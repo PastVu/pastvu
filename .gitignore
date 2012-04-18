@@ -1,9 +1,19 @@
-#Node modules
-node_modules/*
+# Node modules #
+######################
+node_modules
 
-#Temp Files
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Temp Files #
+######################
 *~
 .*
 
-#except
+# Except #
+######################
 !.gitignore
