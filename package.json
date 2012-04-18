@@ -11,7 +11,8 @@
     "url" : "git@github.com:klimashkin/oldplanet.git"
   },
   "dependencies" : {
-    "express" : "~2.5",
+    "express": "~2.5",
+	"jade": "~0.24",
     "less": "~1.3",
     "mongoskin": "~0.3",
     "step": "",

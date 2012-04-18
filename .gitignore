@@ -14,6 +14,10 @@ Thumbs.db
 *~
 .*
 
+# We using LESS instead of CSS #
+######################
+*.css
+
 # Except #
 ######################
 !.gitignore
