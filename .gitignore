@@ -1,2 +1,9 @@
 #Node modules
 node_modules/*
+
+#Temp Files
+*~
+.*
+
+#except
+!.gitignore
