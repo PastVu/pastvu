@@ -15,11 +15,11 @@ app.configure(function(){
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
 	app.set('view options', {layout: false});
-    app.use(express.methodOverride());
     app.use(express.bodyParser());
+	app.use(express.methodOverride());
 	
 	if (env=='development') {
-		app.use('/style', lessMiddleware({src: __dirname + '/style', force: true, once: false, compress: false, debug:true}));
+		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:true}));
 		app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 		require('reloader')({
 			watchModules: true,
@@ -27,13 +27,12 @@ app.configure(function(){
 			onReload: function () {app.listen(3000);}
 		});
 	} else {
-		app.use('/style', lessMiddleware({src: __dirname + '/style', force: false, once: true, compress: true, optimization:2, debug:false}));
+		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
 		app.use(express.errorHandler());
 	}
 	
     app.use(app.router);
-	app.use('/js', express.static(__dirname + '/js', {maxAge: oneDay, redirect: '/'}));
-	app.use('/style', express.static(__dirname + '/style'));
+	app.use(express.static(__dirname + '/public', {maxAge: oneDay, redirect: '/'}));
 	
 });
 

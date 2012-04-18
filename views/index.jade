@@ -1,5 +1,5 @@
 doctype 5
-html(lang="ru")
+html
 	head
 		meta(http-equiv="content-type", content="text/html; charset=utf-8")
 		meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
@@ -11,9 +11,55 @@ html(lang="ru")
 		script(type='text/javascript')
 			
 	body
-		h1 Jade - node template engine
-		#container
-			if youAreUsingJade
-				p You are amazing
-			else
-				p Get on it!
+		script(type='text/html', id="CamListTemplate").
+			<div class='CamList' data-bind="style: {height: containerH()+'px'}, css: {scrolls: scrollActive()}">
+				<div class='camListScroll up' data-bind="css: {noScroll: scrollTop()==0}, event: { mousedown: ScrollOnUp, touchstart: ScrollOnUp, mouseup: ScrollOff, touchend: ScrollOff }"></div>
+				<div class='camListRowsWrapper' data-bind="style: {height: (containerH() - (scrollActive() ? 58 : 0))+'px'}, event: {mousewheel: OnWheel, DOMMouseScroll: OnWheel}">
+					<div class='camListRows' data-bind="foreach: cams, style: {marginTop: scrollTop()+'px'}">
+						<div class='CamListRow' data-bind="click: $parent.clickRow">
+							<div class='CamIcon' data-bind="style: {backgroundImage: 'url('+icon+')'}"></div>
+							<div class='CamContent'>
+								<div class='CamName' data-bind="html: name"></div>.&nbsp;
+								<div class='CamAddr' data-bind="text: address"></div>
+								<div class='CamTools' data-bind="text: address"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class='camListScroll down' data-bind="css: {noScroll: scrollDownNoScroll()}, event: { mousedown: ScrollOnDown, touchstart: ScrollOnDown, mouseup: ScrollOff, touchend: ScrollOff }"></div>
+			</div>
+		div#main_loader.yell
+			div#cnt
+				div#loading_cam
+				div#indicator_wrap
+					div#indicator
+						div#percent
+							\7\%
+						div#bar
+							div#bar_fill
+					div.helper
+				div#info_msg
+					подождите, идет загрузка
+			div.helper
+		script(type='text/javascript')
+			var main_loader = document.getElementById('main_loader'),
+				main_loader_interval = window.setInterval(function(){main_loader.classList.toggle('yell');}, 600),
+				allPercent = 15, //15% остается на выполнение app()
+				current_percent = 0,
+				main_loader_percent = document.getElementById('percent'),
+				main_loader_bar_fill = document.getElementById('bar_fill');
+			function LoaderIncrement(delta, finish){
+				delta = (allPercent > 100 ? Math.floor(delta*100/allPercent) : Math.floor(delta*allPercent/100));
+				current_percent += delta;
+				if (current_percent >= 100 || finish){
+					current_percent = 100;
+					window.clearInterval(main_loader_interval);
+					main_loader.classList.add('green');
+				}
+				main_loader_percent.innerHTML = current_percent + '%';
+				main_loader_bar_fill.style.width = current_percent + 'px';
+			}
+			function removeLoader(){
+				main_loader.style.display = 'none';
+				main_loader = main_loader_interval = main_loader_percent = main_loader_bar_fill = null;
+			}
