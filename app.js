@@ -3,7 +3,7 @@
 var express = require('express'),
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
-    mongoStore = require('connect-mongodb'),
+  mongoStore = require('connect-mongodb'),
 	second = 1000,
 	minute = 60*second,
 	oneDay = 86400000,
@@ -31,7 +31,7 @@ app.configure(function(){
 	
 	
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: oneDay }));
-    app.use(express.bodyParser());
+  app.use(express.bodyParser());
 	app.use(express.cookieParser());
 	app.use(express.session({ cookie: {maxAge: 30*minute}, store: mongoStore(app.set('db-uri')), secret: 'OldMosSess' }));
 	app.use(express.methodOverride());
@@ -77,10 +77,6 @@ app.dynamicHelpers({
 
 });
 
-app.get('/', function(req, res){
-	res.render('index.jade', { pageTitle: 'My Site', youAreUsingJade: true });
-});
-
 // connecting to db
 mongoose.connect(app.set('db-uri'));
 
@@ -90,6 +86,7 @@ require(__dirname+'/models/User.js');
 
 // loading controllers
 require('./controllers/auth.js').loadController(app);
+require('./controllers/index.js').loadController(app);
 
 if (env!='development') app.listen(3000);
 console.log('Express server listening on port %d, environment: %s', app.address().port, app.settings.env)
