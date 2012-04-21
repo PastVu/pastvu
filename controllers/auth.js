@@ -1,5 +1,5 @@
 var mongoose = require('mongoose'),
-	  crypto = require('crypto');
+    crypto = require('crypto');
 
 var Step = require('step');
 var User = mongoose.model('User');
@@ -9,37 +9,36 @@ var User = mongoose.model('User');
  * @param role
  */
 function restrictToRole(role) {
-  return function(req, res, next) {
-	  var user = req.session.user,
-        param = '';
-    if (User.checkRole(user, role)) {
-      next();
-	  } else {
-      var url = '/login';
-      if (user) {
-        url += '/' + role;
-        req.flash('error', i18n("For current operation you need to login as %s",
-                           i18n(User.getRole(role).name, req), req));
-      }
-       
-      if (req.xhr) {
-        url = {redirect: url};
-        res.send(url, 403);
-      } else {
-        req.sessionStore.cameFrom = req.url;
-        res.redirect(url);
-      }
-	  }
-  }
+    return function(req, res, next) {
+        var user = req.session.user,
+            param = '';
+        if (User.checkRole(user, role)) {
+            next();
+        } else {
+            var url = '/login';
+            if (user) {
+                url += '/' + role;
+                req.flash('error', i18n("For current operation you need to login as %s", i18n(User.getRole(role).name, req), req));
+            }
+
+            if (req.xhr) {
+                url = {redirect: url};
+                res.send(url, 403);
+            } else {
+                req.sessionStore.cameFrom = req.url;
+                res.redirect(url);
+            }
+        }
+    }
 }
 
 function renderLoginPage(req, res, opts) {
-  if (!opts) opts = {};
-  opts.title = i18n('Login to StatServer', req);
-  opts.layout = true;
+	if (!opts) opts = {};
+	opts.title = i18n('Login to StatServer', req);
+	opts.layout = true;
 
-  req.flash('info', i18n("Enter login and password", req));
-  res.render('login', opts);
+	req.flash('info', i18n("Enter login and password", req));
+	res.render('login', opts);
 }
 
 // export methods
@@ -47,24 +46,23 @@ module.exports.restrictToRole = restrictToRole;
 
 module.exports.loadController = function(app) {
 
-  app.get('/logout', function(req, res){
-      // destroy the user's session to log them out
-      // will be re-created next request
-      req.session.destroy(function(){
-        res.redirect('/login');
-      });
-  });
+	app.get('/logout', function(req, res){
+		// destroy the user's session to log them out
+		// will be re-created next request
+		req.session.destroy(function(){
+			res.redirect('/login');
+		});
+	});
 
-  app.get('/login/:role?', function(req, res) {
-    var role = req.params.role,
-        user = req.session.user;
-    if (User.checkRole(user, role)) {
-      res.redirect('/');
-    } else {
-      renderLoginPage(req, res, {role: role});
-    }
-
-  });
+	app.get('/login/:role?', function(req, res) {
+		var role = req.params.role,
+			user = req.session.user;
+		if (User.checkRole(user, role)) {
+			res.redirect('/');
+		} else {
+			renderLoginPage(req, res, {role: role});
+		}
+	});
 
   app.post('/login/:role?', function(req, res, next) {
     var role  = req.params.role,
@@ -106,5 +104,4 @@ module.exports.loadController = function(app) {
       }
     );
   });
-
 };

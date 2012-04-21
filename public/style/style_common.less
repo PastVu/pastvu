@@ -1,0 +1,220 @@
+@font-face {
+	font-family: 'SpyFont';
+	font-style: normal;
+	font-weight: bold;
+	src:url('fonts/pt_sans-web-bold-webfont.eot');
+	src:local('PT Sans Bold'), local('PTSans-Bold'), 
+		url('fonts/pt_sans-web-bold-webfont.eot?#iefix') format('embedded-opentype'),
+		url('fonts/PT_Sans-Web-Bold.woff') format('woff'),
+		url('fonts/pt_sans-web-bold-webfont.ttf') format('truetype'),
+		url('fonts/pt_sans-web-bold-webfont.svg#PTSansBold') format('svg'),
+		local('Sans');
+}
+@font-face {
+	font-family: 'SpyFont';
+	font-style: normal;
+	font-weight: normal;
+	src:url('fonts/pt_sans-web-regular-webfont.eot');
+	src:local('PT Sans'), local('PTSans-Regular'),
+		url('fonts/pt_sans-web-regular-webfont.eot?#iefix') format('embedded-opentype'),
+		url('fonts/PT_Sans-Web-Regular.woff') format('woff'),
+		url('fonts/pt_sans-web-regular-webfont.ttf') format('truetype'),
+		url('fonts/pt_sans-web-regular-webfont.svg#PTSansRegular') format('svg'),
+		local('Sans');
+}
+html, body {
+    width: 100%;
+    height: 100%;
+	overflow-x: hidden;
+	overflow-y: hidden;
+}
+html, body, button, input, select, textarea {
+    font-family: SpyFont;
+}
+body {
+	color: #f2f2f2;
+	background-color: #303030;
+	cursor: default;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-webkit-text-size-adjust: none; /* Specifies a size adjustment for displaying text content in Safari on iPhone */
+}
+#main_loader {
+	/* Arial, потому что к моменту отображения загрузки, SpyFont еще не загрузился, и во время его применения после загрузки, на секунду пропадают все надписи загрузчика*/
+	font-family: Arial; 
+    position:absolute;
+    height: auto;
+    bottom:0;
+    top:0;
+    left:0;
+    right:0;
+    margin: 0;
+	text-align: center;
+}
+#main_loader #cnt {
+	position: relative;
+	display:inline-block;
+	vertical-align:middle;
+	width: auto;
+	padding: 0;
+	zoom:1;
+}
+#main_loader #welcome_msg {
+	max-width: 758px;
+	font-size: 110%;
+	position: relative;
+	text-shadow: 1px 1px 2px black;
+}
+#main_loader #user_nm {
+	max-width: 758px;
+	position: relative;
+}
+#main_loader #user_nm > span{
+	color:#8DA1B7;
+}
+#main_loader #loading_pics {
+	position: relative;
+	width: 758px;
+	height: 304px;
+	margin: 5px 0 2px;
+	
+	> div {
+		position: absolute;
+		background-position: 0 0;
+		background-size: cover;
+		background-repeat: no-repeat;
+		width: 150px;
+		opacity: 0.5;
+		
+		&.finish {
+			opacity: 1;
+		}
+		
+		&#l1 {
+			top: 153px;
+			left: 0;
+			height: 151px;
+			background-image: url('/images/rome.png');
+		}
+		&#l2 {
+			top: 204px;
+			left: 152px;
+			height: 100px;
+			background-image: url('/images/some.jpg');
+		}
+		&#l3 {
+			top: 0;
+			left: 0;
+			height: 151px;
+			background-image: url('/images/Chrysler1932.png');
+		}
+		&#l4 {
+			top: 204px;
+			left: 304px;
+			height: 100px;
+			background-image: url('/images/ff.jpg');
+		}
+		&#l5 {
+			top: 102px;
+			left: 152px;
+			height: 100px;
+			background-image: url('/images/dirigible.png');
+		}
+		&#l6 {
+			top: 0;
+			left: 152px;
+			height: 100px;
+			background-image: url('/images/OldParis.jpg');
+		}
+		&#l7 {
+			top: 0;
+			left: 304px;
+			height: 202px;
+			background-image: url('/images/msu.jpg');
+		}
+		&#l8 {
+			top: 102px;
+			left: 456px;
+			height: 202px;
+			background-image: url('/images/Paris1885.jpg');
+		}
+		&#l9 {
+			top: 0;
+			left: 456px;
+			height: 100px;
+			background-image: url('/images/old_fulton_nytimes.jpg');
+		}
+		&#l10 {
+			top: 0;
+			left: 608px;
+			height: 304px;
+			background-image: url('/images/tt.png');
+		}
+	}
+}
+#main_loader #bar {
+	background-color: #3D3D3E;
+	border: 1px solid #595959;
+	border-radius: 0;
+	box-shadow: 0 -1px 1px #464647 inset;
+	height: 6px;
+	margin: 0;
+	overflow: hidden;
+	position: relative;
+	width: 756px;
+}
+#main_loader #bar_fill {
+	position: relative;
+	width:0;
+	background-color: #FFFFFF;
+	border-radius: 0;
+	box-shadow: 0 0 2px #9DA5AF inset;
+	height: 6px;
+}
+#main_loader #info_msg {
+	font-size: 82%;
+}
+#main_loader #percent {
+	position: relative;
+	margin-top: 2px;
+	text-align: center;
+	font-size: 82%;
+}
+#main_loader .helper {
+	display:inline-block;
+	height:100%;
+	width:0px;
+	vertical-align:middle;
+	zoom:1;
+}
+
+
+#main {
+    position:absolute;
+    height: auto;
+    bottom:0;
+    top:0;
+    left:0;
+    right:0;
+    margin: 0;
+	opacity: 0;
+	-webkit-transition: opacity 1s ease-out;
+	-moz-transition: opacity 1s ease-out;
+	-ms-transition: opacity 1s ease-out;
+	-o-transition: opacity 1s ease-out;
+	transition: opacity 1s ease-out;
+}
+#main > div {
+	z-index: 1;
+}
+
+#map {
+	display: block;
+	position: relative;
+    width: 100%;
+    height: 100%;
+}
+.leaflet-control-container {
+	display: none;
+}

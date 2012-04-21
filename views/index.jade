@@ -8,7 +8,11 @@ html
 		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
 		title= pageTitle
 		link(rel="stylesheet", type="text/css", href="/style/normalize.css")
+		link(rel="stylesheet", type="text/css", href="/style/style_common.css")
 		script(type='text/javascript')
+		script(type='text/javascript', src="js/jquery-1.7.2.min.js")
+		script(type='text/javascript', src="js/flash_detect.js")
+		script(type='text/javascript', src="js/Utils.js")
 			
 	body
 		script(type='text/html', id="CamListTemplate").
@@ -30,35 +34,50 @@ html
 			</div>
 		div#main_loader.yell
 			div#cnt
-				div#loading_cam
-				div#indicator_wrap
-					div#indicator
-						div#percent
-							\7\%
-						div#bar
-							div#bar_fill
-					div.helper
+				div#welcome_msg
+					Фотографии прошлого
+				div#loading_pics
+					div#l1
+					div#l2
+					div#l3
+					div#l4
+					div#l5
+					div#l6
+					div#l7
+					div#l8
+					div#l9
+					div#l10
+				div#bar
+					div#bar_fill
 				div#info_msg
 					подождите, идет загрузка
+				div#percent
 			div.helper
 		script(type='text/javascript')
 			var main_loader = document.getElementById('main_loader'),
-				main_loader_interval = window.setInterval(function(){main_loader.classList.toggle('yell');}, 600),
-				allPercent = 15, //15% остается на выполнение app()
+				main_loader_interval,// = window.setInterval(function(){main_loader.classList.toggle('yell');}, 600),
+				allPercent = 100, //15% остается на выполнение app()
+				onePercentW = ($('#bar').width())/100,
+				l_pics = document.querySelector('#loading_pics').children,
 				current_percent = 0,
 				main_loader_percent = document.getElementById('percent'),
 				main_loader_bar_fill = document.getElementById('bar_fill');
+				
 			function LoaderIncrement(delta, finish){
 				delta = (allPercent > 100 ? Math.floor(delta*100/allPercent) : Math.floor(delta*allPercent/100));
 				current_percent += delta;
 				if (current_percent >= 100 || finish){
 					current_percent = 100;
-					window.clearInterval(main_loader_interval);
+					window.clearInterval(ccc);
 					main_loader.classList.add('green');
 				}
+				var dec = Math.floor(current_percent/10);
+				for(var i=1; i<=dec; i++) l_pics[i-1].classList.add('finish');
 				main_loader_percent.innerHTML = current_percent + '%';
-				main_loader_bar_fill.style.width = current_percent + 'px';
+				main_loader_bar_fill.style.width = current_percent*onePercentW + 'px';
 			}
+			LoaderIncrement(0);
+			var ccc = window.setInterval(function(){LoaderIncrement(5)}, 100);
 			function removeLoader(){
 				main_loader.style.display = 'none';
 				main_loader = main_loader_interval = main_loader_percent = main_loader_bar_fill = null;
