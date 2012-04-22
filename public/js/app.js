@@ -78,7 +78,6 @@ function app() {
 	$.when(LoadAOs()/*, LoadCams()*/).done(DrawObjects);	
 	
 	MakeKnokout();
-	SessionUpdater();
 	if(window.KeyHandler) window.KeyHandler();
 }
 function DrawObjects(){
@@ -933,23 +932,6 @@ function mousePageXY(e){
 		y = e.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
 	}	
 	return {"x":x, "y":y};
-}
-
-var nextSessionTimeout, sessionUpdateDefaultInterval = 55000;
-function SessionUpdater(when){
-	window.clearTimeout(nextSessionTimeout);
-	nextSessionTimeout = window.setTimeout(SessionUpdate, when || sessionUpdateDefaultInterval);
-}
-function SessionUpdate(){
-	$.ajax({
-	  url: Server.paths.iAmHere,
-	  cache: false,
-	  success: function(json) {},
-	  error: function(json) {
-		console.error('Ошибка возобновления сессии: ' + response.statusText);
-	  }
-	});
-	SessionUpdater();
 }
 
 function navigationSlider(slider){
