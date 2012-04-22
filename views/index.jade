@@ -56,7 +56,7 @@ html
 		script(type='text/javascript')
 			var main_loader = document.getElementById('main_loader'),
 				main_loader_interval,// = window.setInterval(function(){main_loader.classList.toggle('yell');}, 600),
-				allPercent = 100, //15% остается на выполнение app()
+				allPercent = 15, //15% остается на выполнение app()
 				onePercentW = ($('#bar').width())/100,
 				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
 				current_percent = 0,
@@ -83,3 +83,5 @@ html
 				main_loader = main_loader_interval = main_loader_percent = main_loader_bar_fill = null;
 			}
 		link(rel="stylesheet", type="text/css", href="/style/style_main.css")
+		script(type='text/javascript', src="/socket.io/socket.io.js")
+		script(type='text/javascript', src="js/appLoader.js")
