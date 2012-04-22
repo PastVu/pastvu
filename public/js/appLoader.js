@@ -54,9 +54,9 @@ function PrepareAndLoadSources(){
 			{parallel:[
 				{chain: [
 					{s: 'js/leaflet_0.4.0.js', p: 15, t: '?vv=040'},
-					(GlobalParams.USE_GOOGLE_API ? {s: 'js/L.Google.js', p: 5, t: '?cctv='+GlobalParams.appVersion} : undefined)
+					(GlobalParams.USE_GOOGLE_API ? {s: 'js/L.Google.js', p: 5, t: '?appv='+GlobalParams.appVersion} : undefined)
 				]},
-				{s: 'js/KeyHandler.js', p: 5, t: '?cctv='+GlobalParams.appVersion},
+				{s: 'js/KeyHandler.js', p: 5, t: '?appv='+GlobalParams.appVersion},
 				{chain: [
 					{s: 'js/knockout-2.0.0.js', p: 10, t: '?vv=200'},
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'}
@@ -65,12 +65,12 @@ function PrepareAndLoadSources(){
 				/*,'js/raphael-min.js'*/
 			]},
 			{parallel:[
-				{s: 'js/MediaContainer.js', p: 10, t: '?cctv='+GlobalParams.appVersion},
-				{s: 'js/NeoMarker.js', p: 10, t: '?cctv='+GlobalParams.appVersion},
-				{s: 'js/NeoPolygonManager.js', p: 5, t: '?cctv='+GlobalParams.appVersion},
-				{s: 'js/NeoPolygon.js', p: 10, t: '?cctv='+GlobalParams.appVersion},
+				{s: 'js/MediaContainer.js', p: 10, t: '?appv='+GlobalParams.appVersion},
+				{s: 'js/NeoMarker.js', p: 10, t: '?appv='+GlobalParams.appVersion},
+				{s: 'js/NeoPolygonManager.js', p: 5, t: '?appv='+GlobalParams.appVersion},
+				{s: 'js/NeoPolygon.js', p: 10, t: '?appv='+GlobalParams.appVersion},
 			]},
-			{s: 'js/app.js', p: 15, t: '?cctv='+GlobalParams.appVersion}
+			{s: 'js/app.js', p: 15, t: '?appv='+GlobalParams.appVersion}
 		]}
 	];
 	

@@ -8,9 +8,8 @@ var map, layers = {}, curr_lay = {sys: null, type: null},
 	poly_mgr, marker_mgr,
 	markersLayer, aoLayer,
 	navSlider,
-	login, chpass, reg, recall, search,
-	mediaContainerManager,
-	infoFringe, infoC, infoCInitH, ScrollUp, ScrollDown,
+	login, reg, recall, search,
+	//mediaContainerManager,
 	flag_current, flags_available,
 	maxVideoPlaybackTime = 0;
 	
@@ -22,20 +21,19 @@ var ET = {
 	mdown: (Browser.support.touch ? 'touchstart' : 'mousedown'),
 	mmove: (Browser.support.touch ? 'touchmove' : 'mousemove')
 }
+
+function createStructure() {
 	
+}
+
 function app() {
 	GlobalParamsToKO();
 	Utils.Event.add(window, 'resize', function(){GlobalParamsVM.Width(Utils.getClientWidth()); GlobalParamsVM.Height(Utils.getClientHeight());});
 	
-	infoFringe = document.querySelector('#info_fringe');
-	infoC = document.querySelector('#info_content');
-	infoCInitH = infoC.scrollHeight;
-	ScrollUp = document.querySelector('#info_up');
-	ScrollDown = document.querySelector('#info_down');
 	flag_current = document.querySelector('#flag_current');
 	flags_available = document.querySelector('#flags_available');
 	
-	mediaContainerManager = new MediaContainerManager(GlobalParamsVM.MULTI_VIEW());
+	//mediaContainerManager = new MediaContainerManager(GlobalParamsVM.MULTI_VIEW());
 	
 	login = {
 		head: document.querySelector('#login_back #login_body .head'),
@@ -55,12 +53,6 @@ function app() {
 		wait: document.querySelector('#login_back #recall_body .wait'),
 		mess: document.querySelector('#login_back #recall_body .mess')
 	};
-	chpass = {
-		head: document.querySelector('#changepass_back #changepass_body .head'),
-		form: document.querySelector('#changepass_back #changepass_body form'),
-		wait: document.querySelector('#changepass_back #changepass_body .wait'),
-		mess: document.querySelector('#changepass_back #changepass_body .mess')
-	};
 	search = {
 		SearchArrow: document.querySelector('#searchArrow'),
 		SearchInput: document.querySelector('#SearchInput'),
@@ -72,7 +64,7 @@ function app() {
 	
 	createMap();
 	
-	InitLocales();
+	//InitLocales();
 	navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'));
 	
 	markersLayer = new L.LayerGroup();
@@ -83,7 +75,7 @@ function app() {
 	map.addLayer(aoLayer);
 	poly_mgr = new PolygonManager(map, {layer: aoLayer});
 	
-	$.when(LoadAOs(), LoadCams()).done(DrawObjects);	
+	$.when(LoadAOs()/*, LoadCams()*/).done(DrawObjects);	
 	
 	MakeKnokout();
 	SessionUpdater();
@@ -331,260 +323,13 @@ function ShowPanel(id){
 	var showing = document.getElementById(id);
 	var anotherPanels = new Array();
 	if(id!='nav_panel') anotherPanels.push(document.querySelector('#nav_panel'));
-	if(id!='info_fringe') anotherPanels.push(document.querySelector('#info_fringe'));
 	if(id!='user_panel_fringe') anotherPanels.push(document.querySelector('#user_panel_fringe'));
 	if(id!='layers_fringe') anotherPanels.push(document.querySelector('#layers_fringe'));
 	for (var p = 0; p<anotherPanels.length; p++){
 		if (anotherPanels[p].classList.contains('show')) anotherPanels[p].classList.remove('show');
 	}
 	showing.classList.toggle('show');
-	if(id=='info_fringe' && showing.querySelector('#info').classList.contains('closed')) OpenInfo(showing.querySelector('#info'));
 	if(id=='layers_fringe' && !showing.classList.contains('open')) showing.querySelector('#layers_panel').classList.add('open');
-}
-
-var ScrollinfoInterval = null;
-function ScrollMediaImgs(dir, step, wheel){
-	if(dir=='down' && infoC.scrollTop< infoC.scrollHeight-infoC.offsetHeight){
-		infoC.scrollTop += step;
-	}else if (dir=='up' && infoC.scrollTop!=0){
-		infoC.scrollTop -= step;
-	}else if (!wheel) {ScrollMediaImgsOff(); return;}
-	
-	if(infoC.scrollTop==0){
-		ScrollUp.classList.add('noScroll');
-	}else{
-		ScrollUp.classList.remove('noScroll');
-	}
-	if(infoC.scrollTop>=infoC.scrollHeight-infoC.offsetHeight){
-		ScrollDown.classList.add('noScroll');
-	}else{
-		ScrollDown.classList.remove('noScroll');
-	}
-}
-function ScrollMediaImgsOn(dir){
-	ScrollinfoInterval = window.setInterval(function(){ScrollMediaImgs(dir, 10);},60);
-}
-function ScrollMediaImgsOff(){
-	if(ScrollinfoInterval != null) clearInterval(ScrollinfoInterval);
-	ScrollinfoInterval = null;
-}
-
-function OnWheel(e){
-	var dir;
-	if(e.type=='DOMMouseScroll') dir = -1*e.detail;
-	else dir = e.wheelDelta;
-	if(dir>0) dir = 'up';
-	else dir = 'down';
-	ScrollMediaImgs(dir, 12, true);
-	return false;
-}
-
-var infoOpened = false;
-function OpenInfo(info){
-
-	if(infoOpened){
-		Utils.Event.removeAll(infoC);
-		Utils.Event.removeAll(ScrollUp);
-		Utils.Event.removeAll(ScrollDown);
-		info.classList.add('closed');
-		infoC.classList.remove('scroll');
-		ScrollUp.classList.remove('show');
-		ScrollDown.classList.remove('show');
-		Utils.Event.remove(window, 'resize', InfoResize);
-	}else{
-		infoC.scrollTop = 0;
-		InfoResize();
-		
-		Utils.Event.add(infoC, 'mousewheel', OnWheel);
-		Utils.Event.add(infoC, 'DOMMouseScroll', OnWheel); //Mozilla
-		Utils.Event.add(ScrollUp, 'mousedown', function(){ScrollMediaImgsOn('up')});
-		Utils.Event.add(ScrollUp, 'touchstart', function(){ScrollMediaImgsOn('up')});
-		Utils.Event.add(ScrollUp, 'mouseup', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollUp, 'touchend', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollDown, 'mousedown', function(){ScrollMediaImgsOn('down')});
-		Utils.Event.add(ScrollDown, 'touchstart', function(){ScrollMediaImgsOn('down')});
-		Utils.Event.add(ScrollDown, 'mouseup', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollDown, 'touchend', ScrollMediaImgsOff);
-		
-		Utils.Event.add(window, 'resize', InfoResize);
-		info.classList.remove('closed');
-	}
-	
-	infoOpened = !infoOpened;
-}
-
-function InfoResize() {
-	var maxH = Utils.getClientHeight() - 86 - infoFringe.offsetTop;
-	infoCInitH = infoC.scrollHeight;
-	if (infoCInitH < maxH){
-		infoC.style.height = infoCInitH + 'px';
-		infoC.classList.remove('scroll');
-		ScrollUp.classList.remove('show');
-		ScrollDown.classList.remove('show');
-		return false;
-	}else {
-		maxH -= 33;
-		infoC.style.height = maxH + 'px';
-		infoC.classList.add('scroll');
-		ScrollUp.classList.add('show');
-		ScrollDown.classList.add('show');
-		return true;
-	}
-}
-
-function ShowPanel(id){
-	var showing = document.getElementById(id);
-	var anotherPanels = new Array();
-	if(id!='nav_panel') anotherPanels.push(document.querySelector('#nav_panel'));
-	if(id!='info_fringe') anotherPanels.push(document.querySelector('#info_fringe'));
-	if(id!='user_panel_fringe') anotherPanels.push(document.querySelector('#user_panel_fringe'));
-	if(id!='layers_fringe') anotherPanels.push(document.querySelector('#layers_fringe'));
-	for (var p = 0; p<anotherPanels.length; p++){
-		if (anotherPanels[p].classList.contains('show')) anotherPanels[p].classList.remove('show');
-	}
-	showing.classList.toggle('show');
-	if(id=='info_fringe' && showing.querySelector('#info').classList.contains('closed')) OpenInfo(showing.querySelector('#info'));
-	if(id=='layers_fringe' && !showing.classList.contains('open')) showing.querySelector('#layers_panel').classList.add('open');
-}
-
-var ScrollinfoInterval = null;
-function ScrollMediaImgs(dir, step, wheel){
-	if(dir=='down' && infoC.scrollTop< infoC.scrollHeight-infoC.offsetHeight){
-		infoC.scrollTop += step;
-	}else if (dir=='up' && infoC.scrollTop!=0){
-		infoC.scrollTop -= step;
-	}else if (!wheel) {ScrollMediaImgsOff(); return;}
-	
-	if(infoC.scrollTop==0){
-		ScrollUp.classList.add('noScroll');
-	}else{
-		ScrollUp.classList.remove('noScroll');
-	}
-	if(infoC.scrollTop>=infoC.scrollHeight-infoC.offsetHeight){
-		ScrollDown.classList.add('noScroll');
-	}else{
-		ScrollDown.classList.remove('noScroll');
-	}
-}
-function ScrollMediaImgsOn(dir){
-	ScrollinfoInterval = window.setInterval(function(){ScrollMediaImgs(dir, 10);},60);
-}
-function ScrollMediaImgsOff(){
-	if(ScrollinfoInterval != null) clearInterval(ScrollinfoInterval);
-	ScrollinfoInterval = null;
-}
-
-function OnWheel(e){
-	var dir;
-	if(e.type=='DOMMouseScroll') dir = -1*e.detail;
-	else dir = e.wheelDelta;
-	if(dir>0) dir = 'up';
-	else dir = 'down';
-	ScrollMediaImgs(dir, 12, true);
-	return false;
-}
-
-var infoOpened = false;
-function OpenInfo(info){
-
-	if(infoOpened){
-		Utils.Event.removeAll(infoC);
-		Utils.Event.removeAll(ScrollUp);
-		Utils.Event.removeAll(ScrollDown);
-		info.classList.add('closed');
-		infoC.classList.remove('scroll');
-		ScrollUp.classList.remove('show');
-		ScrollDown.classList.remove('show');
-		Utils.Event.remove(window, 'resize', InfoResize);
-	}else{
-		infoC.scrollTop = 0;
-		InfoResize();
-		
-		Utils.Event.add(infoC, 'mousewheel', OnWheel);
-		Utils.Event.add(infoC, 'DOMMouseScroll', OnWheel); //Mozilla
-		Utils.Event.add(ScrollUp, 'mousedown', function(){ScrollMediaImgsOn('up')});
-		Utils.Event.add(ScrollUp, 'touchstart', function(){ScrollMediaImgsOn('up')});
-		Utils.Event.add(ScrollUp, 'mouseup', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollUp, 'touchend', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollDown, 'mousedown', function(){ScrollMediaImgsOn('down')});
-		Utils.Event.add(ScrollDown, 'touchstart', function(){ScrollMediaImgsOn('down')});
-		Utils.Event.add(ScrollDown, 'mouseup', ScrollMediaImgsOff);
-		Utils.Event.add(ScrollDown, 'touchend', ScrollMediaImgsOff);
-		
-		Utils.Event.add(window, 'resize', InfoResize);
-		info.classList.remove('closed');
-	}
-	
-	infoOpened = !infoOpened;
-}
-
-function InfoResize() {
-	var maxH = Utils.getClientHeight() - 86 - infoFringe.offsetTop;
-	infoCInitH = infoC.scrollHeight;
-	if (infoCInitH < maxH){
-		infoC.style.height = infoCInitH + 'px';
-		infoC.classList.remove('scroll');
-		ScrollUp.classList.remove('show');
-		ScrollDown.classList.remove('show');
-		return false;
-	}else {
-		maxH -= 33;
-		infoC.style.height = maxH + 'px';
-		infoC.classList.add('scroll');
-		ScrollUp.classList.add('show');
-		ScrollDown.classList.add('show');
-		return true;
-	}
-}
-
-function ChangePassOpen(){
-	document.querySelector('#changepass_back').style.display = 'block';
-
-	window.setTimeout(function(){
-		document.querySelector('#changepass_back #changepassold').focus();
-	}, 800);
-	
-	keyTarget.push({
-		id: 'ChangePassOverlay',
-		stopFurther: false,
-		onEsc: ChangePassClose
-	});
-}
-function ChangePassClose(){
-	document.querySelector('#changepass_back').style.display = 'none';
-	ChangePassReset();
-	keyTarget.pop();
-}
-function ChangePassReset(){
-	chpass.form.reset();
-	chpass.mess.innerHTML = ''; chpass.mess.classList.remove('show'); chpass.mess.classList.remove('good');
-}
-function ChangePassAjax(form) {
-	chpass.wait.style.display = 'block';
-	$.ajax({
-	  url: form.action,
-	  cache: false,
-	  type: 'POST',
-	  data: $(form).serialize(),
-	  success: function(json) {
-		if (json.status && json.status=='ok') {
-			ChangePassClose();
-		}else {
-			window.setTimeout(function(){
-				document.querySelector('#changepass_back #changepassold').focus();
-			}, 700);
-			chpass.mess.innerHTML = ''+(json.status || json);
-			chpass.mess.classList.add('show');
-		}
-		window.setTimeout(function(){chpass.wait.style.display = 'none';}, 500);
-	  },
-	  error: function(json) {
-		chpass.mess.innerHTML = ''+json.statusText;
-		chpass.mess.classList.add('show');
-		window.setTimeout(function(){chpass.wait.style.display = 'none';}, 500);
-	  }
-	});
-	return false;
 }
 
 function LoginOpen(){
@@ -659,9 +404,9 @@ function AuthAjax(form) {
 						links = '<span onclick="window.open(\'admin\', \'_blank\')">' +
 							Server.messages['index.admin.panel']
 							+ '</span> | ';
-						mediaContainerManager.setControl(1);
+						//mediaContainerManager.setControl(1);
 					}else if(json.roles[r].authority=='ROLE_OPERATOR'){
-						mediaContainerManager.setControl(1);
+						//mediaContainerManager.setControl(1);
 					}
 				}
 			}
@@ -923,7 +668,7 @@ function DrawCams(){
 }
 
 function LoadAOs(){
-	return Utils.addScript('js/NeoPolygonsAO.js'+'?cctv='+GlobalParams.appVersion);
+	return Utils.addScript('js/NeoPolygonsAO.js'+'?appv='+GlobalParams.appVersion);
 }
 
 
@@ -1160,12 +905,12 @@ function MakeKnokout(){
 		owner: SearchInVM
 	}).extend({ throttle: 100 });
 
-	ko.applyBindings(GlobalParamsVM, document.getElementById('user_panel_fringe'));
-	ko.applyBindings(GlobalParamsVM, document.getElementById('super_home_fringe'));
+	//ko.applyBindings(GlobalParamsVM, document.getElementById('user_panel_fringe'));
+	//ko.applyBindings(GlobalParamsVM, document.getElementById('super_home_fringe'));
 	ko.applyBindings(SearchInVM, document.getElementById('search_panel'));
 	
-	MakeMatrixVM();
-	ko.applyBindings(MatrixVM, document.getElementById('matrix_button_fringe'));	
+	//MakeMatrixVM();
+	//ko.applyBindings(MatrixVM, document.getElementById('matrix_button_fringe'));	
 }
 
 function mousePageXY(e){
