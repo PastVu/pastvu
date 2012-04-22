@@ -34,8 +34,8 @@ html
 			</div>
 		div#main_loader.yell
 			div#cnt
-				div#welcome_msg
-					Фотографии прошлого
+				div#welcome_msg.
+					Retro photo of humankind urbanization
 				div#loading_pics
 					div#l1
 					div#l2
@@ -49,8 +49,8 @@ html
 					div#l10
 				div#bar
 					div#bar_fill
-				div#info_msg
-					подождите, идет загрузка
+				div#info_msg.
+					loading, please wait
 				div#percent
 			div.helper
 		script(type='text/javascript')
@@ -58,7 +58,7 @@ html
 				main_loader_interval,// = window.setInterval(function(){main_loader.classList.toggle('yell');}, 600),
 				allPercent = 100, //15% остается на выполнение app()
 				onePercentW = ($('#bar').width())/100,
-				l_pics = document.querySelector('#loading_pics').children,
+				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
 				current_percent = 0,
 				main_loader_percent = document.getElementById('percent'),
 				main_loader_bar_fill = document.getElementById('bar_fill');
@@ -77,7 +77,7 @@ html
 				main_loader_bar_fill.style.width = current_percent*onePercentW + 'px';
 			}
 			LoaderIncrement(0);
-			var ccc = window.setInterval(function(){LoaderIncrement(5)}, 100);
+			var ccc = window.setInterval(function(){LoaderIncrement(5)}, 50);
 			function removeLoader(){
 				main_loader.style.display = 'none';
 				main_loader = main_loader_interval = main_loader_percent = main_loader_bar_fill = null;
