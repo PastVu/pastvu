@@ -27,17 +27,14 @@ function onDOMLoad() {
 }
 
 function init_and_load(){
-	$.when(LoadParams()).then(function(){
-		$.when(PrepareAndLoadSources()).then(
-			startApp
-		);
-	});
+	$.when(LoadParams())
+	 .pipe(PrepareAndLoadSources)
+	 .then(startApp);
 }
 
 function LoadParams(){
 	var dfd = $.Deferred();
 	socket.on('takeGlobeParams', function (json) {
-		console.log(json);
 		$.extend(true, GlobalParams, json);
 		dfd.resolve();
 	});
@@ -53,15 +50,20 @@ function PrepareAndLoadSources(){
 		{chain: [
 			{parallel:[
 				{chain: [
-					{s: 'js/leaflet_0.4.0.js', p: 15, t: '?vv=040'},
+					{s: 'js/leaflet_0.4.0.js', p: 10, t: '?vv=040'},
+					(GlobalParams.USE_GOOGLE_API ? 
+						(window.GMapsOnLoadDFD = $.Deferred() , window.GMapsOnLoad = function (){GMapsOnLoadDFD.resolve(); delete window.GMapsOnLoad; delete window.GMapsOnLoadDFD;} ,
+						{s: 'http://maps.googleapis.com/maps/api/js?v=3.6&sensor=false&region=RU&callback=GMapsOnLoad', p: 10, t: '', waitForDeffered:window.GMapsOnLoadDFD})
+						: undefined
+					),
 					(GlobalParams.USE_GOOGLE_API ? {s: 'js/L.Google.js', p: 5, t: '?appv='+GlobalParams.appVersion} : undefined)
 				]},
 				{s: 'js/KeyHandler.js', p: 5, t: '?appv='+GlobalParams.appVersion},
 				{chain: [
-					{s: 'js/knockout-2.0.0.js', p: 10, t: '?vv=200'},
+					{s: 'js/knockout-2.0.0.js', p: 9, t: '?vv=200'},
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'}
 				]},
-				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 10, t: '?vv=210'} : undefined)
+				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined)
 				/*,'js/raphael-min.js'*/
 			]},
 			{parallel:[
@@ -72,6 +74,14 @@ function PrepareAndLoadSources(){
 			]},
 			{s: 'js/app.js', p: 15, t: '?appv='+GlobalParams.appVersion}
 		]}
+	];
+	
+	/**
+	 * JS load list
+	 */
+	var StylesToLoad = [
+		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
+		{s: 'style/style_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion},
 	];
 	
 	/**
@@ -124,7 +134,7 @@ function PrepareAndLoadSources(){
 	];
 	allPercent += 20;
 	
-	!function removeEmptyArrays(arr) {
+	function removeEmptyArrays(arr) {
 		for (var i = 0; i < arr.length; i += 1) {
 			if (arr[i]===undefined){
 				arr.splice(i, 1);
@@ -139,9 +149,13 @@ function PrepareAndLoadSources(){
 			}
 		}
 		return arr;
-	}(ScriptToLoad);
+	}
 	
-	return $.when(LoadScripts(ScriptToLoad), PreloadImg(IMGToLoad, LoaderIncrement.neoBind(null, [20], false)));
+	removeEmptyArrays(ScriptToLoad);
+	removeEmptyArrays(StylesToLoad);
+	
+	return $.when(LoadScripts(ScriptToLoad), PreloadImg(IMGToLoad, null, LoaderIncrement.neoBind(null, [20], true, false))).
+			 pipe(LoadStyles.neoBind(null, [StylesToLoad], true, false));
 }
 
 function GlobalParamsToKO(){
@@ -149,14 +163,15 @@ function GlobalParamsToKO(){
 }
 
 var LoadScripts = function () {
-	function addVerScript(scr, fn){
-		scr = arguments[Math.max(addVerScript.length, arguments.length)-2];
-		var urlPostfix = scr.t || '';
-		return Utils.addScript(scr.s+urlPostfix, LoaderIncrement.neoBind(null, [scr.p], false));
+	function addVerScript(obj){
+		var urlPostfix = obj.t || '',
+			ret = Utils.addScript(obj.s+urlPostfix, LoaderIncrement.neoBind(null, [obj.p], true, false));
+		if (obj.waitForDeffered) {
+			return obj.waitForDeffered.promise();
+		}else return ret;
 	}
 	
-	function LoaderParallel(arr, fn) {
-		arr = arguments[Math.max(LoaderParallel.length, arguments.length)-2];
+	function LoaderParallel(arr) {
 		var getarray = [], i, len;
 		for (i = 0, len = arr.length; i < len; i += 1) {
 			if (arr[i].chain) {
@@ -174,19 +189,16 @@ var LoadScripts = function () {
 		LoaderChainRecursive(dfd, arr, 0);
 		return dfd.promise();
 	}
-	function LoaderChainRecursive(dfd, arr, index, fn) {
-		dfd = arguments[Math.max(LoaderChainRecursive.length, arguments.length)-4];
-		arr = arguments[Math.max(LoaderChainRecursive.length, arguments.length)-3];
-		index = arguments[Math.max(LoaderChainRecursive.length, arguments.length)-2];
+	function LoaderChainRecursive(dfd, arr, index) {
 		var exec, next;
 		if (arr[index].parallel){
-			exec = LoaderParallel.neoBind(this, [arr[index].parallel]);
+			exec = LoaderParallel.neoBind(this, [arr[index].parallel], true, false);
 		} else {
-			exec = addVerScript.neoBind(this, [arr[index]]);
+			exec = addVerScript.neoBind(this, [arr[index]], true, false);
 		}
 		
 		if (arr[index+1]){
-			next = LoaderChainRecursive.neoBind(this, [dfd, arr, index+1]);
+			next = LoaderChainRecursive.neoBind(this, [dfd, arr, index+1], true, false);
 		}else{
 			next = function(){
 				//console.log('Another CHAIN loaded!');
@@ -217,9 +229,14 @@ var LoadScripts = function () {
 	
 }();
 
-var PreloadImg = function (arr, doneCallback) {
+var PreloadImg = function (arr, postfix, doneCallback) {
 	var dfd = $.Deferred();
 	
+	if (postfix)
+		for (var i = 0, len = arr.length; i < len; i += 1) {
+			arr[i] += postfix;
+		}
+		
 	$.imgpreload(arr,
 	{
 		each: function(){},
@@ -230,6 +247,26 @@ var PreloadImg = function (arr, doneCallback) {
 		}
 	});
 	return dfd.promise();
+};
+
+var LoadStyles = function (arr, doneCallback) {
+	var getarray = [], i, len,
+		style;
+
+	console.groupCollapsed("Styles Loading");
+	console.time("Styles loaded time");
+	for (i = 0, len = arr.length; i < len; i += 1) {
+		style = arr[i];
+		getarray.push(
+			Utils.addStyle(style.s+(style.t || ''), LoaderIncrement.neoBind(null, [style.p], true, false))
+		);
+	};
+	return $.when.apply($, getarray).then(function () {
+		console.log('All Styles loaded');
+		console.timeEnd("Styles loaded time");
+		console.groupEnd();
+	});
+
 };
 
 function startApp(){	

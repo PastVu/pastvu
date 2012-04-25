@@ -13,7 +13,7 @@ module.exports.loadController = function (app, io) {
 	});
 
 	app.get('/', /*auth.restrictToRole('user'),*/ function(req, res){
-		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos', youAreUsingJade: true });
+		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos', appVersion: app.version });
 	});
 	
 	io.sockets.on('connection', function (socket) {

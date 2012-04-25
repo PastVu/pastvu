@@ -117,15 +117,17 @@ var Browser = function (){
 if (!Function.prototype.neoBind) {
 	/**@author P.Klimashkin
 	 * @param {!Object} scope Context, that becomes 'this' in function.
-	 * @param {!Array=} bind_args Array of parameters.
+	 * @param {!Array=} bindArgs Array of parameters.
+	 * @param {!boolean=} bindArgsFirst Insert bind_arguments first.
+	 * @param {!boolean=} pushCallee Add callee (wrapped function) as last parameter.
 	 * @return {!Function} Closured function.*/
-	Function.prototype.neoBind = function(scope, bind_args, pushCallee) {
+	Function.prototype.neoBind = function(scope, bindArgs, bindArgsFirst, pushCallee) {
 		/**@type {!Function}*/
 		var fn = this;
 		return function() {
 			/**@type {!Array}*/
-			var args = bind_args ?
-				Array.prototype.slice.call(arguments).concat(bind_args) :
+			var args = bindArgs ?
+				(bindArgsFirst ? bindArgs.concat(Array.prototype.slice.call(arguments)) : Array.prototype.slice.call(arguments).concat(bindArgs)) :
 				Array.prototype.slice.call(arguments);
 			if (pushCallee!==false) args.push(arguments.callee);
 			var res;
@@ -165,24 +167,11 @@ jQuery.extend({
 		// Return the jqXHR object so we can chain callbacks
 		return jQuery.ajax(options);
 	},
-	getSource: function(url, callback) {
-		var head = document.getElementsByTagName("head")[0];
-
-		var ext = url.replace(/.*\.(\w+)$/, "$1");
-
-		if(ext == 'js'){
-			var script = document.createElement("script");
-			script.src = url;
-			script.type = 'text/javascript';
-		} else if(ext == 'css'){
-			var script = document.createElement("link");
-			script.href = url;
-			script.type = 'text/css';
-			script.rel = 'stylesheet';
-		} else {
-			console.log("Неизвестное расширение подгружаемого скрипта");
-			return false;
-		}
+	getScript: function(url, callback) {
+		var head = document.getElementsByTagName("head")[0],
+			script = document.createElement("script");
+		script.src = url;
+		script.type = 'text/javascript';
 
 		// Handle Script loading
 		{
@@ -205,8 +194,47 @@ jQuery.extend({
 
 		// We handle everything using the script element injection
 		return undefined;
+	},
+	
+	getStyle: function(path, callbackSuccess, callbackFail, scope) {
+		var head = document.getElementsByTagName('head')[0], // reference to document.head for appending/ removing link nodes
+		   link = document.createElement('link');           // create the link node
+		link.setAttribute('href', path);
+		link.setAttribute('rel', 'stylesheet');
+		link.setAttribute('type', 'text/css');
+
+		var sheet, cssRules;
+		//get the correct properties to check for depending on the browser
+		if ( 'sheet' in link ) {
+			sheet = 'sheet'; cssRules = 'cssRules';
+		} else {
+			sheet = 'styleSheet'; cssRules = 'rules';
+		}
+
+	   var interval_id = setInterval(function() {	// start checking whether the style sheet has successfully loaded
+		  try {
+			 if ( link[sheet] && link[sheet][cssRules].length ) { // SUCCESS! our style sheet has loaded
+				clearInterval( interval_id );                     // clear the counters
+				clearTimeout( timeout_id );
+				callbackSuccess.call(scope || window);	// fire the success callback
+			 }
+		  } catch( e ) {console.error('Ошибка применения стилей (getStyle) '+e); if(callbackFail) callbackFail.call(scope || window);} finally {}
+	   }, 100);
+	   
+	   var timeout_id = setTimeout(function() {	// start counting down till fail
+		  clearInterval( interval_id );	// clear the counters
+		  clearTimeout( timeout_id );
+		  head.removeChild( link );	// since the style sheet didn't load, remove the link node from the DOM
+		  console.error('Превышен интервал загрузки стилей (getStyle)');
+		  if(callbackFail) callbackFail.call(scope || window); // fire the fail callback
+	   }, 15000);
+
+	   head.appendChild(link);  // insert the link node into the DOM and start loading the style sheet
+
+	   return link; // return the link node;
 
 	},
+	
 	urlParam: function(name){
 		var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
 		return (results && results[1] ? decodeURIComponent(results[1]): 0);
@@ -631,15 +659,14 @@ var Utils = {
      * Creates Style element in head.
      * @param {!string=} src location.
      */
-	addStyle : function(src) {
+	addStyle : function(src, doneCallback) {
 		var dfd = $.Deferred();
-		dfd.done(function(script, textStatus){
-		  console.log(src + ' load ' + textStatus)
+		dfd.done(function(){
+			console.log("Source '%s' loaded success", src);
+			if (doneCallback) doneCallback();
 		});	
-		$.getSource(src, dfd.resolve);
+		$.getStyle(src, dfd.resolve);
 		return dfd.promise();
-		
-		//document.head.appendChild($('<link />',  {'rel' : "stylesheet", 'type': "text/css", 'href': src})[0]);
 	},
     /**
      * Creates Script element in head.
@@ -649,7 +676,7 @@ var Utils = {
 		var dfd = $.Deferred();
 	 
 		dfd.done(function(script, textStatus){
-		  console.log("Source '%s' loaded %s", src, textStatus)
+		  console.log("Source '%s' loaded %s", src, textStatus);
 		  if (doneCallback) doneCallback();
 		});		
 	
