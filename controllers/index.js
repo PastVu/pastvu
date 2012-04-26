@@ -11,14 +11,14 @@ module.exports.loadController = function (app, io) {
 			}
 		}
 	});
-
+	var iterator = 0;
 	app.get('/', /*auth.restrictToRole('user'),*/ function(req, res){
-		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos', appVersion: app.version });
+		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos', appVersion: app.version, verBuild: ++iterator });
 	});
 	
 	io.sockets.on('connection', function (socket) {
 		socket.on('giveGlobeParams', function (data) {
-			socket.emit('takeGlobeParams', { USE_YANDEX_API: false, appVersion: app.version });
+			socket.emit('takeGlobeParams', { USE_YANDEX_API: false, appVersion: app.version, verBuild: ++iterator });
 		});
 	});
 	 

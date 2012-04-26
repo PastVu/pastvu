@@ -9,7 +9,8 @@ var GlobalParams = {
 	USE_OSM_API: true,
 	USE_GOOGLE_API: true,
 	USE_YANDEX_API: true,
-	appVersion: 0
+	appVersion: 0,
+	verBuild: 0
 };
 /**
  * GlobalSettings ViewModel
@@ -82,7 +83,7 @@ function PrepareAndLoadSources(){
 	 */
 	var StylesToLoad = [
 		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
-		{s: 'style/style_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion},
+		{s: 'style/style_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion+'&verBuild='+GlobalParams.verBuild},
 	];
 	
 	/**
@@ -211,7 +212,7 @@ var LoadScripts = function () {
 	
 	return function (arr) {
 		var getarray = [], i, len;
-	
+		
 		console.groupCollapsed("Scripts Loading");
 		console.time("Scripts loaded time");
 		for (i = 0, len = arr.length; i < len; i += 1) {
