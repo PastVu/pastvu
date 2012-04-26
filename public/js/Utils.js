@@ -1,13 +1,11 @@
 document.head || (document.head = document.getElementsByTagName('head')[0]);
 function func(){};
-if (!window.console){
-	window.console = {};
-	$.each(
-	["log","debug","info","warn","error","assert","clear","dir","dirxml","trace","group","groupCollapsed","groupEnd","time","timeEnd","profile","profileEnd","count","exception","table"],
-	function (index, method) {
-		window.console[method] = func;
-	});
-}
+if (!window.console) window.console = {};
+$.each(
+["log","debug","info","warn","error","assert","clear","dir","dirxml","trace","group","groupCollapsed","groupEnd","time","timeEnd","profile","profileEnd","count","exception","table"],
+function (index, method) {
+	if (!window.console[method]) window.console[method] = func;
+});
 
 /**
  * Browser Detect
@@ -160,7 +158,7 @@ jQuery.extend({
 		options = jQuery.extend(options || {}, {
 			dataType: "script",
 			crossDomain: true, //Hack to display scripts in firebug panel
-			cache: true,
+			cache: false,
 			url: url
 		});
 		// Use $.ajax() since it is more flexible than $.getScript
