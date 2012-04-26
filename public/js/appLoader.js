@@ -22,6 +22,7 @@ var GlobalParamsVM;
 var socket;
 
 function onDOMLoad() {
+	main_loader.classList.add('visi');
 	socket = io.connect(location+'');
 	init_and_load();
 }

@@ -71,7 +71,16 @@ body {
     right:0;
     margin: 0;
 	text-align: center;
+	opacity: 0;
+	-webkit-transition: opacity 1s ease-out;
+	-moz-transition: opacity 1s ease-out;
+	-ms-transition: opacity 1s ease-out;
+	-o-transition: opacity 1s ease-out;
+	transition: opacity 1s ease-out;
 	
+	&.visi {
+		opacity: 1;
+	}
 	#cnt {
 		position: relative;
 		display:inline-block;

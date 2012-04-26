@@ -8,7 +8,7 @@ html
 		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
 		title= pageTitle
 		link(rel="stylesheet", type="text/css", href="/style/normalize.css")
-		link(rel="stylesheet", type="text/css", href="/style/style_common.css")
+		link(rel="stylesheet", type="text/css", href="/style/style_common.css?appv=" + appVersion)
 		script(type='text/javascript')
 		script(type='text/javascript', src="js/jquery-1.7.2.min.js")
 		script(type='text/javascript', src="js/flash_detect.js")
@@ -32,7 +32,7 @@ html
 				</div>
 				<div class='camListScroll down' data-bind="css: {noScroll: scrollDownNoScroll()}, event: { mousedown: ScrollOnDown, touchstart: ScrollOnDown, mouseup: ScrollOff, touchend: ScrollOff }"></div>
 			</div>
-		div#main_loader.yell
+		div#main_loader
 			div#cnt
 				div#welcome_msg.
 					Retro photo of humankind urbanization
