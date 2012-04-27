@@ -2,7 +2,7 @@
 
 var express = require('express'),
 	app, io,
-	version = '0.1.0',
+	version = '0.1.5',
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
 	mongoStore = require('connect-mongodb'),

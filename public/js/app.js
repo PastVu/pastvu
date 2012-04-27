@@ -78,6 +78,8 @@ function app() {
 	$.when(LoadAOs()/*, LoadCams()*/).done(DrawObjects);	
 	
 	MakeKnokout();
+	CreateMVVM();
+	BindMVVM();
 	if(window.KeyHandler) window.KeyHandler();
 }
 function DrawObjects(){
@@ -322,7 +324,6 @@ function ShowPanel(id){
 	var showing = document.getElementById(id);
 	var anotherPanels = new Array();
 	if(id!='nav_panel') anotherPanels.push(document.querySelector('#nav_panel'));
-	if(id!='user_panel_fringe') anotherPanels.push(document.querySelector('#user_panel_fringe'));
 	if(id!='layers_fringe') anotherPanels.push(document.querySelector('#layers_fringe'));
 	for (var p = 0; p<anotherPanels.length; p++){
 		if (anotherPanels[p].classList.contains('show')) anotherPanels[p].classList.remove('show');
@@ -547,11 +548,11 @@ function LocaleHintOff(){
 function InitLocales() {
 	flag_current.style.backgroundImage = 'url("images/front_map/'+Server.locale+'.png")';
 	if(Browser.support.touch){
-		Utils.Event.add(flag_current, 'touchstart', LocaleHintTouch.neoBind(flag_current, [Server.messages['index.lang.currentLang']+Server.locales_available[Server.locale].name, '#user_panel_fringe']));
+		Utils.Event.add(flag_current, 'touchstart', LocaleHintTouch.neoBind(flag_current, [Server.messages['index.lang.currentLang']+Server.locales_available[Server.locale].name]));
 		Utils.Event.add(flag_current, 'touchend', LocaleHintOff);
 	}else{
 		Utils.Event.add(flag_current, 'mousemove', function(){LocaleHintMove(this)});
-		Utils.Event.add(flag_current, 'mouseover', LocaleHintOn.neoBind(this, [Server.messages['index.lang.currentLang']+Server.locales_available[Server.locale].name, '#user_panel_fringe']));
+		Utils.Event.add(flag_current, 'mouseover', LocaleHintOn.neoBind(this, [Server.messages['index.lang.currentLang']+Server.locales_available[Server.locale].name]));
 		Utils.Event.add(flag_current, 'mouseout', LocaleHintOff);
 	}
 	var flag;
@@ -683,6 +684,7 @@ ko.bindingHandlers.ScrollTop = {
 		element.scrollTop = valueUnwrapped;
     }
 };
+
 
 function CamListVM(cams, maxH) {
 	this.cams = ko.observableArray([]);
@@ -904,9 +906,9 @@ function MakeKnokout(){
 		owner: SearchInVM
 	}).extend({ throttle: 100 });
 
-	//ko.applyBindings(GlobalParamsVM, document.getElementById('user_panel_fringe'));
 	//ko.applyBindings(GlobalParamsVM, document.getElementById('super_home_fringe'));
 	ko.applyBindings(SearchInVM, document.getElementById('search_panel'));
+	
 	
 	//MakeMatrixVM();
 	//ko.applyBindings(MatrixVM, document.getElementById('matrix_button_fringe'));	

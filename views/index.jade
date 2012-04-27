@@ -82,9 +82,14 @@ html
 		div#main.
 			<div id="map">
 			</div>
-			<div id='top_panel_fringe' class='fringe'>
+			<div id='top_panel_fringe' class='fringe' data-bind="style: {right: 1==1 ? '116px' : '78px'}">
 				<div id='top_panel' class='inner_bord'>
-					<div id='appName'>Retro photo of mankind's habitat
+					<div id='appName'>Retro photo of mankind's habitat</div>
+					<div id='panelTools'>
+						<div id='toRegister' class='labledIco'><div class='ico'></div>Registration
+						</div><div id='toLogIn' class='labledIco strokeBefore'>
+						Login<div class='ico'></div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -104,30 +109,6 @@ html
 				<div id='zoomout_fringe' class='fringe btn inout' onclick="ChangeZoom(-1)"><div id='zoomout' class='inner_bord'></div></div>
 				<div id='nav_stick_fringe' class='fringe btn'><div id='nav_stick' class='inner_bord'></div></div>
 				<div id='nav_slider_area'>
-				</div>
-			</div>
-			<div id='user_panel_fringe' class='fringe gradientBack' data-bind="style: {right: 1==1 ? '116px' : '78px'}">
-				<div id='user_panel' class='inner_bord'>
-					<sec:ifLoggedIn>
-						<g:message code="index.logged.as" default="Logged in as"/> <sec:username/> | 
-						<sec:access expression="hasRole('ROLE_ADMIN') or hasRole('ROLE_OBJECT_ADMIN')">
-							<span onclick="window.open(Server.paths.admin, '_blank')">
-								<g:message code="index.admin.panel" default="Admin panel"/>
-							</span> | 
-						</sec:access>
-						<span onclick='ChangePassOpen(); return false;'>
-							<g:message code="index.changepass" default="Change password"/>
-						</span> | 
-						<span onclick='document.location=Server.paths.logout'>
-							<g:message code="index.logout" default="Logout"/>
-						</span>
-					</sec:ifLoggedIn>
-					<sec:ifNotLoggedIn>
-						<g:message code="index.anonim" default="You're not authorized"/> | 
-						<span onclick='LoginOpen(); return false;'>
-							<g:message code="index.login" default="Sign in"/>
-						</span>
-					</sec:ifNotLoggedIn>
 				</div>
 			</div>
 			<div id='super_home_fringe' class='fringe gradientBack' onclick='SuperHome();' data-bind="style: {right: 1==1 ? '78px' : '40px'}">
@@ -211,7 +192,6 @@ html
 			<div id='butts'>
 				<div id='bnav' class='butt' onclick="ShowPanel('nav_panel')"></div>
 				<div id='binfo' class='butt' onclick="ShowPanel('info_fringe')"></div>
-				<div id='bauth' class='butt' onclick="ShowPanel('user_panel_fringe')"></div>
 				<div id='blay' class='butt' onclick="ShowPanel('layers_fringe')"></div>
 			</div>
 			<div id='cam_layer' class='transON' data-bind="css: {matrix: allowed() && active()}"></div>

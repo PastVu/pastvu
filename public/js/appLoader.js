@@ -10,7 +10,10 @@ var GlobalParams = {
 	USE_GOOGLE_API: true,
 	USE_YANDEX_API: true,
 	appVersion: 0,
-	verBuild: 0
+	verBuild: 0,
+	
+	LoggedIn: false,
+	RegistrationAllowed: false,
 };
 /**
  * GlobalSettings ViewModel
@@ -63,7 +66,8 @@ function PrepareAndLoadSources(){
 				{s: 'js/KeyHandler.js', p: 5, t: '?appv='+GlobalParams.appVersion},
 				{chain: [
 					{s: 'js/knockout-2.0.0.js', p: 9, t: '?vv=200'},
-					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'}
+					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'},
+					{s: 'js/mvvms.js', p: 2, t: '?appv='+GlobalParams.appVersion}
 				]},
 				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined)
 				/*,'js/raphael-min.js'*/
