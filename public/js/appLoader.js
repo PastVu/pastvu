@@ -87,7 +87,7 @@ function PrepareAndLoadSources(){
 	 */
 	var StylesToLoad = [
 		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
-		{s: 'style/style_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion+'&verBuild='+GlobalParams.verBuild},
+		{s: 'style/style_main2.css', p: 10, t: '?cctv='+GlobalParams.appVersion+'&verBuild='+GlobalParams.verBuild},
 	];
 	
 	/**

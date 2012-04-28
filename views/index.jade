@@ -82,12 +82,13 @@ html
 		div#main.
 			<div id="map">
 			</div>
-			<div id='top_panel_fringe' class='fringe' data-bind="style: {right: 1==1 ? '116px' : '78px'}">
+			
+			<div id='top_panel_fringe' class='fringe'>
 				<div id='top_panel' class='inner_bord'>
 					<div id='appName'>Retro photo of mankind's habitat</div>
 					<div id='panelTools'>
-						<div id='toRegister' class='labledIco'><div class='ico'></div>Registration
-						</div><div id='toLogIn' class='labledIco strokeBefore'>
+						<div id='toRegister' class='labledIco' onclick='FormOpen("#reg_fringe")'><div class='ico'></div>Registration
+						</div><div id='toLogIn' class='labledIco strokeBefore' onclick='FormOpen("#login_fringe")'>
 						Login<div class='ico'></div>
 						</div>
 					</div>
@@ -97,6 +98,8 @@ html
 				<div id='logo' class='inner_bord'>
 				</div>
 			</div>
+			
+			
 			<div id='nav_panel'>
 				<div id='moystick'>
 					<div id='mup' onclick="mapUp()"></div>
@@ -196,61 +199,60 @@ html
 			</div>
 			<div id='cam_layer' class='transON' data-bind="css: {matrix: allowed() && active()}"></div>
 
+			<div id='curtain'></div>
 			
-			<div id='login_back'>
-				<div id='login_fringe' class='fringe gradientBack active'>
-					<div id="login_body" class='body'>
-						<div id='login_head' class='head'><g:message code="index.authorization" default="Authorization"/></div>
-						<form action='${request.contextPath}/j_spring_security_check' autocomplete="on"  method='POST' id='ajaxLoginForm' name='ajaxLoginForm' onSubmit="return AuthAjax(this);">
-							<div class='label'><g:message code="index.username" default="Username"/>:</div>
-							<g:if test="${accessLevel == 'FREE_REGISTRATION'}">
-							<div class='label clickable' onclick='LoginActivateSwap("reg_fringe")'><g:message code="index.registration" default="Registration" /></div>
-							</g:if>
-							<br />
-							<input id='login_user' type="text" required="required" title="input login" placeholder="${message(code: 'index.enter.login', default: 'Enter username')}" name="j_username" />
-							<div class='label'><g:message code="index.password" default="Password"/>:</div>
-							<div class='label clickable' onclick='LoginActivateSwap("recall_fringe")'><g:message code="index.forgot.password" default="Recover password"/></div>
-							<br />
-							<input id='login_pass' type="password" required="required" title="input password" placeholder="${message(code: 'index.enter.password', default: 'Enter password')}" name="j_password">
-							<div class='label' style='margin: 0 0 5px 15px;'>Запомнить меня</div><div id='remember_check' name='_spring_security_remember_me' onclick='LoginRememberCheck(this)'></div><br/>
-							<input type="submit" value="${message(code: 'index.button.ok', default: 'OK')}" />
-							<input type="button" onclick='LoginClose()' value="${message(code: 'index.button.cancel', default: 'Cancel')}" />
-						</form>
-						<div id="login_wait" class='wait'><g:message code="index.wait.authorization" default="Authorizing.."/></div>
-						<div id="login_mess" class='mess'></div>
-					</div>
+			<div id='login_fringe' class='fringe form'>
+				<div id="login_body" class='inner_bord'>
+					<div id='login_head' class='head'>Authorization</div>
+					<form action='' autocomplete="on"  method='POST' id='ajaxLoginForm' name='ajaxLoginForm' onSubmit="return AuthAjax(this);">
+						<div class='label icon-user'>Username:</div>
+						<div class='label clickable' onclick='LoginActivateSwap("#reg_fringe")'>Registration</div>
+						<br />
+						<input id='login_user' class='initFocus' type="text" required="required" title="input login" placeholder="Enter username or e-mail" name="user" />
+						<div class='label icon-lock'>Password:</div>
+						<div class='label clickable' onclick='LoginActivateSwap("#recall_fringe")'>Recover password</div>
+						<br />
+						<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="j_password">
+						<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' name='_spring_security_remember_me' onclick='LoginRememberCheck(this)'></div><br/>
+						<input type="submit" value="Sign in" />
+						<input type="button" onclick='FormClose()' value="Cancel" />
+					</form>
+					<div id="login_wait" class='wait'>Authorizing..</div>
+					<div id="login_mess" class='mess'></div>
 				</div>
+			</div>
 
-				<div id='reg_fringe' class='fringe gradientBack'>
-					<div id="reg_body" class='body'>
-						<div id='reg_head' class='head'><g:message code="index.registration" default="Registration" /></div>
-						<form action='somewhere' method='POST' autocomplete="off" id='ajaxRegForm' name='ajaxRegForm' onSubmit="return RegAjax(this);">
-							<div class='label'>E-mail:</div><div class='label clickable' onclick='LoginActivateSwap("reg_fringe")'><g:message code="index.authorization" default="Authorization"/></div><br />
-							<input id='reg_email' type="email" autocomplete="on" required="required" title="input login" placeholder="${message(code: 'index.enter.mail')}" name="email">
-							<div class='label'><g:message code="index.password" default="Password"/>:</div><br />
-							<input id='reg_pass' type="password" required="required" title="input password" placeholder="${message(code: 'index.enter.password')}" name="password">
-							<div class='label'><g:message code="index.repeate.password" default="Repeat password"/>:</div><br />
-							<input id='reg_pass2' type="password" required="required" title="input password" placeholder="${message(code: 'index.repeate.password')}" name="password2">
-							<input type="submit" value="${message(code: 'index.button.ok')}">
-							<input type="button" onclick='LoginClose()' value="${message(code: 'index.button.cancel')}">
-						</form>
-						<div id="reg_wait" class='wait'><g:message code="index.wait.sending" default="Sending.."/></div>
-						<div id="reg_mess" class='mess'></div>
-					</div>
+			<div id='reg_fringe' class='fringe form'>
+				<div id="reg_body" class='inner_bord'>
+					<div id='reg_head' class='head'>Registration</div>
+					<form action='somewhere' method='POST' autocomplete="off" id='ajaxRegForm' name='ajaxRegForm' onSubmit="return RegAjax(this);">
+						<div class='label icon-user'>User name:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+						<input id='reg_user' type="text" autocomplete="on" required="required" title="input login" placeholder="User" name="user">
+						<div class='label icon-envelope'>E-mail:</div>
+						<input id='reg_email' type="email" autocomplete="on" required="required" title="input email" placeholder="email" name="email">
+						<div class='label icon-lock'>Password:</div><br />
+						<input id='reg_pass' type="password" required="required" title="input password" placeholder="Enter password" name="password">
+						<div class='label icon-lock'>Repeat password:</div><br />
+						<input id='reg_pass2' type="password" required="required" title="input password" placeholder="Enter password" name="password2">
+						<input type="submit" value="Register">
+						<input type="button" onclick='FormClose()' value="Cancel">
+					</form>
+					<div id="reg_wait" class='wait'>Sending data..</div>
+					<div id="reg_mess" class='mess'></div>
 				</div>
+			</div>
 
-				<div id='recall_fringe' class='fringe gradientBack'>
-					<div id="recall_body" class='body'>
-						<div id='recall_head' class='head'><g:message code="index.forgot.password.label" default="Recover password"/></div>
-						<form action='somewhere' method='POST' id='ajaxRecallForm' name='ajaxRecallForm' onSubmit="return RecallAjax(this);">
-							<div class='label'><g:message code="index.mail" />:</div><div class='label clickable' onclick='LoginActivateSwap("recall_fringe")'><g:message code="index.authorization" default="Authorization"/></div><br />
-							<input id='recall_email' type="email" autocomplete="off" required="required" title="input login" placeholder="${message(code: 'index.enter.mail')}" name="username">
-							<input type="submit" value="${message(code: 'index.button.ok')}">
-							<input type="button" onclick='LoginClose()' value="${message(code: 'index.button.cancel')}">
-						</form>
-						<div id="recall_wait" class='wait'><g:message code="index.wait.sending" default="Sending.."/></div>
-						<div id="recall_mess" class='mess'></div>
-					</div>
+			<div id='recall_fringe' class='fringe form'>
+				<div id="recall_body" class='inner_bord'>
+					<div id='recall_head' class='head'>Recover password</div>
+					<form action='somewhere' method='POST' id='ajaxRecallForm' name='ajaxRecallForm' onSubmit="return RecallAjax(this);">
+						<div class='label icon-envelope'>E-mail:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+						<input id='recall_email' type="email" autocomplete="off" required="required" title="input e-mail" placeholder="Enter e-mail" name="email">
+						<input type="submit" value="Send">
+						<input type="button" onclick='FormClose()' value="Cancel">
+					</form>
+					<div id="recall_wait" class='wait'>Sending..</div>
+					<div id="recall_mess" class='mess'></div>
 				</div>
 			</div>
 		

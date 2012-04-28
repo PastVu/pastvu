@@ -36,22 +36,22 @@ function app() {
 	//mediaContainerManager = new MediaContainerManager(GlobalParamsVM.MULTI_VIEW());
 	
 	login = {
-		head: document.querySelector('#login_back #login_body .head'),
-		form: document.querySelector('#login_back #login_body form'),
-		wait: document.querySelector('#login_back #login_body .wait'),
-		mess: document.querySelector('#login_back #login_body .mess')
+		head: document.querySelector('#login_fringe .head'),
+		form: document.querySelector('#login_fringe form'),
+		wait: document.querySelector('#login_fringe .wait'),
+		mess: document.querySelector('#login_fringe .mess')
 	};
 	reg = {
-		head: document.querySelector('#login_back #reg_body .head'),
-		form: document.querySelector('#login_back #reg_body form'),
-		wait: document.querySelector('#login_back #reg_body .wait'),
-		mess: document.querySelector('#login_back #reg_body .mess')
+		head: document.querySelector('#reg_fringe .head'),
+		form: document.querySelector('#reg_fringe form'),
+		wait: document.querySelector('#reg_fringe .wait'),
+		mess: document.querySelector('#reg_fringe .mess')
 	};
 	recall = {
-		head: document.querySelector('#login_back #recall_body .head'),
-		form: document.querySelector('#login_back #recall_body form'),
-		wait: document.querySelector('#login_back #recall_body .wait'),
-		mess: document.querySelector('#login_back #recall_body .mess')
+		head: document.querySelector('#recall_fringe .head'),
+		form: document.querySelector('#recall_fringe form'),
+		wait: document.querySelector('#recall_fringe .wait'),
+		mess: document.querySelector('#recall_fringe .mess')
 	};
 	search = {
 		SearchArrow: document.querySelector('#searchArrow'),
@@ -332,27 +332,29 @@ function ShowPanel(id){
 	if(id=='layers_fringe' && !showing.classList.contains('open')) showing.querySelector('#layers_panel').classList.add('open');
 }
 
-function LoginOpen(){
-	document.querySelector('#login_back').style.display = 'block';
-	if (GlobalParams.ACCESS_LEVEL == 'FREE_REGISTRATION' && GlobalParams.registerUrl){
-
-	}
+var opened_form;
+function FormOpen(selector){
+	document.querySelector('#curtain').style.display = 'block';
+	opened_form = document.querySelector(selector);
+	opened_form.classList.add('active');
 	window.setTimeout(function(){
-		document.querySelector('#login_back #login_user').focus();
+		try{opened_form.querySelector('.initFocus').focus()} catch(e){}
 	}, 800);
 	
 	keyTarget.push({
 		id: 'loginOverlay',
 		stopFurther: false,
-		onEsc: LoginClose
+		onEsc: FormClose
 	});
 }
-function LoginClose(){
-	document.querySelector('#login_back').style.display = 'none';
-	LoginReset();
+function FormClose(){
+	document.querySelector('#curtain').style.display = 'none';
+	opened_form.classList.remove('active');
+	FormReset();
 	keyTarget.pop();
+	opened_form = null;
 }
-function LoginReset(){
+function FormReset(){
 	login.form.reset();
 	reg.form.reset();
 	login.mess.innerHTML = ''; login.mess.classList.remove('show'); login.mess.classList.remove('good');
@@ -363,27 +365,22 @@ function LoginRememberCheck(box){
 	box.classList.toggle('checked');
 }
 
-function LoginActivateSwap(anotherElem) {
-	anotherElem = document.querySelector('#login_back #'+anotherElem);
-	var active = document.querySelector('#login_back .fringe.active');
-	var inactive;
-	if(active === anotherElem){
-		inactive = document.querySelector('#login_back #login_fringe');
-	}else{
-		inactive = anotherElem;
-	}
-
-	active.classList.remove('delay');
-	inactive.classList.add('delay');
+function LoginActivateSwap(selector) {
+	var anotherElem = document.querySelector(selector);
 	
-	active.classList.remove('active');
-	inactive.classList.add('active');
+	opened_form.classList.remove('delay');
+	anotherElem.classList.add('delay');
+	
+	opened_form.classList.remove('active');
+	anotherElem.classList.add('active');
+	
+	opened_form = anotherElem;
 }
 function ResetLoginActive() {
-	var active = document.querySelector('#login_back .fringe.active');
-	if (active !== document.querySelector('#login_back #login_fringe')){
+	/*var active = document.querySelector('.form.fringe.active');
+	if (active !== document.querySelector('#login_fringe')){
 		LoginActivateSwap(active.id);
-	}
+	}*/
 }
 
 function AuthAjax(form) {
@@ -396,7 +393,7 @@ function AuthAjax(form) {
 	  data: $(form).serialize()+'&'+remember_check.getAttribute('name')+'='+remember_check.classList.contains('checked'),
 	  success: function(json) {
 		if (json.success) {
-			LoginClose();
+			FormClose();
 			var links = '';
 			if(json.roles){
 				for(var r=0; r < json.roles.length; r++){
