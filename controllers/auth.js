@@ -2,7 +2,7 @@ var mongoose = require('mongoose'),
 	User = mongoose.model('User'),
 	Step = require('step');
 
-function login(data, callback){
+function login(session, data, callback){
 	var userObj = null, error;
 	
     Step(
@@ -25,7 +25,7 @@ function login(data, callback){
 	  
 		if (!error){
 			this.parallel()(null, user);
-			req.session.regenerate(this.parallel());
+			session.regenerate(this.parallel());
 		}else{
 			callback.call(null, error, null);
 			return;
@@ -34,13 +34,12 @@ function login(data, callback){
       function enter(err, user) {
         if (err) {
 			error = 'Error regeneration session: '+err;
-			console.log(err);
 			callback.call(null, error, null);
         } else {
 			// Store the user's primary key in the session store to be retrieved,
 			// or in this case the entire user object
-			req.session.user = user;
-			console.log("login success for %s", login);
+			session.user = user;
+			console.log("login success for %s", data.user);
 			callback.call(null, null, user);
 		}
 		return;

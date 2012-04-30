@@ -19,15 +19,15 @@ module.exports.loadController = function (app, io) {
 	
 	io.sockets.on('connection', function (socket) {
 		var sess = socket.handshake.session;
-		socket.log.info('a socket with sessionID', socket.handshake.sessionID, 'connected');
-		socket.log.info(sess);
+		//socket.log.info('a socket with sessionID', socket.handshake.sessionID, 'connected');
+		//socket.log.info(sess);
 	
 		socket.on('giveGlobeParams', function (data) {
 			socket.emit('takeGlobeParams', { USE_YANDEX_API: false, appVersion: app.version, verBuild: ++iterator, RegistrationAllowed: true });
 		});
 		
 		socket.on('authRequest', function (data) {
-			auth.login(data, function(err, user){
+			auth.login(sess, data, function(err, user){
 				socket.emit('authResult', {user: user, error: err});
 			});
 		});
