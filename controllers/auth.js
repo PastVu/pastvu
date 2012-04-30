@@ -1,8 +1,54 @@
 var mongoose = require('mongoose'),
-    crypto = require('crypto');
+	User = mongoose.model('User'),
+	Step = require('step');
 
-var Step = require('step');
-var User = mongoose.model('User');
+function login(data, callback){
+	var userObj = null, error;
+	
+    Step(
+      function find() {
+        User.findOne({'login': data.user}, this);
+      },
+      function check(err, user) {
+		if (user){
+			if (User.checkPass(user, data.pass)){
+				delete user.pass; delete user.salt;
+				//ret.user = user;
+			} else {
+				error = 'Password incorrect';
+			}
+		} else if (err) {
+			error = ''+err;
+		} else {
+			error = 'User does not exists';
+		}
+	  
+		if (!error){
+			this.parallel()(null, user);
+			req.session.regenerate(this.parallel());
+		}else{
+			callback.call(null, error, null);
+			return;
+		}
+      },
+      function enter(err, user) {
+        if (err) {
+			error = 'Error regeneration session: '+err;
+			console.log(err);
+			callback.call(null, error, null);
+        } else {
+			// Store the user's primary key in the session store to be retrieved,
+			// or in this case the entire user object
+			req.session.user = user;
+			console.log("login success for %s", login);
+			callback.call(null, null, user);
+		}
+		return;
+      }
+    );
+}
+module.exports.login = login;
+
 
 /**
  * redirect to /login if user has insufficient rights

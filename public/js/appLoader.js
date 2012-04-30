@@ -12,13 +12,36 @@ var GlobalParams = {
 	appVersion: 0,
 	verBuild: 0,
 	
-	LoggedIn: false,
 	RegistrationAllowed: false,
+	LoggedIn: false,
+	user: null
 };
 /**
  * GlobalSettings ViewModel
  */
 var GlobalParamsVM;
+
+/**
+ * i18n
+ */
+var i18n = {
+	en : {
+		login : 'Login',
+		logout : 'Logout',
+		register : 'Registration'
+	},
+	ru : {
+	}
+};
+/**
+ * i18n ViewModel
+ */
+var i18nVM;
+function i18nToKO(lang){
+	if (!i18nVM) i18nVM = ko.mapping.fromJS(i18n[lang]);
+	else ko.mapping.fromJS(i18n[lang], i18nVM);
+}
+
 
 /**
  * Socket.IO
@@ -165,7 +188,8 @@ function PrepareAndLoadSources(){
 }
 
 function GlobalParamsToKO(){
-	GlobalParamsVM = ko.mapping.fromJS(GlobalParams);
+	if (!GlobalParamsVM) GlobalParamsVM = ko.mapping.fromJS(GlobalParams);
+	else ko.mapping.fromJS(GlobalParams, GlobalParamsVM);
 }
 
 var LoadScripts = function () {

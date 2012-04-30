@@ -19,6 +19,19 @@ function CreateMVVM(){
 			owner: TopPanelVM
 		}),
 		
+		//i18n
+		login: ko.computed({
+			read: function(){return i18nVM.login();},
+			owner: TopPanelVM
+		}),
+		logout: ko.computed({
+			read: function(){return i18nVM.logout();},
+			owner: TopPanelVM
+		}),
+		register: ko.computed({
+			read: function(){return i18nVM.register();},
+			owner: TopPanelVM
+		}),
 		// Behaviors
 	};
 }

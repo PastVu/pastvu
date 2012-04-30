@@ -1,11 +1,21 @@
 #!/usr/bin/env node
-
+var version = '0.1.5';
 var express = require('express'),
-	app, io,
-	version = '0.1.5',
+	connect = require('express/node_modules/connect'),
+	mongodb = require('connect-mongodb/node_modules/mongodb'),
+	
+	mongoStore = require('connect-mongodb'),
+	server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
+	db = new mongodb.Db('oldmos', server_config, {}),
+	mongo_store = new mongoStore({db: db, reapInterval: 3000}),
+	 
+	parseCookie = connect.utils.parseCookie,
+	
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
-	mongoStore = require('connect-mongodb'),
+	
+	app, io,
+	
 	second = 1000,
 	minute = 60*second,
 	oneDay = 86400000,
@@ -30,16 +40,27 @@ app.configure(function(){
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
 	app.set('view options', {layout: false, pretty: true});
-	app.set('db-uri', 'mongodb://kub1110OM:27017/oldmos');
-	
+	app.set('db-uri', 'mongodb://localhost:27017/oldmos');
 	
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: oneDay }));
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	app.use(express.session({ cookie: {maxAge: 30*minute}, store: mongoStore(app.set('db-uri')), secret: 'OldMosSess' }));
+	app.use(express.session({ cookie: {maxAge: 30*minute}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
 	
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
+	io.set('authorization', function (data, accept) {
+	  if (!data.headers.cookie) return accept('No cookie transmitted.', false);
+
+	  data.cookie = parseCookie(data.headers.cookie);
+	  data.sessionID = data.cookie['oldmos.sid'];
+
+	  mongo_store.load(data.sessionID, function (err, session) {
+		if (err || !session) return accept('Error: '+err, false);
+		data.session = session;
+		return accept(null, true);
+	  });
+	});
 	
 	if (env=='development') {
 		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:true}));
@@ -92,6 +113,7 @@ app.dynamicHelpers({
 mongoose.connect(app.set('db-uri'));
 
 // creating models
+require(__dirname+'/models/Role.js');
 require(__dirname+'/models/User.js');
 
 

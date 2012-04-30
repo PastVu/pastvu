@@ -96,10 +96,24 @@
 			left: 5px;
 		}
 		
+		&.iconBefore:before, &.iconAfter:after {
+			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
+			content: " ";
+			display: inline-block;
+			line-height: 20px;
+			height: 20px;
+			width: 20px;
+			position: relative;
+			vertical-align: top;
+		}
+		
 		&:hover {
 			background-color: fade(@MainBlueColor, 50%);
 		}
 		
+		.text {
+			display: inline-block;
+		}
 		.ico {
 			line-height: 20px;
 			height: 20px;
@@ -112,6 +126,12 @@
 	#toLogIn {
 		.ico {
 			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
+			margin-left: 2px;
+		}
+	}
+	#toLogOut {
+		.ico {
+			background: url(../images/map/Login-out-icon.png) 50% 50% no-repeat;
 			margin-left: 2px;
 		}
 	}
@@ -228,7 +248,6 @@
 			font-size: 14px;
 			line-height: 15px;
 			height: 0px;
-			color: #f90;
 			text-align: center;
 			white-space: normal;
 			padding: 0 3px;
@@ -237,7 +256,10 @@
 			-o-transition: height 0.5s ease-out;
 			transition: height 0.5s ease-out;
 			
-			&.show.good{
+			&.err {
+				color: #f90;
+			}
+			&.good {
 				color: green;
 			}
 		}
@@ -419,10 +441,6 @@
 	&#login_fringe {
 		margin: -110px 0 0 -162px;
 		
-		.body .mess.show{
-			height: 37px;
-		}
-		
 		form {
 			height: 210px;
 		}
@@ -430,20 +448,12 @@
 	&#reg_fringe {
 		margin: -145px 0 0 -162px;
 		
-		.body .mess.show{
-			height: 47px;
-		}
-		
 		form {
 			height: 330px;
 		}
 	}
 	&#recall_fringe {
 		margin: -70px 0 0 -162px;
-		
-		.body .mess.show{
-			height: 37px;
-		}
 		
 		form {
 			height: 112px;

@@ -1,4 +1,7 @@
 var mongoose = require('mongoose'),
+	//roleModel = mongoose.model('Role'),
+	Schema = mongoose.Schema,
+	ObjectId = Schema.ObjectId,
     crypto = require('crypto');
 
 //Used to generate a hash of the plain-text password + salt
@@ -21,18 +24,28 @@ var userRoles = {
   }
 };
 
+var sexes = {
+	m: 'male',
+	f: 'famale'
+}
+
 var User = new mongoose.Schema({
     login: {type: String, index: { unique: true }},
-    salt: String,
     pass: String,
-    role: String,
+	salt: String,
+    roles: [ObjectId],
+	regdate: {type: Date, default: Date.now},
+	birthdate: {type: Date, default: Date.now},
+	sex: {type: String},
+	country: {type: String},
+	city: {type: String},
     comment: String,
     dateFormat: {"type": String, "default": "dd.mm.yyyy"}
 });
 
-User.path('role').validate(function (role) {
-  return Object.keys(userRoles).indexOf(role) != -1;
-}, 'Incorrect role');
+User.path('sex').validate(function (sex) {
+  return Object.keys(sexes).indexOf(sex) != -1;
+}, 'Incorrect sex');
 
 User.path('pass').set(function (pass) {
   pass = pass.toString();
@@ -43,52 +56,17 @@ User.path('pass').set(function (pass) {
 User.pre('save', function (next) {
   var doc = this.toObject();
 
-  for (var key in doc) {
+  /*for (var key in doc) {
     if (doc.hasOwnProperty(key) &&
         !User.paths[key]) {
       next(new Error('Save failed: Trying to add doc with wrong field(s)'));
       return;
     }
-  }
+  }*/
   next();
 });      
 
 var UserModel = mongoose.model ('User', User);
-
-/**
- * Get all available roles
- * @static
- * @return {Object}
- */
-UserModel.getRoles = function() {
-  return userRoles;
-};
-
-/**
- * Get all roles available for user
- * @static
- * @return {Object}
- */
-UserModel.getAvailRoles = function(user) {
-  var result = Utils.clone(userRoles);
-
-  for (var roleId in result) {
-    if (!UserModel.checkRole(user, roleId)) {
-      delete result[roleId];
-    }
-  }
-  return result;
-};
-
-/**
- * Get role by id
- * @static
- * @param {string} roleId Role Id
- * @return {Object}
- */
-UserModel.getRole = function(roleId) {
-  return userRoles[roleId] || null;
-};
 
 /**
  * Checks if pass is right for current user
@@ -115,6 +93,15 @@ UserModel.checkRole = function(user, role) {
 UserModel.prototype.hashPassword = function() {
   if (!this.pass) return;
   this.salt = Math.random() + '';
-  var pass = this.pass;
-  this.pass = md5(pass + this.salt);
+  this.pass = md5(this.pass + this.salt);
 };
+
+/*var anonymous = new UserModel();
+anonymous.login = 'neo';
+anonymous.pass = 'energy';
+anonymous.hashPassword();
+anonymous.city = 'NY';
+anonymous.comment = 'good role';
+anonymous.save(function (err) {
+  console.log('USER '+err);
+});*/

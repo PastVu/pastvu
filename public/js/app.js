@@ -28,6 +28,7 @@ function createStructure() {
 
 function app() {
 	GlobalParamsToKO();
+	i18nToKO('en');
 	Utils.Event.add(window, 'resize', function(){GlobalParamsVM.Width(Utils.getClientWidth()); GlobalParamsVM.Height(Utils.getClientHeight());});
 	
 	flag_current = document.querySelector('#flag_current');
@@ -39,19 +40,22 @@ function app() {
 		head: document.querySelector('#login_fringe .head'),
 		form: document.querySelector('#login_fringe form'),
 		wait: document.querySelector('#login_fringe .wait'),
-		mess: document.querySelector('#login_fringe .mess')
+		mess: document.querySelector('#login_fringe .mess'),
+		messchild: document.querySelector('#login_fringe .mess > div')
 	};
 	reg = {
 		head: document.querySelector('#reg_fringe .head'),
 		form: document.querySelector('#reg_fringe form'),
 		wait: document.querySelector('#reg_fringe .wait'),
-		mess: document.querySelector('#reg_fringe .mess')
+		mess: document.querySelector('#reg_fringe .mess'),
+		messchild: document.querySelector('#reg_fringe .mess > div')
 	};
 	recall = {
 		head: document.querySelector('#recall_fringe .head'),
 		form: document.querySelector('#recall_fringe form'),
 		wait: document.querySelector('#recall_fringe .wait'),
-		mess: document.querySelector('#recall_fringe .mess')
+		mess: document.querySelector('#recall_fringe .mess'),
+		messchild: document.querySelector('#recall_fringe .mess > div')
 	};
 	search = {
 		SearchArrow: document.querySelector('#searchArrow'),
@@ -337,9 +341,7 @@ function FormOpen(selector){
 	document.querySelector('#curtain').style.display = 'block';
 	opened_form = document.querySelector(selector);
 	opened_form.classList.add('active');
-	window.setTimeout(function(){
-		try{opened_form.querySelector('.initFocus').focus()} catch(e){}
-	}, 800);
+	FormFocus();
 	
 	keyTarget.push({
 		id: 'loginOverlay',
@@ -357,9 +359,14 @@ function FormClose(){
 function FormReset(){
 	login.form.reset();
 	reg.form.reset();
-	login.mess.innerHTML = ''; login.mess.classList.remove('show'); login.mess.classList.remove('good');
-	reg.mess.innerHTML = ''; reg.mess.classList.remove('show'); reg.mess.classList.remove('good');
+	login.messchild.innerHTML = ''; login.mess.style.height = 0; login.mess.classList.remove('err'); login.mess.classList.remove('good');
+	reg.messchild.innerHTML = ''; reg.mess.style.height = 0; reg.mess.classList.remove('err'); reg.mess.classList.remove('good');
 	ResetLoginActive();
+}
+function FormFocus(){
+	window.setTimeout(function(){
+		try{opened_form.querySelector('.initFocus').focus()} catch(e){}
+	}, 800);
 }
 function LoginRememberCheck(box){
 	box.classList.toggle('checked');
@@ -385,7 +392,29 @@ function ResetLoginActive() {
 
 function AuthAjax(form) {
 	login.wait.style.display = 'block';
-	var remember_check = form.querySelector('#remember_check');
+	var remember_check = form.querySelector('#remember_check').classList.contains('checked');
+	
+	socket.on('authResult', function (json) {
+		if (json.user){
+			FormClose();
+			GlobalParams.LoggedIn = true;
+			GlobalParams.user = json.user;
+			GlobalParamsToKO();
+		}else {
+			FormFocus();
+			login.messchild.innerHTML = ''+(json.error || json);
+			login.mess.classList.add('err');
+			login.mess.style.height = login.messchild.offsetHeight+5+'px';
+		}
+		window.setTimeout(function(){login.wait.style.display = 'none';}, 300);
+		
+		//$.extend(true, GlobalParams, json);
+		
+	});
+	socket.emit('authRequest', $.extend($(form).serializeObject(), {'remember': remember_check}));
+	return false;
+	
+	/*
 	$.ajax({
 	  url: form.action,
 	  cache: false,
@@ -430,7 +459,7 @@ function AuthAjax(form) {
 		window.setTimeout(function(){login.wait.style.display = 'none';}, 500);
 	  }
 	});
-	return false;
+	*/
 }
 function RegAjax(form) {
 	reg.wait.style.display = 'block';

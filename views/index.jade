@@ -87,9 +87,22 @@ html
 				<div id='top_panel' class='inner_bord'>
 					<div id='appName'>Retro photo of mankind's habitat</div>
 					<div id='panelTools'>
-						<div id='toRegister' class='labledIco' onclick='FormOpen("#reg_fringe")'><div class='ico'></div>Registration
-						</div><div id='toLogIn' class='labledIco strokeBefore' onclick='FormOpen("#login_fringe")'>
-						Login<div class='ico'></div>
+						<div
+							id='toProfile' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn()?"":"none"}'>
+							<div class='ico'></div>
+							<div class='text' data-bind="text: register"></div>
+						</div><div
+							id='toRegister' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}'>
+							<div class='ico'></div>
+							<div class='text' data-bind="text: register"></div>
+						</div><div
+							id='toLogIn' class='labledIco strokeBefore' onclick='FormOpen("#login_fringe")' data-bind='style:{display: loggedIn()?"none":""}'>
+							<div class='text' data-bind="text: login"></div>
+							<div class='ico'></div>
+						</div><div
+							id='toLogOut' class='labledIco strokeBefore' onclick='FormOpen("#login_fringe")' data-bind='style:{display: loggedIn()?"":"none"}'>
+							<div class='text' data-bind="text: logout"></div>
+							<div class='ico'></div>
 						</div>
 					</div>
 				</div>
@@ -212,13 +225,13 @@ html
 						<div class='label icon-lock'>Password:</div>
 						<div class='label clickable' onclick='LoginActivateSwap("#recall_fringe")'>Recover password</div>
 						<br />
-						<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="j_password">
+						<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
 						<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' name='_spring_security_remember_me' onclick='LoginRememberCheck(this)'></div><br/>
 						<input type="submit" value="Sign in" />
 						<input type="button" onclick='FormClose()' value="Cancel" />
 					</form>
 					<div id="login_wait" class='wait'>Authorizing..</div>
-					<div id="login_mess" class='mess'></div>
+					<div id="login_mess" class='mess'><div></div></div>
 				</div>
 			</div>
 
@@ -238,7 +251,7 @@ html
 						<input type="button" onclick='FormClose()' value="Cancel">
 					</form>
 					<div id="reg_wait" class='wait'>Sending data..</div>
-					<div id="reg_mess" class='mess'></div>
+					<div id="reg_mess" class='mess'><div></div></div>
 				</div>
 			</div>
 
@@ -252,7 +265,7 @@ html
 						<input type="button" onclick='FormClose()' value="Cancel">
 					</form>
 					<div id="recall_wait" class='wait'>Sending..</div>
-					<div id="recall_mess" class='mess'></div>
+					<div id="recall_mess" class='mess'><div></div></div>
 				</div>
 			</div>
 		
