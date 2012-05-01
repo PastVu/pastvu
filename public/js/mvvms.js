@@ -14,7 +14,7 @@ function CreateMVVM(){
 		}),
 		registrationAllowed: ko.computed({
 			read: function(){
-				return GlobalParamsVM.RegistrationAllowed();
+				return GlobalParamsVM.REGISTRATION_ALLOWED();
 			},
 			owner: TopPanelVM
 		}),

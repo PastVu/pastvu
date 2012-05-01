@@ -400,6 +400,15 @@ function AuthAjax(form) {
 			GlobalParams.LoggedIn = true;
 			GlobalParams.user = json.user;
 			GlobalParamsToKO();
+			
+			$.ajax({
+			  url: '/updateCookie',
+			  cache: false,
+			  success: function(json) {
+			  },
+			  error: function(json) {
+			  }
+			});
 		}else {
 			FormFocus();
 			login.messchild.innerHTML = ''+(json.error || json);

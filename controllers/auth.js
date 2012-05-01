@@ -38,6 +38,10 @@ function login(session, data, callback){
         } else {
 			// Store the user's primary key in the session store to be retrieved,
 			// or in this case the entire user object
+			session.user_id = user._id;
+			if(!data.remember) session.cookie.expires = false;
+			else session.cookie.expires = new Date(Date.now()+24*60*60000);
+			session.save();
 			session.user = user;
 			console.log("login success for %s", data.user);
 			callback.call(null, null, user);

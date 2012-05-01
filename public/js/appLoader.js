@@ -6,13 +6,14 @@ Utils.Event.add(window, 'load', onDOMLoad);
 var GlobalParams = {
 	Width: Utils.getClientWidth(),
 	Height: Utils.getClientHeight(),
+	
 	USE_OSM_API: true,
 	USE_GOOGLE_API: true,
 	USE_YANDEX_API: true,
 	appVersion: 0,
 	verBuild: 0,
 	
-	RegistrationAllowed: false,
+	REGISTRATION_ALLOWED: false,
 	LoggedIn: false,
 	user: null
 };

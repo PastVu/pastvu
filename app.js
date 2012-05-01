@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-var version = '0.1.5';
+var fs = require( 'fs' );
+
 var express = require('express'),
 	connect = require('express/node_modules/connect'),
 	mongodb = require('connect-mongodb/node_modules/mongodb'),
@@ -15,12 +16,15 @@ var express = require('express'),
 	mongoose = require('mongoose'),
 	
 	app, io,
-	
-	second = 1000,
-	minute = 60*second,
-	oneDay = 86400000,
-	oneYear = 31557600000;
-	
+
+		second = 1000,
+		minute = 60*second,
+		hour = 60*minute,
+		day = 24*hour,
+		week = 7*day,
+		month = 30.4368499*day,
+		oneYear = 365*day
+
 /**
  * Выполняем "наши" модули
  */
@@ -30,7 +34,7 @@ require('./commons/Utils.js');
 app = module.exports = express.createServer();
 io = require('socket.io').listen(app);
 
-app.version = version;
+app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
 /**
  * Окружение (development, test, production)
  */
@@ -42,10 +46,10 @@ app.configure(function(){
 	app.set('view options', {layout: false, pretty: true});
 	app.set('db-uri', 'mongodb://localhost:27017/oldmos');
 	
-	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: oneDay }));
+	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	app.use(express.session({ cookie: {maxAge: 30*minute}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
+	app.use(express.session({ cookie: {maxAge: false}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
 	
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
@@ -54,7 +58,7 @@ app.configure(function(){
 
 	  data.cookie = parseCookie(data.headers.cookie);
 	  data.sessionID = data.cookie['oldmos.sid'];
-
+		console.log(data.sessionID);
 	  mongo_store.load(data.sessionID, function (err, session) {
 		if (err || !session) return accept('Error: '+err, false);
 		data.session = session;
@@ -82,7 +86,7 @@ app.configure(function(){
 	}
 	
     app.use(app.router);
-	app.use(express.static(__dirname + '/public', {maxAge: oneDay, redirect: '/'}));
+	app.use(express.static(__dirname + '/public', {maxAge: day, redirect: '/'}));
 	
 });
 
@@ -113,6 +117,7 @@ app.dynamicHelpers({
 mongoose.connect(app.set('db-uri'));
 
 // creating models
+require(__dirname+'/models/Settings.js');
 require(__dirname+'/models/Role.js');
 require(__dirname+'/models/User.js');
 

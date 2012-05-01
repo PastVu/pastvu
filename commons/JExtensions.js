@@ -112,3 +112,18 @@ if (!Function.prototype.neoBind) {
 		return new_str.join("");
 	};
 })(global);
+
+/**
+ * Extend
+ */
+Object.defineProperty(Object.prototype, "extend", {
+    enumerable: false,
+    value: function(from) {
+        var props = Object.getOwnPropertyNames(from),
+			dest = this;
+        props.forEach(function(name) {
+			Object.defineProperty(dest, name, Object.getOwnPropertyDescriptor(from, name));
+        });
+        return this;
+    }
+});
