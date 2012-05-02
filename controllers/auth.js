@@ -26,6 +26,7 @@ function login(session, data, callback){
 		}else{
 			console.log('enter '+session.id);
 			session.login = user.login;
+			session.remember = data.remember;
 			if (data.remember) session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
 			else session.cookie.expires = false;
 			console.log('----');
