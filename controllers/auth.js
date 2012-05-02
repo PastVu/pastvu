@@ -1,52 +1,45 @@
 var mongoose = require('mongoose'),
 	User = mongoose.model('User'),
-	Step = require('step');
+	Step = require('step'),
+	app, mongo_store;
 
 function login(session, data, callback){
-	var userObj = null, error;
-	
+	var error = null;
+	console.log('---- '+session.id);
     Step(
-      function find() {
-        User.findOne({'login': data.user}, this);
+      function findUser() {
+		User.findOne({'login': data.user}, this);
       },
-      function check(err, user) {
+      function checkEnter(err, user) {
 		if (user){
 			if (User.checkPass(user, data.pass)){
-				delete user.pass; delete user.salt;
-				//ret.user = user;
 			} else {
 				error = 'Password incorrect';
 			}
-		} else if (err) {
-			error = ''+err;
 		} else {
 			error = 'User does not exists';
 		}
-	  
-		if (!error){
-			this.parallel()(null, user);
-			session.regenerate(this.parallel());
-		}else{
+
+		if (error){
 			callback.call(null, error, null);
 			return;
-		}
-      },
-      function enter(err, user) {
-        if (err) {
-			error = 'Error regeneration session: '+err;
-			callback.call(null, error, null);
-        } else {
-			// Store the user's primary key in the session store to be retrieved,
-			// or in this case the entire user object
-			session.user_id = user._id;
-			if(!data.remember) session.cookie.expires = false;
-			else session.cookie.expires = new Date(Date.now()+24*60*60000);
+		}else{
+			console.log('enter '+session.id);
+			session.login = user.login;
+			if (data.remember) session.cookie.expires = new Date(Date.now()+24*60*60000);
+			else session.cookie.expires = false;
+			console.log('----');
 			session.save();
-			session.user = user;
+			
+			//Удаляем предыдущие сохранившиеся сессии этого пользователя
+			mongo_store.getCollection().remove({'session': { $regex : user.login, $options: 'i' }, _id: { $ne : session.id }});
+			
+			/*delete user.pass; delete user.salt;
+			session.user = user;			
+			*/
 			console.log("login success for %s", data.user);
 			callback.call(null, null, user);
 		}
-		return;
       }
     );
 }
@@ -93,64 +86,7 @@ function renderLoginPage(req, res, opts) {
 // export methods
 module.exports.restrictToRole = restrictToRole;
 
-module.exports.loadController = function(app) {
-
-	app.get('/logout', function(req, res){
-		// destroy the user's session to log them out
-		// will be re-created next request
-		req.session.destroy(function(){
-			res.redirect('/login');
-		});
-	});
-
-	app.get('/login/:role?', function(req, res) {
-		var role = req.params.role,
-			user = req.session.user;
-		if (User.checkRole(user, role)) {
-			res.redirect('/');
-		} else {
-			renderLoginPage(req, res, {role: role});
-		}
-	});
-
-  app.post('/login/:role?', function(req, res, next) {
-    var role  = req.params.role,
-        login = req.body.user.login,
-        pass = req.body.user.pass; 
-
-    Step(
-      function find() {
-        User.findOne({login: login}, this);
-      },
-      function check(err, user) {
-        if (err || !user) {
-          req.flash('error', i18n("There is no such user", req));
-          return renderLoginPage(req, res);
-        }
-        user = user.toObject();
-        if (!User.checkPass(user, pass)) {
-          req.flash('error', i18n("Wrong password", req));
-          return renderLoginPage(req, res);
-        }
-        if (!User.checkRole(user, role)) {
-          req.flash('error', i18n("Wrong login/pass for role %s", role, req));
-          return renderLoginPage(req, res);
-        }
-        this.parallel()(null, user);
-        req.session.regenerate(this.parallel());
-      },
-      function enter(err, user) {
-        if (err) {
-          console.log("Error regeniration session. " + err);
-          return next(err);
-        }
-        // Store the user's primary key in the session store to be retrieved,
-        // or in this case the entire user object
-        req.session.user = user;
-        res.redirect(req.sessionStore.cameFrom || 'home');
-        delete req.sessionStore.cameFrom;
-        console.log("login success for %s", login);
-      }
-    );
-  });
+module.exports.loadController = function(a, ms) {
+	app = a;
+	mongo_store = ms;
 };

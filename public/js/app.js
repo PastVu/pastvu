@@ -404,10 +404,8 @@ function AuthAjax(form) {
 			$.ajax({
 			  url: '/updateCookie',
 			  cache: false,
-			  success: function(json) {
-			  },
-			  error: function(json) {
-			  }
+			  success: function(json) {},
+			  error: function(json) {}
 			});
 		}else {
 			FormFocus();

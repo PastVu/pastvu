@@ -13,29 +13,46 @@ module.exports.loadController = function (app, io) {
 			}
 		}
 	});
+	
+	function regenSession(req, res, next){
+		if (req.session.login){
+			console.log('!!!!+++++');
+			var login = req.session.login;
+			console.log('qqqq1=' + req.sessionID+' '+req.session.login);
+			req.session.regenerate(function(err){
+				if (err) console.log('Regenerate session error: '+err);
+				req.session.login = login;
+				req.session.cookie.expires = new Date(Date.now()+24*60*60000);
+				req.session.save();
+				console.log('qqqq2=' + req.sessionID+' '+req.session.login);
+				next();
+			});
+		}else{
+			next();
+		}
+	}
+	
 	var iterator = 0;
-	app.get('/', /*auth.restrictToRole('user'),*/ function(req, res){
-
+	app.get('/', regenSession, function(req, res){		
 		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator });
 	});
 	
-	app.get('/updateCookie', function(req, res, next) {
-		res.send({});
+	app.get('/updateCookie', function(req, res) {
+		res.send();
 	});
 	
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake,
 			session = hs.session;
-		//socket.log.info('a socket with sessionID', socket.handshake.sessionID, 'connected');
-	
+			
 		socket.on('giveGlobeParams', function (data) {
 			var params = {
-				LoggedIn: !!session.user_id
+				LoggedIn: !!session.login
 			}
 			Step(
 				function (){
 					Settings.find({}, this.parallel())
-					if (params.LoggedIn) User.findOne({'_id': session.user_id}, { 'pass': 0, 'salt': 0, 'roles': 0}, this.parallel());
+					if (params.LoggedIn) User.findOne({'login': session.login}, { 'pass': 0, 'salt': 0, 'roles': 0}, this.parallel());
 				},
 				function (err, settings, user){
 					var x = settings.length-1;
@@ -50,8 +67,7 @@ module.exports.loadController = function (app, io) {
 		});
 		
 		socket.on('authRequest', function (data) {
-			auth.login(session, data, function(err, user){
-				console.log(socket.handshake.session.user);
+			auth.login(socket.handshake.session, data, function(err, user){
 				socket.emit('authResult', {user: user, error: err});
 			});
 		});

@@ -17,13 +17,13 @@ var express = require('express'),
 	
 	app, io,
 
-		second = 1000,
-		minute = 60*second,
-		hour = 60*minute,
-		day = 24*hour,
-		week = 7*day,
-		month = 30.4368499*day,
-		oneYear = 365*day
+	second = 1000,
+	minute = 60*second,
+	hour = 60*minute,
+	day = 24*hour,
+	week = 7*day,
+	month = 30.4368499*day,
+	oneYear = 365*day;
 
 /**
  * Выполняем "наши" модули
@@ -49,21 +49,23 @@ app.configure(function(){
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	app.use(express.session({ cookie: {maxAge: false}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
+	app.use(express.session({ cookie: {maxAge: minute}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
 	
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
 	io.set('authorization', function (data, accept) {
-	  if (!data.headers.cookie) return accept('No cookie transmitted.', false);
+		if (!data.headers.cookie) return accept('No cookie transmitted.', false);
+		data.cookie = parseCookie(data.headers.cookie);
+		data.sessionID = data.cookie['oldmos.sid'];
+	  
+		console.log('ssss1=' + data.sessionID);
+		
+		mongo_store.load(data.sessionID, function (err, session) {
+			if (err || !session) return accept('Error: '+err, false);
+			data.session = session;
+			return accept(null, true);
 
-	  data.cookie = parseCookie(data.headers.cookie);
-	  data.sessionID = data.cookie['oldmos.sid'];
-		console.log(data.sessionID);
-	  mongo_store.load(data.sessionID, function (err, session) {
-		if (err || !session) return accept('Error: '+err, false);
-		data.session = session;
-		return accept(null, true);
-	  });
+		});
 	});
 	
 	if (env=='development') {
@@ -123,7 +125,7 @@ require(__dirname+'/models/User.js');
 
 
 // loading controllers
-require('./controllers/auth.js').loadController(app);
+require('./controllers/auth.js').loadController(app, mongo_store);
 require('./controllers/index.js').loadController(app, io);
 
 if (env!='development') {app.listen(3000);}
