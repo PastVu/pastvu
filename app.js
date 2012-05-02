@@ -49,7 +49,7 @@ app.configure(function(){
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	app.use(express.session({ cookie: {maxAge: minute}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
+	app.use(express.session({ cookie: {maxAge: 12*hour}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
 	
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);

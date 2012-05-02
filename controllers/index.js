@@ -22,7 +22,7 @@ module.exports.loadController = function (app, io) {
 			req.session.regenerate(function(err){
 				if (err) console.log('Regenerate session error: '+err);
 				req.session.login = login;
-				req.session.cookie.expires = new Date(Date.now()+24*60*60000);
+				req.session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
 				req.session.save();
 				console.log('qqqq2=' + req.sessionID+' '+req.session.login);
 				next();
