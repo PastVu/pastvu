@@ -127,6 +127,7 @@ require(__dirname+'/models/User.js');
 // loading controllers
 require('./controllers/auth.js').loadController(app, mongo_store);
 require('./controllers/index.js').loadController(app, io);
+require('./controllers/photo.js').loadController(app, io);
 
 if (env!='development') {app.listen(3000);}
 
