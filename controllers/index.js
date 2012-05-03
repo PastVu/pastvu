@@ -36,7 +36,7 @@ module.exports.loadController = function (app, io) {
 	}
 	
 	var iterator = 0;
-	app.get('/', regenSession, function(req, res){		
+	app.get('/', regenSession, function(req, res){
 		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator });
 	});
 	
@@ -54,7 +54,7 @@ module.exports.loadController = function (app, io) {
 			}
 			Step(
 				function (){
-					Settings.find({}, this.parallel())
+					Settings.find({}, this.parallel());
 					if (params.LoggedIn) User.findOne({'login': session.login}, { 'pass': 0, 'salt': 0, 'roles': 0}, this.parallel());
 				},
 				function (err, settings, user){
@@ -75,6 +75,11 @@ module.exports.loadController = function (app, io) {
 			});
 		});
 		
+		socket.on('logoutRequest', function (data) {
+			session.destroy(function(err) {
+				socket.emit('logoutResult', {err:err, logoutPath: '/'});
+			});
+		});
  
 		// setup an inteval that will keep our session fresh
 		/*var intervalID = setInterval(function () {

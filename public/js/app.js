@@ -468,6 +468,18 @@ function AuthAjax(form) {
 	});
 	*/
 }
+function Logout(){
+	socket.on('logoutResult', function (json) {
+		if (json.err){
+			consol.log('Logout error' + json.err);
+		}else {
+			document.location = json.logoutPath;
+		}
+		
+	});
+	socket.emit('logoutRequest', {});
+	return false;
+}
 function RegAjax(form) {
 	reg.wait.style.display = 'block';
 	var formRequest = 'username='+encodeURIComponent(Form.Element.getValue(form['reg_email']))+'&'+$(form).serialize();
