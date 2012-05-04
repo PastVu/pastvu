@@ -390,7 +390,7 @@ function ResetLoginActive() {
 	}*/
 }
 
-function AuthAjax(form) {
+function Login(form) {
 	login.wait.style.display = 'block';
 	var remember_check = form.querySelector('#remember_check').classList.contains('checked');
 	
@@ -420,53 +420,6 @@ function AuthAjax(form) {
 	});
 	socket.emit('authRequest', $.extend($(form).serializeObject(), {'remember': remember_check}));
 	return false;
-	
-	/*
-	$.ajax({
-	  url: form.action,
-	  cache: false,
-	  type: 'POST',
-	  data: $(form).serialize()+'&'+remember_check.getAttribute('name')+'='+remember_check.classList.contains('checked'),
-	  success: function(json) {
-		if (json.success) {
-			FormClose();
-			var links = '';
-			if(json.roles){
-				for(var r=0; r < json.roles.length; r++){
-					if(json.roles[r].authority=='ROLE_ADMIN'){
-						links = '<span onclick="window.open(\'admin\', \'_blank\')">' +
-							Server.messages['index.admin.panel']
-							+ '</span> | ';
-						//mediaContainerManager.setControl(1);
-					}else if(json.roles[r].authority=='ROLE_OPERATOR'){
-						//mediaContainerManager.setControl(1);
-					}
-				}
-			}
-			links += '<span onclick="ChangePassOpen(); return false;">' +
-							Server.messages['index.changepass']
-							+ '</span> | ';
-			document.querySelector('#user_panel').innerHTML =
-				Server.messages['index.logged.as'] + ' ' + json.username +
-				' | ' + links +
-				'<span onclick="document.location=Server.paths.logout">' +
-				Server.messages['index.logout'] + '</span>';
-		}else {
-			window.setTimeout(function(){
-				document.querySelector('#login_back #login_user').focus();
-			}, 700);
-			login.mess.innerHTML = ''+(json.error || json);
-			login.mess.classList.add('show');
-		}
-		window.setTimeout(function(){login.wait.style.display = 'none';}, 500);
-	  },
-	  error: function(json) {
-		login.mess.innerHTML = ''+json.statusText;
-		login.mess.classList.add('show');
-		window.setTimeout(function(){login.wait.style.display = 'none';}, 500);
-	  }
-	});
-	*/
 }
 function Logout(){
 	socket.on('logoutResult', function (json) {
@@ -480,9 +433,37 @@ function Logout(){
 	socket.emit('logoutRequest', {});
 	return false;
 }
-function RegAjax(form) {
+function Register(form) {
 	reg.wait.style.display = 'block';
-	var formRequest = 'username='+encodeURIComponent(Form.Element.getValue(form['reg_email']))+'&'+$(form).serialize();
+	
+	socket.on('registerResult', function (json) {
+		/*if (json.user){
+			FormClose();
+			GlobalParams.LoggedIn = true;
+			GlobalParams.user = json.user;
+			GlobalParamsToKO();
+			
+			$.ajax({
+			  url: '/updateCookie',
+			  cache: false,
+			  success: function(json) {},
+			  error: function(json) {}
+			});
+		}else {
+			FormFocus();
+			login.messchild.innerHTML = ''+(json.error || json);
+			login.mess.classList.add('err');
+			login.mess.style.height = login.messchild.offsetHeight+5+'px';
+		}*/
+		window.setTimeout(function(){reg.wait.style.display = 'none';}, 300);
+		
+	});
+	socket.emit('registerRequest', $.extend($(form).serializeObject(), {}));
+	return false;
+
+
+	
+	/*var formRequest = 'username='+encodeURIComponent(Form.Element.getValue(form['reg_email']))+'&'+$(form).serialize();
 	$.ajax({
 	  url: GlobalParams.registerUrl,
 	  cache: false,
@@ -520,7 +501,7 @@ function RegAjax(form) {
 		window.setTimeout(function(){reg.wait.style.display = 'none';}, 500);
 	  }
 	});
-	return false;
+	return false;*/
 }
 
 function RecallAjax(form) {

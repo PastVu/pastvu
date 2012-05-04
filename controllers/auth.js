@@ -1,14 +1,17 @@
 var mongoose = require('mongoose'),
 	User = mongoose.model('User'),
+	UserConfirm = mongoose.model('UserConfirm'),
+	Mail = require('./mail.js'),
 	Step = require('step'),
-	app, mongo_store;
+	Utils = require('../commons/Utils.js'),
+	app, io, mongo_store;
 
 function login(session, data, callback){
 	var error = null;
 	console.log('---- '+session.id);
     Step(
       function findUser() {
-		User.findOne({'login': data.user}, this);
+		User.findOne({'login': data.login}, this);
       },
       function checkEnter(err, user) {
 		if (user){
@@ -32,19 +35,97 @@ function login(session, data, callback){
 			console.log('----');
 			session.save();
 			
-			//������� ���������� ������������� ������ ����� ������������
+			//Удаляем предыдущие сохранившиеся сессии этого пользователя
 			mongo_store.getCollection().remove({'session': { $regex : user.login, $options: 'i' }, _id: { $ne : session.id }});
 			
 			/*delete user.pass; delete user.salt;
 			session.user = user;			
 			*/
-			console.log("login success for %s", data.user);
+			console.log("login success for %s", data.login);
 			callback.call(null, null, user);
 		}
       }
     );
 }
 module.exports.login = login;
+
+function register(session, data, callback){
+	var error = '',
+		confirmKey = '';
+	
+    Step(
+      function checkUserExists() {
+		console.log('st');
+		User.findOne({'login': data.login}, this.parallel());
+		User.findOne({'email': data.email}, this.parallel());
+      },
+	  function createUser(err, user, email){
+		console.log('createUser '+err);
+		if (user) error += 'User with such login already exists. ';
+		if (email) error += 'User with such email already exists';
+		if (error){
+			if (callback) callback.call(null, error);
+			return;
+		}
+		
+		confirmKey = Utils.randomString(32);
+		
+		var user = new User();
+		user.login = data.login; user.email = data.email;
+		user.pass = data.pass; user.hashPassword();
+		user.save(this.parallel());
+
+		new UserConfirm({key: confirmKey, login: data.login}).save(this.parallel());
+		
+	  },
+	  function sendMail(err){
+		console.log('sendMail '+err);
+		if (err){
+			if (callback) callback.call(null, err);
+			return;
+		}
+		Mail.send({
+			// sender info
+			from: 'Oldmos2 <confirm@oldmos2.ru>',
+
+			// Comma separated list of recipients
+			to: data.login+' <'+data.email+'>',
+
+			// Subject of the message
+			subject: 'Registration confirm', //
+
+			headers: {
+				'X-Laziness-level': 1000
+			},
+
+			// plaintext body
+			text: 'Привет, '+data.login+'!'+
+				'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.'+
+				'При регистрации вы указали логин и пароль:'+
+				'Логин: '+data.login+
+				'Пароль: '+data.pass+
+				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.'+
+				'Для активации Вашего аккаунта, пройдите по следующей ссылке:'+
+				'http://oldmos2.ru/confirm/'+confirmKey+' ',
+
+			// HTML body
+			html:'Привет, <b>'+data.login+'</b>!<br/><br/>'+
+				'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.<br/><br/>'+
+				'При регистрации вы указали логин и пароль:<br/>'+
+				'Логин: <b>'+data.login+'</b><br/>'+
+				'Пароль: <b>'+data.pass+'</b><br/><br/>'+
+				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>'+
+				'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>'+
+				'<a href="http://oldmos2.ru/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a> '
+		}, this);
+	  },
+	  
+	  function finish(err){
+		console.log('finish '+err);
+		if (callback) callback.call(null, err || error);
+	  }
+	)
+}
 
 
 /**
@@ -74,6 +155,7 @@ function restrictToRole(role) {
         }
     }
 }
+module.exports.restrictToRole = restrictToRole;
 
 function renderLoginPage(req, res, opts) {
 	if (!opts) opts = {};
@@ -84,10 +166,34 @@ function renderLoginPage(req, res, opts) {
 	res.render('login', opts);
 }
 
-// export methods
-module.exports.restrictToRole = restrictToRole;
-
-module.exports.loadController = function(a, ms) {
+module.exports.loadController = function(a, io, ms) {
 	app = a;
 	mongo_store = ms;
+	
+	io.sockets.on('connection', function (socket) {
+		var hs = socket.handshake,
+			session = hs.session;
+				
+		socket.on('authRequest', function (data) {
+			login(socket.handshake.session, data, function(err, user){
+				socket.emit('authResult', {user: user, error: err});
+			});
+		});
+		
+		socket.on('logoutRequest', function (data) {
+			session.destroy(function(err) {
+				socket.emit('logoutResult', {err:err, logoutPath: '/'});
+			});
+		});
+ 
+ 		socket.on('registerRequest', function (data) {
+			register(socket.handshake.session, data, function(err){
+				socket.emit('registerResult', {ok:!err, error: err});
+			});
+		});
+	});
+	
+	app.get('/confirm/:key', function(req, res) {
+		res.send();
+	});
 };

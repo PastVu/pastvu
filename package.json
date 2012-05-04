@@ -20,6 +20,7 @@
 	"crypto": "~0.0.3",
     "step": "",
     "socket.io": "~0.9",
+    "nodemailer": "~0.3.19",
     "sprintf": "",
     "opts" : ""
   },

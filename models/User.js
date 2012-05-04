@@ -31,6 +31,7 @@ var sexes = {
 
 var User = new mongoose.Schema({
     login: {type: String, index: { unique: true }},
+	email: {type: String, /*index: { unique: true }*/},
     pass: String,
 	salt: String,
     roles: [ObjectId],
@@ -40,7 +41,8 @@ var User = new mongoose.Schema({
 	country: {type: String},
 	city: {type: String},
     comment: String,
-    dateFormat: {"type": String, "default": "dd.mm.yyyy"}
+    dateFormat: {"type": String, "default": "dd.mm.yyyy"},
+	active: {type: Boolean, default: false}
 });
 
 User.path('sex').validate(function (sex) {
@@ -105,3 +107,12 @@ anonymous.comment = 'good role';
 anonymous.save(function (err) {
   console.log('USER '+err);
 });*/
+
+
+var UserConfirm = new mongoose.Schema({
+	key: {type: String, index: { unique: true }},
+    login: {type: String, index: { unique: true }},
+	created: {type: Date, default: Date.now}
+});
+
+var UserConfirmModel = mongoose.model ('UserConfirm', UserConfirm);
