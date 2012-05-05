@@ -437,26 +437,19 @@ function Register(form) {
 	reg.wait.style.display = 'block';
 	
 	socket.on('registerResult', function (json) {
-		/*if (json.user){
-			FormClose();
-			GlobalParams.LoggedIn = true;
-			GlobalParams.user = json.user;
-			GlobalParamsToKO();
-			
-			$.ajax({
-			  url: '/updateCookie',
-			  cache: false,
-			  success: function(json) {},
-			  error: function(json) {}
-			});
+		if (json.success) {
+			reg.form.querySelector('input[type="button"]').value = 'Finish';
+			reg.form.querySelector('input[type="button"]').classList.add('fin');
+			reg.form.querySelector('input[type="submit"]').style.display = 'none';
+			reg.messchild.innerHTML = json.success;
+			reg.mess.classList.add('good');
 		}else {
-			FormFocus();
-			login.messchild.innerHTML = ''+(json.error || json);
-			login.mess.classList.add('err');
-			login.mess.style.height = login.messchild.offsetHeight+5+'px';
-		}*/
+			var message = ''+(json.error || json);
+			reg.messchild.innerHTML = ''+message;
+			reg.mess.classList.add('err');
+		}
+		reg.mess.style.height = reg.messchild.offsetHeight+5+'px';
 		window.setTimeout(function(){reg.wait.style.display = 'none';}, 300);
-		
 	});
 	socket.emit('registerRequest', $.extend($(form).serializeObject(), {}));
 	return false;

@@ -51,6 +51,7 @@ module.exports.login = login;
 
 function register(session, data, callback){
 	var error = '',
+		success = 'The data is successfully sent. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	
     Step(
@@ -122,11 +123,30 @@ function register(session, data, callback){
 	  
 	  function finish(err){
 		console.log('finish '+err);
-		if (callback) callback.call(null, err || error);
+		if (callback) callback.call(null, err, (!err && success));
 	  }
 	)
 }
 
+function clearUnconfirmedUsers(){
+	console.log('clearUnconfirmedUsers');
+	var today = new Date(),
+		todayminus2days = new Date(today);
+		todayminus2days.setDate(today.getDate()+2);
+	UserConfirm.find({'created': { "$lte" : todayminus2days}}, {login:1, _id:0}, function(err, docs){
+		if (err) console.log('Err '+err);
+		if (docs.length<1) return;
+		
+		var users = [];
+		for (var i=0, dlen=docs.length; i<dlen; i++){
+			users.push(docs[i]['login']);
+			console.dir(docs[i]);
+		}
+		console.dir(users);
+		User.remove({'login': { $in : users }}, function(err){console.log(err)});
+		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){console.log(err)});
+	})
+}
 
 /**
  * redirect to /login if user has insufficient rights
@@ -187,13 +207,33 @@ module.exports.loadController = function(a, io, ms) {
 		});
  
  		socket.on('registerRequest', function (data) {
-			register(socket.handshake.session, data, function(err){
-				socket.emit('registerResult', {ok:!err, error: err});
+			register(socket.handshake.session, data, function(err, success){
+				socket.emit('registerResult', {success: success, error: err});
 			});
 		});
 	});
 	
 	app.get('/confirm/:key', function(req, res) {
+		console.log(req.key);
+		UserConfirm.findOne({'key': req.key}, {login:1, _id:1}, function(err, doc){
+			if (err) console.log('Err '+err);
+			if (doc) {
+				Step(
+					function(){
+						User.update({ login: doc.login }, {$set: {active : true}},  { multi: false }, this.parallel());
+						UserConfirm.remove({'_id': doc['_id']}, this.parallel());
+					},
+					function(err){
+						if (err) console.log('Err '+err);
+						res.redirect('/?confirm=true');
+					}
+				)
+			}
+		});
 		res.send();
 	});
+	
+	//Раз в день чистим пользователей, которые не подтвердили регистрацию
+	setInterval(clearUnconfirmedUsers, 60*60*1000);
+	//clearUnconfirmedUsers();
 };
