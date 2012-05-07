@@ -10,6 +10,7 @@ var mongoose = require('mongoose'),
 function login(session, data, callback){
 	var error = null;
 	console.log('---- '+session.id);
+	data.login = data.login.toLowerCase();
     Step(
       function findUser() {
 		User.findOne({'login': data.login}, this);
@@ -54,7 +55,7 @@ function register(session, data, callback){
 	var error = '',
 		success = 'The data is successfully sent. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
-	
+	data.login = data.login.toLowerCase();
     Step(
       function checkUserExists() {
 		console.log('st');
@@ -70,7 +71,7 @@ function register(session, data, callback){
 			return;
 		}
 		
-		confirmKey = Utils.randomString(128);
+		confirmKey = Utils.randomString(80);
 		
 		var user = new User();
 		user.login = data.login; user.email = data.email;
@@ -108,7 +109,8 @@ function register(session, data, callback){
 				'Пароль: '+data.pass+
 				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.'+
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:'+
-				'http://oldmos2.ru/confirm/'+confirmKey+' ',
+				'http://oldmos2.ru/confirm/'+confirmKey+' '+
+				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно',
 
 			// HTML body
 			html:'Привет, <b>'+data.login+'</b>!<br/><br/>'+
@@ -118,7 +120,8 @@ function register(session, data, callback){
 				'Пароль: <b>'+data.pass+'</b><br/><br/>'+
 				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>'+
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>'+
-				'<a href="http://oldmos2.ru/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a> '
+				'<a href="http://oldmos2.ru/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a><br/>'+
+				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно'
 		}, this);
 	  },
 	  
@@ -133,7 +136,7 @@ function clearUnconfirmedUsers(){
 	console.log('clearUnconfirmedUsers');
 	var today = new Date(),
 		todayminus2days = new Date(today);
-		todayminus2days.setDate(today.getDate()+2);
+		todayminus2days.setDate(today.getDate()-3);
 	UserConfirm.find({'created': { "$lte" : todayminus2days}}, {login:1, _id:0}, function(err, docs){
 		if (err) console.log('Err '+err);
 		if (docs.length<1) return;
@@ -216,10 +219,10 @@ module.exports.loadController = function(a, io, ms) {
 	
 	app.get('/confirm/:key', function(req, res) {
 		var key = req.params.key;
-		if (!key || key.length<128) throw new errS.e404('The page you requested was not found');//NotFound;//res.send('REEOE'/*err.message*/, 500);
+		if (!key || key.length<80) throw new errS.e404();
 		console.log(req.params.key);
 		UserConfirm.findOne({'key': req.params.key}, {login:1, _id:1}, function(err, doc){
-			if (err) console.log('Err '+err);
+			if (err) throw new errS.e404();
 			if (doc) {
 				Step(
 					function(){
@@ -227,7 +230,7 @@ module.exports.loadController = function(a, io, ms) {
 						UserConfirm.remove({'_id': doc['_id']}, this.parallel());
 					},
 					function(err){
-						if (err) console.log('Err '+err);
+						if (err) throw new errS.e404();
 						req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
 						res.redirect('/');
 					}
