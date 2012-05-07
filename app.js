@@ -15,6 +15,7 @@ var express = require('express'),
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
 	
+	errS = require('./controllers/errors.js').err,
 	app, io,
 
 	second = 1000,
@@ -118,6 +119,9 @@ app.dynamicHelpers({
 // connecting to db
 mongoose.connect(app.set('db-uri'));
 
+
+
+
 // creating models
 require(__dirname+'/models/Settings.js');
 require(__dirname+'/models/Role.js');
@@ -125,6 +129,7 @@ require(__dirname+'/models/User.js');
 
 
 // loading controllers
+require('./controllers/errors.js').loadController(app);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, io, mongo_store);
 require('./controllers/index.js').loadController(app, io);

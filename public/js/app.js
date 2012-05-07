@@ -95,6 +95,7 @@ function DrawObjects(){
 			poly_mgr.refresh(true);
 			LoaderIncrement(7, true);
 			if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){removeLoader(); document.querySelector('#main').style.opacity = '1';}, 500);
+			if(init_message) $().toastmessage('showSuccessToast', init_message);
 		},50);
 	},50);	
 }

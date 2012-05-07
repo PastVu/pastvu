@@ -19,12 +19,14 @@ module.exports.loadController = function (app, io) {
 		if (req.session.login){
 			console.log('!!!!+++++');
 			var login = req.session.login,
-				remember = req.session.remember;
+				remember = req.session.remember,
+				message = req.session.message;
 			console.log('qqqq1=' + req.sessionID+' '+req.session.login);
 			req.session.regenerate(function(err){
 				if (err) console.log('Regenerate session error: '+err);
 				req.session.login = login;
 				req.session.remember = remember;
+				req.session.message = message;
 				if (remember) req.session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
 				else req.session.cookie.expires = false;
 				req.session.save();
@@ -38,7 +40,7 @@ module.exports.loadController = function (app, io) {
 	
 	var iterator = 0;
 	app.get('/', regenSession, function(req, res){
-		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator });
+		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator});
 	});
 	
 	app.get('/updateCookie', function(req, res) {
@@ -48,7 +50,9 @@ module.exports.loadController = function (app, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake,
 			session = hs.session;
-			
+		//session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
+		if (session.message) { socket.emit('initMessage', {init_message: session.message}); session.message = null;}
+		
 		socket.on('giveGlobeParams', function (data) {
 			var params = {
 				LoggedIn: !!session.login

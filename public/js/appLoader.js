@@ -43,6 +43,7 @@ function i18nToKO(lang){
 	else ko.mapping.fromJS(i18n[lang], i18nVM);
 }
 
+var init_message;
 
 /**
  * Socket.IO
@@ -52,6 +53,9 @@ var socket;
 function onDOMLoad() {
 	main_loader.classList.add('visi');
 	socket = io.connect(location+'');
+	socket.on('initMessage', function (json) {
+		init_message = json.init_message;
+	});
 	init_and_load();
 }
 
@@ -77,7 +81,7 @@ function PrepareAndLoadSources(){
 	 */
 	var ScriptToLoad = [
 		{chain: [
-			{parallel:[
+			{parallel: [
 				{chain: [
 					{s: 'js/leaflet_0.4.0.js', p: 10, t: '?vv=040'},
 					(GlobalParams.USE_GOOGLE_API ? 
@@ -93,7 +97,8 @@ function PrepareAndLoadSources(){
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'},
 					{s: 'js/mvvms.js', p: 2, t: '?appv='+GlobalParams.appVersion}
 				]},
-				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined)
+				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined),
+				{s: 'js/jquery.toast/jquery.toast.js', p: 3, t: '?appv='+GlobalParams.appVersion},
 				/*,'js/raphael-min.js'*/
 			]},
 			{parallel:[
@@ -111,6 +116,7 @@ function PrepareAndLoadSources(){
 	 */
 	var StylesToLoad = [
 		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
+		{s: 'style/jquery.toast.css', p: 2, t: '?vv=100'},
 		{s: 'style/style_main2.css', p: 10, t: '?cctv='+GlobalParams.appVersion+'&verBuild='+GlobalParams.verBuild},
 	];
 	

@@ -4,6 +4,7 @@ var mongoose = require('mongoose'),
 	Mail = require('./mail.js'),
 	Step = require('step'),
 	Utils = require('../commons/Utils.js'),
+	errS = require('../controllers/errors.js').err,
 	app, io, mongo_store;
 
 function login(session, data, callback){
@@ -69,7 +70,7 @@ function register(session, data, callback){
 			return;
 		}
 		
-		confirmKey = Utils.randomString(32);
+		confirmKey = Utils.randomString(128);
 		
 		var user = new User();
 		user.login = data.login; user.email = data.email;
@@ -214,8 +215,10 @@ module.exports.loadController = function(a, io, ms) {
 	});
 	
 	app.get('/confirm/:key', function(req, res) {
-		console.log(req.key);
-		UserConfirm.findOne({'key': req.key}, {login:1, _id:1}, function(err, doc){
+		var key = req.params.key;
+		if (!key || key.length<128) throw new errS.e404('The page you requested was not found');//NotFound;//res.send('REEOE'/*err.message*/, 500);
+		console.log(req.params.key);
+		UserConfirm.findOne({'key': req.params.key}, {login:1, _id:1}, function(err, doc){
 			if (err) console.log('Err '+err);
 			if (doc) {
 				Step(
@@ -225,15 +228,15 @@ module.exports.loadController = function(a, io, ms) {
 					},
 					function(err){
 						if (err) console.log('Err '+err);
-						res.redirect('/?confirm=true');
+						req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
+						res.redirect('/');
 					}
 				)
 			}
 		});
-		res.send();
 	});
 	
 	//Раз в день чистим пользователей, которые не подтвердили регистрацию
-	setInterval(clearUnconfirmedUsers, 60*60*1000);
+	setInterval(clearUnconfirmedUsers, 24*60*60*1000);
 	//clearUnconfirmedUsers();
 };
