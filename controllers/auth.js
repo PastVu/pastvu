@@ -109,7 +109,7 @@ function register(session, data, callback){
 				'Пароль: '+data.pass+
 				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.'+
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:'+
-				'http://oldmos2.ru/confirm/'+confirmKey+' '+
+				'http://oldmos2.ru:3000/confirm/'+confirmKey+' '+
 				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно',
 
 			// HTML body
@@ -120,7 +120,7 @@ function register(session, data, callback){
 				'Пароль: <b>'+data.pass+'</b><br/><br/>'+
 				'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>'+
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>'+
-				'<a href="http://oldmos2.ru/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a><br/>'+
+				'<a href="http://oldmos2.ru:3000/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a><br/>'+
 				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно'
 		}, this);
 	  },
@@ -219,7 +219,7 @@ module.exports.loadController = function(a, io, ms) {
 	
 	app.get('/confirm/:key', function(req, res) {
 		var key = req.params.key;
-		if (!key || key.length<80) throw new errS.e404();
+		if (!key || key.length!=80) throw new errS.e404();
 		console.log(req.params.key);
 		UserConfirm.findOne({'key': req.params.key}, {login:1, _id:1}, function(err, doc){
 			if (err) throw new errS.e404();
