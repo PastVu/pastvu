@@ -97,6 +97,11 @@ UserModel.prototype.hashPassword = function() {
   this.salt = Math.random() + '';
   this.pass = md5(this.pass + this.salt);
 };
+UserModel.hashPasswordExternal = function() {
+  if (!this.pass) return;
+  this.salt = Math.random() + '';
+  this.pass = md5(this.pass + this.salt);
+};
 
 /*var anonymous = new UserModel();
 anonymous.login = 'neo';

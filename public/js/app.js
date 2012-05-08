@@ -454,89 +454,28 @@ function Register(form) {
 	});
 	socket.emit('registerRequest', $.extend($(form).serializeObject(), {}));
 	return false;
-
-
-	
-	/*var formRequest = 'username='+encodeURIComponent(Form.Element.getValue(form['reg_email']))+'&'+$(form).serialize();
-	$.ajax({
-	  url: GlobalParams.registerUrl,
-	  cache: false,
-	  type: 'POST',
-	  data: formRequest,
-	  success: function(json) {
-		if (json.success) {
-			reg.form.querySelector('input[type="button"]').value =
-				Server.messages['index.form.close'];
-			reg.form.querySelector('input[type="button"]').classList.add('fin');
-			reg.form.querySelector('input[type="submit"]').style.display = 'none';
-			reg.mess.innerHTML = json.success;
-			reg.mess.classList.add('show');
-			reg.mess.classList.add('good');
-		}else {
-			var message = '';
-			if(json[0] && json[0].error){
-				if(json[0].error.errors){
-					for(var m in json[0].error.errors){
-						if (!json[0].error.errors.hasOwnProperty(m)) continue;
-						message += json[0].error.errors[m].message+'<br/>';
-					}
-				}
-			}else{
-				message = ''+(json.error || json);
-			}
-			reg.mess.innerHTML = ''+message;
-			reg.mess.classList.add('show');
-		}
-		window.setTimeout(function(){reg.wait.style.display = 'none';}, 500);
-	  },
-	  error: function(json) {
-		reg.mess.innerHTML = ''+(json.responseText || json.statusText);
-		reg.mess.classList.add('show');
-		window.setTimeout(function(){reg.wait.style.display = 'none';}, 500);
-	  }
-	});
-	return false;*/
 }
 
 function RecallAjax(form) {
 	recall.wait.style.display = 'block';
-	$.ajax({
-	  url: Server.paths.forgotPass,
-	  cache: false,
-	  type: 'POST',
-	  data: $(form).serialize(),
-	  success: function(json) {
+	
+	socket.on('recallResult', function (json) {
 		if (json.success) {
-			recall.form.querySelector('input[type="button"]').value =
-				Server.messages['index.form.close'];
+			recall.form.querySelector('input[type="button"]').value = 'Finish';
 			recall.form.querySelector('input[type="button"]').classList.add('fin');
 			recall.form.querySelector('input[type="submit"]').style.display = 'none';
-			recall.mess.innerHTML = json.success;
-			recall.mess.classList.add('show');
+			recall.messchild.innerHTML = json.success;
 			recall.mess.classList.add('good');
 		}else {
-			var message = '';
-			if(json[0] && json[0].error){
-				if(json[0].error.errors){
-					for(var m in json[0].error.errors){
-						if (!json[0].error.errors.hasOwnProperty(m)) continue;
-						message += json[0].error.errors[m].message+'<br/>';
-					}
-				}
-			}else{
-				message = ''+(json.error || json);
-			}
-			recall.mess.innerHTML = ''+message;
-			recall.mess.classList.add('show');
+			var message = ''+(json.error || json);
+			recall.messchild.innerHTML = ''+message;
+			recall.mess.classList.add('err');
 		}
-		window.setTimeout(function(){recall.wait.style.display = 'none';}, 500);
-	  },
-	  error: function(json) {
-		recall.mess.innerHTML = ''+(json.responseText || json.statusText);
-		recall.mess.classList.add('show');
-		window.setTimeout(function(){recall.wait.style.display = 'none';}, 500);
-	  }
+		recall.mess.style.height = recall.messchild.offsetHeight+5+'px';
+		window.setTimeout(function(){recall.wait.style.display = 'none';}, 300);
 	});
+	socket.emit('recallRequest', $(form).serializeObject());
+	
 	return false;
 }
 

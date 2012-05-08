@@ -58,8 +58,6 @@ app.configure(function(){
 		if (!data.headers.cookie) return accept('No cookie transmitted.', false);
 		data.cookie = parseCookie(data.headers.cookie);
 		data.sessionID = data.cookie['oldmos.sid'];
-	  
-		console.log('ssss1=' + data.sessionID);
 		
 		mongo_store.load(data.sessionID, function (err, session) {
 			if (err || !session) return accept('Error: '+err, false);

@@ -9,11 +9,10 @@ var mongoose = require('mongoose'),
 
 function login(session, data, callback){
 	var error = null;
-	console.log('---- '+session.id);
 	data.login = data.login.toLowerCase();
     Step(
       function findUser() {
-		User.findOne({'login': data.login}, this);
+		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
       },
       function checkEnter(err, user) {
 		if (user){
@@ -29,12 +28,10 @@ function login(session, data, callback){
 			callback.call(null, error, null);
 			return;
 		}else{
-			console.log('enter '+session.id);
 			session.login = user.login;
 			session.remember = data.remember;
 			if (data.remember) session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
 			else session.cookie.expires = false;
-			console.log('----');
 			session.save();
 			
 			//Удаляем предыдущие сохранившиеся сессии этого пользователя
@@ -56,17 +53,16 @@ function register(session, data, callback){
 		success = 'The data is successfully sent. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	data.login = data.login.toLowerCase();
+	data.email = data.email.toLowerCase();
     Step(
       function checkUserExists() {
-		console.log('st');
-		User.findOne({'login': data.login}, this.parallel());
-		User.findOne({'email': data.email}, this.parallel());
+		User.findOne({ $or : [ { login : data.login } , { email : data.email } ] } , this);
       },
-	  function createUser(err, user, email){
-		console.log('createUser '+err);
-		if (user) error += 'User with such login already exists. ';
-		if (email) error += 'User with such email already exists';
-		if (error){
+	  function createUser(err, user){
+		if (user) {
+			if (user.login == data.login) error += 'User with such login already exists. ';
+			if (user.email == data.email) error += 'User with such email already exists.';
+			
 			if (callback) callback.call(null, error);
 			return;
 		}
@@ -77,31 +73,22 @@ function register(session, data, callback){
 		user.login = data.login; user.email = data.email;
 		user.pass = data.pass; user.hashPassword();
 		user.save(this.parallel());
-
-		new UserConfirm({key: confirmKey, login: data.login}).save(this.parallel());
 		
+		UserConfirm.remove({login: data.login}, this.parallel());
 	  },
 	  function sendMail(err){
-		console.log('sendMail '+err);
 		if (err){
 			if (callback) callback.call(null, err);
 			return;
 		}
 		Mail.send({
-			// sender info
 			from: 'Oldmos2 <confirm@oldmos2.ru>',
-
-			// Comma separated list of recipients
 			to: data.login+' <'+data.email+'>',
-
-			// Subject of the message
 			subject: 'Registration confirm', //
-
 			headers: {
 				'X-Laziness-level': 1000
 			},
 
-			// plaintext body
 			text: 'Привет, '+data.login+'!'+
 				'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.'+
 				'При регистрации вы указали логин и пароль:'+
@@ -111,8 +98,6 @@ function register(session, data, callback){
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:'+
 				'http://oldmos2.ru:3000/confirm/'+confirmKey+' '+
 				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно',
-
-			// HTML body
 			html:'Привет, <b>'+data.login+'</b>!<br/><br/>'+
 				'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.<br/><br/>'+
 				'При регистрации вы указали логин и пароль:<br/>'+
@@ -122,11 +107,67 @@ function register(session, data, callback){
 				'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>'+
 				'<a href="http://oldmos2.ru:3000/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a><br/>'+
 				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо зарегистрироваться повторно'
+		}, this.parallel());
+		
+		new UserConfirm({key: confirmKey, login: data.login}).save(this.parallel());
+	  },
+	  
+	  function finish(err){
+		if (callback) callback.call(null, err, (!err && success));
+	  }
+	)
+}
+
+function recall(session, data, callback){
+	var error = '',
+		success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
+		confirmKey = '';
+	data.login = data.login.toLowerCase();
+    Step(
+      function checkUserExists() {
+		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
+      },
+	  function (err, user){
+		if (err || !user){
+			error += 'User with such login or e-mail does not exist';
+			if (callback) callback.call(null, error);
+			return;
+		}else{
+			data.login = user.login; data.email = user.email;
+			confirmKey = Utils.randomString(79);
+			UserConfirm.remove({login: data.login}, this);
+		}
+	  },
+	  function (err){
+		new UserConfirm({key: confirmKey, login: data.login}).save(this);
+	  },
+	  function sendMail(err){
+		if (err){
+			if (callback) callback.call(null, err);
+			return;
+		}
+		Mail.send({
+			from: 'Oldmos2 <confirm@oldmos2.ru>',
+			to: data.login+' <'+data.email+'>',
+			subject: 'Request for password recovery',
+			headers: {
+				'X-Laziness-level': 1000
+			},
+
+			text: 'Привет, '+data.login+'!'+
+				'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте oldmos2.ru. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.'+
+				'Для получения нового пароля перейдите по следующей ссылке:'+
+				'http://oldmos2.ru:3000/confirm/'+confirmKey+' '+
+				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо запрашивать смену пароля повторно',
+			html:'Привет, <b>'+data.login+'</b>!<br/><br/>'+
+				'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте oldmos2.ru. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>'+
+				'Для получения нового пароля перейдите по следующей ссылке:<br/>'+
+				'<a href="http://oldmos2.ru:3000/confirm/'+confirmKey+'" target="_blank">http://oldmos2.ru/confirm/'+confirmKey+'</a><br/>'+
+				'Ссылка действительна 3 дня, по истечении которых Вам будет необходимо запрашивать смену пароля повторно'
 		}, this);
 	  },
 	  
 	  function finish(err){
-		console.log('finish '+err);
 		if (callback) callback.call(null, err, (!err && success));
 	  }
 	)
@@ -137,17 +178,16 @@ function clearUnconfirmedUsers(){
 	var today = new Date(),
 		todayminus2days = new Date(today);
 		todayminus2days.setDate(today.getDate()-3);
-	UserConfirm.find({'created': { "$lte" : todayminus2days}}, {login:1, _id:0}, function(err, docs){
+	UserConfirm.find({'created': { "$lte" : todayminus2days}}, {key: 1, login:1, _id:0}, function(err, docs){
 		if (err) console.log('Err '+err);
 		if (docs.length<1) return;
 		
 		var users = [];
 		for (var i=0, dlen=docs.length; i<dlen; i++){
-			users.push(docs[i]['login']);
-			console.dir(docs[i]);
+			if(docs[i]['key'].length == 80) users.push(docs[i]['login']);
 		}
 		console.dir(users);
-		User.remove({'login': { $in : users }}, function(err){console.log(err)});
+		if(users.length > 0) User.remove({'login': { $in : users }}, function(err){console.log(err)});
 		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){console.log(err)});
 	})
 }
@@ -215,27 +255,93 @@ module.exports.loadController = function(a, io, ms) {
 				socket.emit('registerResult', {success: success, error: err});
 			});
 		});
+
+		socket.on('recallRequest', function (data) {
+			recall(socket.handshake.session, data, function(err, success){
+				socket.emit('recallResult', {success: success, error: err});
+			});
+		});
 	});
 	
 	app.get('/confirm/:key', function(req, res) {
 		var key = req.params.key;
-		if (!key || key.length!=80) throw new errS.e404();
+		if (!key || key.length<79 || key.length>80) throw new errS.e404();
 		
 		UserConfirm.findOne({'key': key}, {login:1, _id:1}, function(err, doc){
 			if (err || !doc) {
 				errS.e404Virgin(req, res);
 			}else {
-				Step(
-					function(){
-						User.update({ login: doc.login }, {$set: {active : true}},  { multi: false }, this.parallel());
-						UserConfirm.remove({'_id': doc['_id']}, this.parallel());
-					},
-					function(err){
-						if (err) errS.e404Virgin(req, res);
-						req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
-						res.redirect('/');
-					}
-				)
+				if (key.length == 80) { //Confirm registration
+					Step(
+						function(){
+							User.update({ login: doc.login }, {$set: {active : true}},  { multi: false }, this.parallel());
+							UserConfirm.remove({'_id': doc['_id']}, this.parallel());
+						},
+						function(err){
+							if (err) errS.e500Virgin(req, res);
+							else{
+								req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
+								res.redirect('/');
+							}
+						}
+					);
+				} else if (key.length == 79) { //Confirm pass change
+					var newPass = Utils.randomString(8),
+						email;
+						
+					Step(
+						function findUser(){
+							User.findOne({ login: doc.login }, this);
+						},
+						function (err, user){
+							if (user){
+								email = user.email;
+								user.pass = newPass; user.hashPassword();
+								user.save(this);
+							} else {
+								errS.e404Virgin(req, res);
+							}
+						},
+						function sendMail(err){
+							if (err){
+								errS.e500Virgin(req, res);
+							}
+							Mail.send({
+								// sender info
+								from: 'Oldmos2 <confirm@oldmos2.ru>',
+
+								// Comma separated list of recipients
+								to: doc.login+' <'+email+'>',
+
+								// Subject of the message
+								subject: 'Your new password', //
+
+								headers: {
+									'X-Laziness-level': 1000
+								},
+
+								text: 'Привет, '+doc.login+'!'+
+									'Ваш пароль успешно заменен на новый.'+
+									'Логин: '+doc.login+
+									'Пароль: '+newPass+
+									'Теперь Вы можете зайти на проект oldmos2.ru, используя новые реквизиты',
+								
+								html:'Привет, <b>'+doc.login+'</b>!<br/><br/>'+
+									'Ваш пароль успешно заменен на новый.<br/>'+
+									'Логин: <b>'+doc.login+'</b><br/>'+
+									'Пароль: <b>'+newPass+'</b><br/><br/>'+
+									'Теперь Вы можете зайти на проект oldmos2.ru, используя новые реквизиты'
+							}, this);
+						},
+						function finish(err){
+							if (err) errS.e500Virgin(req, res);
+							else{
+								req.session.message = 'Thank you! E-mail with new password sent to your e-mail. You can use it right now!';
+								res.redirect('/');
+							}
+						}
+					);
+				}
 			}
 		});
 	});

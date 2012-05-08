@@ -259,8 +259,8 @@ html
 				<div id="recall_body" class='inner_bord'>
 					<div id='recall_head' class='head'>Recover password</div>
 					<form action='' method='POST' id='recallForm' name='recallForm' onSubmit="return RecallAjax(this);">
-						<div class='label icon-envelope'>E-mail:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
-						<input id='recall_email' type="email" autocomplete="off" required="required" title="input e-mail" placeholder="Enter e-mail" name="email">
+						<div class='label icon-envelope'>Login or e-mail:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+						<input id='recall_email' type="text" autocomplete="off" required="required" title="Input login or e-mail" placeholder="Enter login or e-mail" name="login">
 						<input type="submit" value="Send">
 						<input type="button" onclick='FormClose()' value="Cancel">
 					</form>
