@@ -87,9 +87,9 @@ app.configure(function(){
 		io.enable('browser client gzip');          // gzip the file
 		io.set('log level', 1);                    // reduce logging
 	}
-	
-    app.use(app.router);
 	app.use(express.static(__dirname + '/public', {maxAge: day, redirect: '/'}));
+    app.use(app.router);
+	
 	
 });
 
@@ -112,15 +112,12 @@ app.dynamicHelpers({
   user: function(req, res){
     var user = req.session.user;
     return user || {};
-  },
+  }
 
 });
 
 // connecting to db
-mongoose.connect(app.set('db-uri'));
-
-
-
+var ccc = mongoose.connect(app.set('db-uri'));
 
 // creating models
 require(__dirname+'/models/Settings.js');
@@ -134,6 +131,7 @@ require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, io, mongo_store);
 require('./controllers/index.js').loadController(app, io);
 require('./controllers/photo.js').loadController(app, io);
+app.get('*', function(req, res){errS.e404Virgin(req, res)});
 
 if (env!='development') {app.listen(3000);}
 

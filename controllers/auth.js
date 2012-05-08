@@ -220,17 +220,18 @@ module.exports.loadController = function(a, io, ms) {
 	app.get('/confirm/:key', function(req, res) {
 		var key = req.params.key;
 		if (!key || key.length!=80) throw new errS.e404();
-		console.log(req.params.key);
-		UserConfirm.findOne({'key': req.params.key}, {login:1, _id:1}, function(err, doc){
-			if (err) throw new errS.e404();
-			if (doc) {
+		
+		UserConfirm.findOne({'key': key}, {login:1, _id:1}, function(err, doc){
+			if (err || !doc) {
+				errS.e404Virgin(req, res);
+			}else {
 				Step(
 					function(){
 						User.update({ login: doc.login }, {$set: {active : true}},  { multi: false }, this.parallel());
 						UserConfirm.remove({'_id': doc['_id']}, this.parallel());
 					},
 					function(err){
-						if (err) throw new errS.e404();
+						if (err) errS.e404Virgin(req, res);
 						req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
 						res.redirect('/');
 					}
