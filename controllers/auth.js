@@ -1,25 +1,23 @@
 var mongoose = require('mongoose'),
 	User = mongoose.model('User'),
 	UserConfirm = mongoose.model('UserConfirm'),
-	Mail = require('./mail.js'),
 	Step = require('step'),
+	Mail = require('./mail.js'),
+	errS = require('./errors.js').err,
 	Utils = require('../commons/Utils.js'),
-	errS = require('../controllers/errors.js').err,
 	app, io, mongo_store;
 
 function login(session, data, callback){
 	var error = null;
 	data.login = data.login.toLowerCase();
+	
     Step(
       function findUser() {
 		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
       },
       function checkEnter(err, user) {
 		if (user){
-			if (User.checkPass(user, data.pass)){
-			} else {
-				error = 'Password incorrect';
-			}
+			if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
 		} else {
 			error = 'User does not exists';
 		}
@@ -46,7 +44,6 @@ function login(session, data, callback){
       }
     );
 }
-module.exports.login = login;
 
 function register(session, data, callback){
 	var error = '',
@@ -54,6 +51,7 @@ function register(session, data, callback){
 		confirmKey = '';
 	data.login = data.login.toLowerCase();
 	data.email = data.email.toLowerCase();
+	
     Step(
       function checkUserExists() {
 		User.findOne({ $or : [ { login : data.login } , { email : data.email } ] } , this);
@@ -346,7 +344,7 @@ module.exports.loadController = function(a, io, ms) {
 		});
 	});
 	
-	//Раз в день чистим пользователей, которые не подтвердили регистрацию
+	//Раз в день чистим пользователей, которые не подтвердили регистрацию или не сменили пароль
 	setInterval(clearUnconfirmedUsers, 24*60*60*1000);
 	//clearUnconfirmedUsers();
 };
