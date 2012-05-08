@@ -93,7 +93,7 @@ function PrepareAndLoadSources(){
 				]},
 				{s: 'js/KeyHandler.js', p: 5, t: '?appv='+GlobalParams.appVersion},
 				{chain: [
-					{s: 'js/knockout-2.0.0.js', p: 9, t: '?vv=200'},
+					{s: 'js/knockout-2.1.0.js', p: 9, t: '?vv=210'},
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'},
 					{s: 'js/mvvms.js', p: 2, t: '?appv='+GlobalParams.appVersion}
 				]},
