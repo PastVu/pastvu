@@ -17,11 +17,10 @@ module.exports.loadController = function (app, io) {
 	
 	function regenSession(req, res, next){
 		if (req.session.login){
-			console.log('!!!!+++++');
 			var login = req.session.login,
 				remember = req.session.remember,
 				message = req.session.message;
-			console.log('qqqq1=' + req.sessionID+' '+req.session.login);
+			//console.log('qqqq1=' + req.sessionID+' '+req.session.login);
 			req.session.regenerate(function(err){
 				if (err) console.log('Regenerate session error: '+err);
 				req.session.login = login;
@@ -30,7 +29,7 @@ module.exports.loadController = function (app, io) {
 				if (remember) req.session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
 				else req.session.cookie.expires = false;
 				req.session.save();
-				console.log('qqqq2=' + req.sessionID+' '+req.session.login);
+				//console.log('qqqq2=' + req.sessionID+' '+req.session.login);
 				next();
 			});
 		}else{

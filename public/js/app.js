@@ -445,6 +445,7 @@ function Register(form) {
 			reg.messchild.innerHTML = json.success;
 			reg.mess.classList.add('good');
 		}else {
+			FormFocus();
 			var message = ''+(json.error || json);
 			reg.messchild.innerHTML = ''+message;
 			reg.mess.classList.add('err');
@@ -467,6 +468,7 @@ function RecallAjax(form) {
 			recall.messchild.innerHTML = json.success;
 			recall.mess.classList.add('good');
 		}else {
+			FormFocus();
 			var message = ''+(json.error || json);
 			recall.messchild.innerHTML = ''+message;
 			recall.mess.classList.add('err');
