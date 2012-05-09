@@ -10,6 +10,11 @@ var mongoose = require('mongoose'),
 function login(session, data, callback){
 	var error = null;
 	data.login = data.login.toLowerCase();
+	if (!data.login) error += 'Fill in the login field. ';
+	if (!data.pass) error += 'Fill in the password field.';
+	if (error){
+		callback.call(null, error, null); return;
+	}
 	
     Step(
       function findUser() {
@@ -51,6 +56,14 @@ function register(session, data, callback){
 		confirmKey = '';
 	data.login = data.login.toLowerCase();
 	data.email = data.email.toLowerCase();
+	
+	if (!data.login) error += 'Fill in the login field. ';
+	if (!data.email) error += 'Fill in the e-mail field. ';
+	if (!data.pass) error += 'Fill in the password field. ';
+	if (data.pass!=data.pass2) error += 'Passwords do not match.';
+	if (error){
+		callback.call(null, error, null); return;
+	}
 	
     Step(
       function checkUserExists() {
@@ -121,6 +134,10 @@ function recall(session, data, callback){
 		success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	data.login = data.login.toLowerCase();
+	if (!data.login) error += 'Fill in login or e-mail.';
+	if (error){
+		callback.call(null, error, null); return;
+	}
     Step(
       function checkUserExists() {
 		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
