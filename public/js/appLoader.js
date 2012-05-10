@@ -14,13 +14,19 @@ var GlobalParams = {
 	verBuild: 0,
 	
 	REGISTRATION_ALLOWED: false,
-	LoggedIn: false,
-	user: null
+	LoggedIn: false
 };
 /**
  * GlobalSettings ViewModel
  */
 var GlobalParamsVM;
+
+var User = {
+	login: '',
+	email: '',
+	firstName: '',
+	lastName: ''
+};
 
 /**
  * i18n

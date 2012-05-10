@@ -399,8 +399,8 @@ function Login(form) {
 		if (json.user){
 			FormClose();
 			GlobalParams.LoggedIn = true;
-			GlobalParams.user = json.user;
 			GlobalParamsToKO();
+			ko.mapping.fromJS(json.user, UserVM);
 			
 			$.ajax({
 			  url: '/updateCookie',

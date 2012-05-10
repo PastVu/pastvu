@@ -9,7 +9,7 @@ var mongoose = require('mongoose'),
 
 function login(session, data, callback){
 	var error = '';
-	data.login = data.login.toLowerCase();
+
 	if (!data.login) error += 'Fill in the login field. ';
 	if (!data.pass) error += 'Fill in the password field.';
 	if (error){
@@ -18,7 +18,7 @@ function login(session, data, callback){
 	
     Step(
       function findUser() {
-		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] }, {_id:0, active:0} , this);
+		User.findOne({ $and: [ { $or : [ { login : new RegExp(data.login, 'i') } , { email : data.login.toLowerCase() } ] }, { active: true } ] }, {_id:0, active:0} , this);
       },
       function checkEnter(err, user) {
 		if (user){
@@ -38,7 +38,7 @@ function login(session, data, callback){
 			session.save();
 			
 			//Удаляем предыдущие сохранившиеся сессии этого пользователя
-			mongo_store.getCollection().remove({'session': { $regex : user.login, $options: 'i' }, _id: { $ne : session.id }});
+			mongo_store.getCollection().remove({'session': new RegExp(user.login, 'i'), _id: { $ne : session.id }});
 			
 			/*delete user.pass; delete user.salt;
 			session.user = user;			
@@ -56,7 +56,6 @@ function register(session, data, callback){
 	var error = '',
 		success = 'The data is successfully sent. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
-	data.login = data.login.toLowerCase();
 	data.email = data.email.toLowerCase();
 	
 	if (!data.login) error += 'Fill in the login field. ';
@@ -69,11 +68,11 @@ function register(session, data, callback){
 	
     Step(
       function checkUserExists() {
-		User.findOne({ $or : [ { login : data.login } , { email : data.email } ] } , this);
+		User.findOne({ $or : [ { login : new RegExp(data.login, 'i') } , { email : data.email } ] } , this);
       },
 	  function createUser(err, user){
 		if (user) {
-			if (user.login == data.login) error += 'User with such login already exists. ';
+			if (user.login.toLowerCase() == data.login.toLowerCase()) error += 'User with such login already exists. ';
 			if (user.email == data.email) error += 'User with such email already exists.';
 			
 			if (callback) callback.call(null, error);
@@ -87,7 +86,7 @@ function register(session, data, callback){
 		user.pass = data.pass; user.hashPassword();
 		user.save(this.parallel());
 		
-		UserConfirm.remove({login: data.login}, this.parallel());
+		UserConfirm.remove({login: new RegExp(data.login, 'i')}, this.parallel());
 	  },
 	  function sendMail(err){
 		if (err){
@@ -135,14 +134,15 @@ function recall(session, data, callback){
 	var error = '',
 		success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
-	data.login = data.login.toLowerCase();
+
 	if (!data.login) error += 'Fill in login or e-mail.';
 	if (error){
 		callback.call(null, error, null); return;
 	}
+	
     Step(
       function checkUserExists() {
-		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
+		User.findOne({ $and: [ { $or : [ { login : new RegExp(data.login, 'i') } , { email : data.login.toLowerCase() } ] }, { active: true } ] } , this);
       },
 	  function (err, user){
 		if (err || !user){
@@ -152,7 +152,7 @@ function recall(session, data, callback){
 		}else{
 			data.login = user.login; data.email = user.email;
 			confirmKey = Utils.randomString(79);
-			UserConfirm.remove({login: data.login}, this);
+			UserConfirm.remove({login: new RegExp(data.login, 'i')}, this);
 		}
 	  },
 	  function (err){
@@ -291,7 +291,7 @@ module.exports.loadController = function(a, io, ms) {
 				if (key.length == 80) { //Confirm registration
 					Step(
 						function(){
-							User.update({ login: doc.login }, {$set: {active : true}},  { multi: false }, this.parallel());
+							User.update({ login: doc.login }, {$set: {active : true}}, { multi: false }, this.parallel());
 							UserConfirm.remove({'_id': doc['_id']}, this.parallel());
 						},
 						function(err){
@@ -353,7 +353,7 @@ module.exports.loadController = function(a, io, ms) {
 						function finish(err){
 							if (err) errS.e500Virgin(req, res);
 							else{
-								req.session.message = 'Thank you! E-mail with new password sent to your e-mail. You can use it right now!';
+								req.session.message = 'Thank you! Information with new password sent to your e-mail. You can use it right now!';
 								res.redirect('/');
 							}
 						}

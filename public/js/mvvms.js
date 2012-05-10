@@ -3,7 +3,17 @@
  */
 var TopPanelVM;
 
+var UserVM;
+
 function CreateMVVM(){
+
+	UserVM = ko.mapping.fromJS(User);
+	UserVM.fullName = ko.computed(function() {
+		if (this.firstName() && this.lastName()) return this.firstName() + " " + this.lastName();
+		else return this.login();
+	}, UserVM);
+
+
 	TopPanelVM = {
 		// Data
 		loggedIn: ko.computed({
@@ -32,6 +42,15 @@ function CreateMVVM(){
 			read: function(){return i18nVM.register();},
 			owner: TopPanelVM
 		}),
+		profile: ko.computed({
+			read: function(){
+				if (GlobalParamsVM.LoggedIn())
+					return UserVM.fullName();
+				else
+					return '';
+			},
+			owner: TopPanelVM
+		})
 		// Behaviors
 	};
 }
