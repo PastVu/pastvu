@@ -34,15 +34,32 @@ var User = new mongoose.Schema({
 	email: {type: String, /*index: { unique: true }*/},
     pass: String,
 	salt: String,
-    roles: [ObjectId],
-	regdate: {type: Date, default: Date.now},
+	
+	//Profile
+	avatar: String,
+	firstName: String,
+	lastName: String,
 	birthdate: {type: Date, default: Date.now},
 	sex: {type: String},
 	country: {type: String},
 	city: {type: String},
-    comment: String,
+	work: {type: String},
+	www: {type: String},
+	icq: {type: String},
+	skype: {type: String},
+	aim: {type: String},
+	lj: {type: String},
+	flickr: {type: String},
+	blogger: {type: String},
+	aboutme: String,
+	
+	//Service
+    roles: [ObjectId],
+	regdate: {type: Date, default: Date.now},
+    
     dateFormat: {"type": String, "default": "dd.mm.yyyy"},
-	active: {type: Boolean, default: false}
+	active: {type: Boolean, default: false},
+	activatedate: {type: Date, default: Date.now}
 });
 
 User.path('sex').validate(function (sex) {

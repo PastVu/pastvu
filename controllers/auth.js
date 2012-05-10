@@ -8,7 +8,7 @@ var mongoose = require('mongoose'),
 	app, io, mongo_store;
 
 function login(session, data, callback){
-	var error = null;
+	var error = '';
 	data.login = data.login.toLowerCase();
 	if (!data.login) error += 'Fill in the login field. ';
 	if (!data.pass) error += 'Fill in the password field.';
@@ -18,7 +18,7 @@ function login(session, data, callback){
 	
     Step(
       function findUser() {
-		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] } , this);
+		User.findOne({ $and: [ { $or : [ { login : data.login } , { email : data.login } ] }, { active: true } ] }, {_id:0, active:0} , this);
       },
       function checkEnter(err, user) {
 		if (user){
@@ -43,8 +43,10 @@ function login(session, data, callback){
 			/*delete user.pass; delete user.salt;
 			session.user = user;			
 			*/
+			var u = user.toObject();
+			delete u.salt; delete u.pass;
 			console.log("login success for %s", data.login);
-			callback.call(null, null, user);
+			callback.call(null, null, u);
 		}
       }
     );

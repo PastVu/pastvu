@@ -41,7 +41,7 @@ module.exports.loadController = function (app) {
 	});
 
 	app.error(function(err, req, res, next) {
-		if (err instanceof neoError.e404) {
+		if (err instanceof neoError.e404 || err.code=='ENOTDIR') {
 			neoError.e404Virgin(req, res, err.msgs);
 		} else if (err instanceof neoError.e500) {
 			neoError.e500Virgin(req, res, err.msgs);

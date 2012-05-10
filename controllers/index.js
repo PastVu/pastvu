@@ -43,7 +43,7 @@ module.exports.loadController = function (app, io) {
 	});
 	
 	app.get('/updateCookie', function(req, res) {
-		res.send();
+		res.send('updateCookie', 200);
 	});
 	
 	io.sockets.on('connection', function (socket) {

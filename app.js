@@ -4,17 +4,17 @@ var fs = require( 'fs' );
 var express = require('express'),
 	connect = require('express/node_modules/connect'),
 	mongodb = require('connect-mongodb/node_modules/mongodb'),
-	
+
 	mongoStore = require('connect-mongodb'),
 	server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
 	db = new mongodb.Db('oldmos', server_config, {}),
 	mongo_store = new mongoStore({db: db, reapInterval: 3000}),
-	 
+
 	parseCookie = connect.utils.parseCookie,
-	
+
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
-	
+
 	errS = require('./controllers/errors.js').err,
 	app, io,
 
@@ -47,11 +47,23 @@ app.configure(function(){
 	app.set('view options', {layout: false, pretty: true});
 	app.set('db-uri', 'mongodb://localhost:27017/oldmos');
 	
+	//app.use(express.logger({ immediate: false, format: 'dev' }));
+	
+	app.use(express.errorHandler({ dumpExceptions: (env=='development'), showStack: (env=='development') }));
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
+	if (env=='development') {
+		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:true}));
+	} else {
+		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
+	}
+	app.use(express.static(__dirname + '/public', {maxAge: day}));
+	app.use('/ava', express.static(__dirname + '/uploads/ava', {maxAge: day}));
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
 	app.use(express.session({ cookie: {maxAge: 12*hour}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
+	
+    app.use(app.router);
 	
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
 	io.set('authorization', function (data, accept) {
@@ -67,9 +79,7 @@ app.configure(function(){
 		});
 	});
 	
-	if (env=='development') {
-		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:true}));
-		app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+	if (env=='development') {	
 		io.set('log level', 2);
 		require('reloader')({
 			watchModules: false,
@@ -77,18 +87,11 @@ app.configure(function(){
 			onReload: function () {app.listen(3000);}
 		});
 	} else { 
-		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
-		app.use(express.errorHandler());
-		
 		io.enable('browser client minification');  // send minified client
 		io.enable('browser client etag');          // apply etag caching logic based on version number
 		io.enable('browser client gzip');          // gzip the file
 		io.set('log level', 1);                    // reduce logging
 	}
-	app.use(express.static(__dirname + '/public', {maxAge: day, redirect: '/'}));
-    app.use(app.router);
-	
-	
 });
 
 // Helpers
@@ -130,6 +133,7 @@ require('./controllers/auth.js').loadController(app, io, mongo_store);
 require('./controllers/index.js').loadController(app, io);
 require('./controllers/photo.js').loadController(app, io);
 app.get('*', function(req, res){errS.e404Virgin(req, res)});
+
 
 if (env!='development') {app.listen(3000);}
 
