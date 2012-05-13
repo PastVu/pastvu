@@ -114,7 +114,7 @@ function KeyHandler(){
 		  if(currTarget[action]) currTarget[action].call(currTarget.source || null, event, action);
 	  } catch (e) {
 	  }
-	  return false;
+	  return true;
 	}
 
 	function getKey(event) {

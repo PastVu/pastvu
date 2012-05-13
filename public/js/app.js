@@ -290,7 +290,7 @@ function mapRight() {
 keyTarget.push({
 	id: 'mapArrows',
 	source: window,
-	stopFurther: true,
+	stopFurther: false,
 	onUp: mapUp, onUpHoldStart: upHoldStart, onUpHoldEnd: holdEnd,
 	onDown: mapDown, onDownHoldStart: downHoldStart, onDownHoldEnd: holdEnd,
 	onLeft: mapLeft, onLeftHoldStart: leftHoldStart, onLeftHoldEnd: holdEnd,
@@ -868,7 +868,7 @@ function MakeKnokout(){
 	}).extend({ throttle: 100 });
 
 	//ko.applyBindings(GlobalParamsVM, document.getElementById('super_home_fringe'));
-	ko.applyBindings(SearchInVM, document.getElementById('search_panel'));
+	//ko.applyBindings(SearchInVM, document.getElementById('search_panel'));
 	
 	
 	//MakeMatrixVM();

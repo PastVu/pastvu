@@ -1060,7 +1060,7 @@ function MakeMatrixVM() {
 		owner: MatrixVM
 	})/*.extend({ throttle: 10 })*/;
 
-	ko.applyBindings(MatrixVM, document.getElementById('cam_layer'));
+	//ko.applyBindings(MatrixVM, document.getElementById('cam_layer'));
 }
 
 

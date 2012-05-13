@@ -127,25 +127,6 @@ html
 				<div id='nav_slider_area'>
 				</div>
 			</div>
-			<div id='super_home_fringe' class='fringe gradientBack' onclick='SuperHome();' data-bind="style: {right: 1==1 ? '78px' : '40px'}">
-				<div id='super_home' class='inner_bord'>
-					<div id='super_home_img'>
-					</div>
-				</div>
-			</div>
-			
-			<div id='matrix_button_fringe' class='fringe gradientBack' data-bind="click: toggleActive, css: {show: allowed(), pushed: active ()}">
-				<div id='matrix_button' class='inner_bord'>
-					<div id='matrix_button_img'>
-					</div>
-				</div>
-			</div>
-			
-			<div id='flag_current' class='flag' onclick='this.classList.toggle("open"); document.getElementById("flags_available").classList.toggle("open"); document.getElementById("layers_fringe").classList.toggle("move")'>
-				<div id='flag_arrow'></div>
-			</div>
-			<div id='flags_available'>
-			</div>
 
 			<div id='layers_fringe' class='fringe gradientBack'>
 				<div id='layers_panel' class='inner_bord'>
@@ -153,42 +134,7 @@ html
 					<div id='systems'></div>
 				</div>
 			</div>
-			<div id='filter_fringe' class='fringe gradientBack'>
-				<div id='filter_panel' class='inner_bord'>
-					<div id='filt_title' onclick="this.parentNode.classList.toggle('open'); document.getElementById('search_fringe').classList.toggle('moveByFilter');">Фильтр</div>
-					<div id='filters'>
-						<div id='fao_title'>Административное деление</div>
-						<div id='fao'>
-							<div id='f_0_0' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ЦАО</div></div>
-							<div id='f_0_1' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>САО</div></div>
-							<div id='f_0_2' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>СВАО</div></div>
-							<div id='f_0_3' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ВАО</div></div>
-							<div id='f_0_4' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ЮВАО</div></div>
-							<div id='f_0_5' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ЮАО</div></div>
-							<div id='f_0_6' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ЮЗАО</div></div>
-							<div id='f_0_7' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>ЗАО</div></div>
-							<div id='f_0_8' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>СЗАО</div></div>
-							<div id='f_0_9' class='fon' onclick='FilterChange(this)' onmouseover='AOUps(this, true)' onmouseout='AOUps(this)'><div class='fchk'></div><div class='fnm'>Зеленоград</div></div>
-							<!--<div id='f_0_10' class='fon'><div class='fchk'></div><div class='fnm'>Дорожное строительство</div></div>-->
-						</div>
-						<div id='fcams_title'>Камеры</div>
-						<div id='fcams'>
-							<g:if test="${customerId == 'echd'}">
-							<div id='f_1_3' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'>ВН ММС</div></div>
-							</g:if>
-							<div id='f_1_0' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'><g:if test="${customerId == 'echd'}">ДВН</g:if><g:else>Дорожное строительство</g:else></div></div>
-							<div id='f_1_1' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'>Жилые дома</div></div>
-							<div id='f_1_2' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'>ДОУ и школы</div></div>
-							<g:if test="${customerId == 'echd'}">
-							<div id='f_1_4' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'>ИТС</div></div>
-							</g:if>
-							<g:if test="${customerId != 'echd'}">
-							<div id='f_1_3' class='fon' onclick='FilterChange(this)'><div class='fchk'></div><div class='fnm'>Прочие</div></div>
-							</g:if>
-						</div>
-					</div>
-				</div>
-			</div>
+
 			<div id='search_fringe' class='fringe gradientBack'>
 				<div id='search_panel' class='inner_bord' data-bind="css: {open: open()==true, fill: query().length>0 }">
 					<div id='search_in'>
@@ -205,13 +151,6 @@ html
 					</div>
 				</div>
 			</div>
-			<div id='butts'>
-				<div id='bnav' class='butt' onclick="ShowPanel('nav_panel')"></div>
-				<div id='binfo' class='butt' onclick="ShowPanel('info_fringe')"></div>
-				<div id='blay' class='butt' onclick="ShowPanel('layers_fringe')"></div>
-			</div>
-			<div id='cam_layer' class='transON' data-bind="css: {matrix: allowed() && active()}"></div>
-
 			<div id='curtain'></div>
 			
 			<div id='login_fringe' class='fringe form'>
