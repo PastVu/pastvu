@@ -1,19 +1,7 @@
 doctype 5
 html
-	head
-		meta(http-equiv="content-type", content="text/html; charset=utf-8")
-		meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
-		meta(name="apple-mobile-web-app-capable", content="yes")
-		meta(http-equiv="cache-control", content="no-cache")
-		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
-		title= pageTitle
-		link(rel="stylesheet", type="text/css", href="/style/normalize.css")
-		link(rel="stylesheet", type="text/css", href="/style/fonts.css")
-		link(rel="stylesheet", type="text/css", href="/style/style_common.css?appv=" + appVersion)
-		script(type='text/javascript', src="js/jquery-1.7.2.min.js")
-		script(type='text/javascript', src="js/flash_detect.js")
-		script(type='text/javascript', src="js/Utils.js?appv=" + appVersion)
-			
+	include includes/head_meta
+		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
 	body
 		script(type='text/html', id="CamListTemplate").
 			<div class='CamList' data-bind="style: {height: containerH()+'px'}, css: {scrolls: scrollActive()}">
@@ -79,41 +67,13 @@ html
 				main_loader.style.display = 'none';
 				main_loader = main_loader_percent = main_loader_bar_fill = null;
 			}
-		div#main.
-			<div id="map">
-			</div>
+		
+		div#main
+			div#map
 			
-			<div id='top_panel_fringe' class='fringe'>
-				<div id='top_panel' class='inner_bord'>
-					<div id='appName'>Retro photo of mankind's habitat</div>
-					<div id='panelTools'>
-						<div
-							id='toProfile' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn()?"":"none"}'>
-							<div class='ico'></div>
-							<div class='text' data-bind="text: profile"></div>
-						</div><div
-							id='toRegister' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}'>
-							<div class='ico'></div>
-							<div class='text' data-bind="text: register"></div>
-						</div><div
-							id='toLogIn' class='labledIco strokeBefore' onclick='FormOpen("#login_fringe")' data-bind='style:{display: loggedIn()?"none":""}'>
-							<div class='text' data-bind="text: login"></div>
-							<div class='ico'></div>
-						</div><div
-							id='toLogOut' class='labledIco strokeBefore' onclick='Logout()' data-bind='style:{display: loggedIn()?"":"none"}'>
-							<div class='text' data-bind="text: logout"></div>
-							<div class='ico'></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div id='logo_fringe' class='fringe'>
-				<div id='logo' class='inner_bord'>
-				</div>
-			</div>
+			include includes/top
 			
-			
-			<div id='nav_panel'>
+			div#nav_panel.
 				<div id='moystick'>
 					<div id='mup' onclick="mapUp()"></div>
 					<div id='mright' onclick="mapRight()"></div>
@@ -126,16 +86,12 @@ html
 				<div id='nav_stick_fringe' class='fringe btn'><div id='nav_stick' class='inner_bord'></div></div>
 				<div id='nav_slider_area'>
 				</div>
-			</div>
-
-			<div id='layers_fringe' class='fringe gradientBack'>
+			div#layers_fringe.fringe.gradientBack.
 				<div id='layers_panel' class='inner_bord'>
 					<div id='current' onclick="this.parentNode.classList.toggle('open'); document.getElementById('filter_fringe').classList.toggle('move'); document.getElementById('search_fringe').classList.toggle('moveByLayers');"></div>
 					<div id='systems'></div>
 				</div>
-			</div>
-
-			<div id='search_fringe' class='fringe gradientBack'>
+			div#search_fringe.fringe.gradientBack.
 				<div id='search_panel' class='inner_bord' data-bind="css: {open: open()==true, fill: query().length>0 }">
 					<div id='search_in'>
 						<div id='searchArrow' data-bind="click: toggleOpen"><div></div></div>
@@ -150,10 +106,9 @@ html
 					<div id='search_out' data-bind="template: {name:'CamListTemplate', data: CamList, afterRender: CamList.AfterTemplateRender}, style: {height: CamList.containerH()+'px'}">
 					</div>
 				</div>
-			</div>
-			<div id='curtain'></div>
+			div#curtain
 			
-			<div id='login_fringe' class='fringe form'>
+			div#login_fringe.fringe.form.
 				<div id="login_body" class='inner_bord'>
 					<div id='login_head' class='head'>Authorization</div>
 					<form action='' autocomplete="on"  method='POST' id='loginForm' name='loginForm' onSubmit="return Login(this);">
@@ -172,9 +127,7 @@ html
 					<div id="login_wait" class='wait'>Authorizing..</div>
 					<div id="login_mess" class='mess'><div></div></div>
 				</div>
-			</div>
-
-			<div id='reg_fringe' class='fringe form'>
+			div#reg_fringe.fringe.form.
 				<div id="reg_body" class='inner_bord'>
 					<div id='reg_head' class='head'>Registration</div>
 					<form action='' autocomplete="off" method='POST' id='regForm' name='regForm' onSubmit="return Register(this);">
@@ -192,9 +145,7 @@ html
 					<div id="reg_wait" class='wait'>Sending data..</div>
 					<div id="reg_mess" class='mess'><div></div></div>
 				</div>
-			</div>
-
-			<div id='recall_fringe' class='fringe form'>
+			div#recall_fringe.fringe.form.
 				<div id="recall_body" class='inner_bord'>
 					<div id='recall_head' class='head'>Recover password</div>
 					<form action='' autocomplete="off" method='POST' id='recallForm' name='recallForm' onSubmit="return RecallAjax(this);">
@@ -206,7 +157,6 @@ html
 					<div id="recall_wait" class='wait'>Sending..</div>
 					<div id="recall_mess" class='mess'><div></div></div>
 				</div>
-			</div>
 		
 		script(type='text/javascript', src="/socket.io/socket.io.js")
 		script(type='text/javascript', src="js/appLoader.js?appv=" + appVersion)

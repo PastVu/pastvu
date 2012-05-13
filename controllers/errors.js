@@ -1,3 +1,5 @@
+var Utils = require('../commons/Utils.js');
+
 var ms404 = {
 		title: 'NotFound',
 		body: 'The page you requested was not found'
@@ -5,7 +7,8 @@ var ms404 = {
 	ms500 = {
 		title: 'Oldmos Error',
 		body: 'Sorry, server failed to fulfill an apparently request'
-	};
+	},
+	app_version = 'temp_'+Utils.randomString(10);
 
 var neoError = {
 	e404: function (msgs) {
@@ -15,7 +18,7 @@ var neoError = {
 	},
 	e404Virgin: function (req, res, msgss) {
 		var msgs = ms404; if (msgss) msgs = {}.extend(ms404).extend(msgss);
-		res.render('404.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body} ,status: 404 });
+		res.render('404.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version} ,status: 404 });
 	},
 	e500: function (msg) {
 		this.msgs = msgs;
@@ -24,7 +27,7 @@ var neoError = {
 	},
 	e500Virgin: function (req, res, msgss) {
 		var msgs = ms500; if (msgss) msgs = {}.extend(ms500).extend(msgss);
-		res.render('500.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body} ,status: 500 });
+		res.render('500.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version} ,status: 500 });
 	},
 };
 neoError.e404.prototype.__proto__ = Error.prototype;
@@ -32,7 +35,8 @@ neoError.e500.prototype.__proto__ = Error.prototype;
 module.exports.err = neoError;
 
 module.exports.loadController = function (app) {
-
+	app_version = app.version;
+	
 	app.get('/404', function(req, res) {
 		throw new neoError.e404();
 	});
