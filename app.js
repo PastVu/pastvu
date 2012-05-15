@@ -79,7 +79,7 @@ app.configure(function(){
 		});
 	});
 	
-	if (env=='development') {	
+	if (env=='development') {
 		io.set('log level', 2);
 		require('reloader')({
 			watchModules: false,

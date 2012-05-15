@@ -1,6 +1,20 @@
 @MainLigthColor: #f2f2f2;
 @MainBlueColor: rgb(5,63,126);
 
+html, body, button, input, select, textarea {
+    font-family: UCondensed;
+}
+
+body {
+	color: #f2f2f2;
+	background-color: #fff;
+	cursor: default;
+	user-select: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-webkit-text-size-adjust: none; /* Specifies a size adjustment for displaying text content in Safari on iPhone */
+}
+
 /**
  * FRINGE CLASS
  */
@@ -28,5 +42,132 @@
 		left: 0;
 		overflow: hidden;
 		border: 1px solid #C3C7DD;
+	}
+}
+
+/**
+ * TOP PANEL
+ */
+#top_panel_fringe {
+	top:0;
+	left:0;
+	width: 100%;
+	height: 30px;
+	
+	.inner_bord {
+		border-width: 0 0 1px 0;
+	}
+	
+	#appName {
+		font-size: 110%;
+		top:0;
+		height: 30px;
+		left: 150px;
+		line-height: 30px;
+		position: relative;
+		text-transform: capitalize;
+	}
+	
+	#panelTools {
+		display: block;
+		position: absolute;
+		right: 0;
+		top: 0;
+		text-align: right;
+		white-space: no-wrap;
+	}
+	
+	.labledIco {
+		position: relative;
+		display: inline-block;
+		top: 0;
+		height: 30px;
+		padding: 0 5px;
+		line-height: 30px;
+		cursor: pointer;
+		text-align: center;
+		vertical-align: middle;
+		white-space: no-wrap;
+		
+		&.strokeBefore:before, &.strokeAfter:after {
+			filter: none; /* Needs for support full multi-stop gradients with IE9 (using SVG) */
+			background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzA1M2Y3ZSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjE2JSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgIDxzdG9wIG9mZnNldD0iNDklIiBzdG9wLWNvbG9yPSIjZjJmMmYyIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgIDxzdG9wIG9mZnNldD0iODUlIiBzdG9wLWNvbG9yPSIjMDc1YWIzIiBzdG9wLW9wYWNpdHk9IjAuOCIvPgogICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDUzZjdlIiBzdG9wLW9wYWNpdHk9IjAiLz4KICA8L2xpbmVhckdyYWRpZW50PgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InVybCgjZ3JhZC11Y2dnLWdlbmVyYXRlZCkiIC8+Cjwvc3ZnPg==);
+			background: -moz-linear-gradient(top, fade(@MainBlueColor,0%) 0%, rgba(7,90,179,0.8) 16%, @MainLigthColor 49%, rgba(7,90,179,0.8) 85%, fade(@MainBlueColor,0%) 100%); /* FF3.6+ */
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,fade(@MainBlueColor,0%)), color-stop(16%,rgba(7,90,179,0.8)), color-stop(49%,rgba(242,242,242,1)), color-stop(85%,rgba(7,90,179,0.8)), color-stop(100%,fade(@MainBlueColor,0%))); /* Chrome,Safari4+ */
+			background: -webkit-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* Chrome10+,Safari5.1+ */
+			background: -o-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* Opera 11.10+ */
+			background: -ms-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* IE10+ */
+			background: linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* W3C */
+			content: " ";
+			display: inline-block;
+			height: 100%;
+			position: relative;
+			vertical-align: top;
+			width: 1px;
+		}
+		&.strokeBefore:before {
+			left: -5px;
+		}
+		&.strokeAfter:after {
+			left: 5px;
+		}
+		
+		&.iconBefore:before, &.iconAfter:after {
+			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
+			content: " ";
+			display: inline-block;
+			line-height: 20px;
+			height: 20px;
+			width: 20px;
+			position: relative;
+			vertical-align: top;
+		}
+		
+		&:hover {
+			background-color: fade(@MainBlueColor, 50%);
+		}
+		
+		.text {
+			display: inline-block;
+		}
+		.ico {
+			line-height: 20px;
+			height: 20px;
+			width: 20px;
+			display: inline-block;
+			vertical-align: text-top;
+		}
+	}
+	
+	#toLogIn {
+		.ico {
+			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
+			margin-left: 2px;
+		}
+	}
+	#toLogOut {
+		.ico {
+			background: url(../images/map/Login-out-icon.png) 50% 50% no-repeat;
+			margin-left: 2px;
+		}
+	}
+	#toRegister {
+		.ico {
+			background: url(../images/map/register.png) 50% 50% no-repeat;
+			margin-right: 4px;
+		}
+	}
+}
+
+#logo_fringe {
+	top: 0;
+	left: 80px;
+	width: 60px;
+	height: 60px;
+	background-color: fade(@MainBlueColor,100%);
+	
+	.inner_bord {
+		border-width: 0 1px 1px;
+		background: url(../images/map/logo.png) 50% 50% no-repeat;
 	}
 }

@@ -30,36 +30,36 @@ var sexes = {
 }
 
 var User = new mongoose.Schema({
-    login: {type: String, index: { unique: true }},
-	email: {type: String, /*index: { unique: true }*/},
-    pass: String,
-	salt: String,
+    login: {type: String, index: { unique: true }, select: true},
+	email: {type: String, index: { unique: true }, select: true},
+    pass: {type: String, select: false},
+	salt: {type: String, select: false},
 	
 	//Profile
-	avatar: String,
-	firstName: String,
-	lastName: String,
-	birthdate: {type: Date, default: Date.now},
-	sex: {type: String},
-	country: {type: String},
-	city: {type: String},
-	work: {type: String},
-	www: {type: String},
-	icq: {type: String},
-	skype: {type: String},
-	aim: {type: String},
-	lj: {type: String},
-	flickr: {type: String},
-	blogger: {type: String},
-	aboutme: String,
+	avatar: {type: String, default: '', select: true},
+	firstName: {type: String, default: '', select: true},
+	lastName: {type: String, default: '', select: true},
+	birthdate: {type: Date, default: Date.now, select: true},
+	sex: {type: String, select: true},
+	country: {type: String, select: true},
+	city: {type: String, select: true},
+	work: {type: String, select: true},
+	www: {type: String, select: true},
+	icq: {type: String, select: true},
+	skype: {type: String, select: true},
+	aim: {type: String, select: true},
+	lj: {type: String, select: true},
+	flickr: {type: String, select: true},
+	blogger: {type: String, select: true},
+	aboutme: {type: String, select: true},
 	
 	//Service
     roles: [ObjectId],
-	regdate: {type: Date, default: Date.now},
+	regdate: {type: Date, default: Date.now, select: true},
     
-    dateFormat: {"type": String, "default": "dd.mm.yyyy"},
-	active: {type: Boolean, default: false},
-	activatedate: {type: Date, default: Date.now}
+    dateFormat: {"type": String, "default": "dd.mm.yyyy", select: true},
+	active: {type: Boolean, default: false, select: false},
+	activatedate: {type: Date, default: Date.now, select: false}
 });
 
 User.path('sex').validate(function (sex) {
@@ -107,6 +107,28 @@ UserModel.checkRole = function(user, role) {
   if (!user) return false;
   var roleLevel = (role && userRoles[role]) ? userRoles[role].level : 0;
   return userRoles[user.role].level >= roleLevel;
+};
+
+/**
+ * getPublicUser
+ * @static
+ * @param {string} login
+ * @param {function} callback
+ */
+UserModel.getUserPublic = function(login, callback) {
+  if (!login) callback(null, 'Login is not specified');
+  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }).select('login').exec(callback);
+};
+
+/**
+ * getAllUser
+ * @static
+ * @param {string} login
+ * @param {function} callback
+ */
+UserModel.getUserAll = function(login, callback) {
+  if (!login) callback(null, 'Login is not specified');
+  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }).select('pass', 'salt', 'active').exec(callback);
 };
 
 UserModel.prototype.hashPassword = function() {

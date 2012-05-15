@@ -1,8 +1,91 @@
 doctype 5
 html
 	include includes/head_meta
-		
+		script(type='text/javascript', src="/js/knockout-2.1.0.js")
+		script(type='text/javascript', src="/js/knockout.mapping-latest.js")
+		script(type='text/javascript', src="/js/mvvm/User.js")
+		script(type='text/javascript').
+			var socket,
+				user_profile;
+			$(document).ready(function() {
+				user_profile = document.getElementById('userProfile');
+				socket = io.connect(location.host);
+				socket.on('connect', function () {
+					socket.on('initMessage', function (json) {
+						var init_message = json.init_message;
+					});
+					
+					socket.on('takeUser', function (user) {
+						UserUpdate(user);
+						ko.applyBindings(UserVM, user_profile);
+						user_profile.classList.add('show');
+					});
+					socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});					
+				});
+			});
+		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
+		script(type='text/javascript', src="/style/profile.js?appv=" + appVersion)
 	body
-
+		include includes/top
 		
-		
+		div#userProfile
+			div#leftSide
+				div#avatar.fringe
+					div.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
+				div#pm.fringe
+					div.inner_bord
+						| Send message
+				div#info_common.block
+					div.head
+						| Commons
+					div.h_separator
+					div.row
+						div.left
+							| Group:
+						div.right
+							| Administrators
+					div.row
+						div.left
+							| Registration:
+						div.right
+							| 01.01.2007
+					div.row
+						div.left
+							| Status:
+						div.right
+							| Online
+				div#short_stat.block
+					div.head
+						| Brief statistics
+					div.h_separator
+					div.row
+						div.left
+							| Photo uploaded:
+						div.right
+							| 77
+					div.row
+						div.left
+							| Blogs created:
+						div.right
+							| 10
+					div.row
+						div.left
+							| Favorite areas:
+						div.right
+							| 20
+					div.row
+						div.left
+							| Comments:
+						div.right
+							| 108
+				div#leftSideDash
+			div#mainSide
+				ul.nav.nav-tabs
+					li.active
+						a(href='#') Information
+					li
+						a(href='#') Photo
+					li
+						a(href='#') Blogs
+					li
+						a(href='#') Comments

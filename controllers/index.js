@@ -17,6 +17,7 @@ module.exports.loadController = function (app, io) {
 	
 	function regenSession(req, res, next){
 		if (req.session.login){
+			var neoStore = req.session.neoStore || {};
 			var login = req.session.login,
 				remember = req.session.remember,
 				message = req.session.message;

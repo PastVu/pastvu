@@ -1,9 +1,9 @@
+var User, UserVM;
+
 /**
  * Модель управляет верхней панелью
  */
 var TopPanelVM;
-
-var UserVM;
 
 function CreateMVVM(){
 
