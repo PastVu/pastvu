@@ -14,7 +14,7 @@ var express = require('express'),
 
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
-
+	memcached = require('mc'),
 	errS = require('./controllers/errors.js').err,
 	app, io,
 
@@ -125,8 +125,43 @@ require(__dirname+'/models/Settings.js');
 require(__dirname+'/models/Role.js');
 require(__dirname+'/models/User.js');
 
+var User = mongoose.model('User'),
+	anonymouse = {};
+var mc = new memcached.Client();
+mc.connect(function() {
+  console.log("Connected to the localhost memcache on port 11211!");
+});
 
 // loading controllers
+app.get('*', function(req, res, next){
+
+	if (req.session.login){
+
+		mc.get('u'+req.session.login, function(err, response) {
+			if (!err) {
+				req.session.user = JSON.parse(response['u'+req.session.login]);
+				next();
+			}else {
+				User.getUserPublic(req.session.login, function(err, user){
+					var u = user.toObject();
+					mc.set('u'+req.session.login, JSON.stringify(u), { flags: 0, exptime: hour/1000}, function(err, status) {
+					  if (!err) { 
+						console.log(status);
+					  }
+					});
+					
+					req.session.user = u;
+					
+					next();
+				});
+			}
+		});
+
+	} else {
+		req.session.user = null;
+		next();
+	}	
+});
 require('./controllers/errors.js').loadController(app);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, io, mongo_store);

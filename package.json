@@ -17,6 +17,7 @@
 	"mongoose": "~2.5",
     "mongoskin": "~0.3",
 	"connect-mongodb": "~1.1",
+	"mc": "~1.0",
 	"crypto": "~0.0.3",
     "step": "",
     "socket.io": "~0.9",
