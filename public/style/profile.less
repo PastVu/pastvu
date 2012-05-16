@@ -130,6 +130,58 @@
 	#mainSide {
 		position: absolute;
 		left: 222px;
+		color: #000;
+		
+		#info {
+			padding: 0 0 0 20px;
+			.row {
+				position: relative;
+				margin: 0 0 4px;
+				
+				.left {	
+					position: absolute;
+				}
+				.right {
+					position: relative;
+					left: 120px;
+					color: #444;
+				}
+				
+				&:hover {
+					color: #03006B;
+				}
+			}
+			
+			input {
+				position: relative;
+				border: none;
+				border: 1px solid transparent;
+				background-color: #FCFCFC;
+				display: inline-block;
+				position: relative;
+				padding: 0 5px;
+				width: auto;
+			}
+			
+			&.edit {
+				input[type="text"] {
+					outline: medium none !important;
+					position: relative;
+					border-color: #8C8C8C;
+					color: #000;
+					min-width: 100px;
+					-webkit-box-shadow: inset 0 1px 4px 0 #A8A8A8;
+					box-shadow: inset 0 1px 4px 0 #A8A8A8;
+					
+					&:focus{
+						background: rgba(238, 236, 240, 0.1);
+						&:invalid {
+							color: #777777;
+						}
+					}
+				}
+			}
+		}
 	}
 }
  
@@ -270,10 +322,11 @@
 }
 .nav-tabs > li > a,
 .nav-pills > li > a {
-  padding-right: 12px;
-  padding-left: 12px;
-  margin-right: 2px;
-  line-height: 14px;
+	color: #000;
+	padding-right: 12px;
+	padding-left: 12px;
+	margin-right: 2px;
+	line-height: 14px;
 }
 .nav-tabs {
   border-bottom: 1px solid rgba(7, 90, 179, 0.8);
@@ -295,7 +348,7 @@
 }
 .nav-tabs > .active > a,
 .nav-tabs > .active > a:hover {
-  color: #555555;
+  color: #03006B;
   background-color: #ffffff;
   border: 1px solid rgba(7, 90, 179, 0.8);
   border-bottom-color: transparent;

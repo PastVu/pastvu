@@ -10,18 +10,18 @@ module.exports.loadController = function (app, io) {
 			userObject;
 		if (!login) throw new errS.e404();
 		
+		console.dir('III');
+		
 		Step(
 			function () {
 				User.getUserPublic(login, this);
 			},
 			function (err, user) {
-				console.dir(err);
-				userObject = user.toObject;
-				//req.session['_neoUser'+login] = userObject;
+				userObject = user.toObject();
 				if (err || !user) {
 					throw new errS.e404();
 				} else {
-					res.render('profile.jade', {prettyprint:true, pageTitle: user.login, appVersion: app.version, login: user.login});
+					res.render('profile.jade', {prettyprint:true, pageTitle: user.login, appVersion: app.version, login: user.login, fff: JSON.stringify({a:0})});
 				}
 			}
 		);	

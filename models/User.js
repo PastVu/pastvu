@@ -36,10 +36,10 @@ var User = new mongoose.Schema({
 	salt: {type: String, select: false},
 	
 	//Profile
-	avatar: {type: String, default: '', select: true},
-	firstName: {type: String, default: '', select: true},
-	lastName: {type: String, default: '', select: true},
-	birthdate: {type: Date, default: Date.now, select: true},
+	avatar: {type: String, select: true},
+	firstName: {type: String, select: true},
+	lastName: {type: String, select: true},
+	birthdate: {type: String, select: true},
 	sex: {type: String, select: true},
 	country: {type: String, select: true},
 	city: {type: String, select: true},
@@ -94,6 +94,9 @@ var UserModel = mongoose.model ('User', User);
  * @param {string} pass
  */
 UserModel.checkPass = function(user, pass) {
+	console.log(pass+' '+user.salt);
+	console.log(md5(pass + user.salt));
+	console.log(user.pass);
   return (user.pass === md5(pass + user.salt));
 };
 
@@ -129,6 +132,10 @@ UserModel.getUserPublic = function(login, callback) {
 UserModel.getUserAll = function(login, callback) {
   if (!login) callback(null, 'Login is not specified');
   UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }).select('pass', 'salt', 'active').exec(callback);
+};
+UserModel.getUserAllLoginMail = function(login, callback) {
+  if (!login) callback(null, 'Login is not specified');
+  UserModel.findOne({ $and: [ { $or : [ { login : new RegExp(login, 'i') } , { email : login.toLowerCase() } ] }, { active: true } ] }).select('pass', 'salt', 'active').exec(callback);
 };
 
 UserModel.prototype.hashPassword = function() {

@@ -17,9 +17,9 @@ function login(session, data, callback){
 	}
 	
     Step(
-      function findUser() {
-		User.findOne({ $and: [ { $or : [ { login : new RegExp(data.login, 'i') } , { email : data.login.toLowerCase() } ] }, { active: true } ] }, {_id:0, active:0} , this);
-      },
+		function findUser() {
+			User.getUserAllLoginMail(data.login, this);
+		},
       function checkEnter(err, user) {
 		if (user){
 			if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
@@ -46,6 +46,7 @@ function login(session, data, callback){
 			var u = user.toObject();
 			delete u.salt; delete u.pass;
 			console.log("login success for %s", data.login);
+			session.user = u; 
 			callback.call(null, null, u);
 		}
       }
@@ -277,6 +278,11 @@ module.exports.loadController = function(a, io, ms) {
 			recall(socket.handshake.session, data, function(err, success){
 				socket.emit('recallResult', {success: success, error: err});
 			});
+		});
+		
+		socket.on('whoAmI', function (data) {
+			console.log(session.user);
+			socket.emit('youAre', session.user);
 		});
 	});
 	

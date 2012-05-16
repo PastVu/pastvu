@@ -4,11 +4,17 @@ html
 		script(type='text/javascript', src="/js/knockout-2.1.0.js")
 		script(type='text/javascript', src="/js/knockout.mapping-latest.js")
 		script(type='text/javascript', src="/js/mvvm/User.js")
+		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.js")
+		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.lang.js")
+		link(rel="stylesheet", type="text/css", href="/js/jquery.datepick/redmond.datepick.css?appv=" + appVersion)
+
 		script(type='text/javascript').
 			var socket,
-				user_profile;
+				profileView,
+				profileVM,
+				iAmVM;
 			$(document).ready(function() {
-				user_profile = document.getElementById('userProfile');
+				profileView = document.getElementById('userProfile');
 				socket = io.connect(location.host);
 				socket.on('connect', function () {
 					socket.on('initMessage', function (json) {
@@ -16,18 +22,34 @@ html
 					});
 					
 					socket.on('takeUser', function (user) {
-						UserUpdate(user);
-						ko.applyBindings(UserVM, user_profile);
-						user_profile.classList.add('show');
+						profileVM = UserUpdate(user, profileVM);
+						
+						profileVM.edit = ko.observable(false);
+						
+						profileVM.canBeEdit = ko.computed(function() {
+							return iAmVM.login()==this.login();
+						}, profileVM);
+						
+						profileVM.edit_mode = ko.computed(function() {
+							return this.canBeEdit() && this.edit();
+						}, profileVM);
+						
+						ko.applyBindings(profileVM, profileView);
+						
+						profileView.classList.add('show');
+						$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));
 					});
-					socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});					
+					socket.on('youAre', function (user) {
+						iAmVM = UserUpdate(user, iAmVM);
+						socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
+					});
+					socket.emit('whoAmI', {});
 				});
 			});
 		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
 		script(type='text/javascript', src="/style/profile.js?appv=" + appVersion)
 	body
 		include includes/top
-		
 		div#userProfile
 			div#leftSide
 				div#avatar.fringe
@@ -89,3 +111,72 @@ html
 						a(href='#') Blogs
 					li
 						a(href='#') Comments
+				div#info(data-bind="css: { edit: edit_mode()}")
+					div.row
+						div.left
+							| Name:
+						div.right
+							input(type='text', data-bind="attr: { size: firstName().length, disabled: !edit_mode()}, value: firstName, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: { size: lastName().length+1, disabled: !edit_mode() }, value: lastName, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| Birthday:
+						div.right
+							input(type='text', id='in_birthdate', data-bind="attr: { size: birthdate().length+1, disabled: !edit_mode() }, style: {display: edit_mode() ? 'block' : 'none'}, value: birthdate")
+							span(data-bind="text: birthdate(), style: {display: !edit_mode() ? 'block' : 'none'}")
+					div.row
+						div.left
+							| Sex:
+						div.right
+							| Male
+					div.row
+						div.left
+							| Residence:
+						div.right
+							input(type='text', data-bind="attr: { size: country().length, disabled: !edit_mode() }, value: country, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: { size: city().length+1, disabled: !edit_mode() }, value: city, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| Interested in:
+						div.right
+							input(type='text', data-bind="attr: { size: work().length, disabled: !edit_mode() }, value: work, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| Website:
+						div.right
+							input(type='text', data-bind="attr: { size: www().length, disabled: !edit_mode() }, value: www, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| ICQ:
+						div.right
+							input(type='text', data-bind="attr: { size: icq().length, disabled: !edit_mode() }, value: icq, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| Skype:
+						div.right
+							input(type='text, data-bind="attr: { size: skype().length, disabled: !edit_mode() }, value: skype, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| aim:
+						div.right
+							input(type='text', data-bind="attr: { size: aim().length, disabled: !edit_mode() }, value: aim, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| LJ:
+						div.right
+							input(type='text', data-bind="attr: { size: lj().length, disabled: !edit_mode() }, value: lj, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| flickr:
+						div.right
+							input(type='text', data-bind="attr: { size: flickr().length, disabled: !edit_mode() }, value: flickr, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| Blogger:
+						div.right
+							input(type='text', data-bind="attr: { size: blogger().length, disabled: !edit_mode() }, value: blogger, valueUpdate: 'afterkeydown'")
+					div.row
+						div.left
+							| About Me:
+						div.right
+							input(type='text', data-bind="attr: { size: aboutme().length, disabled: !edit_mode() }, value: aboutme, valueUpdate: 'afterkeydown'")

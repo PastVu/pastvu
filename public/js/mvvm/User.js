@@ -1,45 +1,45 @@
-var User = {
-		login: '',
-		email: '',
-		
-		//Profile
-		avatar: '/ava/neo.jpg',
-		firstName: '',
-		lastName: '',
-		birthdate: Date.now,
-		sex: '',
-		country: '',
-		city: '',
-		work: '',
-		www: '',
-		icq: '',
-		skype: '',
-		aim: '',
-		lj: '',
-		flickr: '',
-		blogger: '',
-		aboutme: ''
-	},
-	UserVM;
-
-function UserActivate(data) {
-	data = data || {};
-	User = $.extend(User, data);
+var DefaultUser = {
+	login: '',
+	email: '',
 	
-	UserVM = ko.mapping.fromJS(User);
-	UserVM.fullName = ko.computed(function() {
+	//Profile
+	avatar: '/ava/neo.jpg',
+	firstName: 'Paul',
+	lastName: 'Klimashkin',
+	birthdate: '',
+	sex: '',
+	country: 'Russia',
+	city: 'Moscow',
+	work: 'Architecture',
+	www: 'http://oldmos.ru',
+	icq: '',
+	skype: '',
+	aim: '',
+	lj: '',
+	flickr: '',
+	blogger: '',
+	aboutme: ''
+};
+
+function UserActivate(model) {
+	model = model || {};
+	model = $.extend(DefaultUser, model);
+	
+	var vm = ko.mapping.fromJS(model);
+	vm.fullName = ko.computed(function() {
 		if (this.firstName() && this.lastName()) return this.firstName() + " " + this.lastName();
 		else return this.login();
-	}, UserVM);
+	}, vm);
+	
+	return vm;
 }
 
-function UserUpdate(data) {
-	console.log('AAAAAAAAAAA '+data);
-	if (!UserVM){ UserActivate (data);
+function UserUpdate(model, vm) {
+	console.log('AAAAAAAAAAA '+model);
+	if (!vm){ vm = UserActivate(model);
 	} else {
-		data = data || {};
-		User = $.extend(User, data);
-		
-		ko.mapping.fromJS(data, UserVM);
+		model = model || {};
+		ko.mapping.fromJS(model, vm);
 	}
+	return vm;
 }
