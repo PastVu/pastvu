@@ -20,13 +20,7 @@ var GlobalParams = {
  * GlobalSettings ViewModel
  */
 var GlobalParamsVM;
-
-var User = {
-	login: '',
-	email: '',
-	firstName: '',
-	lastName: ''
-};
+var iAmVM;
 
 /**
  * i18n
@@ -101,6 +95,7 @@ function PrepareAndLoadSources(){
 				{chain: [
 					{s: 'js/knockout-2.1.0.js', p: 9, t: '?vv=210'},
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'},
+					{s: 'js/mvvm/User.js', p: 2, t: '?appv='+GlobalParams.appVersion},
 					{s: 'js/mvvms.js', p: 2, t: '?appv='+GlobalParams.appVersion}
 				]},
 				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined),

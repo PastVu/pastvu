@@ -64,15 +64,17 @@ app.configure(function(){
 	app.use(express.methodOverride());
 	
     app.use(app.router);
-	
+	var Session = connect.middleware.session.Session;
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
 	io.set('authorization', function (data, accept) {
 		if (!data.headers.cookie) return accept('No cookie transmitted.', false);
 		data.cookie = parseCookie(data.headers.cookie);
-		data.sessionID = data.cookie['oldmos.sid'];
+		data.sessionID = data.cookie['oldmos.sid']; 
 		
 		mongo_store.load(data.sessionID, function (err, session) {
 			if (err || !session) return accept('Error: '+err, false);
+			console.log(session.login+' '+session.user);
+			
 			data.session = session;
 			return accept(null, true);
 
@@ -120,48 +122,20 @@ app.dynamicHelpers({
 // connecting to db
 var ccc = mongoose.connect(app.set('db-uri'));
 
-// creating models
-require(__dirname+'/models/Settings.js');
-require(__dirname+'/models/Role.js');
-require(__dirname+'/models/User.js');
-
-var User = mongoose.model('User'),
-	anonymouse = {};
+// connecting to memcached
 var mc = new memcached.Client();
 mc.connect(function() {
   console.log("Connected to the localhost memcache on port 11211!");
 });
 
+// creating models
+require(__dirname+'/models/Settings.js');
+require(__dirname+'/models/Role.js');
+require(__dirname+'/models/User.js');
+
+
 // loading controllers
-app.get('*', function(req, res, next){
-
-	if (req.session.login){
-
-		mc.get('u'+req.session.login, function(err, response) {
-			if (!err) {
-				req.session.user = JSON.parse(response['u'+req.session.login]);
-				next();
-			}else {
-				User.getUserPublic(req.session.login, function(err, user){
-					var u = user.toObject();
-					mc.set('u'+req.session.login, JSON.stringify(u), { flags: 0, exptime: hour/1000}, function(err, status) {
-					  if (!err) { 
-						console.log(status);
-					  }
-					});
-					
-					req.session.user = u;
-					
-					next();
-				});
-			}
-		});
-
-	} else {
-		req.session.user = null;
-		next();
-	}	
-});
+require('./controllers/_session.js').loadController(app, io, mongo_store, mc);
 require('./controllers/errors.js').loadController(app);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, io, mongo_store);

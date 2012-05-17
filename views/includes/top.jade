@@ -3,7 +3,7 @@ div#top_panel_fringe.fringe.
 		<div id='appName'>Retro photo of mankind's habitat</div>
 		<div id='panelTools'>
 			<div
-				id='toProfile' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn()?"":"none"}'>
+				id='toProfile' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+iAmVM.login())}}'>
 				<div class='ico'></div>
 				<div class='text' data-bind="text: profile"></div>
 			</div><div

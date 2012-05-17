@@ -1,4 +1,5 @@
 var Utils = new Object(null);
+
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
  * @param {string} type Имя типа.Возможные значения (из спецификации):
@@ -60,6 +61,15 @@ Utils.randomString = function(length) {
 	}
 	return str;
 };
+
+Utils.time = {};
+Utils.time.second = 1000;
+Utils.time.minute = 60*Utils.time.second;
+Utils.time.hour = 60*Utils.time.minute;
+Utils.time.day = 24*Utils.time.hour;
+Utils.time.week = 7*Utils.time.day;
+Utils.time.month = 30.4368499*Utils.time.day;
+Utils.time.oneYear = 365*Utils.time.day;
 
 
 Utils.ComboCallback = function(callback){

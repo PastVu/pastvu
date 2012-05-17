@@ -1,18 +1,9 @@
-var User, UserVM;
-
 /**
  * Модель управляет верхней панелью
  */
 var TopPanelVM;
 
 function CreateMVVM(){
-
-	UserVM = ko.mapping.fromJS(User);
-	UserVM.fullName = ko.computed(function() {
-		if (this.firstName() && this.lastName()) return this.firstName() + " " + this.lastName();
-		else return this.login();
-	}, UserVM);
-
 
 	TopPanelVM = {
 		// Data
@@ -28,6 +19,8 @@ function CreateMVVM(){
 			},
 			owner: TopPanelVM
 		}),
+		
+		user: iAmVM,
 		
 		//i18n
 		login: ko.computed({
@@ -45,7 +38,7 @@ function CreateMVVM(){
 		profile: ko.computed({
 			read: function(){
 				if (GlobalParamsVM.LoggedIn())
-					return UserVM.fullName();
+					return iAmVM.fullName();
 				else
 					return '';
 			},

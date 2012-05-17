@@ -79,14 +79,27 @@ function app() {
 	map.addLayer(aoLayer);
 	poly_mgr = new PolygonManager(map, {layer: aoLayer});
 	
-	$.when(LoadAOs()/*, LoadCams()*/).done(DrawObjects);	
+	$.when(LoadAOs(), LoadMe()/*, LoadCams()*/).done(DrawObjects);	
 	
 	MakeKnokout();
-	CreateMVVM();
-	BindMVVM();
 	if(window.KeyHandler) window.KeyHandler();
 }
+function LoadMe(){
+	var dfd = $.Deferred();
+	socket.on('youAre', function (user) {
+		GlobalParams.LoggedIn = !!user;
+		GlobalParamsToKO();
+		console.dir(user);
+		iAmVM = UserUpdate(user, iAmVM);
+		dfd.resolve();
+	});
+	socket.emit('whoAmI', {});
+	return dfd.promise();
+}
 function DrawObjects(){
+	CreateMVVM();
+	BindMVVM();
+
 	LoaderIncrement(4);
 	window.setTimeout(function(){
 		DrawCams();
@@ -395,12 +408,12 @@ function Login(form) {
 	login.wait.style.display = 'block';
 	var remember_check = form.querySelector('#remember_check').classList.contains('checked');
 	
-	socket.on('authResult', function (json) {
+	socket.on('loginResult', function (json) {
 		if (json.user){
 			FormClose();
 			GlobalParams.LoggedIn = true;
 			GlobalParamsToKO();
-			ko.mapping.fromJS(json.user, UserVM);
+			LoadMe();
 			
 			$.ajax({
 			  url: '/updateCookie',
@@ -419,7 +432,7 @@ function Login(form) {
 		//$.extend(true, GlobalParams, json);
 		
 	});
-	socket.emit('authRequest', $.extend($(form).serializeObject(), {'remember': remember_check}));
+	socket.emit('loginRequest', $.extend($(form).serializeObject(), {'remember': remember_check}));
 	return false;
 }
 function Logout(){

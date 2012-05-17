@@ -1,4 +1,5 @@
 var mongoose = require('mongoose'),
+	_session = require('./_session.js'),
 	User = mongoose.model('User'),
 	UserConfirm = mongoose.model('UserConfirm'),
 	Step = require('step'),
@@ -20,36 +21,36 @@ function login(session, data, callback){
 		function findUser() {
 			User.getUserAllLoginMail(data.login, this);
 		},
-      function checkEnter(err, user) {
-		if (user){
-			if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
-		} else {
-			error = 'User does not exists';
-		}
+		function checkEnter(err, user) {
+			if (user){
+				if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
+			} else {
+				error = 'User does not exists';
+			}
 
-		if (error){
-			callback.call(null, error, null);
-			return;
-		}else{
-			session.login = user.login;
-			session.remember = data.remember;
-			if (data.remember) session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
-			else session.cookie.expires = false;
-			session.save();
+			if (error){
+				callback.call(null, error, null);
+				return;
+			}else{
+				session.login = user.login;
+				session.remember = data.remember;
+				if (data.remember) session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
+				else session.cookie.expires = false;
+				session.save();
+
+				//Удаляем предыдущие сохранившиеся сессии этого пользователя
+				mongo_store.getCollection().remove({'session': new RegExp(user.login, 'i'), _id: { $ne : session.id }});
+				
+				var u = user.toObject(); delete u.salt; delete u.pass;
+				session.neoStore.user = u;
+				
+				//Сохраняем временные данные сессии в memcashed
+				_session.cashedSession(session.id, session.neoStore);				
 			
-			//Удаляем предыдущие сохранившиеся сессии этого пользователя
-			mongo_store.getCollection().remove({'session': new RegExp(user.login, 'i'), _id: { $ne : session.id }});
-			
-			/*delete user.pass; delete user.salt;
-			session.user = user;			
-			*/
-			var u = user.toObject();
-			delete u.salt; delete u.pass;
-			console.log("login success for %s", data.login);
-			session.user = u; 
-			callback.call(null, null, u);
+				console.log("Login success for %s", data.login);
+				callback.call(null, null, u);
+			}
 		}
-      }
     );
 }
 
@@ -256,33 +257,35 @@ module.exports.loadController = function(a, io, ms) {
 		var hs = socket.handshake,
 			session = hs.session;
 				
-		socket.on('authRequest', function (data) {
+		socket.on('loginRequest', function (data) {
 			login(socket.handshake.session, data, function(err, user){
-				socket.emit('authResult', {user: user, error: err});
+				socket.emit('loginResult', {user: user, error: err});
 			});
 		});
 		
 		socket.on('logoutRequest', function (data) {
+			_session.cashedSessionDel(session.id);
+			
 			session.destroy(function(err) {
 				socket.emit('logoutResult', {err:err, logoutPath: '/'});
 			});
 		});
  
  		socket.on('registerRequest', function (data) {
-			register(socket.handshake.session, data, function(err, success){
+			register(session, data, function(err, success){
 				socket.emit('registerResult', {success: success, error: err});
 			});
 		});
 
 		socket.on('recallRequest', function (data) {
-			recall(socket.handshake.session, data, function(err, success){
+			recall(session, data, function(err, success){
 				socket.emit('recallResult', {success: success, error: err});
 			});
 		});
 		
 		socket.on('whoAmI', function (data) {
-			console.log(session.user);
-			socket.emit('youAre', session.user);
+			console.log('whoAmI ='+socket.handshake.session.neoStore);
+			socket.emit('youAre', session.neoStore.user);
 		});
 	});
 	

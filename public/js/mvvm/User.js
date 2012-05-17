@@ -1,11 +1,11 @@
 var DefaultUser = {
-	login: '',
+	login: 'anonymous',
 	email: '',
 	
 	//Profile
 	avatar: '/ava/__def__.png',
-	firstName: 'Paul',
-	lastName: 'Klimashkin',
+	firstName: '',
+	lastName: '',
 	birthdate: '',
 	sex: '',
 	country: 'Russia',
