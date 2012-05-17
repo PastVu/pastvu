@@ -34,6 +34,10 @@ html
 							return this.canBeEdit() && this.edit();
 						}, profileVM);
 						
+						profileVM.can_pm = ko.computed(function() {
+							return iAmVM.login()!=this.login();
+						}, profileVM);
+						
 						ko.applyBindings(profileVM, profileView);
 						
 						profileView.classList.add('show');
@@ -50,13 +54,15 @@ html
 		script(type='text/javascript', src="/style/profile.js?appv=" + appVersion)
 	body
 		include includes/top
-		div#userProfile
+		div#userProfile(data-bind="css: {edit_mode: edit_mode()}")
 			div#leftSide
 				div#avatar.fringe
 					div.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
-				div#pm.fringe
+				div#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
 					div.inner_bord
 						| Send message
+				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)}else{data.edit(false)}}}")
+					div.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
 				div#info_common.block
 					div.head
 						| Commons
@@ -111,7 +117,7 @@ html
 						a(href='#') Blogs
 					li
 						a(href='#') Comments
-				div#info(data-bind="css: { edit: edit_mode()}")
+				div#info
 					div.row
 						div.left
 							| Name:

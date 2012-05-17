@@ -3,7 +3,7 @@ var DefaultUser = {
 	email: '',
 	
 	//Profile
-	avatar: '/ava/neo.jpg',
+	avatar: '/ava/__def__.png',
 	firstName: 'Paul',
 	lastName: 'Klimashkin',
 	birthdate: '',
