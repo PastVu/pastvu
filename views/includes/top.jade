@@ -3,8 +3,10 @@ div#top_panel_fringe.fringe.
 		<div id='appName'>Retro photo of mankind's habitat</div>
 		<div id='panelTools'>
 			<div
-				id='toProfile' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+iAmVM.login())}}'>
-				<div class='ico'></div>
+				id='toProfile' class='labledIco' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+iAmVM.login())}}'>
+				<div class='fringe'>
+					<div class='ico inner_bord' data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}"></div>
+				</div>
 				<div class='text' data-bind="text: profile"></div>
 			</div><div
 				id='toRegister' class='labledIco' onclick='FormOpen("#reg_fringe")' data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}'>

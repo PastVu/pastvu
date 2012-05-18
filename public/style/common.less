@@ -54,7 +54,7 @@ body {
 	width: 100%;
 	height: 30px;
 	
-	.inner_bord {
+	> .inner_bord {
 		border-width: 0 0 1px 0;
 	}
 	
@@ -136,25 +136,53 @@ body {
 			width: 20px;
 			display: inline-block;
 			vertical-align: text-top;
+			background-repeat: no-repeat;
+			background-position: 50% 50%;
+			background-color: transparent;
 		}
 	}
 	
 	#toLogIn {
 		.ico {
-			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
+			background-image: url(../images/map/Login-in-icon.png);
 			margin-left: 2px;
 		}
 	}
 	#toLogOut {
 		.ico {
-			background: url(../images/map/Login-out-icon.png) 50% 50% no-repeat;
+			background-image: url(../images/map/Login-out-icon.png);
 			margin-left: 2px;
 		}
 	}
 	#toRegister {
 		.ico {
-			background: url(../images/map/register.png) 50% 50% no-repeat;
+			background-image: url(../images/map/register.png);
 			margin-right: 4px;
+		}
+	}
+	#toProfile {
+		padding: 0 5px 0 30px;
+		.fringe{
+			left: 0;
+			top: 2px;
+			height: 24px;
+			width: 24px;
+			border-color: transparent;
+			box-shadow: none;
+
+			.ico {
+				height: 22px;
+				width: 22px;
+				background-size: cover;
+			}
+		}
+		
+		&:hover {
+			.fringe{
+				border-color: #000;
+				-webkit-box-shadow: 0 2px 4px 0px #222;
+				box-shadow: 0 2px 4px 0px #222;
+			}
 		}
 	}
 }
