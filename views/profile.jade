@@ -26,6 +26,8 @@ html
 						
 						profileVM.edit = ko.observable(false);
 						
+						profileVM.originUser = user;
+						
 						profileVM.canBeEdit = ko.computed(function() {
 							return iAmVM.login()==this.login();
 						}, profileVM);
@@ -44,12 +46,25 @@ html
 						$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));
 					});
 					socket.on('youAre', function (user) {
+						console.dir(user);
 						iAmVM = UserUpdate(user, iAmVM);
 						socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
 					});
 					socket.emit('whoAmI', {});
 				});
 			});
+			function saveUser(){
+				var targetUser = ko.mapping.toJS(profileVM)
+				console.dir(targetUser);
+				for(var key in targetUser) {
+					if (targetUser.hasOwnProperty(key) && key != 'login') {
+						if (profileVM.originUser[key] && targetUser[key]==profileVM.originUser[key]) delete targetUser[key];
+						else if (!profileVM.originUser[key] && targetUser[key]==DefaultUser[key]) delete targetUser[key];
+					}
+				}
+				if (Utils.getObjectPropertyLength(targetUser)>1) socket.emit('saveUser', targetUser);
+				profileVM.edit(false);
+			}
 		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
 		script(type='text/javascript', src="/style/profile.js?appv=" + appVersion)
 	body
@@ -61,7 +76,7 @@ html
 				div#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
 					div.inner_bord
 						| Send message
-				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)}else{data.edit(false)}}}")
+				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)}else{saveUser()}}}")
 					div.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
 				div#info_common.block
 					div.head
@@ -134,7 +149,10 @@ html
 						div.left
 							| Sex:
 						div.right
-							| Male
+							input(type="radio", name="sex", value="male", data-bind="checked: sex")
+							<span data-bind="style: {display: (edit_mode() || sex()=='male' ? 'inline' : 'none')}">Male</span>
+							input(type="radio", name="sex", value="female", data-bind="checked: sex")
+							<span data-bind="style: {display: (edit_mode() || sex()=='female' ? 'inline' : 'none')}">Female</span>
 					div.row
 						div.left
 							| Residence:

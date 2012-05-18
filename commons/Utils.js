@@ -46,6 +46,7 @@ Utils.mixin = function (dst, src, force){
       dst[x] = src[x];
     }
   }
+  return dst;
 };
 
 Utils.randomString = function(length) {

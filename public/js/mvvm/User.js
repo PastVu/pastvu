@@ -7,11 +7,11 @@ var DefaultUser = {
 	firstName: '',
 	lastName: '',
 	birthdate: '',
-	sex: '',
-	country: 'Russia',
-	city: 'Moscow',
-	work: 'Architecture',
-	www: 'http://oldmos.ru',
+	sex: 'male',
+	country: '',
+	city: '',
+	work: '',
+	www: '',
 	icq: '',
 	skype: '',
 	aim: '',
@@ -35,7 +35,7 @@ function UserActivate(model) {
 }
 
 function UserUpdate(model, vm) {
-	console.log('AAAAAAAAAAA '+model);
+	
 	if (!vm){ vm = UserActivate(model);
 	} else {
 		model = model || {};

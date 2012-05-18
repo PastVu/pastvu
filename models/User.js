@@ -24,10 +24,10 @@ var userRoles = {
   }
 };
 
-var sexes = {
-	m: 'male',
-	f: 'famale'
-}
+var sexes = [
+	'male',
+	'female'
+];
 
 var User = new mongoose.Schema({
     login: {type: String, index: { unique: true }, select: true},
@@ -63,7 +63,7 @@ var User = new mongoose.Schema({
 });
 
 User.path('sex').validate(function (sex) {
-  return Object.keys(sexes).indexOf(sex) != -1;
+	return sexes.indexOf(sex) != -1;
 }, 'Incorrect sex');
 
 User.path('pass').set(function (pass) {
@@ -72,18 +72,18 @@ User.path('pass').set(function (pass) {
   return pass;
 });
 
-User.pre('save', function (next) {
+/*User.pre('save', function (next) {
   var doc = this.toObject();
-
-  /*for (var key in doc) {
+ console.log('PRESAVE');
+  for (var key in doc) {
     if (doc.hasOwnProperty(key) &&
         !User.paths[key]) {
       next(new Error('Save failed: Trying to add doc with wrong field(s)'));
       return;
     }
-  }*/
+  }
   next();
-});      
+});*/     
 
 var UserModel = mongoose.model ('User', User);
 
@@ -120,7 +120,7 @@ UserModel.checkRole = function(user, role) {
  */
 UserModel.getUserPublic = function(login, callback) {
   if (!login) callback(null, 'Login is not specified');
-  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }).select('login').exec(callback);
+  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }, {_id:0}).select('login').exec(callback);
 };
 
 /**

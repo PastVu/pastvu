@@ -41,7 +41,7 @@ function login(session, data, callback){
 				//Удаляем предыдущие сохранившиеся сессии этого пользователя
 				mongo_store.getCollection().remove({'session': new RegExp(user.login, 'i'), _id: { $ne : session.id }});
 				
-				var u = user.toObject(); delete u.salt; delete u.pass;
+				var u = user.toObject(); delete u.salt; delete u.pass; delete u['_id'];
 				session.neoStore.user = u;
 				
 				//Сохраняем временные данные сессии в memcashed
@@ -285,6 +285,7 @@ module.exports.loadController = function(a, io, ms) {
 		
 		socket.on('whoAmI', function (data) {
 			console.log('whoAmI ='+socket.handshake.session.neoStore);
+			console.dir(session.neoStore.user);
 			socket.emit('youAre', session.neoStore.user);
 		});
 	});
