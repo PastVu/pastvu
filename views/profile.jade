@@ -35,6 +35,15 @@ html
 						profileVM.edit_mode = ko.computed(function() {
 							return this.canBeEdit() && this.edit();
 						}, profileVM);
+						profileVM.edit_mode.subscribe(function(val){
+							if (val){
+								document.body.classList.add('edit_mode');
+								window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 2000);
+								
+							}else{
+								document.body.classList.remove('edit_mode');
+							}
+						});
 						
 						profileVM.can_pm = ko.computed(function() {
 							return iAmVM.login()!=this.login();
@@ -43,7 +52,7 @@ html
 						ko.applyBindings(profileVM, profileView);
 						
 						profileView.classList.add('show');
-						$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));
+						
 					});
 					socket.on('youAre', function (user) {
 						console.dir(user);
@@ -73,6 +82,9 @@ html
 			div#leftSide
 				div#avatar.fringe
 					div.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
+						div#avatar_edit(data-bind="style: {display: edit_mode() ? '' : 'none'}")
+							div#avatar_edit_pic
+							| Change avatar
 				div#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
 					div.inner_bord
 						| Send message
@@ -137,14 +149,15 @@ html
 						div.left
 							| Name:
 						div.right
-							input(type='text', data-bind="attr: { size: firstName().length, disabled: !edit_mode()}, value: firstName, valueUpdate: 'afterkeydown'")
-							input(type='text', data-bind="attr: { size: lastName().length+1, disabled: !edit_mode() }, value: lastName, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: firstName, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: lastName, valueUpdate: 'afterkeydown'")
+							span(data-bind="text: fullName(), style: {display: !edit_mode() ? '' : 'none'}")
 					div.row
 						div.left
 							| Birthday:
 						div.right
-							input(type='text', id='in_birthdate', data-bind="attr: { size: birthdate().length+1, disabled: !edit_mode() }, style: {display: edit_mode() ? 'block' : 'none'}, value: birthdate")
-							span(data-bind="text: birthdate(), style: {display: !edit_mode() ? 'block' : 'none'}")
+							input(type='text', id='in_birthdate', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? 'block' : 'none'}, value: birthdate")
+							span(data-bind="text: birthdate(), style: {display: !edit_mode() ? '' : 'none'}")
 					div.row
 						div.left
 							| Sex:
@@ -157,8 +170,9 @@ html
 						div.left
 							| Residence:
 						div.right
-							input(type='text', data-bind="attr: { size: country().length, disabled: !edit_mode() }, value: country, valueUpdate: 'afterkeydown'")
-							input(type='text', data-bind="attr: { size: city().length+1, disabled: !edit_mode() }, value: city, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: { size: country().length, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: country, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: { size: city().length+1, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: city, valueUpdate: 'afterkeydown'")
+							span(data-bind="text: country()+', '+city(), style: {display: !edit_mode() ? '' : 'none'}")
 					div.row
 						div.left
 							| Interested in:
@@ -178,7 +192,7 @@ html
 						div.left
 							| Skype:
 						div.right
-							input(type='text, data-bind="attr: { size: skype().length, disabled: !edit_mode() }, value: skype, valueUpdate: 'afterkeydown'")
+							input(type='text', data-bind="attr: { size: skype().length, disabled: !edit_mode() }, value: skype, valueUpdate: 'afterkeydown'")
 					div.row
 						div.left
 							| aim:

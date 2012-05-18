@@ -1,6 +1,10 @@
 @MainLigthColor: #f2f2f2;
 @MainBlueColor: rgb(5,63,126);
 
+body.edit_mode {
+	background-color: #E5E5E5;
+}
+
 #userProfile {
 	position: absolute;
 	top: 32px;
@@ -32,7 +36,6 @@
 					outline: medium none !important;
 					border-color: #8C8C8C;
 					color: #000;
-					min-width: 100px;
 					-webkit-box-shadow: inset 0 1px 4px 0 #A8A8A8;
 					box-shadow: inset 0 1px 4px 0 #A8A8A8;
 					
@@ -66,7 +69,34 @@
 				background-position: 50% 50%;
 				background-repeat: no-repeat;
 				background-size: cover;
+				
+				#avatar_edit {
+					position: absolute;
+					left: 0;
+					bottom: 0;
+					width: 100%;
+					padding: 0 0 0 17px;
+					opacity: 0.8;
+					cursor: pointer;
+					background-color: rgba(0,0,0, 0.2);
+						
+					#avatar_edit_pic {
+						position: absolute;
+						left: 2px;
+						top: 2px;
+						width: 13px;
+						height: 14px;
+						background: url("/images/misc/tww.png") no-repeat -456px -48px;
+					}
+					
+					&:hover {
+						border-top: 1px solid;
+						opacity: 1;
+					}
+				}
 			}
+			
+
 		}
 		
 		#pm {
@@ -200,6 +230,9 @@
 		
 		#info {
 			padding: 0 0 0 20px;
+			span {
+				min-width: 1px;
+			}
 			.row {
 				position: relative;
 				margin: 0 0 4px;
@@ -218,15 +251,15 @@
 				}
 			}
 			
-			input {
+			input[type="text"] {
 				position: relative;
-				border: none;
 				border: 1px solid transparent;
-				background-color: #FCFCFC;
+				background-color: #fff;
 				display: inline-block;
 				position: relative;
 				padding: 0 5px;
-				width: auto;
+				min-width: 150px;
+				width: 150px;
 			}
 			input[name="sex"] {
 				display: none;
