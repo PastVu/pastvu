@@ -16,7 +16,7 @@ Thumbs.db
 
 # We using LESS instead of CSS #
 ######################
-*.css
+public/style/*.css
 
 # Except #
 ######################
