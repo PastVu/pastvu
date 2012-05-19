@@ -35,7 +35,6 @@ function UserActivate(model) {
 }
 
 function UserUpdate(model, vm) {
-	
 	if (!vm){ vm = UserActivate(model);
 	} else {
 		model = model || {};

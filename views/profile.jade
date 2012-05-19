@@ -4,6 +4,7 @@ html
 		script(type='text/javascript', src="/js/knockout-2.1.0.js")
 		script(type='text/javascript', src="/js/knockout.mapping-latest.js")
 		script(type='text/javascript', src="/js/mvvm/User.js")
+		script(type='text/javascript', src="/js/mvvm/TopPanel.js")
 		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.js")
 		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.lang.js")
 		link(rel="stylesheet", type="text/css", href="/js/jquery.datepick/redmond.datepick.css?appv=" + appVersion)
@@ -13,7 +14,54 @@ html
 				profileView,
 				profileVM,
 				iAmVM;
+				
+			var GlobalParams = {
+					Width: Utils.getClientWidth(),
+					Height: Utils.getClientHeight(),
+					
+					USE_OSM_API: true,
+					USE_GOOGLE_API: true,
+					USE_YANDEX_API: true,
+					appVersion: 0,
+					verBuild: 0,
+					
+					REGISTRATION_ALLOWED: false,
+					LoggedIn: false
+				},
+				GlobalParamsVM;	
+			function GlobalParamsToKO(){
+				if (!GlobalParamsVM) GlobalParamsVM = ko.mapping.fromJS(GlobalParams);
+				else ko.mapping.fromJS(GlobalParams, GlobalParamsVM);
+			}
+			
+			var i18n = {
+				en : {
+					login : 'Login',
+					logout : 'Logout',
+					register : 'Registration'
+				},
+				ru : {
+				}
+			};
+			var i18nVM;
+			function i18nToKO(lang){
+				if (!i18nVM) i18nVM = ko.mapping.fromJS(i18n[lang]);
+				else ko.mapping.fromJS(i18n[lang], i18nVM);
+			}
+			function Logout(){
+				socket.on('logoutResult', function (json) {
+					if (json.err){
+						consol.log('Logout error' + json.err);
+					}else {
+						document.location = json.logoutPath;
+					}
+					
+				});
+				socket.emit('logoutRequest', {});
+				return false;
+			}
 			$(document).ready(function() {
+				i18nToKO('en');
 				profileView = document.getElementById('userProfile');
 				socket = io.connect(location.host);
 				socket.on('connect', function () {
@@ -51,11 +99,16 @@ html
 						
 						ko.applyBindings(profileVM, profileView);
 						
+						CreateTopPanelVM();
+						BindTopPanelVM();
+						
 						profileView.classList.add('show');
 						
 					});
 					socket.on('youAre', function (user) {
 						console.dir(user);
+						GlobalParams.LoggedIn = !!user;
+						GlobalParamsToKO();
 						iAmVM = UserUpdate(user, iAmVM);
 						socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
 					});

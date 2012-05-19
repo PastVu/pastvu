@@ -97,8 +97,8 @@ function LoadMe(){
 	return dfd.promise();
 }
 function DrawObjects(){
-	CreateMVVM();
-	BindMVVM();
+	CreateTopPanelVM();
+	BindTopPanelVM();
 
 	LoaderIncrement(4);
 	window.setTimeout(function(){

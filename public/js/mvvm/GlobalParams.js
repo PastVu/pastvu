@@ -1,4 +1,24 @@
 /**
+ * GlobalSettings
+ */
+var GlobalParams = {
+	Width: Utils.getClientWidth(),
+	Height: Utils.getClientHeight(),
+	
+	USE_OSM_API: true,
+	USE_GOOGLE_API: true,
+	USE_YANDEX_API: true,
+	appVersion: 0,
+	verBuild: 0,
+	
+	REGISTRATION_ALLOWED: false,
+	LoggedIn: false
+};
+/**
+ * GlobalSettings ViewModel
+ */
+var GlobalParamsVM;
+/**
  * Модель управляет верхней панелью
  */
 var TopPanelVM;

@@ -96,7 +96,7 @@ function PrepareAndLoadSources(){
 					{s: 'js/knockout-2.1.0.js', p: 9, t: '?vv=210'},
 					{s: 'js/knockout.mapping-latest.js', p: 5, t: '?vv=210'},
 					{s: 'js/mvvm/User.js', p: 2, t: '?appv='+GlobalParams.appVersion},
-					{s: 'js/mvvms.js', p: 2, t: '?appv='+GlobalParams.appVersion}
+					{s: 'js/mvvm/TopPanel.js', p: 2, t: '?appv='+GlobalParams.appVersion}
 				]},
 				(Browser.support.flash ? {s: 'js/swfobject/swfobject.js', p: 9, t: '?vv=210'} : undefined),
 				{s: 'js/jquery.toast/jquery.toast.js', p: 3, t: '?appv='+GlobalParams.appVersion},
