@@ -86,7 +86,7 @@ html
 						profileVM.edit_mode.subscribe(function(val){
 							if (val){
 								document.body.classList.add('edit_mode');
-								window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 2000);
+								window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 1000);
 								
 							}else{
 								document.body.classList.remove('edit_mode');
