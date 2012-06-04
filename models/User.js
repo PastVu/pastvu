@@ -54,7 +54,7 @@ var User = new mongoose.Schema({
 	aboutme: {type: String, select: true},
 	
 	//Service
-    roles: [String],
+    roles: {type: [String], select: true},
 	regdate: {type: Date, default: Date.now, select: true},
     
     dateFormat: {"type": String, "default": "dd.mm.yyyy", select: true},

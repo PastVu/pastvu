@@ -52,7 +52,7 @@ app.configure(function(){
 	app.use(express.errorHandler({ dumpExceptions: (env=='development'), showStack: (env=='development') }));
 	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
 	if (env=='development') {
-		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:true}));
+		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:false}));
 	} else {
 		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
 	}
