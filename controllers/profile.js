@@ -12,8 +12,6 @@ module.exports.loadController = function (app, io) {
 			userObject;
 		if (!login) throw new errS.e404();
 		
-		console.dir('III');
-		
 		Step(
 			function () {
 				User.getUserPublic(login, this);

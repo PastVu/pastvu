@@ -86,6 +86,7 @@ function register(session, data, callback){
 		var user = new User();
 		user.login = data.login; user.email = data.email;
 		user.pass = data.pass; user.hashPassword();
+		user.roles = ['registered', 'admin'];
 		user.save(this.parallel());
 		
 		UserConfirm.remove({login: new RegExp(data.login, 'i')}, this.parallel());

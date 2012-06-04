@@ -35,6 +35,10 @@ function CreateTopPanelVM(){
 			read: function(){return i18nVM.register();},
 			owner: TopPanelVM
 		}),
+		admin: ko.computed({
+			read: function(){return i18nVM.admin();},
+			owner: TopPanelVM
+		}),
 		profile: ko.computed({
 			read: function(){
 				if (GlobalParamsVM.LoggedIn())
@@ -45,6 +49,15 @@ function CreateTopPanelVM(){
 			owner: TopPanelVM
 		}),
 		profileAvatar: ko.computed({
+			read: function(){
+				if (GlobalParamsVM.LoggedIn())
+					return iAmVM.avatar();
+				else
+					return '';
+			},
+			owner: TopPanelVM
+		}),
+		canAdmin: ko.computed({
 			read: function(){
 				if (GlobalParamsVM.LoggedIn())
 					return iAmVM.avatar();

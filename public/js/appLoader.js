@@ -29,7 +29,8 @@ var i18n = {
 	en : {
 		login : 'Login',
 		logout : 'Logout',
-		register : 'Registration'
+		register : 'Registration',
+		admin : 'Administration'
 	},
 	ru : {
 	}

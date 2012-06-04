@@ -1,5 +1,7 @@
 var mongoose = require('mongoose'),
 	User = mongoose.model('User'),
+	Role = mongoose.model('Role'),
+	Step = require('step'),
 	errS = require('./errors.js').err,
 	Utils = require('../commons/Utils.js'),
 	app, io, mongo_store, mc;
@@ -49,13 +51,22 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 				
 				if (req.session.login){
 					if (!neoStore.user){
-						User.getUserPublic(req.session.login, function(err, user){
-							console.log('To MC');
-							neoStore.user = user.toObject();
-							cashedSession(sessId, neoStore);
-							next();
-						});
-						
+						Step(
+							function () {
+								User.getUserPublic(req.session.login, this);
+							},
+							function (err, user) {
+								neoStore.user = user.toObject();
+								Role.find({name: {$in: ['admin', 'registered']}}, {_id:0}, this);
+							},
+							function (err, roles) {
+								console.dir(roles);
+								neoStore.roles = roles;
+								console.log('To MC');
+								cashedSession(sessId, neoStore);
+								next();
+							}
+						);
 					} else {
 						next();
 					}

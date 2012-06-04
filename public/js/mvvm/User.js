@@ -2,6 +2,10 @@ var DefaultUser = {
 	login: 'anonymous',
 	email: '',
 	
+	//ROLE
+	role_level: 0,
+	role_name: 'anonymous',
+	
 	//Profile
 	avatar: '/ava/__def__.png',
 	firstName: '',

@@ -52,6 +52,12 @@ if (!Function.prototype.neoBind) {
     };
 }
 
+if(!Array.isArray) {
+  Array.isArray = function (vArg) {
+    return vArg.constructor === Array;
+  };
+}
+
 /** 
  * JSON.minify()
  * v0.1 (c) Kyle Simpson

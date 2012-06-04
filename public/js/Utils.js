@@ -145,6 +145,12 @@ if (!Function.prototype.neoBind) {
 	};
 }
 
+if(!Array.isArray) {
+  Array.isArray = function (vArg) {
+    return vArg.constructor === Array;
+  };
+}
+
 /**
  * jQuery Image Preload Plugin
  * v1.3

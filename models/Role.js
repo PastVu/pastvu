@@ -22,18 +22,8 @@ Role.pre('save', function (next) {
 
 var RoleModel = mongoose.model('Role', Role);
 
-/*var anonymous = new RoleModel();
-anonymous.name = 'anonymous';
-anonymous.level = 0;
-anonymous.comment = 'good role';
-anonymous.save(function (err) {
-  console.log('WOW '+err);
-});
-
-var registered = new RoleModel();
-registered.name = 'registered';
-registered.level = 1;
-registered.comment = 'good role2';
-registered.save(function (err) {
-  console.log('WOW '+err);
-});*/
+RoleModel.update({name: 'anonymous'}, {level:0, comment:'Role for unregistered users'}, {upsert: true}, function(err){if (err) console.log('Role '+err);});
+RoleModel.update({name: 'registered'}, {level:1, comment:'Registered user'}, {upsert: true}, function(err){if (err) console.log('Role '+err);});
+RoleModel.update({name: 'moderator'}, {level:10, comment:'Moderator'}, {upsert: true}, function(err){if (err) console.log('Role '+err);});
+RoleModel.update({name: 'admin'}, {level:50, comment:'Administrator'}, {upsert: true}, function(err){if (err) console.log('Role '+err);});
+RoleModel.update({name: 'super_admin'}, {level:100, comment:'Super Administrator'}, {upsert: true}, function(err){if (err) console.log('Role '+err);});
