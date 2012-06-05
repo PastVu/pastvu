@@ -281,6 +281,19 @@ var Utils = {
 		return this.getObjectPropertyLength(obj) === 0;
 	},
 	
+	isObjectsEqual: function(obj1, obj2) {
+		var p1 = this.getOwnPropertyNames(obj1), i = p1.length, prop,
+			p2 = this.getOwnPropertyNames(obj2);
+		if (i == p2.length){
+			while (i--) {
+				prop = p1[i];
+				if (!obj2.hasOwnProperty(prop) || obj2[prop]!==obj2[prop]) return false;
+			}
+			return true;
+		}
+		return false;
+	},
+	
 	getObjectPropertyLength: function(obj){
 		var result = 0;
 		if (Object.getOwnPropertyNames){ //ECMAScript 5
