@@ -54,7 +54,7 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 							},
 							function (err, user) {
 								neoStore.user = user.toObject();
-								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}, this);
+								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
 							},
 							function (err, roles) {
 								neoStore.roles = roles;
@@ -88,7 +88,6 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 			cashedSession(sessId, null, function (err, neoStore){
 				if (!neoStore) neoStore = {};
 				session.neoStore = neoStore;
-				
 				if (session.login){
 					if (!neoStore.user){
 						Step(
@@ -97,7 +96,7 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 							},
 							function (err, user) {
 								neoStore.user = user.toObject();
-								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}, this);
+								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
 							},
 							function (err, roles) {
 								neoStore.roles = roles;

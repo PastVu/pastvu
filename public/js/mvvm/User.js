@@ -3,7 +3,7 @@ var DefaultUser = {
 	email: '',
 	
 	//ROLE
-	role_level: 60,
+	role_level: 0,
 	role_name: 'anonymous',
 	
 	//Profile

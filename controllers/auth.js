@@ -286,7 +286,10 @@ module.exports.loadController = function(a, io, ms) {
 		
 		socket.on('whoAmI', function (data) {
 			console.log('whoAmI ='+socket.handshake.session.neoStore);
-			console.dir(session.neoStore.user);
+			if (session.neoStore.user && session.neoStore.roles) {
+				session.neoStore.user.role_level = session.neoStore.roles[0]['level'];
+				session.neoStore.user.role_name = session.neoStore.roles[0]['name'];
+			}
 			socket.emit('youAre', session.neoStore.user);
 		});
 	});
