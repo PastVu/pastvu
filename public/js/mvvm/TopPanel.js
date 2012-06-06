@@ -56,15 +56,6 @@ function CreateTopPanelVM(){
 					return '';
 			},
 			owner: TopPanelVM
-		}),
-		canAdmin: ko.computed({
-			read: function(){
-				if (GlobalParamsVM.LoggedIn())
-					return iAmVM.avatar();
-				else
-					return '';
-			},
-			owner: TopPanelVM
 		})
 		// Behaviors
 	};
