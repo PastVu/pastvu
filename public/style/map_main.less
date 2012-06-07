@@ -307,88 +307,164 @@
  * NAVIGATION
  */
 #nav_panel {
-	display: none;
+	display: block;
 	position: absolute;
-	top: 100px;
-	left: 5px;
+	top: 70px;
+	left: 7px;
 	width: 66px;
 	height: 303px;
-}
 
-#nav_panel #moystick {
-	position: absolute;
-	height:  66px;
-	width:  66px;
-	background: url(../images/map/joistik_map.png) center 0 no-repeat;
-}
+	#moystick {
+		position: absolute;
+		height: 66px;
+		width: 66px;
+		
+		> div {
+			position: absolute;
+			cursor: pointer;
+			-webkit-transition: all 0.25s ease-out 0.25s;
+			-moz-transition: all 0.25s ease-out 0.25s;
+			-o-transition: all 0.25s ease-out 0.25s;
+			-ms-transition: all 0.25s ease-out 0.25s;
+			transition: all 0.25s ease-out 0.25s;
+			
+			&:after {
+				content: "";
+				position: absolute;
+				width: 13px;
+				height: 14px;
+				opacity: 0.8;
+				background-repeat: no-repeat;
+				background-image: url(../images/misc/tww.png);
+			}
 
-#nav_panel #moystick div{
-	position: absolute;
-	cursor: pointer;
-}
-#nav_panel #moystick div#mup{
-	height: 20px;
-	left: 5px;
-	top: 0;
-	width: 58px;
-}
-#nav_panel #moystick div#mright{
-	height: 27px;
-	left: 45px;
-	top: 20px;
-	width: 24px;
-}
-#nav_panel #moystick div#mdown{
-	height: 21px;
-	left: 5px;
-	top: 47px;
-	width: 58px;
-}
-#nav_panel #moystick div#mleft{
-	height: 27px;
-	left: 0;
-	top: 20px;
-	width: 21px;
-}
-#nav_panel #moystick div#mhome{
-	height: 27px;
-	left: 21px;
-	top: 20px;
-	width: 26px;
-}
-
-#nav_panel > div.fringe.btn {
-	cursor: pointer;
-}
-#nav_panel > div.fringe.btn.inout {
-	left: 17px;
-    height: 28px;
-    width: 28px;
-}
-#nav_panel > div.fringe.btn.inout > div {
-	height: 26px;
-	background-position: -1px -1px;
-	background-repeat: no-repeat;
-}
-#main.black  #nav_panel > div.fringe.btn.inout > div {
-	background-color: rgba(13,13,13,0.7);
-}
-
-#nav_panel > div#zoomin_fringe {
-	top: 70px;
-}
-#main.black  #nav_panel div#zoomin {
-	background-image:url(../images/map/map_plus_black.png);
-}
-#main.white  #nav_panel div#zoomin {
-	background-image:url(../images/map/map_plus_white.png);
-}
-
-#nav_panel > div#zoomout_fringe{
-	bottom: 0px;
-}
-#nav_panel div#zoomout {
-	background-image:url(../images/map/map_minus_black.png);
+		}
+		
+		#mup{
+			height: 15px;
+			left: 18px;
+			top: 18px;
+			width: 28px;
+			opacity: 0;
+			&:after {
+				left: 7px;
+				top: 1px;
+				background-position: -289px -96px;
+			}
+		}
+		#mright{
+			height: 28px;
+			left: 31px;
+			top: 18px;
+			width: 15px;
+			opacity: 0;
+			&:after {
+				left: 0px;
+				top: 7px;
+				background-position: -264px -96px;
+			}
+		}
+		#mdown{
+			height: 15px;
+			left: 18px;
+			top: 31px;
+			width: 28px;
+			opacity: 0;
+			&:after {
+				left: 7px;
+				top: 0px;
+				background-position: -312px -96px;
+			}
+		}
+		#mleft{
+			height: 28px;
+			left: 18px;
+			top: 18px;
+			width: 15px;
+			opacity: 0;
+			&:after {
+				left: 1px;
+				top: 7px;
+				background-position: -240px -96px;
+			}
+		}
+		#mhome{
+			left: 18px;
+			top: 36px;
+			height: 28px;
+			width: 28px;
+			-webkit-transition: top 0.25s ease-out;
+			-moz-transition: top 0.25s ease-out;
+			-o-transition: top 0.25s ease-out;
+			-ms-transition: top 0.25s ease-out;
+			transition: top 0.25s ease-out;
+			&:after {
+				left: 7px;
+				top: 7px;
+				background-position: 0 -24px;
+			}
+		}
+		
+		&:hover {
+			#mup{
+				top: 0;
+				opacity: 1;
+			}
+			#mright{
+				left: 49px;
+				opacity: 1;
+			}
+			#mdown{
+				top: 49px;
+				opacity: 1;
+			}
+			#mleft{
+				left: 0;
+				opacity: 1;
+			}
+			#mhome{
+				top: 18px;
+			}
+		}
+	}
+	
+	> .btn {
+		cursor: pointer;
+		&.inout {
+			left: 17px;
+			height: 28px;
+			width: 28px;
+			
+			> .inner_bord {
+				height: 26px;
+				
+				&:after {
+					content: "";
+					position: absolute;
+					left: 6px;
+					top: 6px;
+					width: 13px;
+					height: 14px;
+					opacity: 0.8;
+					background-repeat: no-repeat;
+					background-image: url(../images/misc/tww.png);
+				}
+				&#zoomin:after {
+					background-position: -408px -96px;
+				}
+				&#zoomout:after {
+					background-position: -433px -96px;
+				}
+			}
+			
+			&#zoomin_fringe {
+				top: 70px;
+			}
+			&#zoomout_fringe {
+				bottom: 0;
+			}
+		}
+	}
 }
 
 #nav_panel > div.fringe#nav_stick_fringe {
