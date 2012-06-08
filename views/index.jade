@@ -68,30 +68,36 @@ html
 				main_loader = main_loader_percent = main_loader_bar_fill = null;
 			}
 		
-		div#main
-			div#map
+		#main
+			#map
 			
 			include includes/top
 			
-			div#nav_panel.
-				<div id='moystick'>
-					<div id='mup' class='fringe' onclick="mapUp()"><div class='inner_bord'></div></div>
-					<div id='mright' class='fringe' onclick="mapRight()"><div class='inner_bord'></div></div>
-					<div id='mdown' class='fringe' onclick="mapDown()"><div class='inner_bord'></div></div>
-					<div id='mleft' class='fringe' onclick="mapLeft()"><div class='inner_bord'></div></div>
-					<div id='mhome' class='fringe' onclick="setMapDefCenter(true)"><div class='inner_bord'></div></div>
-				</div>
-				<div id='zoomin_fringe' class='fringe btn inout' onclick="ChangeZoom(1)"><div id='zoomin' class='inner_bord'></div></div>
-				<div id='zoomout_fringe' class='fringe btn inout' onclick="ChangeZoom(-1)"><div id='zoomout' class='inner_bord'></div></div>
-				<div id='nav_stick_fringe' class='fringe btn'><div id='nav_stick' class='inner_bord'></div></div>
-				<div id='nav_slider_area'>
-				</div>
-			div#layers_fringe.fringe.gradientBack.
+			#nav_panel
+				#mup.fringe.btn(onclick="mapUp()")
+					.inner_bord
+				#mright.fringe.btn(onclick="mapRight()")
+					.inner_bord
+				#mdown.fringe.btn(onclick="mapDown()")
+					.inner_bord
+				#mleft.fringe.btn(onclick="mapLeft()")
+					.inner_bord
+				#mhome.fringe.btn(onclick="setMapDefCenter(true)")
+					.inner_bord
+				#zoomin.fringe.btn.inout(onclick="ChangeZoom(1)")
+					.inner_bord
+				#zoomout.fringe.btn.inout(onclick="ChangeZoom(-1)")
+					.inner_bord
+				#nav_stick.fringe(onclick="ChangeZoom(-1)")
+					.inner_bord
+				#nav_slider_area
+			
+			#layers_fringe.fringe.gradientBack.
 				<div id='layers_panel' class='inner_bord'>
 					<div id='current' onclick="this.parentNode.classList.toggle('open'); document.getElementById('filter_fringe').classList.toggle('move'); document.getElementById('search_fringe').classList.toggle('moveByLayers');"></div>
 					<div id='systems'></div>
 				</div>
-			div#search_fringe.fringe.gradientBack.
+			#search_fringe.fringe.gradientBack.
 				<div id='search_panel' class='inner_bord' data-bind="css: {open: open()==true, fill: query().length>0 }">
 					<div id='search_in'>
 						<div id='searchArrow' data-bind="click: toggleOpen"><div></div></div>

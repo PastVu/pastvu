@@ -912,7 +912,7 @@ function mousePageXY(e){
 
 function navigationSlider(slider){
 	this.DOMPanel = slider;
-	this.DOMSlider = document.createElement('div'); this.DOMSlider.id = 'nav_slider';
+	this.DOMSlider = $('<div/>',  {'id':'nav_slider', 'class': 'fringe'}).append($('<div/>',  {'class': 'inner_bord'}))[0];
 	this.DOMPanel.appendChild(this.DOMSlider);
 	
 	this.DomDashsArray = [];

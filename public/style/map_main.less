@@ -307,235 +307,216 @@
  * NAVIGATION
  */
 #nav_panel {
-	display: block;
 	position: absolute;
 	top: 70px;
 	left: 7px;
 	width: 66px;
-	height: 303px;
+	height: 134px;
+	-webkit-transition: height 0.25s ease-out;
+	-moz-transition: height 0.25s ease-out;
+	-o-transition: height 0.25s ease-out;
+	-ms-transition: height 0.25s ease-out;
+	transition: height 0.25s ease-out;
 
-	#moystick {
+	> .btn {
 		position: absolute;
-		height: 66px;
-		width: 66px;
+		cursor: pointer;
+		height: 28px;
+		width: 28px;
+		-webkit-transition: all 0.25s ease-out 0.3s;
+		-moz-transition: all 0.25s ease-out 0.3s;
+		-o-transition: all 0.25s ease-out 0.3s;
+		-ms-transition: all 0.25s ease-out 0.3s;
+		transition: all 0.25s ease-out 0.3s;
 		
-		> div {
+		&:after {
+			content: "";
 			position: absolute;
-			cursor: pointer;
-			-webkit-transition: all 0.25s ease-out 0.25s;
-			-moz-transition: all 0.25s ease-out 0.25s;
-			-o-transition: all 0.25s ease-out 0.25s;
-			-ms-transition: all 0.25s ease-out 0.25s;
-			transition: all 0.25s ease-out 0.25s;
-			
-			&:after {
-				content: "";
-				position: absolute;
-				width: 13px;
-				height: 14px;
-				opacity: 0.8;
-				background-repeat: no-repeat;
-				background-image: url(../images/misc/tww.png);
-			}
-
+			width: 13px;
+			height: 14px;
+			opacity: 0.8;
+			background-repeat: no-repeat;
+			background-image: url(../images/misc/tww.png);
 		}
 		
-		#mup{
-			height: 15px;
-			left: 18px;
-			top: 18px;
-			width: 28px;
-			opacity: 0;
-			&:after {
-				left: 7px;
-				top: 1px;
-				background-position: -289px -96px;
-			}
+		&:hover:after {
+			opacity: 1;
 		}
-		#mright{
-			height: 28px;
-			left: 31px;
-			top: 18px;
-			width: 15px;
-			opacity: 0;
-			&:after {
-				left: 0px;
-				top: 7px;
-				background-position: -264px -96px;
-			}
-		}
-		#mdown{
-			height: 15px;
+		
+		&.inout {
 			left: 18px;
-			top: 31px;
-			width: 28px;
-			opacity: 0;
-			&:after {
-				left: 7px;
-				top: 0px;
-				background-position: -312px -96px;
-			}
-		}
-		#mleft{
-			height: 28px;
-			left: 18px;
-			top: 18px;
-			width: 15px;
-			opacity: 0;
-			&:after {
-				left: 1px;
-				top: 7px;
-				background-position: -240px -96px;
-			}
-		}
-		#mhome{
-			left: 18px;
-			top: 36px;
-			height: 28px;
-			width: 28px;
-			-webkit-transition: top 0.25s ease-out;
-			-moz-transition: top 0.25s ease-out;
-			-o-transition: top 0.25s ease-out;
-			-ms-transition: top 0.25s ease-out;
-			transition: top 0.25s ease-out;
 			&:after {
 				left: 7px;
 				top: 7px;
-				background-position: 0 -24px;
 			}
 		}
 		
-		&:hover {
-			#mup{
-				top: 0;
-				opacity: 1;
-			}
-			#mright{
-				left: 49px;
-				opacity: 1;
-			}
-			#mdown{
-				top: 49px;
-				opacity: 1;
-			}
-			#mleft{
-				left: 0;
-				opacity: 1;
-			}
-			#mhome{
-				top: 18px;
-			}
+	}
+	
+	#mup{
+		height: 15px;
+		left: 18px;
+		top: 18px;
+		width: 28px;
+		opacity: 0;
+		&:after {
+			left: 7px;
+			top: 1px;
+			background-position: -289px -96px;
+		}
+	}
+	#mright{
+		height: 28px;
+		left: 31px;
+		top: 18px;
+		width: 15px;
+		opacity: 0;
+		&:after {
+			left: 0px;
+			top: 7px;
+			background-position: -264px -96px;
+		}
+	}
+	#mdown{
+		height: 15px;
+		left: 18px;
+		top: 31px;
+		width: 28px;
+		opacity: 0;
+		&:after {
+			left: 7px;
+			top: 0px;
+			background-position: -312px -96px;
+		}
+	}
+	#mleft{
+		height: 28px;
+		left: 18px;
+		top: 18px;
+		width: 15px;
+		opacity: 0;
+		&:after {
+			left: 1px;
+			top: 7px;
+			background-position: -240px -96px;
+		}
+	}
+	#mhome{
+		left: 18px;
+		top: 36px;
+		height: 28px;
+		width: 28px;
+		-webkit-transition: top 0.25s ease-out;
+		-moz-transition: top 0.25s ease-out;
+		-o-transition: top 0.25s ease-out;
+		-ms-transition: top 0.25s ease-out;
+		transition: top 0.25s ease-out;
+		&:after {
+			left: 7px;
+			top: 7px;
+			background-position: 0 -24px;
 		}
 	}
 	
-	> .btn {
-		cursor: pointer;
-		&.inout {
-			left: 17px;
-			height: 28px;
-			width: 28px;
-			
-			> .inner_bord {
-				height: 26px;
-				
-				&:after {
-					content: "";
-					position: absolute;
-					left: 6px;
-					top: 6px;
-					width: 13px;
-					height: 14px;
-					opacity: 0.8;
-					background-repeat: no-repeat;
-					background-image: url(../images/misc/tww.png);
-				}
-				&#zoomin:after {
-					background-position: -408px -96px;
-				}
-				&#zoomout:after {
-					background-position: -433px -96px;
-				}
-			}
-			
-			&#zoomin_fringe {
-				top: 70px;
-			}
-			&#zoomout_fringe {
-				bottom: 0;
-			}
+	#zoomin {
+		top: 70px;
+		&:after {
+			background-position: -408px -96px;
 		}
 	}
+	#zoomout {
+		bottom: 0;
+		&:after {
+			background-position: -433px -96px;
+		}
+	}
+	
+	#nav_stick {
+		left: 29px;
+		top: 99px;
+		bottom: 29px;
+		width: 5px;
+		-webkit-box-shadow: none;
+		box-shadow: none;
+		border-top-width: 0;
+		border-bottom-width: 0;
+		
+		.inner_bord {
+			top: -1px;
+			bottom: -1px;
+			border-top-width: 0;
+			border-bottom-width: 0;
+		}
+	}
+	
+	#nav_slider_area {
+		position: absolute;
+		width: 100%;
+		height: 171px;
+		left: 0;
+		top: 99px;
+		padding: 2px 0 0 0;
+		
+		> div {
+			cursor: pointer;
+		}
+		
+		&.sliding {
+			cursor: url(../images/map/closehand.gif), pointer;
+			
+			> div {
+				cursor: url(../images/map/closehand.gif), pointer;
+			}
+		}
+		
+		> .dash {
+			position:relative;
+			background-image: url(../images/map/ZoomDash.png);
+			background-position: 50% 50%;
+			background-repeat: no-repeat;
+			width: 64px;
+			-webkit-tap-highlight-color: #939393; 
+			
+			&:hover {
+				background-image: url(../images/map/ZoomDashAct.png);
+			}
+		}
+		
+		> #nav_slider {
+			bottom: 2px;
+			left: 18px;
+			width: 28px;
+			height: 9px;
+		}
+		
+	}
+	
+	&:hover {
+		height: 303px;
+		
+		#mup{
+			top: 0;
+			opacity: 1;
+		}
+		#mright{
+			left: 49px;
+			opacity: 1;
+		}
+		#mdown{
+			top: 49px;
+			opacity: 1;
+		}
+		#mleft{
+			left: 0;
+			opacity: 1;
+		}
+		#mhome{
+			top: 18px;
+		}
+	}
+		
 }
 
-#nav_panel > div.fringe#nav_stick_fringe {
-	left: 29px;
-	top: 99px;
-	width: 4px;
-	height: 175px;
-	-webkit-box-shadow: none;
-	box-shadow: none;
-	-webkit-border-radius: 0;
-	border-radius: 0;
-	border-top-width: 0;
-	border-bottom-width: 0;
-}
-#nav_panel > div.fringe#nav_stick_fringe > div.inner_bord {
-	top: -1px;
-	bottom: -1px;
-	-webkit-border-radius: 0;
-	border-radius: 0;
-	border-top-width: 0;
-	border-bottom-width: 0;
-	background-color: rgba(13,13,13,0.7);
-}
-#nav_panel > #nav_slider_area {
-	display: block;
-	height: 171px;
-	left: 0;
-	position: absolute;
-	padding: 2px 0 0 0;
-	top: 99px;
-	width: 100%;
-}
-#nav_panel > #nav_slider_area.sliding {
-	cursor: url(../images/map/closehand.gif), pointer;
-}
-#nav_panel > #nav_slider_area > .dash {
-	position:relative;
-	background-image: url(../images/map/ZoomDash.png);
-	background-position: 50% 50%;
-	background-repeat: no-repeat;
-	width: 64px;
-	-webkit-tap-highlight-color: #939393; 
-	cursor: pointer;
-}
-#nav_panel > #nav_slider_area > .dash:hover {
-	background-image: url(../images/map/ZoomDashAct.png);
-}
-#nav_panel > .sliding#nav_slider_area > .dash {
-	cursor: url(../images/map/closehand.gif), pointer;
-}
-#nav_panel > #nav_slider_area > .dash {
-
-}
-#nav_panel > #nav_slider_area > #nav_slider {
-	position: absolute;
-	bottom: 2px;
-	left: 18px;
-	width: 28px;
-	height: 9px;
-	cursor: pointer;
-}
-#nav_panel > .sliding#nav_slider_area > #nav_slider{
-	cursor: url(../images/map/closehand.gif), pointer;
-}
-#nav_panel > #nav_slider_area > #nav_slider{
-	background-position: 50% 50%;
-	background-repeat: no-repeat;
-}
-#nav_panel > #nav_slider_area > #nav_slider{
-	background-image:url(../images/map/map_handler.png);
-}
 
 /**
  * LAYER PANEL
