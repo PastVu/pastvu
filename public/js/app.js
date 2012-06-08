@@ -912,14 +912,15 @@ function mousePageXY(e){
 
 function navigationSlider(slider){
 	this.DOMPanel = slider;
-	this.DOMSlider = $('<div/>',  {'id':'nav_slider', 'class': 'fringe'}).append($('<div/>',  {'class': 'inner_bord'}))[0];
+	this.DOMSliderInner = $('<div/>',  {'class': 'inner_bord'})[0];
+	this.DOMSlider = $('<div/>',  {'id':'nav_slider', 'class': 'fringe'}).append(this.DOMSliderInner)[0];
 	this.DOMPanel.appendChild(this.DOMSlider);
 	
 	this.DomDashsArray = [];
 	
 	map.on('zoomend', this.onChangeZoom, this);
 	
-	this.DOMh = 9;
+	this.DOMh = 12;
 	this.offset = 0;
 	this.usefulH = 171;
 	this.sliderOnZoom = 0;
@@ -958,12 +959,13 @@ navigationSlider.prototype.dashClick = function(event, zoom){
 	map.setZoom(zoom);
 };
 navigationSlider.prototype.dashOver = function(obj){
+	console.log('asdasd');
+	window.clearTimeout(this.zoomChangeTimeout);
 	var newZoom = Number(obj.target.id.substr(1));
 	this.sliderOnZoom = newZoom;
-	window.clearTimeout(this.zoomChangeTimeout);
 	this.zoomChangeTimeout = window.setTimeout(function(){
 		map.setZoom(newZoom);
-	}, 500);
+	}, 750);
 	this.pos();
 };
 navigationSlider.prototype.onChangeZoom = function(obj){
@@ -972,8 +974,9 @@ navigationSlider.prototype.onChangeZoom = function(obj){
 };
 navigationSlider.prototype.pos = function(){
 	this.DOMSlider.style.bottom = this.step*this.sliderOnZoom-this.offset + 'px';
+	this.DOMSliderInner.innerHTML = this.sliderOnZoom;
 };
-navigationSlider.prototype.Snatch = function(evt){
+navigationSlider.prototype.Snatch = function(e){
 	for(var z=0; z<this.numZooms; z++){
 		Utils.Event.add(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
 		/*if(Browser.support.touch){
@@ -982,16 +985,19 @@ navigationSlider.prototype.Snatch = function(evt){
 	}
 	Utils.Event.add(document.body, ET.mup, this.SnatchOffBind, false);
 	Utils.Event.add(document.body, 'mouseout', this.SnatchOffByWindowOutBind, false);
-	
+	this.DOMPanel.classList.add('sliding');
 	
 	/*if(Browser.support.touch){
 		Utils.Event.add(this.DOMPanel, 'touchmove', this.SnatchTouchMoveBind, false);
 		Utils.Event.add(document.body, 'touchend', this.SnatchOffBind, false);
 	}*/
-	
+	if(e.stopPropagation) e.stopPropagation();
+	if(e.preventDefault) e.preventDefault();
+	return false;
 };
 navigationSlider.prototype.SnatchOff = function(evt){
-	Utils.Event.remove(document.body, ET.mdup, this.SnatchOffBind, false);
+	this.DOMPanel.classList.remove('sliding');
+	Utils.Event.remove(document.body, ET.mup, this.SnatchOffBind, false);
 	Utils.Event.remove(document.body, 'mouseout', this.SnatchOffByWindowOutBind, false);
 	for(var z=0; z<this.numZooms; z++){
 		Utils.Event.remove(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
@@ -1000,11 +1006,16 @@ navigationSlider.prototype.SnatchOff = function(evt){
 		Utils.Event.remove(this.DOMPanel, 'touchmove', this.SnatchTouchMoveBind, false);
 		Utils.Event.remove(document.body, 'touchend', this.SnatchOffBind, false);
 	}*/
-}
+};
 navigationSlider.prototype.SnatchOffByWindowOut = function(evt){
 	var pos = mousePageXY(evt);
-	if(pos.x<=0 || pos.x>=Utils.getDocumentWidth() ||
-	   pos.y<=0 || pos.y>=Utils.getDocumentHeight()){
+	
+	if(pos.x<=0 || pos.x>=Utils.getClientWidth() ||
+	   pos.y<=0 || pos.y>=Utils.getClientHeight()){
 	   this.SnatchOff(evt);
 	}
-}
+	pos = null;
+};
+navigationSlider.prototype.togglePin = function(){
+	document.querySelector('#nav_panel').classList.toggle('pin');
+};

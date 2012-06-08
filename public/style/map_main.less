@@ -308,16 +308,24 @@
  */
 #nav_panel {
 	position: absolute;
-	top: 70px;
-	left: 7px;
-	width: 66px;
-	height: 134px;
+	top: 40px;
+	left: 5px;
+	width: 70px;
+	height: 136px;
+	box-sizing: content-box;
 	-webkit-transition: height 0.25s ease-out;
 	-moz-transition: height 0.25s ease-out;
 	-o-transition: height 0.25s ease-out;
 	-ms-transition: height 0.25s ease-out;
 	transition: height 0.25s ease-out;
 
+	#nav_pin_sub {
+		position: absolute;
+		left: 0;
+		right: 0;
+		height: 0;
+	}
+	
 	> .btn {
 		position: absolute;
 		cursor: pointer;
@@ -339,24 +347,28 @@
 			background-image: url(../images/misc/tww.png);
 		}
 		
-		&:hover:after {
-			opacity: 1;
+		&:hover {
+			&:after {
+				opacity: 1;
+			}
+			.inner_bord{
+				border-color: #EFF2FF;
+			}
 		}
 		
 		&.inout {
-			left: 18px;
+			left: 20px;
 			&:after {
 				left: 7px;
 				top: 7px;
 			}
 		}
-		
 	}
 	
 	#mup{
 		height: 15px;
-		left: 18px;
-		top: 18px;
+		left: 20px;
+		top: 20px;
 		width: 28px;
 		opacity: 0;
 		&:after {
@@ -367,8 +379,8 @@
 	}
 	#mright{
 		height: 28px;
-		left: 31px;
-		top: 18px;
+		left: 33px;
+		top: 20px;
 		width: 15px;
 		opacity: 0;
 		&:after {
@@ -379,8 +391,8 @@
 	}
 	#mdown{
 		height: 15px;
-		left: 18px;
-		top: 31px;
+		left: 20px;
+		top: 33px;
 		width: 28px;
 		opacity: 0;
 		&:after {
@@ -391,8 +403,8 @@
 	}
 	#mleft{
 		height: 28px;
-		left: 18px;
-		top: 18px;
+		left: 20px;
+		top: 20px;
 		width: 15px;
 		opacity: 0;
 		&:after {
@@ -402,8 +414,8 @@
 		}
 	}
 	#mhome{
-		left: 18px;
-		top: 36px;
+		left: 20px;
+		top: 38px;
 		height: 28px;
 		width: 28px;
 		-webkit-transition: top 0.25s ease-out;
@@ -419,7 +431,7 @@
 	}
 	
 	#zoomin {
-		top: 70px;
+		top: 72px;
 		&:after {
 			background-position: -408px -96px;
 		}
@@ -431,11 +443,24 @@
 		}
 	}
 	
+	#nav_pin {
+		display: none;
+		left: 24px;
+		bottom: -25px;
+		width: 20px;
+		height: 20px;
+		&:after {
+			left: 3px;
+			top: 3px;
+			background: url(../images/map/pin.png) 0 0 no-repeat;
+		}
+	}
+	
 	#nav_stick {
-		left: 29px;
-		top: 99px;
+		left: 31px;
+		top: 101px;
 		bottom: 29px;
-		width: 5px;
+		width: 6px;
 		-webkit-box-shadow: none;
 		box-shadow: none;
 		border-top-width: 0;
@@ -452,10 +477,17 @@
 	#nav_slider_area {
 		position: absolute;
 		width: 100%;
-		height: 171px;
 		left: 0;
-		top: 99px;
-		padding: 2px 0 0 0;
+		top: 103px;
+		bottom: 31px;
+		overflow: hidden;
+		padding: 3px 0 2px;
+		opacity: 0;
+		-webkit-transition: opacity 0.25s ease-out 0.3s;
+		-moz-transition: opacity 0.25s ease-out 0.3s;
+		-o-transition: opacity 0.25s ease-out 0.3s;
+		-ms-transition: opacity 0.25s ease-out 0.3s;
+		transition: opacity 0.25s ease-out 0.3s;
 		
 		> div {
 			cursor: pointer;
@@ -467,6 +499,14 @@
 			> div {
 				cursor: url(../images/map/closehand.gif), pointer;
 			}
+			
+			> #nav_slider {
+				-webkit-transition: none;
+				-moz-transition: none;
+				-o-transition: none;
+				-ms-transition: none;
+				transition: none;
+			}
 		}
 		
 		> .dash {
@@ -474,7 +514,7 @@
 			background-image: url(../images/map/ZoomDash.png);
 			background-position: 50% 50%;
 			background-repeat: no-repeat;
-			width: 64px;
+			width: 70px;
 			-webkit-tap-highlight-color: #939393; 
 			
 			&:hover {
@@ -484,34 +524,68 @@
 		
 		> #nav_slider {
 			bottom: 2px;
-			left: 18px;
+			left: 20px;
 			width: 28px;
-			height: 9px;
+			height: 12px;
+			-webkit-transition: bottom 0.25s linear;
+			-moz-transition: bottom 0.25s linear;
+			-o-transition: bottom 0.25s linear;
+			-ms-transition: bottom 0.25s linear;
+			transition: bottom 0.25s linear;
+			
+			.inner_bord{
+				background-color: rgba(5, 63, 126, 1);
+				font-size: 11px;
+				line-height: 10px;
+				text-align: center;
+			}			
+			&:hover {
+				.inner_bord{
+					border-color: #EFF2FF;
+					color: #fff;
+				}
+			}
 		}
-		
 	}
 	
-	&:hover {
-		height: 303px;
+	&:hover, &.pin {
+		height: 310px;
 		
 		#mup{
-			top: 0;
+			top: 1px;
 			opacity: 1;
 		}
 		#mright{
-			left: 49px;
+			left: 52px;
 			opacity: 1;
 		}
 		#mdown{
-			top: 49px;
+			top: 52px;
 			opacity: 1;
 		}
 		#mleft{
-			left: 0;
+			left: 1px;
 			opacity: 1;
 		}
 		#mhome{
-			top: 18px;
+			top: 20px;
+		}
+		#nav_slider_area {
+			opacity: 1;
+		}
+	}
+	&:hover {
+		#nav_pin_sub {
+			bottom: -28px;
+			height: 29px;
+		}
+		#nav_pin {
+			display: block;
+		}
+	}
+	&.pin {
+		#nav_pin .inner_bord{
+			background-color: rgba(6, 130, 78, 0.85);
 		}
 	}
 		

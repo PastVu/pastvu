@@ -84,6 +84,9 @@ html
 					.inner_bord
 				#mhome.fringe.btn(onclick="setMapDefCenter(true)")
 					.inner_bord
+				#nav_pin_sub
+				#nav_pin.fringe.btn(onclick="navSlider.togglePin()")
+					.inner_bord
 				#zoomin.fringe.btn.inout(onclick="ChangeZoom(1)")
 					.inner_bord
 				#zoomout.fringe.btn.inout(onclick="ChangeZoom(-1)")
@@ -91,7 +94,7 @@ html
 				#nav_stick.fringe(onclick="ChangeZoom(-1)")
 					.inner_bord
 				#nav_slider_area
-			
+
 			#layers_fringe.fringe.gradientBack.
 				<div id='layers_panel' class='inner_bord'>
 					<div id='current' onclick="this.parentNode.classList.toggle('open'); document.getElementById('filter_fringe').classList.toggle('move'); document.getElementById('search_fringe').classList.toggle('moveByLayers');"></div>

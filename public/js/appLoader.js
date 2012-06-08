@@ -167,8 +167,9 @@ function PrepareAndLoadSources(){
 		'images/map/same_size.png',
 		'images/map/scale.png',
 		'images/map/search_clear.png',
-		'images/map/video_archive.png',
-		'images/map/video-loader.gif'
+		'images/map/pin.png',
+		'images/map/ZoomDash.png',
+		'images/map/ZoomDashAct.png'
 	];
 	allPercent += 20;
 	
