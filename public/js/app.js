@@ -916,6 +916,9 @@ function navigationSlider(slider){
 	this.DOMSlider = $('<div/>',  {'id':'nav_slider', 'class': 'fringe'}).append(this.DOMSliderInner)[0];
 	this.DOMPanel.appendChild(this.DOMSlider);
 	
+	Utils.Event.add(this.DOMPanel, 'mousewheel', this.OnWheel.neoBind(this), false);
+	Utils.Event.add(this.DOMPanel, 'DOMMouseScroll', this.OnWheel.neoBind(this), false);
+	
 	this.DomDashsArray = [];
 	
 	map.on('zoomend', this.onChangeZoom, this);
@@ -956,10 +959,10 @@ navigationSlider.prototype.recalcZooms = function(){
 	this.pos();
 };
 navigationSlider.prototype.dashClick = function(event, zoom){
+	window.clearTimeout(this.zoomChangeTimeout);
 	map.setZoom(zoom);
 };
 navigationSlider.prototype.dashOver = function(obj){
-	console.log('asdasd');
 	window.clearTimeout(this.zoomChangeTimeout);
 	var newZoom = Number(obj.target.id.substr(1));
 	this.sliderOnZoom = newZoom;
@@ -1015,6 +1018,24 @@ navigationSlider.prototype.SnatchOffByWindowOut = function(evt){
 	   this.SnatchOff(evt);
 	}
 	pos = null;
+};
+navigationSlider.prototype.OnWheel = function (e){
+	var dir, newZoom;
+	if (e.type=='DOMMouseScroll') dir = -1*e.detail;
+	else dir = e.wheelDelta;
+	if (dir>0) dir = 'up';
+	else dir = 'down';
+	
+	newZoom = Math.max(0, Math.min(this.sliderOnZoom + (dir == 'up' ? 1 : -1), 18));
+	if (newZoom == this.sliderOnZoom) return false;
+	
+	window.clearTimeout(this.zoomChangeTimeout);
+	this.sliderOnZoom = newZoom;
+	this.zoomChangeTimeout = window.setTimeout(function(){
+		map.setZoom(newZoom);
+	}, 750);
+	this.pos();
+	return false;
 };
 navigationSlider.prototype.togglePin = function(){
 	document.querySelector('#nav_panel').classList.toggle('pin');
