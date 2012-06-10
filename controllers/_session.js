@@ -80,6 +80,10 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 	});
 	
 	io.sockets.on('connection', function (socket) {
+		//var address = socket.handshake.address;
+		//console.log("New connection from " + address.address + ":" + address.port);
+	
+	
 		var hs = socket.handshake,
 			session = hs.session;
 			

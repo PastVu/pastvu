@@ -13,14 +13,56 @@ var GlobalParams = {
 	appVersion: 0,
 	verBuild: 0,
 	
+	locDef: {lat:40, lng:-17, z:3},
+	locDefRange: ['gpsip', '_def_'],
+	locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
+	
 	REGISTRATION_ALLOWED: false,
 	LoggedIn: false
 };
+
 /**
  * GlobalSettings ViewModel
  */
 var GlobalParamsVM;
 var iAmVM;
+
+var myIP,
+	Locations = {
+		types: {},
+		range: [],
+		
+		current: null,
+		
+		subscribers: [],
+		
+		set: function (obj) {
+			$.extend(this.types, obj);
+			this.subscribersNotify();
+		},
+		setRange: function (ran) {
+			this.range = ran;
+		},
+		setRangeTypePos: function (type, pos) {
+			this.range = ran;
+		},
+		subscribe: function (fn, context) {
+			this.subscribers.push({fn: fn, context: context});
+		},
+		subscribersNotify:  function () {
+			this.current = this.get();
+			this.subscribers.forEach(function(element, index, array){
+				element['fn'].call(element['context'] || null, this.current);
+			}, this);
+		},
+		get: function(){
+			for (var i=0; i<this.range.length; i++){
+				if (this.types[this.range[i]]) return this.types[this.range[i]];
+			}
+		}
+	};
+Locations.setRange(GlobalParams.locDefRange);
+Locations.set({'_def_': GlobalParams.locDef});
 
 /**
  * i18n
@@ -64,6 +106,9 @@ function init_and_load(){
 	$.when(LoadParams())
 	 .pipe(PrepareAndLoadSources)
 	 .then(startApp);
+
+	$.when(getIp())
+	 .then(getLocation);
 }
 
 function LoadParams(){
@@ -76,6 +121,49 @@ function LoadParams(){
 	return dfd.promise();
 }
 
+function getIp() {
+	return $.ajax({
+		url: 'http://jsonip.appspot.com/',
+		cache: false,
+		success: function(json) {
+			console.dir(json);
+			if (Utils.isObjectType('string', json)) json = JSON.parse(json);
+			myIP = json["ip"];
+		},
+		error: function(json) {
+			console.error('Ошибка определения адреса и местоположения пользователя: ' + json.status + ' ('+json.statusText+')');
+		}
+	});
+}
+
+function getLocation() {
+	Utils.addScript('http://www.geoplugin.net/json.gp?ip='+myIP);
+	geolocateMe();
+}
+function geoPlugin(data){
+	if (!Locations.types['gpsip']) Locations.set({'gpsip': {lat: data.geoplugin_latitude, lng: data.geoplugin_longitude, z: 10}});
+}
+function geolocateMe() {
+	if (Browser.support.geolocation) {
+		navigator.geolocation.getCurrentPosition(show_map, handle_error, {enableHighAccuracy: true, timeout:5000, maximumAge: 5*60*1000});
+	}
+	
+	function show_map(position) {
+		Locations.set({gpsip: {lat:position.coords.latitude, lng:position.coords.longitude, z:15}});
+	}
+	function handle_error(err) {
+		if (err.code == 1) {
+			console.log('Geolocation failed because user denied');
+		} else if (err.code == 2) {
+			console.log('Geolocation failed because position_unavailable');
+		} else if (err.code == 3) {
+			console.log('Geolocation failed because timeout');
+		} else if (err.code == 4) {
+			console.log('Geolocation failed because unknown_error');
+		}
+	}
+}
+
 function PrepareAndLoadSources(){
 	/**
 	 * JS load list
@@ -84,7 +172,7 @@ function PrepareAndLoadSources(){
 		{chain: [
 			{parallel: [
 				{chain: [
-					{s: 'js/leaflet_0.4.0.js', p: 10, t: '?vv=040'},
+					{s: 'js/leaflet_0.4.0.min.js', p: 10, t: '?vv=040'},
 					(GlobalParams.USE_GOOGLE_API ? 
 						(window.GMapsOnLoadDFD = $.Deferred() , window.GMapsOnLoad = function (){GMapsOnLoadDFD.resolve(); delete window.GMapsOnLoad; delete window.GMapsOnLoadDFD;} ,
 						{s: 'http://maps.googleapis.com/maps/api/js?v=3.6&sensor=false&region=RU&callback=GMapsOnLoad', p: 10, t: '', waitForDeffered:window.GMapsOnLoadDFD})
@@ -147,10 +235,7 @@ function PrepareAndLoadSources(){
 		'images/map/icon_cam_green.png',
 		'images/map/icon_cam_purple.png',
 		'images/map/icon_cam_yellow.png',
-		'images/map/joistik.png',
-		'images/map/joistik_map.png',
 		'images/map/linked_cams.png',
-		'images/map/map_handler.png',
 		'images/map/map_minus_black.png',
 		'images/map/map_plus_black.png',
 		'images/map/map_stick_black.png',

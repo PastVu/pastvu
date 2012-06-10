@@ -1,10 +1,31 @@
+
+
+/*var myLocation = {
+	//ip: {lat:, lng:, pos:2},
+	//gps: {lat:, lng:, pos:1},
+	_default: {lat:55.7418, lng:37.61, pos:1},
+	
+	set: function (type, lat, lng, pos) {
+		for (var i in this) {
+			if (!this.hasOwnProperty(i) || !Utils.isObjectType('object', this[i])) continue;
+			if (this[i]['pos']>=pos) this[i]['pos']++;
+		}
+		this[type] = {lat:lat, lng:lng, pos:pos};
+		if (pos == 1) mapDefCenter = new L.LatLng(lat, lng);
+	},
+	getPrioritet: function () {
+		for (var i in this) {
+			if (!this.hasOwnProperty(i) || !Utils.isObjectType('object', this[i])) continue;
+			if (this[i]['pos']==1) return this[i];
+		}
+	}
+};*/
 /**
  * Global vars
  */
 var map, layers = {}, curr_lay = {sys: null, type: null},
-	mapDefCenter = new L.LatLng(55.7418, 37.61),
 	cams = {},
-	playingFormat, mapDefCenter,
+	playingFormat,
 	poly_mgr, marker_mgr,
 	markersLayer, aoLayer,
 	navSlider,
@@ -12,6 +33,12 @@ var map, layers = {}, curr_lay = {sys: null, type: null},
 	//mediaContainerManager,
 	flag_current, flags_available,
 	maxVideoPlaybackTime = 0;
+
+var mapDefCenter = new L.LatLng(Locations.get().lat, Locations.get().lng);
+Locations.subscribe(function(val){
+	mapDefCenter = new L.LatLng(val.lat, val.lng);
+	setMapDefCenter(true);
+});
 	
 /**
  * Event Types
@@ -99,17 +126,15 @@ function LoadMe(){
 function DrawObjects(){
 	CreateTopPanelVM();
 	BindTopPanelVM();
-
-	LoaderIncrement(4);
+	LoaderIncrement(11);
+	
 	window.setTimeout(function(){
-		DrawCams();
-		LoaderIncrement(7);
-		window.setTimeout(function(){
-			poly_mgr.refresh(true);
-			LoaderIncrement(7, true);
-			if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){removeLoader(); document.querySelector('#main').style.opacity = '1';}, 500);
-			if(init_message) $().toastmessage('showSuccessToast', init_message);
-		},50);
+		poly_mgr.refresh(true);
+		LoaderIncrement(7, true);
+		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
+			removeLoader(); document.querySelector('#main').style.opacity = '1';
+		}, 500);
+		if(init_message) $().toastmessage('showSuccessToast', init_message);
 	},50);	
 }
 
@@ -219,10 +244,7 @@ function createMap() {
 	document.querySelector('#layers_panel #systems').classList.add('s'+sysNum);
 
 	
-	map = new L.Map('map', {center: mapDefCenter, zoom: (Utils.getClientHeight()>Utils.getClientWidth() ? 11: 10)});
-	if (!map.getCenter()) {
-		setMapDefCenter();
-	}
+	map = new L.Map('map', {center: mapDefCenter, zoom: Locations.current.z});
 	
 	if (!!window.localStorage && !! window.localStorage['arguments.SelectLayer']) {
 		SelectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','))
@@ -233,16 +255,15 @@ function createMap() {
 }
 
 function setMapDefCenter(forceMoveEvent){
-	map.setView(mapDefCenter, (Utils.getClientHeight()>Utils.getClientWidth() ? 11: 10), false);
+	map.setView(mapDefCenter, Locations.current.z, false);
 	//При setCenter срабатывает только событие смены зума, без moveend, поэтому сами вызываем событие у полигона
 	if(forceMoveEvent) poly_mgr.onMapMoveEnd();
 }
-
-function SuperHome(){
-	setMapDefCenter(true);
-	if (layers.yandex) SelectLayer('yandex', 'scheme');
-	else SelectLayer('osm', 'osmosnimki');
+function home () {
+	var home = Locations.types['home'] || Locations.types['gpsip'] || Locations.types['_def_'];
+	map.setView(new L.LatLng(home.lat, home.lng), Locations.current.z, false);
 }
+
 
 function SelectLayer(sys_id, type_id){
     if (!layers.hasOwnProperty(sys_id)) return;
@@ -615,30 +636,6 @@ function LoadCams(){
 		console.error('Ошибка загрузки камер: ' + json.status + ' ('+json.statusText+')');
 	  }
 	});
-}
-
-function DrawCams(){
-	var icon, neomarker,
-		iblack = 'images/front_map/camera_black_new.png',
-		iblue = 'images/front_map/camera_blue_new.png',
-		iyellow = 'images/front_map/camera_yellow_new.png',
-		igreen = 'images/front_map/camera_green_new.png',
-		ipurple = 'images/front_map/camera_purple_new.png';
-	
-	var markersLayerRaphael;// = Raphael(map._panes.markerPane, GlobalParams.Width, GlobalParams.Height);
-	
-	for (var c in cams){
-		if (!cams.hasOwnProperty(c)) continue;
-		icon = iblack;
-		if(cams[c].mask[1][0]==1) icon = iblue;
-		else if(cams[c].mask[1][1]==1) icon = iyellow;
-		else if(cams[c].mask[1][2]==1) icon = igreen;
-		else if(cams[c].mask[1][4]==1) icon = ipurple;
-		
-		neomarker = new L.NeoMarker((cams[c].lat && cams[c].lng ? new L.LatLng(cams[c].lat, cams[c].lng) : mapDefCenter), {id: c, img: icon});
-		marker_mgr.addMarker(neomarker);
-	}
-	marker_mgr.refresh();
 }
 
 function LoadAOs(){
