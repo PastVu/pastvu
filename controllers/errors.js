@@ -18,7 +18,7 @@ var neoError = {
 	},
 	e404Virgin: function (req, res, msgss) {
 		var msgs = ms404; if (msgss) msgs = {}.extend(ms404).extend(msgss);
-		res.render('404.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version} ,status: 404 });
+		res.render('404.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version}, status: 404 });
 	},
 	e500: function (msg) {
 		this.msgs = msgs;
@@ -27,7 +27,7 @@ var neoError = {
 	},
 	e500Virgin: function (req, res, msgss) {
 		var msgs = ms500; if (msgss) msgs = {}.extend(ms500).extend(msgss);
-		res.render('500.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version} ,status: 500 });
+		res.render('500.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version}, status: 500 });
 	},
 };
 neoError.e404.prototype.__proto__ = Error.prototype;

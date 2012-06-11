@@ -1,6 +1,7 @@
 var mongoose = require('mongoose'),
 	_session = require('./_session.js'),
 	User = mongoose.model('User'),
+	Role = mongoose.model('Role'),
 	UserConfirm = mongoose.model('UserConfirm'),
 	Step = require('step'),
 	Mail = require('./mail.js'),
@@ -14,7 +15,7 @@ function login(session, data, callback){
 	if (!data.login) error += 'Fill in the login field. ';
 	if (!data.pass) error += 'Fill in the password field.';
 	if (error){
-		callback.call(null, error, null); return;
+		callback.call(null, error); return;
 	}
 	
     Step(
@@ -28,10 +29,10 @@ function login(session, data, callback){
 				error = 'User does not exists';
 			}
 
-			if (error){
-				callback.call(null, error, null);
+			if (error) {
+				callback.call(null, error);
 				return;
-			}else{
+			} else {
 				session.login = user.login;
 				session.remember = data.remember;
 				if (data.remember) session.cookie.expires = new Date(Date.now()+14*24*60*60*1000);
@@ -41,15 +42,13 @@ function login(session, data, callback){
 				//Удаляем предыдущие сохранившиеся сессии этого пользователя
 				mongo_store.getCollection().remove({'session': new RegExp(user.login, 'i'), _id: { $ne : session.id }});
 				
-				var u = user.toObject(); delete u.salt; delete u.pass; delete u['_id'];
-				session.neoStore.user = u;
-				
-				//Сохраняем временные данные сессии в memcashed
-				_session.cashedSession(session.id, session.neoStore);				
-			
-				console.log("Login success for %s", data.login);
-				callback.call(null, null, u);
+				_session.getNeoStore(session, user.login, this);
 			}
+		},
+		function SaveSess (neoStore) {
+			session.neoStore = neoStore;
+			console.log("Login success for %s", data.login);
+			callback.call(null, null);
 		}
     );
 }
@@ -194,21 +193,19 @@ function recall(session, data, callback){
 }
 
 function clearUnconfirmedUsers(){
-	console.log('clearUnconfirmedUsers');
 	var today = new Date(),
 		todayminus2days = new Date(today);
 		todayminus2days.setDate(today.getDate()-3);
 	UserConfirm.find({'created': { "$lte" : todayminus2days}}, {key: 1, login:1, _id:0}, function(err, docs){
-		if (err) console.log('Err '+err);
-		if (docs.length<1) return;
+		if (err || docs.length<1) return;
 		
 		var users = [];
 		for (var i=0, dlen=docs.length; i<dlen; i++){
 			if(docs[i]['key'].length == 80) users.push(docs[i]['login']);
 		}
-		console.dir(users);
-		if(users.length > 0) User.remove({'login': { $in : users }}, function(err){console.log(err)});
-		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){console.log(err)});
+		console.log('Clear '+users.length+' unconfirmed users: '+users.join(", "));
+		if(users.length > 0) User.remove({'login': { $in : users }}, function(err){console.log('Fail to clear users: '+err)});
+		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){console.log('Fail to clear unconfirmed records: '+err)});
 	})
 }
 
@@ -257,10 +254,10 @@ module.exports.loadController = function(a, io, ms) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake,
 			session = hs.session;
-				
+		
 		socket.on('loginRequest', function (data) {
-			login(socket.handshake.session, data, function(err, user){
-				socket.emit('loginResult', {user: user, error: err});
+			login(socket.handshake.session, data, function(err){
+				socket.emit('loginResult', {success: Number(!err), error: err});
 			});
 		});
 		
@@ -285,7 +282,6 @@ module.exports.loadController = function(a, io, ms) {
 		});
 		
 		socket.on('whoAmI', function (data) {
-			console.log('whoAmI ='+socket.handshake.session.neoStore);
 			if (session.neoStore.user && session.neoStore.roles) {
 				session.neoStore.user.role_level = session.neoStore.roles[0]['level'];
 				session.neoStore.user.role_name = session.neoStore.roles[0]['name'];

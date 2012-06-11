@@ -94,9 +94,6 @@ var UserModel = mongoose.model ('User', User);
  * @param {string} pass
  */
 UserModel.checkPass = function(user, pass) {
-	console.log(pass+' '+user.salt);
-	console.log(md5(pass + user.salt));
-	console.log(user.pass);
   return (user.pass === md5(pass + user.salt));
 };
 

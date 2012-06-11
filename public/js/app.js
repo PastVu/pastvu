@@ -430,28 +430,22 @@ function Login(form) {
 	var remember_check = form.querySelector('#remember_check').classList.contains('checked');
 	
 	socket.on('loginResult', function (json) {
-		if (json.user){
+		if (json.success) {
 			FormClose();
-			GlobalParams.LoggedIn = true;
-			GlobalParamsToKO();
-			LoadMe();
-			
 			$.ajax({
 			  url: '/updateCookie',
 			  cache: false,
 			  success: function(json) {},
 			  error: function(json) {}
 			});
-		}else {
+			LoadMe();
+		} else {
 			FormFocus();
 			login.messchild.innerHTML = ''+(json.error || json);
 			login.mess.classList.add('err');
 			login.mess.style.height = login.messchild.offsetHeight+5+'px';
 		}
 		window.setTimeout(function(){login.wait.style.display = 'none';}, 300);
-		
-		//$.extend(true, GlobalParams, json);
-		
 	});
 	socket.emit('loginRequest', $.extend($(form).serializeObject(), {'remember': remember_check}));
 	return false;

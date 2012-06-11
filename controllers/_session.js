@@ -16,16 +16,44 @@ function cashedSession(id, neoStore, callback){
 	} else {
 		mc.get('sess'+id, function(err, response) {
 			if (!err) {
-				console.log('From MC');
 				if (callback) callback(null, JSON.parse(response['sess'+id]));
 			}else{
-				console.dir(err);
 				if (callback) callback(err);
 			}
 		});
 	}
 }
+function mongoSession(id, neoStore, callback){
+	
+}
+function getNeoStore (id, login, callback) {
+	var neoStore;
+	if (!id) {neoStore = {}; if (callback) callback.call(null, neoStore); return;}
+	
+	cashedSession(id, null, function (err, store) {
+		neoStore = store || {};
+		
+		if (!login || neoStore.user) {if (callback) callback.call(null, neoStore); return;}
+		
+		Step(
+			function () {
+				User.getUserPublic(login, this);
+			},
+			function (err, user) {
+				neoStore.user = user.toObject();
+				Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
+			},
+			function (err, roles) {
+				neoStore.roles = roles;
+				cashedSession(id, neoStore);
+				if (callback) callback.call(null, neoStore);
+			}
+		);
+	});
+}
+
 module.exports.cashedSession = cashedSession;
+module.exports.getNeoStore = getNeoStore;
 
 function cashedSessionDel(id, callback){
 	mc.del('sess'+id, callback || function(){});
@@ -39,89 +67,22 @@ module.exports.loadController = function(a, io, ms, memcashed) {
 	mc = memcashed;
 		
 	app.get('*', function(req, res, next){
-		
-		var sessId = req.cookies['oldmos.sid'];
-		if (sessId){
-			cashedSession(sessId, null, function (err, neoStore){
-				if (!neoStore) neoStore = {};
-				req.session.neoStore = neoStore;
-				
-				if (req.session.login){
-					if (!neoStore.user){
-						Step(
-							function () {
-								User.getUserPublic(req.session.login, this);
-							},
-							function (err, user) {
-								neoStore.user = user.toObject();
-								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
-							},
-							function (err, roles) {
-								neoStore.roles = roles;
-								console.log('To MC by Request');
-								cashedSession(sessId, neoStore);
-								next();
-							}
-						);
-					} else {
-						next();
-					}
-					
-				} else {
-					next();
-				}
-
-			});
-		} else {
-			req.session.neoStore = {};
+		var sessionId = req.cookies['oldmos.sid'];
+		getNeoStore (sessionId, req.session.login, function (neoStore) {
+			req.session.neoStore = neoStore;
 			next();
-		}
-
+		});
 	});
 	
 	io.sockets.on('connection', function (socket) {
 		//var address = socket.handshake.address;
 		//console.log("New connection from " + address.address + ":" + address.port);
 	
-	
-		var hs = socket.handshake,
-			session = hs.session;
+		var session = socket.handshake.session,
+			sessionId = socket.handshake.sessionID;
 			
-		var sessId = hs.sessionID;
-		if (sessId){
-			cashedSession(sessId, null, function (err, neoStore){
-				if (!neoStore) neoStore = {};
-				session.neoStore = neoStore;
-				if (session.login){
-					if (!neoStore.user){
-						Step(
-							function () {
-								User.getUserPublic(session.login, this);
-							},
-							function (err, user) {
-								neoStore.user = user.toObject();
-								Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
-							},
-							function (err, roles) {
-								neoStore.roles = roles;
-								console.log('To MC by Socket');
-								cashedSession(sessId, neoStore);
-								next();
-							}
-						);
-					} else {
-						//next();
-					}
-					
-				} else {
-					//next();
-				}
-
-			});
-		} else {
-			session.neoStore = {};
-			//next();
-		}
+		getNeoStore (sessionId, session.login, function (neoStore) {
+			session.neoStore = neoStore;
+		});
 	});
-	
 };

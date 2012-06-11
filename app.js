@@ -73,22 +73,20 @@ app.configure(function(){
 		
 		mongo_store.load(data.sessionID, function (err, session) {
 			if (err || !session) return accept('Error: '+err, false);
-			console.log(session.login+' '+session.user);
-			
+			if (session.login) console.log("%s entered", session.login);
 			data.session = session;
 			return accept(null, true);
-
 		});
 	});
 	
 	if (env=='development') {
-		io.set('log level', 2);
+		io.set('log level', 1);
 		require('reloader')({
 			watchModules: false,
 			onStart: function () {},
 			onReload: function () {app.listen(3000);}
 		});
-	} else { 
+	} else {
 		io.enable('browser client minification');  // send minified client
 		io.enable('browser client etag');          // apply etag caching logic based on version number
 		io.enable('browser client gzip');          // gzip the file
