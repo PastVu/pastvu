@@ -107,8 +107,7 @@ function init_and_load(){
 	 .pipe(PrepareAndLoadSources)
 	 .then(startApp);
 
-	$.when(getIp())
-	 .then(getLocation);
+	getLocation();
 }
 
 function LoadParams(){
@@ -119,6 +118,13 @@ function LoadParams(){
 	});
 	socket.emit('giveGlobeParams', {});
 	return dfd.promise();
+}
+
+function getLocation() {
+	$.when(getIp())
+	 .then(getLocationByIp);
+
+	geolocateMe();
 }
 
 function getIp() {
@@ -135,14 +141,13 @@ function getIp() {
 		}
 	});
 }
-
-function getLocation() {
+function getLocationByIp() {
 	Utils.addScript('http://www.geoplugin.net/json.gp?ip='+myIP);
-	geolocateMe();
 }
 function geoPlugin(data){
 	if (!Locations.types['gpsip']) Locations.set({'gpsip': {lat: data.geoplugin_latitude, lng: data.geoplugin_longitude, z: 10}});
 }
+
 function geolocateMe() {
 	if (Browser.support.geolocation) {
 		navigator.geolocation.getCurrentPosition(show_map, handle_error, {enableHighAccuracy: true, timeout:5000, maximumAge: 5*60*1000});
@@ -153,13 +158,13 @@ function geolocateMe() {
 	}
 	function handle_error(err) {
 		if (err.code == 1) {
-			console.log('Geolocation failed because user denied');
+			console.log('Geolocation failed because user denied. '+err.message);
 		} else if (err.code == 2) {
-			console.log('Geolocation failed because position_unavailable');
+			console.log('Geolocation failed because position_unavailable. '+err.message);
 		} else if (err.code == 3) {
-			console.log('Geolocation failed because timeout');
+			console.log('Geolocation failed because timeout. '+err.message);
 		} else if (err.code == 4) {
-			console.log('Geolocation failed because unknown_error');
+			console.log('Geolocation failed because unknown_error. '+err.message);
 		}
 	}
 }
