@@ -213,30 +213,28 @@ function clearUnconfirmedUsers(){
  * redirect to /login if user has insufficient rights
  * @param role
  */
-function restrictToRole(role) {
+function restrictToRoleLevel(role_level) {
     return function(req, res, next) {
-        var user = req.session.user,
-            param = '';
-        if (User.checkRole(user, role)) {
-            next();
+        var user = req.session.neoStore.user;
+		if (req.session.login && 
+			req.session.neoStore && req.session.neoStore.roles && 
+			req.session.neoStore.roles[0]['level'] >= role_level) {
+			 next();
         } else {
-            var url = '/login';
-            if (user) {
-                url += '/' + role;
-                req.flash('error', i18n("For current operation you need to login as %s", i18n(User.getRole(role).name, req), req));
-            }
-
+			throw new errS.e404();
+			
+            /*var url = '/login';
             if (req.xhr) {
                 url = {redirect: url};
                 res.send(url, 403);
             } else {
                 req.sessionStore.cameFrom = req.url;
                 res.redirect(url);
-            }
+            }*/
         }
     }
 }
-module.exports.restrictToRole = restrictToRole;
+module.exports.restrictToRoleLevel = restrictToRoleLevel;
 
 function renderLoginPage(req, res, opts) {
 	if (!opts) opts = {};

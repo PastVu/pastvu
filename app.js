@@ -140,6 +140,7 @@ require('./controllers/auth.js').loadController(app, io, mongo_store);
 require('./controllers/index.js').loadController(app, io);
 require('./controllers/photo.js').loadController(app, io);
 require('./controllers/profile.js').loadController(app, io);
+require('./controllers/admin.js').loadController(app, io);
 app.get('*', function(req, res){errS.e404Virgin(req, res)});
 
 

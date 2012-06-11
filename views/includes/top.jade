@@ -3,7 +3,7 @@ div#top_panel_fringe.fringe.
 		<div id='appName'>Retro photo of mankind's habitat</div>
 		<div id='panelTools'>
 			<div
-				id='toAdmin' class='labledIco strokeAfter' data-bind='style:{display: user.role_level()>=50 ? "":"none"}'>
+				id='toAdmin' class='labledIco strokeAfter' data-bind='style:{display: user.role_level()>=50 ? "":"none"}, event:{click: function(data, evt){window.open("/admin")}}'>
 				<div class='ico'></div>
 				<div class='text' data-bind="text: admin"></div>
 			</div>
