@@ -1,11 +1,48 @@
 doctype 5
 html
 	include includes/head_meta
+		link(rel="stylesheet", type="text/css", href="js/jqueryui/smoothness/jquery-ui-1.8.21.custom.css")
+		link(rel="stylesheet", type="text/css", href="js/jqgrid/ui.jqgrid.css")
+		script(type='text/javascript', src="/js/jqueryui/jquery-ui-1.8.21.custom.min.js")
 		script(type='text/javascript', src="/js/knockout-2.1.0.js")
 		script(type='text/javascript', src="/js/knockout.mapping-latest.js")
 		script(type='text/javascript', src="/js/mvvm/User.js")
 		script(type='text/javascript', src="/js/mvvm/TopPanel.js")
+		script(type='text/javascript', src="/js/jqgrid/i18n/grid.locale-en.js")
+		script(type='text/javascript', src="/js/jqgrid/jquery.jqGrid.min.js")
+		
+		style(type='text/css').
+			.userGridAvatar {
+				position: relative;
+				background-position: 0 0;
+				background-repeat: no-repeat;
+				background-size: contain;
+				left: -2px;
+				width: 50px;
+				height: 50px;
+			}
+			#users {
+				position: relative;
+				margin: 100px 10px 0;
+				width: 100%;
+				/* Firefox */
+				display:-moz-box;
+				-moz-box-orient:horizontal;
+				-moz-box-pack:center;
+				-moz-box-align:center;
 
+				/* Safari and Chrome */
+				display:-webkit-box;
+				-webkit-box-orient:horizontal;
+				-webkit-box-pack:center;
+				-webkit-box-align:center;
+
+				/* W3C */
+				display:box;
+				box-orient:horizontal;
+				box-pack:center;
+				box-align:center;
+			}
 		script(type='text/javascript').
 			var socket,
 				iAmVM;
@@ -56,8 +93,10 @@ html
 				socket.emit('logoutRequest', {});
 				return false;
 			}
+			var grid, grid_data;
 			$(document).ready(function() {
 				i18nToKO('en');
+				grid = $("#usersGrid");
 				socket = io.connect(location.host);
 				socket.on('connect', function () {
 					socket.on('initMessage', function (json) {
@@ -72,9 +111,58 @@ html
 						
 						CreateTopPanelVM();
 						BindTopPanelVM();
+						CreateGrid();
 					});
 					socket.emit('whoAmI', {});
 				});
 			});
+			function CreateGrid(){
+				socket.on('takeUsers', function (users) {
+					console.dir(users);
+					//users.forEach(function(element){});
+					
+					var avatar = '__def__.png';
+					function  unitsInStockFormatter(cellvalue, options, rowObject) {
+						var cellValueInt = parseInt(cellvalue);
+						
+						return "<div class='userGridAvatar' style='background-image: url(/ava/"+avatar+")'></div>";
+					}
+					grid_data = users;
+					grid.jqGrid({
+						data: grid_data,
+						datatype: "local",
+						height: 'auto',
+						colNames:['Join date', 'Avatar', 'Login', 'Email', 'Role', 'First name', 'Last name', 'Country', 'City'],
+						colModel:[
+							{name:'regdate',index:'regdate', width:110, align:'center', sorttype:'date', formatter:'date', formatoptions: {newformat:'d.m.Y'}},
+							{name:'avatar',index:'avatar', width:46, formatter: unitsInStockFormatter},
+							{name:'login',index:'login', width:150},
+							{name:'email',index:'email', width:170, align:'left'},
+							{name:'roles',index:'roles', width:170},
+							{name:'firstName',index:'firstName', width:100, align:'right'},
+							{name:'lastName',index:'lastName', width:150, align:'left'},
+							{name:'country',index:'country', width:100},
+							{name:'city',index:'city', width:130}
+						],
+						loadComplete: function() {
+							//grid.jqGrid('setCell',"","login","",{color:'red'});
+						},
+						onSelectRow: function(id){
+							var item = grid.jqGrid('getRowData', id);
+							if (item){
+								window.open("/u/"+item.login);
+							}
+						},
+						sortname: 'regdate',
+						sortorder: "asc",
+						multiselect: false,
+						caption: "Oldmos active users"
+					});
+					
+				});
+				socket.emit('giveUsers', {});
+			}
 	body
 		include includes/top
+		#users
+			table#usersGrid

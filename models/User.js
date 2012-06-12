@@ -121,7 +121,17 @@ UserModel.getUserPublic = function(login, callback) {
 };
 
 /**
- * getAllUser
+ * getAllPublicUser
+ * @static
+ * @param {string} login
+ * @param {function} callback
+ */
+UserModel.getAllUserPublic = function(callback) {
+  UserModel.find({active: true}, {_id:0, roles:0}).select('login', 'regdate').exec(callback);
+};
+
+/**
+ * getUserAll
  * @static
  * @param {string} login
  * @param {function} callback
