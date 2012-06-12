@@ -121,11 +121,11 @@ html
 					console.dir(users);
 					//users.forEach(function(element){});
 					
-					var avatar = '__def__.png';
+					var avatar = '/ava/__def__.png';
 					function  unitsInStockFormatter(cellvalue, options, rowObject) {
 						var cellValueInt = parseInt(cellvalue);
 						
-						return "<div class='userGridAvatar' style='background-image: url(/ava/"+avatar+")'></div>";
+						return "<div class='userGridAvatar' style='background-image: url("+(cellvalue || avatar)+")'></div>";
 					}
 					grid_data = users;
 					grid.jqGrid({
