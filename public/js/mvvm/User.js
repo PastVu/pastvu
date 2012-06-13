@@ -25,9 +25,8 @@ var DefaultUser = {
 	aboutme: ''
 };
 
-function UserActivate(model) {
-	model = model || {};
-	model = $.extend(DefaultUser, model);
+function UserActivate(m) {
+	var model = $.extend(null, DefaultUser, m);
 	
 	var vm = ko.mapping.fromJS(model);
 	vm.fullName = ko.computed(function() {
