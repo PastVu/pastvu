@@ -78,7 +78,7 @@ html
 						profileVM.originUser = user;
 						
 						profileVM.canBeEdit = ko.computed(function() {
-							return iAmVM.login()==this.login();
+							return iAmVM.login()==this.login() || iAmVM.role_level() >= 50;
 						}, profileVM);
 						
 						profileVM.edit_mode = ko.computed(function() {
