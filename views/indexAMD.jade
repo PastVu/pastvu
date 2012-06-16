@@ -1,0 +1,173 @@
+doctype 5
+html
+	head
+		meta(http-equiv="content-type", content="text/html; charset=utf-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
+		meta(name="apple-mobile-web-app-capable", content="yes")
+		meta(http-equiv="cache-control", content="no-cache")
+		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
+		title= pageTitle
+		
+		link(rel="stylesheet", type="text/css", href="/style/normalize.css")
+		link(rel="stylesheet", type="text/css", href="/style/fonts.css")
+		link(rel="stylesheet", type="text/css", href="/style/common.css")
+		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
+		
+		script(type='text/javascript').
+			var require = {
+				baseUrl: "/js",
+				waitSeconds: 15,
+				deps: ["./JSExtensions"],
+				callback: function(module1, module2) {
+					console.log(9);
+				}
+			};
+		script(type='text/javascript', data-main="js/appAMD", src="/js/require-jquery.js")
+		
+	body
+		div#main_loader
+			div#cnt
+				div#welcome_msg.
+					Retro photo of humankind urbanization
+				div#loading_pics
+					div#l1
+					div#l2
+					div#l3
+					div#l4
+					div#l5
+					div#l6
+					div#l7
+					div#l8
+					div#l9
+					div#l10
+				div#bar
+					div#bar_fill
+				div#info_msg.
+					loading, please wait
+				div#percent
+			div.helper
+		script(type='text/javascript')
+			var main_loader = document.getElementById('main_loader'),
+				allPercent = 15, //15% остается на выполнение app()
+				onePercentW = ($('#bar').width())/100,
+				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
+				current_percent = 0,
+				main_loader_percent = document.getElementById('percent'),
+				main_loader_bar_fill = document.getElementById('bar_fill');
+				
+			function LoaderIncrement(delta, finish){
+				delta = (allPercent > 100 ? Math.floor(delta*100/allPercent) : Math.floor(delta*allPercent/100));
+				current_percent += delta;
+				if (current_percent >= 100 || finish){
+					current_percent = 100;
+					main_loader.classList.add('green');
+				}
+				var dec = Math.floor(current_percent/10);
+				for(var i=1; i<=dec; i++) l_pics[i-1].classList.add('finish');
+				main_loader_percent.innerHTML = current_percent + '%';
+				main_loader_bar_fill.style.width = current_percent*onePercentW + 'px';
+			}
+			LoaderIncrement(0);
+			function removeLoader(){
+				main_loader.style.display = 'none';
+				main_loader = main_loader_percent = main_loader_bar_fill = null;
+			}
+		
+		#main
+			#map
+			
+			include includes/top
+			
+			#nav_panel
+				#mup.fringe.btn(onclick="mapUp()")
+					.inner_bord
+				#mright.fringe.btn(onclick="mapRight()")
+					.inner_bord
+				#mdown.fringe.btn(onclick="mapDown()")
+					.inner_bord
+				#mleft.fringe.btn(onclick="mapLeft()")
+					.inner_bord
+				#mhome.fringe.btn(onclick="home()")
+					.inner_bord
+				#nav_pin_sub
+				#nav_pin.fringe.btn(onclick="navSlider.togglePin()")
+					.inner_bord
+				#zoomin.fringe.btn.inout(onclick="ChangeZoom(1)")
+					.inner_bord
+				#zoomout.fringe.btn.inout(onclick="ChangeZoom(-1)")
+					.inner_bord
+				#nav_stick.fringe(onclick="ChangeZoom(-1)")
+					.inner_bord
+				#nav_slider_area
+
+			#layers_fringe.fringe.gradientBack.
+				<div id='layers_panel' class='inner_bord'>
+					<div id='current' onclick="this.parentNode.classList.toggle('open');"></div>
+					<div id='systems'></div>
+				</div>
+			#search_fringe.fringe.gradientBack.
+				<div id='search_panel' class='inner_bord' data-bind="css: {open: open()==true, fill: query().length>0 }">
+					<div id='search_in'>
+						<div id='searchArrow' data-bind="click: toggleOpen"><div></div></div>
+						<input id='SearchInput' placeholder="Поиск.." type="text" data-bind="value: query, valueUpdate: 'keyup'" autocomplete="off">
+						<div id='searchClear' data-bind="click: clear"></div>
+					</div>
+					<div id='search_options'>
+						<div id='searchWithFilter' data-bind="css: {check: respectFilter()==true}, click: toggleFilter"><div class='check_box'></div><div class='check_name'>С учетом фильтра</div></div>
+						<div id='searchApplyMap' data-bind="css: {check: applyMap()==true}, click: toggleApplyMap"><div class='check_box'></div><div class='check_name'>Отображать на карте</div></div>
+						<div id='searchResultCount'>Результатов: <span data-bind="text: resultCount"></span></div>
+					</div>
+					<div id='search_out' data-bind="template: {name:'CamListTemplate', data: CamList, afterRender: CamList.AfterTemplateRender}, style: {height: CamList.containerH()+'px'}">
+					</div>
+				</div>
+			div#curtain
+			
+			div#login_fringe.fringe.form.
+				<div id="login_body" class='inner_bord'>
+					<div id='login_head' class='head'>Authorization</div>
+					<form action='' autocomplete="on"  method='POST' id='loginForm' name='loginForm' onSubmit="return Login(this);">
+						<div class='label icon-user'>Username:</div>
+						<div class='label clickable' onclick='LoginActivateSwap("#reg_fringe")'>Registration</div>
+						<br />
+						<input id='login_user' autocomplete="on" class='initFocus' type="text" required="required" title="input login" placeholder="Enter username or e-mail" name="login" />
+						<div class='label icon-lock'>Password:</div>
+						<div class='label clickable' onclick='LoginActivateSwap("#recall_fringe")'>Recover password</div>
+						<br />
+						<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
+						<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' class='checked' onclick='LoginRememberCheck(this)'></div><br/>
+						<input type="submit" value="Sign in" />
+						<input type="button" onclick='FormClose()' value="Cancel" />
+					</form>
+					<div id="login_wait" class='wait'>Authorizing..</div>
+					<div id="login_mess" class='mess'><div></div></div>
+				</div>
+			div#reg_fringe.fringe.form.
+				<div id="reg_body" class='inner_bord'>
+					<div id='reg_head' class='head'>Registration</div>
+					<form action='' autocomplete="off" method='POST' id='regForm' name='regForm' onSubmit="return Register(this);">
+						<div class='label icon-user'>User name:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+						<input id='reg_user' autocomplete="off" class='initFocus' type="text" required="required" title="input login" placeholder="User" name="login">
+						<div class='label icon-envelope'>E-mail:</div>
+						<input id='reg_email' type="email" autocomplete="on" required="required" title="input email" placeholder="email" name="email">
+						<div class='label icon-lock'>Password:</div><br />
+						<input id='reg_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
+						<div class='label icon-lock'>Repeat password:</div><br />
+						<input id='reg_pass2' type="password" required="required" title="input password" placeholder="Enter password" name="pass2">
+						<input type="submit" value="Register">
+						<input type="button" onclick='FormClose()' value="Cancel">
+					</form>
+					<div id="reg_wait" class='wait'>Sending data..</div>
+					<div id="reg_mess" class='mess'><div></div></div>
+				</div>
+			div#recall_fringe.fringe.form.
+				<div id="recall_body" class='inner_bord'>
+					<div id='recall_head' class='head'>Recover password</div>
+					<form action='' autocomplete="off" method='POST' id='recallForm' name='recallForm' onSubmit="return RecallAjax(this);">
+						<div class='label icon-envelope'>Login or e-mail:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+						<input id='recall_email' autocomplete="off" class='initFocus' type="text" required="required" title="Input login or e-mail" placeholder="Enter login or e-mail" name="login">
+						<input type="submit" value="Send">
+						<input type="button" onclick='FormClose()' value="Cancel">
+					</form>
+					<div id="recall_wait" class='wait'>Sending..</div>
+					<div id="recall_mess" class='mess'><div></div></div>
+				</div>

@@ -40,7 +40,7 @@ module.exports.loadController = function (app, io) {
 	
 	var iterator = 0;
 	app.get('/'/*, regenSession*/, function(req, res){
-		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator});
+		res.render('indexAMD.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator});
 	});
 	
 	app.get('/updateCookie', function(req, res) {
