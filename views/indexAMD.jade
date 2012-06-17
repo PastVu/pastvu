@@ -13,17 +13,6 @@ html
 		link(rel="stylesheet", type="text/css", href="/style/common.css")
 		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
 		
-		script(type='text/javascript').
-			var require = {
-				baseUrl: "/js",
-				waitSeconds: 15,
-				deps: ["./JSExtensions"],
-				callback: function(module1, module2) {
-					console.log(9);
-				}
-			};
-		script(type='text/javascript', data-main="js/appAMD", src="/js/require-jquery.js")
-		
 	body
 		div#main_loader
 			div#cnt
@@ -46,8 +35,8 @@ html
 					loading, please wait
 				div#percent
 			div.helper
-		script(type='text/javascript')
-			var main_loader = document.getElementById('main_loader'),
+		script(type='text/javascript').
+			/*var main_loader = document.getElementById('main_loader'),
 				allPercent = 15, //15% остается на выполнение app()
 				onePercentW = ($('#bar').width())/100,
 				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
@@ -71,7 +60,7 @@ html
 			function removeLoader(){
 				main_loader.style.display = 'none';
 				main_loader = main_loader_percent = main_loader_bar_fill = null;
-			}
+			}*/
 		
 		#main
 			#map
@@ -171,3 +160,5 @@ html
 					<div id="recall_wait" class='wait'>Sending..</div>
 					<div id="recall_mess" class='mess'><div></div></div>
 				</div>
+			
+			script(type='text/javascript', data-main="js/appAMD", src="/js/require-jquery.js")

@@ -3,12 +3,13 @@
  Leaflet is a modern open-source JavaScript library for interactive maps.
  http://leaflet.cloudmade.com
 */
-
-(function (root) {
-	root.L = {
+define (function(){
+//(function (root) {
+	//root.L = {
+	var L = {
 		VERSION: '0.4',
 
-		ROOT_URL: root.L_ROOT_URL || (function () {
+		ROOT_URL: /*root.L_ROOT_URL ||*/ (function () {
 			var scripts = document.getElementsByTagName('script'),
 			    leafletRe = /\/?leaflet[\-\._]?([\w\-\._]*)\.js\??/;
 
@@ -30,13 +31,13 @@
 		}()),
 
 		noConflict: function () {
-			root.L = this._originalL;
+			//root.L = this._originalL;
 			return this;
-		},
+		}/*,
 
-		_originalL: root.L
+		_originalL: root.L*/
 	};
-}(this));
+//}(this));
 
 
 /*
@@ -6442,4 +6443,5 @@ L.Map.include({
 	}
 });
 
-
+	return L;
+});
