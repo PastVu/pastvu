@@ -3,7 +3,7 @@ requirejs.config({
 	waitSeconds: 15,
 	deps: ['./JSExtensions'],
 	callback: function(module1, module2) {
-		console.log('AMD depends loaded');
+		console.timeStamp('AMD depends loaded');
 	},
 	map: {
 		'*': {
@@ -24,10 +24,11 @@ requirejs.config({
 		}
 	}
 });
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'knockout', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/i18n', 'leaflet', 'L.Google'],
-function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle) {
+['domReady', 'jquery', 'knockout', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations'],
+function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Locations) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		poly_mgr, aoLayer,
@@ -65,6 +66,7 @@ function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle) {
 		createMap();
 		navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'));
 	}
+	
 	function createMap() {
 		if (GlobalParams.USE_OSM_API()) {
 			layers.osm = {
@@ -159,4 +161,54 @@ function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle) {
 		}
 	}
 	
+	function getLocation() {
+		$.when(getIp())
+		 .then(getLocationByIp);
+
+		geolocateMe();
+	}
+
+	function getIp() {
+		return $.ajax({
+			url: 'http://jsonip.appspot.com/',
+			cache: false,
+			success: function(json) {
+				console.dir(json);
+				if (Utils.isObjectType('string', json)) json = JSON.parse(json);
+				myIP = json["ip"];
+			},
+			error: function(json) {
+				console.error('Ошибка определения адреса и местоположения пользователя: ' + json.status + ' ('+json.statusText+')');
+			}
+		});
+	}
+	function getLocationByIp() {
+		Utils.addScript('http://www.geoplugin.net/json.gp?ip='+myIP);
+	}
+
+	function geolocateMe() {
+		if (Browser.support.geolocation) {
+			navigator.geolocation.getCurrentPosition(show_map, handle_error, {enableHighAccuracy: true, timeout:5000, maximumAge: 5*60*1000});
+		}
+		
+		function show_map(position) {
+			Locations.set({gpsip: {lat:position.coords.latitude, lng:position.coords.longitude, z:15}});
+		}
+		function handle_error(err) {
+			if (err.code == 1) {
+				console.log('Geolocation failed because user denied. '+err.message);
+			} else if (err.code == 2) {
+				console.log('Geolocation failed because position_unavailable. '+err.message);
+			} else if (err.code == 3) {
+				console.log('Geolocation failed because timeout. '+err.message);
+			} else if (err.code == 4) {
+				console.log('Geolocation failed because unknown_error. '+err.message);
+			}
+		}
+	}
+	
 });
+
+function geoPlugin(data){
+	if (!Locations.types['gpsip']) Locations.set({'gpsip': {lat: data.geoplugin_latitude, lng: data.geoplugin_longitude, z: 10}});
+}
