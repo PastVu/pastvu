@@ -3,6 +3,7 @@ var fs = require( 'fs' );
 
 var express = require('express'),
 	connect = require('express/node_modules/connect'),
+	gzippo = require('gzippo'),
 	mongodb = require('connect-mongodb/node_modules/mongodb'),
 
 	mongoStore = require('connect-mongodb'),
@@ -56,13 +57,16 @@ app.configure(function(){
 	} else {
 		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
 	}
-	app.use(express.static(__dirname + '/public', {maxAge: day}));
+	app.use(gzippo.staticGzip(__dirname + '/public', {maxAge: day})); //app.use(express.static(__dirname + '/public', {maxAge: day}));
+	
 	app.use('/ava', express.static(__dirname + '/uploads/ava', {maxAge: day}));
+	
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
 	app.use(express.session({ cookie: {maxAge: 12*hour}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
 	app.use(express.methodOverride());
 	
+	app.use(gzippo.compress());
     app.use(app.router);
 	var Session = connect.middleware.session.Session;
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
