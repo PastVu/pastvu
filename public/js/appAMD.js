@@ -2,7 +2,7 @@ requirejs.config({
 	baseUrl: '/js',
 	waitSeconds: 15,
 	deps: ['./JSExtensions'],
-	callback: function(module1, module2) {
+	callback: function() {
 		console.timeStamp('AMD depends loaded');
 	},
 	map: {
@@ -27,18 +27,34 @@ requirejs.config({
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'knockout', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations'],
-function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Locations) {
+['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations'],
+function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Locations) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
+		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
 		poly_mgr, aoLayer,
 		navSlider,
 		login, reg, recall;
 	
-	domReady(app);
+	$.when(LoadParams(), waitForDomReady())
+	 .then(app);
+	
+	function waitForDomReady() {
+		var dfd = $.Deferred();
+		domReady(function(){console.timeStamp('Dom Ready'); dfd.resolve();})
+		return dfd.promise();
+	}
+	function LoadParams(){
+		var dfd = $.Deferred();
+		socket.on('takeGlobeParams', function (json) {
+			ko_mapping.fromJS(json, GlobalParams);
+			dfd.resolve();
+		});
+		socket.emit('giveGlobeParams');
+		return dfd.promise();
+	}
 	
 	function app () {
-		console.timeStamp('Dom Ready');
 		
 		login = {
 			head: document.querySelector('#login_fringe .head'),
@@ -151,6 +167,10 @@ function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Loc
 		document.querySelector('#layers_panel #systems').classList.add('s'+sysNum);
 
 		
+		Locations.subscribe(function(val){
+			mapDefCenter = new L.LatLng(val.lat, val.lng);
+			setMapDefCenter(true);
+		});
 		map = new L.Map('map', {center: mapDefCenter, zoom: Locations.current.z});
 		
 		if (!!window.localStorage && !! window.localStorage['arguments.SelectLayer']) {
@@ -161,54 +181,40 @@ function(domReady, $, ko, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Loc
 		}
 	}
 	
-	function getLocation() {
-		$.when(getIp())
-		 .then(getLocationByIp);
-
-		geolocateMe();
-	}
-
-	function getIp() {
-		return $.ajax({
-			url: 'http://jsonip.appspot.com/',
-			cache: false,
-			success: function(json) {
-				console.dir(json);
-				if (Utils.isObjectType('string', json)) json = JSON.parse(json);
-				myIP = json["ip"];
-			},
-			error: function(json) {
-				console.error('Ошибка определения адреса и местоположения пользователя: ' + json.status + ' ('+json.statusText+')');
-			}
-		});
-	}
-	function getLocationByIp() {
-		Utils.addScript('http://www.geoplugin.net/json.gp?ip='+myIP);
-	}
-
-	function geolocateMe() {
-		if (Browser.support.geolocation) {
-			navigator.geolocation.getCurrentPosition(show_map, handle_error, {enableHighAccuracy: true, timeout:5000, maximumAge: 5*60*1000});
-		}
+	function SelectLayer(sys_id, type_id){
+		if (!layers.hasOwnProperty(sys_id)) return;
+		var sys = layers[sys_id];
+		if (!sys.types.hasOwnProperty(type_id)) return;
+		var type = sys.types[type_id];
 		
-		function show_map(position) {
-			Locations.set({gpsip: {lat:position.coords.latitude, lng:position.coords.longitude, z:15}});
-		}
-		function handle_error(err) {
-			if (err.code == 1) {
-				console.log('Geolocation failed because user denied. '+err.message);
-			} else if (err.code == 2) {
-				console.log('Geolocation failed because position_unavailable. '+err.message);
-			} else if (err.code == 3) {
-				console.log('Geolocation failed because timeout. '+err.message);
-			} else if (err.code == 4) {
-				console.log('Geolocation failed because unknown_error. '+err.message);
+		if (curr_lay.sys && curr_lay.type){
+			var prev_selected = document.querySelector('#layers_panel #systems > div > div.selected');
+			if (prev_selected){
+				prev_selected.parentNode.firstChild.classList.remove('selected');
+				prev_selected.classList.remove('selected');
 			}
+			
+			if (curr_lay.type.iColor != type.iColor){
+				document.querySelector('#main').classList.remove(curr_lay.type.iColor);
+				document.querySelector('#main').classList.add(type.iColor);
+			}
+			
+			map.removeLayer(curr_lay.type.obj);
+		}else{
+			document.querySelector('#main').classList.add(type.iColor);
 		}
+
+		type.dom.parentNode.firstChild.classList.add('selected');
+		type.dom.classList.add('selected');
+		document.querySelector('#current').innerHTML = sys.desc+': '+type.desc;
+		
+		if (!!window.localStorage) {
+			window.localStorage['arguments.SelectLayer'] = Array.prototype.slice.call(arguments).join(',');
+		}
+		curr_lay.sys = sys; curr_lay.type = type;
+		map.addLayer(type.obj);
 	}
+
+
 	
 });
-
-function geoPlugin(data){
-	if (!Locations.types['gpsip']) Locations.set({'gpsip': {lat: data.geoplugin_latitude, lng: data.geoplugin_longitude, z: 10}});
-}
