@@ -1,25 +1,4 @@
 
-
-/*var myLocation = {
-	//ip: {lat:, lng:, pos:2},
-	//gps: {lat:, lng:, pos:1},
-	_default: {lat:55.7418, lng:37.61, pos:1},
-	
-	set: function (type, lat, lng, pos) {
-		for (var i in this) {
-			if (!this.hasOwnProperty(i) || !Utils.isObjectType('object', this[i])) continue;
-			if (this[i]['pos']>=pos) this[i]['pos']++;
-		}
-		this[type] = {lat:lat, lng:lng, pos:pos};
-		if (pos == 1) mapDefCenter = new L.LatLng(lat, lng);
-	},
-	getPrioritet: function () {
-		for (var i in this) {
-			if (!this.hasOwnProperty(i) || !Utils.isObjectType('object', this[i])) continue;
-			if (this[i]['pos']==1) return this[i];
-		}
-	}
-};*/
 /**
  * Global vars
  */

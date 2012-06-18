@@ -1,4 +1,4 @@
 define (function(){
-	console.log('socket define');
+	console.timeStamp('Socket define');
 	return io.connect(location+'');
 });
