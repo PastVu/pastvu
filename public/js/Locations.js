@@ -1,7 +1,7 @@
 define (['Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://www.geoplugin.net/javascript.gp'], function(Browser, ko_mapping, GlobalParams){
 	var Locations = {
 		types: {'_def_': ko_mapping.toJS(GlobalParams.locDef)},
-		range: [GlobalParams.locDefRange()],
+		range: GlobalParams.locDefRange(),
 		
 		current: ko_mapping.toJS(GlobalParams.locDef),
 		
@@ -35,7 +35,7 @@ define (['Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://www.geoplug
 	
 	
 	/**
-	 * Определяем координаты по ip
+	 * РћРїСЂРµРґРµР»СЏРµРј РєРѕРѕСЂРґРёРЅР°С‚С‹ РїРѕ ip
 	 */
 	try {
 		if (geoplugin_status && geoplugin_status()=='200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
@@ -46,7 +46,7 @@ define (['Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://www.geoplug
 	}
 	
 	/**
-	 * Определяем координаты по Geolocation API
+	 * РћРїСЂРµРґРµР»СЏРµРј РєРѕРѕСЂРґРёРЅР°С‚С‹ РїРѕ Geolocation API
 	 */
 	if (Browser.support.geolocation) {
 		!function geolocateMe() {
