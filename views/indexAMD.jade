@@ -94,21 +94,7 @@ html
 					<div id='current' onclick="this.parentNode.classList.toggle('open');"></div>
 					<div id='systems'></div>
 				</div>
-			#search_fringe.fringe.gradientBack.
-				<div id='search_panel' class='inner_bord' data-bind="css: {open: open()==true, fill: query().length>0 }">
-					<div id='search_in'>
-						<div id='searchArrow' data-bind="click: toggleOpen"><div></div></div>
-						<input id='SearchInput' placeholder="Поиск.." type="text" data-bind="value: query, valueUpdate: 'keyup'" autocomplete="off">
-						<div id='searchClear' data-bind="click: clear"></div>
-					</div>
-					<div id='search_options'>
-						<div id='searchWithFilter' data-bind="css: {check: respectFilter()==true}, click: toggleFilter"><div class='check_box'></div><div class='check_name'>С учетом фильтра</div></div>
-						<div id='searchApplyMap' data-bind="css: {check: applyMap()==true}, click: toggleApplyMap"><div class='check_box'></div><div class='check_name'>Отображать на карте</div></div>
-						<div id='searchResultCount'>Результатов: <span data-bind="text: resultCount"></span></div>
-					</div>
-					<div id='search_out' data-bind="template: {name:'CamListTemplate', data: CamList, afterRender: CamList.AfterTemplateRender}, style: {height: CamList.containerH()+'px'}">
-					</div>
-				</div>
+			
 			div#curtain
 			
 			div#login_fringe.fringe.form.

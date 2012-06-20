@@ -27,8 +27,8 @@ requirejs.config({
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
-function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, User, i18n, L, LGoogle, Locations, navigationSlider) {
+['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
+function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
@@ -95,6 +95,8 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 		
 		createMap();
 		navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
+		
+		TopPanel(iAmVM, 'top_panel_fringe');
 	}
 	
 	function createMap() {
@@ -227,6 +229,14 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 		}
 		curr_lay.sys = sys; curr_lay.type = type;
 		map.addLayer(type.obj);
+	}
+	
+	function setMapDefCenter(forceMoveEvent){
+		map.setView(mapDefCenter, Locations.current.z, false);
+	}
+	function home () {
+		var home = Locations.types['home'] || Locations.types['gpsip'] || Locations.types['_def_'];
+		map.setView(new L.LatLng(home.lat, home.lng), Locations.current.z, false);
 	}
 	
 });

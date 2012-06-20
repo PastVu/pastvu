@@ -1,66 +1,64 @@
 /**
  * Модель управляет верхней панелью
  */
-var TopPanelVM;
-
-function CreateTopPanelVM(){
-
-	TopPanelVM = {
-		// Data
-		loggedIn: ko.computed({
+define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i18nVM, ko){
+	function TopPanelVM (iAmVM, dom) {
+		this.user = iAmVM;
+		
+		loggedIn = ko.computed({
 			read: function(){
-				return GlobalParamsVM.LoggedIn();
+				return GlobalParams.LoggedIn();
 			},
 			owner: TopPanelVM
-		}),
-		registrationAllowed: ko.computed({
+		});
+		registrationAllowed = ko.computed({
 			read: function(){
-				return GlobalParamsVM.REGISTRATION_ALLOWED();
+				return GlobalParams.REGISTRATION_ALLOWED();
 			},
 			owner: TopPanelVM
-		}),
-		
-		user: iAmVM,
-		
-		//i18n
-		login: ko.computed({
+		});
+		login = ko.computed({
 			read: function(){return i18nVM.login();},
 			owner: TopPanelVM
-		}),
-		logout: ko.computed({
+		});
+		logout = ko.computed({
 			read: function(){return i18nVM.logout();},
 			owner: TopPanelVM
-		}),
-		register: ko.computed({
+		});
+		register = ko.computed({
 			read: function(){return i18nVM.register();},
 			owner: TopPanelVM
-		}),
-		admin: ko.computed({
+		});
+		admin = ko.computed({
 			read: function(){return i18nVM.admin();},
 			owner: TopPanelVM
-		}),
-		profile: ko.computed({
+		});
+		profile = ko.computed({
 			read: function(){
-				if (GlobalParamsVM.LoggedIn())
+				if (GlobalParams.LoggedIn())
 					return iAmVM.fullName();
 				else
 					return '';
 			},
 			owner: TopPanelVM
-		}),
-		profileAvatar: ko.computed({
+		});
+		profileAvatar = ko.computed({
 			read: function(){
-				if (GlobalParamsVM.LoggedIn())
+				if (GlobalParams.LoggedIn())
 					return iAmVM.avatar();
 				else
 					return '';
 			},
 			owner: TopPanelVM
-		})
-		// Behaviors
-	};
-}
+		});
+		
+		ko.applyBindings(this, document.getElementById('dom'));
+	}
 
-function BindTopPanelVM(){
-	ko.applyBindings(TopPanelVM, document.getElementById('top_panel_fringe'));
-}
+	/*function BindTopPanelVM(){
+		ko.applyBindings(TopPanelVM, document.getElementById('top_panel_fringe'));
+	}
+	BindTopPanelVM();*/
+	
+	return TopPanelVM;
+});
