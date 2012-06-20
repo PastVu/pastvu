@@ -52,13 +52,8 @@ define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i1
 			owner: TopPanelVM
 		});
 		
-		ko.applyBindings(this, document.getElementById('dom'));
+		ko.applyBindings(this, document.getElementById(dom));
 	}
-
-	/*function BindTopPanelVM(){
-		ko.applyBindings(TopPanelVM, document.getElementById('top_panel_fringe'));
-	}
-	BindTopPanelVM();*/
 	
 	return TopPanelVM;
 });

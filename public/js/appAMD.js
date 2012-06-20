@@ -14,6 +14,7 @@ requirejs.config({
 	},
 	paths: {
 		'domReady': 'require_plugins/domReady',
+		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
 		'goog': 'require_plugins/goog'
 	},
@@ -27,8 +28,8 @@ requirejs.config({
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
-function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider) {
+['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider', 'text!../style/leaflet_0.4.0.css'],
+function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider, css) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
@@ -37,7 +38,16 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 		login, reg, recall,
 		iAmVM;
 	
-	$.when(LoadParams(), waitForDomReady())
+	/**
+	 * Styles load list
+	 */
+	var StylesToLoad = [
+		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
+		{s: 'style/jquery.toast.css', p: 2, t: '?vv=100'},
+		{s: 'style/map_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion()/*+'&verBuild='+GlobalParams.verBuild*/},
+	];
+	
+	$.when(LoadParams(), waitForDomReady(), LoadStyles(StylesToLoad))
 	 .pipe(LoadMe)
 	 .then(app);
 	
@@ -68,6 +78,26 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 		return dfd.promise();
 	}
 	
+	function LoadStyles(arr, doneCallback) {
+		var getarray = [], i, len,
+			style;
+
+		console.groupCollapsed("Styles Loading");
+		console.time("Styles loaded time");
+		for (i = 0, len = arr.length; i < len; i += 1) {
+			style = arr[i];
+			getarray.push(
+				Utils.addStyle(style.s+(style.t || '')/*, LoaderIncrement.neoBind(null, [style.p], true, false)*/)
+			);
+		};
+		return $.when.apply($, getarray).then(function () {
+			console.log('All Styles loaded');
+			console.timeEnd("Styles loaded time");
+			console.groupEnd();
+		});
+
+	};
+	
 	function app () {
 		
 		login = {
@@ -96,7 +126,7 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 		createMap();
 		navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
 		
-		TopPanel(iAmVM, 'top_panel_fringe');
+		new TopPanel(iAmVM, 'top_panel_fringe');
 	}
 	
 	function createMap() {

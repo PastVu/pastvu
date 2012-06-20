@@ -64,14 +64,14 @@ define(['jquery'], function (jQuery) {
 					clearTimeout( timeout_id );
 					callbackSuccess.call(scope || window);	// fire the success callback
 				 }
-			  } catch( e ) {console.error('Ошибка применения стилей (getStyle) '+e); if(callbackFail) callbackFail.call(scope || window);} finally {}
+			  } catch( e ) {console.error('РћС€РёР±РєР° РїСЂРёРјРµРЅРµРЅРёСЏ СЃС‚РёР»РµР№ (getStyle) '+e); if(callbackFail) callbackFail.call(scope || window);} finally {}
 		   }, 100);
 		   
 		   var timeout_id = setTimeout(function() {	// start counting down till fail
 			  clearInterval( interval_id );	// clear the counters
 			  clearTimeout( timeout_id );
 			  head.removeChild( link );	// since the style sheet didn't load, remove the link node from the DOM
-			  console.error('Превышен интервал загрузки стилей (getStyle)');
+			  console.error('РџСЂРµРІС‹С€РµРЅ РёРЅС‚РµСЂРІР°Р» Р·Р°РіСЂСѓР·РєРё СЃС‚РёР»РµР№ (getStyle)');
 			  if(callbackFail) callbackFail.call(scope || window); // fire the fail callback
 		   }, 15000);
 
