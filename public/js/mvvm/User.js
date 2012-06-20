@@ -1,47 +1,51 @@
-var DefaultUser = {
-	login: 'anonymous',
-	email: '',
-	
-	//ROLE
-	role_level: 0,
-	role_name: 'anonymous',
-	
-	//Profile
-	avatar: '/ava/__def__.png',
-	firstName: '',
-	lastName: '',
-	birthdate: '',
-	sex: 'male',
-	country: '',
-	city: '',
-	work: '',
-	www: '',
-	icq: '',
-	skype: '',
-	aim: '',
-	lj: '',
-	flickr: '',
-	blogger: '',
-	aboutme: ''
-};
+define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_mapping, Utils) {
+	var DefaultUser = {
+		login: 'anonymous',
+		email: '',
+		
+		//ROLE
+		role_level: 0,
+		role_name: 'anonymous',
+		
+		//Profile
+		avatar: '/ava/__def__.png',
+		firstName: '',
+		lastName: '',
+		birthdate: '',
+		sex: 'male',
+		country: '',
+		city: '',
+		work: '',
+		www: '',
+		icq: '',
+		skype: '',
+		aim: '',
+		lj: '',
+		flickr: '',
+		blogger: '',
+		aboutme: ''
+	};
 
-function UserActivate(m) {
-	var model = $.extend(null, DefaultUser, m);
-	
-	var vm = ko.mapping.fromJS(model);
-	vm.fullName = ko.computed(function() {
-		if (this.firstName() && this.lastName()) return this.firstName() + " " + this.lastName();
-		else return this.login();
-	}, vm);
-	
-	return vm;
-}
-
-function UserUpdate(model, vm) {
-	if (!vm){ vm = UserActivate(model);
-	} else {
-		model = model || {};
-		ko.mapping.fromJS(model, vm);
+	function UserActivate(m) {
+		var model = $.extend(null, DefaultUser, m);
+		
+		var vm = ko_mapping.fromJS(model);
+		vm.fullName = ko.computed(function() {
+			if (this.firstName() && this.lastName()) return this.firstName() + " " + this.lastName();
+			else return this.login();
+		}, vm);
+		
+		return vm;
 	}
-	return vm;
-}
+
+	function UserUpdate(model, vm) {
+		if (!vm){ vm = UserActivate(model);
+		} else {
+			model = model || {};
+			ko_mapping.fromJS(model, vm);
+		}
+		return vm;
+	}
+	
+	return UserUpdate;
+});

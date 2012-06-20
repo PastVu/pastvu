@@ -27,16 +27,18 @@ requirejs.config({
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
-function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, i18n, L, LGoogle, Locations, navigationSlider) {
+['domReady', 'jquery', 'knockout', 'knockout.mapping', 'Browser', 'Utils', 'socket', 'EventTypes', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
+function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, User, i18n, L, LGoogle, Locations, navigationSlider) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
 		poly_mgr, aoLayer,
 		navSlider,
-		login, reg, recall;
+		login, reg, recall,
+		iAmVM;
 	
 	$.when(LoadParams(), waitForDomReady())
+	 .pipe(LoadMe)
 	 .then(app);
 	
 	function waitForDomReady() {
@@ -51,6 +53,18 @@ function(domReady, $, ko, ko_mapping, Browser, Utils, socket, ET, GlobalParams, 
 			dfd.resolve();
 		});
 		socket.emit('giveGlobeParams');
+		return dfd.promise();
+	}
+	
+	function LoadMe(){
+		var dfd = $.Deferred();
+		socket.on('youAre', function (user) {
+			GlobalParams.LoggedIn(!!user);
+			console.dir(user);
+			iAmVM = User(user, iAmVM);
+			dfd.resolve();
+		});
+		socket.emit('whoAmI');
 		return dfd.promise();
 	}
 	
