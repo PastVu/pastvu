@@ -42,9 +42,8 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 	 * Styles load list
 	 */
 	var StylesToLoad = [
-		{s: 'style/leaflet_0.4.0.css', p: 2, t: '?vv=040'},
 		{s: 'style/jquery.toast.css', p: 2, t: '?vv=100'},
-		{s: 'style/map_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion()/*+'&verBuild='+GlobalParams.verBuild*/},
+		{s: 'style/map_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion()/*+'&verBuild='+GlobalParams.verBuild*/}
 	];
 	
 	$.when(LoadParams(), waitForDomReady(), LoadStyles(StylesToLoad))
@@ -127,6 +126,11 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 		navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
 		
 		new TopPanel(iAmVM, 'top_panel_fringe');
+		
+		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
+			/*removeLoader();*/ document.querySelector('#main').style.opacity = '1';
+		}, 250);
+		//if(init_message) $().toastmessage('showSuccessToast', init_message);
 	}
 	
 	function createMap() {

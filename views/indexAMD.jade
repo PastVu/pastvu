@@ -8,9 +8,6 @@ html
 		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
 		title= pageTitle
 		
-		link(rel="stylesheet", type="text/css", href="/style/normalize.css")
-		link(rel="stylesheet", type="text/css", href="/style/fonts.css")
-		link(rel="stylesheet", type="text/css", href="/style/common.css")
 		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
 		
 	body
@@ -36,14 +33,14 @@ html
 				div#percent
 			div.helper
 		script(type='text/javascript').
-			/*var main_loader = document.getElementById('main_loader'),
+			var main_loader = document.getElementById('main_loader'),
 				allPercent = 15, //15% остается на выполнение app()
-				onePercentW = ($('#bar').width())/100,
+				onePercentW = (document.querySelector('#bar').offsetWidth)/100,
 				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
 				current_percent = 0,
 				main_loader_percent = document.getElementById('percent'),
 				main_loader_bar_fill = document.getElementById('bar_fill');
-				
+			main_loader.classList.add('visi');
 			function LoaderIncrement(delta, finish){
 				delta = (allPercent > 100 ? Math.floor(delta*100/allPercent) : Math.floor(delta*allPercent/100));
 				current_percent += delta;
@@ -60,7 +57,7 @@ html
 			function removeLoader(){
 				main_loader.style.display = 'none';
 				main_loader = main_loader_percent = main_loader_bar_fill = null;
-			}*/
+			}
 		
 		#main
 			#map
