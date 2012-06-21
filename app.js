@@ -40,7 +40,8 @@ app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).
 /**
  * Окружение (development, test, production)
  */
-var env = process.env.NODE_ENV || 'development';
+var env = process.env.NODE_ENV || 'development',
+	pub = (env == 'development' ? '/public' : '/public-build');
 	
 app.configure(function(){
 	app.set('views', __dirname + '/views');
@@ -51,13 +52,13 @@ app.configure(function(){
 	//app.use(express.logger({ immediate: false, format: 'dev' }));
 	
 	app.use(express.errorHandler({ dumpExceptions: (env=='development'), showStack: (env=='development') }));
-	app.use(express.favicon(__dirname + '/public/favicon.ico', { maxAge: day }));
+	app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: day }));
 	if (env=='development') {
-		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: true, once: false, compress: false, debug:false}));
+		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug:false}));
 	} else {
-		app.use('/style', lessMiddleware({src: __dirname + '/public/style', force: false, once: true, compress: true, optimization:2, debug:false}));
+		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, optimization:2, debug:false}));
 	}
-	app.use(gzippo.staticGzip(__dirname + '/public', {maxAge: day})); //app.use(express.static(__dirname + '/public', {maxAge: day}));
+	app.use(gzippo.staticGzip(__dirname + pub, {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
 	
 	app.use('/ava', express.static(__dirname + '/uploads/ava', {maxAge: day}));
 	

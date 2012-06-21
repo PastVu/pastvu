@@ -1,7 +1,7 @@
 requirejs.config({
-	baseUrl: '/js',
+	//baseUrl: 'public/js',
 	waitSeconds: 15,
-	deps: ['./JSExtensions'],
+	deps: ['JSExtensions'],
 	callback: function() {
 		console.timeStamp('AMD depends loaded');
 	},
@@ -17,19 +17,19 @@ requirejs.config({
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
 		'goog': 'require_plugins/goog'
-	},
+	}/*,
 	shim: {
 		'socket':{
             deps: ['/socket.io/socket.io.js'],
-            exports: 'socket'
+            exports: 'io'
 		}
-	}
+	}*/
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 require(
-['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider', 'text!../style/leaflet_0.4.0.css'],
-function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider, css) {
+['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
+function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
