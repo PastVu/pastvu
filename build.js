@@ -25,7 +25,7 @@ var config = {
 	},
 	paths: {
 		'jquery': 'jquery-1.7.2.min',
-		'socket.io': 'empty:',
+		'socket.io': 'empty:', //Говорим, что socket.io не надо включать в выходной файл
 		'domReady': 'require_plugins/domReady',
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
