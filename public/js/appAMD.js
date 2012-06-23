@@ -13,17 +13,13 @@ requirejs.config({
 		}
 	},
 	paths: {
+		'jquery': 'jquery-1.7.2.min',
+		'socket.io': '/socket.io/socket.io',
 		'domReady': 'require_plugins/domReady',
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
 		'goog': 'require_plugins/goog'
-	}/*,
-	shim: {
-		'socket':{
-            deps: ['/socket.io/socket.io.js'],
-            exports: 'io'
-		}
-	}*/
+	}
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации

@@ -1,4 +1,4 @@
-define (['async!/socket.io/socket.io.js'], function(){
+define (['socket.io'], function(){
 	console.timeStamp('Socket define');
 	return io.connect(location+'');
 });

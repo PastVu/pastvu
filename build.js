@@ -13,9 +13,9 @@ var config = {
         ascii_only: false,
         beautify: false
     },
-	optimizeCss: false, //Не трогаем css
-	preserveLicenseComments: false, //Удаляем лицензионные комментарии
-	removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
+	optimizeCss: false, //РќРµ С‚СЂРѕРіР°РµРј css
+	preserveLicenseComments: false, //РЈРґР°Р»СЏРµРј Р»РёС†РµРЅР·РёРѕРЅРЅС‹Рµ РєРѕРјРјРµРЅС‚Р°СЂРёРё
+	removeCombined: true, //РЈРґР°Р»СЏРµРј С„Р°Р№Р»С‹, РєРѕС‚РѕСЂС‹Рµ Р·Р°РёРЅР»Р°Р№РЅРёР»РёСЃСЊ РІ РјРѕРґСѓР»СЊ
 	map: {
 		'*': {
 			'knockout': 'knockout-2.1.0',
@@ -23,17 +23,23 @@ var config = {
 			'leaflet': 'leaflet_0.4.0'
 		}
 	},
-    paths: {
-        "jquery": "require-jquery",
+	paths: {
+		'jquery': 'jquery-1.7.2.min',
+		'socket.io': 'empty:',
 		'domReady': 'require_plugins/domReady',
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
 		'goog': 'require_plugins/goog'
-    },
+	}/*,
+	shim: {
+		'jqplugins/extends':{
+            deps: ['jquery'],
+            exports: 'jQuery.fn.serializeObject'
+		}
+	}*/,
     modules: [
         {
-            name: "appAMD",
-            exclude: ["jquery"]
+            name: "appAMD"
         }
     ]
 };
