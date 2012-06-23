@@ -1,4 +1,4 @@
-define (['Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://www.geoplugin.net/javascript.gp'], function(Browser, ko_mapping, GlobalParams){
+define (['jquery', 'Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://www.geoplugin.net/javascript.gp'], function($, Browser, ko_mapping, GlobalParams){
 	var Locations = {
 		types: {'_def_': ko_mapping.toJS(GlobalParams.locDef)},
 		range: GlobalParams.locDefRange(),
