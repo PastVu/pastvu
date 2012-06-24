@@ -11,53 +11,26 @@ html
 		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
 		
 	body
-		div#main_loader
-			div#cnt
-				div#welcome_msg.
+		#main_loader
+			#cnt
+				#welcome_msg.
 					Retro photo of humankind urbanization
-				div#loading_pics
-					div#l1
-					div#l2
-					div#l3
-					div#l4
-					div#l5
-					div#l6
-					div#l7
-					div#l8
-					div#l9
-					div#l10
-				div#bar
-					div#bar_fill
-				div#info_msg.
+				#loading_pics
+					#l1
+					#l2
+					#l3
+					#l4
+					#l5
+					#l6
+					#l7
+					#l8
+					#l9
+					#l10
+				#bar
+					#bar_fill
+				#info_msg.
 					loading, please wait
-				div#percent
-			div.helper
-		script(type='text/javascript').
-			var main_loader = document.getElementById('main_loader'),
-				allPercent = 15, //15% остается на выполнение app()
-				onePercentW = (document.querySelector('#bar').offsetWidth)/100,
-				l_pics = Array.prototype.splice.call(document.querySelector('#loading_pics').children, 0, 10).sort(function sRand() { return Math.random() > 0.5 ? 1 : -1;}),
-				current_percent = 0,
-				main_loader_percent = document.getElementById('percent'),
-				main_loader_bar_fill = document.getElementById('bar_fill');
-			main_loader.classList.add('visi');
-			function LoaderIncrement(delta, finish){
-				delta = (allPercent > 100 ? Math.floor(delta*100/allPercent) : Math.floor(delta*allPercent/100));
-				current_percent += delta;
-				if (current_percent >= 100 || finish){
-					current_percent = 100;
-					main_loader.classList.add('green');
-				}
-				var dec = Math.floor(current_percent/10);
-				for(var i=1; i<=dec; i++) l_pics[i-1].classList.add('finish');
-				main_loader_percent.innerHTML = current_percent + '%';
-				main_loader_bar_fill.style.width = current_percent*onePercentW + 'px';
-			}
-			LoaderIncrement(0);
-			function removeLoader(){
-				main_loader.style.display = 'none';
-				main_loader = main_loader_percent = main_loader_bar_fill = null;
-			}
+			.helper
 		
 		#main
 			#map
@@ -144,4 +117,9 @@ html
 					<div id="recall_mess" class='mess'><div></div></div>
 				</div>
 			
+			script(type='text/javascript').
+				window.setTimeout(function() {
+					document.getElementById('main_loader').classList.add('visi');
+					document.getElementById('loading_pics').classList.add('finish');
+				}, 50);
 			script(type='text/javascript', data-main="js/appAMD", src="/js/require.min.js")

@@ -12,7 +12,7 @@ body {
 }
 
 #main_loader {
-	/* Arial, ïîòîìó ÷òî ê ìîìåíòó îòîáðàæåíèÿ çàãðóçêè, UCondensed åùå íå çàãðóçèëñÿ, è âî âðåìÿ åãî ïðèìåíåíèÿ ïîñëå çàãðóçêè, íà ñåêóíäó ïðîïàäàþò âñå íàäïèñè çàãðóç÷èêà*/
+	/* Arial, Ð¿Ð¾Ñ‚Ð¾Ð¼Ñƒ Ñ‡Ñ‚Ð¾ Ðº Ð¼Ð¾Ð¼ÐµÐ½Ñ‚Ñƒ Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ñ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÐ¸, UCondensed ÐµÑ‰Ðµ Ð½Ðµ Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ð»ÑÑ, Ð¸ Ð²Ð¾ Ð²Ñ€ÐµÐ¼Ñ ÐµÐ³Ð¾ Ð¿Ñ€Ð¸Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð¿Ð¾ÑÐ»Ðµ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÐ¸, Ð½Ð° ÑÐµÐºÑƒÐ½Ð´Ñƒ Ð¿Ñ€Ð¾Ð¿Ð°Ð´Ð°ÑŽÑ‚ Ð²ÑÐµ Ð½Ð°Ð´Ð¿Ð¸ÑÐ¸ Ð·Ð°Ð³Ñ€ÑƒÐ·Ñ‡Ð¸ÐºÐ°*/
 	font-family: Arial; 
     position: absolute;
     height: auto;
@@ -62,17 +62,24 @@ body {
 		width: 758px;
 		height: 304px;
 		margin: 5px 0 2px;
-		background: url('/images/loading/Loading1.gif') 0 0 no-repeat;
+		background: url('/images/loading/Loading1.jpg') 0 0 no-repeat;
+		
+		&.finish {
+			> div {
+				opacity: 0;
+			}
+		}
 		
 		> div {
 			position: absolute;
 			width: 150px;
-			opacity: 0.5;
 			background: #000;
-			
-			&.finish {
-				opacity: 0;
-			}
+			opacity: 0.5;
+			-webkit-transition: opacity 0s linear;
+			-moz-transition: opacity 0s linear;
+			-ms-transition: opacity 0s linear;
+			-o-transition: opacity 0s linear;
+			transition: opacity 0s linear;
 			
 			&#l1 {
 				top: 153px;
@@ -83,46 +90,91 @@ body {
 				top: 204px;
 				left: 152px;
 				height: 100px;
+				-webkit-transition-delay: 0.25s;
+				-moz-transition-delay: 0.25s;
+				-ms-transition-delay: 0.25s;
+				-o-transition-delay: 0.25s;
+				transition-delay: 0.25s;
 			}
 			&#l3 {
 				top: 0;
 				left: 0;
 				height: 151px;
+				-webkit-transition-delay: 0.5s;
+				-moz-transition-delay: 0.5s;
+				-ms-transition-delay: 0.5s;
+				-o-transition-delay: 0.5s;
+				transition-delay: 0.5s;
 			}
 			&#l4 {
 				top: 204px;
 				left: 304px;
 				height: 100px;
+				-webkit-transition-delay: 0.75s;
+				-moz-transition-delay: 0.75s;
+				-ms-transition-delay: 0.75s;
+				-o-transition-delay: 0.75s;
+				transition-delay: 0.75s;
 			}
 			&#l5 {
 				top: 102px;
 				left: 152px;
 				height: 100px;
+				-webkit-transition-delay: 1.0s;
+				-moz-transition-delay: 1.0s;
+				-ms-transition-delay: 1.0s;
+				-o-transition-delay: 1.0s;
+				transition-delay: 1.0s;
 			}
 			&#l6 {
 				top: 0;
 				left: 152px;
 				height: 100px;
+				-webkit-transition-delay: 1.25s;
+				-moz-transition-delay: 1.25s;
+				-ms-transition-delay: 1.25s;
+				-o-transition-delay: 1.25s;
+				transition-delay: 1.25s;
 			}
 			&#l7 {
 				top: 0;
 				left: 304px;
 				height: 202px;
+				-webkit-transition-delay: 1.5s;
+				-moz-transition-delay: 1.5s;
+				-ms-transition-delay: 1.5s;
+				-o-transition-delay: 1.5s;
+				transition-delay: 1.5s;
 			}
 			&#l8 {
 				top: 102px;
 				left: 456px;
 				height: 202px;
+				-webkit-transition-delay: 1.75s;
+				-moz-transition-delay: 1.75s;
+				-ms-transition-delay: 1.75s;
+				-o-transition-delay: 1.75s;
+				transition-delay: 1.75s;
 			}
 			&#l9 {
 				top: 0;
 				left: 456px;
 				height: 100px;
+				-webkit-transition-delay: 2.0s;
+				-moz-transition-delay: 2.0s;
+				-ms-transition-delay: 2.0s;
+				-o-transition-delay: 2.0s;
+				transition-delay: 2.0s;
 			}
 			&#l10 {
 				top: 0;
 				left: 608px;
 				height: 304px;
+				-webkit-transition-delay: 2.1s;
+				-moz-transition-delay: 2.1s;
+				-ms-transition-delay: 2.1s;
+				-o-transition-delay: 2.1s;
+				transition-delay: 2.1s;
 			}
 		}
 	}
@@ -139,24 +191,22 @@ body {
 		width: 756px;
 	
 		#bar_fill {
-			position: relative;
-			width:0;
-			background-color: #FFFFFF;
+			position: absolute;
+			left: -50px;
+			width: 50px;
+			background-color: @MainLigthColor;
 			border-radius: 0;
-			box-shadow: 0 0 2px #9DA5AF inset;
 			height: 6px;
+			-moz-animation: loader_bar 2.25s linear 5;
+			-webkit-animation: loader_bar 2.25s linear 3;
+			-ms-animation: loader_bar 2.25s linear 5;
+			-o-animation: loader_bar 2.25s linear 5;
+			animation: loader_bar 2.25s linear 5;
 		}
 		
 	}
 	
 	#info_msg {
-		font-size: 82%;
-	}
-	
-	#percent {
-		position: relative;
-		margin-top: 2px;
-		text-align: center;
 		font-size: 82%;
 	}
 	
@@ -168,7 +218,30 @@ body {
 		zoom:1;
 	}
 }
-
+@-moz-keyframes qwe {
+	from {left: -50px;}
+	to {left: 806px;}
+}
+@-moz-keyframes loader_bar {
+	from {left: -50px;}
+	to {left: 806px;}
+}
+@-webkit-keyframes loader_bar {
+	from {left: -50px;}
+	to {left: 806px;}
+}
+@-o-keyframes loader_bar {
+	from {left: -50px;}
+	to {left: 806px;}
+}
+@-ms-keyframes loader_bar {
+	from {left: -50px;}
+	to {left: 806px;}
+}
+@keyframes loader_bar {
+	from {left: -50px;}
+	to {left: 806px;}
+}
 #main {
     position:absolute;
     height: auto;

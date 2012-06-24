@@ -83,9 +83,7 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 		console.time("Styles loaded time");
 		for (i = 0, len = arr.length; i < len; i += 1) {
 			style = arr[i];
-			getarray.push(
-				Utils.addStyle(style.s+(style.t || '')/*, LoaderIncrement.neoBind(null, [style.p], true, false)*/)
-			);
+			getarray.push(Utils.addStyle(style.s+(style.t || '')));
 		};
 		return $.when.apply($, getarray).then(function () {
 			console.log('All Styles loaded');
