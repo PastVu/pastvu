@@ -23,9 +23,8 @@ requirejs.config({
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
-require(['jquery'], function(jQuery){
-	jQuery.noConflict(true);
-});
+require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
+
 require(
 ['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
 function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider) {
