@@ -406,7 +406,7 @@ if (typeof document !== "undefined" && !("classList" in document.createElement("
 !function () {
 	function func(){};
 	if (!window.console) window.console = {};
-	["log","debug","info","warn","error","assert","clear","dir","dirxml","trace","group","groupCollapsed","groupEnd","time","timeEnd","profile","profileEnd","count","exception","table"]
+	["log","debug","info","warn","error","assert","clear","dir","dirxml","trace","group","groupCollapsed","groupEnd","time","timeEnd","timeStamp","profile","profileEnd","count","exception","table"]
 	.forEach(function (method, index) {
 		if (!window.console[method]) window.console[method] = func;
 	});

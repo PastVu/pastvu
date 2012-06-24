@@ -1,10 +1,7 @@
 requirejs.config({
 	baseUrl: 'js',
 	waitSeconds: 15,
-	//deps: ['JSExtensions'],
-	callback: function() {
-		console.timeStamp('AMD depends loaded');
-	},
+	deps: ['JSExtensions'],
 	map: {
 		'*': {
 			'knockout': 'knockout-2.1.0',

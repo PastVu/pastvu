@@ -38,10 +38,9 @@ window.setCookie = function (name, value, props) {
 		loadImg.onload = function (evt){
 			var loading_pics = document.getElementById('loading_pics');
 			setCookie('oldmosload', new Date().toUTCString());
-			
 			loading_pics.style.backgroundImage = 'url(/images/loading/Loading1.jpg)';
-			document.getElementById('main_loader').classList.add('visi');
-			loading_pics.classList.add('finish');
+			document.getElementById('main_loader').className +=' visi';
+			loading_pics.className += 'finish';
 			loadImg = null;
 			
 			start();
