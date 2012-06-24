@@ -123,9 +123,15 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 		
 		new TopPanel(iAmVM, 'top_panel_fringe');
 		
+		var loadTime = Utils.getCookie('oldmosload');
+		if (loadTime) {loadTime = new Date(loadTime);}
+		else {loadTime = new Date(); Utils.setCookie('oldmosload', loadTime.toUTCString());}
+		
 		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
-			/*removeLoader();*/ document.querySelector('#main').style.opacity = '1';
-		}, 250);
+			document.getElementById('main_loader').classList.remove('visi');
+			document.querySelector('#main').style.opacity = '1';
+		}, Math.max(100, 2500 - (new Date() - loadTime)) );
+		
 		//if(init_message) $().toastmessage('showSuccessToast', init_message);
 	}
 	

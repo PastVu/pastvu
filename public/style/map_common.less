@@ -13,6 +13,7 @@ body {
 
 #main_loader {
 	/* Arial, потому что к моменту отображения загрузки, UCondensed еще не загрузился, и во время его применения после загрузки, на секунду пропадают все надписи загрузчика*/
+	visibility: hidden;
 	font-family: Arial; 
     position: absolute;
     height: auto;
@@ -22,16 +23,12 @@ body {
     right:0;
     margin: 0;
 	text-align: center;
-	opacity: 0;
-	-webkit-transition: opacity 0.25s ease-out;
-	-moz-transition: opacity 0.25s ease-out;
-	-ms-transition: opacity 0.25s ease-out;
-	-o-transition: opacity 0.25s ease-out;
-	transition: opacity 0.25s ease-out;
+	opacity: 1;
 	
 	&.visi {
-		opacity: 1;
+		visibility: visible;
 	}
+	
 	#cnt {
 		position: relative;
 		display:inline-block;
@@ -62,7 +59,8 @@ body {
 		width: 758px;
 		height: 304px;
 		margin: 5px 0 2px;
-		background: url('/images/loading/Loading1.jpg') 0 0 no-repeat;
+		background-position: 0 0;
+		background-repeat: no-repeat;
 		
 		&.finish {
 			> div {
@@ -218,10 +216,6 @@ body {
 		zoom:1;
 	}
 }
-@-moz-keyframes qwe {
-	from {left: -50px;}
-	to {left: 806px;}
-}
 @-moz-keyframes loader_bar {
 	from {left: -50px;}
 	to {left: 806px;}
@@ -242,6 +236,7 @@ body {
 	from {left: -50px;}
 	to {left: 806px;}
 }
+
 #main {
     position:absolute;
     height: auto;
@@ -251,11 +246,11 @@ body {
     right:0;
     margin: 0;
 	opacity: 0;
-	-webkit-transition: opacity 1s ease-out;
-	-moz-transition: opacity 1s ease-out;
-	-ms-transition: opacity 1s ease-out;
-	-o-transition: opacity 1s ease-out;
-	transition: opacity 1s ease-out;
+	-webkit-transition: opacity 0.7s ease-out;
+	-moz-transition: opacity 0.7s ease-out;
+	-ms-transition: opacity 0.7s ease-out;
+	-o-transition: opacity 0.7s ease-out;
+	transition: opacity 0.7s ease-out;
 	
 	> div {
 		z-index: 1;

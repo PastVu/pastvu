@@ -180,6 +180,58 @@ define(['jquery', 'jqplugins/extends'], function ($) {
 			return Math.sqrt( Math.pow(x1-x2,2) + Math.pow(y1-y2,2) );
 		},
 		
+		getCookie: function(){
+			if (typeof window.getCookie == 'function') {
+				var func = window.getCookie;
+				delete window.getCookie;
+				return func;
+			}else {
+				return function (name) {
+					var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
+					return matches ? decodeURIComponent(matches[1]) : undefined 
+				};
+			}
+		}(),
+		setCookie: function(){
+			if (typeof window.setCookie == 'function') {
+				var func = window.setCookie;
+				delete window.setCookie;
+				return func;
+			}else {
+				return function (name, value, props) {
+					props = props || {}
+					var exp = props.expires
+					if (typeof exp == "number" && exp) {
+						var d = new Date()
+						d.setTime(d.getTime() + exp*1000)
+						exp = props.expires = d
+					}
+					if(exp && exp.toUTCString) { props.expires = exp.toUTCString() }
+
+					value = encodeURIComponent(value)
+					var updatedCookie = name + "=" + value
+					for(var propName in props){
+						updatedCookie += "; " + propName
+						var propValue = props[propName]
+						if(propValue !== true){ updatedCookie += "=" + propValue }
+					}
+					document.cookie = updatedCookie
+
+				};
+			}
+		}(),
+		deleteCookie: function(){
+			if (typeof window.deleteCookie == 'function') {
+				var func = window.deleteCookie;
+				delete window.deleteCookie;
+				return func;
+			}else {
+				return function (name) {
+					setCookie(name, null, { expires: -1 })
+				};
+			}
+		}(),
+		
 		/**
 		 * Converts an RGB color value to HSL. Conversion formula
 		 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.

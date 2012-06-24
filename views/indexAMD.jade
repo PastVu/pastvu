@@ -9,7 +9,6 @@ html
 		title= pageTitle
 		
 		link(rel="stylesheet", type="text/css", href="/style/map_common.css?appv=" + appVersion)
-		
 	body
 		#main_loader
 			#cnt
@@ -117,9 +116,4 @@ html
 					<div id="recall_mess" class='mess'><div></div></div>
 				</div>
 			
-			script(type='text/javascript').
-				window.setTimeout(function() {
-					document.getElementById('main_loader').classList.add('visi');
-					document.getElementById('loading_pics').classList.add('finish');
-				}, 50);
-			script(type='text/javascript', data-main="js/appAMD", src="/js/require.min.js")
+			script(type='text/javascript', src='/js/mapstart.js')
