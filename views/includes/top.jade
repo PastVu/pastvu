@@ -8,7 +8,7 @@ div#top_panel_fringe.fringe.
 				<div class='text' data-bind="text: admin"></div>
 			</div>
 			<div
-				id='toProfile' class='labledIco' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+iAmVM.login())}}'>
+				id='toProfile' class='labledIco' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+user.login())}}'>
 				<div class='fringe'>
 					<div class='ico inner_bord' data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}"></div>
 				</div>

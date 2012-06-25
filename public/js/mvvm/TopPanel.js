@@ -1,5 +1,5 @@
 /**
- * Μξδελό σοπΰβλÿες βεπυνει οΰνελόώ
+ * ΠΠΎΠ΄ΠµΠ»Ρ ΡƒΠΏΡ€Π°Π²Π»ΡΠµΡ‚ Π²ΠµΡ€Ρ…Π½ΠµΠΉ ΠΏΠ°Π½ΠµΠ»ΡΡ
  */
 define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i18nVM, ko){
 
@@ -53,21 +53,8 @@ define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i1
 			owner: TopPanelVM
 		});
 		
-		this.FormOpen = function () {
-			document.querySelector('#curtain').style.display = 'block';
-			opened_form = document.querySelector(selector);
-			opened_form.classList.add('active');
-			FormFocus();
-			
-			keyTarget.push({
-				id: 'loginOverlay',
-				stopFurther: false,
-				onEsc: FormClose
-			});
-		};
-		
 		ko.applyBindings(this, document.getElementById(dom));
 	}
-		
+	
 	return TopPanelVM;
 });

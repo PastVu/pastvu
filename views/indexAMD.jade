@@ -69,18 +69,18 @@ html
 			div#login_fringe.fringe.form.
 				<div id="login_body" class='inner_bord'>
 					<div id='login_head' class='head'>Authorization</div>
-					<form action='' autocomplete="on"  method='POST' id='loginForm' name='loginForm' onSubmit="return Login(this);">
+					<form action='' autocomplete="on"  method='POST' id='loginForm' name='loginForm'>
 						<div class='label icon-user'>Username:</div>
-						<div class='label clickable' onclick='LoginActivateSwap("#reg_fringe")'>Registration</div>
+						<div class='label clickable' id='toReg'>Registration</div>
 						<br />
 						<input id='login_user' autocomplete="on" class='initFocus' type="text" required="required" title="input login" placeholder="Enter username or e-mail" name="login" />
 						<div class='label icon-lock'>Password:</div>
-						<div class='label clickable' onclick='LoginActivateSwap("#recall_fringe")'>Recover password</div>
+						<div class='label clickable' id='toRecall'>Recover password</div>
 						<br />
 						<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
-						<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' class='checked' onclick='LoginRememberCheck(this)'></div><br/>
+						<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' class='checked'></div><br/>
 						<input type="submit" value="Sign in" />
-						<input type="button" onclick='FormClose()' value="Cancel" />
+						<input type="button" class='cancel' value="Cancel" />
 					</form>
 					<div id="login_wait" class='wait'>Authorizing..</div>
 					<div id="login_mess" class='mess'><div></div></div>
@@ -88,8 +88,8 @@ html
 			div#reg_fringe.fringe.form.
 				<div id="reg_body" class='inner_bord'>
 					<div id='reg_head' class='head'>Registration</div>
-					<form action='' autocomplete="off" method='POST' id='regForm' name='regForm' onSubmit="return Register(this);">
-						<div class='label icon-user'>User name:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+					<form action='' autocomplete="off" method='POST' id='regForm' name='regForm'>
+						<div class='label icon-user'>User name:</div><div class='label clickable' id='toLogin'>Authorization</div><br />
 						<input id='reg_user' autocomplete="off" class='initFocus' type="text" required="required" title="input login" placeholder="User" name="login">
 						<div class='label icon-envelope'>E-mail:</div>
 						<input id='reg_email' type="email" autocomplete="on" required="required" title="input email" placeholder="email" name="email">
@@ -98,7 +98,7 @@ html
 						<div class='label icon-lock'>Repeat password:</div><br />
 						<input id='reg_pass2' type="password" required="required" title="input password" placeholder="Enter password" name="pass2">
 						<input type="submit" value="Register">
-						<input type="button" onclick='FormClose()' value="Cancel">
+						<input type="button" class='cancel' value="Cancel">
 					</form>
 					<div id="reg_wait" class='wait'>Sending data..</div>
 					<div id="reg_mess" class='mess'><div></div></div>
@@ -106,11 +106,11 @@ html
 			div#recall_fringe.fringe.form.
 				<div id="recall_body" class='inner_bord'>
 					<div id='recall_head' class='head'>Recover password</div>
-					<form action='' autocomplete="off" method='POST' id='recallForm' name='recallForm' onSubmit="return RecallAjax(this);">
-						<div class='label icon-envelope'>Login or e-mail:</div><div class='label clickable' onclick='LoginActivateSwap("#login_fringe")'>Authorization</div><br />
+					<form action='' autocomplete="off" method='POST' id='recallForm' name='recallForm'>
+						<div class='label icon-envelope'>Login or e-mail:</div><div class='label clickable'  id='toLogin'>Authorization</div><br />
 						<input id='recall_email' autocomplete="off" class='initFocus' type="text" required="required" title="Input login or e-mail" placeholder="Enter login or e-mail" name="login">
 						<input type="submit" value="Send">
-						<input type="button" onclick='FormClose()' value="Cancel">
+						<input type="button" class='cancel' value="Cancel">
 					</form>
 					<div id="recall_wait" class='wait'>Sending..</div>
 					<div id="recall_mess" class='mess'><div></div></div>

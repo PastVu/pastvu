@@ -1,7 +1,6 @@
-var keyTarget = new Array();
+define(['Utils', 'Browser'], function(Utils, Browser){
+	var keyTarget = [];
 
-function KeyHandler(){
-	
 	!function () {
 		if (Browser.name == 'OPERA') return handleOpera;
 		else return handleNonOpera;
@@ -132,4 +131,6 @@ function KeyHandler(){
 
 	  return which;
 	}
-}
+	
+	return keyTarget;
+});
