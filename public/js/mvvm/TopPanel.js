@@ -2,6 +2,7 @@
  * Модель управляет верхней панелью
  */
 define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i18nVM, ko){
+
 	function TopPanelVM (iAmVM, dom) {
 		this.user = iAmVM;
 		
@@ -52,8 +53,21 @@ define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i1
 			owner: TopPanelVM
 		});
 		
+		this.FormOpen = function () {
+			document.querySelector('#curtain').style.display = 'block';
+			opened_form = document.querySelector(selector);
+			opened_form.classList.add('active');
+			FormFocus();
+			
+			keyTarget.push({
+				id: 'loginOverlay',
+				stopFurther: false,
+				onEsc: FormClose
+			});
+		};
+		
 		ko.applyBindings(this, document.getElementById(dom));
 	}
-	
+		
 	return TopPanelVM;
 });
