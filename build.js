@@ -4,15 +4,15 @@ var requirejs = require('requirejs');
 
 var config = {
 	appDir: "public/",
-    baseUrl: 'js',
+	baseUrl: 'js',
 	dir: "public-build",
 	keepBuildDir: false,
 	optimize: "uglify",
 	uglify: {
-        toplevel: false,
-        ascii_only: false,
-        beautify: false
-    },
+		toplevel: false,
+		ascii_only: false,
+		beautify: false
+	},
 	optimizeCss: false, //Не трогаем css
 	preserveLicenseComments: false, //Удаляем лицензионные комментарии
 	removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
@@ -30,24 +30,18 @@ var config = {
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
 		'goog': 'require_plugins/goog'
-	}/*,
-	shim: {
-		'jqplugins/extends':{
-            deps: ['jquery'],
-            exports: 'jQuery.fn.serializeObject'
+	},
+	modules: [
+		{
+			name: "appAMD"
 		}
-	}*/,
-    modules: [
-        {
-            name: "appAMD"
-        }
-    ]
+	]
 };
 
 requirejs.optimize(config, function (buildResponse) {
-    //buildResponse is just a text output of the modules
-    //included. Load the built file for the contents.
-    //Use config.out to get the optimized file contents.
+	//buildResponse is just a text output of the modules
+	//included. Load the built file for the contents.
+	//Use config.out to get the optimized file contents.
 	console.log('Build finished');
-    //var contents = fs.readFileSync(config.out, 'utf8');
+	//var contents = fs.readFileSync(config.out, 'utf8');
 });

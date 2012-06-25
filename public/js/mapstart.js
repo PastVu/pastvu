@@ -32,12 +32,12 @@ window.setCookie = function (name, value, props) {
 		s.setAttribute('src', '/js/require.min.js');
 		document.head.appendChild(s);
 	}
-	if (!getCookie('oldmosload')){
+	if (!getCookie('oldmos.load')){
 		var loadImg = new Image();
 		loadImg.onabort = loadImg.onerror = function (evt){start();}
 		loadImg.onload = function (evt){
 			var loading_pics = document.getElementById('loading_pics');
-			setCookie('oldmosload', new Date().toUTCString());
+			setCookie('oldmos.load', new Date().toUTCString());
 			loading_pics.style.backgroundImage = 'url(/images/loading/Loading1.jpg)';
 			document.getElementById('main_loader').className +=' visi';
 			loading_pics.className += 'finish';

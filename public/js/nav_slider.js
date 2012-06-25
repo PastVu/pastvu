@@ -1,4 +1,5 @@
-define(['jquery', 'Utils', 'EventTypes'], function ($, Utils, ET) {
+define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], function ($, Utils, ET, L, ko, Locations) {
+	
 	function navigationSlider(slider, map){
 		this.map = map;
 		this.DOMPanel = slider;
@@ -28,10 +29,29 @@ define(['jquery', 'Utils', 'EventTypes'], function ($, Utils, ET) {
 		
 		Utils.Event.add(this.DOMPanel, ET.mdown, this.SnatchBind, false);
 		
+		Utils.Event.add(document.querySelector('#nav_pin.fringe.btn'), 'click', this.togglePin.bind(this), false);
+		Utils.Event.add(document.querySelector('#zoomin.fringe.btn.inout'), 'click', this.changeZoom.neoBind(this, [1], true, false), false);
+		Utils.Event.add(document.querySelector('#zoomout.fringe.btn.inout'), 'click', this.changeZoom.neoBind(this, [-1], true, false), false);
+		Utils.Event.add(document.querySelector('#mhome.fringe.btn'), 'click', this.home.bind(this), false);
+		Utils.Event.add(document.querySelector('#mup.fringe.btn'), 'click', this.pan.neoBind(this, ['up'], true, false), false);
+		Utils.Event.add(document.querySelector('#mright.fringe.btn'), 'click', this.pan.neoBind(this, ['right'], true, false), false);
+		Utils.Event.add(document.querySelector('#mdown.fringe.btn'), 'click', this.pan.neoBind(this, ['down'], true, false), false);
+		Utils.Event.add(document.querySelector('#mleft.fringe.btn'), 'click', this.pan.neoBind(this, ['left'], true, false), false);
 		//if(Browser.support.touch) Utils.Event.add(this.DOMPanel, 'touchstart', this.SnatchBind, false);
 		
 		this.recalcZooms();
 	}
+	
+	navigationSlider.prototype.changeZoom = function(diff){
+		this.map.zoomBy(diff);
+	};
+	navigationSlider.prototype.pan = function(dir){
+		if (Utils.isObjectType('function', this.map[dir])) this.map[dir]();
+	};
+	navigationSlider.prototype.home = function(){
+		var home = Locations.types['home'] || Locations.types['gpsip'] || Locations.types['_def_'];
+		this.map.setView(new L.LatLng(home.lat, home.lng), Locations.current.z, false);
+	};
 	navigationSlider.prototype.recalcZooms = function(){
 		this.numZooms = this.map.getMaxZoom() - this.map.getMinZoom() + 1;
 		this.step = this.usefulH/this.numZooms;
@@ -58,7 +78,7 @@ define(['jquery', 'Utils', 'EventTypes'], function ($, Utils, ET) {
 		this.sliderOnZoom = newZoom;
 		this.zoomChangeTimeout = window.setTimeout(function(){
 			this.map.setZoom(newZoom);
-		}, 750);
+		}.bind(this), 750);
 		this.pos();
 	};
 	navigationSlider.prototype.onChangeZoom = function(obj){
@@ -101,7 +121,7 @@ define(['jquery', 'Utils', 'EventTypes'], function ($, Utils, ET) {
 		}*/
 	};
 	navigationSlider.prototype.SnatchOffByWindowOut = function(evt){
-		var pos = mousePageXY(evt);
+		var pos = Utils.mousePageXY(evt);
 		
 		if(pos.x<=0 || pos.x>=Utils.getClientWidth() ||
 		   pos.y<=0 || pos.y>=Utils.getClientHeight()){
@@ -123,7 +143,7 @@ define(['jquery', 'Utils', 'EventTypes'], function ($, Utils, ET) {
 		this.sliderOnZoom = newZoom;
 		this.zoomChangeTimeout = window.setTimeout(function(){
 			this.map.setZoom(newZoom);
-		}, 750);
+		}.bind(this), 750);
 		this.pos();
 		return false;
 	};

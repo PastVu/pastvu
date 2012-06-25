@@ -101,6 +101,28 @@ define(['jquery', 'jqplugins/extends'], function ($) {
 			return str;
 		},
 		
+		mousePageXY: function (e){
+			var x = 0, y = 0;	
+			if (!e) e = window.event;
+			if (e.touches && e.touches.item && e.touches.item(0)){
+				var et = e.touches.item(0);
+				if (et.pageX || et.pageY){
+					x = et.pageX;
+					y = et.pageY;
+				}else if (et.clientX || et.clientY){
+					x = et.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+					y = et.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+				}
+			}else if (e.pageX || e.pageY){
+				x = e.pageX;
+				y = e.pageY;
+			}else if (e.clientX || e.clientY){
+				x = e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft) - document.documentElement.clientLeft;
+				y = e.clientY + (document.documentElement.scrollTop || document.body.scrollTop) - document.documentElement.clientTop;
+			}	
+			return {"x":x, "y":y};
+		},
+		
 		getClientWidth: function() {
 			if(window.opera) {
 				return innerWidth;

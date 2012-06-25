@@ -23,8 +23,8 @@ require(['JSExtensions']); //Делаем require вместо deps чтобы �
 require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require(
-['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.Google', 'Locations', 'nav_slider'],
-function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, LGoogle, Locations, navigationSlider) {
+['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.neoMap', 'L.Google', 'Locations', 'nav_slider'],
+function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, LGoogle, Locations, navigationSlider) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
@@ -120,9 +120,9 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 		
 		new TopPanel(iAmVM, 'top_panel_fringe');
 		
-		var loadTime = Utils.getCookie('oldmosload');
+		var loadTime = Utils.getCookie('oldmos.load');
 		if (loadTime) {loadTime = new Date(loadTime);}
-		else {loadTime = new Date(); Utils.setCookie('oldmosload', loadTime.toUTCString());}
+		else {loadTime = new Date(); Utils.setCookie('oldmos.load', loadTime.toUTCString());}
 		
 		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
 			document.getElementById('main_loader').classList.remove('visi');
@@ -220,7 +220,7 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 			mapDefCenter = new L.LatLng(val.lat, val.lng);
 			setMapDefCenter(true);
 		});
-		map = new L.Map('map', {center: mapDefCenter, zoom: Locations.current.z});
+		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z});
 		
 		if (!!window.localStorage && !! window.localStorage['arguments.SelectLayer']) {
 			SelectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','))
