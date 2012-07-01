@@ -5,7 +5,7 @@
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
 
-(function($) { // Hide scope, no $ conflict
+define(['jquery'], function($) { // Hide scope, no $ conflict
 
 /* Datepicker manager. */
 function Datepicker() {
@@ -2089,4 +2089,4 @@ $(function() {
 		resize(function() { $.datepick.hide($.datepick.curInst); });
 });
 
-})(jQuery);
+});

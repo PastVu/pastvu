@@ -15,17 +15,7 @@ requirejs.config({
 		'text': 'require_plugins/text',
 		'jquery.datepick': 'jqplugins/datepick/jquery.datepick',
 		'jquery.datepick.lang': 'jqplugins/datepick/jquery.datepick.lang'
-	},
-    shim: {
-        'jquery.datepick': {
-            deps: ['jquery'],
-            exports: 'jQuery.fn.datepick'
-        },
-		'jquery.datepick.lang': {
-            deps: ['jquery', 'jquery.datepick'],
-            exports: '$.datepick.regional["ru"]'
-        }
-    }
+	}
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации

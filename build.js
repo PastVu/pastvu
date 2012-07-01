@@ -29,11 +29,16 @@ var config = {
 		'domReady': 'require_plugins/domReady',
 		'text': 'require_plugins/text',
 		'async': 'require_plugins/async',
-		'goog': 'require_plugins/goog'
+		'goog': 'require_plugins/goog',
+		'jquery.datepick': 'jqplugins/datepick/jquery.datepick',
+		'jquery.datepick.lang': 'jqplugins/datepick/jquery.datepick.lang'
 	},
 	modules: [
 		{
 			name: "appMap"
+		},
+		{
+			name: "appProfile"
 		}
 	]
 };
