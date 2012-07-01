@@ -1,28 +1,38 @@
 requirejs.config({
 	baseUrl: '/js',
 	waitSeconds: 15,
-	deps: ['JSExtensions'],
+	deps: ['lib/JSExtensions'],
 	map: {
 		'*': {
-			'knockout': 'knockout-2.1.0',
-			'knockout.mapping': 'knockout.mapping-latest'
+			'knockout': 'lib/knockout/knockout-2.1.0',
+			'knockout.mapping': 'lib/knockout/knockout.mapping-latest'
 		}
 	},
 	paths: {
-		'jquery': 'jquery-1.7.2.min',
+		'jquery': 'lib/jquery/jquery-1.7.2.min',
 		'socket.io': '/socket.io/socket.io',
-		'domReady': 'require_plugins/domReady',
-		'text': 'require_plugins/text',
-		'jquery.datepick': 'jqplugins/datepick/jquery.datepick',
-		'jquery.datepick.lang': 'jqplugins/datepick/jquery.datepick.lang'
+		'domReady': 'lib/require/plugins/domReady',
+		'text': 'lib/require/plugins/text',
+		'Utils': 'lib/Utils',
+		'Browser': 'lib/Browser',
+		'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
+		'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang'
 	}
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
+require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
 
-require(
-['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'KeyHandler', 'jquery.datepick', 'jquery.datepick.lang'],
-function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget) {
+require([
+	'domReady',
+	'jquery',
+	'Browser', 'Utils',
+	'socket',
+	'EventTypes',
+	'knockout', 'knockout.mapping',
+	'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+	'KeyHandler',
+	'jquery.datepick', 'jquery.datepick.lang'
+],function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget) {
 	console.timeStamp('Require app Ready');
 	var login, reg, recall,
 		profileView, profileVM,

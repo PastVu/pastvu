@@ -18,20 +18,22 @@ var config = {
 	removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
 	map: {
 		'*': {
-			'knockout': 'knockout-2.1.0',
-			'knockout.mapping': 'knockout.mapping-latest',
-			'leaflet': 'leaflet_0.4.0'
+			'knockout': 'lib/knockout/knockout-2.1.0',
+			'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+			'leaflet': 'lib/leaflet/leaflet_0.4.0'
 		}
 	},
 	paths: {
-		'jquery': 'jquery-1.7.2.min',
+		'jquery': 'lib/jquery/jquery-1.7.2.min',
 		'socket.io': 'empty:', //Говорим, что socket.io не надо включать в выходной файл
-		'domReady': 'require_plugins/domReady',
-		'text': 'require_plugins/text',
-		'async': 'require_plugins/async',
-		'goog': 'require_plugins/goog',
-		'jquery.datepick': 'jqplugins/datepick/jquery.datepick',
-		'jquery.datepick.lang': 'jqplugins/datepick/jquery.datepick.lang'
+		'domReady': 'lib/require/plugins/domReady',
+		'text': 'lib/require/plugins/text',
+		'async': 'lib/require/plugins/async',
+		'goog': 'lib/require/plugins/goog',
+		'Utils': 'lib/Utils',
+		'Browser': 'lib/Browser',
+		'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
+		'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang'
 	},
 	modules: [
 		{

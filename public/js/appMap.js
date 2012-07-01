@@ -1,30 +1,40 @@
 requirejs.config({
 	baseUrl: '/js',
 	waitSeconds: 15,
-	deps: ['JSExtensions'],
+	deps: ['lib/JSExtensions'],
 	map: {
 		'*': {
-			'knockout': 'knockout-2.1.0',
-			'knockout.mapping': 'knockout.mapping-latest',
-			'leaflet': 'leaflet_0.4.0'
+			'knockout': 'lib/knockout/knockout-2.1.0',
+			'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+			'leaflet': 'lib/leaflet/leaflet_0.4.0'
 		}
 	},
 	paths: {
-		'jquery': 'jquery-1.7.2.min',
+		'jquery': 'lib/jquery/jquery-1.7.2.min',
 		'socket.io': '/socket.io/socket.io',
-		'domReady': 'require_plugins/domReady',
-		'text': 'require_plugins/text',
-		'async': 'require_plugins/async',
-		'goog': 'require_plugins/goog'
+		'domReady': 'lib/require/plugins/domReady',
+		'text': 'lib/require/plugins/text',
+		'async': 'lib/require/plugins/async',
+		'goog': 'lib/require/plugins/goog',
+		'Utils': 'lib/Utils',
+		'Browser': 'lib/Browser',
 	}
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
+require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
 //require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
-require(
-['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.neoMap', 'L.Google', 'Locations', 'nav_slider', 'KeyHandler'],
-function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, LGoogle, Locations, navigationSlider, keyTarget) {
+require([
+	'domReady',
+	'jquery',
+	'Browser', 'Utils',
+	'socket',
+	'EventTypes',
+	'knockout', 'knockout.mapping',
+	'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+	'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
+	'Locations', 'KeyHandler'
+],function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget) {
 	console.timeStamp('Require app Ready');
 	var map, layers = {}, curr_lay = {sys: null, type: null},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),

@@ -1,6 +1,6 @@
 {
   "name" : "oldplanet",
-  "version" : "0.3.0",
+  "version" : "0.3.3",
   "description": "Retrospective topography of media content",
   "homepage" : "https://github.com/klimashkin/oldplanet",
   "keywords": ["oldmos", "oldmos2", "oldplanet"],
@@ -26,7 +26,7 @@
     "nodemailer": "~0.3.20",
     "sprintf": "",
     "opts" : "",
-	"uglify-js": "~1.3.0"
+	"uglify-js": "~1.3.1"
   },
   "private": true,
   "engines": {
