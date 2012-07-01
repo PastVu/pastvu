@@ -33,7 +33,7 @@ var config = {
 	},
 	modules: [
 		{
-			name: "appAMD"
+			name: "appMap"
 		}
 	]
 };

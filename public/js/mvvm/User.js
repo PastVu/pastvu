@@ -26,7 +26,7 @@ define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_m
 		aboutme: ''
 	};
 
-	function UserActivate(m) {
+	function UserVMCreate(m) {
 		var model = $.extend(null, DefaultUser, m);
 		
 		var vm = ko_mapping.fromJS(model);
@@ -38,8 +38,8 @@ define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_m
 		return vm;
 	}
 
-	function UserUpdate(model, vm) {
-		if (!vm){ vm = UserActivate(model);
+	function UserVM(model, vm) {
+		if (!vm){ vm = UserVMCreate(model);
 		} else {
 			model = model || {};
 			ko_mapping.fromJS(model, vm);
@@ -47,5 +47,5 @@ define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_m
 		return vm;
 	}
 	
-	return UserUpdate;
+	return {def: DefaultUser, VM: UserVM};
 });

@@ -1,135 +1,11 @@
 doctype 5
 html
 	include includes/head_meta
-		script(type='text/javascript', src="/js/knockout-2.1.0.js")
-		script(type='text/javascript', src="/js/knockout.mapping-latest.js")
-		script(type='text/javascript', src="/js/mvvm/User.js")
-		script(type='text/javascript', src="/js/mvvm/TopPanel.js")
-		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.js")
-		script(type='text/javascript', src="/js/jquery.datepick/jquery.datepick.lang.js")
+		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
 		link(rel="stylesheet", type="text/css", href="/js/jquery.datepick/redmond.datepick.css?appv=" + appVersion)
 
-		script(type='text/javascript').
-			var socket,
-				profileView,
-				profileVM,
-				iAmVM;
-				
-			var GlobalParams = {
-					Width: Utils.getClientWidth(),
-					Height: Utils.getClientHeight(),
-					
-					USE_OSM_API: true,
-					USE_GOOGLE_API: true,
-					USE_YANDEX_API: true,
-					appVersion: 0,
-					verBuild: 0,
-					
-					REGISTRATION_ALLOWED: false,
-					LoggedIn: false
-				},
-				GlobalParamsVM;	
-			function GlobalParamsToKO(){
-				if (!GlobalParamsVM) GlobalParamsVM = ko.mapping.fromJS(GlobalParams);
-				else ko.mapping.fromJS(GlobalParams, GlobalParamsVM);
-			}
-			
-			var i18n = {
-				en : {
-					login : 'Login',
-					logout : 'Logout',
-					register : 'Registration',
-					admin : 'Administration'
-				},
-				ru : {
-				}
-			};
-			var i18nVM;
-			function i18nToKO(lang){
-				if (!i18nVM) i18nVM = ko.mapping.fromJS(i18n[lang]);
-				else ko.mapping.fromJS(i18n[lang], i18nVM);
-			}
-			function Logout(){
-				socket.on('logoutResult', function (json) {
-					if (json.err){
-						consol.log('Logout error' + json.err);
-					}else {
-						document.location = json.logoutPath;
-					}
-					
-				});
-				socket.emit('logoutRequest', {});
-				return false;
-			}
-			$(document).ready(function() {
-				i18nToKO('en');
-				profileView = document.getElementById('userProfile');
-				socket = io.connect(location.host);
-				socket.on('connect', function () {
-					socket.on('initMessage', function (json) {
-						var init_message = json.init_message;
-					});
-					
-					socket.on('takeUser', function (user) {
-						profileVM = UserUpdate(user, profileVM);
-						
-						profileVM.edit = ko.observable(false);
-						
-						profileVM.originUser = user;
-						
-						profileVM.canBeEdit = ko.computed(function() {
-							return iAmVM.login()==this.login() || iAmVM.role_level() >= 50;
-						}, profileVM);
-						
-						profileVM.edit_mode = ko.computed(function() {
-							return this.canBeEdit() && this.edit();
-						}, profileVM);
-						profileVM.edit_mode.subscribe(function(val){
-							if (val){
-								document.body.classList.add('edit_mode');
-								window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 1000);
-								
-							}else{
-								document.body.classList.remove('edit_mode');
-							}
-						});
-						
-						profileVM.can_pm = ko.computed(function() {
-							return iAmVM.login()!=this.login();
-						}, profileVM);
-						
-						ko.applyBindings(profileVM, profileView);
-						
-						CreateTopPanelVM();
-						BindTopPanelVM();
-						
-						profileView.classList.add('show');
-						
-					});
-					socket.on('youAre', function (user) {
-						console.dir(user);
-						GlobalParams.LoggedIn = !!user;
-						GlobalParamsToKO();
-						iAmVM = UserUpdate(user, iAmVM);
-						socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
-					});
-					socket.emit('whoAmI', {});
-				});
-			});
-			function saveUser(){
-				var targetUser = ko.mapping.toJS(profileVM)
-				console.dir(targetUser);
-				for(var key in targetUser) {
-					if (targetUser.hasOwnProperty(key) && key != 'login') {
-						if (profileVM.originUser[key] && targetUser[key]==profileVM.originUser[key]) delete targetUser[key];
-						else if (!profileVM.originUser[key] && targetUser[key]==DefaultUser[key]) delete targetUser[key];
-					}
-				}
-				if (Utils.getObjectPropertyLength(targetUser)>1) socket.emit('saveUser', targetUser);
-				profileVM.edit(false);
-			}
-		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
-		script(type='text/javascript', src="/style/profile.js?appv=" + appVersion)
+		script(type='text/javascript',  data-main='/js/appProfile.js', src='/js/require.min.js')
+
 	body
 		include includes/top
 		div#userProfile(data-bind="css: {edit_mode: edit_mode()}")
@@ -142,7 +18,7 @@ html
 				div#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
 					div.inner_bord
 						| Send message
-				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)}else{saveUser()}}}")
+				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
 					div.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
 				div#info_common.block
 					div.head
@@ -272,3 +148,5 @@ html
 							| About Me:
 						div.right
 							input(type='text', data-bind="attr: { size: aboutme().length, disabled: !edit_mode() }, value: aboutme, valueUpdate: 'afterkeydown'")
+		
+		include includes/auth

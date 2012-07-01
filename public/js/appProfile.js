@@ -1,12 +1,11 @@
 requirejs.config({
-	baseUrl: 'js',
+	baseUrl: '/js',
 	waitSeconds: 15,
 	deps: ['JSExtensions'],
 	map: {
 		'*': {
 			'knockout': 'knockout-2.1.0',
-			'knockout.mapping': 'knockout.mapping-latest',
-			'leaflet': 'leaflet_0.4.0'
+			'knockout.mapping': 'knockout.mapping-latest'
 		}
 	},
 	paths: {
@@ -14,34 +13,32 @@ requirejs.config({
 		'socket.io': '/socket.io/socket.io',
 		'domReady': 'require_plugins/domReady',
 		'text': 'require_plugins/text',
-		'async': 'require_plugins/async',
-		'goog': 'require_plugins/goog'
-	}
+		'jquery.datepick': 'jqplugins/datepick/jquery.datepick',
+		'jquery.datepick.lang': 'jqplugins/datepick/jquery.datepick.lang'
+	},
+    shim: {
+        'jquery.datepick': {
+            deps: ['jquery'],
+            exports: 'jQuery.fn.datepick'
+        },
+		'jquery.datepick.lang': {
+            deps: ['jquery', 'jquery.datepick'],
+            exports: '$.datepick.regional["ru"]'
+        }
+    }
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 require(['JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
-//require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require(
-['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'leaflet', 'L.neoMap', 'L.Google', 'Locations', 'nav_slider', 'KeyHandler'],
-function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, LGoogle, Locations, navigationSlider, keyTarget) {
+['domReady', 'jquery', 'Browser', 'Utils', 'socket', 'EventTypes', 'knockout', 'knockout.mapping', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n', 'KeyHandler', 'jquery.datepick', 'jquery.datepick.lang'],
+function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget) {
 	console.timeStamp('Require app Ready');
-	var map, layers = {}, curr_lay = {sys: null, type: null},
-		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
-		poly_mgr, aoLayer,
-		navSlider,
-		login, reg, recall,
+	var login, reg, recall,
+		profileView, profileVM,
 		iAmVM = null;
 	
-	/**
-	 * Styles load list
-	 */
-	var StylesToLoad = [
-		{s: 'style/jquery.toast.css', p: 2, t: '?vv=100'},
-		{s: 'style/map_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion()/*+'&verBuild='+GlobalParams.verBuild*/}
-	];
-	
-	$.when(LoadParams(), waitForDomReady(), LoadStyles(StylesToLoad))
+	$.when(LoadParams(), waitForDomReady())
 	 .pipe(LoadMe)
 	 .then(app);
 	
@@ -65,186 +62,73 @@ function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, 
 		socket.on('youAre', function (user) {
 			GlobalParams.LoggedIn(!!user);
 			console.dir(user);
-			iAmVM = User(user, iAmVM);
+			iAmVM = User.VM(user, iAmVM);
 			dfd.resolve();
 		});
 		socket.emit('whoAmI');
 		return dfd.promise();
 	}
-	
-	function LoadStyles(arr, doneCallback) {
-		var getarray = [], i, len,
-			style;
-
-		console.groupCollapsed("Styles Loading");
-		console.time("Styles loaded time");
-		for (i = 0, len = arr.length; i < len; i += 1) {
-			style = arr[i];
-			getarray.push(Utils.addStyle(style.s+(style.t || '')));
-		};
-		return $.when.apply($, getarray).then(function () {
-			console.log('All Styles loaded');
-			console.timeEnd("Styles loaded time");
-			console.groupEnd();
-		});
-
-	};
-	
+		
 	function app () {
-		
 		makeForms();
-		createMap();
-		navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
-		
 		new TopPanel(iAmVM, 'top_panel_fringe');
 		
-		var loadTime = Utils.getCookie('oldmos.load');
-		if (loadTime) {loadTime = new Date(loadTime);}
-		else {loadTime = new Date(); Utils.setCookie('oldmos.load', loadTime.toUTCString());}
+		profileView = document.getElementById('userProfile');
 		
-		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
-			document.getElementById('main_loader').classList.remove('visi');
-			document.querySelector('#main').style.opacity = '1';
-		}, Math.max(100, 2500 - (new Date() - loadTime)) );
-		
-		//if(init_message) $().toastmessage('showSuccessToast', init_message);
-	}
-	
-	function createMap() {
-		if (GlobalParams.USE_OSM_API()) {
-			layers.osm = {
-				desc: 'OSM',
-				types: {
-					osmosnimki: {
-						desc:'Osmosnimki',
-						iColor:'black',
-						obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png')
-					},
-					mapnik: {
-						desc:'Mapnik',
-						iColor:'black',
-						obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-					},
-					mapquest: {
-						desc:'Mapquest',
-						iColor:'black',
-						obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {attribution:'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'})
-					}
-				}
-			};
-		}
-		if (GlobalParams.USE_GOOGLE_API()) {
-			layers.google = {
-				desc: 'Google',
-				types: {
-					scheme: {
-						desc:'Схема',
-						iColor:'black',
-						obj: new L.Google('ROADMAP')
-					},
-					sat: {
-						desc:'Спутник',
-						iColor:'black',//'white',
-						obj: new L.Google('SATELLITE')
-					},
-					hyb: {
-						desc:'Гибрид',
-						iColor:'black',//'white',
-						obj: new L.Google('HYBRID')
-					},
-					land: {
-						desc:'Ландшафт',
-						iColor:'black',
-						obj: new L.Google('TERRAIN')
-					}
-				}
-			};
-		}
-
-		function getSystemTypesObjs(sys){
-			var ret = new Array();
-			for (var typ in layers[sys].types){
-				if (!layers[sys].types.hasOwnProperty(typ)) continue;
-				ret.push(layers[sys].types[typ].obj);
-			}
-		}
-
-		var layersArr = [];
-		var systems = document.createDocumentFragment(), sysElem, typeElem, sysNum = 0;
-
-		for (var lay in layers){
-			if (!layers.hasOwnProperty(lay)) continue;
-			
-			sysElem = $('<div/>',  {id : lay});
-			sysElem.append($('<span/>', {'class': 'head', 'html': layers[lay].desc}));
-			for (var type in layers[lay].types) {
-				if (!layers[lay].types.hasOwnProperty(type)) continue;
-				typeElem = $('<div/>', {html: layers[lay].types[type].desc, 'maptp': type}).appendTo(sysElem);
-				Utils.Event.add(typeElem[0], 'click', function(event, s, t){
-					SelectLayer(s, t);
-				}.neoBind(typeElem[0], [lay, type]));
-				layers[lay].types[type].dom = typeElem[0];
-				layersArr.push(layers[lay].types[type].obj);
-			}
-			systems.appendChild(sysElem[0]);
-			sysNum++;
-		}
-
-		document.querySelector('#layers_panel #systems').appendChild(systems);
-		document.querySelector('#layers_panel #systems').classList.add('s'+sysNum);
-
-		
-		Locations.subscribe(function(val){
-			mapDefCenter = new L.LatLng(val.lat, val.lng);
-			setMapDefCenter(true);
+		socket.on('initMessage', function (json) {
+			var init_message = json.init_message;
 		});
-		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z});
 		
-		if (!!window.localStorage && !! window.localStorage['arguments.SelectLayer']) {
-			SelectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','))
-		} else {
-			if (layers.yandex) SelectLayer('yandex', 'scheme');
-			else SelectLayer('osm', 'osmosnimki');
-		}
+		socket.on('takeUser', function (user) {
+			profileVM = User.VM(user, profileVM);
+			
+			profileVM.edit = ko.observable(false);
+			
+			profileVM.originUser = user;
+			
+			profileVM.canBeEdit = ko.computed(function() {
+				return iAmVM.login()==this.login() || iAmVM.role_level() >= 50;
+			}, profileVM);
+			
+			profileVM.edit_mode = ko.computed(function() {
+				return this.canBeEdit() && this.edit();
+			}, profileVM);
+			profileVM.edit_mode.subscribe(function(val){
+				if (val){
+					document.body.classList.add('edit_mode');
+					window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 1000);
+					
+				}else{
+					document.body.classList.remove('edit_mode');
+				}
+			});
+			
+			profileVM.can_pm = ko.computed(function() {
+				return iAmVM.login()!=this.login();
+			}, profileVM);
+			
+			profileVM.saveUser = function (){
+				var targetUser = ko_mapping.toJS(profileVM)
+				console.dir(targetUser);
+				for(var key in targetUser) {
+					if (targetUser.hasOwnProperty(key) && key != 'login') {
+						if (profileVM.originUser[key] && targetUser[key]==profileVM.originUser[key]) delete targetUser[key];
+						else if (!profileVM.originUser[key] && targetUser[key]==User.def[key]) delete targetUser[key];
+					}
+				}
+				if (Utils.getObjectPropertyLength(targetUser)>1) socket.emit('saveUser', targetUser);
+				profileVM.edit(false);
+			};
+			
+			ko.applyBindings(profileVM, profileView);
+			
+			profileView.classList.add('show');
+			
+		});
+		socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
+	
 	}
 	
-	function SelectLayer(sys_id, type_id){
-		if (!layers.hasOwnProperty(sys_id)) return;
-		var sys = layers[sys_id];
-		if (!sys.types.hasOwnProperty(type_id)) return;
-		var type = sys.types[type_id];
-		
-		if (curr_lay.sys && curr_lay.type){
-			var prev_selected = document.querySelector('#layers_panel #systems > div > div.selected');
-			if (prev_selected){
-				prev_selected.parentNode.firstChild.classList.remove('selected');
-				prev_selected.classList.remove('selected');
-			}
-			
-			if (curr_lay.type.iColor != type.iColor){
-				document.querySelector('#main').classList.remove(curr_lay.type.iColor);
-				document.querySelector('#main').classList.add(type.iColor);
-			}
-			
-			map.removeLayer(curr_lay.type.obj);
-		}else{
-			document.querySelector('#main').classList.add(type.iColor);
-		}
-
-		type.dom.parentNode.firstChild.classList.add('selected');
-		type.dom.classList.add('selected');
-		document.querySelector('#current').innerHTML = sys.desc+': '+type.desc;
-		
-		if (!!window.localStorage) {
-			window.localStorage['arguments.SelectLayer'] = Array.prototype.slice.call(arguments).join(',');
-		}
-		curr_lay.sys = sys; curr_lay.type = type;
-		map.addLayer(type.obj);
-	}
-	
-	function setMapDefCenter(forceMoveEvent){
-		map.setView(mapDefCenter, Locations.current.z, false);
-	}
 	
 	
 	function makeForms() {

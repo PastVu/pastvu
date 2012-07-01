@@ -28,7 +28,7 @@ window.setCookie = function (name, value, props) {
 	function start() {
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('data-main', 'js/appAMD');
+		s.setAttribute('data-main', 'js/appMap');
 		s.setAttribute('src', '/js/require.min.js');
 		document.head.appendChild(s);
 	}
