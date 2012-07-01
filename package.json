@@ -11,8 +11,8 @@
     "url" : "git@github.com:klimashkin/oldplanet.git"
   },
   "dependencies" : {
-    "express": "~2.5",
-	"gzippo": "~0.1",
+    "express": "~2.5.11",
+	"gzippo": "~0.1.7",
 	"jade": "~0.26",
 	"less-middleware": ">=0.1.3",
 	"mongoose": "~2.7",
@@ -26,7 +26,7 @@
     "nodemailer": "~0.3.20",
     "sprintf": "",
     "opts" : "",
-	"uglify-js": "~1.3.1"
+	"uglify-js": "~1.3.2"
   },
   "private": true,
   "engines": {
