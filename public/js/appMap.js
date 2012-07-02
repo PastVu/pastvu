@@ -36,7 +36,7 @@ require([
 	'Locations', 'KeyHandler'
 ],function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget) {
 	console.timeStamp('Require app Ready');
-	var map, layers = {}, curr_lay = {sys: null, type: null},
+	var map, layers = {},
 		mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
 		poly_mgr, aoLayer,
 		navSlider,
@@ -121,80 +121,25 @@ require([
 	}
 	
 	function createMap() {
-		if (GlobalParams.USE_OSM_API()) {
-			layers.osm = {
-				desc: 'OSM',
-				types: {
-					osmosnimki: {
-						desc:'Osmosnimki',
-						iColor:'black',
-						obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png')
-					},
-					mapnik: {
-						desc:'Mapnik',
-						iColor:'black',
-						obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-					},
-					mapquest: {
-						desc:'Mapquest',
-						iColor:'black',
-						obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {attribution:'Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">'})
-					}
-				}
-			};
-		}
-		if (GlobalParams.USE_GOOGLE_API()) {
-			layers.google = {
-				desc: 'Google',
-				types: {
-					scheme: {
-						desc:'Схема',
-						iColor:'black',
-						obj: new L.Google('ROADMAP')
-					},
-					sat: {
-						desc:'Спутник',
-						iColor:'black',//'white',
-						obj: new L.Google('SATELLITE')
-					},
-					hyb: {
-						desc:'Гибрид',
-						iColor:'black',//'white',
-						obj: new L.Google('HYBRID')
-					},
-					land: {
-						desc:'Ландшафт',
-						iColor:'black',
-						obj: new L.Google('TERRAIN')
-					}
-				}
-			};
-		}
-
-		function getSystemTypesObjs(sys){
-			var ret = new Array();
-			for (var typ in layers[sys].types){
-				if (!layers[sys].types.hasOwnProperty(typ)) continue;
-				ret.push(layers[sys].types[typ].obj);
-			}
-		}
-
-		var layersArr = [];
+		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z, minZoom: 0,	maxZoom: 18});
+	
+		layers = map.layers;
 		var systems = document.createDocumentFragment(), sysElem, typeElem, sysNum = 0;
 
 		for (var lay in layers){
 			if (!layers.hasOwnProperty(lay)) continue;
 			
-			sysElem = $('<div/>',  {id : lay});
-			sysElem.append($('<span/>', {'class': 'head', 'html': layers[lay].desc}));
+			sysElem = $('<div/>',  {id : lay})
+					  .append($('<span/>', {'class': 'head', 'html': layers[lay].desc}));
+					  
 			for (var type in layers[lay].types) {
 				if (!layers[lay].types.hasOwnProperty(type)) continue;
+				
 				typeElem = $('<div/>', {html: layers[lay].types[type].desc, 'maptp': type}).appendTo(sysElem);
 				Utils.Event.add(typeElem[0], 'click', function(event, s, t){
-					SelectLayer(s, t);
+					map.selectLayer(s, t);
 				}.neoBind(typeElem[0], [lay, type]));
 				layers[lay].types[type].dom = typeElem[0];
-				layersArr.push(layers[lay].types[type].obj);
 			}
 			systems.appendChild(sysElem[0]);
 			sysNum++;
@@ -202,55 +147,19 @@ require([
 
 		document.querySelector('#layers_panel #systems').appendChild(systems);
 		document.querySelector('#layers_panel #systems').classList.add('s'+sysNum);
-
 		
 		Locations.subscribe(function(val){
 			mapDefCenter = new L.LatLng(val.lat, val.lng);
 			setMapDefCenter(true);
 		});
-		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z});
 		
 		if (!!window.localStorage && !! window.localStorage['arguments.SelectLayer']) {
-			SelectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','))
+			map.selectLayer.apply(map, window.localStorage['arguments.SelectLayer'].split(','))
 		} else {
-			if (layers.yandex) SelectLayer('yandex', 'scheme');
-			else SelectLayer('osm', 'osmosnimki');
+			map.selectLayer('osm', 'mapnik');
 		}
 	}
-	
-	function SelectLayer(sys_id, type_id){
-		if (!layers.hasOwnProperty(sys_id)) return;
-		var sys = layers[sys_id];
-		if (!sys.types.hasOwnProperty(type_id)) return;
-		var type = sys.types[type_id];
-		
-		if (curr_lay.sys && curr_lay.type){
-			var prev_selected = document.querySelector('#layers_panel #systems > div > div.selected');
-			if (prev_selected){
-				prev_selected.parentNode.firstChild.classList.remove('selected');
-				prev_selected.classList.remove('selected');
-			}
-			
-			if (curr_lay.type.iColor != type.iColor){
-				document.querySelector('#main').classList.remove(curr_lay.type.iColor);
-				document.querySelector('#main').classList.add(type.iColor);
-			}
-			
-			map.removeLayer(curr_lay.type.obj);
-		}else{
-			document.querySelector('#main').classList.add(type.iColor);
-		}
 
-		type.dom.parentNode.firstChild.classList.add('selected');
-		type.dom.classList.add('selected');
-		document.querySelector('#current').innerHTML = sys.desc+': '+type.desc;
-		
-		if (!!window.localStorage) {
-			window.localStorage['arguments.SelectLayer'] = Array.prototype.slice.call(arguments).join(',');
-		}
-		curr_lay.sys = sys; curr_lay.type = type;
-		map.addLayer(type.obj);
-	}
 	
 	function setMapDefCenter(forceMoveEvent){
 		map.setView(mapDefCenter, Locations.current.z, false);

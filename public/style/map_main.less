@@ -620,11 +620,6 @@
 	-o-transition: height 0.7s ease-out;
 	transition: height 0.7s ease-out;
 }
-#main.black  #layers_panel {
-}
-#main.white  #layers_panel {
-	color: #000;
-}
 #layers_panel.open {
 	height: 175px;
 }
@@ -642,11 +637,6 @@
 	cursor: pointer;
 	border-width: 0 0 1px;
 	border-style: solid;
-}
-#main.black  #layers_panel #current {
-	border-color: #000;
-}
-#main.white  #layers_panel #current {
 	border-color: #000;
 }
 #layers_panel #systems {
@@ -658,16 +648,11 @@
 	white-space: nowrap;
 	border-width: 1px 0 0;
 	border-style: solid;
+	border-color: #707070;
 	-webkit-transition: width 0.7s ease-out, opacity 0.7s ease-out;
 	-moz-transition: width 0.7s ease-out, opacity 0.7s ease-out;
 	-o-transition: width 0.7s ease-out, opacity 0.7s ease-out;
 	transition: width 0.7s ease-out, opacity 0.7s ease-out;
-}
-#main.black  #layers_panel #systems {
-	border-color: #707070;
-}
-#main.white  #layers_panel #systems {
-	border-color: #8F8F8F;
 }
 #layers_panel.open  #systems{
 	opacity: 1;
@@ -707,23 +692,13 @@
 	font-weight: bold;
 	font-size: 17px;
 	line-height: 22px;
-	border-style: solid;
-	border-width: 1px;
+	border: 1px solid transparent;
 	background: #5282c0;
 	padding: 2px 0 1px;
 	margin: 0 0 3px 0;
 }
-#main.black  #layers_panel #systems > div > span.head {
-	border-color: transparent;
-}
-#main.black  #layers_panel #systems > div > span.head.selected {
+#layers_panel #systems > div > span.head.selected {
 	border-color: #999;
-}
-#main.white  #layers_panel #systems > div > span.head {
-	border-color: #0B0A00;
-}
-#main.white  #layers_panel #systems > div > span.head.selected  {
-	border-color: #ccc;
 }
 #layers_panel #systems > div > div {
 	border: 1px solid transparent;
@@ -736,23 +711,14 @@
 	padding: 5px 4px;
 	text-align: center;
 }
-#main.black #layers_panel #systems > div > div:hover {
+#layers_panel #systems > div > div:hover {
 	border-color: #9B9B9B;
 }
-#main.white  #layers_panel #systems > div > div:hover {
-	border-color: #646464;
-}
-#main.black #layers_panel #systems > div > div.selected {
+#layers_panel #systems > div > div.selected {
 	-webkit-box-shadow: inset 0 1px 1px 1px #1C1C1C;
 	box-shadow: inset 0 1px 1px 1px #1C1C1C;
 	background-color: #474747;
 	border: 1px solid #707070;
-}
-#main.white #layers_panel #systems > div > div.selected {
-	-webkit-box-shadow: inset 0 1px 1px 1px #A0A0A0;
-	box-shadow: inset 0 1px 1px 1px #A0A0A0;
-	background-color: #fff;
-	border: 1px solid #EAEAEA;
 }
 
 /**
