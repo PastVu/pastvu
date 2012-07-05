@@ -1,56 +1,56 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout'], function(GlobalParams, i18nVM, ko){
+define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout', 'auth'], function(GlobalParams, i18nVM, ko, auth){
 
-	function TopPanelVM (iAmVM, dom) {
-		this.user = iAmVM;
+	function TopPanelVM (dom) {
+		this.auth = auth;
 		
 		loggedIn = ko.computed({
 			read: function(){
 				return GlobalParams.LoggedIn();
 			},
-			owner: TopPanelVM
+			owner: this
 		});
 		registrationAllowed = ko.computed({
 			read: function(){
 				return GlobalParams.REGISTRATION_ALLOWED();
 			},
-			owner: TopPanelVM
+			owner: this
 		});
 		login = ko.computed({
 			read: function(){return i18nVM.login();},
-			owner: TopPanelVM
+			owner: this
 		});
 		logout = ko.computed({
 			read: function(){return i18nVM.logout();},
-			owner: TopPanelVM
+			owner: this
 		});
 		register = ko.computed({
 			read: function(){return i18nVM.register();},
-			owner: TopPanelVM
+			owner: this
 		});
 		admin = ko.computed({
 			read: function(){return i18nVM.admin();},
-			owner: TopPanelVM
+			owner: this
 		});
 		profile = ko.computed({
 			read: function(){
 				if (GlobalParams.LoggedIn())
-					return iAmVM.fullName();
+					return this.auth.iAm.fullName();
 				else
 					return '';
 			},
-			owner: TopPanelVM
+			owner: this
 		});
 		profileAvatar = ko.computed({
 			read: function(){
 				if (GlobalParams.LoggedIn())
-					return iAmVM.avatar();
+					return this.auth.iAm.avatar();
 				else
 					return '';
 			},
-			owner: TopPanelVM
+			owner: this
 		});
 		
 		ko.applyBindings(this, document.getElementById(dom));

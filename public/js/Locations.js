@@ -47,7 +47,7 @@ define (['jquery', 'Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://w
 	
 	/**
 	 * Определяем координаты по Geolocation API
-	 */
+	 *//*
 	if (Browser.support.geolocation) {
 		!function geolocateMe() {
 			navigator.geolocation.getCurrentPosition(show_map, handle_error, {enableHighAccuracy: true, timeout:5000, maximumAge: 5*60*1000});
@@ -67,7 +67,7 @@ define (['jquery', 'Browser', 'knockout.mapping', 'mvvm/GlobalParams', 'http://w
 				}
 			}
 		}();
-	}
+	}*/
 	
 	return Locations;
 });

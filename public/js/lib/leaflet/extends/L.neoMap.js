@@ -19,7 +19,7 @@ define(['jquery', 'Utils', 'leaflet', 'mvvm/GlobalParams'], function($, Utils, L
 			}
 		};
 	}
-	if (GlobalParams.USE_GOOGLE_API()) {
+	if (GlobalParams.USE_YANDEX_API()) {
 		layers.yandex = {
 			desc: 'Яндекс',
 			deps: 'lib/leaflet/extends/L.Yandex',
@@ -27,27 +27,22 @@ define(['jquery', 'Utils', 'leaflet', 'mvvm/GlobalParams'], function($, Utils, L
 				scheme: {
 					desc:'Схема',
 					params: 'map'
-					//obj: new L.Yandex('map')
 				},
 				sat: {
 					desc:'Спутник',
 					params: 'satellite'
-					//obj: new L.Yandex('satellite')
 				},
 				hyb: {
 					desc:'Гибрид',
 					params: 'hybrid'
-					//obj: new L.Yandex('hybrid')
 				},
 				pub: {
 					desc:'Народная',
 					params: 'publicMap'
-					//obj: new L.Yandex('publicMap')
 				},
 				pubhyb: {
 					desc:'Народный гибрид',
 					params: 'publicMapHybrid'
-					//obj: new L.Yandex('publicMapHybrid')
 				}
 			}
 		};
@@ -60,22 +55,18 @@ define(['jquery', 'Utils', 'leaflet', 'mvvm/GlobalParams'], function($, Utils, L
 				scheme: {
 					desc:'Схема',
 					params: 'ROADMAP'
-					//obj: new L.Google('ROADMAP')
 				},
 				sat: {
 					desc:'Спутник',
 					params: 'SATELLITE'
-					//obj: new L.Google('SATELLITE')
 				},
 				hyb: {
 					desc:'Гибрид',
 					params: 'HYBRID'
-					//obj: new L.Google('HYBRID')
 				},
 				land: {
 					desc:'Ландшафт',
 					params: 'TERRAIN'
-					//obj: new L.Google('TERRAIN')
 				}
 			}
 		};

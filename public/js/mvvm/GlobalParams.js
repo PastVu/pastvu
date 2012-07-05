@@ -1,7 +1,7 @@
 /**
  * GlobalParams
  */
-define(['knockout', 'knockout.mapping', 'Utils'], function(ko, ko_mapping, Utils) {
+define(['socket', 'knockout', 'knockout.mapping', 'Utils'], function(socket, ko, ko_mapping, Utils) {
 	var GlobalParams = ko_mapping.fromJS({
 		Width: Utils.getClientWidth(),
 		Height: Utils.getClientHeight(),
