@@ -43,7 +43,7 @@ define(['domReady', 'jquery', 'socket', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/
 	});
 	
 	function FormOpen(selector){
-		document.querySelector('#curtain').style.display = 'block';
+		document.querySelector('#auth_curtain').style.display = 'block';
 		opened_form = document.querySelector(selector);
 		opened_form.classList.add('active');
 		FormFocus();
@@ -56,7 +56,7 @@ define(['domReady', 'jquery', 'socket', 'mvvm/GlobalParams', 'mvvm/User', 'mvvm/
 	}
 
 	function FormClose(){
-		document.querySelector('#curtain').style.display = 'none';
+		document.querySelector('#auth_curtain').style.display = 'none';
 		opened_form.classList.remove('active');
 		FormReset();
 		keyTarget.pop();
