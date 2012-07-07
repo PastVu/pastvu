@@ -95,9 +95,9 @@ require([
 		
 		new TopPanel('top_panel_fringe');
 		
-		var loadTime = Utils.getCookie('oldmos.load');
+		var loadTime = Utils.getCookie('oldmos.load.'+GlobalParams.appHash());
 		if (loadTime) {loadTime = new Date(loadTime);}
-		else {loadTime = new Date(); Utils.setCookie('oldmos.load', loadTime.toUTCString());}
+		else {loadTime = new Date(); Utils.setCookie('oldmos.load.'+GlobalParams.appHash(), loadTime.toUTCString());}
 		
 		if(!$.urlParam('stopOnLoad')) window.setTimeout(function(){
 			document.getElementById('main_loader').classList.remove('visi');

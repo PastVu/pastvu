@@ -21,28 +21,29 @@ window.setCookie = function (name, value, props) {
 	}
 	document.cookie = updatedCookie;
 };
+if(!String.prototype.trim) {String.prototype.trim = function () {return this.replace(/^\s+|\s+$/g,'');};}
 
 !function (){
 	document.head || (document.head = document.getElementsByTagName('head')[0]);
-	
+	var hash = (document.getElementById('hashContainer').innerHTML+'').trim();
 	function start() {
 		var s;
 		s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('src', '/js/lib/require/require.min.js?__=' + document.getElementById('hashContainer').innerHTML);
+		s.setAttribute('src', '/js/lib/require/require.min.js?__=' + hash);
 		document.head.appendChild(s);
 		
 		s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('src', '/js/appMap.js?__=' + document.getElementById('hashContainer').innerHTML);
+		s.setAttribute('src', '/js/appMap.js?__=' + hash);
 		document.head.appendChild(s);
 	}
-	if (!getCookie('oldmos.load')){
+	if (!getCookie('oldmos.load.'+hash)){
 		var loadImg = new Image();
 		loadImg.onabort = loadImg.onerror = function (evt){start();}
 		loadImg.onload = function (evt){
 			var loading_pics = document.getElementById('loading_pics');
-			setCookie('oldmos.load', new Date().toUTCString());
+			setCookie('oldmos.load.'+hash, new Date().toUTCString());
 			loading_pics.style.backgroundImage = 'url(/images/loading/Loading1.jpg)';
 			document.getElementById('main_loader').className +=' visi';
 			loading_pics.className += 'finish';
