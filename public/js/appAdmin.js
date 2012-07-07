@@ -91,12 +91,12 @@ require([
 					{name:'avatar',index:'avatar', width:46, formatter: unitsInStockFormatter},
 					{name:'login',index:'login', width:150},
 					{name:'email',index:'email', width:170, align:'left'},
-					{name:'roles',index:'roles', width:170,
+					{name:'roles',index:'roles', width:170, align:'center',
 						formatter:'select', editable: true, edittype:'select',
 						editoptions: {
-							value: 'registered:Registered user;moderator:Moderator;admin:Administrator;super_admin:Super Administrator',
+							value: 'registered:Registered user;spec:Special account;moderator:Moderator;admin:Administrator;super_admin:Super Administrator',
 							multiple: true,
-							size: 4
+							size: 5
 						}
 					},
 					{name:'firstName',index:'firstName', width:100, align:'right'},

@@ -36,8 +36,8 @@ html
 					div.row
 						div.left
 							| Registration:
-						div.right
-							| 01.01.2007
+						div.right(data-bind="text: regdate().getDate()+'.'+(regdate().getMonth()+1)+'.'+regdate().getFullYear()")
+							
 					div.row
 						div.left
 							| Status:
@@ -51,22 +51,22 @@ html
 						div.left
 							| Photo uploaded:
 						div.right
-							| 77
+							| 0
 					div.row
 						div.left
 							| Blogs created:
 						div.right
-							| 10
+							| 0
 					div.row
 						div.left
 							| Favorite areas:
 						div.right
-							| 20
+							| 0
 					div.row
 						div.left
 							| Comments:
 						div.right
-							| 108
+							| 0
 				div#leftSideDash
 			div#mainSide
 				ul.nav.nav-tabs

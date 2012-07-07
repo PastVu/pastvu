@@ -6,6 +6,7 @@ define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_m
 		//ROLE
 		role_level: 0,
 		role_name: 'anonymous',
+		regdate: new Date(0),
 		
 		//Profile
 		avatar: '/ava/__def__.png',
@@ -44,6 +45,7 @@ define(['jquery', 'knockout', 'knockout.mapping', 'Utils'], function($, ko, ko_m
 			model = model || {};
 			ko_mapping.fromJS(model, vm);
 		}
+		vm.regdate(new Date(vm.regdate()));
 		return vm;
 	}
 	
