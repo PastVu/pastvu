@@ -1,0 +1,119 @@
+requirejs.config({
+	baseUrl: '/js',
+	waitSeconds: 15,
+	deps: ['lib/JSExtensions'],
+	map: {
+		'*': {
+			'knockout': 'lib/knockout/knockout-2.1.0',
+			'knockout.mapping': 'lib/knockout/knockout.mapping-latest'
+		}
+	},
+	paths: {
+		'jquery': 'lib/jquery/jquery-1.7.2.min',
+		'socket.io': '/socket.io/socket.io',
+		'domReady': 'lib/require/plugins/domReady',
+		'text': 'lib/require/plugins/text',
+		'Utils': 'lib/Utils',
+		'Browser': 'lib/Browser',
+		'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.21.custom.min',
+		'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
+		'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
+	}
+});
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
+
+require([
+	'domReady',
+	'jquery',
+	'Utils',
+	'socket',
+	'EventTypes',
+	'knockout', 'knockout.mapping',
+	'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+	'KeyHandler', 'auth',
+	'jquery.ui', 'jquery.jgrid', 'jquery.jgrid.en'
+],function(domReady, $, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
+	console.timeStamp('Require app Ready');
+	var login, reg, recall,
+		profileView, profileVM,
+		grid, grid_data;
+	
+	$.when(LoadParams(), waitForDomReady())
+	 .pipe(auth.LoadMe)
+	 .then(app);
+	
+	function waitForDomReady() {
+		var dfd = $.Deferred();
+		domReady(function(){console.timeStamp('Dom Ready'); dfd.resolve();})
+		return dfd.promise();
+	}
+	function LoadParams(){
+		var dfd = $.Deferred();
+		socket.on('takeGlobeParams', function (json) {
+			ko_mapping.fromJS(json, GlobalParams);
+			dfd.resolve();
+		});
+		socket.emit('giveGlobeParams');
+		return dfd.promise();
+	}
+		
+	function app () {
+		new TopPanel('top_panel_fringe');
+		grid = $("#usersGrid");
+		
+		CreateGrid();
+		
+		socket.on('initMessage', function (json) {
+			var init_message = json.init_message;
+		});
+	}
+	
+	function CreateGrid(){
+		socket.on('takeUsers', function (users) {
+			console.dir(users);
+			//users.forEach(function(element){});
+			
+			var avatar = '/ava/__def__.png';
+			function  unitsInStockFormatter(cellvalue, options, rowObject) {
+				var cellValueInt = parseInt(cellvalue);
+				
+				return "<div class='userGridAvatar' style='background-image: url("+(cellvalue || avatar)+")'></div>";
+			}
+			grid_data = users;
+			grid.jqGrid({
+				data: grid_data,
+				datatype: "local",
+				height: 'auto',
+				colNames:['Join date', 'Avatar', 'Login', 'Email', 'Role', 'First name', 'Last name', 'Country', 'City'],
+				colModel:[
+					{name:'regdate',index:'regdate', width:110, align:'center', sorttype:'date', formatter:'date', formatoptions: {newformat:'d.m.Y'}},
+					{name:'avatar',index:'avatar', width:46, formatter: unitsInStockFormatter},
+					{name:'login',index:'login', width:150},
+					{name:'email',index:'email', width:170, align:'left'},
+					{name:'roles',index:'roles', width:170},
+					{name:'firstName',index:'firstName', width:100, align:'right'},
+					{name:'lastName',index:'lastName', width:150, align:'left'},
+					{name:'country',index:'country', width:100},
+					{name:'city',index:'city', width:130}
+				],
+				loadComplete: function() {
+					//grid.jqGrid('setCell',"","login","",{color:'red'});
+				},
+				onSelectRow: function(id){
+					var item = grid.jqGrid('getRowData', id);
+					if (item){
+						window.open("/u/"+item.login);
+					}
+				},
+				sortname: 'regdate',
+				sortorder: "asc",
+				multiselect: false,
+				caption: "Oldmos active users"
+			});
+			
+		});
+		socket.emit('giveUsers', {});
+	}
+	
+});

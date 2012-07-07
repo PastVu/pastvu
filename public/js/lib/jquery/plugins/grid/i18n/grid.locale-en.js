@@ -1,3 +1,4 @@
+define(['jquery', 'jquery.ui'], function (jQuery) {
 ;(function($){
 /**
  * jqGrid English Translation
@@ -167,3 +168,4 @@ $.extend($.jgrid,{
 	}
 });
 })(jQuery);
+});
