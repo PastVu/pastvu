@@ -1,10 +1,11 @@
 doctype 5
 html
 	include includes/head_meta
-		link(rel="stylesheet", type="text/css", href="/style/profile.css?appv=" + appVersion)
-		link(rel="stylesheet", type="text/css", href="/js/lib/jquery/plugins/datepick/redmond.datepick.css?appv=" + appVersion)
+		link(rel="stylesheet", type="text/css", href="/style/profile.css?__=" + appHash)
+		link(rel="stylesheet", type="text/css", href="/js/lib/jquery/plugins/datepick/redmond.datepick.css?__=" + appHash)
 
-		script(type='text/javascript',  data-main='/js/appProfile.js', src='/js/lib/require/require.min.js')
+		script(type='text/javascript',  src="/js/lib/require/require.min.js?__=" + appHash)
+		script(type='text/javascript',  src="/js/appProfile.js?__=" + appHash)
 
 	body
 		include includes/top

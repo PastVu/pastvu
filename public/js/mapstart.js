@@ -26,10 +26,15 @@ window.setCookie = function (name, value, props) {
 	document.head || (document.head = document.getElementsByTagName('head')[0]);
 	
 	function start() {
-		var s = document.createElement('script');
+		var s;
+		s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('data-main', '/js/appMap');
-		s.setAttribute('src', '/js/lib/require/require.min.js');
+		s.setAttribute('src', '/js/lib/require/require.min.js?__=' + document.getElementById('hashContainer').innerHTML);
+		document.head.appendChild(s);
+		
+		s = document.createElement('script');
+		s.setAttribute('type', 'text/javascript');
+		s.setAttribute('src', '/js/appMap.js?__=' + document.getElementById('hashContainer').innerHTML);
 		document.head.appendChild(s);
 	}
 	if (!getCookie('oldmos.load')){

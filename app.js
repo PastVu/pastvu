@@ -5,6 +5,7 @@ var express = require('express'),
 	connect = require('express/node_modules/connect'),
 	gzippo = require('gzippo'),
 	mongodb = require('connect-mongodb/node_modules/mongodb'),
+	Utils = require('./commons/Utils.js'),
 
 	mongoStore = require('connect-mongodb'),
 	server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
@@ -36,13 +37,15 @@ require('./commons/Utils.js');
 app = module.exports = express.createServer();
 io = require('socket.io').listen(app);
 
-app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
 /**
  * Окружение (development, test, production)
  */
 var env = process.env.NODE_ENV || 'development',
 	pub = (env == 'development' ? '/public' : '/public-build');
 	
+app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
+app.hash = (env == 'development' ? app.version : Utils.randomString(10)); console.log('Application Hash: '+app.hash);
+
 app.configure(function(){
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');

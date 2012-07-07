@@ -8,7 +8,7 @@ var ms404 = {
 		title: 'Oldmos Error',
 		body: 'Sorry, server failed to fulfill an apparently request'
 	},
-	app_version = 'temp_'+Utils.randomString(10);
+	appHash = '';
 
 var neoError = {
 	e404: function (msgs) {
@@ -18,7 +18,7 @@ var neoError = {
 	},
 	e404Virgin: function (req, res, msgss) {
 		var msgs = ms404; if (msgss) msgs = {}.extend(ms404).extend(msgss);
-		res.render('404.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version}, status: 404 });
+		res.render('404.jade', { locals: {prettyprint:false, pageTitle:msgs.title, mess: msgs.body, appHash: appHash}, status: 404 });
 	},
 	e500: function (msg) {
 		this.msgs = msgs;
@@ -27,7 +27,7 @@ var neoError = {
 	},
 	e500Virgin: function (req, res, msgss) {
 		var msgs = ms500; if (msgss) msgs = {}.extend(ms500).extend(msgss);
-		res.render('500.jade', { locals: {prettyprint:true, pageTitle:msgs.title, mess: msgs.body, appVersion: app_version}, status: 500 });
+		res.render('500.jade', { locals: {prettyprint:false, pageTitle:msgs.title, mess: msgs.body, appHash: appHash}, status: 500 });
 	},
 };
 neoError.e404.prototype.__proto__ = Error.prototype;
@@ -35,7 +35,7 @@ neoError.e500.prototype.__proto__ = Error.prototype;
 module.exports.err = neoError;
 
 module.exports.loadController = function (app) {
-	app_version = app.version;
+	appHash = app.hash;
 	
 	app.get('/404', function(req, res) {
 		throw new neoError.e404();

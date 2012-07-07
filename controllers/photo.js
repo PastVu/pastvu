@@ -8,7 +8,7 @@ module.exports.loadController = function (app, io) {
 	var iterator = 0;
 	app.get('/photo', function(req, res){
 		
-		res.render('photo.jade', {prettyprint:true, pageTitle: 'Photo', appVersion: app.version, verBuild: ++iterator });
+		res.render('photo.jade', {prettyprint:true, pageTitle: 'Photo', appHash: app.hash, verBuild: ++iterator });
 	});
 
 	app.get('/p/:file', function(req, res, next) {

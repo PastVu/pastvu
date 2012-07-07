@@ -10,6 +10,7 @@ define(['socket', 'knockout', 'knockout.mapping', 'Utils'], function(socket, ko,
 		USE_GOOGLE_API: true,
 		USE_YANDEX_API: true,
 		appVersion: 0,
+		appHash: 0,
 		verBuild: 0,
 		
 		locDef: {lat:40, lng:-17, z:3},

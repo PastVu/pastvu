@@ -21,7 +21,7 @@ module.exports.loadController = function (app, io) {
 				if (err || !user) {
 					throw new errS.e404();
 				} else {
-					res.render('profile.jade', {prettyprint:true, pageTitle: user.login, appVersion: app.version, login: user.login, fff: JSON.stringify({a:0})});
+					res.render('profile.jade', {prettyprint:true, pageTitle: user.login, appHash: app.hash});
 				}
 			}
 		);

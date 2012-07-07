@@ -38,9 +38,8 @@ module.exports.loadController = function (app, io) {
 		}
 	}
 	
-	var iterator = 0;
 	app.get('/'/*, regenSession*/, function(req, res){
-		res.render('indexAMD.jade', {prettyprint:true, pageTitle: 'OldMos2', appVersion: app.version, verBuild: ++iterator});
+		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appHash: app.hash});
 	});
 	
 	app.get('/updateCookie', function(req, res) {
@@ -70,7 +69,7 @@ module.exports.loadController = function (app, io) {
 					this();
 				},
 				function (){
-					socket.emit('takeGlobeParams', params.extend({appVersion: app.version, verBuild: ++iterator}));
+					socket.emit('takeGlobeParams', params.extend({appHash: app.hash}));
 				}
 			);
 		});	

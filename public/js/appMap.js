@@ -46,11 +46,12 @@ require([
 	 * Styles load list
 	 */
 	var StylesToLoad = [
-		{s: 'style/jquery.toast.css', p: 2, t: '?vv=100'},
-		{s: 'style/map_main.css', p: 10, t: '?cctv='+GlobalParams.appVersion()/*+'&verBuild='+GlobalParams.verBuild*/}
+		{s: 'style/jquery.toast.css', p: 2},
+		{s: 'style/map_main.css', p: 10}
 	];
 	
-	$.when(LoadParams(), waitForDomReady(), LoadStyles(StylesToLoad))
+	$.when(LoadParams(), waitForDomReady())
+	 .pipe(LoadStyles.bind(null, StylesToLoad))
 	 .pipe(auth.LoadMe)
 	 .then(app);
 	
@@ -77,7 +78,7 @@ require([
 		console.time("Styles loaded time");
 		for (i = 0, len = arr.length; i < len; i += 1) {
 			style = arr[i];
-			getarray.push(Utils.addStyle(style.s+(style.t || '')));
+			getarray.push(Utils.addStyle(style.s+(style.t || '?__='+GlobalParams.appHash())));
 		};
 		return $.when.apply($, getarray).then(function () {
 			console.log('All Styles loaded');
