@@ -27,13 +27,7 @@ if(!String.prototype.trim) {String.prototype.trim = function () {return this.rep
 	document.head || (document.head = document.getElementsByTagName('head')[0]);
 	var hash = (document.getElementById('hashContainer').innerHTML+'').trim();
 	function start() {
-		var s;
-		s = document.createElement('script');
-		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('src', '/js/lib/require/require.min.js?__=' + hash);
-		document.head.appendChild(s);
-		
-		s = document.createElement('script');
+		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
 		s.setAttribute('src', '/js/appMap.js?__=' + hash);
 		document.head.appendChild(s);
@@ -42,11 +36,11 @@ if(!String.prototype.trim) {String.prototype.trim = function () {return this.rep
 		var loadImg = new Image();
 		loadImg.onabort = loadImg.onerror = function (evt){start();}
 		loadImg.onload = function (evt){
-			var loading_pics = document.getElementById('loading_pics');
 			setCookie('oldmos.load.'+hash, new Date().toUTCString());
+			var loading_pics = document.getElementById('loading_pics');
 			loading_pics.style.backgroundImage = 'url(/images/loading/Loading1.jpg)';
 			document.getElementById('main_loader').className +=' visi';
-			loading_pics.className += 'finish';
+			loading_pics.className += ' finish';
 			loadImg = null;
 			
 			start();
