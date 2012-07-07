@@ -37,7 +37,7 @@ require([
 	console.timeStamp('Require app Ready');
 	var login, reg, recall,
 		profileView, profileVM,
-		grid, grid_data;
+		grid, grid_data, lastSel;
 	
 	$.when(LoadParams(), waitForDomReady())
 	 .pipe(auth.LoadMe)
@@ -91,19 +91,31 @@ require([
 					{name:'avatar',index:'avatar', width:46, formatter: unitsInStockFormatter},
 					{name:'login',index:'login', width:150},
 					{name:'email',index:'email', width:170, align:'left'},
-					{name:'roles',index:'roles', width:170},
+					{name:'roles',index:'roles', width:170,
+						formatter:'select', editable: true, edittype:'select',
+						editoptions: {
+							value: 'registered:Registered user;moderator:Moderator;admin:Administrator;super_admin:Super Administrator',
+							multiple: true,
+							size: 4
+						}
+					},
 					{name:'firstName',index:'firstName', width:100, align:'right'},
 					{name:'lastName',index:'lastName', width:150, align:'left'},
 					{name:'country',index:'country', width:100},
 					{name:'city',index:'city', width:130}
 				],
+				afterInsertRow: function(rowId, data)
+				{
+					grid.setCell(rowId, 'roles', '', {'white-space': 'normal'});
+				},
 				loadComplete: function() {
 					//grid.jqGrid('setCell',"","login","",{color:'red'});
 				},
-				onSelectRow: function(id){
-					var item = grid.jqGrid('getRowData', id);
-					if (item){
-						window.open("/u/"+item.login);
+				editurl: 'clientArray',
+				onSelectRow: function(rowid){
+					if (rowid && rowid !== lastSel){
+						jQuery(this).restoreRow(lastSel);
+						lastSel = rowid;
 					}
 				},
 				sortname: 'regdate',
@@ -111,7 +123,17 @@ require([
 				multiselect: false,
 				caption: "Oldmos active users"
 			});
-			
+			$("#edit").click(function(){
+				var rowid = grid.jqGrid('getGridParam','selrow');
+				grid.jqGrid('editRow', rowid, true, null, null, 'clientArray');
+			});
+			$("#gotouser").click(function(){
+				var rowid = grid.jqGrid('getGridParam','selrow');
+					item = grid.jqGrid('getRowData', rowid);
+				if (item){
+					window.open("/u/"+item.login);
+				}
+			});
 		});
 		socket.emit('giveUsers', {});
 	}
