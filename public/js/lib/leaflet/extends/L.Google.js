@@ -7,7 +7,8 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=fa
 
 	L.Google = L.Class.extend({
 		includes: L.Mixin.Events,
-
+		incomingAnimation: false,
+		
 		options: {
 			minZoom: 0,
 			maxZoom: 18,
@@ -31,6 +32,8 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=fa
 		},
 
 		onAdd: function(map, insertAtTheBottom) {
+			incomingAnimation = map.options.zoomAnimation;
+			map.options.zoomAnimation = false;
 			this._map = map;
 			this._insertAtTheBottom = insertAtTheBottom;
 
@@ -52,6 +55,7 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=fa
 		},
 
 		onRemove: function(map) {
+			map.options.zoomAnimation = incomingAnimation;
 			this._map._container.removeChild(this._container);
 			//this._container = null;
 

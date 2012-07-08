@@ -108,7 +108,7 @@ require([
 	}
 	
 	function createMap() {
-		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z, minZoom: 0,	maxZoom: 18});
+		map = new L.neoMap('map', {center: mapDefCenter, zoom: Locations.current.z, minZoom: 0,	maxZoom: 18, zoomAnimation: true});
 	
 		layers = map.layers;
 		var systems = document.createDocumentFragment(), sysElem, typeElem, sysNum = 0;
