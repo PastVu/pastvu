@@ -29,22 +29,24 @@ var express = require('express'),
 	oneYear = 365*day;
 
 /**
- * Выполняем "наши" модули
+ * Включаем "наши" модули
  */
 require('./commons/JExtensions.js');
 require('./commons/Utils.js');
-	
-app = module.exports = express.createServer();
-io = require('socket.io').listen(app);
 
 /**
  * Окружение (development, test, production)
  */
 var env = process.env.NODE_ENV || 'development',
 	pub = (env == 'development' ? '/public' : '/public-build');
-	
+
+console.log('Starting Node('+process.versions.node+') with v8('+process.versions.v8+') and Express('+express.version+') on process pid:'+process.pid);
+
+app = module.exports = express.createServer();
 app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
 app.hash = (env == 'development' ? app.version : Utils.randomString(10)); console.log('Application Hash: '+app.hash);
+
+io = require('socket.io').listen(app);
 
 app.configure(function(){
 	app.set('views', __dirname + '/views');
@@ -155,4 +157,3 @@ app.get('*', function(req, res){errS.e404Virgin(req, res)});
 if (env!='development') {app.listen(3000);}
 
 console.log('Express server listening on port %d, environment: %s', app.address().port, app.settings.env)
-console.log('Using Express %s', express.version);
