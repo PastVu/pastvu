@@ -6,7 +6,7 @@ requirejs.config({
 		'*': {
 			'knockout': 'lib/knockout/knockout-2.1.0',
 			'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
-			'leaflet': 'lib/leaflet/leaflet_0.4.0'
+			'leaflet': 'lib/leaflet/leaflet_0.4.0.min'
 		}
 	},
 	paths: {

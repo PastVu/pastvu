@@ -7,7 +7,7 @@ var config = {
 	baseUrl: 'js',
 	dir: "public-build",
 	keepBuildDir: false,
-	optimize: "uglify",
+	optimize: "uglify", //TODO до 2.0.3 может калечить toplevel.
 	uglify: {
 		toplevel: false,
 		ascii_only: false,
@@ -20,7 +20,7 @@ var config = {
 		'*': {
 			'knockout': 'lib/knockout/knockout-2.1.0',
 			'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
-			'leaflet': 'lib/leaflet/leaflet_0.4.0'
+			'leaflet': 'lib/leaflet/leaflet_0.4.0.min'
 		}
 	},
 	paths: {

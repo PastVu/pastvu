@@ -98,8 +98,7 @@ L.Util = {
 
 	limitExecByInterval: function (fn, time, context) {
 		var lock, execOnUnlock;
-		
-		return function wrapperFn() {
+		var wrapperFn =	function () {
 			var args = arguments;
 
 			if (lock) {
@@ -120,6 +119,7 @@ L.Util = {
 
 			fn.apply(context, args);
 		};
+		return wrapperFn;
 	},
 
 	falseFn: function () {
