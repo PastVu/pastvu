@@ -41,7 +41,7 @@ function getNeoStore (id, login, callback) {
 			},
 			function (err, user) {
 				neoStore.user = user.toObject();
-				Role.find({name: {$in: neoStore.user.roles}}, {_id:0}).desc('level').exec(this);
+				Role.find({name: {$in: neoStore.user.roles}}).select({_id:0}).sort('level', -1).exec(this);
 			},
 			function (err, roles) {
 				neoStore.roles = roles;

@@ -60,7 +60,7 @@ module.exports.loadController = function (app, io) {
 			Step(
 				function (){
 					Settings.find({}, this.parallel());
-					if (params.LoggedIn) User.findOne({'login': session.login}, { 'pass': 0, 'salt': 0, 'roles': 0}, this.parallel());
+					if (params.LoggedIn) User.findOne({'login': session.login}).select({ 'pass': 0, 'salt': 0, 'roles': 0}).exec(this.parallel());
 				},
 				function (err, settings, user){
 					var x = settings.length-1;

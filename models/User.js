@@ -30,36 +30,36 @@ var sexes = [
 ];
 
 var User = new mongoose.Schema({
-    login: {type: String, index: { unique: true }, select: true},
-	email: {type: String, index: { unique: true }, select: true},
-    pass: {type: String, select: false},
-	salt: {type: String, select: false},
+    login: {type: String, index: { unique: true }},
+	email: {type: String, index: { unique: true }, lowercase: true, validate: /^[-\w.]+@([A-z0-9][-A-z0-9]+\.)+[A-z]{2,4}$/},
+    pass: {type: String},
+	salt: {type: String},
 	
 	//Profile
-	avatar: {type: String, select: true},
-	firstName: {type: String, select: true},
-	lastName: {type: String, select: true},
-	birthdate: {type: String, select: true},
-	sex: {type: String, select: true},
-	country: {type: String, select: true},
-	city: {type: String, select: true},
-	work: {type: String, select: true},
-	www: {type: String, select: true},
-	icq: {type: String, select: true},
-	skype: {type: String, select: true},
-	aim: {type: String, select: true},
-	lj: {type: String, select: true},
-	flickr: {type: String, select: true},
-	blogger: {type: String, select: true},
-	aboutme: {type: String, select: true},
+	avatar: {type: String},
+	firstName: {type: String},
+	lastName: {type: String},
+	birthdate: {type: String},
+	sex: {type: String},
+	country: {type: String},
+	city: {type: String},
+	work: {type: String},
+	www: {type: String},
+	icq: {type: String},
+	skype: {type: String},
+	aim: {type: String},
+	lj: {type: String},
+	flickr: {type: String},
+	blogger: {type: String},
+	aboutme: {type: String},
 	
 	//Service
-    roles: {type: [String], select: true},
-	regdate: {type: Date, default: Date.now, select: true},
+    roles: {type: [String] },
+	regdate: {type: Date, default: Date.now },
     
-    dateFormat: {"type": String, "default": "dd.mm.yyyy", select: true},
-	active: {type: Boolean, default: false, select: false},
-	activatedate: {type: Date, default: Date.now, select: false}
+    dateFormat: {"type": String, "default": "dd.mm.yyyy" },
+	active: {type: Boolean, default: false },
+	activatedate: {type: Date, default: Date.now }
 });
 
 User.path('sex').validate(function (sex) {
@@ -117,7 +117,7 @@ UserModel.checkRole = function(user, role) {
  */
 UserModel.getUserPublic = function(login, callback) {
   if (!login) callback(null, 'Login is not specified');
-  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }, {_id:0}).select('login').exec(callback);
+  UserModel.findOne({ $and: [ {login : new RegExp('^'+login+'$', 'i')}, { active: true } ] }).select({_id:0, pass: 0, salt: 0, activatedate: 0 }).exec(callback);
 };
 
 /**
@@ -127,7 +127,7 @@ UserModel.getUserPublic = function(login, callback) {
  * @param {function} callback
  */
 UserModel.getAllUserPublic = function(callback) {
-  UserModel.find({active: true}, {_id:0, roles:0}).select('login', 'regdate').exec(callback);
+  UserModel.find({active: true}).select({_id:0, pass: 0, salt: 0, activatedate: 0 }).exec(callback);
 };
 
 /**
@@ -138,11 +138,11 @@ UserModel.getAllUserPublic = function(callback) {
  */
 UserModel.getUserAll = function(login, callback) {
   if (!login) callback(null, 'Login is not specified');
-  UserModel.findOne({ $and: [ {login : new RegExp(login, 'i')}, { active: true } ] }).select('pass', 'salt', 'active').exec(callback);
+  UserModel.findOne({ $and: [ {login : new RegExp('^'+login+'$', 'i')}, { active: true } ] }).exec(callback);
 };
 UserModel.getUserAllLoginMail = function(login, callback) {
   if (!login) callback(null, 'Login is not specified');
-  UserModel.findOne({ $and: [ { $or : [ { login : new RegExp(login, 'i') } , { email : login.toLowerCase() } ] }, { active: true } ] }).select('pass', 'salt', 'active').exec(callback);
+  UserModel.findOne({ $and: [ { $or : [ { login : new RegExp('^'+login+'$', 'i') } , { email : login.toLowerCase() } ] }, { active: true } ] }).exec(callback);
 };
 
 UserModel.prototype.hashPassword = function() {
