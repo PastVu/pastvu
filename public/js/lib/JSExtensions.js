@@ -412,3 +412,31 @@ if (typeof document !== "undefined" && !("classList" in document.createElement("
 		if (!window.console[method]) window.console[method] = func;
 	});
 }();
+
+/**
+ * @author paulirish
+ * Provides requestAnimationFrame in a cross browser way.
+ */
+!function() {
+	if (!window.requestAnimationFrame) {
+		window.requestAnimationFrame = function() {
+			var frame = 1000 / 60;
+			return  window.webkitRequestAnimationFrame ||
+					window.mozRequestAnimationFrame ||
+					window.oRequestAnimationFrame ||
+					window.msRequestAnimationFrame ||
+					function( /* function FrameRequestCallback */ callback, /* DOMElement Element */ element ) {
+						window.setTimeout( callback, frame );
+					};
+		}();
+	}
+	
+	if (!window.cancelAnimationFrame) {
+		window.cancelAnimationFrame = function() {
+			return  window.webkitCancelAnimationFrame ||
+					window.webkitCancelRequestAnimationFrame ||
+					window.mozCancelAnimationFrame ||
+					window.msCancelAnimationFrame;
+		}();
+	}
+}();
