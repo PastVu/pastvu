@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-var fs = require( 'fs' );
-
-var express = require('express'),
+var fs = require( 'fs' ),
+	port = 3000,
+	express = require('express'),
 	connect = require('express/node_modules/connect'),
 	gzippo = require('gzippo'),
 	mongodb = require('connect-mongodb/node_modules/mongodb'),
 	Utils = require('./commons/Utils.js'),
+	log4js = require('log4js'),
 
 	mongoStore = require('connect-mongodb'),
 	server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
@@ -29,6 +30,13 @@ var express = require('express'),
 	oneYear = 365*day;
 
 /**
+ * log the cheese logger messages to a file, and the console ones as well.
+ */
+console.log('\n');
+log4js.configure('./log4js.json', {cwd: './logs'});
+var logger = log4js.getLogger("app.js");
+
+/**
  * Включаем "наши" модули
  */
 require('./commons/JExtensions.js');
@@ -40,15 +48,16 @@ require('./commons/Utils.js');
 var env = process.env.NODE_ENV || 'development',
 	pub = (env == 'development' ? '/public' : '/public-build');
 
-console.log('Starting Node('+process.versions.node+') with v8('+process.versions.v8+') and Express('+express.version+') on process pid:'+process.pid);
+logger.info('Starting Node('+process.versions.node+') with v8('+process.versions.v8+') and Express('+express.version+') on process pid:'+process.pid);
 
 app = module.exports = express.createServer();
 app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
-app.hash = (env == 'development' ? app.version : Utils.randomString(10)); console.log('Application Hash: '+app.hash);
+app.hash = (env == 'development' ? app.version : Utils.randomString(10)); logger.info('Application Hash: '+app.hash);
 
 io = require('socket.io').listen(app);
 
 app.configure(function(){
+
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
 	app.set('view options', {layout: false, pretty: true});
@@ -83,7 +92,7 @@ app.configure(function(){
 		
 		mongo_store.load(data.sessionID, function (err, session) {
 			if (err || !session) return accept('Error: '+err, false);
-			if (session.login) console.log("%s entered", session.login);
+			if (session.login) console.info("%s entered", session.login);
 			data.session = session;
 			return accept(null, true);
 		});
@@ -94,7 +103,7 @@ app.configure(function(){
 		require('reloader')({
 			watchModules: false,
 			onStart: function () {},
-			onReload: function () {app.listen(3000);}
+			onReload: function () {app.listen(port);}
 		});
 	} else {
 		io.enable('browser client minification');  // send minified client
@@ -113,7 +122,7 @@ app.dynamicHelpers({
       messageTypes.forEach(function(type){
         var arrMsgs = req.flash(type);
         if (arrMsgs.length > 0) {
-          messages[type] = arrMsgs;
+			messages[type] = arrMsgs;
         }
       });
 
@@ -133,7 +142,7 @@ var ccc = mongoose.connect(app.set('db-uri'));
 // connecting to memcached
 var mc = new memcached.Client();
 mc.connect(function() {
-  console.log("Connected to the localhost memcache on port 11211!");
+  logger.info("Connected to the localhost memcache on port 11211!");
 });
 
 // creating models
@@ -158,10 +167,10 @@ app.get('*', function(req, res){errS.e404Virgin(req, res)});
  */
 process.on('uncaughtException', function (err) {
   // Add here storage for saving and resuming
-  console.log("PROCESS uncaughtException: " + err.message);
-  console.log(err.stack);
+  logger.fatal("PROCESS uncaughtException: " + err.message);
+  logger.fatal(err.stack);
 });
 
-if (env!='development') {app.listen(3000);}
+if (env!='development') {app.listen(port);}
 
-console.log('Express server listening on port %d, environment: %s', app.address().port, app.settings.env)
+logger.info('Express server listening on port %d, environment: %s \n', port, app.settings.env)

@@ -1,10 +1,13 @@
 var mongoose = require('mongoose'),
 	Step = require('step'),
 	nodemailer = require('nodemailer'),
+	log4js = require('log4js'),
 	transport, app;
 
+var logger = log4js.getLogger("mail.js");
+
 module.exports.send = function send(mess, callback) {
-	console.log('Sending Mail');
+	logger.info('Sending Mail');
 	transport.sendMail(mess, function (error){
 		if (callback) callback.call(null, error);	
 		// if you don't want to use this transport object anymore, uncomment following line
@@ -23,5 +26,5 @@ module.exports.loadController = function(a) {
 			pass: "zaq1xsw21"
 		}
 	});
-	console.log('SMTP Configured');
+	logger.info('SMTP Configured');
 };

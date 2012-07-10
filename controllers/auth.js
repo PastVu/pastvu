@@ -7,8 +7,11 @@ var mongoose = require('mongoose'),
 	Mail = require('./mail.js'),
 	errS = require('./errors.js').err,
 	Utils = require('../commons/Utils.js'),
+	log4js = require('log4js'),
 	app, io, mongo_store;
 
+var logger = log4js.getLogger("auth.js");
+	
 function login(session, data, callback){
 	var error = '';
 
@@ -27,7 +30,6 @@ function login(session, data, callback){
 				if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
 			} else {
 				error = 'User does not exists';
-				console.dir(err);
 			}
 			
 			if (error) {
@@ -48,7 +50,7 @@ function login(session, data, callback){
 		},
 		function SaveSess (neoStore) {
 			session.neoStore = neoStore;
-			console.log("Login success for %s", data.login);
+			logger.info("Login success for %s", data.login);
 			callback.call(null, null);
 		}
     );
@@ -204,9 +206,9 @@ function clearUnconfirmedUsers(){
 		for (var i=0, dlen=docs.length; i<dlen; i++){
 			if(docs[i]['key'].length == 80) users.push(docs[i]['login']);
 		}
-		console.log('Clear '+users.length+' unconfirmed users: '+users.join(", "));
-		if(users.length > 0) User.remove({'login': { $in : users }}, function(err){console.log('Fail to clear users: '+err)});
-		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){console.log('Fail to clear unconfirmed records: '+err)});
+		logger.info('Clear '+users.length+' unconfirmed users: '+users.join(", "));
+		if(users.length > 0) User.remove({'login': { $in : users }}, function(err){logger.error('Fail to clear users: '+err)});
+		UserConfirm.remove({'created': { "$lte" : todayminus2days }}, function(err){logger.error('Fail to clear unconfirmed records: '+err)});
 	});
 }
 

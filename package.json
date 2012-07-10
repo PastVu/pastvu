@@ -26,7 +26,8 @@
     "nodemailer": "~0.3.20",
     "sprintf": "",
     "opts" : "",
-	"uglify-js": "~1.3.2"
+	"uglify-js": "~1.3.2",
+	"log4js": "~0.5"
   },
   "private": true,
   "engines": {

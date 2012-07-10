@@ -13,6 +13,10 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
+# Log files #
+######################
+*.log
+
 # Temp Files #
 ######################
 *~

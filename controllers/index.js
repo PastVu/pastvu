@@ -2,10 +2,12 @@ var auth = require('./auth.js'),
 	Settings = require('mongoose').model('Settings'),
 	Mail = require('./mail.js'),
 	User = require('mongoose').model('User'),
-	Step = require('step');
+	Step = require('step'),
+	log4js = require('log4js');
 
 module.exports.loadController = function (app, io) {
-
+	var logger = log4js.getLogger("index.js");
+	
 	app.dynamicHelpers({
 		checkAccess: function(req, res){
 			return function (role) {
@@ -23,7 +25,7 @@ module.exports.loadController = function (app, io) {
 				message = req.session.message;
 			//console.log('qqqq1=' + req.sessionID+' '+req.session.login);
 			req.session.regenerate(function(err){
-				if (err) console.log('Regenerate session error: '+err);
+				if (err) logger.error('Regenerate session error: '+err);
 				req.session.login = login;
 				req.session.remember = remember;
 				req.session.message = message;

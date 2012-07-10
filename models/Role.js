@@ -18,7 +18,7 @@ Role.pre('save', function (next) {
     }
   }*/
   next();
-});      
+});
 
 var RoleModel = mongoose.model('Role', Role);
 

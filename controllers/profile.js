@@ -3,9 +3,11 @@ var auth = require('./auth.js'),
 	Settings = require('mongoose').model('Settings'),
 	User = require('mongoose').model('User'),
 	Step = require('step'),
-	Utils = require('../commons/Utils.js');
+	Utils = require('../commons/Utils.js'),
+	log4js = require('log4js');
 
 module.exports.loadController = function (app, io) {
+	var logger = log4js.getLogger("profile.js");
 	
 	app.get('/u/:login', function(req, res){
 		var login = req.params.login,
@@ -35,14 +37,12 @@ module.exports.loadController = function (app, io) {
 		//socket.emit('initMessage', {init_message: '000'});
 
 		socket.on('giveUser', function (data) {
-			//console.dir(data);
 			User.getUserPublic(data.login, function(err, user){			
 				socket.emit('takeUser', user.toObject());
 			});
 		});
 		
 		socket.on('saveUser', function (data) {
-			console.dir(data);
 			var toDel = {};
 			Object.keys(data).forEach(function(key) {
 				if (data[key].length==0){
@@ -54,13 +54,12 @@ module.exports.loadController = function (app, io) {
 			//var updateData = {}.extend(data).extend({'$unset': toDel});
 
 			User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function(err){
-				console.dir(arguments);
-				if (err) {console.dir(err)}
+				if (err) {logger.error(err)}
 				else{
 					//Сохраняем временные данные сессии в memcashed
 					session.neoStore.user.extend(data);
 					_session.cashedSession(session.id, session.neoStore);
-					console.log('saved story line');
+					logger.info('Saved story line for '+data.login);
 				}
 			});
 			socket.emit('saveUserResult', {ok:1});
