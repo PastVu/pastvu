@@ -22,7 +22,7 @@
 	"crypto": "~0.0.3",
     "step": "",
     "socket.io": "~0.9",
-	"requirejs": "~2.0.2",
+	"requirejs": "~2.0.4",
     "nodemailer": "~0.3.20",
     "sprintf": "",
     "opts" : "",
