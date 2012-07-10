@@ -153,6 +153,14 @@ require('./controllers/profile.js').loadController(app, io);
 require('./controllers/admin.js').loadController(app, io);
 app.get('*', function(req, res){errS.e404Virgin(req, res)});
 
+/**
+ * Handling uncaught exceptions
+ */
+process.on('uncaughtException', function (err) {
+  // Add here storage for saving and resuming
+  console.log("PROCESS uncaughtException: " + err.message);
+  console.log(err.stack);
+});
 
 if (env!='development') {app.listen(3000);}
 
