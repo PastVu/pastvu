@@ -53,6 +53,7 @@ body {
 	left:0;
 	width: 100%;
 	height: 30px;
+	border-width: 1px 0;
 	z-index: 100;
 	
 	> .inner_bord {
@@ -76,6 +77,12 @@ body {
 		top: 0;
 		text-align: right;
 		white-space: no-wrap;
+		font-size: 0;
+		
+		> div {
+			font-size: 16px;
+		}
+		
 	}
 	
 	.labledIco {
@@ -112,25 +119,19 @@ body {
 		&.strokeAfter:after {
 			left: 7px;
 		}
-		
-		&.iconBefore:before, &.iconAfter:after {
-			background: url(../images/map/Login-in-icon.png) 50% 50% no-repeat;
-			content: " ";
-			display: inline-block;
-			line-height: 20px;
-			height: 20px;
-			width: 20px;
-			position: relative;
-			vertical-align: top;
-		}
-		
+				
 		&:hover {
 			background-color: fade(@MainBlueColor, 50%);
 		}
 		
 		.text {
 			display: inline-block;
+			margin: 0 0 0 4px;
 		}
+		&.iconAfter .text {
+			margin: 0 4px 0 0;
+		}
+		
 		.ico {
 			line-height: 20px;
 			height: 20px;
@@ -146,34 +147,38 @@ body {
 	#toLogIn {
 		.ico {
 			background-image: url(../images/map/Login-in-icon.png);
-			margin-left: 2px;
 		}
 	}
 	#toLogOut {
 		.ico {
 			background-image: url(../images/map/Login-out-icon.png);
-			margin-left: 2px;
 		}
 	}
 	#toRegister {
 		.ico {
 			background-image: url(../images/map/register.png);
-			margin-right: 4px;
 		}
 	}
 	#toAdmin {
 		.ico {
 			background-image: url(../images/map/admin.png);
-			margin-right: 4px;
+		}
+	}
+	#toUpload {
+		.ico {
+			background-image: url(../images/map/image_upload.png);
+			width: 22px;
 		}
 	}
 	#toProfile {
-		padding: 0 7px 0 32px;
-		.fringe{
-			left: 2px;
-			top: 2px;
+
+		.fringe {
+			position: relative;
+			display: inline-block;
+			top: -3px;
 			height: 24px;
 			width: 24px;
+			vertical-align: text-top;
 			border-color: transparent;
 			box-shadow: none;
 
@@ -193,7 +198,15 @@ body {
 		}
 	}
 }
-
+@media only screen and (max-width: 800px) {
+	#top_panel_fringe {
+		.labledIco {
+			.text {
+				display: none;
+			}
+		}
+	}
+}
 #logo_fringe {
 	top: 0;
 	left: 80px;
@@ -207,3 +220,4 @@ body {
 		background: url(../images/map/logo.png) 50% 50% no-repeat;
 	}
 }
+

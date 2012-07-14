@@ -52,6 +52,15 @@ define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout', 'auth'], function(GlobalPa
 			},
 			owner: this
 		});
+		uploadPhoto = ko.computed({
+			read: function(){
+				if (GlobalParams.LoggedIn())
+					return i18nVM.image_upload();
+				else
+					return '';
+			},
+			owner: this
+		});
 		
 		ko.applyBindings(this, document.getElementById(dom));
 	}
