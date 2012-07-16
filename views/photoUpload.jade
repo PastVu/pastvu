@@ -1,12 +1,30 @@
 doctype 5
 html
 	include includes/head_meta
+		//link(rel="stylesheet", type="text/css", href="/style/bootstrap.css?__=" + appHash)
+		//link(rel="stylesheet", type="text/css", href="/style/bootstrap-responsive.css?__=" + appHash)
+
+		link(rel="stylesheet", type="text/css", href="http://blueimp.github.com/jQuery-File-Upload/css/jquery.fileupload-ui.css")
 		link(rel="stylesheet", type="text/css", href="/style/photoUpload.css?__=" + appHash)
 		
 		script(type='text/javascript',  src="/js/lib/require/require.min.js?__=" + appHash)
 		script(type='text/javascript',  src="/js/appPhotoUpload.js?__=" + appHash)
 	body
 		include includes/top
+		.container-fluid
+			#history
+				.head My previous uploads
+			#now
+				.head Upload new photo
+				.btnNeo
+					.icon-plus.icon-white
+					span Add foto...
+					input(type='file', name="files[]", multiple)
+				br
+				br
+				.btnNeo.green
+					.icon-plus.icon-white
+					span Add foto...
+					input(type='file', name="files[]", multiple)
 
-		
 		include includes/auth

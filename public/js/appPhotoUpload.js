@@ -15,8 +15,7 @@ requirejs.config({
 		'text': 'lib/require/plugins/text',
 		'Utils': 'lib/Utils',
 		'Browser': 'lib/Browser',
-		'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
-		'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang',
+		'jquery.ui.widget': 'lib/jquery/ui/jquery.ui.widget',
 		'jquery.fileupload': 'lib/jquery/plugins/fileupload'
 	}
 });
@@ -32,7 +31,7 @@ require([
 	'knockout', 'knockout.mapping',
 	'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
 	'KeyHandler', 'auth',
-	'jquery.datepick', 'jquery.datepick.lang'
+	'jquery.ui.widget', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload'
 ],function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
 	console.timeStamp('Require app Ready');
 	var login, reg, recall,
