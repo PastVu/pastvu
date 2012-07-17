@@ -30,7 +30,7 @@ body {
 	top: 0;
 	left: 147px;
 	vertical-align: top;
-	height: 100%;
+	height: 110%;
 	width: 1px;
 }
 
@@ -41,6 +41,9 @@ body {
 .head {
 	font-size: 113%;
 	margin-bottom: 10px;
+}
+.txt {
+	color: lighten(@MainDarkColor, 10%);
 }
 
 #history {
@@ -132,6 +135,17 @@ body {
 		background-image: -ms-linear-gradient(top, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%,lighten(@MainGreenColor, 12%) 40%,lighten(spin(@MainGreenColor, -8), 1%) 100%);
 		background-image: linear-gradient(to bottom, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%,lighten(@MainGreenColor, 12%) 40%,lighten(spin(@MainGreenColor, -8), 1%) 100%);
 		border-color: lighten(spin(@MainGreenColor, -8), 1%) lighten(@MainGreenColor, 12%) darken(@MainGreenColor, 40%) lighten(@MainGreenColor, 12%);
+	}
+	&.red {
+		background-color: lighten(spin(@MainRedColor, -8), 1%);
+		background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzU3Yjk1MSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQwJSIgc3RvcC1jb2xvcj0iIzBmYTgwNiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxOTcyMDQiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
+		background-image: -moz-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
+		background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,desaturate(lighten(@MainRedColor, 30%), 50%)), color-stop(40%,lighten(@MainRedColor, 12%)), color-stop(100%,lighten(spin(@MainRedColor, -8), 1%)));
+		background-image: -webkit-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%,lighten(@MainRedColor, 12%) 40%,lighten(spin(@MainRedColor, -8), 1%) 100%);
+		background-image: -o-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%,lighten(@MainRedColor, 12%) 40%,lighten(spin(@MainRedColor, -8), 1%) 100%);
+		background-image: -ms-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%,lighten(@MainRedColor, 12%) 40%,lighten(spin(@MainRedColor, -8), 1%) 100%);
+		background-image: linear-gradient(to bottom, desaturate(lighten(@MainRedColor, 30%), 50%) 0%,lighten(@MainRedColor, 12%) 40%,lighten(spin(@MainRedColor, -8), 1%) 100%);
+		border-color: lighten(spin(@MainRedColor, -8), 1%) lighten(@MainRedColor, 12%) darken(@MainRedColor, 40%) lighten(@MainRedColor, 12%);
 	}
 	
 	[class^="icon-"], [class*=" icon-"] {

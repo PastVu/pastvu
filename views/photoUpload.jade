@@ -16,6 +16,7 @@ html
 				.head My previous uploads
 			#now
 				.head Upload new photo
+				.txt Choose photos from your computer by clicking on a button or dragging the files on this page
 				.btnNeo
 					.icon-plus.icon-white
 					span Add foto...
@@ -23,6 +24,12 @@ html
 				br
 				br
 				.btnNeo.green
+					.icon-plus.icon-white
+					span Add foto...
+					input(type='file', name="files[]", multiple)
+				br
+				br
+				.btnNeo.red
 					.icon-plus.icon-white
 					span Add foto...
 					input(type='file', name="files[]", multiple)
