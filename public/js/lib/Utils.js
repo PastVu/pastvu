@@ -46,6 +46,12 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 			return result;
 		},
 		
+		/*getObjectOneOwnPropertyName: function(obj){
+			return this.getOwnPropertyNames(obj)[0];
+		},
+		getObjectOneOwnProperty: function(obj){
+			return obj[this.getObjectOneOwnPropertyName(obj)];
+		},*/
 		getObjectOneOwnProperty: function(obj){
 			if (Utils.getObjectPropertyLength(obj) > 0) {
 				if (Object.getOwnPropertyNames){ //ECMAScript 5
