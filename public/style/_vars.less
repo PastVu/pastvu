@@ -3,3 +3,14 @@
 @MainBlueColor: rgb(5, 63, 126);
 @MainGreenColor: rgb(10, 109, 4);
 @MainRedColor: rgb(196, 30, 30);
+
+/* The ghost, nudged to maintain perfect centering */
+.centering_content {
+	&:before {
+	  content: '';
+	  display: inline-block;
+	  height: 100%;
+	  vertical-align: middle;
+	  margin-right: -0.25em; /* Adjusts for spacing */
+	}
+}

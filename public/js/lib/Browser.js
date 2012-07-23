@@ -25,6 +25,7 @@ define(["lib/flash_detect"], function (FlashDetect) {
 				var vid = document.createElement('video');
 				return !!vid && !!vid.canPlayType && vid.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
 			}(),
+			filereader: !!(window.File && window.FileReader && window.FileList && window.Blob),
 			canvas: /** @return {boolean} */ function(){
 				var canvas_compatible = false;
 				try{

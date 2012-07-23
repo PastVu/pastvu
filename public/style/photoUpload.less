@@ -1,6 +1,19 @@
 @import "common";
 @import "bootstrap/sprites";
+@import "bootstrap/buttons";
 @import "auth";
+
+/**
+ * Bootstrap override
+ */
+.btn {
+	.border-radius(0);
+	font-size: 15px;
+}
+[class^="icon-"],
+[class*=" icon-"] {
+	margin: 1px 5px 0 0;
+}
 
 body {
 	padding-top: 75px;
@@ -41,9 +54,11 @@ body {
 .head {
 	font-size: 113%;
 	margin-bottom: 10px;
+	#grid > .fluid > .span(12);
 }
 .txt {
 	color: lighten(@MainDarkColor, 10%);
+	#grid > .fluid > .span(12);
 }
 
 #history {
@@ -56,9 +71,66 @@ body {
 
 	}
 }
+
+.row {
+	position: relative;
+	margin: 0 0 10px 0;
+	#grid .fluid .row-fluid();
+}
+
 #now {
 	margin-left: 155px;
+	overflow: hidden;
+	
+	.row#upload {
+		#fileinput-btn {
+			overflow: hidden;
+			
+			input[type='file'] {
+				position: absolute;
+				top: 0;
+				left: 0;
+				bottom: 0;
+				margin: 0;
+				opacity: 0;
+				filter: alpha(opacity=0);
+				direction: ltr;
+				cursor: pointer;
+			}
+		}
+		#addfiles_area {
+			position: absolute;
+			border: 1px dashed @grayDarker;
+			opacity: 0.6;
+			left: 118px;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			text-align: center;
+			
+			&:hover {
+				opacity: 1;
+				top: -4px;
+				bottom: -4px;
+				background-color: @grayLighter;
+			}
+			
+			span {
+				vertical-align: middle;
+			}
+			
+			#or {
+				position: absolute;
+				left: -25px;
+				width: 25px;
+				top: 0;
+				bottom: 0;
+			}
+		}
+	}
 }
+
+
 
 .btnNeo {
 	position: relative;

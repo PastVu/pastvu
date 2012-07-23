@@ -591,8 +591,8 @@
   .fluid (@fluidGridColumnWidth, @fluidGridGutterWidth) {
 
     .spanX (@index) when (@index > 0) {
-      (~".span@{index}") { .span(@index); }
-      .spanX(@index - 1);
+      (~".span@{index}") { #grid > .fluid > .span(@index); }
+       #grid > .fluid > .spanX(@index - 1);
     }
     .spanX (0) {}
 
@@ -615,7 +615,8 @@
       }
 
       // generate .spanX
-      .spanX (@gridColumns);
+      //.spanX (@gridColumns);
+      #grid > .fluid > .spanX (@gridColumns);
     }
 
   }

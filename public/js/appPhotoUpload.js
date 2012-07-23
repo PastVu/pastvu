@@ -35,7 +35,8 @@ require([
 ],function(domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
 	console.timeStamp('Require app Ready');
 	var login, reg, recall,
-		profileView, profileVM;
+		profileView, profileVM,
+		uploadVM;
 	
 	$.when(LoadParams(), waitForDomReady())
 	 .pipe(auth.LoadMe)
@@ -55,64 +56,28 @@ require([
 		socket.emit('giveGlobeParams');
 		return dfd.promise();
 	}
+	
+	var uploadVM = {
+		// Data
+		filereader: ko.observable(Browser.support.filereader),
+		width: ko.computed({
+			read: function(){
+				return GlobalParams.Width();
+			},
+			owner: uploadVM
+		}),
+		height: ko.computed({
+			read: function(){
+				return GlobalParams.Height();
+			},
+			owner: uploadVM
+		}),
+	};
 		
 	function app () {
 		new TopPanel('top_panel_fringe');
+		ko.applyBindings(uploadVM, document.getElementById('now'));
 		
-		profileView = document.getElementById('userProfile');
-		
-		socket.on('initMessage', function (json) {
-			var init_message = json.init_message;
-		});
-		
-		socket.on('takeUser', function (user) {
-			profileVM = User.VM(user, profileVM);
-			
-			profileVM.edit = ko.observable(false);
-			
-			profileVM.originUser = user;
-			
-			profileVM.canBeEdit = ko.computed(function() {
-				return auth.iAm.login()==this.login() || auth.iAm.role_level() >= 50;
-			}, profileVM);
-			
-			profileVM.edit_mode = ko.computed(function() {
-				return this.canBeEdit() && this.edit();
-			}, profileVM);
-			profileVM.edit_mode.subscribe(function(val){
-				if (val){
-					document.body.classList.add('edit_mode');
-					window.setTimeout(function(){$('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));}, 1000);
-					
-				}else{
-					document.body.classList.remove('edit_mode');
-				}
-			});
-			
-			profileVM.can_pm = ko.computed(function() {
-				return auth.iAm.login()!=this.login();
-			}, profileVM);
-			
-			profileVM.saveUser = function (){
-				var targetUser = ko_mapping.toJS(profileVM)
-				console.dir(targetUser);
-				for(var key in targetUser) {
-					if (targetUser.hasOwnProperty(key) && key != 'login') {
-						if (profileVM.originUser[key] && targetUser[key]==profileVM.originUser[key]) delete targetUser[key];
-						else if (!profileVM.originUser[key] && targetUser[key]==User.def[key]) delete targetUser[key];
-					}
-				}
-				if (Utils.getObjectPropertyLength(targetUser)>1) socket.emit('saveUser', targetUser);
-				profileVM.edit(false);
-			};
-			
-			ko.applyBindings(profileVM, profileView);
-			
-			profileView.classList.add('show');
-			
-		});
-		socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/')+3)});
-	
 	}
 	
 });
