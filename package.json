@@ -27,7 +27,10 @@
     "sprintf": "",
     "opts" : "",
 	"uglify-js": "~1.3.2",
-	"log4js": "~0.5"
+	"log4js": "~0.5",
+	"formidable": ">=1.0.8",
+	"node-static": ">=0.5.9",
+	"imagemagick": ">=0.1.2"
   },
   "private": true,
   "engines": {
