@@ -101,7 +101,7 @@ require([
         });
 		
 		$('#fileupload').fileupload('option', {
-            url: '//jquery-file-upload.appspot.com/',
+            url: '/pup',
             maxFileSize: 5000000,
             acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
             process: [
@@ -121,9 +121,9 @@ require([
             ]
         });
         // Upload server status check for browsers with CORS support:
-        if ($.support.cors) {
+        /*if ($.support.cors) {
             $.ajax({
-                url: '//jquery-file-upload.appspot.com/',
+                url: '/pup',
                 type: 'HEAD'
             }).fail(function () {
                 $('<span class="alert alert-error"/>')
@@ -131,7 +131,7 @@ require([
                             new Date())
                     .appendTo('#fileupload');
             });
-        }
+        }*/
 	}
 	
 });

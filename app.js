@@ -43,16 +43,16 @@ require('./commons/JExtensions.js');
 require('./commons/Utils.js');
 
 /**
- * Окружение (development, test, production)
+ * Окружение (dev, test, prod)
  */
-var env = process.env.NODE_ENV || 'development',
-	pub = (env == 'development' ? '/public' : '/public-build');
+var env = process.env.NODE_ENV || 'dev',
+	pub = (env == 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node('+process.versions.node+') with v8('+process.versions.v8+') and Express('+express.version+') on process pid:'+process.pid);
 
 app = module.exports = express.createServer();
 app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8' )).version;
-app.hash = (env == 'development' ? app.version : Utils.randomString(10)); logger.info('Application Hash: '+app.hash);
+app.hash = (env == 'dev' ? app.version : Utils.randomString(10)); logger.info('Application Hash: '+app.hash);
 
 io = require('socket.io').listen(app);
 
@@ -65,9 +65,9 @@ app.configure(function(){
 	
 	//app.use(express.logger({ immediate: false, format: 'dev' }));
 	
-	app.use(express.errorHandler({ dumpExceptions: (env=='development'), showStack: (env=='development') }));
+	app.use(express.errorHandler({ dumpExceptions: (env!='prod'), showStack: (env!='prod') }));
 	app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: day }));
-	if (env=='development') {
+	if (env=='dev') {
 		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug:false}));
 	} else {
 		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, optimization:2, debug:false}));
@@ -98,7 +98,7 @@ app.configure(function(){
 		});
 	});
 	
-	if (env=='development') {
+	if (env=='dev') {
 		io.set('log level', 1);
 		require('reloader')({
 			watchModules: false,
@@ -172,6 +172,6 @@ process.on('uncaughtException', function (err) {
   logger.fatal(err.stack);
 });
 
-if (env!='development') {app.listen(port);}
+if (env!='dev') {app.listen(port);}
 
 logger.info('Express server listening on port %d, environment: %s \n', port, app.settings.env)

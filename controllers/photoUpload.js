@@ -11,11 +11,13 @@ var path = require('path'),
 	User = require('mongoose').model('User'),
 	Step = require('step'),
 	
+	qwert = 'hello',
 	options = {
-		tmpDir: __dirname + '/uploads/tmp',
-		publicDir: __dirname + '/uploads/photos',
-		uploadDir: __dirname + '/uploads/photos',
-		uploadUrl: '/files/',
+		rootpath: process.cwd(),
+		tmpDir: process.cwd() + '/uploads/tmp',
+		publicDir: process.cwd() + '/uploads/photos',
+		uploadDir: process.cwd() + '/uploads/photos',
+		uploadUrl: '/pup',
 		maxPostSize: 500000000, // 500 MB
 		minFileSize: 10,
 		maxFileSize: 100000000, // 100 MB
@@ -63,6 +65,100 @@ module.exports.loadController = function (app, io) {
 			session = hs.session;
 	});
 	
+	app.post('/pup', function(req, res){
+		// TODO: move and rename the file using req.files.path & .name)
+		setHeader(res);
+		
+		var handler = this,
+			form = new formidable.IncomingForm(),
+			tmpFiles = [],
+			files = [],
+			map = {},
+			counter = 1,
+			redirect,
+			finish = function () {
+				counter -= 1;
+				if (!counter) {
+					files.forEach(function (fileInfo) {
+						fileInfo.initUrls(req);
+					});
+					handler.callback(files, redirect);
+				}
+			};
+		
+        form.uploadDir = options.tmpDir;
+        form.on('fileBegin', function (name, file) {
+            tmpFiles.push(file.path);
+            var fileInfo = new FileInfo(file, req, true);
+            fileInfo.safeName();
+            map[path.basename(file.path)] = fileInfo;
+            files.push(fileInfo);
+        }).on('field', function (name, value) {
+            if (name === 'redirect') {
+                redirect = value;
+            }
+        }).on('file', function (name, file) {
+            var fileInfo = map[path.basename(file.path)];
+            fileInfo.size = file.size;
+            if (!fileInfo.validate()) {
+                fs.unlink(file.path);
+                return;
+            }
+            fs.renameSync(file.path, options.uploadDir + '/' + fileInfo.name);
+            if (options.imageTypes.test(fileInfo.name)) {
+                Object.keys(options.imageVersions).forEach(function (version) {
+                    counter += 1;
+                    var opts = options.imageVersions[version];
+                    imageMagick.resize({
+                        width: opts.width,
+                        height: opts.height,
+                        srcPath: options.uploadDir + '/' + fileInfo.name,
+                        dstPath: options.uploadDir + '/' + version + '/' +
+                            fileInfo.name
+                    }, finish);
+                });
+            }
+        }).on('aborted', function () {
+            tmpFiles.forEach(function (file) {
+                fs.unlink(file);
+            });
+        }).on('progress', function (bytesReceived, bytesExpected) {
+            if (bytesReceived > options.maxPostSize) {
+                req.connection.destroy();
+            }
+        }).on('end', finish).parse(req);
+	});
+	
+	app.get('/pup', function(req, res){
+		setHeader(res);
+		
+        var handler = this,
+            files = [];
+        fs.readdir(options.uploadDir, function (err, list) {
+            list.forEach(function (name) {
+                var stats = fs.statSync(options.uploadDir + '/' + name),
+                    fileInfo;
+                if (stats.isFile()) {
+                    fileInfo = new FileInfo({
+                        name: name,
+                        size: stats.size
+                    });
+                    fileInfo.initUrls(req);
+                    files.push(fileInfo);
+                }
+            });
+            handler.callback(files);
+        });
+	});
+	
+	
+	function setHeader(res){
+            res.setHeader('Access-Control-Allow-Origin', options.accessControl.allowOrigin);
+            res.setHeader('Access-Control-Allow-Methods', options.accessControl.allowMethods);
+			res.setHeader('Pragma', 'no-cache');
+			res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+			res.setHeader('Content-Disposition', 'inline; filename="files.json"');
+	}
 
 	var fileServer = new nodeStatic.Server(options.publicDir, options.nodeStatic),
 		FileInfo = function (file) {
@@ -281,10 +377,11 @@ module.exports.loadController = function (app, io) {
             handler.callback(false);
         }
     };
-    if (options.ssl) {
+    
+	/*if (options.ssl) {
         require('https').createServer(options.ssl, serve).listen(8459);
     } else {
         require('http').createServer(serve).listen(8459);
-    }
-	 
+    }*/
+		 
 };
