@@ -34,7 +34,7 @@ var config = {
 		'Browser': 'lib/Browser',
 		'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
 		'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang',
-		'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.21.custom.min',
+		'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.22.custom.min',
 		'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
 		'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
 	},
