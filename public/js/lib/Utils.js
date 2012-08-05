@@ -1,3 +1,4 @@
+/*global define*/
 /**
  * Utils
  * @author Klimashkin P.
@@ -11,7 +12,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          * @return {boolean}
          */
         isObjectType: function (type, obj) {
-            return obj !== undefined && obj !== null && Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
+            return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
         },
 
         isObjectEmpty: function (obj) {
