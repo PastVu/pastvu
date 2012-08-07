@@ -148,13 +148,9 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
         },
 
         getClientHeight: function () {
-            if (window.opera && window.innerWidth) {
-                return window.innerWidth;
-            } else {
-                return (document.compatMode === 'CSS1Compat' && !window.opera ?
-                        document.documentElement.clientHeight :
-                        document.body.clientHeight);
-            }
+            return window.opera && window.innerWidth ? window.innerWidth : (document.compatMode === 'CSS1Compat' && !window.opera ?
+                                                                            document.documentElement.clientHeight :
+                                                                            document.body.clientHeight);
         },
 
         getBodyScrollTop: function () {
