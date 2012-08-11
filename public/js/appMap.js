@@ -1,4 +1,5 @@
 /*global requirejs*/
+Packages = undefined; //TODO Убрать после апдэйта text https://github.com/requirejs/text/issues/13
 requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
@@ -8,6 +9,8 @@ requirejs.config({
         'socket.io': 'lib/socket.io',
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
+        'css': 'lib/require/plugins/css',
+        'css.api': 'lib/require/plugins/css.api',
         'async': 'lib/require/plugins/async',
         'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
@@ -31,8 +34,8 @@ require([
     'knockout', 'knockout.mapping',
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
-    'Locations', 'KeyHandler', 'auth'
-], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth) {
+    'Locations', 'KeyHandler', 'auth', 'css!/style/map_main'
+], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, fff) {
     console.timeStamp('Require app Ready');
 
     var map, layers = {},
@@ -41,7 +44,7 @@ require([
         navSlider,
         StylesToLoad = [
             {s: 'style/jquery.toast.css', p: 2},
-            {s: 'style/map_main.css', p: 10}
+            //{s: 'style/map_main.css', p: 10}
         ];
 
     $.when(loadParams(), waitForDomReady())
