@@ -1,4 +1,5 @@
-define (['socket.io'], function(){
-	console.timeStamp('Socket define');
-	return io.connect(location.host);
+/*global define*/
+define(['socket.io'], function (io) {
+    console.timeStamp('Socket define');
+    return window.io.connect(location.host);
 });
