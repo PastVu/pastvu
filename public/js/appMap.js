@@ -3,22 +3,19 @@ requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
-    map: {
-        '*': {
-            'knockout': 'lib/knockout/knockout-2.1.0',
-            'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
-            'leaflet': 'lib/leaflet/leaflet_0.4.0.min'
-        }
-    },
     paths: {
-        'jquery': 'lib/jquery/jquery-1.7.2.min',
-        'socket.io': document.location.protocol + '//' + document.location.hostname + ':' + (3000) + '/socket.io/socket.io',
+        'jquery': 'lib/jquery/jquery-1.8.0.min',
+        'socket.io': 'lib/socket.io',
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
         'async': 'lib/require/plugins/async',
         'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
-        'Browser': 'lib/Browser'
+        'Browser': 'lib/Browser',
+
+        'knockout': 'lib/knockout/knockout-2.1.0',
+        'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+        'leaflet': 'lib/leaflet/leaflet_0.4.4'
     }
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

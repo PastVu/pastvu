@@ -107,18 +107,18 @@ app.configure(function () {
     });
 
     if (env === 'dev') {
-        io.enable('browser client minification');  // send minified client
-        io.enable('browser client etag');          // apply etag caching logic based on version number
-        io.enable('browser client gzip');          // gzip the file
-        io.set('log level', 3);
-        /*require('reloader')({
+        //io.enable('browser client minification');  // send minified client
+        //io.enable('browser client etag');          // apply etag caching logic based on version number
+        //io.enable('browser client gzip');          // gzip the file
+        io.set('log level', 1);
+        require('reloader')({
             watchModules: false,
             onStart: function () {
             },
             onReload: function () {
                 app.listen(port);
             }
-        });*/
+        });
     } else {
         io.enable('browser client minification');  // send minified client
         io.enable('browser client etag');          // apply etag caching logic based on version number
@@ -188,8 +188,8 @@ process.on('uncaughtException', function (err) {
     logger.fatal(err.stack);
 });
 
-//if (env !== 'dev') {
+if (env !== 'dev') {
     app.listen(port);
-//}
+}
 
 logger.info('Express server listening on port %d in %s-mode \n', port, env.toUpperCase());
