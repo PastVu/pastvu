@@ -1,4 +1,4 @@
-/*global requirejs*/
+/*global requirejs:true, Packages:true*/
 Packages = undefined; //TODO Убрать после апдэйта text https://github.com/requirejs/text/issues/13
 requirejs.config({
     baseUrl: '/js',
