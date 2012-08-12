@@ -3,11 +3,6 @@ requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
-    map: {
-        '*': {
-
-        }
-    },
     paths: {
         'jquery': 'lib/jquery/jquery-1.8.0.min',
         'socket.io': 'lib/socket.io',
