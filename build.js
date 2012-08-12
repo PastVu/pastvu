@@ -28,8 +28,12 @@ var fs = require('fs'),
         paths: {
             'jquery': 'lib/jquery/jquery-1.8.0.min',
             'socket.io': 'lib/socket.io',
+
             'domReady': 'lib/require/plugins/domReady',
             'text': 'lib/require/plugins/text',
+            'css': 'lib/require/plugins/css',
+            'css.api': 'lib/require/plugins/css.api',
+            'css.pluginBuilder': 'lib/require/plugins/css.pluginBuilder',
             'async': 'lib/require/plugins/async',
             'goog': 'lib/require/plugins/goog',
             'Utils': 'lib/Utils',
@@ -47,7 +51,8 @@ var fs = require('fs'),
         },
         modules: [
             {
-                name: "appMap"
+                name: "appMap",
+                include: ['css!>>appMap']
             },
             {
                 name: "appProfile"
@@ -59,17 +64,16 @@ var fs = require('fs'),
     };
 
 lessCompile(lessPreBuildToCompile, function () {
-    /*requirejs.optimize(rJSConfig, function (buildResponse) {
-     //buildResponse is just a text output of the modules
-     //included. Load the built file for the contents.
-     //Use rJSConfig.out to get the optimized file contents.
-     console.log('Build finished');
-     //var contents = fs.readFileSync(rJSConfig.out, 'utf8');
-     });*/
+    requirejs.optimize(rJSConfig, function (buildResponse) {
+        //buildResponse is just a text output of the modules
+        //included. Load the built file for the contents.
+        //Use rJSConfig.out to get the optimized file contents.
+        console.log('Build finished');
+        //var contents = fs.readFileSync(rJSConfig.out, 'utf8');
+    });
 });
 
 function lessCompile(files, done) {
-    console.log(done);
     var input, output,
         lessOptions = {
             compress: true,
@@ -80,7 +84,7 @@ function lessCompile(files, done) {
             color: true,
             strictImports: false
         },
-        css, fd, tree,
+        css, fd,
         i = 0;
 
     next();

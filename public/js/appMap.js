@@ -7,10 +7,12 @@ requirejs.config({
     paths: {
         'jquery': 'lib/jquery/jquery-1.8.0.min',
         'socket.io': 'lib/socket.io',
+
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
         'css': 'lib/require/plugins/css',
         'css.api': 'lib/require/plugins/css.api',
+        'css.pluginBuilder': 'lib/require/plugins/css.pluginBuilder',
         'async': 'lib/require/plugins/async',
         'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
@@ -26,7 +28,7 @@ require(['lib/JSExtensions']); //Делаем require вместо deps чтоб
 //require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require([
-    'domReady',
+    'domReady!',
     'jquery',
     'Browser', 'Utils',
     'socket',
@@ -34,8 +36,9 @@ require([
     'knockout', 'knockout.mapping',
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
-    'Locations', 'KeyHandler', 'auth', 'css!/style/map_main'
-], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, fff) {
+    'Locations', 'KeyHandler', 'auth',
+    'css!/style/map_main', 'css!/style/jquery.toast'
+], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth) {
     console.timeStamp('Require app Ready');
 
     var map, layers = {},
@@ -43,23 +46,14 @@ require([
         poly_mgr, aoLayer,
         navSlider,
         StylesToLoad = [
-            {s: 'style/jquery.toast.css', p: 2},
+            //{s: 'style/jquery.toast.css', p: 2},
             //{s: 'style/map_main.css', p: 10}
         ];
 
-    $.when(loadParams(), waitForDomReady())
-        .pipe(LoadStyles.bind(null, StylesToLoad))
+    $.when(loadParams())
+        //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
         .pipe(auth.LoadMe)
         .then(app);
-
-    function waitForDomReady() {
-        var dfd = $.Deferred();
-        domReady(function () {
-            console.timeStamp('Dom Ready');
-            dfd.resolve();
-        });
-        return dfd.promise();
-    }
 
     function loadParams() {
         var dfd = $.Deferred();
@@ -70,27 +64,6 @@ require([
         socket.emit('giveGlobeParams');
         return dfd.promise();
     }
-
-    function LoadStyles(arr, doneCallback) {
-        var getarray = [], i, len,
-            style;
-
-        console.groupCollapsed("Styles Loading");
-        console.time("Styles loaded time");
-        for (i = 0, len = arr.length; i < len; i += 1) {
-            style = arr[i];
-            getarray.push(Utils.addStyle(style.s + (style.t || '?__=' + GlobalParams.appHash())));
-        }
-        ;
-        return $.when.apply($, getarray).then(function () {
-            console.log('All Styles loaded');
-            console.timeEnd("Styles loaded time");
-            console.groupEnd();
-        });
-
-    }
-
-    ;
 
     function app() {
 

@@ -1,3 +1,4 @@
+/*global requirejs:true, Packages:true*/
 requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
@@ -5,8 +6,13 @@ requirejs.config({
     paths: {
         'jquery': 'lib/jquery/jquery-1.8.0.min',
         'socket.io': 'lib/socket.io',
+
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
+        'css': 'lib/require/plugins/css',
+        'css.api': 'lib/require/plugins/css.api',
+        'async': 'lib/require/plugins/async',
+        'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
         'Browser': 'lib/Browser',
 

@@ -619,21 +619,6 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
         }()),
 
         /**
-         * Creates Style element in head.
-         * @param {!string=} src location.
-         */
-        addStyle: function (src, doneCallback) {
-            var dfd = $.Deferred();
-            dfd.done(function () {
-                console.log("Source '%s' loaded success", src);
-                if (doneCallback) {
-                    doneCallback();
-                }
-            });
-            $.getStyle(src, dfd.resolve);
-            return dfd.promise();
-        },
-        /**
          * Creates Script element in head.
          * @param {!string=} src location.
          */
@@ -649,6 +634,41 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 
             $.cachedScript(src).done(dfd.resolve);
             return dfd.promise();
+        },
+
+        /**
+         * Creates Style element in head.
+         * @param {!string=} src location.
+         */
+        addStyle: function (src, doneCallback) {
+            var dfd = $.Deferred();
+            dfd.done(function () {
+                console.log("Source '%s' loaded success", src);
+                if (doneCallback) {
+                    doneCallback();
+                }
+            });
+            $.getStyle(src, dfd.resolve);
+            return dfd.promise();
+        },
+
+        LoadStyles: function (arr, hash) {
+            var getarray = [], i, len,
+                style;
+
+            console.groupCollapsed("Styles Loading");
+            console.time("Styles loaded time");
+            for (i = 0, len = arr.length; i < len; i += 1) {
+                style = arr[i];
+                getarray.push(Utils.addStyle(style.s + (style.t || '?__=' + hash)));
+            }
+
+            return $.when.apply($, getarray).then(function () {
+                console.log('All Styles loaded');
+                console.timeEnd("Styles loaded time");
+                console.groupEnd();
+            });
+
         },
 
         /**
@@ -711,4 +731,5 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
     }
 
     return Utils;
-});
+})
+;

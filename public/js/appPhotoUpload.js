@@ -1,3 +1,4 @@
+/*global requirejs:true, Packages:true*/
 requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
@@ -29,7 +30,7 @@ requirejs.config({
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
 
 require([
-    'domReady',
+    'domReady!',
     'jquery',
     'Browser', 'Utils',
     'socket',
@@ -46,20 +47,11 @@ require([
         profileView, profileVM,
         uploadVM, fileupload;
 
-    $.when(LoadParams(), waitForDomReady())
+    $.when(loadParams())
         .pipe(auth.LoadMe)
         .then(app);
 
-    function waitForDomReady() {
-        var dfd = $.Deferred();
-        domReady(function () {
-            console.timeStamp('Dom Ready');
-            dfd.resolve();
-        })
-        return dfd.promise();
-    }
-
-    function LoadParams() {
+    function loadParams() {
         var dfd = $.Deferred();
         socket.on('takeGlobeParams', function (json) {
             ko_mapping.fromJS(json, GlobalParams);
