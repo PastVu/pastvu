@@ -56,7 +56,7 @@ require([
         return dfd.promise();
     }
 
-    var uploadVM = {
+    uploadVM = {
         // Data
         filereader: ko.observable(Browser.support.filereader),
         width: ko.computed({

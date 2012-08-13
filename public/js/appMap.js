@@ -5,6 +5,8 @@ requirejs.config({
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
     paths: {
+        'style': '../style',
+
         'jquery': 'lib/jquery/jquery-1.8.0.min',
         'socket.io': 'lib/socket.io',
 
@@ -37,7 +39,7 @@ require([
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
-    'css!/style/map_main', 'css!/style/jquery.toast'
+    'css!style/map_main', 'css!style/jquery.toast'
 ], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth) {
     console.timeStamp('Require app Ready');
 

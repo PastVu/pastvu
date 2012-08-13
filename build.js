@@ -21,11 +21,13 @@ var fs = require('fs'),
             ascii_only: false,
             beautify: false
         },
-        optimizeCss: false, //Не трогаем css
+        optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
         removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
 
         paths: {
+            'style': '../style',
+
             'jquery': 'lib/jquery/jquery-1.8.0.min',
             'socket.io': 'lib/socket.io',
 

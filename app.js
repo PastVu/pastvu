@@ -7,6 +7,7 @@ var fs = require('fs'),
     mongodb = require('connect-mongodb/node_modules/mongodb'),
     Utils = require('./commons/Utils.js'),
     log4js = require('log4js'),
+    argv = require('optimist').argv,
 
     mongoStore = require('connect-mongodb'),
     server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
@@ -45,7 +46,7 @@ require('./commons/Utils.js');
 /**
  * Окружение (dev, test, prod)
  */
-var env = process.env.NODE_ENV || 'dev',
+var env = argv.env || 'dev',
     pub = (env === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + ') and Express(' + express.version + ') on process pid:' + process.pid);
@@ -72,7 +73,7 @@ app.configure(function () {
     if (env === 'dev') {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
     } else {
-        app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, optimization: 2, debug: false}));
+        app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
     }
     app.use(gzippo.staticGzip(__dirname + pub, {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
 
@@ -129,26 +130,26 @@ app.configure(function () {
 
 // Helpers
 /*app.dynamicHelpers({
-    messages: function (req, res) {
-        var messages = {},
-            messageTypes = ['error', 'warning', 'info'];
+ messages: function (req, res) {
+ var messages = {},
+ messageTypes = ['error', 'warning', 'info'];
 
-        messageTypes.forEach(function (type) {
-            var arrMsgs = req.flash(type);
-            if (arrMsgs.length > 0) {
-                messages[type] = arrMsgs;
-            }
-        });
+ messageTypes.forEach(function (type) {
+ var arrMsgs = req.flash(type);
+ if (arrMsgs.length > 0) {
+ messages[type] = arrMsgs;
+ }
+ });
 
-        return messages;
-    },
+ return messages;
+ },
 
-    user: function (req, res) {
-        var user = req.session.user;
-        return user || {};
-    }
+ user: function (req, res) {
+ var user = req.session.user;
+ return user || {};
+ }
 
-});*/
+ });*/
 
 // connecting to db
 var ccc = mongoose.connect(app.set('db-uri'));
