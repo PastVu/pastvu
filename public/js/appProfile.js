@@ -1,4 +1,4 @@
-/*global requirejs:true, Packages:true*/
+/*global requirejs:true*/
 requirejs.config({
     baseUrl: '/js',
     waitSeconds: 15,
