@@ -58,7 +58,7 @@
 					background: -o-linear-gradient(left, rgba(229,229,229,0) 0%,rgba(183,183,183,0.8) 16%,rgba(10,67,128,1) 49%,fade(@MainBlueColor,99%) 50%,rgba(183,183,183,0.8) 85%,rgba(229,229,229,0) 100%); /* Opera 11.10+ */
 					background: -ms-linear-gradient(left, rgba(229,229,229,0) 0%,rgba(183,183,183,0.8) 16%,rgba(10,67,128,1) 49%,fade(@MainBlueColor,99%) 50%,rgba(183,183,183,0.8) 85%,rgba(229,229,229,0) 100%); /* IE10+ */
 					background: linear-gradient(left, rgba(229,229,229,0) 0%,rgba(183,183,183,0.8) 16%,rgba(10,67,128,1) 49%,fade(@MainBlueColor,99%) 50%,rgba(183,183,183,0.8) 85%,rgba(229,229,229,0) 100%); /* W3C */
-					content: " ";
+					content: ' ';
 					display: block;
 					top: 5px;
 					height: 1px;
@@ -135,7 +135,7 @@
 				}
 					
 				&:after {
-					content: "";
+					content: '';
 					left: 5px;
 					position: absolute;
 					top: 30px;
@@ -198,7 +198,7 @@
 					font-style: italic;
 				}
 				
-				&[type="email"], &[type="text"], &[type="password"]{
+				&[type='email'], &[type='text'], &[type='password']{
 					border: 1px solid #8C8C8C;
 					color: #000;
 					display: block;
@@ -239,7 +239,7 @@
 				}
 			}
 			
-			input[type="button"], input[type="submit"] {
+			input[type='button'], input[type='submit'] {
 				position: absolute;
 				bottom: 10px;
 				color: @MainLigthColor;
@@ -262,11 +262,11 @@
 				background: linear-gradient(top, fade(@MainBlueColor,70%) 0%,@MainBlueColor 49%,lighten(@MainBlueColor,10%) 100%); /* W3C */
 			}
 			
-			input[type="submit"] {
+			input[type='submit'] {
 				left: 17px;
 			}
 			
-			input[type="button"] {
+			input[type='button'] {
 				right: 22px;
 				
 				&.fin {
