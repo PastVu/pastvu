@@ -1,7 +1,8 @@
-#top_panel_fringe.fringe.
-	<div id='top_panel' class='inner_bord'>
-		<div id='appName'>Retro photo of mankind's habitat</div>
-		<div id='panelTools'>
+#top_panel_fringe.fringe
+	#top_panel.inner_bord
+		#appName
+			| Retro photo of mankind's habitat
+		#panelTools.
 			<div
 				id='toUpload' class='labledIco strokeAfter iconBefore' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/photoUpload")}}'><div 
 					class='ico'></div><div 
@@ -27,7 +28,5 @@
 					class='text' data-bind="text: logout"></div><div 
 					class='ico'></div
 			></div>
-		</div>
-	</div>
 #logo_fringe.fringe
 	a#logo.inner_bord(href='/', target='_self')

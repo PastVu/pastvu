@@ -19,7 +19,7 @@ var fs = require('fs'),
         uglify: {
             toplevel: false,
             ascii_only: false,
-            beautify: false
+            beautify: true
         },
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
@@ -40,6 +40,8 @@ var fs = require('fs'),
             'goog': 'lib/require/plugins/goog',
             'Utils': 'lib/Utils',
             'Browser': 'lib/Browser',
+
+            'jade': 'lib/jade',
 
             'knockout': 'lib/knockout/knockout-2.1.0',
             'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
@@ -125,6 +127,7 @@ function lessCompile(files, done) {
                         if (output) {
                             fd = fs.openSync(output, "w");
                             fs.writeSync(fd, css, 0, "utf8");
+                            fs.closeSync(fd);
                             next();
                         } else {
                             sys.print(css);
