@@ -19,12 +19,16 @@ var fs = require('fs'),
         uglify: {
             toplevel: false,
             ascii_only: false,
-            beautify: true
+            beautify: false
         },
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
         removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
-
+        shim: {
+            'jade': {
+                exports: 'jade'
+            }
+        },
         paths: {
             'style': '../style',
 

@@ -4,11 +4,11 @@ requirejs.config({
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
     // Shim позволит нам настроить зависимоти для скриптов, которые не содержат define, чтобы объявить себя модулем
-    /*shim: {
+    shim: {
         'jade': {
             exports: 'jade'
         }
-    },*/
+    },
     paths: {
         'style': '../style',
 
@@ -46,7 +46,7 @@ require([
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
-    'jade!../tpl/top',
+    'text!../tpl/top.jade',
     'css!style/map_main', 'css!style/jquery.toast'
 ], function (domReady, $, Browser, Utils, socket, ET, jade, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, top_jade) {
     console.timeStamp('Require app Ready');
@@ -59,8 +59,8 @@ require([
             //{s: 'style/jquery.toast.css', p: 2},
             //{s: 'style/map_main.css', p: 10}
         ];
-    //$('#map').after(jade.compile(top_jade, {pretty: false})());
-    $('#map').after(top_jade({}));
+    $('#map').after(jade.compile(top_jade, {pretty: false})());
+   // $('#map').after(top_jade({}));
 
     $.when(loadParams())
         //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
