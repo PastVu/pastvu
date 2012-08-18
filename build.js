@@ -2,15 +2,28 @@
 var fs = require('fs'),
     path = require('path'),
     sys = require('util'),
+    Step = require('step'),
+    File = require("file-utils").File,
+    Utils = require('./commons/Utils.js'),
     requirejs = require('requirejs'),
     less = require('less'),
+    jade = require('jade'),
 
-    lessPreBuildToCompile = [
-        './public/style/map_main',
-        './public/style/jquery.toast'
-    ],
+    jadeCompileOptions = {
+        pretty: false
+    },
+    
+    lessCompileOptions = {
+        compress: true,
+        yuicompress: true,
+        optimization: 2,
+        silent: false,
+        paths: ['./public/style'],
+        color: true,
+        strictImports: false
+    },
 
-    rJSConfig = {
+    requireBuildConfig = {
         appDir: "public/",
         baseUrl: 'js',
         dir: "public-build",
@@ -19,18 +32,19 @@ var fs = require('fs'),
         uglify: {
             toplevel: false,
             ascii_only: false,
-            beautify: false
+            beautify: true
         },
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
         removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
+        inlineText: true, //Включать ли в модули контент, загруженный плагином text
         shim: {
             'jade': {
                 exports: 'jade'
             }
         },
         paths: {
-            'tpl': '../tpl',
+            'tpl': '../tpl_temp',
             'style': '../style',
 
             'jquery': 'lib/jquery/jquery-1.8.0.min',
@@ -58,6 +72,7 @@ var fs = require('fs'),
             'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
             'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
         },
+        stubModules: ['jade'],
         modules: [
             {
                 name: "appMap",
@@ -70,29 +85,97 @@ var fs = require('fs'),
                 name: "appAdmin"
             }
         ]
-    };
+    },
+    jadeFiles = [],
+    lessFiles = [];
 
-lessCompile(lessPreBuildToCompile, function () {
-    requirejs.optimize(rJSConfig, function (buildResponse) {
-        //buildResponse is just a text output of the modules
-        //included. Load the built file for the contents.
-        //Use rJSConfig.out to get the optimized file contents.
-        console.log('Build finished');
-        //var contents = fs.readFileSync(rJSConfig.out, 'utf8');
-    });
-});
+
+Step(
+
+    function searchJades() {
+        var tpl = new File('./' + requireBuildConfig.appDir + 'tpl'),
+            tpl_temp = new File('./' + requireBuildConfig.appDir + 'tpl_temp');
+
+        tpl.listFiles (this.parallel());
+        tpl_temp.createDirectory(this.parallel());
+        tpl_temp.removeOnExit();
+    },
+
+    function searchLess(e, files) {
+        if (e) {
+            console.dir(e); process.exit(1);
+        }
+        Object.keys(files).forEach(function(element, index, array){
+            jadeFiles.push(files[element].getPath());
+        });
+
+        var lessFolder = new File('./' + requireBuildConfig.appDir + 'style');
+        lessFolder.list(function (name, path){
+            return name.indexOf('.less')>-1;
+        }, this);
+    },
+
+    function startCompile(e, files) {
+        if (e) {
+            console.dir(e); process.exit(1);
+        }
+        Object.keys(files).forEach(function(element, index, array){
+            lessFiles.push(files[element]);
+        });
+
+        lessCompile(lessFiles, this.parallel());
+        jadeCompile(jadeFiles, this.parallel());
+    },
+
+    function requireBuild() {
+        requirejs.optimize(requireBuildConfig, function (buildResponse) {
+            //buildResponse is just a text output of the modules
+            //included. Load the built file for the contents.
+            //Use requireBuildConfig.out to get the optimized file contents.
+            console.log('Build finished');
+            //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
+        });
+    },
+
+    function removeUnnecessary() {
+        var tpl = new File('./' + requireBuildConfig.dir + 'tpl'),
+            tpl_temp = new File('./' + requireBuildConfig.dir + 'tpl_temp');
+    }
+);
+
+
+
+function jadeCompile(files, done) {
+    var input, output,
+        fd,
+        i = 0;
+    next();
+
+    function next() {
+        input = files[i++];
+        if (!input) {
+            return done();
+        }
+        output = input.replace('tpl', 'tpl_temp');
+        fs.readFile(input, 'utf-8', render);
+    }
+
+    function render(e, data) {
+        if (e) {
+            sys.puts("jade readFile error: " + e.message);
+            process.exit(1);
+        }
+
+        var fn = jade.compile(data, jadeCompileOptions);
+        fd = fs.openSync(output, "w");
+        fs.writeSync(fd, fn(jadeCompileOptions), 0, "utf8");
+        fs.closeSync(fd);
+        next();
+    }
+}
 
 function lessCompile(files, done) {
     var input, output,
-        lessOptions = {
-            compress: true,
-            yuicompress: true,
-            optimization: 2,
-            silent: false,
-            paths: ['./public/style'],
-            color: true,
-            strictImports: false
-        },
         css, fd,
         i = 0;
 
@@ -103,8 +186,7 @@ function lessCompile(files, done) {
         if (!input) {
             return done();
         }
-        output = input + '.css';
-        input = input + '.less';
+        output = input.replace('.less', '.css');
         fs.readFile(input, 'utf-8', parseLessFile);
     }
 
@@ -115,19 +197,19 @@ function lessCompile(files, done) {
         }
 
         new (less.Parser)({
-            paths: lessOptions.paths,
-            optimization: lessOptions.optimization,
+            paths: lessCompileOptions.paths,
+            optimization: lessCompileOptions.optimization,
             filename: input,
-            strictImports: lessOptions.strictImports
+            strictImports: lessCompileOptions.strictImports
         }).parse(data, function (err, tree) {
                 if (err) {
-                    less.writeError(err, lessOptions);
+                    less.writeError(err, lessCompileOptions);
                     process.exit(1);
                 } else {
                     try {
                         css = tree.toCSS({
-                            compress: lessOptions.compress,
-                            yuicompress: lessOptions.yuicompress
+                            compress: lessCompileOptions.compress,
+                            yuicompress: lessCompileOptions.yuicompress
                         });
                         if (output) {
                             fd = fs.openSync(output, "w");
@@ -138,7 +220,7 @@ function lessCompile(files, done) {
                             sys.print(css);
                         }
                     } catch (e) {
-                        less.writeError(e, lessOptions);
+                        less.writeError(e, lessCompileOptions);
                         process.exit(2);
                     }
                 }

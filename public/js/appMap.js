@@ -10,6 +10,7 @@ requirejs.config({
         }
     },
     paths: {
+        'tpl': '../tpl',
         'style': '../style',
 
         'jquery': 'lib/jquery/jquery-1.8.0.min',
@@ -46,19 +47,16 @@ require([
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
-    'text!../tpl/top.jade',
+    'text!tpl/top.jade',
     'css!style/map_main', 'css!style/jquery.toast'
 ], function (domReady, $, Browser, Utils, socket, ET, jade, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, top_jade) {
     console.timeStamp('Require app Ready');
 
     var map, layers = {},
         mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng),
-        poly_mgr, aoLayer,
-        navSlider,
-        StylesToLoad = [
-            //{s: 'style/jquery.toast.css', p: 2},
-            //{s: 'style/map_main.css', p: 10}
-        ];
+        poly_mgr,
+        navSlider;
+
     $('#map').after(jade.compile(top_jade, {pretty: false})());
    // $('#map').after(top_jade({}));
 
