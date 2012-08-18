@@ -38,10 +38,8 @@ var fs = require('fs'),
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
         removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
         inlineText: true, //Включать ли в модули контент, загруженный плагином text
+        logLevel: 1,
         shim: {
-            'jade': {
-                exports: 'jade'
-            }
         },
         paths: {
             'tpl': '../tpl_temp',
@@ -60,7 +58,7 @@ var fs = require('fs'),
             'Utils': 'lib/Utils',
             'Browser': 'lib/Browser',
 
-            'jade': 'lib/jade',
+            'jade': 'lib/jade_dumb',
 
             'knockout': 'lib/knockout/knockout-2.1.0',
             'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
@@ -133,13 +131,14 @@ Step(
             //included. Load the built file for the contents.
             //Use requireBuildConfig.out to get the optimized file contents.
             console.log('Build finished');
+            this();
             //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
         });
     },
 
     function removeUnnecessary() {
-        var tpl = new File('./' + requireBuildConfig.dir + 'tpl'),
-            tpl_temp = new File('./' + requireBuildConfig.dir + 'tpl_temp');
+        (new File('./' + requireBuildConfig.dir + 'tpl')).remove();
+        (new File('./' + requireBuildConfig.dir + 'tpl_temp')).remove();
     }
 );
 

@@ -5,9 +5,9 @@ requirejs.config({
     deps: ['lib/JSExtensions'],
     // Shim позволит нам настроить зависимоти для скриптов, которые не содержат define, чтобы объявить себя модулем
     shim: {
-        'jade': {
-            exports: 'jade'
-        }
+        /*'geoplugin': {
+         exports: 'geoplugin_status'
+         }*/
     },
     paths: {
         'tpl': '../tpl',
@@ -57,8 +57,11 @@ require([
         poly_mgr,
         navSlider;
 
-    $('#map').after(jade.compile(top_jade, {pretty: false})());
-   // $('#map').after(top_jade({}));
+    if (jade.version) {
+        $('#map').after(jade.compile(top_jade, {pretty: false})());
+    } else {
+        $('#map').after(top_jade);
+    }
 
     $.when(loadParams())
         //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
