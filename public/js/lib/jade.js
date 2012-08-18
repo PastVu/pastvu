@@ -1,3 +1,5 @@
+define(function() {
+
 (function() {
 
 // CommonJS require()
@@ -3628,3 +3630,7 @@ exports.text = function(str){
 
 window.jade = require("jade");
 })();
+
+
+return window.jade;
+});
