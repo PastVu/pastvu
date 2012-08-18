@@ -2,33 +2,26 @@
 	#top_panel.inner_bord
 		#appName
 			| Retro photo of mankind's habitat
-		#panelTools.
-			<div id='toUpload' class='labledIco strokeAfter iconBefore' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/photoUpload")}}'>
-				<div class='ico'></div>
-				<div class='text' data-bind="text: uploadPhoto"></div>
-			</div>
-			<div id='toAdmin' class='labledIco strokeAfter iconBefore' data-bind='style:{display: auth.iAm.role_level()>=50 ? "":"none"}, event:{click: function(data, evt){window.open("/admin")}}'>
-				<div class='ico'></div>
-				<div class='text' data-bind="text: admin"></div>
-			</div>
-			<div id='toProfile' class='labledIco iconBefore' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+auth.iAm.login())}}'>
-				<div class='fringe'>
-					<div class='ico inner_bord' data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}"></div>
-				</div>
-				<div class='text' data-bind="text: profile">
-			</div>
-			</div>
-			<div id='toRegister' class='labledIco iconBefore' data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}, event:{click: function(data, evt){data.auth.FormOpen("#reg_fringe")}}'>
-				<div class='ico'></div>
-				<div class='text' data-bind="text: register"></div>
-			</div>
-			<div id='toLogIn' class='labledIco strokeBefore iconAfter' data-bind='style:{display: loggedIn()?"none":""}, event:{click: function(data, evt){data.auth.FormOpen("#login_fringe")}}'>
-				<div class='text' data-bind="text: login"></div>
-				<div class='ico'></div>
-			</div>
-			<div id='toLogOut' class='labledIco strokeBefore iconAfter' data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){data.auth.Logout()}}'>
-				<div class='text' data-bind="text: logout"></div>
-				<div class='ico'></div>
-			</div>
+		#panelTools
+			#toUpload.labledIco.strokeAfter.iconBefore(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/photoUpload")}}')
+				.ico
+				.text(data-bind="text: uploadPhoto")
+
+			#toAdmin.labledIco.strokeAfter.iconBefore(data-bind='style:{display: auth.iAm.role_level()>=50 ? "":"none"}, event:{click: function(data, evt){window.open("/admin")}}')
+				.ico
+				.text(data-bind="text: admin")
+			#toProfile.labledIco.iconBefore(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+auth.iAm.login())}}')
+				.fringe
+					.ico.inner_bord(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
+				.text(data-bind="text: profile")
+			#toRegister.labledIco.iconBefore(data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}, event:{click: function(data, evt){data.auth.FormOpen("#reg_fringe")}}')
+				.ico
+				.text(data-bind="text: register")
+			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind='style:{display: loggedIn()?"none":""}, event:{click: function(data, evt){data.auth.FormOpen("#login_fringe")}}')
+				.text(data-bind="text: login")
+				.ico
+			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){data.auth.Logout()}}')
+				.text(data-bind="text: logout")
+				.ico
 #logo_fringe.fringe
 	a#logo.inner_bord(href='/', target='_self')
