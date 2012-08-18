@@ -217,66 +217,42 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
         },
 
-        getCookie: (function () {
-            if (typeof window.getCookie === 'function') {
-                var func = window.getCookie;
-                delete window.getCookie;
-                return func;
-            } else {
-                return function (name) {
-                    var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
-                    return matches ? decodeURIComponent(matches[1]) : undefined;
-                };
-            }
-        }()),
-        setCooksie: (function () {
-            if (typeof window.setCookie === 'function') {
-                var func = window.setCookie;
-                delete window.setCookie;
-                return func;
-            } else {
-                return function (name, value, props) {
-                    props = props || {};
-                    var exp = props.expires,
-                        d,
-                        updatedCookie,
-                        propName,
-                        propValue;
-                    if (typeof exp === "number" && exp) {
-                        d = new Date();
-                        d.setTime(d.getTime() + exp * 1000);
-                        exp = props.expires = d;
-                    }
-                    if (exp && exp.toUTCString) {
-                        props.expires = exp.toUTCString();
-                    }
+        getCookie: function (name) {
+            var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        },
+        setCooksie: function (name, value, props) {
+            props = props || {};
+            value = encodeURIComponent(value);
 
-                    value = encodeURIComponent(value);
-                    updatedCookie = name + "=" + value;
-                    for (propName in props) {
-                        if (props.hasOwnProperty(propName)) {
-                            updatedCookie += "; " + propName;
-                            propValue = props[propName];
-                            if (propValue !== true) {
-                                updatedCookie += "=" + propValue;
-                            }
-                        }
+            var updatedCookie = name + "=" + value,
+                exp = props.expires,
+                dat,
+                propName,
+                propValue;
+            if (typeof exp === "number" && exp) {
+                dat = new Date();
+                dat.setTime(dat.getTime() + exp * 1000);
+                exp = props.expires = dat;
+            }
+            if (exp && exp.toUTCString) {
+                props.expires = exp.toUTCString();
+            }
+
+            for (propName in props) {
+                if (props.hasOwnProperty(propName)) {
+                    updatedCookie += "; " + propName;
+                    propValue = props[propName];
+                    if (propValue !== true) {
+                        updatedCookie += "=" + propValue;
                     }
-                    document.cookie = updatedCookie;
-                };
+                }
             }
-        }()),
-        deleteCookie: (function () {
-            if (typeof window.deleteCookie === 'function') {
-                var func = window.deleteCookie;
-                delete window.deleteCookie;
-                return func;
-            } else {
-                return function (name) {
-                    Utils.setCookie(name, null, { expires: -1 });
-                };
-            }
-        }()),
+            document.cookie = updatedCookie;
+        },
+        deleteCookie: function (name) {
+            Utils.setCookie(name, null, { expires: -1 });
+        },
 
         /**
          * Converts an RGB in hex color value to HSL. Conversion formula

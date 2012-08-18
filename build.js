@@ -30,6 +30,7 @@ var fs = require('fs'),
             }
         },
         paths: {
+            'tpl': '../tpl',
             'style': '../style',
 
             'jquery': 'lib/jquery/jquery-1.8.0.min',
