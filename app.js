@@ -76,6 +76,7 @@ app.configure(function () {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
     }
     app.use(gzippo.staticGzip(__dirname + pub, {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
+    app.use(gzippo.staticGzip(__dirname + '/views', {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
 
     app.use('/ava', express.static(__dirname + '/uploads/ava', {maxAge: day}));
 
@@ -176,6 +177,7 @@ require('./controllers/photo.js').loadController(app, io);
 require('./controllers/photoUpload.js').loadController(app, io);
 require('./controllers/profile.js').loadController(app, io);
 require('./controllers/admin.js').loadController(app, io);
+require('./controllers/tpl.js').loadController(app);
 app.get('*', function (req, res) {
     errS.e404Virgin(req, res);
 });
