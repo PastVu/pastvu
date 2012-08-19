@@ -20,7 +20,6 @@ module.exports.loadController = function (app) {
     var logger = log4js.getLogger("tpl.js");
 
     app.get('/tpl/:name', function (req, res) {
-        console.log(req.route.params.name);
         if (tpls.indexOf(req.route.params.name) !== -1) {
             res.render('client/' + req.route.params.name, {pretty: false});
         } else {
