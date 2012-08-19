@@ -41,7 +41,7 @@ module.exports.loadController = function (app, io) {
 	}
 	
 	app.get('/'/*, regenSession*/, function(req, res){
-		res.render('index.jade', {prettyprint:true, pageTitle: 'OldMos2', appHash: app.hash});
+		res.render('index.jade', {pretty:false, pageTitle: 'OldMos2', appHash: app.hash});
 	});
 	
 	app.get('/updateCookie', function(req, res) {

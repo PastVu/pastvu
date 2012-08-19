@@ -12,17 +12,17 @@ tplFolder.listFiles(function (e, files) {
         process.exit(1);
     }
     Object.keys(files).forEach(function (element, index, array) {
-        tpls.push(files[element].getBaseName());
+        tpls.push(files[element].getName());
     });
 });
 
 module.exports.loadController = function (app) {
     var logger = log4js.getLogger("tpl.js");
 
-    app.get('/tplnew/:name', function (req, res) {
+    app.get('/tpl/:name', function (req, res) {
         console.log(req.route.params.name);
         if (tpls.indexOf(req.route.params.name) !== -1) {
-            res.render('client/' + req.route.params.name, {prettyprint: true});
+            res.render('client/' + req.route.params.name, {pretty: false});
         } else {
             res.send(404);
         }

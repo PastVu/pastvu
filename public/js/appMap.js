@@ -26,8 +26,6 @@ requirejs.config({
         'Utils': 'lib/Utils',
         'Browser': 'lib/Browser',
 
-        'jade': 'lib/jade',
-
         'knockout': 'lib/knockout/knockout-2.1.0',
         'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
         'leaflet': 'lib/leaflet/leaflet_0.4.4'
@@ -43,13 +41,13 @@ require([
     'Browser', 'Utils',
     'socket',
     'EventTypes',
-    'jade', 'knockout', 'knockout.mapping',
+    'knockout', 'knockout.mapping',
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
     'text!tpl/top.jade',
     'css!style/map_main', 'css!style/jquery.toast'
-], function (domReady, $, Browser, Utils, socket, ET, jade, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, top_jade) {
+], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, top_jade) {
     console.timeStamp('Require app Ready');
 
     var map, layers = {},
@@ -57,11 +55,11 @@ require([
         poly_mgr,
         navSlider;
 
-    if (jade.version) {
-        $('#map').after(jade.compile(top_jade, {pretty: false})());
-    } else {
-        $('#map').after(top_jade);
-    }
+    //if (jade.version) {
+    //    $('#map').after(jade.compile(top_jade, {pretty: false})());
+    //} else {
+    $('#map').after(top_jade);
+    //}
 
     $.when(loadParams())
         //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
@@ -88,8 +86,7 @@ require([
         var loadTime = Utils.getCookie('oldmos.load.' + GlobalParams.appHash());
         if (loadTime) {
             loadTime = new Date(loadTime);
-        }
-        else {
+        } else {
             loadTime = new Date();
             Utils.setCookie('oldmos.load.' + GlobalParams.appHash(), loadTime.toUTCString());
         }

@@ -8,7 +8,7 @@ var auth = require('./auth.js'),
 module.exports.loadController = function (app, io) {
 	
 	app.get('/admin', auth.restrictToRoleLevel(50), function(req, res){
-		res.render('adminUser.jade', {prettyprint:true, pageTitle: 'Admin Panel', appHash: app.hash, appVersion: app.version});
+		res.render('adminUser.jade', {pretty:false, pageTitle: 'Admin Panel', appHash: app.hash, appVersion: app.version});
 	});
 	
 	io.sockets.on('connection', function (socket) {

@@ -23,7 +23,7 @@ module.exports.loadController = function (app, io) {
 				if (err || !user) {
 					throw new errS.e404();
 				} else {
-					res.render('profile.jade', {prettyprint:true, pageTitle: user.login, appHash: app.hash});
+					res.render('profile.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
 				}
 			}
 		);
@@ -56,7 +56,7 @@ module.exports.loadController = function (app, io) {
 			User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function(err){
 				if (err) {logger.error(err)}
 				else{
-					//Сохраняем временные данные сессии в memcashed
+					//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ memcashed
 					session.neoStore.user.extend(data);
 					_session.cashedSession(session.id, session.neoStore);
 					logger.info('Saved story line for '+data.login);

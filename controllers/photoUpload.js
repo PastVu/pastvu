@@ -56,7 +56,7 @@ var path = require('path'),
 module.exports.loadController = function (app, io) {
 
     app.get('/photoUpload', function (req, res) {
-        res.render('photoUpload.jade', {prettyprint: true, pageTitle: 'Upload photo', appHash: app.hash});
+        res.render('photoUpload.jade', {pretty: false, pageTitle: 'Upload photo', appHash: app.hash});
     });
 
     io.sockets.on('connection', function (socket) {
