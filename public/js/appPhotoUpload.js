@@ -95,13 +95,13 @@ require([
         });
 
         $('#fileupload').fileupload('option', {
-            url: '/pup',
+            url: 'http://172.31.1.130:8888/',
             maxFileSize: 5000000,
-            acceptFileTypes: /(\.|\/)(gif|jpe?g|png)$/i,
+            acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
             process: [
                 {
                     action: 'load',
-                    fileTypes: /^image\/(gif|jpeg|png)$/,
+                    fileTypes: /^image\/(jpeg|png)$/,
                     maxFileSize: 20000000 // 20MB
                 },
                 {
