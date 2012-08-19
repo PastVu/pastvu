@@ -12,7 +12,7 @@ var fs = require('fs'),
     jadeCompileOptions = {
         pretty: false
     },
-    
+
     lessCompileOptions = {
         compress: true,
         yuicompress: true,
@@ -32,7 +32,8 @@ var fs = require('fs'),
         uglify: {
             toplevel: false,
             ascii_only: false,
-            beautify: true
+            beautify: false,
+            no_mangle: false
         },
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
@@ -42,7 +43,7 @@ var fs = require('fs'),
         shim: {
         },
         paths: {
-            'tpl': '../tpl_temp',
+            'tpl': '../tpl',
             'style': '../style',
 
             'jquery': 'lib/jquery/jquery-1.8.0.min',
@@ -58,8 +59,6 @@ var fs = require('fs'),
             'Utils': 'lib/Utils',
             'Browser': 'lib/Browser',
 
-            'jade': 'lib/jade_dumb',
-
             'knockout': 'lib/knockout/knockout-2.1.0',
             'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
             'leaflet': 'lib/leaflet/leaflet_0.4.4',
@@ -70,7 +69,6 @@ var fs = require('fs'),
             'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
             'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
         },
-        stubModules: ['jade'],
         modules: [
             {
                 name: "appMap",
@@ -89,43 +87,73 @@ var fs = require('fs'),
 
 
 Step(
+    /**
+     * Находим клиентские jade-шаблоны и создаем временную папку tpl для рендеренных
+     */
+        function searchJades() {
+        var tpl = new File('./views/client'),
+            tpl_temp = new File('./' + requireBuildConfig.appDir + 'tpl');
 
-    function searchJades() {
-        var tpl = new File('./' + requireBuildConfig.appDir + 'tpl'),
-            tpl_temp = new File('./' + requireBuildConfig.appDir + 'tpl_temp');
-
-        tpl.listFiles (this.parallel());
+        tpl.listFiles(this.parallel());
         tpl_temp.createDirectory(this.parallel());
         tpl_temp.removeOnExit();
     },
 
-    function searchLess(e, files) {
+    /**
+     * Создаем массив из имен jade-шаблонов
+     * @param e Ошибка поиска jade-шаблонов
+     * @param files Список  jade-шаблонов
+     */
+        function (e, files) {
         if (e) {
-            console.dir(e); process.exit(1);
+            console.dir(e);
+            process.exit(1);
         }
-        Object.keys(files).forEach(function(element, index, array){
-            jadeFiles.push(files[element].getPath());
+        Object.keys(files).forEach(function (element, index, array) {
+            jadeFiles.push(files[element].getName());
         });
+        this();
+    },
 
+    /**
+     * Ищем less-файлы для компиляции
+     */
+        function searchLess() {
         var lessFolder = new File('./' + requireBuildConfig.appDir + 'style');
-        lessFolder.list(function (name, path){
-            return name.indexOf('.less')>-1;
+        lessFolder.list(function (name, path) {
+            return name.indexOf('.less') > -1;
         }, this);
     },
 
-    function startCompile(e, files) {
+    /**
+     * Создаем массив из less-файлов
+     * @param e Ошибка поиска less-файлов
+     * @param files Список  less-файлов
+     */
+        function (e, files) {
         if (e) {
-            console.dir(e); process.exit(1);
+            console.dir(e);
+            process.exit(1);
         }
-        Object.keys(files).forEach(function(element, index, array){
+        Object.keys(files).forEach(function (element, index, array) {
             lessFiles.push(files[element]);
         });
+        this();
 
+    },
+
+    /**
+     * Компилируем less и jade
+     */
+        function startCompile() {
         lessCompile(lessFiles, this.parallel());
         jadeCompile(jadeFiles, this.parallel());
     },
 
-    function requireBuild() {
+    /**
+     * Собираем require
+     */
+        function requireBuild() {
         requirejs.optimize(requireBuildConfig, function (buildResponse) {
             //buildResponse is just a text output of the modules
             //included. Load the built file for the contents.
@@ -137,25 +165,24 @@ Step(
     },
 
     function removeUnnecessary() {
-        (new File('./' + requireBuildConfig.dir + 'tpl')).remove();
-        (new File('./' + requireBuildConfig.dir + 'tpl_temp')).remove();
     }
 );
 
 
-
 function jadeCompile(files, done) {
-    var input, output,
+    var name, input, output,
         fd,
         i = 0;
+
     next();
 
     function next() {
-        input = files[i++];
-        if (!input) {
+        name = files[i++];
+        if (!name) {
             return done();
         }
-        output = input.replace('tpl', 'tpl_temp');
+        input = 'views/client/' + name;
+        output = requireBuildConfig.appDir + 'tpl/' + name;
         fs.readFile(input, 'utf-8', render);
     }
 

@@ -55,11 +55,7 @@ require([
         poly_mgr,
         navSlider;
 
-    //if (jade.version) {
-    //    $('#map').after(jade.compile(top_jade, {pretty: false})());
-    //} else {
     $('#map').after(top_jade);
-    //}
 
     $.when(loadParams())
         //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
