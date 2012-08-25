@@ -75,6 +75,36 @@ require([
         toUpload: ko.observableArray([])
     };
 
+    /**
+     * Для некоторых браузеров необходимо смещать input в сторону, чтобы срабатывало изменение курсора
+     * При этом надо генерировать событие клик на таком input'е
+     */
+    ko.bindingHandlers.fileUploadInput = {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+            // First get the latest data that we're bound to
+            var value = valueAccessor(), allBindings = allBindingsAccessor(),
+                valueUnwrapped = ko.utils.unwrapObservable(value),
+                $element = $(element),
+                id = $element.attr('id');
+
+            // Now manipulate the DOM element
+            if (valueUnwrapped === true) {
+                if (Browser.name === 'FIREFOX' || Browser.name === 'MSIE') {
+                    $element
+                        .css({'left': '110px'})
+                        .attr('size', (viewModel.filereader() ? viewModel.width() / 8 : 10))
+                        .on("click", function (event) {
+                            event.stopPropagation(); // Чтобы опять не вызвать клик родительского элемента
+                        })
+                        .offsetParent().on("click", function (event) {
+                            $('#' + id).trigger('click');
+                        });
+                }
+            }
+        }
+    };
+
+    //data-bind="style: {left: (browser == 'FIREFOX' || browser == 'MSIE' ? '110px' : '0px')}, attr:{size: (filereader() ? Math.round(width()/8) : 10)}")
     function app() {
         new TopPanel('top_panel_fringe');
         ko.applyBindings(uploadVM, document.getElementById('now'));

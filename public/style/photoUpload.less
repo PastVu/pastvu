@@ -84,16 +84,19 @@ body {
 	margin-left: 155px;
 	overflow: hidden;
 
-	.row#upload {
+	.row#addFiles {
 		#fileinput-btn {
+			position: relative;
 			overflow: hidden;
 
 			input[type='file'] {
 				position: absolute;
+				display: block;
 				top: 0;
 				left: 0;
 				bottom: 0;
 				margin: 0;
+				padding: 0 0 0 110px; // Для курсора pointer в chrome
 				.opacity(0);
 				direction: ltr;
 				cursor: pointer;
@@ -131,109 +134,41 @@ body {
 	}
 }
 
-.btnNeo {
+.fileinput-button {
 	position: relative;
-	display: inline-block;
-	margin: 0;
-	padding: 4px 10px;
 	overflow: hidden;
-	font-size: 15px;
-	line-height: 18px;
-	color: #fff;
-	text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
-	text-align: center;
-	vertical-align: middle;
+	float: left;
+	margin-right: 4px;
+}
+.fileinput-button input {
+	position: absolute;
+	top: 0;
+	right: 0;
+	margin: 0;
+	border: solid transparent;
+	border-width: 0 0 100px 200px;
+	opacity: 0;
+	filter: alpha(opacity=0);
+	-moz-transform: translate(-300px, 0) scale(4);
+	direction: ltr;
 	cursor: pointer;
+}
+
+.files .progress {
+	width: 200px;
+}
+.progress-animated .bar {
+	background: url(../img/progressbar.gif) !important;
 	filter: none;
-	background-color: lighten(spin(@MainBlueColor, -8), 1%);
-	background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzVlOGNiZSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQwJSIgc3RvcC1jb2xvcj0iIzA3NWNiOSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMwNTUyODMiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-	background-image: -moz-linear-gradient(top, desaturate(lighten(@MainBlueColor, 30%), 50%) 0%, lighten(@MainBlueColor, 12%) 40%, lighten(spin(@MainBlueColor, -8), 1%) 100%);
-	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, desaturate(lighten(@MainBlueColor, 30%), 50%)), color-stop(40%, lighten(@MainBlueColor, 12%)), color-stop(100%, lighten(spin(@MainBlueColor, -8), 1%)));
-	background-image: -webkit-linear-gradient(top, desaturate(lighten(@MainBlueColor, 30%), 50%) 0%, lighten(@MainBlueColor, 12%) 40%, lighten(spin(@MainBlueColor, -8), 1%) 100%);
-	background-image: -o-linear-gradient(top, desaturate(lighten(@MainBlueColor, 30%), 50%) 0%, lighten(@MainBlueColor, 12%) 40%, lighten(spin(@MainBlueColor, -8), 1%) 100%);
-	background-image: -ms-linear-gradient(top, desaturate(lighten(@MainBlueColor, 30%), 50%) 0%, lighten(@MainBlueColor, 12%) 40%, lighten(spin(@MainBlueColor, -8), 1%) 100%);
-	background-image: linear-gradient(to bottom, desaturate(lighten(@MainBlueColor, 30%), 50%) 0%, lighten(@MainBlueColor, 12%) 40%, lighten(spin(@MainBlueColor, -8), 1%) 100%);
-	background-repeat: repeat-x;
-	border-width: 1px;
-	border-radius: 4px;
-	border-style: solid;
-	border-color: lighten(spin(@MainBlueColor, -8), 1%) lighten(@MainBlueColor, 12%) darken(@MainBlueColor, 40%) lighten(@MainBlueColor, 12%);
-	-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
-	-moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
-
-	&:hover {
-		text-decoration: none;
-		background-position: 0 -12px;
-		-webkit-transition: background-position 0.1s linear;
-		-moz-transition: background-position 0.1s linear;
-		-ms-transition: background-position 0.1s linear;
-		-o-transition: background-position 1.1s linear;
-		transition: background-position 0.1s linear;
-	}
-	&:focus {
-		outline: thin dotted #333;
-		outline: 5px auto -webkit-focus-ring-color;
-		outline-offset: -2px;
-	}
-	&:active {
-		background-image: none;
-		outline: 0;
-		-webkit-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.05);
-		-moz-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.05);
-		box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.05);
-	}
-	&:hover, &:focus, &:active {
-		color: #fff;
-	}
-
-	&.disabled {
-		cursor: default;
-		background-image: none;
-		.opacity(70);
-		-webkit-box-shadow: none;
-		-moz-box-shadow: none;
-		box-shadow: none;
-	}
-
-	&.green {
-		background-color: lighten(spin(@MainGreenColor, -8), 1%);
-		background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzU3Yjk1MSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQwJSIgc3RvcC1jb2xvcj0iIzBmYTgwNiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxOTcyMDQiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-		background-image: -moz-linear-gradient(top, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%, lighten(@MainGreenColor, 12%) 40%, lighten(spin(@MainGreenColor, -8), 1%) 100%);
-		background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, desaturate(lighten(@MainGreenColor, 30%), 50%)), color-stop(40%, lighten(@MainGreenColor, 12%)), color-stop(100%, lighten(spin(@MainGreenColor, -8), 1%)));
-		background-image: -webkit-linear-gradient(top, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%, lighten(@MainGreenColor, 12%) 40%, lighten(spin(@MainGreenColor, -8), 1%) 100%);
-		background-image: -o-linear-gradient(top, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%, lighten(@MainGreenColor, 12%) 40%, lighten(spin(@MainGreenColor, -8), 1%) 100%);
-		background-image: -ms-linear-gradient(top, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%, lighten(@MainGreenColor, 12%) 40%, lighten(spin(@MainGreenColor, -8), 1%) 100%);
-		background-image: linear-gradient(to bottom, desaturate(lighten(@MainGreenColor, 30%), 50%) 0%, lighten(@MainGreenColor, 12%) 40%, lighten(spin(@MainGreenColor, -8), 1%) 100%);
-		border-color: lighten(spin(@MainGreenColor, -8), 1%) lighten(@MainGreenColor, 12%) darken(@MainGreenColor, 40%) lighten(@MainGreenColor, 12%);
-	}
-	&.red {
-		background-color: lighten(spin(@MainRedColor, -8), 1%);
-		background-image: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzU3Yjk1MSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQwJSIgc3RvcC1jb2xvcj0iIzBmYTgwNiIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxOTcyMDQiIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-		background-image: -moz-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
-		background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, desaturate(lighten(@MainRedColor, 30%), 50%)), color-stop(40%, lighten(@MainRedColor, 12%)), color-stop(100%, lighten(spin(@MainRedColor, -8), 1%)));
-		background-image: -webkit-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
-		background-image: -o-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
-		background-image: -ms-linear-gradient(top, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
-		background-image: linear-gradient(to bottom, desaturate(lighten(@MainRedColor, 30%), 50%) 0%, lighten(@MainRedColor, 12%) 40%, lighten(spin(@MainRedColor, -8), 1%) 100%);
-		border-color: lighten(spin(@MainRedColor, -8), 1%) lighten(@MainRedColor, 12%) darken(@MainRedColor, 40%) lighten(@MainRedColor, 12%);
-	}
-
-	[class^="icon-"], [class*=" icon-"] {
-		margin: 1px 5px 0 0;
-	}
-
-	input[type='file'] {
-		position: absolute;
-		top: 0;
-		right: 0;
-		margin: 0;
-		border: solid transparent;
-		border-width: 0 0 100px 200px;
-		.opacity(0);
-		-moz-transform: translate(-300px, 0) scale(4);
-		direction: ltr;
-		cursor: pointer;
-	}
-
+}
+.fileupload-loading {
+	position: absolute;
+	left: 50%;
+	width: 128px;
+	height: 128px;
+	background: url(../img/loading.gif) center no-repeat;
+	display: none;
+}
+.fileupload-processing .fileupload-loading {
+	display: block;
 }

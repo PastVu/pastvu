@@ -2,73 +2,60 @@ doctype 5
 html
 	include includes/head_meta		
 		link(rel="stylesheet", type="text/css", href="/style/photoUpload.css?__=" + appHash)
-		link(rel="stylesheet", type="text/css", href="http://blueimp.github.com/jQuery-File-Upload/css/jquery.fileupload-ui.css")
 		
 		script(type='text/javascript',  src="/js/lib/require/require.min.js?__=" + appHash)
 		script(type='text/javascript',  src="/js/appPhotoUpload.js?__=" + appHash)
 	body
 		include includes/top
 		div.
-			<script type="text/html" id="UploadListTemplate"><div class='UploadList' data-bind="foreach: cams, style: {top: scrollTop2()+'px'}">
-				<div class='row' data-bind="click: $parent.clickRow">
+			<script type="text/html" id="UploadListTemplate">
+				<div class='UploadList' data-bind="foreach: cams, style: {top: scrollTop2()+'px'}">
+					<div class='row' data-bind="click: $parent.clickRow">
+					</div>
 				</div>
-			</div></script>
+			</script>
 		.container-fluid
 			#history
 				.head My previous uploads
 			#now
 				.head Upload new photo
 				.row.txt(data-bind="text: 'Choose photos from your computer by clicking on plus button' + (filereader() ? ' or dragging the files on dashed area' : '')")
-				.row#upload
-					.btn.btn-primary#fileinput-btn
-						.icon-plus.icon-white
-						span Add photos...
-						input(id="fileupload2", type="file", name="files[]", multiple, data-bind="attr:{size: (filereader() ? 200 : 10)}")
-					#addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
-						#or.centering_content or
-						span Drop them here
-				.row.
-					<!-- The file upload form used as target for the file upload widget -->
-					<form id="fileupload" action="http://172.31.1.130:8888/" method="POST" enctype="multipart/form-data">
-						<!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
-						<div class="row fileupload-buttonbar">
-							<div class="span7">
-								<!-- The fileinput-button span is used to style the file input field as button -->
-								<span class="btn btn-success fileinput-button">
-									<i class="icon-plus icon-white"></i>
-									<span>Add files...</span>
-									<input type="file" name="files[]" multiple>
-								</span>
-								<button type="submit" class="btn btn-primary start">
-									<i class="icon-upload icon-white"></i>
-									<span>Start upload</span>
-								</button>
-								<button type="reset" class="btn btn-warning cancel">
-									<i class="icon-ban-circle icon-white"></i>
-									<span>Cancel upload</span>
-								</button>
-								<button type="button" class="btn btn-danger delete">
-									<i class="icon-trash icon-white"></i>
-									<span>Delete</span>
-								</button>
-								<input type="checkbox" class="toggle">
-							</div>
-							<!-- The global progress information -->
-							<div class="span5 fileupload-progress fade">
-								<!-- The global progress bar -->
-								<div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-									<div class="bar" style="width:0%;"></div>
-								</div>
-								<!-- The extended global progress information -->
-								<div class="progress-extended">&nbsp;</div>
-							</div>
-						</div>
-						<!-- The loading indicator is shown during file processing -->
-						<div class="fileupload-loading"></div>
-						<br>
-						<!-- The table listing the files available for upload/download -->
-						<table role="presentation" class="table table-striped"><tbody class="files" data-toggle="modal-gallery" data-target="#modal-gallery"></tbody></table>
-					</form>
+
+				form(id="fileupload", action="http://172.31.1.130:8888/", method="POST", enctype="multipart/form-data")
+					.row#addFiles
+						span.btn.btn-primary#fileinput-btn
+							i.icon-plus.icon-white
+							span Add photos...
+							input(id="fileupload2", type="file", name="files[]", multiple, data-bind="fileUploadInput: true")
+						#addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
+							#or.centering_content or
+							span Drop them here
+					.row.fileupload-buttonbar#commonButtons
+						button.btn.btn-success.start(type="submit")
+							i.icon-upload.icon-white
+							span Start upload
+						button.btn.btn-warning.cancel(type="reset")
+							i.icon-ban-circle.icon-white
+							span Cancel upload
+						button.btn.btn-danger.delete(type="reset")
+							i.icon-trash.icon-white
+							span Delete all
+
+						//The global progress information
+					.row.fileupload-progress.fade
+							//The global progress bar
+							.progress.progress-success.progress-striped.active(role="progressbar", aria-valuemin="0", aria-valuemax="100")
+								.bar(style="width:0%;")
+							//The extended global progress information
+							.progress-extended &nbsp;
+
+					//The loading indicator is shown during file processing
+					.row.fileupload-loading
+
+					//The table listing the files available for upload/download
+					table.table.table-striped(role="presentation")
+						tbody.files(data-toggle="modal-gallery", data-target="#modal-gallery")
+
 				.row.
 					<!-- The template to display files available for upload -->
 					<script id="template-upload" type="text/x-tmpl">
