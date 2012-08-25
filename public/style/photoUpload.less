@@ -84,10 +84,13 @@ body {
 	margin-left: 155px;
 	overflow: hidden;
 
+
 	.row#addFiles {
 		#fileinput-btn {
 			position: relative;
 			overflow: hidden;
+			.box-sizing(border-box);
+			width: 140px;
 
 			input[type='file'] {
 				position: absolute;
@@ -106,7 +109,7 @@ body {
 			position: absolute;
 			border: 1px dashed @grayDarker;
 			.opacity(60);
-			left: 131px;
+			left: 163px;
 			top: 0;
 			right: 0;
 			bottom: 0;
@@ -130,6 +133,12 @@ body {
 				top: 0;
 				bottom: 0;
 			}
+		}
+	}
+	.row#commonButtons {
+		.btn {
+			margin-right: 4px;
+			width: 140px;
 		}
 	}
 }

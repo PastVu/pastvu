@@ -91,7 +91,7 @@ require([
             if (valueUnwrapped === true) {
                 if (Browser.name === 'FIREFOX' || Browser.name === 'MSIE') {
                     $element
-                        .css({'left': '110px'})
+                        .css({'left': '141px'})
                         .attr('size', (viewModel.filereader() ? viewModel.width() / 8 : 10))
                         .on("click", function (event) {
                             event.stopPropagation(); // Чтобы опять не вызвать клик родительского элемента

@@ -15,7 +15,7 @@
         loadImg.onload = function (evt) {
             setCookie('oldmos.load.' + appHash, new Date().toUTCString());
             var loading_pics = document.getElementById('loading_pics');
-            loading_pics.style.backgroundImage = 'url(/images/loading/Loading1.jpg)';
+            loading_pics.style.backgroundImage = 'url(/img/loading/Loading1.jpg)';
             document.getElementById('main_loader').className += ' visi';
             loading_pics.className += ' finish';
             loadImg = null;
@@ -23,7 +23,7 @@
             start();
         };
 
-        loadImg.src = '/images/loading/Loading1.jpg';
+        loadImg.src = '/img/loading/Loading1.jpg';
     } else {
         start();
     }

@@ -31,13 +31,13 @@ html
 							#or.centering_content or
 							span Drop them here
 					.row.fileupload-buttonbar#commonButtons
-						button.btn.btn-success.start(type="submit")
+						button.btn.btn-success.start(type="submit", data-bind="css: {disabled: true}")
 							i.icon-upload.icon-white
 							span Start upload
-						button.btn.btn-warning.cancel(type="reset")
+						button.btn.btn-warning.cancel(type="reset", data-bind="css: {disabled: true}")
 							i.icon-ban-circle.icon-white
 							span Cancel upload
-						button.btn.btn-danger.delete(type="reset")
+						button.btn.btn-danger.delete(type="reset", data-bind="css: {disabled: true}")
 							i.icon-trash.icon-white
 							span Delete all
 
@@ -63,13 +63,13 @@ html
 						<tr class="template-upload fade">
 							<td class="preview"><span class="fade"></span></td>
 							<td class="name"><span>{%=file.name%}</span></td>
-							<td class="size"><span>{%=o.formatFileSize(file.size)%}</span></td>
 							{% if (file.error) { %}
 								<td class="error" colspan="2"><span class="label label-important">{%=locale.fileupload.error%}</span> {%=locale.fileupload.errors[file.error] || file.error%}</td>
 							{% } else if (o.files.valid && !i) { %}
 								<td>
 									<div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar" style="width:0%;"></div></div>
 								</td>
+								<td class="size"><span>{%=o.formatFileSize(file.size)%}</span></td>
 								<td class="start">{% if (!o.options.autoUpload) { %}
 									<button class="btn btn-primary">
 										<i class="icon-upload icon-white"></i>
@@ -124,15 +124,5 @@ html
 						.size
 						.up_progress
 						.btns
-				.row
-					.btn.btn-success.disabled
-						.icon-ok-circle.icon-white
-						span Upload all
-					.btn.btn-warning.disabled
-						.icon-remove-circle.icon-white
-						span Cancel upload
-					.btn.btn-danger.disabled
-						.icon-trash.icon-white
-						span Remove all
 
 		include includes/auth
