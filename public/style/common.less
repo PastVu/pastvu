@@ -1,9 +1,6 @@
+@import "fonts/fontU.less";
+@import "bootstrap/bootstrap.less";
 @import "_vars";
-@import "fonts/fontU";
-@import "bootstrap/variables";
-@import "bootstrap/reset";
-@import "bootstrap/mixins";
-@import "bootstrap/utilities";
 
 html, body, button, input, select, textarea {
     font-family: UCondensed;
@@ -13,10 +10,7 @@ html, body, button, input, select, textarea {
 body {
 	color: #f2f2f2;
 	background-color: #f9f9f9;
-	cursor: default;
-	user-select: none;
-	-moz-user-select: none;
-	-webkit-user-select: none;
+	.user-select(none);
 }
 
 /**
