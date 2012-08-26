@@ -1,5 +1,6 @@
 @import "_vars";
-@import "bootstrap/variables";
+@import "bootstrap/variables.less";
+@import "bootstrap/mixins.less";
 @import "leaflet_0.4.4";
 @import "auth";
 
@@ -13,11 +14,7 @@
 	width: 70px;
 	height: 136px;
 	box-sizing: content-box;
-	-webkit-transition: height 0.25s ease-out;
-	-moz-transition: height 0.25s ease-out;
-	-o-transition: height 0.25s ease-out;
-	-ms-transition: height 0.25s ease-out;
-	transition: height 0.25s ease-out;
+	.transition(height 0.25s ease-out);
 
 	#nav_pin_sub {
 		position: absolute;
@@ -26,16 +23,12 @@
 		height: 0;
 	}
 	
-	> .btn {
+	> .butt {
 		position: absolute;
 		cursor: pointer;
 		height: 28px;
 		width: 28px;
-		-webkit-transition: all 0.25s ease-out;
-		-moz-transition: all 0.25s ease-out;
-		-o-transition: all 0.25s ease-out;
-		-ms-transition: all 0.25s ease-out;
-		transition: all 0.25s ease-out;
+		.transition(all 0.25s ease-out);
 		
 		&:after {
 			content: '';
@@ -118,11 +111,7 @@
 		top: 38px;
 		height: 28px;
 		width: 28px;
-		-webkit-transition: top 0.25s ease-out 0.3s;
-		-moz-transition: top 0.25s ease-out 0.3s;
-		-o-transition: top 0.25s ease-out 0.3s;
-		-ms-transition: top 0.25s ease-out 0.3s;
-		transition: top 0.25s ease-out 0.3s;
+		.transition(top 0.25s ease-out 0.3s);
 		&:after {
 			left: 7px;
 			top: 7px;
@@ -183,11 +172,7 @@
 		overflow: hidden;
 		padding: 3px 0 2px;
 		opacity: 0;
-		-webkit-transition: opacity 0.25s ease-out 0.3s;
-		-moz-transition: opacity 0.25s ease-out 0.3s;
-		-o-transition: opacity 0.25s ease-out 0.3s;
-		-ms-transition: opacity 0.25s ease-out 0.3s;
-		transition: opacity 0.25s ease-out 0.3s;
+		.transition(opacity 0.25s ease-out 0.3s);
 		
 		> div {
 			cursor: pointer;
@@ -201,11 +186,7 @@
 			}
 			
 			> #nav_slider {
-				-webkit-transition: none;
-				-moz-transition: none;
-				-o-transition: none;
-				-ms-transition: none;
-				transition: none;
+				.transition(none);
 			}
 		}
 		
@@ -227,11 +208,7 @@
 			left: 20px;
 			width: 28px;
 			height: 12px;
-			-webkit-transition: bottom 0.25s linear;
-			-moz-transition: bottom 0.25s linear;
-			-o-transition: bottom 0.25s linear;
-			-ms-transition: bottom 0.25s linear;
-			transition: bottom 0.25s linear;
+			.transition(bottom 0.25s linear);
 			
 			.inner_bord{
 				background-color: rgba(5, 63, 126, 1);
@@ -251,12 +228,8 @@
 	&:hover, &.pin {
 		height: 310px;
 		
-		> .btn {
-			-webkit-transition: all 0.25s ease-out 0.3s;
-			-moz-transition: all 0.25s ease-out 0.3s;
-			-o-transition: all 0.25s ease-out 0.3s;
-			-ms-transition: all 0.25s ease-out 0.3s;
-			transition: all 0.25s ease-out 0.3s;
+		> .butt {
+			.transition(all 0.25s ease-out 0.3s);
 		}
 		
 		#mup{
@@ -277,11 +250,7 @@
 		}
 		#mhome{
 			top: 20px;
-			-webkit-transition: top 0.25s ease-out;
-			-moz-transition: top 0.25s ease-out;
-			-o-transition: top 0.25s ease-out;
-			-ms-transition: top 0.25s ease-out;
-			transition: top 0.25s ease-out;
+			.transition(top 0.25s ease-out);
 		}
 		#nav_slider_area {
 			opacity: 1;
@@ -313,10 +282,7 @@
 	top: 46px;
 	right: 5px;
 	height: auto;
-	-webkit-transition: right 0.7s ease-out;
-	-moz-transition: right 0.7s ease-out;
-	-o-transition: right 0.7s ease-out;
-	transition: right 0.7s ease-out;
+	.transition(right 0.7s ease-out);
 }
 #layers_fringe.move {
 	right: 45px;
@@ -328,10 +294,7 @@
 	height: 24px;
 	padding: 0;
 	text-align: center;
-	-webkit-transition: height 0.7s ease-out;
-	-moz-transition: height 0.7s ease-out;
-	-o-transition: height 0.7s ease-out;
-	transition: height 0.7s ease-out;
+	.transition(height 0.7s ease-out);
 }
 #layers_panel.open {
 	height: 175px;
@@ -362,10 +325,7 @@
 	border-width: 1px 0 0;
 	border-style: solid;
 	border-color: #707070;
-	-webkit-transition: width 0.7s ease-out, opacity 0.7s ease-out;
-	-moz-transition: width 0.7s ease-out, opacity 0.7s ease-out;
-	-o-transition: width 0.7s ease-out, opacity 0.7s ease-out;
-	transition: width 0.7s ease-out, opacity 0.7s ease-out;
+	.transition(~'width 0.7s ease-out, opacity 0.7s ease-out');
 }
 #layers_panel.open  #systems{
 	opacity: 1;
@@ -442,10 +402,7 @@
 	top: 124px;
 	right: 5px;
 	height: auto;
-	-webkit-transition: right 0.7s ease-out, top 0.7s ease-out;
-	-moz-transition: right 0.7s ease-out, top 0.7s ease-out;
-	-o-transition: right 0.7s ease-out, top 0.7s ease-out;
-	transition: right 0.7s ease-out, top 0.7s ease-out;
+	.transition(~'right 0.7s ease-out, top 0.7s ease-out');
 }
 #search_fringe.moveByLayers {
 	top: 275px;

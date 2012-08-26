@@ -3,15 +3,15 @@
 		<div id="login_body" class='inner_bord'>
 			<div id='login_head' class='head'>Authorization</div>
 			<form action='' autocomplete="on"  method='POST' id='loginForm' name='loginForm'>
-				<div class='label icon-user'>Username:</div>
-				<div class='label clickable' id='toReg'>Registration</div>
+				<div class='legend icon-userCustom'>Username:</div>
+				<div class='legend clickable' id='toReg'>Registration</div>
 				<br />
 				<input id='login_user' autocomplete="on" class='initFocus' type="text" required="required" title="input login" placeholder="Enter username or e-mail" name="login" />
-				<div class='label icon-lock'>Password:</div>
-				<div class='label clickable' id='toRecall'>Recover password</div>
+				<div class='legend icon-lockCustom'>Password:</div>
+				<div class='legend clickable' id='toRecall'>Recover password</div>
 				<br />
 				<input id='login_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
-				<div class='label' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' class='checked'></div><br/>
+				<div class='legend' style='margin: 0 0 5px 15px;'>Remember me</div><div id='remember_check' class='checked'></div><br/>
 				<input type="submit" value="Sign in" />
 				<input type="button" class='cancel' value="Cancel" />
 			</form>
@@ -22,13 +22,13 @@
 		<div id="reg_body" class='inner_bord'>
 			<div id='reg_head' class='head'>Registration</div>
 			<form action='' autocomplete="off" method='POST' id='regForm' name='regForm'>
-				<div class='label icon-user'>User name:</div><div class='label clickable toLogin'>Authorization</div><br />
+				<div class='legend icon-userCustom'>User name:</div><div class='legend clickable toLogin'>Authorization</div><br />
 				<input id='reg_user' autocomplete="off" class='initFocus' type="text" required="required" title="input login" placeholder="User" name="login">
-				<div class='label icon-envelope'>E-mail:</div>
+				<div class='legend icon-envelopeCustom'>E-mail:</div>
 				<input id='reg_email' type="email" autocomplete="on" required="required" title="input email" placeholder="email" name="email">
-				<div class='label icon-lock'>Password:</div><br />
+				<div class='legend icon-lockCustom'>Password:</div><br />
 				<input id='reg_pass' type="password" required="required" title="input password" placeholder="Enter password" name="pass">
-				<div class='label icon-lock'>Repeat password:</div><br />
+				<div class='legend icon-lockCustom'>Repeat password:</div><br />
 				<input id='reg_pass2' type="password" required="required" title="input password" placeholder="Enter password" name="pass2">
 				<input type="submit" value="Register">
 				<input type="button" class='cancel' value="Cancel">
@@ -40,7 +40,7 @@
 		<div id="recall_body" class='inner_bord'>
 			<div id='recall_head' class='head'>Recover password</div>
 			<form action='' autocomplete="off" method='POST' id='recallForm' name='recallForm'>
-				<div class='label icon-envelope'>Login or e-mail:</div><div class='label clickable toLogin'>Authorization</div><br />
+				<div class='legend icon-envelopeCustom'>Login or e-mail:</div><div class='legend clickable toLogin'>Authorization</div><br />
 				<input id='recall_email' autocomplete="off" class='initFocus' type="text" required="required" title="Input login or e-mail" placeholder="Enter login or e-mail" name="login">
 				<input type="submit" value="Send">
 				<input type="button" class='cancel' value="Cancel">
