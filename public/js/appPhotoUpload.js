@@ -114,7 +114,7 @@ require([
         fileupload.fileupload();
 
         // Load existing files:
-        $('#fileupload').each(function () {
+        /*$('#fileupload').each(function () {
             var that = this;
             $.getJSON(this.action, function (result) {
                 if (result && result.length) {
@@ -122,18 +122,22 @@ require([
                         .call(that, null, {result: result});
                 }
             });
-        });
+        });*/
 
         $('#fileupload').fileupload('option', {
             url: 'http://172.31.1.130:8888/',
-            maxFileSize: 5000000,
+            maxFileSize: 52428800, //50Mb
+            maxNumberOfFiles: 10,
+            previewSourceMaxFileSize: 52428800, //50MB The maximum file size of images that are to be displayed as preview:
+            previewMaxWidth: 320, // The maximum width of the preview images:
+            previewMaxHeight: 180, // The maximum height of the preview images:
             acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
             process: [
                 {
                     action: 'load',
                     fileTypes: /^image\/(jpeg|png)$/,
-                    maxFileSize: 20000000 // 20MB
-                },
+                    maxFileSize: 52428800 // 50MB
+                }/*,
                 {
                     action: 'resize',
                     maxWidth: 1440,
@@ -141,8 +145,20 @@ require([
                 },
                 {
                     action: 'save'
-                }
-            ]
+                }*/
+            ],
+            change: function (e, data) {
+                console.log(data.files.length);
+            },
+            drop: function (e, data) {
+                console.log('drop');
+            },
+            dragover: function (e) {
+                console.log('dragover');
+            },
+            done: function (e, data) {
+                console.log('done');
+            }
         });
         // Upload server status check for browsers with CORS support:
         /*if ($.support.cors) {
