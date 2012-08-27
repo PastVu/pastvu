@@ -8,146 +8,130 @@ html
 		script(type='text/javascript',  src="/js/appProfile.js?__=" + appHash)
 
 	body
-		include includes/top
-		div#userProfile(data-bind="css: {edit_mode: edit_mode()}")
-			div#leftSide
-				div#avatar.fringe
-					div.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
-						div#avatar_edit(data-bind="style: {display: edit_mode() ? '' : 'none'}")
-							div#avatar_edit_pic
-							| Change avatar
-				div#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
-					div.inner_bord
-						| Send message
-				div#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
-					div.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
-				div#info_common.block
-					div.head
-						| Commons
-					div.h_separator
-					div.row
-						div.left
-							| Group:
-						div.right
-							| Administrators
-					div.row
-						div.left
-							| Registration:
-						div.right(data-bind="text: regdate().getDate()+'.'+(regdate().getMonth()+1)+'.'+regdate().getFullYear()")
-							
-					div.row
-						div.left
-							| Status:
-						div.right
-							| Online
-				div#short_stat.block
-					div.head
-						| Brief statistics
-					div.h_separator
-					div.row
-						div.left
-							| Photo uploaded:
-						div.right
-							| 0
-					div.row
-						div.left
-							| Blogs created:
-						div.right
-							| 0
-					div.row
-						div.left
-							| Favorite areas:
-						div.right
-							| 0
-					div.row
-						div.left
-							| Comments:
-						div.right
-							| 0
-				div#leftSideDash
-			div#mainSide
-				ul.nav.nav-tabs
-					li.active
-						a(href='#') Information
-					li
-						a(href='#') Photo
-					li
-						a(href='#') Blogs
-					li
-						a(href='#') Comments
-				div#info
-					div.row
-						div.left
+		.row#mainrow(data-bind="css: {edit_mode: edit_mode()}")
+			.span3
+				#avatar.fringe
+					.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
+						#avatar_edit(data-bind="style: {display: edit_mode() ? '' : 'none'}")
+							#avatar_edit_pic Change avatar
+				#pm.fringe(data-bind="style: {display:  can_pm() ? 'block': 'none'}")
+					.inner_bord Send message
+				#edit.fringe(data-bind="style: {display: canBeEdit() ? 'block': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
+					.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
+				#info_common.block
+					.head Commons
+					.h_separator
+					.row
+						.left Group:
+						.right Administrators
+					.row
+						.left Registration:
+						.right(data-bind="text: regdate().getDate()+'.'+(regdate().getMonth()+1)+'.'+regdate().getFullYear()")
+					.row
+						.left Status:
+						.right Online
+				#short_stat.block
+					.head Brief statistics
+					.h_separator
+					.row
+						.left Photo uploaded:
+						.right  0
+					.row
+						.left Blogs created:
+						.right 0
+					.row
+						.left Favorite areas:
+						.right 0
+					.row
+						.left Comments:
+						.right 0
+				#leftSideDash
+
+			.span9
+				.navbar
+					.navbar-inner
+						ul.nav
+							li.active
+								a(href="#") Profile
+							li
+								a(href="#") Photo
+							li
+								a(href="#") Blogs
+							li
+								a(href="#") Comments
+
+				#info
+					.row
+						.left
 							| Name:
-						div.right
+						.right
 							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: firstName, valueUpdate: 'afterkeydown'")
 							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: lastName, valueUpdate: 'afterkeydown'")
 							span(data-bind="text: fullName(), style: {display: !edit_mode() ? '' : 'none'}")
-					div.row
-						div.left
+					.row
+						.left
 							| Birthday:
-						div.right
+						.right
 							input(type='text', id='in_birthdate', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? 'block' : 'none'}, value: birthdate")
 							span(data-bind="text: birthdate(), style: {display: !edit_mode() ? '' : 'none'}")
-					div.row
-						div.left
+					.row
+						.left
 							| Sex:
-						div.right
+						.right
 							input(type="radio", name="sex", value="male", data-bind="checked: sex")
 							<span data-bind="style: {display: (edit_mode() || sex()=='male' ? 'inline' : 'none')}">Male</span>
 							input(type="radio", name="sex", value="female", data-bind="checked: sex")
 							<span data-bind="style: {display: (edit_mode() || sex()=='female' ? 'inline' : 'none')}">Female</span>
-					div.row
-						div.left
+					.row
+						.left
 							| Residence:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: country().length, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: country, valueUpdate: 'afterkeydown'")
 							input(type='text', data-bind="attr: { size: city().length+1, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: city, valueUpdate: 'afterkeydown'")
 							span(data-bind="text: country()+', '+city(), style: {display: !edit_mode() ? '' : 'none'}")
-					div.row
-						div.left
+					.row
+						.left
 							| Interested in:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: work().length, disabled: !edit_mode() }, value: work, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| Website:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: www().length, disabled: !edit_mode() }, value: www, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| ICQ:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: icq().length, disabled: !edit_mode() }, value: icq, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| Skype:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: skype().length, disabled: !edit_mode() }, value: skype, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| aim:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: aim().length, disabled: !edit_mode() }, value: aim, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| LJ:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: lj().length, disabled: !edit_mode() }, value: lj, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| flickr:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: flickr().length, disabled: !edit_mode() }, value: flickr, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| Blogger:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: blogger().length, disabled: !edit_mode() }, value: blogger, valueUpdate: 'afterkeydown'")
-					div.row
-						div.left
+					.row
+						.left
 							| About Me:
-						div.right
+						.right
 							input(type='text', data-bind="attr: { size: aboutme().length, disabled: !edit_mode() }, value: aboutme, valueUpdate: 'afterkeydown'")
-		
 		include includes/auth

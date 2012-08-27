@@ -45,9 +45,8 @@ require([
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
-    'text!tpl/top.jade',
     'css!style/map_main', 'css!style/jquery.toast'
-], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, navigationSlider, Locations, keyTarget, auth, top_jade) {
+], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, L, Map, NavigationSlider, Locations, keyTarget, auth) {
     console.timeStamp('Require app Ready');
 
     var map, layers = {},
@@ -55,10 +54,7 @@ require([
         poly_mgr,
         navSlider;
 
-    $('#map').after(top_jade);
-
     $.when(loadParams())
-        //.pipe(Utils.LoadStyles.bind(null, StylesToLoad, GlobalParams.appHash()))
         .pipe(auth.LoadMe)
         .then(app);
 
@@ -75,7 +71,7 @@ require([
     function app() {
 
         createMap();
-        navSlider = new navigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
+        navSlider = new NavigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
 
         new TopPanel('top_panel_fringe');
 

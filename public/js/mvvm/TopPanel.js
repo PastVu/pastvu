@@ -2,7 +2,8 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout', 'auth'], function (GlobalParams, i18nVM, ko, auth) {
+define(['mvvm/GlobalParams', 'mvvm/i18n', 'knockout', 'auth', 'text!tpl/top.jade', 'css!style/top' ], function (GlobalParams, i18nVM, ko, auth, top_jade) {
+    $('body').prepend(top_jade);
 
     function TopPanelVM(dom) {
         this.auth = auth;

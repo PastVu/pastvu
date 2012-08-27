@@ -12,7 +12,6 @@ body {
 }
 
 #main_loader {
-	/* Arial, потому что к моменту отображения загрузки, UCondensed еще не загрузился, и во время его применения после загрузки, на секунду пропадают все надписи загрузчика*/
 	visibility: hidden;
     position: absolute;
     height: auto;
@@ -39,7 +38,7 @@ body {
 	
 	#welcome_msg {
 		max-width: 758px;
-		font-size: 18px;
+		font-size: @baseFontSize + 2;
 		position: relative;
 		text-shadow: 1px 1px 2px black;
 	}

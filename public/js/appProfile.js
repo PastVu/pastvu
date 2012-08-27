@@ -5,6 +5,9 @@ requirejs.config({
     deps: ['lib/JSExtensions'],
 
     paths: {
+        'tpl': '../tpl',
+        'style': '../style',
+
         'jquery': 'lib/jquery/jquery-1.8.0.min',
         'socket.io': 'lib/socket.io',
 
@@ -28,7 +31,7 @@ requirejs.config({
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
 
 require([
-    'domReady',
+    'domReady!',
     'jquery',
     'Browser', 'Utils',
     'socket',
@@ -42,18 +45,9 @@ require([
     var login, reg, recall,
         profileView, profileVM;
 
-    $.when(loadParams(), waitForDomReady())
+    $.when(loadParams())
         .pipe(auth.LoadMe)
         .then(app);
-
-    function waitForDomReady() {
-        var dfd = $.Deferred();
-        domReady(function () {
-            console.timeStamp('Dom Ready');
-            dfd.resolve();
-        });
-        return dfd.promise();
-    }
 
     function loadParams() {
         var dfd = $.Deferred();
@@ -68,7 +62,7 @@ require([
     function app() {
         new TopPanel('top_panel_fringe');
 
-        profileView = document.getElementById('userProfile');
+        profileView = document.getElementById('mainrow');
 
         socket.on('initMessage', function (json) {
             var init_message = json.init_message;

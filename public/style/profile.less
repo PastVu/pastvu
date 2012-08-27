@@ -1,20 +1,20 @@
 @import "common";
 @import "auth";
 
-body.edit_mode {
-	background-color: #E5E5E5;
+body {
+	padding-top: 32px;
+
+	&.edit_mode {
+		background-color: #E5E5E5;
+	}
 }
 
-#userProfile {
-	position: absolute;
-	top: 32px;
-    width: 100%;
+#mainrow {
+	position: relative;
+	top: 0;
 	opacity: 0;
 	z-index: 10;
-	-webkit-transition: opacity 0.7s ease-in;
-	-moz-transition: opacity 0.7s ease-in;
-	-o-transition: opacity 0.7s ease-in;
-	transition: opacity 0.7s ease-in;
+	.transition(opacity 0.7s ease-in);
 	
 	&.show {
 		opacity: 1;
