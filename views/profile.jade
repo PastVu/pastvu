@@ -8,7 +8,7 @@ html
 		script(type='text/javascript',  src="/js/appProfile.js?__=" + appHash)
 
 	body
-		.row#mainrow(data-bind="css: {edit_mode: edit_mode()}")
+		.row-fluid#mainrow(data-bind="css: {edit_mode: edit_mode()}")
 			.span3
 				#avatar.fringe
 					.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")

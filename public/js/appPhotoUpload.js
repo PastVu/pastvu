@@ -4,7 +4,7 @@ requirejs.config({
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
     paths: {
-        'jquery': 'lib/jquery/jquery-1.8.0.min',
+        'jquery': 'lib/jquery/jquery-1.8.1.min',
         'socket.io': 'lib/socket.io',
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',

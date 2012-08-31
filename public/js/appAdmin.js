@@ -4,7 +4,7 @@ requirejs.config({
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
     paths: {
-        'jquery': 'lib/jquery/jquery-1.8.0.min',
+        'jquery': 'lib/jquery/jquery-1.8.1.min',
         'socket.io': 'lib/socket.io',
 
         'domReady': 'lib/require/plugins/domReady',
@@ -19,7 +19,7 @@ requirejs.config({
         'knockout': 'lib/knockout/knockout-2.1.0',
         'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
 
-        'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.22.custom.min',
+        'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.23.custom.min',
         'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
         'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
     }

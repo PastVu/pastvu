@@ -45,7 +45,7 @@ var fs = require('fs'),
             'tpl': '../tpl',
             'style': '../style',
 
-            'jquery': 'lib/jquery/jquery-1.8.0.min',
+            'jquery': 'lib/jquery/jquery-1.8.1.min',
             'socket.io': 'lib/socket.io',
 
             'domReady': 'lib/require/plugins/domReady',
@@ -64,7 +64,7 @@ var fs = require('fs'),
 
             'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
             'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang',
-            'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.22.custom.min',
+            'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.23.custom.min',
             'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
             'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
         },
