@@ -14,6 +14,7 @@ requirejs.config({
         'style': '../style',
 
         'jquery': 'lib/jquery/jquery-1.8.1.min',
+        'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
 
         'domReady': 'lib/require/plugins/domReady',

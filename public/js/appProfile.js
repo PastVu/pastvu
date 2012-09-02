@@ -9,6 +9,7 @@ requirejs.config({
         'style': '../style',
 
         'jquery': 'lib/jquery/jquery-1.8.1.min',
+        'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
 
         'domReady': 'lib/require/plugins/domReady',
@@ -39,6 +40,7 @@ require([
     'knockout', 'knockout.mapping',
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'KeyHandler', 'auth',
+    'bs/bootstrap-affix',
     'jquery.datepick', 'jquery.datepick.lang'
 ], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
     console.timeStamp('Require app Ready');
@@ -124,6 +126,13 @@ require([
         });
         socket.emit('giveUser', {login: location.href.substring(location.href.indexOf('/u/') + 3)});
 
+
+        $('#brief').affix({
+            offset: {
+                top: 80,
+                //bottom: 270
+            }
+        });
     }
 
 });

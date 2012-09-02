@@ -4,10 +4,19 @@ requirejs.config({
     waitSeconds: 15,
     deps: ['lib/JSExtensions'],
     paths: {
+        'tpl': '../tpl',
+        'style': '../style',
+
         'jquery': 'lib/jquery/jquery-1.8.1.min',
         'socket.io': 'lib/socket.io',
+
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
+        'css': 'lib/require/plugins/css',
+        'css.api': 'lib/require/plugins/css.api',
+        'css.pluginBuilder': 'lib/require/plugins/css.pluginBuilder',
+        'async': 'lib/require/plugins/async',
+        'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
         'Browser': 'lib/Browser',
 
