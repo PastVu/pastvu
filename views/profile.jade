@@ -9,51 +9,46 @@ html
 
 	body
 		.row-fluid#mainrow(data-bind="css: {edit_mode: edit_mode()}")
-			.span3
+			.span2-3
 				#brief
 					.row-fluid
 						#avatar.fringe
 							.inner_bord(data-bind="style: {backgroundImage: 'url('+avatar()+')'}")
 								#avatar_edit(data-bind="style: {display: edit_mode() ? '' : 'none'}")
 									#avatar_edit_pic Change avatar
-					.row-fluid
-						#pm.fringe(data-bind="style: {display:  can_pm() ? '': 'none'}")
+					.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
+						#pm.fringe
 							.inner_bord Send message
-					.row-fluid
-							#edit.fringe(data-bind="style: {display: canBeEdit() ? '': 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
+					.row-fluid(data-bind="style: {display:  canBeEdit() ? '': 'none'}")
+							#edit.fringe(data-bind="event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
 								.inner_bord(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
 					.row-fluid
 						#info_common.block
 							.head Commons
 							.h_separator
-							.row-fluid
-								.left Group:
-								.right Administrators
-							.row-fluid
-								.left Registration:
-								.right(data-bind="text: regdate().getDate()+'.'+(regdate().getMonth()+1)+'.'+regdate().getFullYear()")
-							.row-fluid
-								.left Status:
-								.right Online
+							dl.dl-horizontal
+								dt Group:
+								dd Administrators
+								dt Registration:
+								dd(data-bind="text: regdate().getDate()+'.'+(regdate().getMonth()+1)+'.'+regdate().getFullYear()")
+								dt Status:
+								dd Online
 					.row-fluid
 						#short_stat.block
 							.head Brief statistics
 							.h_separator
-							.row-fluid
-								.left Photo uploaded:
-								.right  0
-							.row-fluid
-								.left Blogs created:
-								.right 0
-							.row-fluid
-								.left Favorite areas:
-								.right 0
-							.row-fluid
-								.left Comments:
-								.right 0
+							dl.dl-horizontal
+								dt Photo uploaded:
+								dd  0
+								dt Blogs created:
+								dd 0
+								dt Favorite areas:
+								dd 0
+								dt Comments:
+								dd 0
 					#leftSideDash
 
-			.span9
+			.span9-10
 				.navbar
 					.navbar-inner
 						ul.nav

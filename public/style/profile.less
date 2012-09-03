@@ -56,10 +56,12 @@ body {
 	}
 	
 	#brief {
-		//width: 220px;
+		position: relative;
 		margin-top: 40px;
 		text-align: center;
-
+		> .row-fluid {
+			margin-bottom: 10px;
+		}
 		> .row-fluid > div {
 			position: relative;
 			display: inline-block;
@@ -160,7 +162,7 @@ body {
 
 		> .row-fluid > .block {
 			display: block;
-			padding: 0 15px;
+			padding: 0 3px;
 			
 			.head {
 				color: rgb(5,63,126);
@@ -178,22 +180,15 @@ body {
 				position: relative;
 				width: 100%;
 			}
+			dl.dl-horizontal {
+				padding: 0 10px;
 
-			.row-fluid {
-				position: relative;
-				
-				.left {
+				dt {
 					text-align: left;
+					font-weight: normal;
 				}
-				.right {
-					position: absolute;
-					right: 0;
-					top: 0;
+				dd {
 					text-align: right;
-				}
-				
-				&:hover {
-					color: #03006B;
 				}
 			}
 		}
@@ -212,9 +207,9 @@ body {
 			background: -o-linear-gradient(top, rgba(7,90,179,0.5) 0%,rgba(7,90,179,0.9) 10%,rgba(5,63,126,1) 49%,rgba(7,90,179,0.8) 85%,rgba(242,242,242,0) 100%); /* Opera 11.10+ */
 			background: -ms-linear-gradient(top, rgba(7,90,179,0.5) 0%,rgba(7,90,179,0.9) 10%,rgba(5,63,126,1) 49%,rgba(7,90,179,0.8) 85%,rgba(242,242,242,0) 100%); /* IE10+ */
 			background: linear-gradient(top, rgba(7,90,179,0.5) 0%,rgba(7,90,179,0.9) 10%,rgba(5,63,126,1) 49%,rgba(7,90,179,0.8) 85%,rgba(242,242,242,0) 100%); /* W3C */
-			height: 100%;
+			height: 120%;
 			position: absolute;
-			top: 0;
+			top: -40px;
 			right: 0;
 			width: 1px;
 		}
