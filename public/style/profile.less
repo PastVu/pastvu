@@ -164,13 +164,27 @@ body {
 		span {
 			display: inline-block;
 		}
-		.control-group {
-			margin-bottom: 20px;
-			.transition(margin-bottom .5s ease-in);
+		&.canBeEdit {
+			.control-group {
+				.control-label {
+					width: 100px;
+				}
+				.controls {
+					margin-left: 120px;
+				}
+			}
 		}
 		&.cannotBeEdit {
 			.control-group {
-				margin-bottom: 5px;
+				margin-bottom: 1px;
+
+				.control-label {
+					text-align: left;
+					width: auto;
+				}
+				.controls {
+					margin-left: 90px;
+				}
 			}
 			input, textarea {
 				box-shadow: none;
@@ -178,38 +192,27 @@ body {
 				background-color: transparent;
 				cursor: default;
 			}
+			input[type="text"], textarea {
+				width: auto;
+				padding-left: 0;
+				padding-right: 0;
+			}
+			textarea {
+				width: 90%;
+			}
+			input[type="radio"] {
+				display: none;
+			}
+
+
 		}
+
 		&.edit_mode {
-
-		}
-
-		#edit {
-			width: 120px;
-			cursor: pointer;
-
-			.inner_bord {
-				position:relative;
-				padding-left: 30px;
-
-				&:after {
-					content: "";
-					left: 7px;
-					position: absolute;
-					top: 3px;
-					width: 13px;
-					height: 14px;
-					background-image: url("/img/misc/tww.png");
-					background-repeat: no-repeat;
-					background-position: 0 -72px;
-					opacity: 0.9;
-				}
-
-				&:hover:after{
-					opacity: 1;
-				}
-
+			label {
+				text-shadow: 0 1px 0 #FFF, 0 -1px 1px #BBBBBB;
 			}
 		}
+
 	}
 
 }

@@ -8,7 +8,7 @@ html
 		script(type='text/javascript',  src="/js/appProfile.js?__=" + appHash)
 
 	body
-		.row-fluid#mainrow(data-bind="css: {edit_mode: edit_mode()}")
+		.row-fluid#mainrow
 			.span2-3
 				#brief
 					.row-fluid
@@ -58,145 +58,72 @@ html
 							li
 								a(href="#") Comments
 
-				.row-fluid#profile(data-bind="css: {cannotBeEdit: !canBeEdit()}")
+				.row-fluid#profile(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit(), edit_mode: edit_mode()}")
 					form.form-horizontal
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  firstName().length || lastName().length > 0 ? '' : 'none'}")
 							label.control-label(for="inName") Name
 							.controls
-								input(type="text", id="inName", data-bind="attr: {disabled: !edit_mode()}, value: firstName, valueUpdate: 'afterkeydown'")
+								input(type="text", id="inName", data-bind="attr: {size: firstName().length, disabled: !edit_mode()}, value: firstName, valueUpdate: 'afterkeydown'")
 								input(type="text", id="inLastName", data-bind="attr: {disabled: !edit_mode()}, value: lastName, valueUpdate: 'afterkeydown'")
 						.control-group
 							label.control-label(for="inBirthdate") Birthday
 							.controls
 								input(type="text", id='inBirthdate', data-bind="attr: {disabled: !edit_mode()}, value: birthdate")
 						.control-group
-							label.control-label(for="inSex") Sex
+							label.control-label(for="inSex2") Sex
 							.controls
-								label.radio.inline
+								input(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: sex()=='male' ? 'Male' : 'Female'")
+								label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 									input(type="radio", id='inSex', name="sex", value="male", data-bind="checked: sex, attr: {disabled: !edit_mode()}")
-									| Male
-								label.radio.inline
+									span(data-bind="style: {display: (edit_mode() || sex()=='male' ? '' : 'none')}") &nbsp;Male
+								label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 									input(type="radio", id='inSex', name="sex", value="female", data-bind="checked: sex, attr: {disabled: !edit_mode()}")
-									| Female
-						.control-group
+									span(data-bind="style: {display: (edit_mode() || sex()=='female' ? '' : 'none')}") &nbsp;Female
+						.control-group(data-bind="style: {display: canBeEdit() ||  country().length || city().length > 0 ? '' : 'none'}")
 							label.control-label(for="inResidence") Residence
 							.controls
 								input(type="text", id='inResidence', data-bind="attr: {disabled: !edit_mode()}, size: country().length, value: country, valueUpdate: 'afterkeydown'")
 								input(type="text", data-bind="attr: {disabled: !edit_mode()}, size: city().length+1, value: city, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  work().length > 0 ? '' : 'none'}")
 							label.control-label(for="inInterested") Interested in
 							.controls
 								input(type="text", id='inInterested', data-bind="attr: {disabled: !edit_mode()}, value: work, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  www().length > 0 ? '' : 'none'}")
 							label.control-label(for="inWebsite") Website
 							.controls
 								input(type="text", id='inWebsite', data-bind="attr: {disabled: !edit_mode()}, value: www, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  icq().length > 0 ? '' : 'none'}")
 							label.control-label(for="inICQ") ICQ
 							.controls
 								input(type="text", id='inICQ', data-bind="attr: {disabled: !edit_mode()}, value: icq, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  skype().length > 0 ? '' : 'none'}")
 							label.control-label(for="inSkype") Skype
 							.controls
 								input(type="text", id='inSkype', data-bind="attr: {disabled: !edit_mode()}, value: skype, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  aim().length > 0 ? '' : 'none'}")
 							label.control-label(for="inaim") aim
 							.controls
 								input(type="text", id='inaim', data-bind="attr: {disabled: !edit_mode()}, value: aim, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  lj().length > 0 ? '' : 'none'}")
 							label.control-label(for="inLJ") LJ
 							.controls
 								input(type="text", id='inLJ', data-bind="attr: {disabled: !edit_mode()}, value: lj, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  flickr().length > 0 ? '' : 'none'}")
 							label.control-label(for="inflickr") flickr
 							.controls
 								input(type="text", id='inflickr', data-bind="attr: {disabled: !edit_mode()}, value: flickr, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  blogger().length > 0 ? '' : 'none'}")
 							label.control-label(for="inBlogger") Blogger
 							.controls
 								input(type="text", id='inBlogger', data-bind="attr: {disabled: !edit_mode()}, value: blogger, valueUpdate: 'afterkeydown'")
-						.control-group
+						.control-group(data-bind="style: {display: canBeEdit() ||  aboutme().length > 0 ? '' : 'none'}")
 							label.control-label(for="inaboutme") About Me
 							.controls
-								textarea(rows="3", id='inaboutme', data-bind="attr: {disabled: !edit_mode()}, value: aboutme, valueUpdate: 'afterkeydown'")
-						.control-group
+								textarea(rows="4", id='inaboutme', data-bind="attr: {disabled: !edit_mode()}, value: aboutme, valueUpdate: 'afterkeydown'")
+						.control-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 							.controls
 								button.btn-strict(type="button", data-bind="event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
 									i.icon-pencil.icon-white
 									span(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
 
-
-					.row-fluid
-						.left
-							| Name:
-						.right
-							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: firstName, valueUpdate: 'afterkeydown'")
-							input(type='text', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: lastName, valueUpdate: 'afterkeydown'")
-							span(data-bind="text: fullName(), style: {display: !edit_mode() ? '' : 'none'}")
-					.row-fluid
-						.left
-							| Birthday:
-						.right
-							input(type='text', id='in_birthdate', data-bind="attr: {disabled: !edit_mode()}, style: {display: edit_mode() ? 'block' : 'none'}, value: birthdate")
-							span(data-bind="text: birthdate(), style: {display: !edit_mode() ? '' : 'none'}")
-					.row-fluid
-						.left
-							| Sex:
-						.right
-							input(type="radio", name="sex", value="male", data-bind="checked: sex")
-							<span data-bind="style: {display: (edit_mode() || sex()=='male' ? 'inline' : 'none')}">Male</span>
-							input(type="radio", name="sex", value="female", data-bind="checked: sex")
-							<span data-bind="style: {display: (edit_mode() || sex()=='female' ? 'inline' : 'none')}">Female</span>
-					.row-fluid
-						.left
-							| Residence:
-						.right
-							input(type='text', data-bind="attr: { size: country().length, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: country, valueUpdate: 'afterkeydown'")
-							input(type='text', data-bind="attr: { size: city().length+1, disabled: !edit_mode()}, style: {display: edit_mode() ? '' : 'none'}, value: city, valueUpdate: 'afterkeydown'")
-							span(data-bind="text: country()+', '+city(), style: {display: !edit_mode() ? '' : 'none'}")
-					.row-fluid
-						.left
-							| Interested in:
-						.right
-							input(type='text', data-bind="attr: { size: work().length, disabled: !edit_mode() }, value: work, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| Website:
-						.right
-							input(type='text', data-bind="attr: { size: www().length, disabled: !edit_mode() }, value: www, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| ICQ:
-						.right
-							input(type='text', data-bind="attr: { size: icq().length, disabled: !edit_mode() }, value: icq, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| Skype:
-						.right
-							input(type='text', data-bind="attr: { size: skype().length, disabled: !edit_mode() }, value: skype, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| aim:
-						.right
-							input(type='text', data-bind="attr: { size: aim().length, disabled: !edit_mode() }, value: aim, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| LJ:
-						.right
-							input(type='text', data-bind="attr: { size: lj().length, disabled: !edit_mode() }, value: lj, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| flickr:
-						.right
-							input(type='text', data-bind="attr: { size: flickr().length, disabled: !edit_mode() }, value: flickr, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| Blogger:
-						.right
-							input(type='text', data-bind="attr: { size: blogger().length, disabled: !edit_mode() }, value: blogger, valueUpdate: 'afterkeydown'")
-					.row-fluid
-						.left
-							| About Me:
-						.right
-							textarea(rows="3", data-bind="attr: { size: aboutme().length, disabled: !edit_mode() }, value: aboutme, valueUpdate: 'afterkeydown'")
 		include includes/auth

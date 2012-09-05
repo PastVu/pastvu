@@ -216,11 +216,10 @@ input[type="submit"].btn {
 	display: inline-block;
 	position: relative;
 	.ie7-inline-block();
+	margin: 0 1px;
 	padding: 1px 9px;
-	margin-bottom: 0; // For input.btn
 	font-size: @baseFontSize;
 	line-height: @baseLineHeight;
-	*line-height: @baseLineHeight;
 	text-align: center;
 	vertical-align: middle;
 	cursor: pointer;
@@ -229,21 +228,17 @@ input[type="submit"].btn {
 	border: 1px solid #C3C7DD;
 	.box-shadow(~'0 0 0 1px #000, 0 3px 6px 0 #222');
 
-
-// Hover state
 	&:hover {
 		color: #fff;
 		text-decoration: none;
 		background-color: spin(#285991, 5);
 	}
 
-// Focus state for keyboard and accessibility
 	&:focus {
 		color: #fff;
 		outline: 0;
 	}
 
-// Active state
 	&.active,
 	&:active {
 		background-color: spin(#285991, 5);
@@ -254,7 +249,6 @@ input[type="submit"].btn {
 		.transition(box-shadow .05s linear);
 	}
 
-// Disabled state
 	&.disabled,
 	&[disabled] {
 		cursor: default;
