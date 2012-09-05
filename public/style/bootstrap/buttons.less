@@ -209,3 +209,80 @@ input[type="submit"].btn {
   text-decoration: underline;
   background-color: transparent;
 }
+
+
+//Custom buttons
+.btn-strict {
+	display: inline-block;
+	position: relative;
+	.ie7-inline-block();
+	padding: 1px 9px;
+	margin-bottom: 0; // For input.btn
+	font-size: @baseFontSize;
+	line-height: @baseLineHeight;
+	*line-height: @baseLineHeight;
+	text-align: center;
+	vertical-align: middle;
+	cursor: pointer;
+	color: @MainLigthColor;
+	background-color: #285991;
+	border: 1px solid #C3C7DD;
+	.box-shadow(~'0 0 0 1px #000, 0 3px 6px 0 #222');
+
+
+// Hover state
+	&:hover {
+		color: #fff;
+		text-decoration: none;
+		background-color: spin(#285991, 5);
+	}
+
+// Focus state for keyboard and accessibility
+	&:focus {
+		color: #fff;
+		outline: 0;
+	}
+
+// Active state
+	&.active,
+	&:active {
+		background-color: spin(#285991, 5);
+		background-color: spin(#285991, 5) e("\9");
+		outline: 0;
+		border-color: darken(#C3C7DD, 15%);
+		.box-shadow(~"0 0 0 1px #000000, 0 0 0 0 #222222, 0 1px 4px -2px #000000 inset");
+		.transition(box-shadow .05s linear);
+	}
+
+// Disabled state
+	&.disabled,
+	&[disabled] {
+		cursor: default;
+		background-color: darken(#285991, 10%);
+		.opacity(65);
+		.box-shadow(none);
+	}
+
+	&.btn-strict-primary {
+		background-color: #285991;
+	}
+	&.btn-strict-warning {
+		background-color: #e89814;
+	}
+	&.btn-strict-danger {
+		background-color: #d75230;
+	}
+	&.btn-strict-success {
+		background-color: #51a351;
+	}
+	&.btn-strict-info {
+		background-color: #2F96B4;
+	}
+	&.btn-strict-inverse {
+		background-color: #222;
+	}
+
+	[class^="icon-"], [class*=" icon-"] {
+		margin: 2px 8px 0 0;
+	}
+}
