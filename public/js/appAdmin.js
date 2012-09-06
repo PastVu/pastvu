@@ -67,7 +67,7 @@ require([
     }
 
     function app() {
-        new TopPanel('top_panel_fringe');
+        new TopPanel('top');
         grid = $("#usersGrid");
 
         CreateGrid();

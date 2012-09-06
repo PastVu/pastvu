@@ -115,7 +115,7 @@ require([
 
     //data-bind="style: {left: (browser == 'FIREFOX' || browser == 'MSIE' ? '110px' : '0px')}, attr:{size: (filereader() ? Math.round(width()/8) : 10)}")
     function app() {
-        new TopPanel('top_panel_fringe');
+        new TopPanel('top');
         ko.applyBindings(uploadVM, document.getElementById('now'));
 
         fileupload = $('#fileupload');

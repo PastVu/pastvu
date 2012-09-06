@@ -74,7 +74,7 @@ require([
         createMap();
         navSlider = new NavigationSlider(document.querySelector('#nav_panel #nav_slider_area'), map);
 
-        new TopPanel('top_panel_fringe');
+        new TopPanel('top');
 
         var loadTime = Utils.getCookie('oldmos.load.' + GlobalParams.appHash());
         if (loadTime) {

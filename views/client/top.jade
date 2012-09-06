@@ -1,7 +1,8 @@
-#top_panel_fringe.fringe
-	#top_panel.inner_bord
-		#appName
-			| Retro photo of mankind's habitat
+.row-fluid#top
+	.span2-3
+		a.fringe2#logo(href='/', target='_self')
+			#appName Retro photo of mankind's habitat
+	.fringe2#panel
 		#panelTools
 			#toUpload.labledIco.strokeAfter.iconBefore(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/photoUpload")}}')
 				.ico
@@ -10,8 +11,7 @@
 				.ico
 				.text(data-bind="text: admin")
 			#toProfile.labledIco.iconBefore(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){window.open("/u/"+auth.iAm.login())}}')
-				.fringe
-					.ico.inner_bord(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
+				.ico.fringe2(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
 			#toRegister.labledIco.iconBefore(data-bind='style:{display: loggedIn() || !registrationAllowed() ? "none":""}, event:{click: function(data, evt){data.auth.FormOpen("#reg_fringe")}}')
 				.ico
@@ -22,5 +22,3 @@
 			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind='style:{display: loggedIn()?"":"none"}, event:{click: function(data, evt){data.auth.Logout()}}')
 				.text(data-bind="text: logout")
 				.ico
-#logo_fringe.fringe
-	a#logo.inner_bord(href='/', target='_self')

@@ -83,7 +83,7 @@ html
 							label.control-label(for="inResidence") Residence
 							.controls
 								input(type="text", id='inResidence', data-bind="attr: {disabled: !edit_mode()}, size: country().length, value: country, valueUpdate: 'afterkeydown'")
-								input(type="text", data-bind="attr: {disabled: !edit_mode()}, size: city().length+1, value: city, valueUpdate: 'afterkeydown'")
+								input(type="text", id="inResidence2", data-bind="attr: {disabled: !edit_mode()}, value: city, valueUpdate: 'afterkeydown'")
 						.control-group(data-bind="style: {display: canBeEdit() ||  work().length > 0 ? '' : 'none'}")
 							label.control-label(for="inInterested") Interested in
 							.controls
