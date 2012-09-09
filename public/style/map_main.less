@@ -9,7 +9,7 @@
  */
 #nav_panel {
 	position: absolute;
-	top: 40px;
+	top: 65px;
 	left: 5px;
 	width: 70px;
 	height: 136px;
@@ -26,8 +26,8 @@
 	> .butt {
 		position: absolute;
 		cursor: pointer;
-		height: 28px;
-		width: 28px;
+		height: 26px;
+		width: 26px;
 		.transition(all 0.25s ease-out);
 		
 		&:after {
@@ -41,80 +41,79 @@
 		}
 		
 		&:hover {
+			border-color: #EFF2FF;
+
 			&:after {
 				opacity: 1;
-			}
-			.inner_bord{
-				border-color: #EFF2FF;
 			}
 		}
 		
 		&.inout {
 			left: 20px;
 			&:after {
-				left: 7px;
-				top: 7px;
+				left: 6px;
+				top: 6px;
 			}
 		}
 	}
 	
 	#mup{
-		height: 15px;
+		height: 13px;
 		left: 20px;
-		top: 20px;
-		width: 28px;
+		top: 19px;
+		width: 26px;
 		opacity: 0;
 		&:after {
-			left: 7px;
-			top: 1px;
+			left: 6px;
+			top: 0;
 			background-position: -289px -96px;
 		}
 	}
 	#mright{
-		height: 28px;
+		height: 26px;
 		left: 33px;
 		top: 20px;
-		width: 15px;
+		width: 13px;
 		opacity: 0;
 		&:after {
-			left: 0px;
-			top: 7px;
+			left: -1px;
+			top: 6px;
 			background-position: -264px -96px;
 		}
 	}
 	#mdown{
-		height: 15px;
+		height: 13px;
 		left: 20px;
 		top: 33px;
-		width: 28px;
+		width: 26px;
 		opacity: 0;
 		&:after {
-			left: 7px;
-			top: 0px;
+			left: 6px;
+			top: -1px;
 			background-position: -312px -96px;
 		}
 	}
 	#mleft{
-		height: 28px;
+		height: 26px;
 		left: 20px;
 		top: 20px;
-		width: 15px;
+		width: 13px;
 		opacity: 0;
 		&:after {
-			left: 1px;
-			top: 7px;
+			left: 0;
+			top: 6px;
 			background-position: -240px -96px;
 		}
 	}
 	#mhome{
 		left: 20px;
 		top: 38px;
-		height: 28px;
-		width: 28px;
+		height: 26px;
+		width: 26px;
 		.transition(top 0.25s ease-out 0.3s);
 		&:after {
-			left: 7px;
-			top: 7px;
+			left: 6px;
+			top: 6px;
 			background-position: 0 -24px;
 		}
 	}
@@ -146,21 +145,14 @@
 	}
 	
 	#nav_stick {
+		position: absolute;
 		left: 31px;
-		top: 101px;
-		bottom: 29px;
-		width: 6px;
-		-webkit-box-shadow: none;
-		box-shadow: none;
+		top: 99px;
+		bottom: 27px;
+		width: 4px;
 		border-top-width: 0;
 		border-bottom-width: 0;
-		
-		.inner_bord {
-			top: -1px;
-			bottom: -1px;
-			border-top-width: 0;
-			border-bottom-width: 0;
-		}
+		.box-shadow(0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000);
 	}
 	
 	#nav_slider_area {
@@ -208,19 +200,15 @@
 			left: 20px;
 			width: 28px;
 			height: 12px;
+			font-size: 11px;
+			line-height: 10px;
+			text-align: center;
+			background-color: darken(@MainBlueColor, 6%);
 			.transition(bottom 0.25s linear);
-			
-			.inner_bord{
-				background-color: rgba(5, 63, 126, 1);
-				font-size: 11px;
-				line-height: 10px;
-				text-align: center;
-			}			
+
 			&:hover {
-				.inner_bord{
-					border-color: #EFF2FF;
-					color: #fff;
-				}
+				border-color: #EFF2FF;
+				color: @white;
 			}
 		}
 	}
@@ -266,8 +254,8 @@
 		}
 	}
 	&.pin {
-		#nav_pin .inner_bord{
-			background-color: rgba(6, 130, 78, 0.85);
+		#nav_pin {
+			background-color: fadein(@MainBlueColor, 10%);
 		}
 	}
 		

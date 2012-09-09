@@ -4,8 +4,7 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
     function NavigationSlider(slider, map) {
         this.map = map;
         this.DOMPanel = slider;
-        this.DOMSliderInner = $('<div/>', {'class': 'inner_bord'})[0];
-        this.DOMSlider = $('<div/>', {'id': 'nav_slider', 'class': 'fringe'}).append(this.DOMSliderInner)[0];
+        this.DOMSlider = $('<div/>', {'id': 'nav_slider', 'class': 'fringe2'})[0];
         this.DOMPanel.appendChild(this.DOMSlider);
 
         Utils.Event.add(this.DOMPanel, 'mousewheel', this.OnWheel.neoBind(this), false);
@@ -30,14 +29,14 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
 
         Utils.Event.add(this.DOMPanel, ET.mdown, this.SnatchBind, false);
 
-        Utils.Event.add(document.querySelector('#nav_pin.fringe.butt'), 'click', this.togglePin.bind(this), false);
-        Utils.Event.add(document.querySelector('#zoomin.fringe.butt.inout'), 'click', this.changeZoom.neoBind(this, [1], true, false), false);
-        Utils.Event.add(document.querySelector('#zoomout.fringe.butt.inout'), 'click', this.changeZoom.neoBind(this, [-1], true, false), false);
-        Utils.Event.add(document.querySelector('#mhome.fringe.butt'), 'click', this.home.bind(this), false);
-        Utils.Event.add(document.querySelector('#mup.fringe.butt'), 'click', this.pan.neoBind(this, ['up'], true, false), false);
-        Utils.Event.add(document.querySelector('#mright.fringe.butt'), 'click', this.pan.neoBind(this, ['right'], true, false), false);
-        Utils.Event.add(document.querySelector('#mdown.fringe.butt'), 'click', this.pan.neoBind(this, ['down'], true, false), false);
-        Utils.Event.add(document.querySelector('#mleft.fringe.butt'), 'click', this.pan.neoBind(this, ['left'], true, false), false);
+        Utils.Event.add(document.querySelector('#nav_pin.fringe2.butt'), 'click', this.togglePin.bind(this), false);
+        Utils.Event.add(document.querySelector('#zoomin.fringe2.butt.inout'), 'click', this.changeZoom.neoBind(this, [1], true, false), false);
+        Utils.Event.add(document.querySelector('#zoomout.fringe2.butt.inout'), 'click', this.changeZoom.neoBind(this, [-1], true, false), false);
+        Utils.Event.add(document.querySelector('#mhome.fringe2.butt'), 'click', this.home.bind(this), false);
+        Utils.Event.add(document.querySelector('#mup.fringe2.butt'), 'click', this.pan.neoBind(this, ['up'], true, false), false);
+        Utils.Event.add(document.querySelector('#mright.fringe2.butt'), 'click', this.pan.neoBind(this, ['right'], true, false), false);
+        Utils.Event.add(document.querySelector('#mdown.fringe2.butt'), 'click', this.pan.neoBind(this, ['down'], true, false), false);
+        Utils.Event.add(document.querySelector('#mleft.fringe2.butt'), 'click', this.pan.neoBind(this, ['left'], true, false), false);
         //if(Browser.support.touch) Utils.Event.add(this.DOMPanel, 'touchstart', this.SnatchBind, false);
 
         this.recalcZooms();
@@ -91,7 +90,7 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
     };
     NavigationSlider.prototype.pos = function () {
         this.DOMSlider.style.bottom = this.step * this.sliderOnZoom - this.offset + 'px';
-        this.DOMSliderInner.innerHTML = this.sliderOnZoom;
+        this.DOMSlider.innerHTML = this.sliderOnZoom;
     };
     NavigationSlider.prototype.Snatch = function (e) {
         for (var z = 0; z < this.numZooms; z++) {
