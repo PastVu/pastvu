@@ -10,8 +10,8 @@
 #nav_panel {
 	position: absolute;
 	top: 65px;
-	left: 5px;
-	width: 70px;
+	left: 3px;
+	width: 71px;
 	height: 136px;
 	box-sizing: content-box;
 	.transition(height 0.25s ease-out);
@@ -27,7 +27,7 @@
 		position: absolute;
 		cursor: pointer;
 		height: 26px;
-		width: 26px;
+		width: 27px;
 		.transition(all 0.25s ease-out);
 		
 		&:after {
@@ -51,7 +51,7 @@
 		&.inout {
 			left: 20px;
 			&:after {
-				left: 6px;
+				left: 7px;
 				top: 6px;
 			}
 		}
@@ -61,17 +61,17 @@
 		height: 13px;
 		left: 20px;
 		top: 19px;
-		width: 26px;
+		width: 27px;
 		opacity: 0;
 		&:after {
-			left: 6px;
+			left: 7px;
 			top: 0;
 			background-position: -289px -96px;
 		}
 	}
 	#mright{
 		height: 26px;
-		left: 33px;
+		left: 34px;
 		top: 20px;
 		width: 13px;
 		opacity: 0;
@@ -85,10 +85,10 @@
 		height: 13px;
 		left: 20px;
 		top: 33px;
-		width: 26px;
+		width: 27px;
 		opacity: 0;
 		&:after {
-			left: 6px;
+			left: 7px;
 			top: -1px;
 			background-position: -312px -96px;
 		}
@@ -109,10 +109,10 @@
 		left: 20px;
 		top: 38px;
 		height: 26px;
-		width: 26px;
+		width: 27px;
 		.transition(top 0.25s ease-out 0.3s);
 		&:after {
-			left: 6px;
+			left: 7px;
 			top: 6px;
 			background-position: 0 -24px;
 		}
@@ -148,11 +148,24 @@
 		position: absolute;
 		left: 31px;
 		top: 99px;
-		bottom: 27px;
-		width: 4px;
+		bottom: 29px;
+		width: 5px;
 		border-top-width: 0;
 		border-bottom-width: 0;
 		.box-shadow(0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000);
+
+        &:after {
+          content: '';
+          position: absolute;
+          height: 2px;
+          left: -1px;
+          right: -1px;
+          bottom: -2px;
+          border-width: 0 1px;
+          border-style: solid;
+          border-color: #C3C7DD;
+          background-color: @MainBlueColor;
+        }
 	}
 	
 	#nav_slider_area {
@@ -187,7 +200,7 @@
 			background-image: url(/img/map/ZoomDash.png);
 			background-position: 50% 50%;
 			background-repeat: no-repeat;
-			width: 70px;
+			width: 71px;
 			-webkit-tap-highlight-color: #939393; 
 			
 			&:hover {
@@ -196,12 +209,13 @@
 		}
 		
 		> #nav_slider {
+            position: absolute;
 			bottom: 2px;
 			left: 20px;
-			width: 28px;
-			height: 12px;
+			width: 27px;
+			height: 10px;
 			font-size: 11px;
-			line-height: 10px;
+			line-height: 11px;
 			text-align: center;
 			background-color: darken(@MainBlueColor, 6%);
 			.transition(bottom 0.25s linear);
@@ -225,7 +239,7 @@
 			opacity: 1;
 		}
 		#mright{
-			left: 52px;
+			left: 53px;
 			opacity: 1;
 		}
 		#mdown{
