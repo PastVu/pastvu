@@ -68,7 +68,10 @@ html
 						.control-group
 							label.control-label(for="inBirthdate") Birthday
 							.controls
-								input(type="text", id='inBirthdate', data-bind="attr: {disabled: !edit_mode()}, value: birthdate")
+								.input-append.date#birthPick(data-date-format="dd.mm.yyyy", data-bind="attr: {'data-date': (new Date().getDate())+'.'+(new Date().getMonth()+1)+'.'+(new Date().getFullYear())}")
+									input(type="text", id='inBirthdate', data-bind="attr: {disabled: !edit_mode()}, value: birthdate, valueUpdate: 'keyup'")
+									span.add-on(data-bind="style: {display: (edit_mode() ? '' : 'none')}")
+										i.icon-calendar
 						.control-group
 							label.control-label(for="inSex2") Sex
 							.controls

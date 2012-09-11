@@ -22,10 +22,7 @@ requirejs.config({
         'Browser': 'lib/Browser',
 
         'knockout': 'lib/knockout/knockout-2.1.0',
-        'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
-
-        'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
-        'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang'
+        'knockout.mapping': 'lib/knockout/knockout.mapping-latest'
     }
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,8 +37,7 @@ require([
     'knockout', 'knockout.mapping',
     'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
     'KeyHandler', 'auth',
-    'bs/bootstrap-affix',
-    'jquery.datepick', 'jquery.datepick.lang'
+    'bs/bootstrap-affix', 'bs/bootstrap-datepicker'
 ], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
     console.timeStamp('Require app Ready');
     var login, reg, recall,
@@ -87,9 +83,6 @@ require([
             profileVM.edit_mode.subscribe(function (val) {
                 if (val) {
                     document.body.classList.add('edit_mode');
-                    window.setTimeout(function () {
-                        $('#in_birthdate').datepick($.extend({format: 'yyyy-mm-dd'}, $.datepick.regional['ru']));
-                    }, 1000);
 
                 } else {
                     document.body.classList.remove('edit_mode');
@@ -103,6 +96,7 @@ require([
             profileVM.saveUser = function () {
                 var targetUser = ko_mapping.toJS(profileVM),
                     key;
+
                 console.dir(targetUser);
                 for (key in targetUser) {
                     if (targetUser.hasOwnProperty(key) && key !== 'login') {
@@ -120,6 +114,15 @@ require([
             };
 
             ko.applyBindings(profileVM, profileView);
+
+            window.setTimeout(function () {
+                $('#birthPick')
+                    .datepicker()
+                    .on('changeDate', function (ev) {
+                        profileVM.birthdate($('#inBirthdate').val());
+                        console.log(ev);
+                    });
+            }, 1000);
 
             profileView.classList.add('show');
 
