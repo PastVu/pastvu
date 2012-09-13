@@ -1,10 +1,104 @@
-/*global define*/
+/*global requirejs:true, require:true, define:true*/
 /**
  * Utils
  * @author Klimashkin P.
  */
 define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
     var Utils = {
+
+        /**
+         * Merge src properties into dest
+         * @param {!Object} dest
+         * @return {!Object}
+         */
+        extend: function (dest) {
+            var sources = Array.prototype.slice.call(arguments, 1), i, j, len, src;
+            for (j = 0, len = sources.length; j < len; j++) {
+                src = sources[j] || {};
+                for (i in src) {
+                    if (src.hasOwnProperty(i)) {
+                        dest[i] = src[i];
+                    }
+                }
+            }
+            return dest;
+        },
+
+        /**
+         * Class powers the OOP facilities of the library. Thanks to John Resig and Dean Edwards for inspiration!
+         */
+        Class: (function () {
+            var Class = function () {
+            };
+
+            /**
+             *
+             * @param {!Object} props
+             * @return {Function} Class
+             */
+            Class.extend = function (props) {
+                var NewClass, F, proto, i;
+
+                // extended class with the new prototype
+                NewClass = function () {
+                    if (this.initialize) {
+                        this.initialize.apply(this, arguments);
+                    }
+                };
+
+                // instantiate class without calling constructor
+                F = function () {
+                };
+                F.prototype = this.prototype;
+
+                proto = new F();
+                proto.constructor = NewClass;
+
+                NewClass.prototype = proto;
+
+                //inherit parent's statics
+                for (i in this) {
+                    if (this.hasOwnProperty(i) && i !== 'prototype') {
+                        NewClass[i] = this[i];
+                    }
+                }
+
+                // mix static properties into the class
+                if (props.statics) {
+                    Utils.extend(NewClass, props.statics);
+                    delete props.statics;
+                }
+
+                // mix includes into the prototype
+                if (props.includes) {
+                    Utils.extend.apply(null, [proto].concat(props.includes));
+                    delete props.includes;
+                }
+
+                // merge options
+                if (props.options && proto.options) {
+                    props.options = Utils.extend({}, proto.options, props.options);
+                }
+
+                // mix given properties into the prototype
+                Utils.extend(proto, props);
+
+                return NewClass;
+            };
+
+
+            // method for adding properties to prototype
+            Class.include = function (props) {
+                Utils.extend(this.prototype, props);
+            };
+
+            Class.mergeOptions = function (options) {
+                Utils.extend(this.prototype.options, options);
+            };
+
+            return Class;
+        }()),
+
         /**
          * Проверяет на соответствие объекта типу (вместо typeof)
          * @param {string} type Имя типа.
@@ -95,6 +189,32 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 }
             }
             return out;
+        },
+
+        /**
+         * Загружает изображение и по завешению загрузки вызывает callback
+         * @param url
+         * @param callback
+         */
+        loadImage: function (url, callback, context, callbackParam) {
+            var loadImg = new Image();
+            loadImg.onload = function (evt) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback.call(context, callbackParam);
+                }
+                loadImg = null;
+            };
+            loadImg.src = url;
+        },
+
+        /**
+         * Возвращает значение параметра из строки адреса, содержащей параметры, или переданной строки
+         * @param name Имя параметра
+         * @param url Часть строки, начиная со знака ?
+         * @return {String|null}
+         */
+        getURLParameter: function (name, url) {
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [, ""])[1].replace(/\+/g, '%20')) || null;
         },
 
         randomString: function (length) {
@@ -595,6 +715,21 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
         }()),
 
         /**
+         * Creates Style element in head.
+         * @param {!string=} src location.
+         */
+        addStyle: function (src, doneCallback) {
+            var dfd = $.Deferred();
+            dfd.done(function () {
+                console.log("Source '%s' loaded success", src);
+                if (doneCallback) {
+                    doneCallback();
+                }
+            });
+            $.getStyle(src, dfd.resolve);
+            return dfd.promise();
+        },
+        /**
          * Creates Script element in head.
          * @param {!string=} src location.
          */
@@ -610,41 +745,6 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 
             $.cachedScript(src).done(dfd.resolve);
             return dfd.promise();
-        },
-
-        /**
-         * Creates Style element in head.
-         * @param {!string=} src location.
-         */
-        addStyle: function (src, doneCallback) {
-            var dfd = $.Deferred();
-            dfd.done(function () {
-                console.log("Source '%s' loaded success", src);
-                if (doneCallback) {
-                    doneCallback();
-                }
-            });
-            $.getStyle(src, dfd.resolve);
-            return dfd.promise();
-        },
-
-        LoadStyles: function (arr, hash) {
-            var getarray = [], i, len,
-                style;
-
-            console.groupCollapsed("Styles Loading");
-            console.time("Styles loaded time");
-            for (i = 0, len = arr.length; i < len; i += 1) {
-                style = arr[i];
-                getarray.push(Utils.addStyle(style.s + (style.t || '?__=' + hash)));
-            }
-
-            return $.when.apply($, getarray).then(function () {
-                console.log('All Styles loaded');
-                console.timeEnd("Styles loaded time");
-                console.groupEnd();
-            });
-
         },
 
         /**
