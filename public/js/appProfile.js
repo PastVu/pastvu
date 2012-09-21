@@ -35,7 +35,7 @@ require([
     'socket',
     'EventTypes',
     'knockout', 'knockout.mapping',
-    'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+    'm/GlobalParams', 'm/User', 'm/TopPanel', 'm/i18n',
     'KeyHandler', 'auth',
     'bs/bootstrap-affix', 'bs/bootstrap-datepicker'
 ], function (domReady, $, Browser, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {

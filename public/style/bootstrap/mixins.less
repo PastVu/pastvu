@@ -79,15 +79,18 @@
 
 // Placeholder text
 // -------------------------
-.placeholder(@color: @placeholderText) {
+.placeholder(@color: @placeholderText, @style: normal) {
   &:-moz-placeholder {
     color: @color;
+	font-style: @style;
   }
   &:-ms-input-placeholder {
     color: @color;
+	font-style: @style;
   }
   &::-webkit-input-placeholder {
     color: @color;
+	font-style: @style;
   }
 }
 

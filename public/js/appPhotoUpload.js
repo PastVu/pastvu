@@ -40,7 +40,7 @@ require([
     'socket',
     'EventTypes',
     'knockout', 'knockout.mapping',
-    'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+    'm/GlobalParams', 'm/User', 'm/TopPanel', 'm/i18n',
     'KeyHandler', 'auth',
     'jquery.ui.widget',
     'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload', 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'

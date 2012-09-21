@@ -1,5 +1,5 @@
 /*global define*/
-define(['jquery', 'Utils', 'leaflet', 'mvvm/GlobalParams'], function ($, Utils, L, GlobalParams) {
+define(['jquery', 'Utils', 'leaflet', 'm/GlobalParams'], function ($, Utils, L, GlobalParams) {
     var layers = {};
     if (GlobalParams.USE_OSM_API()) {
         layers.osm = {

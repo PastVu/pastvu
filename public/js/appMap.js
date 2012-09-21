@@ -43,7 +43,7 @@ require([
     'socket',
     'EventTypes',
     'knockout', 'knockout.mapping',
-    'mvvm/GlobalParams', 'mvvm/User', 'mvvm/TopPanel', 'mvvm/i18n',
+    'm/GlobalParams', 'm/User', 'm/TopPanel', 'm/i18n',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider',
     'Locations', 'KeyHandler', 'auth',
     'css!style/map_main', 'css!style/jquery.toast'
