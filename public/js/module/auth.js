@@ -57,32 +57,46 @@ define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm
         submit: function () {
             var form = $('#auth_curtain form:visible');
 
-            this.formWorking(true);
-
             try {
                 if (this.mode() === 'login') {
-                    socket.on('loginResult', function (json) {
-                        if (json.success) {
-                            this.formClose();
-                            $.ajax({
-                                url: '/updateCookie',
-                                cache: false
-                            });
-                            //LoadMe();
-                        } else {
-                            this.setMessage(json.error || json, 'error');
-                        }
-                        window.setTimeout(function () {
-                            this.formWorking(false);
-                            this.formFocus();
-                        }.bind(this), 200);
-                    }.bind(this));
-                    socket.emit('loginRequest', $.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}));
+                    this.doLogin($.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}));
                 }
+
+                this.formWorking(true);
             } catch (e) {
                 this.setMessage(e.message, 'error');
                 this.formWorking(false);
             }
+        },
+        doLogin: function (data) {
+            socket.on('loginResult', function (json) {
+                if (json.success) {
+                    //this.formClose();
+                    $.ajax({
+                        url: '/updateCookie',
+                        cache: false
+                    });
+                    //LoadMe();
+                } else {
+                    this.setMessage(json.error || json, 'error');
+                }
+                window.setTimeout(function () {
+                    this.formWorking(false);
+                    this.formFocus();
+                }.bind(this), 200);
+            }.bind(this));
+            socket.emit('loginRequest', data);
+        },
+        doLogout: function () {
+            socket.on('logoutResult', function (json) {
+                if (json.err) {
+                    console.log('Logout error' + json.err);
+                } else {
+                    document.location = json.logoutPath;
+                }
+            });
+            socket.emit('logoutRequest', {});
+            return false;
         }
 
     });
