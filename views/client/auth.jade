@@ -1,0 +1,102 @@
+#auth_curtain(data-bind="with: repository['M!M']")
+	form.fringe2(action='', autocomplete="on",  method='POST', name='loginForm', data-bind="style: {display: mode()==='login' ? '' : 'none'}")
+		.head Authorization
+		dl.dl-horizontal
+			dt User name:
+			dd
+				span(data-bind="click: function () {mode('reg')}") Registration
+		div.inputwrap.user
+			input(autocomplete="on", type="text", required="required", title="input login", placeholder="Enter username or e-mail", name="login")
+		dl.dl-horizontal
+			dt Password:
+			dd
+				span(data-bind="click: function () {mode('recall')}") Recover password
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass")
+		dl.dl-horizontal
+			dt.checked#remember Remember me
+		button.btn-strict(type="submit") Sign in
+		button.btn-strict(type="button") Cancel
+		#login_wait.wait Authorizing..
+		#login_mess.mess
+			div
+
+	form.fringe2(action='', autocomplete="off",  method='POST', name='regForm', data-bind="style: {display: mode()==='reg' ? '' : 'none'}")
+		.head Registration
+		dl.dl-horizontal
+			dt User name:
+			dd
+				span(data-bind="click: function () {mode('login')}") Authorization
+		div.inputwrap.user
+			input(autocomplete="off", type="text", required="required", title="input login", placeholder="User", name="login")
+		dl.dl-horizontal
+			dt E-mail:
+		div.inputwrap.envelope
+			input(autocomplete="off", type="text", required="required", title="input email", placeholder="email", name="login")
+		dl.dl-horizontal
+			dt Password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass")
+		dl.dl-horizontal
+			dt Repeat password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass2")
+		button.btn-strict(type="submit") Register
+		button.btn-strict(type="button") Cancel
+		#reg_wait.wait Sending data..
+		#reg_mess.mess
+			div
+
+	form.fringe2(action='', autocomplete="off",  method='POST', name='recallForm', data-bind="style: {display: mode()==='recall' ? '' : 'none'}")
+		.head Recover password
+		dl.dl-horizontal
+			dt Login or e-mail:
+			dd
+				span(data-bind="click: function () {mode('login')}") Authorization
+		div.inputwrap.user
+			input(autocomplete="off", type="text", required="required", title="Input login or e-mail", placeholder="Enter username or e-mail", name="login")
+		button.btn-strict(type="submit") Send
+		button.btn-strict(type="button") Cancel
+		#recall_wait.wait Sending..
+		#recall_mess.mess
+			div
+
+	form.fringe2(action='', autocomplete="off",  method='POST', name='recallChangePassForm', data-bind="style: {display: mode()==='recallChangePass' ? '' : 'none'}")
+		.head Change password
+		dl.dl-horizontal
+			dt User name:
+		div.inputwrap.user
+			input(autocomplete="off", type="text", required="required", disabled, name="login")
+		dl.dl-horizontal
+			dt New password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew")
+		dl.dl-horizontal
+			dt Repeat new password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
+		button.btn-strict(type="submit") Send
+		button.btn-strict(type="button") Cancel
+		#recall_wait.wait Sending..
+		#recall_mess.mess
+			div
+
+	form.fringe2(action='', autocomplete="off",  method='POST', name='changePassForm', data-bind="style: {display: mode()==='changepass' ? '' : 'none'}")
+		.head Change password
+		dl.dl-horizontal
+			dt Current password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass")
+		dl.dl-horizontal
+			dt New password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew")
+		dl.dl-horizontal
+			dt Repeat new password:
+		div.inputwrap.lock
+			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
+		button.btn-strict(type="submit") Change
+		button.btn-strict(type="button") Cancel
+		#recall_wait.wait Changing..
+		#recall_mess.mess
+			div
