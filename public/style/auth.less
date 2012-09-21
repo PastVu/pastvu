@@ -22,14 +22,35 @@
 	}
 
 	form {
-		display: inline-block;
+		position: relative;
+		display: none;
 		vertical-align: middle;
 		text-align: left;
-		padding: 0 15px 48px;
+		padding: 0 15px 36px;
 		color: @MainBlueColor;
 		border-color: @MainBlueColor;
 		background-color: darken(@MainLigthColor, 5%);
 		.box-shadow(0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%));
+		z-index: @zindexPopover;
+
+		&.show {
+			display: inline-block;
+		}
+
+		&:after {
+			position: absolute;
+			display: none;
+			content: "";
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: @zindexTooltip;
+		}
+
+		&.working:after {
+			display: block;
+		}
 
 		.head {
 			position: relative;
@@ -54,9 +75,14 @@
 				display: block;
 				bottom: -4px;
 				height: 1px;
-				position: relative;
+				position: absolute;
 				width: 100%;
 			}
+		}
+		&.working .head:after {
+			background: url(/img/misc/load.gif) no-repeat 50% 0;
+			height: 10px;
+			bottom: -13px;
 		}
 
 		dl {
@@ -150,12 +176,18 @@
 			font-size: 16px;
 			padding: 5px 5px 5px 21px;
 			width: 257px;
+			background-color: rgba(255, 255, 255, 0.6);
 			.box-shadow(inset 0 1px 4px 0 #A8A8A8);
-			.transition(background 0.2s ease-out);
-			.placeholder(#BEBCBC, italic);
+			.transition(background-color 0.2s ease-out);
+			.placeholder(#adabab, italic);
+
+			&[disabled] {
+				.box-shadow(none);
+				background-color: rgba(255, 255, 255, 0.2);
+			}
 
 			&:focus {
-				background: rgba(238, 236, 240, 0.1);
+				background: #FFF;
 				&:invalid {
 					color: #777777;
 				}
@@ -184,39 +216,16 @@
 			}
 		}
 
-		.wait{
-			display: none;
-			position: absolute;
-			padding: 46px 0 0;
-			top: 0;
-			right: 0;
-			bottom: 0;
-			left: 0;
-			font-weight: bold;
-			font-size: 16px;
-			line-height: 16px;
-			text-align: center;
-			color: #f90;
-			background-color: rgba(0,0,0,0.55);
-		}
-
 		.mess{
 			position: relative;
 			font-weight: bold;
 			font-size: 14px;
 			line-height: 15px;
-			height: 0px;
-			text-align: center;
+			height: 0;
 			white-space: normal;
-			padding: 0 3px;
+			margin: 6px 0;
+			overflow: hidden;
 			.transition(height 0.5s ease-out);
-
-			&.err {
-				color: #FF5D00;
-			}
-			&.good {
-				color: green;
-			}
 		}
 
 	}

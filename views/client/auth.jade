@@ -1,5 +1,5 @@
 #auth_curtain(data-bind="with: repository['M!M']")
-	form.fringe2(action='', autocomplete="on",  method='POST', name='loginForm', data-bind="style: {display: mode()==='login' ? '' : 'none'}")
+	form.fringe2(action='', autocomplete="on", method='POST', name='loginForm', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
 		.head Authorization
 		dl.dl-horizontal
 			dt User name:
@@ -14,14 +14,13 @@
 		div.inputwrap.lock
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass")
 		dl.dl-horizontal
-			dt.checked#remember Remember me
+			dt.checked#remember(onclick="this.classList.toggle('checked')") Remember me
 		button.btn-strict(type="submit") Sign in
 		button.btn-strict(type="button") Cancel
-		#login_wait.wait Authorizing..
-		#login_mess.mess
-			div
+		.mess
+			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off",  method='POST', name='regForm', data-bind="style: {display: mode()==='reg' ? '' : 'none'}")
+	form.fringe2(action='', autocomplete="off", method='POST', name='regForm', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
 		.head Registration
 		dl.dl-horizontal
 			dt User name:
@@ -43,11 +42,10 @@
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass2")
 		button.btn-strict(type="submit") Register
 		button.btn-strict(type="button") Cancel
-		#reg_wait.wait Sending data..
-		#reg_mess.mess
-			div
+		.mess
+			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off",  method='POST', name='recallForm', data-bind="style: {display: mode()==='recall' ? '' : 'none'}")
+	form.fringe2(action='', autocomplete="off", method='POST', name='recallForm', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -57,11 +55,10 @@
 			input(autocomplete="off", type="text", required="required", title="Input login or e-mail", placeholder="Enter username or e-mail", name="login")
 		button.btn-strict(type="submit") Send
 		button.btn-strict(type="button") Cancel
-		#recall_wait.wait Sending..
-		#recall_mess.mess
-			div
+		.mess
+			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off",  method='POST', name='recallChangePassForm', data-bind="style: {display: mode()==='recallChangePass' ? '' : 'none'}")
+	form.fringe2(action='', autocomplete="off", method='POST', name='recallChangePassForm', data-bind="css: {show: mode()==='recallChangePass', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt User name:
@@ -77,11 +74,10 @@
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
 		button.btn-strict(type="submit") Send
 		button.btn-strict(type="button") Cancel
-		#recall_wait.wait Sending..
-		#recall_mess.mess
-			div
+		.mess
+			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off",  method='POST', name='changePassForm', data-bind="style: {display: mode()==='changepass' ? '' : 'none'}")
+	form.fringe2(action='', autocomplete="off", method='POST', name='changePassForm', data-bind="css: {show: mode()==='changepass', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt Current password:
@@ -97,6 +93,5 @@
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
 		button.btn-strict(type="submit") Change
 		button.btn-strict(type="button") Cancel
-		#recall_wait.wait Changing..
-		#recall_mess.mess
-			div
+		.mess
+			div(data-bind="text: msg()")
