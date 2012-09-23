@@ -1,5 +1,5 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, socket, globalParams, ko, Cliche, User, keyTarget, jade) {
+define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, Utils, socket, globalParams, ko, Cliche, User, keyTarget, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -22,6 +22,12 @@ define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm
                 } catch (e) {
                 }
             }, 400);
+        },
+        formReset: function () {
+            $("#auth_curtain").find(':focus').blur();
+            $("#auth_curtain input").val(null);
+            $("#auth_curtain .mess").height(0).text('').removeClass('text-error text-warning text-info text-success muted');
+            this.formWorking(false);
         },
         formWorking: function (param) {
             this.working(param);
@@ -56,10 +62,65 @@ define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm
         },
         submit: function () {
             var form = $('#auth_curtain form:visible');
+            form.find(':focus').blur();
 
             try {
                 if (this.mode() === 'login') {
-                    this.doLogin($.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}));
+                    this.doLogin(
+                        $.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}),
+                        function (error, data) {
+                            if (error) {
+                                this.setMessage(error, 'error');
+                                window.setTimeout(function () {
+                                    this.formWorking(false);
+                                    this.formFocus();
+                                }.bind(this), 420);
+                            } else {
+                                this.formClose();
+                            }
+                        }.bind(this)
+                    );
+
+                } else if (this.mode() === 'reg') {
+                    this.doRegister(
+                        $.extend(form.serializeObject(), {}),
+                        function (error, data) {
+                            if (error) {
+                                this.setMessage(error, 'error');
+                                window.setTimeout(function () {
+                                    this.formFocus();
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            } else {
+                                form.find('button').css('display', 'none');
+                                form.find('.formfinish').css('display', '');
+                                this.setMessage(data, 'success');
+                                window.setTimeout(function () {
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            }
+                        }.bind(this)
+                    );
+                } else if (this.mode() === 'recall') {
+                    this.doPassRecall(
+                        $.extend(form.serializeObject(), {}),
+                        function (error, data) {
+                            if (error) {
+                                this.setMessage(error, 'error');
+                                window.setTimeout(function () {
+                                    this.formFocus();
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            } else {
+                                form.find('button').css('display', 'none');
+                                form.find('.formfinish').css('display', '');
+                                this.setMessage(data, 'success');
+                                window.setTimeout(function () {
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            }
+                        }.bind(this)
+                    );
                 }
 
                 this.formWorking(true);
@@ -67,96 +128,78 @@ define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm
                 this.setMessage(e.message, 'error');
                 this.formWorking(false);
             }
-        },
-        doLogin: function (data) {
-            socket.on('loginResult', function (json) {
-                if (json.success) {
-                    //this.formClose();
-                    $.ajax({
-                        url: '/updateCookie',
-                        cache: false
-                    });
-                    //LoadMe();
-                } else {
-                    this.setMessage(json.error || json, 'error');
-                }
-                window.setTimeout(function () {
-                    this.formWorking(false);
-                    this.formFocus();
-                }.bind(this), 200);
-            }.bind(this));
-            socket.emit('loginRequest', data);
-        },
-        doLogout: function () {
-            socket.on('logoutResult', function (json) {
-                if (json.err) {
-                    console.log('Logout error' + json.err);
-                } else {
-                    document.location = json.logoutPath;
-                }
-            });
-            socket.emit('logoutRequest', {});
+
             return false;
+        },
+        doLogin: function (data, callback) {
+            try {
+                socket.on('loginResult', function (json) {
+                    if (json.success) {
+                        $.ajax({
+                            url: '/updateCookie',
+                            cache: false
+                        });
+                        //LoadMe();
+                    }
+
+                    if (Utils.isObjectType('function', callback)) {
+                        callback(json.error, json.success);
+                    }
+                }.bind(this));
+                socket.emit('loginRequest', data);
+            } catch (e) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback(e.message);
+                }
+            }
+        },
+        doLogout: function (callback) {
+            try {
+                socket.on('logoutResult', function (json) {
+                    if (json.err) {
+                        console.log('Logout error' + json.err);
+                    } else {
+                        document.location = json.logoutPath;
+                    }
+                });
+                socket.emit('logoutRequest', {});
+            } catch (e) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback(e.message);
+                }
+            }
+        },
+        doRegister: function (data, callback) {
+            try {
+                socket.on('registerResult', function (json) {
+                    if (Utils.isObjectType('function', callback)) {
+                        callback(json.error, json.success);
+                    }
+                });
+                socket.emit('registerRequest', data);
+            } catch (e) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback(e.message);
+                }
+            }
+        },
+        doPassRecall: function (data, callback) {
+            try {
+                socket.on('recallResult', function (json) {
+                    if (Utils.isObjectType('function', callback)) {
+                        callback(json.error, json.success);
+                    }
+                });
+                socket.emit('recallRequest', data);
+            } catch (e) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback(e.message);
+                }
+            }
         }
 
     });
     /*
-     var auth = {},
-     login, reg, recall,
-     opened_form;
-
-     login = {
-     head: document.querySelector('#login_fringe .head'),
-     form: document.querySelector('#login_fringe form'),
-     wait: document.querySelector('#login_fringe .wait'),
-     mess: document.querySelector('#login_fringe .mess'),
-     messchild: document.querySelector('#login_fringe .mess > div')
-     };
-     reg = {
-     head: document.querySelector('#reg_fringe .head'),
-     form: document.querySelector('#reg_fringe form'),
-     wait: document.querySelector('#reg_fringe .wait'),
-     mess: document.querySelector('#reg_fringe .mess'),
-     messchild: document.querySelector('#reg_fringe .mess > div')
-     };
-     recall = {
-     head: document.querySelector('#recall_fringe .head'),
-     form: document.querySelector('#recall_fringe form'),
-     wait: document.querySelector('#recall_fringe .wait'),
-     mess: document.querySelector('#recall_fringe .mess'),
-     messchild: document.querySelector('#recall_fringe .mess > div')
-     };
-
-     login.form.onsubmit = Login;
-     login.form.querySelector('#toReg').onclick = function () {
-     LoginActivateSwap("#reg_fringe")
-     };
-     login.form.querySelector('#toRecall').onclick = function () {
-     LoginActivateSwap("#recall_fringe")
-     };
-     login.form.querySelector('#remember_check').onclick = function () {
-     LoginRememberCheck(this)
-     };
-     login.form.querySelector('.cancel').onclick = FormClose;
-
-     reg.form.onsubmit = Register;
-     reg.form.querySelector('.toLogin').onclick = function () {
-     LoginActivateSwap("#login_fringe")
-     };
-     reg.form.querySelector('.cancel').onclick = FormClose;
-
-     recall.form.onsubmit = RecallAjax;
-     recall.form.querySelector('.toLogin').onclick = function () {
-     LoginActivateSwap("#login_fringe")
-     };
-     recall.form.querySelector('.cancel').onclick = FormClose;
-
-     function FormOpen(selector) {
-     document.querySelector('#auth_curtain').style.display = 'block';
-     opened_form = document.querySelector(selector);
-     opened_form.classList.add('active');
-     FormFocus();
-
      keyTarget.push({
      id: 'loginOverlay',
      stopFurther: false,
@@ -170,145 +213,6 @@ define(['jquery', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm
      FormReset();
      keyTarget.pop();
      opened_form = null;
-     }
-
-     function FormReset() {
-     login.form.reset();
-     reg.form.reset();
-     login.messchild.innerHTML = '';
-     login.mess.style.height = 0;
-     login.mess.classList.remove('err');
-     login.mess.classList.remove('good');
-     reg.messchild.innerHTML = '';
-     reg.mess.style.height = 0;
-     reg.mess.classList.remove('err');
-     reg.mess.classList.remove('good');
-     ResetLoginActive();
-     }
-
-     function FormFocus() {
-     window.setTimeout(function () {
-     try {
-     opened_form.querySelector('.initFocus').focus()
-     } catch (e) {
-     }
-     }, 800);
-     }
-
-     function LoginRememberCheck(box) {
-     box.classList.toggle('checked');
-     }
-
-     function LoginActivateSwap(selector) {
-     var anotherElem = document.querySelector(selector);
-
-     opened_form.classList.remove('delay');
-     anotherElem.classList.add('delay');
-
-     opened_form.classList.remove('active');
-     anotherElem.classList.add('active');
-
-     opened_form = anotherElem;
-     }
-
-     function ResetLoginActive() {
-     //        var active = document.querySelector('.form.fringe.active');
-     //         if (active !== document.querySelector('#login_fringe')){
-     //         LoginActivateSwap(active.id);
-     //         }
-     }
-
-     function Login() {
-     login.wait.style.display = 'block';
-     var remember_check = login.form.querySelector('#remember_check').classList.contains('checked');
-
-     socket.on('loginResult', function (json) {
-     if (json.success) {
-     FormClose();
-     $.ajax({
-     url: '/updateCookie',
-     cache: false,
-     success: function (json) {
-     },
-     error: function (json) {
-     }
-     });
-     LoadMe();
-     } else {
-     FormFocus();
-     login.messchild.innerHTML = '' + (json.error || json);
-     login.mess.classList.add('err');
-     login.mess.style.height = login.messchild.offsetHeight + 5 + 'px';
-     }
-     window.setTimeout(function () {
-     login.wait.style.display = 'none';
-     }, 300);
-     });
-     socket.emit('loginRequest', $.extend($(login.form).serializeObject(), {'remember': remember_check}));
-     return false;
-     }
-
-     function Logout() {
-     socket.on('logoutResult', function (json) {
-     if (json.err) {
-     consol.log('Logout error' + json.err);
-     } else {
-     document.location = json.logoutPath;
-     }
-     });
-     socket.emit('logoutRequest', {});
-     return false;
-     }
-
-     function Register() {
-     reg.wait.style.display = 'block';
-
-     socket.on('registerResult', function (json) {
-     if (json.success) {
-     reg.form.querySelector('input[type="button"]').value = 'Finish';
-     reg.form.querySelector('input[type="button"]').classList.add('fin');
-     reg.form.querySelector('input[type="submit"]').style.display = 'none';
-     reg.messchild.innerHTML = json.success;
-     reg.mess.classList.add('good');
-     } else {
-     FormFocus();
-     var message = '' + (json.error || json);
-     reg.messchild.innerHTML = '' + message;
-     reg.mess.classList.add('err');
-     }
-     reg.mess.style.height = reg.messchild.offsetHeight + 5 + 'px';
-     window.setTimeout(function () {
-     reg.wait.style.display = 'none';
-     }, 300);
-     });
-     socket.emit('registerRequest', $.extend($(reg.form).serializeObject(), {}));
-     return false;
-     }
-
-     function RecallAjax(form) {
-     recall.wait.style.display = 'block';
-
-     socket.on('recallResult', function (json) {
-     if (json.success) {
-     recall.form.querySelector('input[type="button"]').value = 'Finish';
-     recall.form.querySelector('input[type="button"]').classList.add('fin');
-     recall.form.querySelector('input[type="submit"]').style.display = 'none';
-     recall.messchild.innerHTML = json.success;
-     recall.mess.classList.add('good');
-     } else {
-     FormFocus();
-     var message = '' + (json.error || json);
-     recall.messchild.innerHTML = '' + message;
-     recall.mess.classList.add('err');
-     }
-     recall.mess.style.height = recall.messchild.offsetHeight + 5 + 'px';
-     window.setTimeout(function () {
-     recall.wait.style.display = 'none';
-     }, 300);
-     });
-     socket.emit('recallRequest', $(recall.form).serializeObject());
-
-     return false;
      }
 
      var iAm = User.VM(User.def);

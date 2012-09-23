@@ -1,5 +1,5 @@
 #auth_curtain(data-bind="with: repository['M!M']")
-	form.fringe2(action='', autocomplete="on", method='POST', name='loginForm', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
+	form.fringe2(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
 		.head Authorization
 		dl.dl-horizontal
 			dt User name:
@@ -20,7 +20,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off", method='POST', name='regForm', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
+	form.fringe2(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
 		.head Registration
 		dl.dl-horizontal
 			dt User name:
@@ -31,7 +31,7 @@
 		dl.dl-horizontal
 			dt E-mail:
 		div.inputwrap.envelope
-			input(autocomplete="off", type="text", required="required", title="input email", placeholder="email", name="login")
+			input(autocomplete="off", type="text", required="required", title="input email", placeholder="email", name="email")
 		dl.dl-horizontal
 			dt Password:
 		div.inputwrap.lock
@@ -42,10 +42,11 @@
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass2")
 		button.btn-strict(type="submit") Register
 		button.btn-strict(type="button") Cancel
+		button.btn-strict.formfinish(type="button", style="display: none;") Finish
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off", method='POST', name='recallForm', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
+	form.fringe2(name='recallForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -58,7 +59,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off", method='POST', name='recallChangePassForm', data-bind="css: {show: mode()==='recallChangePass', working: working()}, event: {submit: submit}")
+	form.fringe2(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallChangePass', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt User name:
@@ -77,7 +78,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(action='', autocomplete="off", method='POST', name='changePassForm', data-bind="css: {show: mode()==='changepass', working: working()}, event: {submit: submit}")
+	form.fringe2(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='changepass', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt Current password:
