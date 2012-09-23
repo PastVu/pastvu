@@ -12,6 +12,9 @@ define([
         parent = parent || globalVM;
         level = level || 0;
 
+        /**
+         * Уничтожаем модули, которых нет в новом списке
+         */
         _.forOwn(repository, function (existingVM, existingVMKey) {
             if (existingVM.level === level) {
                 var savesExisting = false,
@@ -43,6 +46,9 @@ define([
             }
         });
 
+        /**
+         * Создаем новые модули
+         */
         _.forOwn(modules, function (item, key, object) {
             var dfd = $.Deferred();
             require([item.module], function (VM) {

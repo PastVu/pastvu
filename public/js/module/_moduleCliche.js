@@ -19,12 +19,12 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.childModules = {};
 
             this.$container = $(container).append(this.jade.replace('M!M', this.id));
-            this.dom = this.$container.children(":first");
+            this.$dom = this.$container.children(":first");
 
             this.create();
 
             repository[this.id] = this;
-            ko.applyBindings(globalVM, this.dom[0]);
+            ko.applyBindings(globalVM, this.$dom[0]);
 
             if (this.childs) {
                 renderer(this, this.childs, this.level + 1);
@@ -34,12 +34,17 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
         create: function () {
 
         },
+        show: function () {
 
+        },
+        hide: function () {
+
+        },
         destroy: function () {
             _.forOwn(this.childModules, function (item, key, object) {
                 item.destroy();
             });
-            ko.removeNode(this.dom[0]);
+            ko.removeNode(this.$dom[0]);
             this.$container.empty();
 
             delete this.$container;

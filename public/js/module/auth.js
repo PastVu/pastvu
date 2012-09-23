@@ -5,33 +5,59 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
     return Cliche.extend({
         jade: jade,
         create: function () {
+            this.showing = ko.observable(false);
             this.mode = ko.observable('login');
             this.working = ko.observable(false);
 
             this.msg = ko.observable('');
 
-            this.mode.subscribe(function (newVal) {
+            this.mode.subscribe(function () {
                 this.formFocus();
             }, this);
-            this.formFocus();
+
+            this.show();
         },
+        show: function (mode) {
+            if (mode) {
+                this.mode(mode);
+            }
+            this.$container.css('display', 'block');
+            this.showing(true);
+            this.formFocus();
+
+            keyTarget.push({
+                id: 'loginOverlay',
+                stopFurther: false,
+                onEsc: this.formClose.bind(this)
+            });
+        },
+        hide: function () {
+            keyTarget.pop();
+            this.formReset();
+            this.$container.css('display', '');
+            this.showing(false);
+        },
+
         formFocus: function () {
             window.setTimeout(function () {
                 try {
-                    $('#auth_curtain').children('form:visible')[0].querySelector('input:first-child:not([disabled])').focus();
+                    this.$dom.children('form:visible')[0].querySelector('input:first-child:not([disabled])').focus();
                 } catch (e) {
                 }
             }, 400);
         },
         formReset: function () {
-            $("#auth_curtain").find(':focus').blur();
-            $("#auth_curtain input").val(null);
-            $("#auth_curtain .mess").height(0).text('').removeClass('text-error text-warning text-info text-success muted');
+            this.$dom.find(':focus').blur();
+            this.$dom.find("input").val(null);
+            this.$dom.find(".mess").height(0).text('').removeClass('text-error text-warning text-info text-success muted');
             this.formWorking(false);
+        },
+        formClose: function () {
+            this.hide();
         },
         formWorking: function (param) {
             this.working(param);
-            $('#auth_curtain form:visible').find('input, button').attr('disabled', param);
+            this.$dom.find('form:visible').find('input, button').attr('disabled', param);
         },
         setMessage: function (text, type) {
             var css = '';
@@ -54,14 +80,14 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             }
 
             this.msg(text);
-            $('#auth_curtain form:visible .mess')
+            this.$dom.find('form:visible .mess')
                 .addClass(css)
-                .css({height: 5 + $('#auth_curtain form:visible .mess > div').height()});
+                .css({height: 5 + this.$dom.find('form:visible .mess > div').height()});
 
             text = type = css = null;
         },
         submit: function () {
-            var form = $('#auth_curtain form:visible');
+            var form = this.$dom.find('form:visible');
             form.find(':focus').blur();
 
             try {
@@ -200,20 +226,6 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
 
     });
     /*
-     keyTarget.push({
-     id: 'loginOverlay',
-     stopFurther: false,
-     onEsc: FormClose
-     });
-     }
-
-     function FormClose() {
-     document.querySelector('#auth_curtain').style.display = 'none';
-     opened_form.classList.remove('active');
-     FormReset();
-     keyTarget.pop();
-     opened_form = null;
-     }
 
      var iAm = User.VM(User.def);
 

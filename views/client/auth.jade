@@ -16,7 +16,7 @@
 		dl.dl-horizontal
 			dt.checked#remember(onclick="this.classList.toggle('checked')") Remember me
 		button.btn-strict(type="submit") Sign in
-		button.btn-strict(type="button") Cancel
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
 		.mess
 			div(data-bind="text: msg()")
 
@@ -41,8 +41,8 @@
 		div.inputwrap.lock
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="pass2")
 		button.btn-strict(type="submit") Register
-		button.btn-strict(type="button") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;") Finish
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
 		.mess
 			div(data-bind="text: msg()")
 
@@ -55,7 +55,8 @@
 		div.inputwrap.user
 			input(autocomplete="off", type="text", required="required", title="Input login or e-mail", placeholder="Enter username or e-mail", name="login")
 		button.btn-strict(type="submit") Send
-		button.btn-strict(type="button") Cancel
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
 		.mess
 			div(data-bind="text: msg()")
 
@@ -74,7 +75,7 @@
 		div.inputwrap.lock
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
 		button.btn-strict(type="submit") Send
-		button.btn-strict(type="button") Cancel
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
 		.mess
 			div(data-bind="text: msg()")
 
@@ -93,6 +94,6 @@
 		div.inputwrap.lock
 			input(type="password", required="required", title="input password", placeholder="Enter password", name="passNew2")
 		button.btn-strict(type="submit") Change
-		button.btn-strict(type="button") Cancel
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
 		.mess
 			div(data-bind="text: msg()")
