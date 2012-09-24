@@ -64,16 +64,16 @@ require([
     'globalParams', 'globalVM', 'RouteManager', 'text!tpl/u.jade'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, GP, globalVM, RouteManager, index_jade) {
     "use strict";
-    var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000';
+    var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
+        routeDFD = $.Deferred();
 
     $('body').append(index_jade);
     ko.applyBindings(globalVM);
 
-    globalVM.router = new RouteManager({globalVM: globalVM});
-    Backbone.history.start({pushState: true, root: '/u/', silent: false});
+    globalVM.router = new RouteManager({globalVM: globalVM}, routeDFD);
 
-    $.when(loadParams())
-        //.pipe(auth.LoadMe)
+    $.when(loadParams(), routeDFD.promise())
+        //.pipe(historyStart)
         .then(app);
 
     function loadParams() {
@@ -85,11 +85,15 @@ require([
         socket.emit('giveGlobeParams');
         return dfd.promise();
     }
-
+    function historyStart() {
+        Backbone.history.start({pushState: true, root: '/u/', silent: false});
+    }
     function app() {
+        Backbone.history.start({pushState: true, root: '/u/', silent: false});
         document.body.classList.remove('crystal');
     }
 
     window.appRouter = globalVM.router;
+    window.glob = globalVM;
     console.timeStamp('=== app load (' + appHash + ') ===');
 });

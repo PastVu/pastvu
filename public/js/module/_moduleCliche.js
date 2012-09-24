@@ -10,8 +10,13 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
     return Utils.Class.extend({
         jade: '',
         childs: null,
-        initialize: function (parent, moduleName, container, level) {
-            this.id = Utils.randomString(10);
+        initialize: function (parent, moduleName, container, level, global) {
+            if (global) {
+                this.id = moduleName;
+            } else {
+                this.id = Utils.randomString(10);
+            }
+            this.global = global;
             this.module = moduleName;
             this.container = container;
             this.level = level;
@@ -41,6 +46,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 
         },
         destroy: function () {
+            this.hide();
             _.forOwn(this.childModules, function (item, key, object) {
                 item.destroy();
             });

@@ -5,6 +5,8 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
     return Cliche.extend({
         jade: jade,
         create: function () {
+            this.iAm = User.VM(User.def);
+
             this.showing = ko.observable(false);
             this.mode = ko.observable('login');
             this.working = ko.observable(false);
@@ -26,7 +28,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             this.formFocus();
 
             keyTarget.push({
-                id: 'loginOverlay',
+                id: 'authOverlay',
                 stopFurther: false,
                 onEsc: this.formClose.bind(this)
             });
@@ -36,6 +38,18 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             this.formReset();
             this.$container.css('display', '');
             this.showing(false);
+        },
+
+        LoadMe: function () {
+            var dfd = $.Deferred();
+            socket.on('youAre', function (user) {
+                globalParams.LoggedIn(!!user);
+                console.dir(user);
+                this.iAm = User.VM(user, this.iAm);
+                dfd.resolve();
+            });
+            socket.emit('whoAmI');
+            return dfd.promise();
         },
 
         formFocus: function () {
@@ -165,7 +179,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                             url: '/updateCookie',
                             cache: false
                         });
-                        //LoadMe();
+                        this.LoadMe();
                     }
 
                     if (Utils.isObjectType('function', callback)) {
@@ -225,26 +239,4 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         }
 
     });
-    /*
-
-     var iAm = User.VM(User.def);
-
-     function LoadMe() {
-     var dfd = $.Deferred();
-     socket.on('youAre', function (user) {
-     GlobalParams.LoggedIn(!!user);
-     console.dir(user);
-     iAm = User.VM(user, iAm);
-     dfd.resolve();
-     });
-     socket.emit('whoAmI');
-     return dfd.promise();
-     }
-
-     auth.FormOpen = FormOpen;
-     auth.Logout = Logout;
-     auth.LoadMe = LoadMe;
-     auth.iAm = iAm;
-
-     return auth;*/
 });

@@ -15,8 +15,9 @@ module.exports.loadController = function (app, io) {
         if (!login) {
             throw new errS.e404();
         }
+        res.render('indexNew.jade', {pretty: false, pageTitle: login, appHash: app.hash});
 
-        Step(
+        /*Step(
             function () {
                 User.getUserPublic(login, this);
             },
@@ -29,7 +30,7 @@ module.exports.loadController = function (app, io) {
                     //res.render('profile.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
                 }
             }
-        );
+        );*/
 
     });
 

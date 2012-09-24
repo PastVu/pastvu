@@ -13,10 +13,10 @@ define([
         level = level || 0;
 
         /**
-         * Уничтожаем модули, которых нет в новом списке
+         * Уничтожаем не глобальные модули, которых нет в новом списке
          */
         _.forOwn(repository, function (existingVM, existingVMKey) {
-            if (existingVM.level === level) {
+            if (!existingVM.global && existingVM.level === level) {
                 var savesExisting = false,
                     sameContainer = false,
                     i = modules.length - 1,
@@ -56,7 +56,7 @@ define([
                     repository[replacedContainers[item.container]].destroy();
                 }
 
-                var vm = new VM(parent, item.module, item.container, level);
+                var vm = new VM(parent, item.module, item.container, level, item.global);
 
                 if (Utils.isObjectType('function', item.callback)) {
                     item.callback.call(window, vm);

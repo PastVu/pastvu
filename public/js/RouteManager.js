@@ -12,8 +12,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.route(":user", "profile");
         },
 
-        initialize: function (options) {
-
+        initialize: function (options, dfd) {
             this.base = ko.observable('');
             this.param = ko.observable('');
 
@@ -23,6 +22,20 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.offset = 0;
             this.currentLeaf = '';
             this.nextLeaf = '';
+
+            //Регистрируем глобальные модули
+            renderer(
+                globalVM,
+                [
+                    {module: 'm/auth', container: '#auth', global: true}
+                ],
+                0,
+                function (auth) {
+                    if (dfd) {
+                        dfd.resolve();
+                    }
+                }
+            );
 
             this.registerRouters();
         },
@@ -37,8 +50,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             renderer(
                 globalVM,
                 [
-                    //{module: 'm/top', container: '#top_container'}//,
-                    {module: 'm/auth', container: '#auth'}//,
+                    {module: 'm/top', container: '#top_container'}
                     //{module: 'm/home', container: '#main_container'}
                 ],
                 0,

@@ -2,13 +2,14 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'm/auth', 'text!tpl/top.jade', 'css!style/top' ], function (_, GlobalParams, ko, Cliche, auth, jade) {
+define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/top.jade', 'css!style/top' ], function (_, GlobalParams, ko, Cliche, globalVM, jade) {
     'use strict';
 
     return Cliche.extend({
         jade: jade,
         create: function () {
-            this.auth = auth;
+            console.log(globalVM.repository['m/auth']);
+            this.auth = globalVM.repository['m/auth'];
 
             this.loggedIn = ko.computed({
                 read: function () {
@@ -42,6 +43,14 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'm/auth', '
                 },
                 owner: this
             });
+
+            this.show();
+        },
+        show: function () {
+            this.$container.css('display', 'block');
+        },
+        hide: function () {
+            this.$container.css('display', '');
         }
     });
 });
