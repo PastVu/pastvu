@@ -72,6 +72,12 @@ if (!String.prototype.trim) {
     };
 }
 
+if (!Date.now) {
+    Date.now = function now() {
+        return new Date().getTime();
+    };
+}
+
 if (!Array.isArray) {
     Array.isArray = function (vArg) {
         return vArg.constructor === Array;
@@ -538,42 +544,55 @@ if (typeof document !== "undefined" && !("classList" in document.createElement("
  * @author P.Klimashkin
  * Console Gag
  */
-!function () {
+(function () {
     function func() {
     }
 
-    ;
     if (!window.console) window.console = {};
     ["log", "debug", "info", "warn", "error", "assert", "clear", "dir", "dirxml", "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd", "timeStamp", "profile", "profileEnd", "count", "exception", "table"]
         .forEach(function (method, index) {
             if (!window.console[method]) window.console[method] = func;
         });
-}();
+}());
+
 
 /**
- * @author paulirish
  * Provides requestAnimationFrame in a cross browser way.
+ * @author paulirish
+ * @url https://gist.github.com/1579671
  */
-!function () {
-    if (!window.requestAnimationFrame) {
-        window.requestAnimationFrame = function () {
-            var frame = 1000 / 60;
-            return  window.webkitRequestAnimationFrame ||
-                window.mozRequestAnimationFrame ||
-                window.oRequestAnimationFrame ||
-                window.msRequestAnimationFrame ||
-                function (/* function FrameRequestCallback */ callback, /* DOMElement Element */ element) {
-                    window.setTimeout(callback, frame);
-                };
-        }();
-    }
+if (!window.requestAnimationFrame || !window.cancelAnimationFrame) {
+    (function () {
+        var lastTime = 0,
+            vendors = ['ms', 'moz', 'webkit', 'o'],
+            x,
+            length,
+            currTime,
+            timeToCall;
 
-    if (!window.cancelAnimationFrame) {
-        window.cancelAnimationFrame = function () {
-            return  window.webkitCancelAnimationFrame ||
-                window.webkitCancelRequestAnimationFrame ||
-                window.mozCancelAnimationFrame ||
-                window.msCancelAnimationFrame;
-        }();
-    }
-}();
+        for (x = 0, length = vendors.length; x < length && !window.requestAnimationFrame; ++x) {
+            window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+            window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
+        }
+
+        if (!window.requestAnimationFrame) {
+            window.requestAnimationFrame = function (callback, element) {
+                currTime = Date.now();
+                timeToCall = Math.max(0, 16 - (currTime - lastTime));
+                lastTime = currTime + timeToCall;
+                return window.setTimeout(
+                    function () {
+                        callback(currTime + timeToCall);
+                    },
+                    timeToCall
+                );
+            };
+        }
+
+        if (!window.cancelAnimationFrame) {
+            window.cancelAnimationFrame = function (id) {
+                clearTimeout(id);
+            };
+        }
+    }());
+}
