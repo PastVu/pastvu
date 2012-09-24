@@ -8,7 +8,7 @@ requirejs.config({
         'tpl': '../tpl',
         'style': '../style',
 
-        'jquery': 'lib/jquery/jquery-1.8.1.min',
+        'jquery': 'lib/jquery/jquery-1.8.2.min',
         'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
 
