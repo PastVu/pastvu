@@ -50,8 +50,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             renderer(
                 globalVM,
                 [
-                    {module: 'm/top', container: '#top_container'}
-                    //{module: 'm/home', container: '#main_container'}
+                    {module: 'm/top', container: '#top_container'},
+                    {module: 'm/userBrief', container: '#user_brief'},
+                    {module: 'm/userProfile', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {

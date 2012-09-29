@@ -1,11 +1,11 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, Utils, socket, globalParams, ko, Cliche, User, keyTarget, jade) {
+define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, Utils, socket, globalParams, ko, Cliche, globalVM, User, keyTarget, jade) {
     'use strict';
 
     return Cliche.extend({
         jade: jade,
         create: function () {
-            this.iAm = User.VM(User.def);
+            this.iAm = User.VM();
 
             this.showing = ko.observable(false);
             this.mode = ko.observable('login');
@@ -17,21 +17,25 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                 this.formFocus();
             }, this);
 
-            this.show();
+            ko.applyBindings(globalVM, this.$dom[0]);
         },
         show: function (mode) {
             if (mode) {
                 this.mode(mode);
             }
-            this.$container.css('display', 'block');
-            this.showing(true);
-            this.formFocus();
 
-            keyTarget.push({
-                id: 'authOverlay',
-                stopFurther: false,
-                onEsc: this.formClose.bind(this)
-            });
+            //this.$container.css('display', 'block');
+            this.$container.fadeIn(300, function () {
+                this.showing(true);
+                this.formFocus();
+
+                keyTarget.push({
+                    id: 'authOverlay',
+                    stopFurther: false,
+                    onEsc: this.formClose.bind(this)
+                });
+            }.bind(this));
+
         },
         hide: function () {
             keyTarget.pop();
@@ -44,10 +48,10 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             var dfd = $.Deferred();
             socket.on('youAre', function (user) {
                 globalParams.LoggedIn(!!user);
-                console.dir(user);
                 this.iAm = User.VM(user, this.iAm);
+                console.log(this.iAm.fullName());
                 dfd.resolve();
-            });
+            }.bind(this));
             socket.emit('whoAmI');
             return dfd.promise();
         },

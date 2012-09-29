@@ -27,7 +27,7 @@ module.exports.loadController = function (app, io) {
                     throw new errS.e404();
                 } else {
                     res.render('indexNew.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
-                    //res.render('profile.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
+                    //res.render('userProfile.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
                 }
             }
         );*/

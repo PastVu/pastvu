@@ -23,13 +23,12 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.parentModule = parent;
             this.childModules = {};
 
-            this.$container = $(container).append(this.jade.replace('M!M', this.id));
+            repository[this.id] = this;
+
+            this.$container = $(container).append(this.jade.replace(/M!M/g, "'" + this.id + "'"));
             this.$dom = this.$container.children(":first");
 
             this.create();
-
-            repository[this.id] = this;
-            ko.applyBindings(globalVM, this.$dom[0]);
 
             if (this.childs) {
                 renderer(this, this.childs, this.level + 1);
@@ -37,10 +36,10 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
         },
 
         create: function () {
-
+            this.show();
         },
         show: function () {
-
+            ko.applyBindings(globalVM, this.$dom[0]);
         },
         hide: function () {
 

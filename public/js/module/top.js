@@ -1,4 +1,4 @@
-/*global define*/
+/*global requirejs:true, require:true, define:true*/
 /**
  * Модель управляет верхней панелью
  */
@@ -8,7 +8,6 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
     return Cliche.extend({
         jade: jade,
         create: function () {
-            console.log(globalVM.repository['m/auth']);
             this.auth = globalVM.repository['m/auth'];
 
             this.loggedIn = ko.computed({
@@ -32,7 +31,7 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
                     }
                 },
                 owner: this
-            });
+            }).extend({ throttle: 50 });
             this.profileAvatar = ko.computed({
                 read: function () {
                     if (GlobalParams.LoggedIn()) {
@@ -44,10 +43,12 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
                 owner: this
             });
 
+            ko.applyBindings(globalVM, this.$dom[0]);
             this.show();
         },
         show: function () {
-            this.$container.css('display', 'block');
+            this.$container.fadeIn();
+            //this.$container.css('display', 'block');
         },
         hide: function () {
             this.$container.css('display', '');

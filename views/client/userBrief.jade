@@ -1,0 +1,34 @@
+.user_brief(data-bind="with: repository[M!M]")
+	.row-fluid
+		#avatar.fringe
+			.inner_bord(data-bind="style: {backgroundImage: 'url('+user.avatar()+')'}")
+				#avatar_edit(data-bind="style: {display: can_avatar() ? '' : 'none'}")
+					#avatar_edit_pic Change avatar
+	.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
+		#pm.fringe
+			.inner_bord Send message
+	.row-fluid
+		#info_common.block
+			.head Commons
+			.h_separator
+			dl.dl-horizontal
+				dt Group:
+				dd Administrators
+				dt Registration:
+				dd(data-bind="text: user.regdate().getDate()+'.'+(user.regdate().getMonth()+1)+'.'+user.regdate().getFullYear()")
+				dt Status:
+				dd Online
+	.row-fluid
+		#short_stat.block
+			.head Brief statistics
+			.h_separator
+			dl.dl-horizontal
+				dt Photo uploaded:
+				dd  0
+				dt Blogs created:
+				dd 0
+				dt Favorite areas:
+				dd 0
+				dt Comments:
+				dd 0
+	#leftSideDash
