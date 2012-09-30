@@ -32,7 +32,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 0,
                 function (auth) {
                     if (dfd) {
-                        dfd.resolve();
+                        $.when(auth.LoadMe()).done(function () {
+                            dfd.resolve();
+                        });
                     }
                 }
             );
