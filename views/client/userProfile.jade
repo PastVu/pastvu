@@ -65,6 +65,9 @@
 				textarea(rows="4", id='inaboutme', data-bind="attr: {disabled: !edit_mode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 			.controls
-				button.btn-strict(type="button", data-bind="event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
-					i.icon-pencil.icon-white
+				button.btn-strict(type="button", data-bind="css: {'btn-strict-success': edit_mode()}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
+					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit_mode(), 'icon-ok': edit_mode()}")
 					span(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
+				button.btn-strict.btn-strict-danger(type="button", data-bind="style: {display: edit_mode() ? '' : 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
+					i.icon-remove.icon-white
+					span Cancel
