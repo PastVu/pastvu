@@ -1,0 +1,96 @@
+@import "_vars";
+@import "bootstrap/variables.less";
+@import "bootstrap/mixins.less";
+
+.user_photo {
+	.head {
+		font-size: 18px;
+		margin-bottom: 10px;
+	}
+
+	.txt {
+		color: lighten(@MainDarkColor, 10%);
+	}
+
+	#addFiles {
+		position: relative;
+		margin: 7px 0;
+
+		#fileinput-btn {
+			position: relative;
+			overflow: hidden;
+			width: 140px;
+			.box-sizing(border-box);
+
+			input[type='file'] {
+				position: absolute;
+				display: block;
+				top: 0;
+				left: 0;
+				bottom: 0;
+				margin: 0;
+				padding: 0 0 0 110px; // Для курсора pointer в chrome
+				.opacity(0);
+				direction: ltr;
+				cursor: pointer;
+			}
+		}
+		#addfiles_area {
+			position: absolute;
+			border: 1px dashed @grayDarker;
+			.opacity(60);
+			left: 170px;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			text-align: center;
+
+			&:hover {
+				.opacity(100);
+				top: -4px;
+				bottom: -4px;
+				background-color: @grayLighter;
+			}
+
+			span {
+				vertical-align: middle;
+			}
+
+			#or {
+				position: absolute;
+				left: -25px;
+				width: 25px;
+				top: 0;
+				bottom: 0;
+			}
+		}
+	}
+	#commonButtons {
+		margin-top: 10px;
+
+		button {
+			margin-right: 7px;
+			width: 140px;
+		}
+	}
+
+
+	.files .progress {
+		width: 200px;
+	}
+	.progress-animated .bar {
+		background: url(../img/progressbar.gif) !important;
+		filter: none;
+	}
+	.fileupload-loading {
+		position: absolute;
+		left: 50%;
+		width: 128px;
+		height: 128px;
+		background: url(../img/loading.gif) center no-repeat;
+		display: none;
+	}
+	.fileupload-processing .fileupload-loading {
+		display: block;
+	}
+}

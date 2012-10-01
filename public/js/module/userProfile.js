@@ -11,7 +11,9 @@ define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockou
             this.auth = globalVM.repository['m/auth'];
             this.u = null;
 
-            users.user(location.href.substring(location.href.indexOf('/u/') + 3), function (vm) {
+            var user = globalVM.router.params().user || this.auth.iAm.login();
+
+            users.user(user, function (vm) {
                 console.log('Profile');
 
                 this.u = vm;
@@ -42,7 +44,7 @@ define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockou
             }, this);
         },
         show: function () {
-            this.$container.css('display', 'block');
+            this.$container.fadeIn();
         },
         hide: function () {
             this.$container.css('display', '');

@@ -10,10 +10,12 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         registerRouters: function () {
             this.route("", "profile");
             this.route(":user", "profile");
+            this.route(":user/photoUpload", "profile2");
         },
 
         initialize: function (options, dfd) {
             this.base = ko.observable('');
+            this.params = ko.observable({});
             this.param = ko.observable('');
 
             this.stack = [];
@@ -43,10 +45,11 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         },
 
         profile: function (user, params) {
-            console.log('user Section');
+            console.log('User Profile');
 
             this.addToStack('u/', user, (params && params.leaf) || '');
             this.base('u/');
+            this.params({user: user || ""});
             this.param(null);
 
             renderer(
@@ -58,10 +61,29 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 ],
                 0,
                 function (top, home) {
-                    //window.setTimeout(function () { $(window).trigger('resize'); }, 500);
                 }
             );
+        },
 
+        profile2: function (user, params) {
+            console.log('User Photo');
+
+            this.addToStack('u/', user, (params && params.leaf) || '');
+            this.base('u/');
+            this.params({user: user || ""});
+            this.param(null);
+
+            renderer(
+                globalVM,
+                [
+                    {module: 'm/top', container: '#top_container'},
+                    {module: 'm/userBrief', container: '#user_brief'},
+                    {module: 'm/userPhoto', container: '#user_profile'}
+                ],
+                0,
+                function (top, home) {
+                }
+            );
         },
 
         video: function (id, params) {

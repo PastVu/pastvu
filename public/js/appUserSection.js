@@ -49,7 +49,13 @@ requirejs.config({
 
         'knockout': 'lib/knockout/knockout-2.1.0',
         'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
-        'knockout.postbox': 'lib/knockout/knockout-postbox.min'
+        'knockout.postbox': 'lib/knockout/knockout-postbox.min',
+
+        'jquery.ui.widget': 'lib/jquery/ui/jquery.ui.widget',
+        'jquery.fileupload': 'lib/jquery/plugins/fileupload',
+        'load-image': 'lib/jquery/plugins/fileupload/load-image',
+        'tmpl': 'lib/jquery/plugins/fileupload/tmpl',
+        'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob'
     }
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -10,7 +10,9 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
         create: function () {
             this.auth = globalVM.repository['m/auth'];
 
-            users.user(location.href.substring(location.href.indexOf('/u/') + 3), function (vm) {
+            var user = globalVM.router.params().user || this.auth.iAm.login();
+
+            users.user(user, function (vm) {
                 console.log('Brief');
                 this.user = vm;
 

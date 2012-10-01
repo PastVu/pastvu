@@ -9,12 +9,13 @@ var auth = require('./auth.js'),
 module.exports.loadController = function (app, io) {
     var logger = log4js.getLogger("profile.js");
 
-    app.get('/u/:login?', function (req, res) {
+    app.get('/u/:login?/*', function (req, res) {
         var login = req.params.login,
             userObject;
         if (!login) {
             //throw new errS.e404();
         }
+        console.log(login);
         res.render('indexNew.jade', {pretty: false, pageTitle: login || 'Profile', appHash: app.hash});
 
         /*Step(
