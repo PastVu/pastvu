@@ -31,7 +31,7 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
 
                 this.$dom.affix({
                     offset: {
-                        top: 80
+                        top: 40
                     }
                 });
 

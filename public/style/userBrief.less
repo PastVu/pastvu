@@ -6,7 +6,16 @@
  * User Brief
  */
 .user_brief {
+	position: relative;
 	margin-top: 40px;
+
+	&.affix {
+		position: fixed;
+		margin-top: 0;
+		width: 14.3646408839779%;
+		*width: 14.311449394616199%;
+	}
+
 	text-align: center;
 	> .row-fluid {
 		margin-bottom: 10px;
@@ -132,5 +141,24 @@
 		top: -40px;
 		right: 0;
 		width: 1px;
+	}
+}
+@media (max-width: 1520px) {
+	.user_brief.affix {
+		width: 18.646408839779006%;
+		*width: 18.593217350417305%;
+	}
+}
+
+@media (max-width: 1200px) {
+	.user_brief.affix {
+		width: 22.92817679558011%;
+		*width: 22.87498530621841%;
+	}
+}
+@media (max-width: 950px) {
+	.user_brief.affix {
+		width: 27.209944751381215%;
+		*width: 27.156753262019514%;
 	}
 }
