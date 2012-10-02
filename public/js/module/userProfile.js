@@ -68,6 +68,15 @@ define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockou
             this.edit(false);
 
             targetUser = key = null;
+        },
+        cancelUser: function () {
+            _.forEach(this.originUser, function (item, key) {
+                if (Utils.isObjectType('function', this.u[key]) && this.u[key]() !== item) {
+                    this.u[key](item);
+                }
+            }.bind(this));
+
+            this.edit(false);
         }
     });
 });

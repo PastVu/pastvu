@@ -68,6 +68,6 @@
 				button.btn-strict(type="button", data-bind="css: {'btn-strict-success': edit_mode()}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
 					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit_mode(), 'icon-ok': edit_mode()}")
 					span(data-bind="text: edit_mode() ? 'Save profile' : 'Edit profile'")
-				button.btn-strict.btn-strict-danger(type="button", data-bind="style: {display: edit_mode() ? '' : 'none'}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
+				button.btn-strict.btn-strict-danger(type="button", data-bind="style: {display: edit_mode() ? '' : 'none'}, event: {click: function(data, event) { if (data.edit_mode()) {data.cancelUser()}}}")
 					i.icon-remove.icon-white
 					span Cancel
