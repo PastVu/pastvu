@@ -15,8 +15,11 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 
         initialize: function (options, dfd) {
             this.base = ko.observable('');
+            this.body = ko.observable('');
             this.params = ko.observable({});
             this.param = ko.observable('');
+
+            this.routeChanged = ko.observable();
 
             this.stack = [];
             this.stackHash = {};
@@ -42,13 +45,17 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             );
 
             this.registerRouters();
+
+            $(document).on('click', 'a', {prefix: '', body: 'route'}, this.ahrefHandler);
         },
 
         profile: function (user, params) {
             console.log('User Profile');
+            var fragment = Backbone.history.getFragment();
 
             this.addToStack('u/', user, (params && params.leaf) || '');
             this.base('u/');
+            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
             this.params({user: user || ""});
             this.param(null);
 
@@ -57,19 +64,24 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 [
                     {module: 'm/top', container: '#top_container'},
                     {module: 'm/userBrief', container: '#user_brief'},
+                    {module: 'm/userMenu', container: '#user_menu'},
                     {module: 'm/userProfile', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {
                 }
             );
+
+            this.routeChanged(Backbone.history.getFragment());
         },
 
         profile2: function (user, params) {
             console.log('User Photo');
+            var fragment = Backbone.history.getFragment();
 
             this.addToStack('u/', user, (params && params.leaf) || '');
             this.base('u/');
+            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
             this.params({user: user || ""});
             this.param(null);
 
@@ -78,12 +90,15 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 [
                     {module: 'm/top', container: '#top_container'},
                     {module: 'm/userBrief', container: '#user_brief'},
+                    {module: 'm/userMenu', container: '#user_menu'},
                     {module: 'm/userPhoto', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {
                 }
             );
+
+            this.routeChanged(Backbone.history.getFragment());
         },
 
         video: function (id, params) {
@@ -111,7 +126,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         },
         defaultRoute: function (other, params) {
             console.log("Invalid. You attempted to reach:" + other);
-            document.location.href = other;
+            //document.location.href = other;
         },
 
         addToStack: function (base, route, leaf) {
@@ -169,18 +184,39 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         },
         ahrefHandler: function (evt) {
             var _this = globalVM.router,
-                dataset = this.dataset || $(this).data(),
-                datasetParent = this.parentNode.dataset || $(this.parentNode).data(),
-                base = evt.data.prefix,
-                body = _.isString(dataset[evt.data.body]) ? dataset[evt.data.body] : datasetParent[evt.data.body],
-                leaf = _.isString(dataset.leaf) ? dataset.leaf : datasetParent.leaf;
-            evt.preventDefault();
+                a = this,
+                parent = a.parentNode,
+                href = a.getAttribute('href'),
+                base = '/u/',
+                body = '',
+                leaf = Utils.getURLParameter('leaf', href);
+
+            if (href.indexOf(base) > -1) {
+                evt.preventDefault();
+                body = href.substring(3, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
+
+                if (_.isString(base) && _.isString(body) && _.isString(leaf) && _this.stack.indexOf(base + body + leaf) > -1) {
+                    window.history.go(_this.stack.indexOf(base + body + leaf) - _this.stackCurrentIndex);
+                } else {
+                    globalVM.router.navigate(href.substr(3) + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
+                }
+            } else {
+
+            }
+/*
+            if (!_.isString(body)) {
+                body = Utils.getDataParam(parent, evt.data.body);
+            }
+            if (!_.isString(leaf)) {
+                leaf = Utils.getDataParam(parent, 'leaf');
+            }
+
             if (_.isString(base) && _.isString(body) && _.isString(leaf)) {
                 window.history.go(_this.stack.indexOf(base + body + leaf) - _this.stackCurrentIndex);
             } else if (body) {
-                globalVM.router.navigate((evt.data.prefix || '') + body + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
-            }
-            dataset = datasetParent = base = body = leaf = null;
+                globalVM.router.navigate((base || '') + body + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
+            }*/
+            _this = a = parent = base = body = leaf = null;
         }
     });
 

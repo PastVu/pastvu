@@ -217,6 +217,24 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [, ""])[1].replace(/\+/g, '%20')) || null;
         },
 
+        /**
+         * Возвращает значение data- параметра dom-элемента
+         * @param ele Элемент
+         * @param name Имя параметра
+         */
+        getDataParam: (function () {
+            "use strict";
+            if (!!document.createElement('div').dataset) {
+                return function (ele, name) {
+                    return ele.dataset[name];
+                };
+            } else {
+                return function (ele, name) {
+                    return ele.getAttribute('data-' + name);
+                };
+            }
+        }()),
+
         randomString: function (length) {
             'use strict';
             var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz').split(''),
@@ -231,6 +249,30 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 str += chars[Math.floor(Math.random() * chars.length)];
             }
             return str;
+        },
+
+        cutStringByWord: function (text, n) {
+            "use strict";
+            var cut = text.lastIndexOf(' ', n);
+            if (cut === -1) {
+                return text.substr(0, n);
+            }
+            return text.substring(0, cut);
+        },
+
+        secondsToTime: function (secs) {
+            "use strict";
+            if (secs < 60) {
+                return '0:' + (secs > 9 ? secs : '0' + secs);
+            }
+
+            var hours = (secs / (60 * 60)) >> 0,
+                divisor_for_minutes = secs % (60 * 60),
+                minutes = (divisor_for_minutes / 60) >> 0,
+                divisor_for_seconds = divisor_for_minutes % 60,
+                seconds = Math.ceil(divisor_for_seconds);
+
+            return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
         },
 
         mousePageXY: function (e) {
@@ -337,42 +379,66 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
         },
 
-        getCookie: function (name) {
-            var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
-            return matches ? decodeURIComponent(matches[1]) : undefined;
-        },
-        setCooksie: function (name, value, props) {
-            props = props || {};
-            value = encodeURIComponent(value);
-
-            var updatedCookie = name + "=" + value,
-                exp = props.expires,
-                dat,
-                propName,
-                propValue;
-            if (typeof exp === "number" && exp) {
-                dat = new Date();
-                dat.setTime(dat.getTime() + exp * 1000);
-                exp = props.expires = dat;
+        getCookie: (function () {
+            if (typeof window.getCookie === 'function') {
+                var func = window.getCookie;
+                delete window.getCookie;
+                return func;
+            } else {
+                return function (name) {
+                    var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
+                    return matches ? decodeURIComponent(matches[1]) : undefined;
+                };
             }
-            if (exp && exp.toUTCString) {
-                props.expires = exp.toUTCString();
-            }
-
-            for (propName in props) {
-                if (props.hasOwnProperty(propName)) {
-                    updatedCookie += "; " + propName;
-                    propValue = props[propName];
-                    if (propValue !== true) {
-                        updatedCookie += "=" + propValue;
+        }()),
+        setCooksie: (function () {
+            if (typeof window.setCookie === 'function') {
+                var func = window.setCookie;
+                delete window.setCookie;
+                return func;
+            } else {
+                return function (name, value, props) {
+                    props = props || {};
+                    var exp = props.expires,
+                        d,
+                        updatedCookie,
+                        propName,
+                        propValue;
+                    if (typeof exp === "number" && exp) {
+                        d = new Date();
+                        d.setTime(d.getTime() + exp * 1000);
+                        exp = props.expires = d;
                     }
-                }
+                    if (exp && exp.toUTCString) {
+                        props.expires = exp.toUTCString();
+                    }
+
+                    value = encodeURIComponent(value);
+                    updatedCookie = name + "=" + value;
+                    for (propName in props) {
+                        if (props.hasOwnProperty(propName)) {
+                            updatedCookie += "; " + propName;
+                            propValue = props[propName];
+                            if (propValue !== true) {
+                                updatedCookie += "=" + propValue;
+                            }
+                        }
+                    }
+                    document.cookie = updatedCookie;
+                };
             }
-            document.cookie = updatedCookie;
-        },
-        deleteCookie: function (name) {
-            Utils.setCookie(name, null, { expires: -1 });
-        },
+        }()),
+        deleteCookie: (function () {
+            if (typeof window.deleteCookie === 'function') {
+                var func = window.deleteCookie;
+                delete window.deleteCookie;
+                return func;
+            } else {
+                return function (name) {
+                    Utils.setCookie(name, null, { expires: -1 });
+                };
+            }
+        }()),
 
         /**
          * Converts an RGB in hex color value to HSL. Conversion formula

@@ -1,0 +1,5 @@
+.navbar.user_menu(data-bind="with: repository[M!M]")
+	.navbar-inner
+		ul.nav(data-bind="foreach: links")
+			li(data-bind="css: {active: $data.active}")
+				a(data-bind="text: name, attr: {href: href}")
