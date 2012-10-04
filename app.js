@@ -165,6 +165,7 @@ mc.connect(function () {
 require(__dirname + '/models/Settings.js');
 require(__dirname + '/models/Role.js');
 require(__dirname + '/models/User.js');
+require(__dirname + '/models/Photo.js');
 
 
 // loading controllers

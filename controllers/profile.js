@@ -50,7 +50,7 @@ module.exports.loadController = function (app, io) {
         socket.on('saveUser', function (data) {
             var toDel = {};
             Object.keys(data).forEach(function (key) {
-                if (data[key].length == 0) {
+                if (data[key].length === 0) {
                     toDel[key] = 1;
                     delete data[key];
                     delete session.neoStore.user[key];
@@ -60,9 +60,8 @@ module.exports.loadController = function (app, io) {
 
             User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function (err) {
                 if (err) {
-                    logger.error(err)
-                }
-                else {
+                    logger.error(err);
+                } else {
                     //��������� ��������� ������ ������ � memcashed
                     session.neoStore.user.extend(data);
                     _session.cashedSession(session.id, session.neoStore);

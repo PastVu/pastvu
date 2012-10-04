@@ -92,6 +92,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                     {module: 'm/userBrief', container: '#user_brief'},
                     {module: 'm/userMenu', container: '#user_menu'},
                     {module: 'm/userPhoto', container: '#user_profile'}
+                    //{module: 'm/userPhotoUpload', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {
