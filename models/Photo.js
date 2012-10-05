@@ -15,8 +15,8 @@ var Photo = new mongoose.Schema({
 
     file: {type: String},
     loaded: {type: Date, default: Date.now},
-    width: {type: Number},
-    height: {type: Number},
+    w: {type: Number},
+    h: {type: Number},
 
     title: {type: String},
     year: {type: String},

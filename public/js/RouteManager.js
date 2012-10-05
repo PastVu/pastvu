@@ -10,7 +10,8 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         registerRouters: function () {
             this.route("", "profile");
             this.route(":user", "profile");
-            this.route(":user/photoUpload", "profile2");
+            this.route(":user/photoUpload", "photoUpload");
+            this.route(":user/photo", "photo");
         },
 
         initialize: function (options, dfd) {
@@ -75,7 +76,34 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.routeChanged(Backbone.history.getFragment());
         },
 
-        profile2: function (user, params) {
+        photoUpload: function (user, params) {
+            console.log('User Photo');
+            var fragment = Backbone.history.getFragment();
+
+            this.addToStack('u/', user, (params && params.leaf) || '');
+            this.base('u/');
+            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
+            this.params({user: user || ""});
+            this.param(null);
+
+            renderer(
+                globalVM,
+                [
+                    {module: 'm/top', container: '#top_container'},
+                    {module: 'm/userBrief', container: '#user_brief'},
+                    {module: 'm/userMenu', container: '#user_menu'},
+                    {module: 'm/userPhotoUpload', container: '#user_profile'}
+                    //{module: 'm/userPhotoUpload', container: '#user_profile'}
+                ],
+                0,
+                function (top, home) {
+                }
+            );
+
+            this.routeChanged(Backbone.history.getFragment());
+        },
+
+        photo: function (user, params) {
             console.log('User Photo');
             var fragment = Backbone.history.getFragment();
 

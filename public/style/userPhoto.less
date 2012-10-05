@@ -1,7 +1,133 @@
-@import "_vars";
+@import "_vars.less";
 @import "bootstrap/variables.less";
 @import "bootstrap/mixins.less";
 
-.user_photo {
+@thumbDimension: 200px;
+@thumbDimensionSmall: 130px;
 
+.user_photo {
+	display: -webkit-flex;
+	-webkit-flex-wrap: wrap;
+	-webkit-flex-direction: row;
+	-webkit-justify-content: space-between; // flex-start | flex-end | center | space-between | space-around
+	display: -ms-flex;
+	-ms-flex-wrap: wrap;
+	-ms-flex-direction: row;
+	-ms-justify-content: space-between;
+	-ms-flex-align: stretch;
+
+	display: flex;
+	flex-wrap: wrap;
+	flex-direction: row;
+	justify-content: space-between;
+
+	.photoThumb {
+		display: inline-block;
+		margin: 0 14px 17px 0;
+		padding-bottom: 30px;
+		opacity: 0;
+
+		img {
+			position: relative;
+			display: block;
+			height: @thumbDimension;
+			width: @thumbDimension * 1.5;
+		}
+
+		a {
+			position: absolute;
+			display: block;
+			top: 0;
+			height: @thumbDimension;
+			width: @thumbDimension * 1.5;
+			cursor: pointer;
+			background: rgba(0, 0, 0, 0.15);
+			.transition(all .1s linear);
+		}
+
+		.photoTool {
+			position: absolute;
+			white-space: nowrap;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			height: 30px;
+			line-height: 30px;
+			border-width: 1px 0 0 0;
+			border-style: solid;
+			border-color: #C3C7DD;
+		}
+
+		&.addPhoto {
+			opacity: 1;
+
+			a {
+				position: relative;
+				background: url(/img/misc/add_photo.png) 50% 50% no-repeat;
+			}
+		}
+
+		&:hover a {
+			background: rgba(0, 0, 0, 0);
+		}
+	}
+
+	.photoUploadCurtain {
+		position: fixed;
+		display: none;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: rgba(0, 0, 0, 0.3);
+		z-index: @zindexModal; // Ценрируем формы
+		text-align: center;
+		&:before {
+			content: '';
+			display: inline-block;
+			height: 100%;
+			vertical-align: middle;
+			margin-right: -0.25em; /* Adjusts for spacing */
+		}
+
+		.photoUploadModal {
+			position: relative;
+			display: inline-block;
+			vertical-align: middle;
+			text-align: left;
+			min-width: 950px;
+			min-height: 250px;
+			padding: 0 20px 10px 20px;
+			overflow: auto;
+			border-color: @MainBlueColor;
+			background-color: darken(@MainLigthColor, 5%);
+			.box-shadow(0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%));
+			z-index: @zindexPopover;
+		}
+	}
+}
+
+@media (max-width: 1550px) {
+	.user_photo {
+		.photoThumb {
+			img {
+				height: @thumbDimensionSmall;
+				width: @thumbDimensionSmall * 1.5;
+			}
+			a {
+				height: @thumbDimensionSmall;
+				width: @thumbDimensionSmall * 1.5;
+			}
+		}
+	}
+}
+
+@media (max-width: 1000px) {
+	.user_photo {
+		.photoUploadCurtain {
+			.photoUploadModal {
+				min-width: 500px;
+			}
+		}
+	}
 }

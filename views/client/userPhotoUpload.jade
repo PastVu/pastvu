@@ -4,7 +4,7 @@
 			<div class='row' data-bind="click: $parent.clickRow">
 			</div>
 		</div>
-	.row-fluid.head Upload new photo
+	h3 Upload new photo
 	.row-fluid.txt(data-bind="text: 'Choose photos from your computer by clicking on plus button' + (filereader() ? ' or dragging the files on dashed area' : '')")
 
 	form(id="fileupload", method="POST", enctype="multipart/form-data")

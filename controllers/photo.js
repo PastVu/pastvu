@@ -15,7 +15,6 @@ module.exports.loadController = function (app, io) {
                 if (!err) {
                     console.dir(user._id);
                     Photo.find({user_id: user._id}).exec(function (err, photo) {
-                        console.dir(photo);
                         socket.emit('takeUserPhoto', photo);
                     });
                 }
