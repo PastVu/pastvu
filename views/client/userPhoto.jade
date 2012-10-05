@@ -1,12 +1,13 @@
 .user_photo(data-bind="with: repository[M!M]")
-	.photoThumb.fringe2.addPhoto
-		a(data-bind="event: {click: showUpload}")
-		.photoTool Add photos
-	//ko foreach: photos
-	.photoThumb.fringe2
-		img(data-bind="attr: {src: file}, event: {load: $parent.onThumbLoad}")
-		a(data-bind="attr: {href: file}")
-		.photoTool(data-bind="text: title")
-	// /ko
+	.photoThumbs
+		.photoThumb.fringe2.addPhoto
+			a(data-bind="event: {click: showUpload}")
+			.photoTool Add photos
+		//ko foreach: photos
+		.photoThumb.fringe2
+			img(data-bind="attr: {src: file}, event: {load: $parent.onThumbLoad}")
+			a(data-bind="attr: {href: file}")
+			.photoTool(data-bind="text: title")
+		// /ko
 	.photoUploadCurtain
 		.photoUploadModal.fringe2(data-bind="style: {maxWidth: $root.GlobalParams.Width() - $root.GlobalParams.Width()/5 + 'px', maxHeight: $root.GlobalParams.Height() - 64 + 'px'}")

@@ -6,25 +6,29 @@
 @thumbDimensionSmall: 130px;
 
 .user_photo {
-	display: -webkit-flex;
-	-webkit-flex-wrap: wrap;
-	-webkit-flex-direction: row;
-	-webkit-justify-content: space-between; // flex-start | flex-end | center | space-between | space-around
-	display: -ms-flex;
-	-ms-flex-wrap: wrap;
-	-ms-flex-direction: row;
-	-ms-justify-content: space-between;
-	-ms-flex-align: stretch;
 
-	display: flex;
-	flex-wrap: wrap;
-	flex-direction: row;
-	justify-content: space-between;
+	.photoThumbs {
+		display: -webkit-flex;
+		-webkit-flex-wrap: wrap;
+		-webkit-flex-direction: row;
+		-webkit-justify-content: space-between; // flex-start | flex-end | center | space-between | space-around
+
+		display: -ms-flex;
+		-ms-flex-wrap: wrap;
+		-ms-flex-direction: row;
+		-ms-justify-content: space-between;
+		-ms-flex-align: stretch;
+
+		display: flex;
+		flex-wrap: wrap;
+		flex-direction: row;
+		justify-content: space-between;
+	}
 
 	.photoThumb {
 		display: inline-block;
 		margin: 0 14px 17px 0;
-		padding-bottom: 30px;
+		padding-bottom: 28px;
 		opacity: 0;
 
 		img {
@@ -41,21 +45,22 @@
 			height: @thumbDimension;
 			width: @thumbDimension * 1.5;
 			cursor: pointer;
-			background: rgba(0, 0, 0, 0.15);
+			background-color: rgba(0, 0, 0, 0.15);
 			.transition(all .1s linear);
 		}
 
 		.photoTool {
 			position: absolute;
-			white-space: nowrap;
 			left: 0;
 			right: 0;
 			bottom: 0;
-			height: 30px;
-			line-height: 30px;
+			height: 28px;
+			line-height: 28px;
+			padding: 0 0 0 5px;
 			border-width: 1px 0 0 0;
 			border-style: solid;
 			border-color: #C3C7DD;
+			.text-overflow();
 		}
 
 		&.addPhoto {
@@ -68,7 +73,7 @@
 		}
 
 		&:hover a {
-			background: rgba(0, 0, 0, 0);
+			background-color: rgba(0, 0, 0, 0);
 		}
 	}
 
@@ -117,6 +122,10 @@
 			a {
 				height: @thumbDimensionSmall;
 				width: @thumbDimensionSmall * 1.5;
+			}
+			.photoTool {
+				padding: 0 0 0 3px;
+				font-size: 14px;
 			}
 		}
 	}

@@ -25,14 +25,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         show: function () {
             this.$container.fadeIn();
-            this.photos.push({file: '/img/1.jpg', title: 'Hello'});
-            this.photos.push({file: '/img/2.jpg', title: 'Hello s'});
-            this.photos.push({file: '/img/3.jpg', title: 'hello'});
+            this.photos.push({file: '/img/1.jpg', title: 'Вид на Кремлёвскую'});
+            this.photos.push({file: '/img/2.jpg', title: 'Царская(Ивановская) площадь в Кремле'});
+            this.photos.push({file: '/img/3.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
             this.photos.push({file: '/img/4.jpg', title: 'hello'});
             this.photos.push({file: '/img/5.jpg', title: 'hello'});
-            this.photos.push({file: '/img/6.jpg', title: 'hello'});
+            this.photos.push({file: '/img/6.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
             this.photos.push({file: '/img/7.jpg', title: 'hello'});
-            this.photos.push({file: '/img/8.jpg', title: 'hello'});
+            this.photos.push({file: '/img/8.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
             this.photos.push({file: '/img/9.jpg', title: 'hello'});
             this.photos.push({file: '/img/10.jpg', title: 'hello'});
             this.photos.push({file: '/img/11.jpg', title: 'hello'});
