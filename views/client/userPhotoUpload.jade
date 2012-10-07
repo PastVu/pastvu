@@ -13,17 +13,18 @@
 				i.icon-plus.icon-white
 				span Add photos...
 				input(id="fileupload2", type="file", name="files[]", multiple, data-bind="fileUploadInput: true")
-			#addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
+			.addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
 				#or.centering_content or
 				span Drop them here
-		.row-fluid.fileupload-buttonbar#commonButtons
-			button.btn-strict.btn-strict-success.start(type="submit", data-bind="css: {disabled: false}")
+				#dropzone
+		.row-fluid.fileupload-buttonbar#commonButtons(data-bind="style: {display: filelist().length > 0 ? '' : 'none'}")
+			button.btn-strict.btn-strict-success.start(data-bind="click: send, attr: {disabled: filelist().length < 1}")
 				i.icon-upload.icon-white
-				span Start upload
-			button.btn-strict.btn-strict-warning.cancel(type="reset", data-bind="css: {disabled: false}")
+				span Start upload all
+			button.btn-strict.btn-strict-warning.cancel(type="reset", data-bind="attr: {disabled: filelist().length < 1}")
 				i.icon-ban-circle.icon-white
-				span Cancel upload
-			button.btn-strict.btn-strict-danger.delete(type="reset", data-bind="css: {disabled: false}")
+				span Cancel all
+			//-button.btn-strict.btn-strict-danger.delete(type="reset", data-bind="css: {disabled: false}")
 				i.icon-trash.icon-white
 				span Delete all
 
@@ -39,10 +40,30 @@
 		.row-fluid.fileupload-loading
 
 		//The table listing the files available for upload/download
-		table.table.table-striped(role="presentation")
+		//-table.table.table-striped(role="presentation")
 			tbody.files(data-toggle="modal-gallery", data-target="#modal-gallery")
 
-	.row-fluid
+	.row-fluid(data-bind="style: {display: filelist().length > 0 ? '' : 'none'}")
+		table.table.table-striped.table-hover
+			caption Added photos
+			tbody
+				//ko foreach: filelist
+				tr
+					td
+						div.forcanvas(data-bind="attr: {'data-fileuid': uid}")
+					td(data-bind="text: name")
+					td(data-bind="")
+					td(data-bind="text: humansize")
+					td(data-bind="")
+						button.btn-strict.btn-strict-success(data-bind="attr: {disabled: uploaded()}")
+							i.icon-upload.icon-white
+							span Upload this
+					td(data-bind="")
+						button.btn-strict.btn-strict-warning.cancel(data-bind="attr: {disabled: uploaded()}")
+							i.icon-ban-circle.icon-white
+							span Cancel this
+
+				// /ko
 		// The template to display files available for upload
 		script(id="template-upload", type="text/x-tmpl").
 			{% for (var i=0, file; file=o.files[i]; i++) { %}

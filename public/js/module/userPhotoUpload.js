@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/userPhotoUpload.jade', 'css!style/userPhotoUpload', 'jquery.ui.widget', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload', 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'load-image', 'text!tpl/userPhotoUpload.jade', 'css!style/userPhotoUpload', 'jquery.ui.widget', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload', 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, User, users, loadImage, jade) {
     'use strict';
 
     /**
@@ -37,12 +37,22 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
     return Cliche.extend({
         jade: jade,
         create: function () {
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
+
             this.auth = globalVM.repository['m/auth'];
             this.u = null;
 
             this.$fileupload = this.$dom.find('#fileupload');
             this.filereader = ko.observable(Browser.support.filereader);
-            this.toUpload = ko.observableArray([]);
+            this.filelist = ko.observableArray([]);
+
+            $(document)
+                .on('dragenter', '#dropzone', function () {
+                    this.parentNode.classList.add('dragover');
+                })
+                .on('dragleave', '#dropzone', function () {
+                    this.parentNode.classList.remove('dragover');
+                });
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
@@ -55,7 +65,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                 this.$dom.find('#fileupload').fileupload();
                 this.$dom.find('#fileupload').fileupload('option', {
                     url: 'http://172.31.1.130:8888/',
-                    dropZone: this.$dom.find('#addfiles_area'),
+                    dropZone: this.$dom.find('.addfiles_area'),
                     maxFileSize: 52428800, //50Mb
                     maxNumberOfFiles: 10,
                     previewSourceMaxFileSize: 52428800, //50MB The maximum file size of images that are to be displayed as preview:
@@ -77,18 +87,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                          action: 'save'
                          }*/
                     ],
-                    change: function (e, data) {
-                        console.log(data.files.length);
-                    },
-                    drop: function (e, data) {
-                        console.log('drop');
-                    },
+                    change: this.fileAdd.bind(this),
+                    drop: this.fileAdd.bind(this),
                     dragover: function (e) {
-                        console.log('dragover');
-                    },
+                        //this.$dom.find('.addfiles_area')[0].classList.add('dragover');
+                    }.bind(this),
                     done: function (e, data) {
                         console.log('done');
-                    }
+                    }.bind(this)
                 });
 
                 this.show();
@@ -96,10 +102,57 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             }, this);
         },
         show: function () {
-            this.$container.fadeIn();
+            this.$container.fadeIn(400, function () {
+                this.$dom.find('#fileupload').fileupload('enable');
+            }.bind(this));
         },
         hide: function () {
+            this.$dom.find('#fileupload').fileupload('disable');
+            $(document).off('dragenter').off('dragleave');
             this.$container.css('display', '');
+        },
+        localDestroy: function (destroy) {
+            this.$dom.find('#fileupload').fileupload('destroy');
+            destroy.call(this);
+        },
+
+        fileAdd: function (e, data) {
+            this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
+            $.each(data.files, function (index, file) {
+                file.uid = Utils.randomString(7);
+                file.humansize = Utils.formatFileSize(file.size);
+                file.uploaded = ko.observable(false);
+                this.filelist.push(file);
+                loadImage(
+                    file,
+                    function (img) {
+                        var td = this.$dom.find("[data-fileuid='" + file.uid + "']");
+                        if (td.length > 0) {
+                            td.append(img);
+                            window.setTimeout(function () {
+                                td.css({height: img.height, opacity: 1});
+                                index = file = img = td = null;
+                            }, 250);
+                        }
+                    }.bind(this),
+                    {
+                        maxWidth: 300,
+                        maxHeight: 200,
+                        canvas: true
+                    }
+                );
+            }.bind(this));
+        },
+        send: function (viewModel) {
+            this.$dom.find('#fileupload').fileupload('send', {files: viewModel.filelist()})
+                .success(function (result, textStatus, jqXHR) {
+                    console.log(textStatus);
+                })
+                .error(function (jqXHR, textStatus, errorThrown) { console.log(textStatus); })
+                .complete(function (result, textStatus, jqXHR) { console.log(textStatus); });
+            viewModel.filelist().forEach(function (item) {
+                item.uploaded(true);
+            });
         }
     });
 });

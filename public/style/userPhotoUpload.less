@@ -37,7 +37,7 @@
 				cursor: pointer;
 			}
 		}
-		#addfiles_area {
+		.addfiles_area {
 			position: absolute;
 			border: 1px dashed @grayDarker;
 			.opacity(60);
@@ -47,10 +47,10 @@
 			bottom: 0;
 			text-align: center;
 
-			&:hover {
+			&:hover, &.dragover {
 				.opacity(100);
-				top: -4px;
-				bottom: -4px;
+				top: -5px;
+				bottom: -5px;
 				background-color: @grayLighter;
 			}
 
@@ -65,6 +65,14 @@
 				top: 0;
 				bottom: 0;
 			}
+
+			#dropzone {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+			}
 		}
 	}
 	#commonButtons {
@@ -73,6 +81,15 @@
 		button {
 			width: 140px;
 		}
+	}
+
+	.forcanvas {
+		position: relative;
+		width: 300px;
+		height: 25px;
+		opacity: 0;
+		overflow: hidden;
+		.transition(all .75s linear);
 	}
 
 

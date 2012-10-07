@@ -260,6 +260,35 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return text.substring(0, cut);
         },
 
+        formatFileSize: function (bytes) {
+            if (typeof bytes !== 'number') {
+                return '';
+            }
+            if (bytes >= 1000000000) {
+                return (bytes / 1000000000).toFixed(2) + ' GB';
+            }
+            if (bytes >= 1000000) {
+                return (bytes / 1000000).toFixed(2) + ' MB';
+            }
+            return (bytes / 1000).toFixed(2) + ' KB';
+        },
+
+        formatBitrate: function (bits) {
+            if (typeof bits !== 'number') {
+                return '';
+            }
+            if (bits >= 1000000000) {
+                return (bits / 1000000000).toFixed(2) + ' Gbit/s';
+            }
+            if (bits >= 1000000) {
+                return (bits / 1000000).toFixed(2) + ' Mbit/s';
+            }
+            if (bits >= 1000) {
+                return (bits / 1000).toFixed(2) + ' kbit/s';
+            }
+            return bits + ' bit/s';
+        },
+
         secondsToTime: function (secs) {
             "use strict";
             if (secs < 60) {
@@ -273,6 +302,10 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 seconds = Math.ceil(divisor_for_seconds);
 
             return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
+        },
+
+        formatPercentage: function (floatValue) {
+            return (floatValue * 100).toFixed(2) + ' %';
         },
 
         mousePageXY: function (e) {

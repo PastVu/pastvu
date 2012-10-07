@@ -67,7 +67,7 @@
             // to always display preview images as img elements:
             previewAsCanvas: true,
             // The ID of the upload template:
-            uploadTemplateId: 'template-upload',
+            uploadTemplateId: null,
             // The ID of the download template:
             downloadTemplateId: 'template-download',
             // The container for the list of files. If undefined, it is set to
