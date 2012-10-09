@@ -106,8 +106,35 @@
 			overflow: auto;
 			border-color: @MainBlueColor;
 			background-color: darken(@MainLigthColor, 5%);
-			.box-shadow(0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%));
+			.box-shadow(0 2px 4px 0px #222);
 			z-index: @zindexPopover;
+
+			&::-webkit-scrollbar {
+				width:15px;
+			}
+
+			&::-webkit-scrollbar-thumb {
+				border-width: 2px 3px 2px 4px;
+				border-color: darken(@MainLigthColor, 5%);
+				border-style: solid;
+				background-color: desaturate(@MainBlueColor, 5%);
+
+				&:hover {
+					border-color: #eee;
+					border-left: 1px solid #aaa;
+					-webkit-box-shadow: inset 3px 0 0 0 #eee;
+					background-color: darken(@MainBlueColor, 5%);
+				}
+			}
+
+			&::-webkit-scrollbar-track {
+				border-width:0;
+
+				&:hover {
+					border-left: 1px solid #aaa;
+					background-color: #eee;
+				}
+			}
 		}
 	}
 }
