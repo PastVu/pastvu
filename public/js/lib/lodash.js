@@ -1,7 +1,7 @@
 /*!
- * Lo-Dash v0.8.1 <http://lodash.com>
+ * Lo-Dash v0.8.2 <http://lodash.com>
  * (c) 2012 John-David Dalton <http://allyoucanleet.com/>
- * Based on Underscore.js 1.4.1 <http://underscorejs.org>
+ * Based on Underscore.js 1.4.2 <http://underscorejs.org>
  * (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
  * Available under MIT license <http://lodash.com/license>
  */
@@ -71,7 +71,10 @@
   var templateCounter = 0;
 
   /** Native method shortcuts */
-  var concat = ArrayProto.concat,
+  var ceil = Math.ceil,
+      concat = ArrayProto.concat,
+      floor = Math.floor,
+      getPrototypeOf = reNative.test(getPrototypeOf = Object.getPrototypeOf) && getPrototypeOf,
       hasOwnProperty = ObjectProto.hasOwnProperty,
       push = ArrayProto.push,
       propertyIsEnumerable = ObjectProto.propertyIsEnumerable,
@@ -80,8 +83,6 @@
 
   /* Native method shortcuts for methods with the same name as other `lodash` methods */
   var nativeBind = reNative.test(nativeBind = slice.bind) && nativeBind,
-      nativeFloor = Math.floor,
-      nativeGetPrototypeOf = reNative.test(nativeGetPrototypeOf = Object.getPrototypeOf) && nativeGetPrototypeOf,
       nativeIsArray = reNative.test(nativeIsArray = Array.isArray) && nativeIsArray,
       nativeIsFinite = window.isFinite,
       nativeKeys = reNative.test(nativeKeys = Object.keys) && nativeKeys,
@@ -235,6 +236,7 @@
    *
    * @name _
    * @constructor
+   * @category Chaining
    * @param {Mixed} value The value to wrap in a `lodash` instance.
    * @returns {Object} Returns a `lodash` instance.
    */
@@ -314,7 +316,7 @@
     // the `iteratee` may be reassigned by the `top` snippet
     'var index, value, iteratee = <%= firstArg %>, ' +
     // assign the `result` variable an initial value
-    'result<% if (init) { %> = <%= init %><% } %>;\n' +
+    'result = <%= init || firstArg %>;\n' +
     // exit early if the first argument is falsey
     'if (!<%= firstArg %>) return result;\n' +
     // add code before the iteration branches
@@ -429,7 +431,6 @@
    */
   var baseIteratorOptions = {
     'args': 'collection, callback, thisArg',
-    'init': 'collection',
     'top': 'callback = createCallback(callback, thisArg)',
     'inLoop': 'if (callback(value, index, collection) === false) return result'
   };
@@ -454,7 +455,6 @@
     'useHas': false,
     'useStrict': false,
     'args': 'object',
-    'init': 'object',
     'top':
       'for (var argsIndex = 1, argsLength = arguments.length; argsIndex < argsLength; argsIndex++) {\n' +
       '  if (iteratee = arguments[argsIndex]) {',
@@ -482,7 +482,7 @@
 
   /** Reusable iterator options for `invoke`, `map`, `pluck`, and `sortBy` */
   var mapIteratorOptions = {
-    'init': false,
+    'init': 'collection || []',
     'beforeLoop': {
       'array':  'result = Array(length)',
       'object': 'result = ' + (isKeysFast ? 'Array(length)' : '[]')
@@ -531,13 +531,11 @@
 
     if (isLarge) {
       // init value cache
-      var key,
-          index = fromIndex - 1;
-
+      var index = fromIndex - 1;
       while (++index < length) {
         // manually coerce `value` to string because `hasOwnProperty`, in some
         // older versions of Firefox, coerces objects incorrectly
-        key = array[index] + '';
+        var key = array[index] + '';
         (hasOwnProperty.call(cache, key) ? cache[key] : (cache[key] = [])).push(array[index]);
       }
     }
@@ -666,11 +664,9 @@
    * @private
    * @param {Object} [options1, options2, ...] The compile options objects.
    *
-   *  useHas - A boolean to specify whether or not to use `hasOwnProperty` checks
-   *   in the object loop.
+   *  useHas - A boolean to specify using `hasOwnProperty` checks in the object loop.
    *
-   *  useStrict - A boolean to specify whether or not to include the ES5
-   *   "use strict" directive.
+   *  useStrict - A boolean to specify including the "use strict" directive.
    *
    *  args - A string of comma separated arguments the iteration function will accept.
    *
@@ -690,13 +686,10 @@
    * @returns {Function} Returns the compiled function.
    */
   function createIterator() {
-    var index = -1,
-        length = arguments.length;
-
-    // merge options into a template data object
     var data = {
       'bottom': '',
       'hasDontEnumBug': hasDontEnumBug,
+      'init': '',
       'isKeysFast': isKeysFast,
       'noArgsEnum': noArgsEnum,
       'noCharByIndex': noCharByIndex,
@@ -704,12 +697,15 @@
       'top': '',
       'useHas': true,
       'useStrict': isStrictFast,
-      'arrayBranch': {},
-      'objectBranch': {}
+      'arrayBranch': { 'beforeLoop': '' },
+      'objectBranch': { 'beforeLoop': '' }
     };
 
-    while (++index < length) {
-      var object = arguments[index];
+    var object,
+        index = -1;
+
+    // merge options into a template data object
+    while (object = arguments[++index]) {
       for (var prop in object) {
         var value = object[prop];
         // keep this regexp explicit for the build pre-process
@@ -724,15 +720,9 @@
         }
       }
     }
-    // set additional template `data` values
-    var args = data.args,
-        firstArg = /^[^,]+/.exec(args)[0],
-        init = data.init;
-
-    data.firstArg = firstArg;
-    data.init = init == null ? firstArg : init;
-
-    if (firstArg != 'collection' || !data.arrayBranch.inLoop) {
+    // set additional template `data` properties
+    var args = data.args;
+    if ((data.firstArg = /^[^,]+/.exec(args)[0]) != 'collection' || !data.arrayBranch.inLoop) {
       data.arrayBranch = null;
     }
     // create the function factory
@@ -902,23 +892,23 @@
    * }
    *
    * _.isPlainObject(new Stooge('moe', 40));
-   * // false
+   * // => false
    *
    * _.isPlainObject([1, 2, 3]);
-   * // false
+   * // => false
    *
    * _.isPlainObject({ 'name': 'moe', 'age': 40 });
    * // => true
    */
-  var isPlainObject = !nativeGetPrototypeOf ? isPlainFallback : function(value) {
+  var isPlainObject = !getPrototypeOf ? isPlainFallback : function(value) {
     if (!(value && typeof value == 'object')) {
       return false;
     }
     var valueOf = value.valueOf,
-        objProto = typeof valueOf == 'function' && (objProto = nativeGetPrototypeOf(valueOf)) && nativeGetPrototypeOf(objProto);
+        objProto = typeof valueOf == 'function' && (objProto = getPrototypeOf(valueOf)) && getPrototypeOf(objProto);
 
     return objProto
-      ? value == objProto || (nativeGetPrototypeOf(value) == objProto && !isArguments(value))
+      ? value == objProto || (getPrototypeOf(value) == objProto && !isArguments(value))
       : isPlainFallback(value);
   };
 
@@ -1065,8 +1055,6 @@
     var ctor = value.constructor;
     switch (className) {
       case boolClass:
-        return new ctor(value == true);
-
       case dateClass:
         return new ctor(+value);
 
@@ -1077,7 +1065,6 @@
       case regexpClass:
         return ctor(value.source, reFlags.exec(value));
     }
-
     // check for circular references and return corresponding clone
     stackA || (stackA = []);
     stackB || (stackB = []);
@@ -1088,9 +1075,8 @@
         return stackB[length];
       }
     }
-
     // init cloned object
-    var result = isArr ? ctor(length = value.length) : {};
+    var result = isArr ? ctor(value.length) : {};
 
     // add the source value to the stack of traversed objects
     // and associate it with its clone
@@ -1098,16 +1084,10 @@
     stackB.push(result);
 
     // recursively populate clone (susceptible to call stack limits)
-    if (isArr) {
-      var index = -1;
-      while (++index < length) {
-        result[index] = clone(value[index], deep, null, stackA, stackB);
-      }
-    } else {
-      forOwn(value, function(objValue, key) {
-        result[key] = clone(objValue, deep, null, stackA, stackB);
-      });
-    }
+    (isArr ? forEach : forOwn)(value, function(objValue, key) {
+      result[key] = clone(objValue, deep, null, stackA, stackB);
+    });
+
     return result;
   }
 
@@ -1224,7 +1204,7 @@
     'useHas': false,
     'args': 'object',
     'init': '[]',
-    'inLoop': 'if (isFunction(value)) result.push(index)',
+    'inLoop': 'isFunction(value) && result.push(index)',
     'bottom': 'result.sort()'
   });
 
@@ -1691,7 +1671,7 @@
     }
     return object && objectTypes[type]
       ? nativeKeys(object)
-     : [];
+      : [];
   };
 
   /**
@@ -1746,7 +1726,7 @@
       '    result[index] = stackB[stackLength]\n' +
       '  } else {\n' +
       '    stackA.push(source);\n' +
-      '    stackB.push(value = (value = result[index]) && isArr\n' +
+      '    stackB.push(value = (value = result[index], isArr)\n' +
       '      ? (isArray(value) ? value : [])\n' +
       '      : (isPlainObject(value) ? value : {})\n' +
       '    );\n' +
@@ -1832,11 +1812,11 @@
   var pick = createIterator(omitIteratorOptions, {
     'top':
       'if (typeof callback != \'function\') {\n' +
-      '  var prop,\n' +
+      '  var index = 0,\n' +
       '      props = concat.apply(ArrayProto, arguments),\n' +
       '      length = props.length;\n' +
-      '  for (index = 1; index < length; index++) {\n' +
-      '    prop = props[index];\n' +
+      '  while (++index < length) {\n' +
+      '    var prop = props[index];\n' +
       '    if (prop in object) result[prop] = object[prop]\n' +
       '  }\n' +
       '} else {\n' +
@@ -1989,7 +1969,7 @@
    * // => 2
    */
   var find = createIterator(baseIteratorOptions, forEachIteratorOptions, {
-    'init': false,
+    'init': 'undefined',
     'inLoop': 'if (callback(value, index, collection)) return value'
   });
 
@@ -2107,6 +2087,98 @@
    * // => [3, 6, 9] (order is not guaranteed)
    */
   var map = createIterator(baseIteratorOptions, mapIteratorOptions);
+
+  /**
+   * Retrieves the maximum value of an `array`. If `callback` is passed,
+   * it will be executed for each value in the `array` to generate the
+   * criterion by which the value is ranked. The `callback` is bound to
+   * `thisArg` and invoked with three arguments; (value, index, collection).
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to iterate over.
+   * @param {Function} [callback] The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Mixed} Returns the maximum value.
+   * @example
+   *
+   * var stooges = [
+   *   { 'name': 'moe', 'age': 40 },
+   *   { 'name': 'larry', 'age': 50 },
+   *   { 'name': 'curly', 'age': 60 }
+   * ];
+   *
+   * _.max(stooges, function(stooge) { return stooge.age; });
+   * // => { 'name': 'curly', 'age': 60 };
+   */
+  function max(collection, callback, thisArg) {
+    var computed = -Infinity,
+        index = -1,
+        length = collection ? collection.length : 0,
+        result = computed;
+
+    if (callback || length !== +length) {
+      callback = createCallback(callback, thisArg);
+      forEach(collection, function(value, index, collection) {
+        var current = callback(value, index, collection);
+        if (current > computed) {
+          computed = current;
+          result = value;
+        }
+      });
+    } else {
+      while (++index < length) {
+        if (collection[index] > result) {
+          result = collection[index];
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Retrieves the minimum value of an `array`. If `callback` is passed,
+   * it will be executed for each value in the `array` to generate the
+   * criterion by which the value is ranked. The `callback` is bound to `thisArg`
+   * and invoked with three arguments; (value, index, collection).
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to iterate over.
+   * @param {Function} [callback] The function called per iteration.
+   * @param {Mixed} [thisArg] The `this` binding of `callback`.
+   * @returns {Mixed} Returns the minimum value.
+   * @example
+   *
+   * _.min([10, 5, 100, 2, 1000]);
+   * // => 2
+   */
+  function min(collection, callback, thisArg) {
+    var computed = Infinity,
+        index = -1,
+        length = collection ? collection.length : 0,
+        result = computed;
+
+    if (callback || length !== +length) {
+      callback = createCallback(callback, thisArg);
+      forEach(collection, function(value, index, collection) {
+        var current = callback(value, index, collection);
+        if (current < computed) {
+          computed = current;
+          result = value;
+        }
+      });
+    } else {
+      while (++index < length) {
+        if (collection[index] < result) {
+          result = collection[index];
+        }
+      }
+    }
+    return result;
+  }
 
   /**
    * Retrieves the value of a specified property from all elements in
@@ -2234,6 +2306,32 @@
   var reject = createIterator(baseIteratorOptions, filterIteratorOptions, {
     'inLoop': '!' + filterIteratorOptions.inLoop
   });
+
+  /**
+   * Creates an array of shuffled `array` values, using a version of the
+   * Fisher-Yates shuffle. See http://en.wikipedia.org/wiki/Fisher-Yates_shuffle.
+   *
+   * @static
+   * @memberOf _
+   * @category Collections
+   * @param {Array} collection The collection to shuffle.
+   * @returns {Array} Returns a new shuffled collection.
+   * @example
+   *
+   * _.shuffle([1, 2, 3, 4, 5, 6]);
+   * // => [4, 1, 6, 3, 5, 2]
+   */
+  function shuffle(collection) {
+    var index = -1,
+        result = Array(collection ? collection.length : 0);
+
+    forEach(collection, function(value) {
+      var rand = floor(nativeRandom() * (++index + 1));
+      result[index] = result[rand];
+      result[rand] = value;
+    });
+    return result;
+  }
 
   /**
    * Gets the size of the `collection` by returning `collection.length` for arrays
@@ -2387,8 +2485,8 @@
       'forIn(properties, function(value, prop) { props.push(prop) });\n' +
       'var propsLength = props.length',
     'inLoop':
-      'for (var prop, pass = true, propIndex = 0; propIndex < propsLength; propIndex++) {\n' +
-      '  prop = props[propIndex];\n' +
+      'for (var pass = true, propIndex = 0; propIndex < propsLength; propIndex++) {\n' +
+      '  var prop = props[propIndex];\n' +
       '  if (!(pass = value[prop] === properties[prop])) break\n' +
       '}\n' +
       'pass && result.push(value)'
@@ -2416,8 +2514,9 @@
         result = [];
 
     while (++index < length) {
-      if (array[index]) {
-        result.push(array[index]);
+      var value = array[index];
+      if (value) {
+        result.push(value);
       }
     }
     return result;
@@ -2502,13 +2601,12 @@
    * // => [1, 2, 3, [[4]]];
    */
   function flatten(array, shallow) {
-    var value,
-        index = -1,
+    var index = -1,
         length = array ? array.length : 0,
         result = [];
 
     while (++index < length) {
-      value = array[index];
+      var value = array[index];
 
       // recursively flatten arrays (susceptible to call stack limits)
       if (isArray(value)) {
@@ -2523,7 +2621,7 @@
   /**
    * Gets the index at which the first occurrence of `value` is found using
    * strict equality for comparisons, i.e. `===`. If the `array` is already
-   * sorted, passing `true` for `isSorted` will run a faster binary search.
+   * sorted, passing `true` for `fromIndex` will run a faster binary search.
    *
    * @static
    * @memberOf _
@@ -2679,84 +2777,6 @@
   }
 
   /**
-   * Retrieves the maximum value of an `array`. If `callback` is passed,
-   * it will be executed for each value in the `array` to generate the
-   * criterion by which the value is ranked. The `callback` is bound to
-   * `thisArg` and invoked with three arguments; (value, index, array).
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} array The array to iterate over.
-   * @param {Function} [callback] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding of `callback`.
-   * @returns {Mixed} Returns the maximum value.
-   * @example
-   *
-   * var stooges = [
-   *   { 'name': 'moe', 'age': 40 },
-   *   { 'name': 'larry', 'age': 50 },
-   *   { 'name': 'curly', 'age': 60 }
-   * ];
-   *
-   * _.max(stooges, function(stooge) { return stooge.age; });
-   * // => { 'name': 'curly', 'age': 60 };
-   */
-  function max(array, callback, thisArg) {
-    var current,
-        computed = -Infinity,
-        index = -1,
-        length = array ? array.length : 0,
-        result = computed;
-
-    callback = createCallback(callback, thisArg);
-    while (++index < length) {
-      current = callback(array[index], index, array);
-      if (current > computed) {
-        computed = current;
-        result = array[index];
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Retrieves the minimum value of an `array`. If `callback` is passed,
-   * it will be executed for each value in the `array` to generate the
-   * criterion by which the value is ranked. The `callback` is bound to `thisArg`
-   * and invoked with three arguments; (value, index, array).
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} array The array to iterate over.
-   * @param {Function} [callback] The function called per iteration.
-   * @param {Mixed} [thisArg] The `this` binding of `callback`.
-   * @returns {Mixed} Returns the minimum value.
-   * @example
-   *
-   * _.min([10, 5, 100, 2, 1000]);
-   * // => 2
-   */
-  function min(array, callback, thisArg) {
-    var current,
-        computed = Infinity,
-        index = -1,
-        length = array ? array.length : 0,
-        result = computed;
-
-    callback = createCallback(callback, thisArg);
-    while (++index < length) {
-      current = callback(array[index], index, array);
-      if (current < computed) {
-        computed = current;
-        result = array[index];
-      }
-    }
-    return result;
-  }
-
-  /**
    * Creates an object composed from arrays of `keys` and `values`. Pass either
    * a single two dimensional array, i.e. `[[key1, value1], [key2, value2]]`, or
    * two arrays, one of `keys` and one of corresponding `values`.
@@ -2779,10 +2799,11 @@
         result = {};
 
     while (++index < length) {
+      var key = keys[index];
       if (values) {
-        result[keys[index]] = values[index];
+        result[key] = values[index];
       } else {
-        result[keys[index][0]] = keys[index][1];
+        result[key[0]] = key[1];
       }
     }
     return result;
@@ -2828,7 +2849,7 @@
     // use `Array(length)` so V8 will avoid the slower "dictionary" mode
     // http://www.youtube.com/watch?v=XAqIpGU8ZZk#t=16m27s
     var index = -1,
-        length = nativeMax(0, Math.ceil((end - start) / step)),
+        length = nativeMax(0, ceil((end - start) / step)),
         result = Array(length);
 
     while (++index < length) {
@@ -2860,33 +2881,6 @@
     return array
       ? slice.call(array, (n == null || guard) ? 1 : n)
       : [];
-  }
-
-  /**
-   * Creates an array of shuffled `array` values, using a version of the
-   * Fisher-Yates shuffle. See http://en.wikipedia.org/wiki/Fisher-Yates_shuffle.
-   *
-   * @static
-   * @memberOf _
-   * @category Arrays
-   * @param {Array} array The array to shuffle.
-   * @returns {Array} Returns a new shuffled array.
-   * @example
-   *
-   * _.shuffle([1, 2, 3, 4, 5, 6]);
-   * // => [4, 1, 6, 3, 5, 2]
-   */
-  function shuffle(array) {
-    var index = -1,
-        length = array ? array.length : 0,
-        result = Array(length);
-
-    while (++index < length) {
-      var rand = nativeFloor(nativeRandom() * (index + 1));
-      result[index] = result[rand];
-      result[rand] = array[index];
-    }
-    return result;
   }
 
   /**
@@ -2933,11 +2927,18 @@
     var low = 0,
         high = array ? array.length : low;
 
-    callback = createCallback(callback, thisArg);
-    value = callback(value);
-    while (low < high) {
-      var mid = (low + high) >>> 1;
-      callback(array[mid]) < value ? low = mid + 1 : high = mid;
+    if (callback) {
+      callback = createCallback(callback, thisArg);
+      value = callback(value);
+      while (low < high) {
+        var mid = (low + high) >>> 1;
+        callback(array[mid]) < value ? low = mid + 1 : high = mid;
+      }
+    } else {
+      while (low < high) {
+        var mid = (low + high) >>> 1;
+        array[mid] < value ? low = mid + 1 : high = mid;
+      }
     }
     return low;
   }
@@ -2964,8 +2965,9 @@
         result = [];
 
     while (++index < length) {
-      if (indexOf(result, flattened[index]) < 0) {
-        result.push(flattened[index]);
+      var value = flattened[index];
+      if (indexOf(result, value) < 0) {
+        result.push(value);
       }
     }
     return result;
@@ -3174,17 +3176,16 @@
     'args': 'object',
     'top':
       'var funcs = arguments,\n' +
+      '    index = 0,\n' +
       '    length = funcs.length;\n' +
       'if (length > 1) {\n' +
-      '  for (var index = 1; index < length; index++) {\n' +
+      '  while (++index < length) {\n' +
       '    result[funcs[index]] = bind(result[funcs[index]], result)\n' +
       '  }\n' +
       '  return result\n' +
       '}',
     'inLoop':
-      'if (isFunction(value)) {\n' +
-      '  result[index] = bind(value, result)\n' +
-      '}'
+      'if (isFunction(value)) result[index] = bind(value, result)'
   });
 
   /**
@@ -3467,6 +3468,7 @@
       thisArg = this;
 
       if (remain <= 0) {
+        clearTimeout(timeoutId);
         lastCalled = now;
         result = func.apply(thisArg, args);
       }
@@ -3632,7 +3634,7 @@
       max = min;
       min = 0;
     }
-    return min + nativeFloor(nativeRandom() * ((+max || 0) - min + 1));
+    return min + floor(nativeRandom() * ((+max || 0) - min + 1));
   }
 
   /**
@@ -3737,7 +3739,7 @@
     // http://ejohn.org/blog/javascript-micro-templating/
     // and Laura Doktorova's doT.js
     // https://github.com/olado/doT
-    text += '';
+    text || (text = '');
     options || (options = {});
 
     var isEvaluating,
@@ -3999,7 +4001,7 @@
    * @memberOf _
    * @type String
    */
-  lodash.VERSION = '0.8.1';
+  lodash.VERSION = '0.8.2';
 
   // assign static methods
   lodash.after = after;
