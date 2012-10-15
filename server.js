@@ -36,9 +36,19 @@
             safeFileTypes: /\.(gif|jpe?g|png)$/i,
             imageTypes: /\.(gif|jpe?g|png)$/i,
             imageVersions: {
-                'thumbnail': {
+                'micro': {
+                    width: 60,
+                    height: 40,
+                    gravity: true
+                },
+                'thumb': {
                     width: 320,
-                    height: 200
+                    height: 200,
+                    gravity: true
+                },
+                'standard': {
+                    width: 1366,
+                    height: 768
                 }
             },
             accessControl: {
@@ -243,13 +253,32 @@
                 Object.keys(options.imageVersions).forEach(function (version) {
                     counter += 1;
                     var opts = options.imageVersions[version];
-                    imageMagick.resize({
-                        width: opts.width,
-                        height: opts.height,
-                        srcPath: options.uploadDir + '/' + fileInfo.name,
-                        dstPath: options.uploadDir + '/' + version + '/' +
-                            fileInfo.name
-                    }, finish);
+
+                    // Превью генерируем путем вырезания аспекта из центра
+                    if (opts.gravity){
+                        // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
+                        imageMagick.resize({
+                            srcPath: options.uploadDir + '/' + fileInfo.name,
+                            dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
+                            strip: true,
+                            filter: 'Sinc',
+                            width: opts.width,
+                            height: opts.height + "^",
+                            customArgs: [
+                                "-gravity", "center",
+                                "-extent", opts.width + "x" + opts.height
+                            ]
+                        }, finish);
+                    } else {
+                        imageMagick.resize({
+                            srcPath: options.uploadDir + '/' + fileInfo.name,
+                            dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
+                            strip: false,
+                            filter: 'Sinc',
+                            width: opts.width,
+                            height: opts.height
+                        }, finish);
+                    }
                 });
             }
         }).on('aborted', function () {
