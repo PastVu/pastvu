@@ -22,6 +22,11 @@ requirejs.config({
             //exports: ' Backbone.Router.arrayValueSplit'
         }
     },
+    map: {
+        '*': {
+            'css': 'lib/require/plugins/require-css/css'
+        }
+    },
     paths: {
         'tpl': '/tpl',
         'style': '/style',
@@ -34,8 +39,6 @@ requirejs.config({
 
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
-        'css': 'lib/require/plugins/css',
-        'css.api': 'lib/require/plugins/css.api',
         'async': 'lib/require/plugins/async',
         'goog': 'lib/require/plugins/goog',
         'Utils': 'lib/Utils',
