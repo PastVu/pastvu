@@ -67,7 +67,7 @@
             // to always display preview images as img elements:
             previewAsCanvas: true,
             // The ID of the upload template:
-            uploadTemplateId: null,
+            uploadTemplateId: 'template-upload',
             // The ID of the download template:
             downloadTemplateId: 'template-download',
             // The container for the list of files. If undefined, it is set to
@@ -455,9 +455,14 @@
                 function (img) {
                     node.append(img);
                     that._forceReflow(node);
-                    that._transition(node).done(function () {
+                    window.setTimeout(function () {
+                        node.css({height: img.height, opacity: 1});
                         dfd.resolveWith(node);
-                    });
+                        img = node = null;
+                    }, 200);
+//                    that._transition(node).done(function () {
+//                        dfd.resolveWith(node);
+//                    });
                     if (!$.contains(document.body, node[0])) {
                         // If the element is not part of the DOM,
                         // transition events are not triggered,

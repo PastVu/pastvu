@@ -11,17 +11,25 @@
 		display: -webkit-flex;
 		-webkit-flex-wrap: wrap;
 		-webkit-flex-direction: row;
+		-webkit-align-items: center;
 		-webkit-justify-content: space-between; // flex-start | flex-end | center | space-between | space-around
+
+		display: -moz-flex;
+		-moz-flex-wrap: wrap;
+		-moz-flex-direction: row;
+		-moz-align-items: center;
+		-moz-justify-content: space-between;
 
 		display: -ms-flex;
 		-ms-flex-wrap: wrap;
 		-ms-flex-direction: row;
+		-ms-align-items: center;
 		-ms-justify-content: space-between;
-		-ms-flex-align: stretch;
 
 		display: flex;
 		flex-wrap: wrap;
 		flex-direction: row;
+		align-items: center;
 		justify-content: space-between;
 	}
 
@@ -87,7 +95,7 @@
 		background-color: rgba(0, 0, 0, 0.3);
 		z-index: @zindexModal; // Ценрируем формы
 		text-align: center;
-		&:before {
+		&::before {
 			content: '';
 			display: inline-block;
 			height: 100%;
@@ -100,7 +108,7 @@
 			display: inline-block;
 			vertical-align: middle;
 			text-align: left;
-			min-width: 950px;
+			min-width: 1000px;
 			min-height: 250px;
 			padding: 0 20px 10px 20px;
 			overflow: auto;

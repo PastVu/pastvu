@@ -76,29 +76,41 @@
 		}
 	}
 	#commonButtons {
-		margin-top: 10px;
+		margin: 15px 0 10px 0;
 
 		button {
 			width: 140px;
 		}
 	}
-
+	.progress {
+		margin-bottom: 3px;
+	}
+	.progress-extended {
+		margin-bottom: 3px;
+	}
+	td.preview {
+		width: 210px;
+	}
+	td.start, td.cancel, td.delete {
+		width: 120px;
+		text-align: center;
+	}
 	.forcanvas {
 		position: relative;
-		width: 300px;
+		display: block;
+		width: 210px;
 		height: 25px;
 		opacity: 0;
 		overflow: hidden;
 		.transition(all .75s linear);
 	}
-
+	.template-download .preview img {
+		max-width: 210px;
+		max-height: 140px;
+	}
 
 	.files .progress {
-		width: 200px;
-	}
-	.progress-animated .bar {
-		background: url(../img/progressbar.gif) !important;
-		filter: none;
+		width: auto;
 	}
 	.fileupload-loading {
 		position: absolute;

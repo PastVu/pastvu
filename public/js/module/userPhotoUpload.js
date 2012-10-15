@@ -14,20 +14,19 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             // First get the latest data that we're bound to
             var value = valueAccessor(), allBindings = allBindingsAccessor(),
                 valueUnwrapped = ko.utils.unwrapObservable(value),
-                $element = $(element),
-                id = $element.attr('id');
+                $element = $(element);
 
             // Now manipulate the DOM element
             if (valueUnwrapped === true) {
                 if (Browser.name === 'FIREFOX' || Browser.name === 'MSIE') {
                     $element
                         .css({'left': '141px'})
-                        .attr('size', (viewModel.filereader() ? GP.Width() / 8 : 10))
+                        //.attr('size', (viewModel.filereader() ? GP.Width() / 8 : 10))
                         .on("click", function (event) {
                             event.stopPropagation(); // Чтобы опять не вызвать клик родительского элемента
                         })
-                        .offsetParent().on("click", function (event) {
-                            $('#' + id).trigger('click');
+                        .parent().on("click", function (event) {
+                            $(this).find("input[type='file']").trigger('click');
                         });
                 }
             }
@@ -44,7 +43,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
 
             this.$fileupload = this.$dom.find('#fileupload');
             this.filereader = ko.observable(Browser.support.filereader);
-            this.filelist = ko.observableArray([]);
+            this.fileList = ko.observableArray([]);
+            this.fileProgressAll = ko.observable(0);
 
             $(document)
                 .on('dragenter', '#dropzone', function () {
@@ -64,37 +64,31 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                 // Initialize the jQuery File Upload widget:
                 this.$dom.find('#fileupload').fileupload();
                 this.$dom.find('#fileupload').fileupload('option', {
-                    url: 'http://172.31.1.130:8888/',
+                    url: 'http://localhost:8888/',
                     dropZone: this.$dom.find('.addfiles_area'),
                     maxFileSize: 52428800, //50Mb
                     maxNumberOfFiles: 10,
-                    previewSourceMaxFileSize: 52428800, //50MB The maximum file size of images that are to be displayed as preview:
-                    previewMaxWidth: 320, // The maximum width of the preview images:
-                    previewMaxHeight: 180, // The maximum height of the preview images:
+                    previewSourceMaxFileSize: 31457280, //30MB The maximum file size of images that are to be displayed as preview:
+                    previewMaxWidth: 210, // The maximum width of the preview images:
+                    previewMaxHeight: 140, // The maximum height of the preview images:
                     acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
+                    prependFiles: true,
                     process: [
                         {
                             action: 'load',
                             fileTypes: /^image\/(jpeg|png)$/,
                             maxFileSize: 52428800 // 50MB
-                        }/*,
-                         {
-                         action: 'resize',
-                         maxWidth: 1440,
-                         maxHeight: 900
-                         },
-                         {
-                         action: 'save'
-                         }*/
+                        }
                     ],
                     change: this.fileAdd.bind(this),
-                    drop: this.fileAdd.bind(this),
-                    dragover: function (e) {
-                        //this.$dom.find('.addfiles_area')[0].classList.add('dragover');
-                    }.bind(this),
-                    done: function (e, data) {
+                    drop: this.fileAdd.bind(this)
+                    /*progressall: function (e, data) {
+                        var progress = parseInt(data.loaded / data.total * 100, 10);
+                        this.fileProgressAll(progress);
+                    }.bind(this),*/
+                    /*done: function (e, data) {
                         console.log('done');
-                    }.bind(this)
+                    }.bind(this)*/
                 });
 
                 this.show();
@@ -119,11 +113,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         fileAdd: function (e, data) {
             this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
             $.each(data.files, function (index, file) {
-                file.uid = Utils.randomString(7);
-                file.humansize = Utils.formatFileSize(file.size);
-                file.uploaded = ko.observable(false);
-                this.filelist.push(file);
-                loadImage(
+                //file.uid = Utils.randomString(7);
+                //file.humansize = Utils.formatFileSize(file.size);
+                //file.uploaded = ko.observable(false);
+                this.fileList.push(file);
+                /*loadImage(
                     file,
                     function (img) {
                         var td = this.$dom.find("[data-fileuid='" + file.uid + "']");
@@ -140,19 +134,20 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                         maxHeight: 200,
                         canvas: true
                     }
-                );
+                );*/
             }.bind(this));
         },
         send: function (viewModel) {
-            this.$dom.find('#fileupload').fileupload('send', {files: viewModel.filelist()})
+            var data = this.$dom.find('#fileupload').data('fileupload');
+/*            this.$dom.find('#fileupload').fileupload('send', {files: viewModel.fileList()})
                 .success(function (result, textStatus, jqXHR) {
                     console.log(textStatus);
                 })
                 .error(function (jqXHR, textStatus, errorThrown) { console.log(textStatus); })
-                .complete(function (result, textStatus, jqXHR) { console.log(textStatus); });
-            viewModel.filelist().forEach(function (item) {
+                .complete(function (result, textStatus, jqXHR) { console.log(textStatus); });*/
+            /*viewModel.fileList().forEach(function (item) {
                 item.uploaded(true);
-            });
+            });*/
         }
     });
 });

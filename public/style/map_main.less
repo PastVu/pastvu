@@ -29,7 +29,7 @@
 		width: 27px;
 		.transition(all 0.25s ease-out);
 		
-		&:after {
+		&::after {
 			content: '';
 			position: absolute;
 			width: 13px;
@@ -42,14 +42,14 @@
 		&:hover {
 			border-color: #EFF2FF;
 
-			&:after {
+			&::after {
 				opacity: 1;
 			}
 		}
 		
 		&.inout {
 			left: 20px;
-			&:after {
+			&::after {
 				left: 7px;
 				top: 6px;
 			}
@@ -62,7 +62,7 @@
 		top: 19px;
 		width: 27px;
 		opacity: 0;
-		&:after {
+		&::after {
 			left: 7px;
 			top: 0;
 			background-position: -289px -96px;
@@ -74,7 +74,7 @@
 		top: 20px;
 		width: 13px;
 		opacity: 0;
-		&:after {
+		&::after {
 			left: -1px;
 			top: 6px;
 			background-position: -264px -96px;
@@ -86,7 +86,7 @@
 		top: 33px;
 		width: 27px;
 		opacity: 0;
-		&:after {
+		&::after {
 			left: 7px;
 			top: -1px;
 			background-position: -312px -96px;
@@ -98,7 +98,7 @@
 		top: 20px;
 		width: 13px;
 		opacity: 0;
-		&:after {
+		&::after {
 			left: 0;
 			top: 6px;
 			background-position: -240px -96px;
@@ -110,7 +110,7 @@
 		height: 26px;
 		width: 27px;
 		.transition(top 0.25s ease-out 0.3s);
-		&:after {
+		&::after {
 			left: 7px;
 			top: 6px;
 			background-position: 0 -24px;
@@ -119,13 +119,13 @@
 	
 	#zoomin {
 		top: 72px;
-		&:after {
+		&::after {
 			background-position: -408px -96px;
 		}
 	}
 	#zoomout {
 		bottom: 0;
-		&:after {
+		&::after {
 			background-position: -433px -96px;
 		}
 	}
@@ -136,7 +136,7 @@
 		bottom: -25px;
 		width: 20px;
 		height: 20px;
-		&:after {
+		&::after {
 			left: 3px;
 			top: 3px;
 			background: url(/img/map/pin.png) 0 0 no-repeat;
@@ -153,7 +153,7 @@
 		border-bottom-width: 0;
 		.box-shadow(0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000);
 
-        &:after {
+        &::after {
           content: '';
           position: absolute;
           height: 2px;

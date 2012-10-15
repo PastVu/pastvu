@@ -13,7 +13,7 @@ module.exports.loadController = function (app, io) {
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (!err) {
-                    console.dir(user._id);
+                    console.dir('userID', user._id);
                     Photo.find({user_id: user._id}).exec(function (err, photo) {
                         socket.emit('takeUserPhoto', photo);
                     });

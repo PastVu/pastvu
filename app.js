@@ -21,7 +21,6 @@ var fs = require('fs'),
     memcached = require('mc'),
     errS = require('./controllers/errors.js').err,
     app, io,
-
     second = 1000,
     minute = 60 * second,
     hour = 60 * minute,

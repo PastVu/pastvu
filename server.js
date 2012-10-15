@@ -37,8 +37,8 @@
             imageTypes: /\.(gif|jpe?g|png)$/i,
             imageVersions: {
                 'thumbnail': {
-                    width: 80,
-                    height: 80
+                    width: 320,
+                    height: 200
                 }
             },
             accessControl: {

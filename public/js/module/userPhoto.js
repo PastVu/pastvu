@@ -56,6 +56,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             $('.photoUploadModal').css({display: 'none'});
             $('.photoUploadCurtain').css({display: 'block'});
             renderer(this, [{module: 'm/userPhotoUpload', container: '.photoUploadModal'}], this.level + 1);
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            }
+            return false;
         }
     });
 });
