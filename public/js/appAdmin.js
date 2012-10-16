@@ -82,7 +82,7 @@ require([
             console.dir(users);
             //users.forEach(function(element){});
 
-            var avatar = '/ava/__def__.png';
+            var avatar = '/img/caps/avatar.png';
 
             function unitsInStockFormatter(cellvalue, options, rowObject) {
                 var cellValueInt = parseInt(cellvalue);

@@ -10,7 +10,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         regdate: new Date(0),
 
         //Profile
-        avatar: '/ava/__def__.png',
+        avatar: '/img/caps/avatar.png',
         firstName: '',
         lastName: '',
         birthdate: '',

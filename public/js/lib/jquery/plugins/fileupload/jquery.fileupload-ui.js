@@ -459,7 +459,7 @@
                         node.css({height: img.height, opacity: 1});
                         dfd.resolveWith(node);
                         img = node = null;
-                    }, 200);
+                    }, 250);
 //                    that._transition(node).done(function () {
 //                        dfd.resolveWith(node);
 //                    });

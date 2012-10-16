@@ -6,6 +6,7 @@ var fs = require('fs'),
     gzippo = require('gzippo'),
     mongodb = require('connect-mongodb/node_modules/mongodb'),
     Utils = require('./commons/Utils.js'),
+    File = require("file-utils").File,
     log4js = require('log4js'),
     argv = require('optimist').argv,
 
@@ -58,6 +59,13 @@ logger.info('Application Hash: ' + app.hash);
 
 io = require('socket.io').listen(app);
 
+new File ("publicContent/avatars").createDirectory();
+new File ("publicContent/photos/micro").createDirectory();
+new File ("publicContent/photos/thumb").createDirectory();
+new File ("publicContent/photos/standard").createDirectory();
+new File ("publicContent/photos/origin").createDirectory();
+new File ("publicContent/incoming").createDirectory();
+
 app.configure(function () {
 
     app.set('views', __dirname + '/views');
@@ -77,7 +85,8 @@ app.configure(function () {
     app.use(gzippo.staticGzip(__dirname + pub, {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
     app.use(gzippo.staticGzip(__dirname + '/views', {maxAge: day})); //app.use(express.static(__dirname + pub, {maxAge: day}));
 
-    app.use('/ava', express.static(__dirname + '/uploads/ava', {maxAge: day}));
+    app.use('/_avatar', express.static(__dirname + '/publicContent/avatars', {maxAge: day}));
+    app.use('/_photo', express.static(__dirname + '/publicContent/photos', {maxAge: week}));
 
     app.use(express.bodyParser());
     app.use(express.cookieParser());

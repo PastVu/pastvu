@@ -23,10 +23,10 @@
         nodeStatic = require('node-static'),
         imageMagick = require('imagemagick'),
         options = {
-            tmpDir: __dirname + '/ftmp',
-            publicDir: __dirname + '/fpublic',
-            uploadDir: __dirname + '/fpublic/files',
-            uploadUrl: '/files/',
+            tmpDir: __dirname + '/publicContent/incoming',
+            publicDir: __dirname + '/publicContent/photos',
+            uploadDir: __dirname + '/publicContent/photos',
+            uploadUrl: '/',
             maxPostSize: 11000000000, // 11 GB
             minFileSize: 1,
             maxFileSize: 10000000000, // 10 GB
@@ -174,7 +174,7 @@
         // Prevent directory traversal and creating hidden system files:
         this.name = path.basename(this.name).replace(/^\.+/, '');
         // Prevent overwriting existing files:
-        while (_existsSync(options.uploadDir + '/' + this.name)) {
+        while (_existsSync(options.uploadDir + '/origin/' + this.name)) {
             this.name = this.name.replace(nameCountRegexp, nameCountFunc);
         }
     };
@@ -183,7 +183,8 @@
             var that = this,
                 baseUrl = (options.ssl ? 'https:' : 'http:') +
                     '//' + req.headers.host + options.uploadUrl;
-            this.url = this.delete_url = baseUrl + encodeURIComponent(this.name);
+            this.url = baseUrl + 'origin/' + encodeURIComponent(this.name);
+            this.delete_url = baseUrl + encodeURIComponent(this.name);
             Object.keys(options.imageVersions).forEach(function (version) {
                 if (_existsSync(
                         options.uploadDir + '/' + version + '/' + that.name
@@ -197,9 +198,9 @@
     UploadHandler.prototype.get = function () {
         var handler = this,
             files = [];
-        fs.readdir(options.uploadDir, function (err, list) {
+        fs.readdir(options.uploadDir + '/origin', function (err, list) {
             list.forEach(function (name) {
-                var stats = fs.statSync(options.uploadDir + '/' + name),
+                var stats = fs.statSync(options.uploadDir + '/origin/' + name),
                     fileInfo;
                 if (stats.isFile()) {
                     fileInfo = new FileInfo({
@@ -248,7 +249,7 @@
                 fs.unlink(file.path);
                 return;
             }
-            fs.renameSync(file.path, options.uploadDir + '/' + fileInfo.name);
+            fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.name);
             if (options.imageTypes.test(fileInfo.name)) {
                 Object.keys(options.imageVersions).forEach(function (version) {
                     counter += 1;
@@ -258,12 +259,12 @@
                     if (opts.gravity){
                         // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
                         imageMagick.resize({
-                            srcPath: options.uploadDir + '/' + fileInfo.name,
+                            srcPath: options.uploadDir + '/origin/' + fileInfo.name,
                             dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
                             strip: true,
                             filter: 'Sinc',
                             width: opts.width,
-                            height: opts.height + "^",
+                            height: opts.height + "^", // Fill Area Flag
                             customArgs: [
                                 "-gravity", "center",
                                 "-extent", opts.width + "x" + opts.height
@@ -271,12 +272,12 @@
                         }, finish);
                     } else {
                         imageMagick.resize({
-                            srcPath: options.uploadDir + '/' + fileInfo.name,
+                            srcPath: options.uploadDir + '/origin/' + fileInfo.name,
                             dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
                             strip: false,
                             filter: 'Sinc',
                             width: opts.width,
-                            height: opts.height
+                            height: opts.height + ">" // Only Shrink Larger Images
                         }, finish);
                     }
                 });
@@ -298,7 +299,7 @@
             fileName;
         if (handler.req.url.slice(0, options.uploadUrl.length) === options.uploadUrl) {
             fileName = path.basename(decodeURIComponent(handler.req.url));
-            fs.unlink(options.uploadDir + '/' + fileName, function (ex) {
+            fs.unlink(options.uploadDir + '/origin/' + fileName, function (ex) {
                 Object.keys(options.imageVersions).forEach(function (version) {
                     fs.unlink(options.uploadDir + '/' + version + '/' + fileName);
                 });

@@ -15,11 +15,12 @@ Thumbs.db
 
 # Log files #
 ######################
-*.log
+logs/*.log
+logs/*.log.*
 
-# Pics #
+# USER CONTENT #
 ######################
-ftmp
+publicContent
 
 # Temp Files #
 ######################
@@ -37,3 +38,4 @@ public/style/*.css
 # Except #
 ######################
 !.gitignore
+!_dumb
