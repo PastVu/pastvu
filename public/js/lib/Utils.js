@@ -248,6 +248,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             for (i = 0; i < length; i += 1) {
                 str += chars[Math.floor(Math.random() * chars.length)];
             }
+            chars = i = null;
             return str;
         },
 

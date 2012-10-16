@@ -22,6 +22,7 @@
         formidable = require('formidable'),
         nodeStatic = require('node-static'),
         imageMagick = require('imagemagick'),
+        Utils = require('./commons/Utils.js'),
         options = {
             tmpDir: __dirname + '/publicContent/incoming',
             publicDir: __dirname + '/publicContent/photos',
@@ -74,7 +75,7 @@
             return ' (' + ((parseInt(index, 10) || 0) + 1) + ')' + (ext || '');
         },
         FileInfo = function (file) {
-            this.name = file.name;
+            this.name = Utils.randomString(36) + file.name.substr(file.name.lastIndexOf('.'));
             this.size = file.size;
             this.type = file.type;
             this.delete_type = 'DELETE';
@@ -235,6 +236,7 @@
         form.on('fileBegin', function (name, file) {
             tmpFiles.push(file.path);
             var fileInfo = new FileInfo(file, handler.req, true);
+            console.log(fileInfo.name);
             fileInfo.safeName();
             map[path.basename(file.path)] = fileInfo;
             files.push(fileInfo);

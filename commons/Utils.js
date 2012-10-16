@@ -50,16 +50,19 @@ Utils.mixin = function (dst, src, force) {
 };
 
 Utils.randomString = function (length) {
-    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
+    'use strict';
+    var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz').split(''),
+        str = '',
+        i;
 
     if (!length) {
         length = Math.floor(Math.random() * chars.length);
     }
 
-    var str = '';
-    for (var i = 0; i < length; i++) {
+    for (i = 0; i < length; i += 1) {
         str += chars[Math.floor(Math.random() * chars.length)];
     }
+    chars = i = null;
     return str;
 };
 
