@@ -170,6 +170,7 @@ mc.connect(function () {
 });
 
 // creating models
+require(__dirname + '/models/Counter.js');
 require(__dirname + '/models/Settings.js');
 require(__dirname + '/models/Role.js');
 require(__dirname + '/models/User.js');
@@ -183,7 +184,6 @@ require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, io, mongo_store);
 require('./controllers/index.js').loadController(app, io);
 require('./controllers/photo.js').loadController(app, io);
-require('./controllers/photoUpload.js').loadController(app, io);
 require('./controllers/profile.js').loadController(app, io);
 require('./controllers/admin.js').loadController(app, io);
 require('./controllers/tpl.js').loadController(app);

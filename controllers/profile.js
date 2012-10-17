@@ -15,7 +15,7 @@ module.exports.loadController = function (app, io) {
         if (!login) {
             //throw new errS.e404();
         }
-        console.log(login);
+
         res.render('indexNew.jade', {pretty: false, pageTitle: login || 'Profile', appHash: app.hash});
 
         /*Step(

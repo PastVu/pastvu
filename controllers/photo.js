@@ -2,9 +2,12 @@ var auth = require('./auth.js'),
     Settings = require('mongoose').model('Settings'),
     User = require('mongoose').model('User'),
     Photo = require('mongoose').model('Photo'),
-    Step = require('step');
+    Counter = require('mongoose').model('Counter'),
+    Step = require('step'),
+    log4js = require('log4js');
 
 module.exports.loadController = function (app, io) {
+    var logger = log4js.getLogger("photo.js");
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake,
@@ -13,12 +16,50 @@ module.exports.loadController = function (app, io) {
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (!err) {
-                    console.dir('userID', user._id);
-                    Photo.find({user_id: user._id}).exec(function (err, photo) {
+                    logger.info('userID', user._id);
+                    Photo.find({user_id: user._id}, {_id: 0}).sort('loaded', -1).skip(data.start).limit(data.limit).exec(function (err, photo) {
                         socket.emit('takeUserPhoto', photo);
                     });
                 }
             });
+        });
+
+        socket.on('savePhoto', function (data) {
+            if (data.login) {
+                User.getUserID(data.login, function (err, user) {
+                    if (!err) {
+                        delete data.login;
+                        Counter.increment('photo', function (err, result) {
+                            if (err) {
+                                logger.error('Counter on foto save error: ' + err);
+                            } else {
+                                Photo.update({cid: result.next, user_id: user._id, file: data.file}, {}.extend(data), {upsert: true}, function (err) {
+                                    if (err) {
+                                        logger.error(err);
+                                    } else {
+                                        socket.emit('savePhotoCallback', {ok: 1});
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        socket.emit('savePhotoCallback', err);
+                    }
+                });
+            }
+        });
+
+        socket.on('removePhoto', function (data) {
+            if (data.login && data.file) {
+                User.getUserID(data.login, function (err, user) {
+                    if (!err) {
+                        console.dir(data);
+                        Photo.find({user_id: user._id, file: data.file}).remove();
+                    } else {
+                        socket.emit('removePhotoCallback', err);
+                    }
+                });
+            }
         });
     });
 

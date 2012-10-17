@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload User Interface Plugin 6.9.6
+ * jQuery File Upload User Interface Plugin 6.9.7
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -139,13 +139,17 @@
             },
             // Callback for successful uploads:
             done: function (e, data) {
+                console.dir(data);
                 var that = $(this).data('fileupload'),
                     template;
+
+                if (that.options.VM && that.options.VM.onUpload && data.result && data.result.length > 0) {
+                    that.options.VM.onUpload(data.result);
+                }
+
                 if (data.context) {
                     data.context.each(function (index) {
-                        var file = ($.isArray(data.result) &&
-                                data.result[index]) ||
-                                    {error: 'Empty file upload result'};
+                        var file = ($.isArray(data.result) && data.result[index]) ||  {error: 'Empty file upload result'};
                         if (file.error) {
                             that._adjustMaxNumberOfFiles(1);
                         }
@@ -294,8 +298,13 @@
             },
             // Callback for file deletion:
             destroy: function (e, data) {
-                var that = $(this).data('fileupload');
+                var that = $(this).data('fileupload'),
+                    name;
                 if (data.url) {
+                    name = data.url.substr(data.url.lastIndexOf('/') + 1);
+                    if (name && that.options.VM && that.options.VM.onDestroy) {
+                        that.options.VM.onDestroy(name);
+                    }
                     $.ajax(data);
                     that._adjustMaxNumberOfFiles(1);
                 }
@@ -399,22 +408,22 @@
             // maxNumberOfFiles before validation, so we check if
             // maxNumberOfFiles is below 0 (instead of below 1):
             if (this.options.maxNumberOfFiles < 0) {
-                return 'maxNumberOfFiles';
+                return 'Maximum number of files exceeded';
             }
             // Files are accepted if either the file type or the file name
             // matches against the acceptFileTypes regular expression, as
             // only browsers with support for the File API report the type:
             if (!(this.options.acceptFileTypes.test(file.type) ||
                     this.options.acceptFileTypes.test(file.name))) {
-                return 'acceptFileTypes';
+                return 'Filetype not allowed';
             }
             if (this.options.maxFileSize &&
                     file.size > this.options.maxFileSize) {
-                return 'maxFileSize';
+                return 'File is too big';
             }
             if (typeof file.size === 'number' &&
                     file.size < this.options.minFileSize) {
-                return 'minFileSize';
+                return 'File is too small';
             }
             return null;
         },

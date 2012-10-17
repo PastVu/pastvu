@@ -5,6 +5,17 @@
 define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/User', 'm/Users', 'text!tpl/userPhoto.jade', 'css!style/userPhoto'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, renderer, User, users, jade) {
     'use strict';
 
+    ko.observableArray['fn']['concat'] = function (arr, before) {
+        var underlyingArray = this(),
+            methodCallResult;
+
+        this.valueWillMutate();
+        methodCallResult = Array.prototype[(before ? 'unshift' : 'push')][(Array.isArray(arr) ? 'apply' : 'call')](underlyingArray, arr);
+        this.valueHasMutated();
+
+        return methodCallResult;
+    };
+
     return Cliche.extend({
         jade: jade,
         create: function () {
@@ -25,7 +36,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         show: function () {
             this.$container.fadeIn();
-            this.photos.push({file: '/img/1.jpg', title: 'Вид на Кремлёвскую'});
+            /*this.photos.push({file: '/img/1.jpg', title: 'Вид на Кремлёвскую'});
             this.photos.push({file: '/img/2.jpg', title: 'Царская(Ивановская) площадь в Кремле'});
             this.photos.push({file: '/img/3.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
             this.photos.push({file: '/img/4.jpg', title: 'hello'});
@@ -36,17 +47,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.photos.push({file: '/img/9.jpg', title: 'hello'});
             this.photos.push({file: '/img/10.jpg', title: 'hello'});
             this.photos.push({file: '/img/11.jpg', title: 'hello'});
-            this.photos.push({file: '/img/12.jpg', title: 'hello'});
+            this.photos.push({file: '/img/12.jpg', title: 'hello'});*/
             this.getPhotos(0, 20);
         },
         hide: function () {
             this.$container.css('display', '');
         },
-        getPhotos: function (start, length) {
+        getPhotos: function (start, limit) {
             socket.on('takeUserPhoto', function (data) {
-                console.dir(data);
-            });
-            socket.emit('giveUserPhoto', {login: this.u.login(), start: start, length: length});
+                this.photos.concat(data, false);
+            }.bind(this));
+            socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
         },
         onThumbLoad: function (data, event) {
             $(event.target).parent().animate({opacity: 1});

@@ -236,7 +236,6 @@
         form.on('fileBegin', function (name, file) {
             tmpFiles.push(file.path);
             var fileInfo = new FileInfo(file, handler.req, true);
-            console.log(fileInfo.name);
             fileInfo.safeName();
             map[path.basename(file.path)] = fileInfo;
             files.push(fileInfo);
@@ -253,6 +252,23 @@
             }
             fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.name);
             if (options.imageTypes.test(fileInfo.name)) {
+                counter += 1;
+                imageMagick.identify(options.uploadDir + '/origin/' + fileInfo.name, function(err, data){
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        if (data.format) {
+                            fileInfo.format = data.format;
+                        }
+                        if (data.width) {
+                            fileInfo.w = data.width;
+                        }
+                        if (data.height) {
+                            fileInfo.h = data.height;
+                        }
+                    }
+                    finish();
+                });
                 Object.keys(options.imageVersions).forEach(function (version) {
                     counter += 1;
                     var opts = options.imageVersions[version];

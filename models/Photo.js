@@ -1,10 +1,11 @@
 var mongoose = require('mongoose'),
     Schema = mongoose.Schema,
-    ObjectId = Schema.ObjectId;
+    ObjectId = Schema.ObjectId,
+    Counter = require('mongoose').model('Counter');
 
 var Photo = new mongoose.Schema({
-    nid: {type: Number, index: { unique: true }},
-    user_id: {type: ObjectId, index: { unique: true }},
+    cid: {type: Number, index: { unique: true }},
+    user_id: {type: ObjectId},
     album_id: {type: Number},
     stack_id: {type: String},
     stack_order: {type: Number},
@@ -14,11 +15,13 @@ var Photo = new mongoose.Schema({
     direction: {type: String},
 
     file: {type: String},
-    loaded: {type: Date, default: Date.now},
+    loaded: {type: Date, default: Date.now, required : true},
+    format: {type: String},
+    size: {type: Number},
     w: {type: Number},
     h: {type: Number},
 
-    title: {type: String},
+    title: {type: String, default: 'No title yet'},
     year: {type: String},
     year_from: {type: Number},
     year_to: {type: Number},
@@ -32,17 +35,14 @@ var Photo = new mongoose.Schema({
     stats_all: {type: Number},
     comments_count: {type: Number},
 
-    checked: {type: Boolean}
+    new: {type: Boolean, default: true},
+    active: {type: Boolean, default: false}
 });
 
 var PhotoModel = mongoose.model('Photo', Photo);
 
-/*var anonymous = new UserModel();
- anonymous.login = 'neo';
- anonymous.pass = 'energy';
- anonymous.hashPassword();
- anonymous.city = 'NY';
- anonymous.comment = 'good role';
- anonymous.save(function (err) {
- console.log('USER '+err);
- });*/
+Counter.findOne({_id: 'photo'}, function (err, doc) {
+    if (!doc) {
+        Counter.update({_id: 'photo'}, {$inc: { next: 1 }}, {upsert: true}, function (err) { if (err) { console.log('Counter photo' + err); } });
+    }
+});
