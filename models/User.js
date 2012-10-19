@@ -1,13 +1,10 @@
 var mongoose = require('mongoose'),
-//roleModel = mongoose.model('Role'),
     Schema = mongoose.Schema,
-    ObjectId = Schema.ObjectId,
-    crypto = require('crypto');
-
-//Used to generate a hash of the plain-text password + salt
-function md5(str) {
-    return crypto.createHash('md5').update(str).digest('hex');
-}
+    bcrypt = require('bcrypt'),
+    SALT_ROUNDS = 10,
+    SALT_SEED = 20,
+    MAX_LOGIN_ATTEMPTS = 5,
+    LOCK_TIME = 2 * 60 * 1000;
 
 var userRoles = {
     user: {
@@ -29,11 +26,14 @@ var sexes = [
     'female'
 ];
 
-var User = new mongoose.Schema({
-    login: {type: String, index: { unique: true }},
-    email: {type: String, index: { unique: true }, lowercase: true, validate: /^[-\w.]+@([A-z0-9][-A-z0-9]+\.)+[A-z]{2,4}$/},
-    pass: {type: String},
+var UserScheme = new mongoose.Schema({
+    login: {type: String, required: true, index: { unique: true }},
+    email: {type: String, required: true, index: { unique: true }, lowercase: true, validate: /^[-\w.]+@([A-z0-9][-A-z0-9]+\.)+[A-z]{2,4}$/},
+
+    pass: {type: String, required: true},
     salt: {type: String},
+    loginAttempts: {type: Number, required: true, default: 0},
+    lockUntil: {type: Number},
 
     //Profile
     avatar: {type: String},
@@ -54,7 +54,7 @@ var User = new mongoose.Schema({
     aboutme: {type: String},
 
     //Service
-    roles: {type: [String] },
+    roles: {type: [Schema.ObjectId]},
     regdate: {type: Date, default: Date.now },
 
     dateFormat: {"type": String, "default": "dd.mm.yyyy" },
@@ -62,127 +62,219 @@ var User = new mongoose.Schema({
     activatedate: {type: Date, default: Date.now }
 });
 
-User.path('sex').validate(function (sex) {
-    return sexes.indexOf(sex) != -1;
-}, 'Incorrect sex');
+/**
+ * Перед каждым сохранением, если изменился пароль, генерируем хэш и соль по BlowFish
+ * @instance
+ * @param {string} candidatePassword
+ * @param {function} cb
+ */
+UserScheme.pre('save', function (next) {
+    var user;
 
-User.path('pass').set(function (pass) {
-    pass = pass.toString();
-    if (pass.length === 0) return this.pass;
-    return pass;
+    // only hash the password if it has been modified (or is new)
+    if (!this.isModified('pass')) {
+        return next();
+    }
+
+    user = this;
+    // generate a salt
+    bcrypt.genSalt(SALT_ROUNDS, SALT_SEED, function (err, salt) {
+        if (err) {
+            return next(err);
+        }
+
+        // hash the password along with our new salt
+        bcrypt.hash(user.pass, salt, function (err, hash) {
+            if (err) {
+                return next(err);
+            }
+
+            // override the cleartext password with the hashed one
+            user.pass = hash;
+            next();
+        });
+    });
 });
-
-/*User.pre('save', function (next) {
- var doc = this.toObject();
- console.log('PRESAVE');
- for (var key in doc) {
- if (doc.hasOwnProperty(key) &&
- !User.paths[key]) {
- next(new Error('Save failed: Trying to add doc with wrong field(s)'));
- return;
- }
- }
- next();
- });*/
-
-var UserModel = mongoose.model('User', User);
 
 /**
  * Checks if pass is right for current user
- * @static
- * @param {Object} user
- * @param {string} pass
+ * @instance
+ * @param {string} candidatePassword
+ * @param {function} cb
  */
-UserModel.checkPass = function (user, pass) {
-    return (user.pass === md5(pass + user.salt));
+UserScheme.methods.checkPass = function (candidatePassword, cb) {
+    bcrypt.compare(candidatePassword, this.pass, function (err, isMatch) {
+        if (err) {
+            return cb(err);
+        }
+        cb(null, isMatch);
+    });
 };
 
 /**
  * Checks if role is right for current user
- * @static
- * @param {Object} user
+ * @instance
  * @param {string} role
  */
-UserModel.checkRole = function (user, role) {
-    if (!user) return false;
+UserScheme.methods.checkRole = function (role) {
     var roleLevel = (role && userRoles[role]) ? userRoles[role].level : 0;
-    return userRoles[user.role].level >= roleLevel;
+    return userRoles[this.role].level >= roleLevel;
 };
+
+UserScheme.virtual('isLocked').get(function () {
+    // check for a future lockUntil timestamp
+    return !!(this.lockUntil && this.lockUntil > Date.now());
+});
+
+UserScheme.methods.incLoginAttempts = function (cb) {
+    // if we have a previous lock that has expired, restart at 1
+    if (this.lockUntil && this.lockUntil < Date.now()) {
+        return this.update({
+            $set: { loginAttempts: 1 },
+            $unset: { lockUntil: 1 }
+        }, cb);
+    }
+    // otherwise we're incrementing
+    var updates = { $inc: { loginAttempts: 1 } };
+    // lock the account if we've reached max attempts and it's not locked already
+    if (this.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
+        updates.$set = { lockUntil: Date.now() + LOCK_TIME };
+    }
+    return this.update(updates, cb);
+};
+
+/**
+ * Failed Login Reasons
+ */
+var reasons = UserScheme.statics.failedLogin = {
+    NOT_FOUND: 0,
+    PASSWORD_INCORRECT: 1,
+    MAX_ATTEMPTS: 2
+};
+
+UserScheme.statics.getAuthenticated = function (login, password, cb) {
+    this.findOne({ login: login }, function (err, user) {
+        if (err) {
+            return cb(err);
+        }
+
+        // make sure the user exists
+        if (!user) {
+            return cb(null, null, reasons.NOT_FOUND);
+        }
+
+        // check if the account is currently locked
+        if (user.isLocked) {
+            // just increment login attempts if account is already locked
+            return user.incLoginAttempts(function (err) {
+                if (err) {
+                    return cb(err);
+                }
+                return cb(null, null, reasons.MAX_ATTEMPTS);
+            });
+        }
+
+        // test for a matching password
+        user.comparePassword(password, function (err, isMatch) {
+            if (err) {
+                return cb(err);
+            }
+
+            // check if the password was a match
+            if (isMatch) {
+                // if there's no lock or failed attempts, just return the user
+                if (!user.loginAttempts && !user.lockUntil) {
+                    return cb(null, user);
+                }
+                // reset attempts and lock info
+                var updates = {
+                    $set: { loginAttempts: 0 },
+                    $unset: { lockUntil: 1 }
+                };
+                return user.update(updates, function (err) {
+                    if (err) {
+                        return cb(err);
+                    }
+                    return cb(null, user);
+                });
+            }
+
+            // password is incorrect, so increment login attempts before responding
+            user.incLoginAttempts(function (err) {
+                if (err) {
+                    return cb(err);
+                }
+                return cb(null, null, reasons.PASSWORD_INCORRECT);
+            });
+        });
+    });
+};
+
+UserScheme.path('sex').validate(function (sex) {
+    return sexes.indexOf(sex) !== -1;
+}, 'Incorrect sex');
+
+UserScheme.path('pass').set(function (pass) {
+    pass = pass.toString();
+    if (pass.length === 0) {
+        return this.pass;
+    }
+    return pass;
+});
 
 /**
  * getPublicUser
  * @static
  * @param {string} login
- * @param {function} callback
+ * @param {function} cb
  */
-UserModel.getUserPublic = function (login, callback) {
-    if (!login) callback(null, 'Login is not specified');
-    UserModel.findOne({ $and: [
-        {login: new RegExp('^' + login + '$', 'i')},
-        { active: true }
-    ] }).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(callback);
+UserScheme.statics.getUserPublic = function (login, cb) {
+    if (!login) {
+        cb(null, 'Login is not specified');
+    }
+    this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(cb);
 };
 
 /**
- * getAllPublicUser
+ * getAllPublicUsers
  * @static
- * @param {string} login
- * @param {function} callback
+ * @param {function} cb
  */
-UserModel.getAllUserPublic = function (callback) {
-    UserModel.find({active: true}).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(callback);
+UserScheme.statics.getAllPublicUsers = function (cb) {
+    this.find({active: true}).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(cb);
 };
 
 /**
  * getUserAll
  * @static
  * @param {string} login
- * @param {function} callback
+ * @param {function} cb
  */
-UserModel.getUserAll = function (login, callback) {
-    if (!login) callback(null, 'Login is not specified');
-    UserModel.findOne({ $and: [
-        {login: new RegExp('^' + login + '$', 'i')},
-        { active: true }
-    ] }).exec(callback);
+UserScheme.statics.getUserAll = function (login, cb) {
+    if (!login) {
+        cb(null, 'Login is not specified');
+    }
+    this.findOne({login: new RegExp('^' + login + '$', 'i'),  active: true }).exec(cb);
 };
-UserModel.getUserAllLoginMail = function (login, callback) {
-    if (!login) callback(null, 'Login is not specified');
-    UserModel.findOne({ $and: [
+UserScheme.statics.getUserAllLoginMail = function (login, cb) {
+    if (!login) {
+        cb(null, 'Login is not specified');
+    }
+    this.findOne({ $and: [
         { $or: [
-            { login: new RegExp('^' + login + '$', 'i') } ,
+            { login: new RegExp('^' + login + '$', 'i') },
             { email: login.toLowerCase() }
         ] },
         { active: true }
-    ] }).exec(callback);
+    ] }).exec(cb);
 };
-UserModel.getUserID = function (login, callback) {
+UserScheme.statics.getUserID = function (login, cb) {
     if (!login) {
-        callback(null, 'Login is not specified');
+        cb(null, 'Login is not specified');
     }
-    UserModel.findOne({ login: new RegExp('^' + login + '$', 'i') }, '_id', { safe: true }, callback);
+    this.findOne({login: new RegExp('^' + login + '$', 'i') }, '_id', { safe: true }, cb);
 };
 
-UserModel.prototype.hashPassword = function () {
-    if (!this.pass) return;
-    this.salt = Math.random() + '';
-    this.pass = md5(this.pass + this.salt);
-};
-UserModel.hashPasswordExternal = function () {
-    if (!this.pass) return;
-    this.salt = Math.random() + '';
-    this.pass = md5(this.pass + this.salt);
-};
-
-/*var anonymous = new UserModel();
- anonymous.login = 'neo';
- anonymous.pass = 'energy';
- anonymous.hashPassword();
- anonymous.city = 'NY';
- anonymous.comment = 'good role';
- anonymous.save(function (err) {
- console.log('USER '+err);
- });*/
 
 
 var UserConfirm = new mongoose.Schema({
@@ -191,4 +283,7 @@ var UserConfirm = new mongoose.Schema({
     created: {type: Date, default: Date.now}
 });
 
-var UserConfirmModel = mongoose.model('UserConfirm', UserConfirm);
+module.exports.makeModel = function (db) {
+    var UserModel = db.model('User', UserScheme),
+        UserConfirmModel = db.model('UserConfirm', UserConfirm);
+};

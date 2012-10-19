@@ -24,39 +24,80 @@ function login(session, data, callback) {
         return;
     }
 
-    Step(
-        function findUser() {
-            User.getUserAllLoginMail(data.login, this);
-        },
-        function checkEnter(err, user) {
-            if (user) {
-                if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
-            } else {
-                error = 'User does not exists';
-            }
-
-            if (error) {
-                callback.call(null, error);
-                return;
-            } else {
-                session.login = user.login;
-                session.remember = data.remember;
-                if (data.remember) session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-                else session.cookie.expires = false;
-                session.save();
-
-                //Удаляем предыдущие сохранившиеся сессии этого пользователя
-                mongo_store.getCollection().remove({'session': new RegExp('^' + user.login + '$', 'i'), _id: { $ne: session.id }});
-
-                _session.getNeoStore(session, user.login, this);
-            }
-        },
-        function SaveSess(neoStore) {
-            session.neoStore = neoStore;
-            logger.info("Login success for %s", data.login);
-            callback.call(null, null);
+    User.statics.getAuthenticated(data.login, data.pass, function (err, user, reason) {
+        if (err) {
+            callback.call(null, err + '.');
         }
-    );
+
+        // login was successful if we have a user
+        if (user) {
+            session.login = user.login;
+            session.remember = data.remember;
+            if (data.remember) {
+                session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+            } else {
+                session.cookie.expires = false;
+            }
+            session.save();
+
+            //Удаляем предыдущие сохранившиеся сессии этого пользователя
+            mongo_store.getCollection().remove({'session': new RegExp('^' + user.login + '$', 'i'), _id: { $ne: session.id }});
+
+            _session.getNeoStore(session, user.login, function SaveSess(neoStore) {
+                session.neoStore = neoStore;
+                logger.info("Login success for %s", data.login);
+                callback.call(null, null);
+            });
+            return;
+        }
+
+        switch (reason) {
+        case User.failedLogin.NOT_FOUND:
+        case User.failedLogin.PASSWORD_INCORRECT:
+            // note: these cases are usually treated the same - don't tell
+            // the user *why* the login failed, only that it did
+            callback.call(null, 'Login or password incorrect');
+            break;
+        case User.failedLogin.MAX_ATTEMPTS:
+            // send email or otherwise notify user that account is
+            // temporarily locked
+            callback.call(null, 'Your account has been temporarily locked due to exceeding the number of wrong login attempts');
+            break;
+        }
+    });
+    /*Step(
+     function findUser() {
+     User.getUserAllLoginMail(data.login, this);
+     },
+     function checkEnter(err, user) {
+     if (user) {
+     if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
+     } else {
+     error = 'User does not exists';
+     }
+
+     if (error) {
+     callback.call(null, error);
+     return;
+     } else {
+     session.login = user.login;
+     session.remember = data.remember;
+     if (data.remember) session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+     else session.cookie.expires = false;
+     session.save();
+
+     //Удаляем предыдущие сохранившиеся сессии этого пользователя
+     mongo_store.getCollection().remove({'session': new RegExp('^' + user.login + '$', 'i'), _id: { $ne: session.id }});
+
+     _session.getNeoStore(session, user.login, this);
+     }
+     },
+     function SaveSess(neoStore) {
+     session.neoStore = neoStore;
+     logger.info("Login success for %s", data.login);
+     callback.call(null, null);
+     }
+     );*/
 }
 
 function register(session, data, callback) {
@@ -68,7 +109,7 @@ function register(session, data, callback) {
     if (!data.login) error += 'Fill in the login field. ';
     if (!data.email) error += 'Fill in the e-mail field. ';
     if (!data.pass) error += 'Fill in the password field. ';
-    if (data.pass != data.pass2) error += 'Passwords do not match.';
+    if (data.pass !== data.pass2) error += 'Passwords do not match.';
     if (error) {
         callback.call(null, error, null);
         return;
@@ -77,14 +118,14 @@ function register(session, data, callback) {
     Step(
         function checkUserExists() {
             User.findOne({ $or: [
-                { login: new RegExp('^' + data.login + '$', 'i') } ,
+                { login: new RegExp('^' + data.login + '$', 'i') },
                 { email: data.email }
             ] }, this);
         },
         function createUser(err, user) {
             if (user) {
-                if (user.login.toLowerCase() == data.login.toLowerCase()) error += 'User with such login already exists. ';
-                if (user.email == data.email) error += 'User with such email already exists.';
+                if (user.login.toLowerCase() === data.login.toLowerCase()) error += 'User with such login already exists. ';
+                if (user.email === data.email) error += 'User with such email already exists.';
 
                 if (callback) callback.call(null, error);
                 return;
@@ -331,7 +372,7 @@ module.exports.loadController = function (a, io, ms) {
                             }
                         }
                     );
-                } else if (key.length == 79) { //Confirm pass change
+                } else if (key.length === 79) { //Confirm pass change
                     var newPass = Utils.randomString(8),
                         email;
 
@@ -394,6 +435,6 @@ module.exports.loadController = function (a, io, ms) {
     });
 
     //Раз в день чистим пользователей, которые не подтвердили регистрацию или не сменили пароль
-    setInterval(clearUnconfirmedUsers, 24 * 60 * 60 * 1000);
+    //setInterval(clearUnconfirmedUsers, 24 * 60 * 60 * 1000);
     //clearUnconfirmedUsers();
 };

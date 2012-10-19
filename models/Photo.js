@@ -3,7 +3,7 @@ var mongoose = require('mongoose'),
     ObjectId = Schema.ObjectId,
     Counter = require('mongoose').model('Counter');
 
-var Photo = new mongoose.Schema({
+var PhotoSheme = new mongoose.Schema({
     cid: {type: Number, index: { unique: true }},
     user_id: {type: ObjectId},
     album_id: {type: Number},
@@ -39,10 +39,13 @@ var Photo = new mongoose.Schema({
     active: {type: Boolean, default: false}
 });
 
-var PhotoModel = mongoose.model('Photo', Photo);
+module.exports.makeModel = function (db) {
+    var PhotoModel = db.model('Photo', PhotoSheme);
+};
 
+/*
 Counter.findOne({_id: 'photo'}, function (err, doc) {
     if (!doc) {
         Counter.update({_id: 'photo'}, {$inc: { next: 1 }}, {upsert: true}, function (err) { if (err) { console.log('Counter photo' + err); } });
     }
-});
+});*/

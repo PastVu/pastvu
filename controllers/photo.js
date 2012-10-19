@@ -16,7 +16,6 @@ module.exports.loadController = function (app, io) {
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (!err) {
-                    logger.info('userID', user._id);
                     Photo.find({user_id: user._id}, {_id: 0}).sort('loaded', -1).skip(data.start).limit(data.limit).exec(function (err, photo) {
                         socket.emit('takeUserPhoto', photo);
                     });

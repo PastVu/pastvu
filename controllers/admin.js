@@ -16,7 +16,7 @@ module.exports.loadController = function (app, io) {
             session = hs.session;
 
         socket.on('giveUsers', function () {
-            User.getAllUserPublic(function (err, users) {
+            User.getAllPublicUsers(function (err, users) {
                 socket.emit('takeUsers', users);
             });
         });

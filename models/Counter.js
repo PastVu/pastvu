@@ -1,16 +1,19 @@
 var mongoose = require('mongoose');
 
-var Counter = new mongoose.Schema({
+var CounterSchema = new mongoose.Schema({
     _id: String,
-    next: {type: Number, default: 0}
+    next: {type: Number, default: 1}
 });
 
-Counter.statics.findAndModify = function (query, sort, doc, options, callback) {
+CounterSchema.statics.findAndModify = function (query, sort, doc, options, callback) {
     return this.collection.findAndModify(query, sort, doc, options, callback);
 };
 
-Counter.statics.increment = function (counter, callback) {
-    return this.collection.findAndModify({ _id: counter }, [], { $inc: { next: 1 } }, {}, callback);
+CounterSchema.statics.increment = function (counter, callback) {
+    return this.collection.findByIdAndUpdate(counter, { $inc: { next: 1 } }, {new: true, upsert: true, select: {next: 1}}, callback);
+    //return this.collection.findAndModify({ _id: counter }, [], { $inc: { next: 1 } }, {}, callback);
 };
 
-var CounterModel = mongoose.model('Counter', Counter);
+module.exports.makeModel = function (db) {
+    db.model('Counter', CounterSchema);
+};
