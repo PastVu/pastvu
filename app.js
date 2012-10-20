@@ -176,15 +176,15 @@ require(__dirname + '/models/Photo.js').makeModel(db);
 
 
 // loading controllers
-//require('./controllers/_session.js').loadController(app, io, mongo_store, memcached);
-//require('./controllers/errors.js').loadController(app);
-//require('./controllers/mail.js').loadController(app);
-//require('./controllers/auth.js').loadController(app, io, mongo_store);
-//require('./controllers/index.js').loadController(app, io);
-//require('./controllers/photo.js').loadController(app, io);
-//require('./controllers/profile.js').loadController(app, io);
-//require('./controllers/admin.js').loadController(app, io);
-//require('./controllers/tpl.js').loadController(app);
+require('./controllers/_session.js').loadController(app, db, io, mongo_store, memcached);
+require('./controllers/errors.js').loadController(app);
+require('./controllers/mail.js').loadController(app);
+require('./controllers/auth.js').loadController(app, db, io, mongo_store);
+require('./controllers/index.js').loadController(app, db, io);
+require('./controllers/photo.js').loadController(app, db, io);
+require('./controllers/profile.js').loadController(app, db, io);
+require('./controllers/admin.js').loadController(app, db, io);
+require('./controllers/tpl.js').loadController(app);
 app.get('*', function (req, res) {
     errS.e404Virgin(req, res);
 });

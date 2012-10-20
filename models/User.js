@@ -6,21 +6,6 @@ var mongoose = require('mongoose'),
     MAX_LOGIN_ATTEMPTS = 5,
     LOCK_TIME = 2 * 60 * 1000;
 
-var userRoles = {
-    user: {
-        name: 'operator',
-        level: 1
-    },
-    admin: {
-        name: 'administrator',
-        level: 3
-    },
-    sadmin: {
-        name: 'superadministrator',
-        level: 10
-    }
-};
-
 var sexes = [
     'male',
     'female'
@@ -54,7 +39,9 @@ var UserScheme = new mongoose.Schema({
     aboutme: {type: String},
 
     //Service
-    roles: {type: [Schema.ObjectId]},
+    roles: [
+        { type: Schema.Types.ObjectId, ref: mongoose.model('Role') }
+    ],
     regdate: {type: Date, default: Date.now },
 
     dateFormat: {"type": String, "default": "dd.mm.yyyy" },
@@ -109,16 +96,6 @@ UserScheme.methods.checkPass = function (candidatePassword, cb) {
         }
         cb(null, isMatch);
     });
-};
-
-/**
- * Checks if role is right for current user
- * @instance
- * @param {string} role
- */
-UserScheme.methods.checkRole = function (role) {
-    var roleLevel = (role && userRoles[role]) ? userRoles[role].level : 0;
-    return userRoles[this.role].level >= roleLevel;
 };
 
 UserScheme.virtual('isLocked').get(function () {
@@ -254,7 +231,7 @@ UserScheme.statics.getUserAll = function (login, cb) {
     if (!login) {
         cb(null, 'Login is not specified');
     }
-    this.findOne({login: new RegExp('^' + login + '$', 'i'),  active: true }).exec(cb);
+    this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).exec(cb);
 };
 UserScheme.statics.getUserAllLoginMail = function (login, cb) {
     if (!login) {
@@ -276,7 +253,6 @@ UserScheme.statics.getUserID = function (login, cb) {
 };
 
 
-
 var UserConfirm = new mongoose.Schema({
     key: {type: String, index: { unique: true }},
     login: {type: String, index: { unique: true }},
@@ -285,5 +261,12 @@ var UserConfirm = new mongoose.Schema({
 
 module.exports.makeModel = function (db) {
     var UserModel = db.model('User', UserScheme),
-        UserConfirmModel = db.model('UserConfirm', UserConfirm);
+        UserConfirmModel = db.model('UserConfirm', UserConfirm),
+        Role = db.model('Role');
+
+    Role.findOne({name: 'super_admin'}, function (err, role) {
+        UserModel.saveUpsert({login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow'}, function (err, doc) {
+            if (err) console.log('UserModel ' + err);
+        });
+    });
 };

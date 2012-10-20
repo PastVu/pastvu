@@ -40,7 +40,7 @@ var PhotoSheme = new mongoose.Schema({
 });
 
 module.exports.makeModel = function (db) {
-    var PhotoModel = db.model('Photo', PhotoSheme);
+    db.model('Photo', PhotoSheme);
 };
 
 /*

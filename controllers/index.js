@@ -1,12 +1,14 @@
 var auth = require('./auth.js'),
-    Settings = require('mongoose').model('Settings'),
-    Mail = require('./mail.js'),
-    User = require('mongoose').model('User'),
+    Settings,
+    User,
     Step = require('step'),
     log4js = require('log4js');
 
-module.exports.loadController = function (app, io) {
+module.exports.loadController = function (app, db, io) {
     var logger = log4js.getLogger("index.js");
+
+    Settings = db.model('Settings');
+    User = db.model('User');
 
     app.dynamicHelpers({
         checkAccess: function (req, res) {
@@ -61,7 +63,7 @@ module.exports.loadController = function (app, io) {
             var params = {
                 LoggedIn: !!session.login,
                 ip: hs.address
-            }
+            };
             Step(
                 function () {
                     Settings.find({}, this.parallel());

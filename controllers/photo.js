@@ -1,13 +1,17 @@
 var auth = require('./auth.js'),
-    Settings = require('mongoose').model('Settings'),
-    User = require('mongoose').model('User'),
-    Photo = require('mongoose').model('Photo'),
-    Counter = require('mongoose').model('Counter'),
-    Step = require('step'),
+    Settings,
+    User,
+    Photo,
+    Counter,
     log4js = require('log4js');
 
-module.exports.loadController = function (app, io) {
+module.exports.loadController = function (app, db, io) {
     var logger = log4js.getLogger("photo.js");
+
+    Settings = db.model('Settings');
+    User = db.model('User');
+    Photo = db.model('Photo');
+    Counter = db.model('Counter');
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake,

@@ -1,13 +1,15 @@
 var auth = require('./auth.js'),
     _session = require('./_session.js'),
-    Settings = require('mongoose').model('Settings'),
-    User = require('mongoose').model('User'),
-    Step = require('step'),
+    Settings,
+    User,
     Utils = require('../commons/Utils.js'),
     log4js = require('log4js');
 
-module.exports.loadController = function (app, io) {
+module.exports.loadController = function (app, db, io) {
     var logger = log4js.getLogger("profile.js");
+
+    Settings = db.model('Settings');
+    User = db.model('User');
 
     app.get('/u/:login?/*', function (req, res) {
         var login = req.params.login,
@@ -42,6 +44,7 @@ module.exports.loadController = function (app, io) {
         //socket.emit('initMessage', {init_message: '000'});
 
         socket.on('giveUser', function (data) {
+            logger.info(data);
             User.getUserPublic(data.login, function (err, user) {
                 socket.emit('takeUser', user.toObject());
             });

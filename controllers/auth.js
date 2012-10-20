@@ -1,8 +1,8 @@
 var mongoose = require('mongoose'),
     _session = require('./_session.js'),
-    User = mongoose.model('User'),
-    Role = mongoose.model('Role'),
-    UserConfirm = mongoose.model('UserConfirm'),
+    User,
+    Role,
+    UserConfirm,
     Step = require('step'),
     Mail = require('./mail.js'),
     errS = require('./errors.js').err,
@@ -307,8 +307,11 @@ function renderLoginPage(req, res, opts) {
     res.render('login', opts);
 }
 
-module.exports.loadController = function (a, io, ms) {
+module.exports.loadController = function (a, db, io, ms) {
     app = a;
+    User = db.model('User');
+    Role = db.model('Role');
+    UserConfirm = db.model('UserConfirm');
     mongo_store = ms;
 
     io.sockets.on('connection', function (socket) {

@@ -1,6 +1,3 @@
-/**
- * p.klimashkin
- */
 var log4js = require('log4js'),
     File = require("file-utils").File,
     tplFolder = new File('./views/client'),
