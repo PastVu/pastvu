@@ -12,12 +12,16 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 Users.waitings[login].push({cb: callback, ctx: context});
             } else {
                 Users.waitings[login] = [{cb: callback, ctx: context}];
-                socket.on('takeUser', function (user) {
-                    console.log(444);
-                    Users.users[user.login] = User.VM(user);
-                    Users.waitings[user.login].forEach(function (item, index, collection) {
-                        item.cb.call(item.ctx, Users.users[user.login]);
-                    });
+                socket.on('takeUser', function (data) {
+                    if (!data.error && data.login === login) {
+                        Users.users[login] = User.VM(data);
+                    }
+                    if (Users.waitings[login]) {
+                        Users.waitings[login].forEach(function (item, index, collection) {
+                            item.cb.call(item.ctx, !data.error && data.login === login && Users.users[login]);
+                        });
+                        delete Users.waitings[login];
+                    }
                 });
                 socket.emit('giveUser', {login: login});
             }

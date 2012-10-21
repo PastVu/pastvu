@@ -26,11 +26,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             users.user(user, function (vm) {
-                this.u = vm;
+                if (vm) {
+                    this.u = vm;
 
-                ko.applyBindings(globalVM, this.$dom[0]);
+                    ko.applyBindings(globalVM, this.$dom[0]);
 
-                this.show();
+                    this.show();
+                }
 
             }, this);
         },

@@ -194,6 +194,29 @@
 					color: #777777;
 				}
 			}
+
+			&:required:invalid {
+			}
+			/* The entire area of the popup including area outside the bubble shape&nbsp;*/
+			&::-webkit-validation-bubble{}
+			/* Portion above the bubble behind top arrow&nbsp;*/
+			&::-webkit-validation-bubble-arrow-clipper{}
+			/* The arrow at the top of the bubble */
+			&::-webkit-validation-bubble-arrow{
+				border: 1px solid @MainBlueColor;
+				background-color: darken(@MainLigthColor, 1%);
+
+			}
+			/* The area containing the validation message&nbsp;*/
+			&::-webkit-validation-bubble-message {
+				font: 14px/16px UCondensed;
+				color: @MainBlueColor;
+				border-radius: 0;
+				border: 1px solid @MainBlueColor;
+				background-color: darken(@MainLigthColor, 1%);
+				.box-shadow(0 1px 4px 0px #222);
+			}
+
 		}
 
 		button {

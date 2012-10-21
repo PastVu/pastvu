@@ -46,7 +46,7 @@ module.exports.loadController = function (app, db, io) {
         socket.on('giveUser', function (data) {
             logger.info(data);
             User.getUserPublic(data.login, function (err, user) {
-                socket.emit('takeUser', user.toObject());
+                socket.emit('takeUser', (user && user.toObject()) || {error: true, message: err && err.messagee});
             });
         });
 

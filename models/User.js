@@ -13,10 +13,9 @@ var sexes = [
 
 var UserScheme = new mongoose.Schema({
     login: {type: String, required: true, index: { unique: true }},
-    email: {type: String, required: true, index: { unique: true }, lowercase: true, validate: /^[-\w.]+@([A-z0-9][-A-z0-9]+\.)+[A-z]{2,4}$/},
+    email: {type: String, required: true, index: { unique: true }, lowercase: true, validate: /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/},
 
     pass: {type: String, required: true},
-    salt: {type: String},
     loginAttempts: {type: Number, required: true, default: 0},
     lockUntil: {type: Number},
 
@@ -40,7 +39,7 @@ var UserScheme = new mongoose.Schema({
 
     //Service
     roles: [
-        { type: Schema.Types.ObjectId, ref: mongoose.model('Role') }
+        { type: Schema.Types.ObjectId, ref: 'Role' }
     ],
     regdate: {type: Date, default: Date.now },
 
@@ -130,7 +129,7 @@ var reasons = UserScheme.statics.failedLogin = {
 };
 
 UserScheme.statics.getAuthenticated = function (login, password, cb) {
-    this.findOne({ login: login }, function (err, user) {
+    this.findOne({ login: login, active: true }, function (err, user) {
         if (err) {
             return cb(err);
         }
@@ -152,7 +151,7 @@ UserScheme.statics.getAuthenticated = function (login, password, cb) {
         }
 
         // test for a matching password
-        user.comparePassword(password, function (err, isMatch) {
+        user.checkPass(password, function (err, isMatch) {
             if (err) {
                 return cb(err);
             }
@@ -209,7 +208,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
     if (!login) {
         cb(null, 'Login is not specified');
     }
-    this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(cb);
+    this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
 };
 
 /**
@@ -218,7 +217,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
  * @param {function} cb
  */
 UserScheme.statics.getAllPublicUsers = function (cb) {
-    this.find({active: true}).select({_id: 0, pass: 0, salt: 0, activatedate: 0 }).exec(cb);
+    this.find({active: true}).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
 };
 
 /**
@@ -265,7 +264,7 @@ module.exports.makeModel = function (db) {
         Role = db.model('Role');
 
     Role.findOne({name: 'super_admin'}, function (err, role) {
-        UserModel.saveUpsert({login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow'}, function (err, doc) {
+        UserModel.saveUpsert({login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow', aboutme: 'Must be deactivated after the creation of human administrator'}, function (err, doc) {
             if (err) console.log('UserModel ' + err);
         });
     });

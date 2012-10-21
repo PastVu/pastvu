@@ -57,46 +57,48 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             var user = this.auth.iAm.login();
             if (GP.LoggedIn()) {
                 users.user(user, function (vm) {
-                    this.u = vm;
+                    if (vm) {
+                        this.u = vm;
 
-                    ko.applyBindings(globalVM, this.$dom[0]);
+                        ko.applyBindings(globalVM, this.$dom[0]);
 
-                    // Initialize the jQuery File Upload widget:
-                    this.$dom.find('#fileupload').fileupload();
-                    this.$dom.find('#fileupload').fileupload('option', {
-                        VM: this,
-                        url: 'http://localhost:8888/',
-                        dropZone: this.$dom.find('.addfiles_area'),
-                        maxFileSize: 52428800, //50Mb
-                        maxNumberOfFiles: 10,
-                        previewSourceMaxFileSize: 26214400, //25MB The maximum file size of images that are to be displayed as preview:
-                        previewMaxWidth: 210, // The maximum width of the preview images:
-                        previewMaxHeight: 140, // The maximum height of the preview images:
-                        acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
-                        prependFiles: true,
-                        process: [
-                            {
-                                action: 'load',
-                                fileTypes: /^image\/(jpeg|png)$/,
-                                maxFileSize: 52428800 // 50MB
-                            }
-                        ],
-                        change: this.fileAdd.bind(this),
-                        drop: this.fileAdd.bind(this),
-                        always: function (e, data) {
-                            /*if (data && data.result) {
-                                data.result.forEach(function (item, index, array) {
-                                    if (item.name) {
-                                        this.fileUploaded.push(item.name);
-                                        socket.emit('saveUser', targetUser);
-                                    }
-                                }.bind(this));
-                            }
-                            console.log('done');*/
-                        }.bind(this)
-                    });
+                        // Initialize the jQuery File Upload widget:
+                        this.$dom.find('#fileupload').fileupload();
+                        this.$dom.find('#fileupload').fileupload('option', {
+                            VM: this,
+                            url: 'http://localhost:8888/',
+                            dropZone: this.$dom.find('.addfiles_area'),
+                            maxFileSize: 52428800, //50Mb
+                            maxNumberOfFiles: 10,
+                            previewSourceMaxFileSize: 26214400, //25MB The maximum file size of images that are to be displayed as preview:
+                            previewMaxWidth: 210, // The maximum width of the preview images:
+                            previewMaxHeight: 140, // The maximum height of the preview images:
+                            acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
+                            prependFiles: true,
+                            process: [
+                                {
+                                    action: 'load',
+                                    fileTypes: /^image\/(jpeg|png)$/,
+                                    maxFileSize: 52428800 // 50MB
+                                }
+                            ],
+                            change: this.fileAdd.bind(this),
+                            drop: this.fileAdd.bind(this),
+                            always: function (e, data) {
+                                /*if (data && data.result) {
+                                 data.result.forEach(function (item, index, array) {
+                                 if (item.name) {
+                                 this.fileUploaded.push(item.name);
+                                 socket.emit('saveUser', targetUser);
+                                 }
+                                 }.bind(this));
+                                 }
+                                 console.log('done');*/
+                            }.bind(this)
+                        });
 
-                    this.show();
+                        this.show();
+                    }
 
                 }, this);
             } else {
@@ -129,15 +131,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         send: function (viewModel) {
             var data = this.$dom.find('#fileupload').data('fileupload');
-/*            this.$dom.find('#fileupload').fileupload('send', {files: viewModel.fileList()})
-                .success(function (result, textStatus, jqXHR) {
-                    console.log(textStatus);
-                })
-                .error(function (jqXHR, textStatus, errorThrown) { console.log(textStatus); })
-                .complete(function (result, textStatus, jqXHR) { console.log(textStatus); });*/
+            /*            this.$dom.find('#fileupload').fileupload('send', {files: viewModel.fileList()})
+             .success(function (result, textStatus, jqXHR) {
+             console.log(textStatus);
+             })
+             .error(function (jqXHR, textStatus, errorThrown) { console.log(textStatus); })
+             .complete(function (result, textStatus, jqXHR) { console.log(textStatus); });*/
             /*viewModel.fileList().forEach(function (item) {
-                item.uploaded(true);
-            });*/
+             item.uploaded(true);
+             });*/
         },
         onUpload: function (data) {
             if (data) {

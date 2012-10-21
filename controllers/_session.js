@@ -61,9 +61,14 @@ function getNeoStore(id, login, callback) {
 module.exports.cashedSession = cashedSession;
 module.exports.getNeoStore = getNeoStore;
 
-function cashedSessionDel(id, callback) {
-    memcashed.del('sess' + id, callback || function () {
-    });
+function cashedSessionDel(id, cb) {
+    console.dir(memcashed);
+    if (memcashed && memcashed.del) {
+        memcashed.del('sess' + id, cb || function () {
+        });
+    } else {
+        cb && cb();
+    }
 }
 module.exports.cashedSessionDel = cashedSessionDel;
 

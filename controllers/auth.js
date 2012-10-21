@@ -1,5 +1,4 @@
-var mongoose = require('mongoose'),
-    _session = require('./_session.js'),
+var _session = require('./_session.js'),
     User,
     Role,
     UserConfirm,
@@ -14,19 +13,20 @@ var mongoose = require('mongoose'),
 
 var logger = log4js.getLogger("auth.js");
 
-function login(session, data, callback) {
+function login(session, data, cb) {
     var error = '';
 
     if (!data.login) error += 'Fill in the login field. ';
     if (!data.pass) error += 'Fill in the password field.';
     if (error) {
-        callback.call(null, error);
+        cb({message: error, error: true});
         return;
     }
 
-    User.statics.getAuthenticated(data.login, data.pass, function (err, user, reason) {
+    User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
         if (err) {
-            callback.call(null, err + '.');
+            cb({message: err && err.message, error: true});
+            return;
         }
 
         // login was successful if we have a user
@@ -46,7 +46,7 @@ function login(session, data, callback) {
             _session.getNeoStore(session, user.login, function SaveSess(neoStore) {
                 session.neoStore = neoStore;
                 logger.info("Login success for %s", data.login);
-                callback.call(null, null);
+                cb({message: "Success login"});
             });
             return;
         }
@@ -56,53 +56,20 @@ function login(session, data, callback) {
         case User.failedLogin.PASSWORD_INCORRECT:
             // note: these cases are usually treated the same - don't tell
             // the user *why* the login failed, only that it did
-            callback.call(null, 'Login or password incorrect');
+            cb({message: 'Login or password incorrect', error: true});
             break;
         case User.failedLogin.MAX_ATTEMPTS:
             // send email or otherwise notify user that account is
             // temporarily locked
-            callback.call(null, 'Your account has been temporarily locked due to exceeding the number of wrong login attempts');
+            cb({message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
             break;
         }
     });
-    /*Step(
-     function findUser() {
-     User.getUserAllLoginMail(data.login, this);
-     },
-     function checkEnter(err, user) {
-     if (user) {
-     if (!User.checkPass(user, data.pass)) error = 'Password incorrect';
-     } else {
-     error = 'User does not exists';
-     }
-
-     if (error) {
-     callback.call(null, error);
-     return;
-     } else {
-     session.login = user.login;
-     session.remember = data.remember;
-     if (data.remember) session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-     else session.cookie.expires = false;
-     session.save();
-
-     //Удаляем предыдущие сохранившиеся сессии этого пользователя
-     mongo_store.getCollection().remove({'session': new RegExp('^' + user.login + '$', 'i'), _id: { $ne: session.id }});
-
-     _session.getNeoStore(session, user.login, this);
-     }
-     },
-     function SaveSess(neoStore) {
-     session.neoStore = neoStore;
-     logger.info("Login success for %s", data.login);
-     callback.call(null, null);
-     }
-     );*/
 }
 
-function register(session, data, callback) {
+function register(session, data, cb) {
     var error = '',
-        success = 'The data is successfully sent. To confirm registration, follow the instructions sent to Your e-mail',
+        success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
         confirmKey = '';
     data.email = data.email.toLowerCase();
 
@@ -111,7 +78,7 @@ function register(session, data, callback) {
     if (!data.pass) error += 'Fill in the password field. ';
     if (data.pass !== data.pass2) error += 'Passwords do not match.';
     if (error) {
-        callback.call(null, error, null);
+        cb({message: error, error: true});
         return;
     }
 
@@ -120,32 +87,35 @@ function register(session, data, callback) {
             User.findOne({ $or: [
                 { login: new RegExp('^' + data.login + '$', 'i') },
                 { email: data.email }
-            ] }, this);
+            ] }, this.parallel());
+            Role.findOne({name: 'registered'}, this.parallel());
         },
-        function createUser(err, user) {
+        function createUser(err, user, role) {
             if (user) {
                 if (user.login.toLowerCase() === data.login.toLowerCase()) error += 'User with such login already exists. ';
                 if (user.email === data.email) error += 'User with such email already exists.';
 
-                if (callback) callback.call(null, error);
+                cb({message: error, error: true});
                 return;
             }
 
             confirmKey = Utils.randomString(80);
 
-            var user = new User();
-            user.login = data.login;
-            user.email = data.email;
-            user.pass = data.pass;
-            user.hashPassword();
-            user.roles = ['registered', 'admin'];
-            user.save(this.parallel());
+            logger.info(data.email);
+
+            new User({
+                login: data.login,
+                email: data.email,
+                pass: data.pass,
+                roles: [role._id]
+            }).save(this.parallel());
 
             UserConfirm.remove({login: new RegExp(data.login, 'i')}, this.parallel());
         },
         function sendMail(err) {
             if (err) {
-                if (callback) callback.call(null, err);
+                console.dir(err);
+                cb({message: err.message, error: true});
                 return;
             }
             Mail.send({
@@ -180,19 +150,24 @@ function register(session, data, callback) {
         },
 
         function finish(err) {
-            if (callback) callback.call(null, err, (!err && success));
+            if (err) {
+                console.dir(err);
+                cb({message: err.message, error: true});
+                return;
+            }
+            cb({message: success});
         }
     );
 }
 
-function recall(session, data, callback) {
+function recall(session, data, cb) {
     var error = '',
         success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
         confirmKey = '';
 
     if (!data.login) error += 'Fill in login or e-mail.';
     if (error) {
-        callback.call(null, error, null);
+        cb.call({message: error, error: true});
         return;
     }
 
@@ -207,7 +182,7 @@ function recall(session, data, callback) {
         function (err, user) {
             if (err || !user) {
                 error += 'User with such login or e-mail does not exist';
-                if (callback) callback.call(null, error);
+                cb.call({message: error, error: true});
                 return;
             } else {
                 data.login = user.login;
@@ -221,7 +196,7 @@ function recall(session, data, callback) {
         },
         function sendMail(err) {
             if (err) {
-                if (callback) callback.call(null, err);
+                cb.call({message: (err && err.message) || '', error: true});
                 return;
             }
             Mail.send({
@@ -245,7 +220,7 @@ function recall(session, data, callback) {
             }, this);
         },
         function finish(err) {
-            if (callback) callback.call(null, err, (!err && success));
+            cb.call(null, err, (!err && success));
         }
     )
 }
@@ -273,7 +248,7 @@ function clearUnconfirmedUsers() {
 
 /**
  * redirect to /login if user has insufficient rights
- * @param role
+ * @param role_level
  */
 function restrictToRoleLevel(role_level) {
     return function (req, res, next) {
@@ -298,15 +273,6 @@ function restrictToRoleLevel(role_level) {
 }
 module.exports.restrictToRoleLevel = restrictToRoleLevel;
 
-function renderLoginPage(req, res, opts) {
-    if (!opts) opts = {};
-    opts.title = i18n('Login to StatServer', req);
-    opts.layout = true;
-
-    req.flash('info', i18n("Enter login and password", req));
-    res.render('login', opts);
-}
-
 module.exports.loadController = function (a, db, io, ms) {
     app = a;
     User = db.model('User');
@@ -318,9 +284,9 @@ module.exports.loadController = function (a, db, io, ms) {
         var hs = socket.handshake,
             session = hs.session;
 
-        socket.on('loginRequest', function (data) {
-            login(socket.handshake.session, data, function (err) {
-                socket.emit('loginResult', {success: Number(!err), error: err});
+        socket.on('loginRequest', function (json) {
+            login(socket.handshake.session, json, function (data) {
+                socket.emit('loginResult', data);
             });
         });
 
@@ -328,19 +294,19 @@ module.exports.loadController = function (a, db, io, ms) {
             _session.cashedSessionDel(session.id);
 
             session.destroy(function (err) {
-                socket.emit('logoutResult', {err: err, logoutPath: '/'});
+                socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: '/'});
             });
         });
 
         socket.on('registerRequest', function (data) {
-            register(session, data, function (err, success) {
-                socket.emit('registerResult', {success: success, error: err});
+            register(session, data, function (data) {
+                socket.emit('registerResult', data);
             });
         });
 
         socket.on('recallRequest', function (data) {
-            recall(session, data, function (err, success) {
-                socket.emit('recallResult', {success: success, error: err});
+            recall(session, data, function (data) {
+                socket.emit('recallResult', data);
             });
         });
 
@@ -365,7 +331,7 @@ module.exports.loadController = function (a, db, io, ms) {
                     Step(
                         function () {
                             User.update({ login: doc.login }, {$set: {active: true}}, { multi: false }, this.parallel());
-                            UserConfirm.remove({'_id': doc['_id']}, this.parallel());
+                            UserConfirm.remove({'_id': doc._id}, this.parallel());
                         },
                         function (err) {
                             if (err) errS.e500Virgin(req, res);
@@ -387,7 +353,6 @@ module.exports.loadController = function (a, db, io, ms) {
                             if (user) {
                                 email = user.email;
                                 user.pass = newPass;
-                                user.hashPassword();
                                 user.save(this);
                             } else {
                                 errS.e404Virgin(req, res);

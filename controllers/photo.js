@@ -20,7 +20,7 @@ module.exports.loadController = function (app, db, io) {
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (!err) {
-                    Photo.find({user_id: user._id}, {_id: 0}).sort('loaded', -1).skip(data.start).limit(data.limit).exec(function (err, photo) {
+                    Photo.find({user_id: user._id}, {_id: 0}).sort('-loaded').skip(data.start).limit(data.limit).exec(function (err, photo) {
                         socket.emit('takeUserPhoto', photo);
                     });
                 }
@@ -31,7 +31,6 @@ module.exports.loadController = function (app, db, io) {
             if (data.login) {
                 User.getUserID(data.login, function (err, user) {
                     if (!err) {
-                        delete data.login;
                         Counter.increment('photo', function (err, result) {
                             if (err) {
                                 logger.error('Counter on foto save error: ' + err);

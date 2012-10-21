@@ -13,23 +13,24 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             users.user(user, function (vm) {
-                console.log('Menu');
-                this.user = vm;
+                if (vm) {
+                    this.user = vm;
 
-                this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
-                if (GlobalParams.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
-                    this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm'});
+                    this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
+                    if (GlobalParams.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
+                        this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm'});
+                    }
+                    this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});
+                    this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/photoUpload"});
+                    this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments"});
+
+                    globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+                    this.routeHandler();
+
+                    ko.applyBindings(globalVM, this.$dom[0]);
+
+                    this.show();
                 }
-                this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});
-                this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/photoUpload"});
-                this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments"});
-
-                globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-                this.routeHandler();
-
-                ko.applyBindings(globalVM, this.$dom[0]);
-
-                this.show();
             }, this);
 
         },

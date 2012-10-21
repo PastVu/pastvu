@@ -13,31 +13,32 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             users.user(user, function (vm) {
-                console.log('Brief');
-                this.user = vm;
+                if (vm) {
+                    this.user = vm;
 
-                this.can_pm = ko.computed({
-                    read: function () {
-                        return GlobalParams.LoggedIn() && (this.auth.iAm.login() !== this.user.login());
-                    },
-                    owner: this
-                });
-                this.can_avatar = ko.computed({
-                    read: function () {
-                        return this.auth.iAm.login() === this.user.login();
-                    },
-                    owner: this
-                });
+                    this.can_pm = ko.computed({
+                        read: function () {
+                            return GlobalParams.LoggedIn() && (this.auth.iAm.login() !== this.user.login());
+                        },
+                        owner: this
+                    });
+                    this.can_avatar = ko.computed({
+                        read: function () {
+                            return this.auth.iAm.login() === this.user.login();
+                        },
+                        owner: this
+                    });
 
-                ko.applyBindings(globalVM, this.$dom[0]);
+                    ko.applyBindings(globalVM, this.$dom[0]);
 
-                this.$dom.affix({
-                    offset: {
-                        top: 40
-                    }
-                });
+                    this.$dom.affix({
+                        offset: {
+                            top: 40
+                        }
+                    });
 
-                this.show();
+                    this.show();
+                }
             }, this);
 
         },

@@ -112,9 +112,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                 if (this.mode() === 'login') {
                     this.doLogin(
                         $.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}),
-                        function (error, data) {
-                            if (error) {
-                                this.setMessage(error, 'error');
+                        function (data) {
+                            if (data.error) {
+                                this.setMessage(data.message, 'error');
                                 window.setTimeout(function () {
                                     this.formWorking(false);
                                     this.formFocus();
@@ -128,9 +128,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                 } else if (this.mode() === 'reg') {
                     this.doRegister(
                         $.extend(form.serializeObject(), {}),
-                        function (error, data) {
-                            if (error) {
-                                this.setMessage(error, 'error');
+                        function (data) {
+                            if (data.error) {
+                                this.setMessage(data.message, 'error');
                                 window.setTimeout(function () {
                                     this.formFocus();
                                     this.formWorking(false);
@@ -138,7 +138,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                             } else {
                                 form.find('button').css('display', 'none');
                                 form.find('.formfinish').css('display', '');
-                                this.setMessage(data, 'success');
+                                this.setMessage(data.message, 'success');
                                 window.setTimeout(function () {
                                     this.formWorking(false);
                                 }.bind(this), 420);
@@ -148,9 +148,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                 } else if (this.mode() === 'recall') {
                     this.doPassRecall(
                         $.extend(form.serializeObject(), {}),
-                        function (error, data) {
-                            if (error) {
-                                this.setMessage(error, 'error');
+                        function (data) {
+                            if (data.error) {
+                                this.setMessage(data.message, 'error');
                                 window.setTimeout(function () {
                                     this.formFocus();
                                     this.formWorking(false);
@@ -158,7 +158,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                             } else {
                                 form.find('button').css('display', 'none');
                                 form.find('.formfinish').css('display', '');
-                                this.setMessage(data, 'success');
+                                this.setMessage(data.message, 'success');
                                 window.setTimeout(function () {
                                     this.formWorking(false);
                                 }.bind(this), 420);
@@ -178,7 +178,8 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         doLogin: function (data, callback) {
             try {
                 socket.on('loginResult', function (json) {
-                    if (json.success) {
+                    socket.removeAllListeners('loginResult');
+                    if (!json.error) {
                         $.ajax({
                             url: '/updateCookie',
                             cache: false
@@ -187,7 +188,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                     }
 
                     if (Utils.isObjectType('function', callback)) {
-                        callback(json.error, json.success);
+                        callback(json);
                     }
                 }.bind(this));
                 socket.emit('loginRequest', data);
@@ -200,8 +201,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         doLogout: function (callback) {
             try {
                 socket.on('logoutResult', function (json) {
-                    if (json.err) {
-                        console.log('Logout error' + json.err);
+                    socket.removeAllListeners('logoutResult');
+                    if (json.error) {
+                        console.log('Logout error' + json.message);
                     } else {
                         document.location = json.logoutPath;
                     }
@@ -216,8 +218,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         doRegister: function (data, callback) {
             try {
                 socket.on('registerResult', function (json) {
+                    socket.removeAllListeners('registerResult');
                     if (Utils.isObjectType('function', callback)) {
-                        callback(json.error, json.success);
+                        callback(json);
                     }
                 });
                 socket.emit('registerRequest', data);
@@ -230,8 +233,9 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         doPassRecall: function (data, callback) {
             try {
                 socket.on('recallResult', function (json) {
+                    socket.removeAllListeners('recallResult');
                     if (Utils.isObjectType('function', callback)) {
-                        callback(json.error, json.success);
+                        callback(json);
                     }
                 });
                 socket.emit('recallRequest', data);

@@ -14,33 +14,34 @@ define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockou
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             users.user(user, function (vm) {
-                console.log('Profile');
+                if (vm) {
 
-                this.u = vm;
-                this.originUser = ko_mapping.toJS(this.u);
+                    this.u = vm;
+                    this.originUser = ko_mapping.toJS(this.u);
 
-                this.edit = ko.observable(false);
+                    this.edit = ko.observable(false);
 
-                this.canBeEdit = ko.computed(function () {
-                    return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
-                }, this);
+                    this.canBeEdit = ko.computed(function () {
+                        return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
+                    }, this);
 
-                this.edit_mode = ko.computed(function () {
-                    return this.canBeEdit() && this.edit();
-                }, this);
+                    this.edit_mode = ko.computed(function () {
+                        return this.canBeEdit() && this.edit();
+                    }, this);
 
-                ko.applyBindings(globalVM, this.$dom[0]);
+                    ko.applyBindings(globalVM, this.$dom[0]);
 
-                window.setTimeout(function () {
-                    this.$dom
-                        .find('.birthPick')
-                        .datepicker()
-                        .on('changeDate', function (ev) {
-                            this.u.birthdate(this.$dom.find('#inBirthdate').val());
-                        }.bind(this));
-                }.bind(this), 1000);
+                    window.setTimeout(function () {
+                        this.$dom
+                            .find('.birthPick')
+                            .datepicker()
+                            .on('changeDate', function (ev) {
+                                this.u.birthdate(this.$dom.find('#inBirthdate').val());
+                            }.bind(this));
+                    }.bind(this), 1000);
 
-                this.show();
+                    this.show();
+                }
             }, this);
         },
         show: function () {
