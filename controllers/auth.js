@@ -151,7 +151,6 @@ function register(session, data, cb) {
 
         function finish(err) {
             if (err) {
-                console.dir(err);
                 cb({message: err.message, error: true});
                 return;
             }
@@ -220,7 +219,11 @@ function recall(session, data, cb) {
             }, this);
         },
         function finish(err) {
-            cb.call(null, err, (!err && success));
+            if (err) {
+                cb({message: err.message, error: true});
+                return;
+            }
+            cb({message: success});
         }
     )
 }
