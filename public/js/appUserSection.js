@@ -36,6 +36,7 @@ requirejs.config({
         'jquery': 'lib/jquery/jquery-1.8.2.min',
         'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
+        'moment': 'lib/moment',
 
         'domReady': 'lib/require/plugins/domReady',
         'text': 'lib/require/plugins/text',
@@ -69,9 +70,9 @@ require([
     'jquery',
     'Browser', 'Utils',
     'socket',
-    'underscore', 'backbone', 'knockout', 'knockout.mapping',
+    'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
     'globalParams', 'globalVM', 'RouteManager', 'text!tpl/userSection.jade', 'css!style/userSection', 'backbone.queryparams'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, GP, globalVM, RouteManager, index_jade) {
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, GP, globalVM, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
         routeDFD = $.Deferred();

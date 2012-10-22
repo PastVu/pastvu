@@ -1,43 +1,48 @@
 {
-  "name" : "oldplanet",
-  "version" : "0.4.0",
-  "description": "Retrospective topography of media content",
-  "homepage" : "https://github.com/klimashkin/oldplanet",
-  "keywords": ["oldmos", "oldmos2", "oldplanet"],
-  "author": "Paul Klimashkin <klimashkin@gmail.com>",
-  "main" : "app.js",
-  "repository" : {
-    "type" : "git",
-    "url" : "git@github.com:klimashkin/oldplanet.git"
-  },
-  "dependencies" : {
-    "express": "~2.5.11",
-	"gzippo": "~0.1.7",
-	"jade": "~0.27",
-	"less-middleware": ">=0.1.8",
-	"less": ">=1.3.0",
-	"mongoose": "~3.3.0",
-    "mongoskin": "~0.4.4",
-	"connect-mongodb": "~1.1.5",
-	"mc": "~1.0",
-	"ms": "~0.3.0",
-	"bcrypt": "~0.7.2",
-	"crypto": "~0.0.3",
-    "step": "",
-    "socket.io": ">=0.9.10",
-	"requirejs": "~2.1.1",
-    "nodemailer": "~0.3.20",
-    "sprintf": "",
-    "optimist" : ">=0.3.5",
-	"uglify-js": "~1.3.3",
-	"log4js": "~0.5.4",
-	"file-utils": "~0.2.4",
-	"formidable": ">=1.0.11",
-	"node-static": ">=0.6.3",
-	"imagemagick": ">=0.1.3"
-  },
-  "private": true,
-  "engines": {
-    "node": ">= 0.6.19" 
-  }
+	"name": "oldplanet",
+	"version": "0.4.0",
+	"description": "Retrospective topography of media content",
+	"homepage": "https://github.com/klimashkin/oldplanet",
+	"keywords": ["oldmos", "oldmos2", "oldplanet"],
+	"author": "Paul Klimashkin <klimashkin@gmail.com>",
+	"main": "app.js",
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:klimashkin/oldplanet.git"
+	},
+	"dependencies": {
+		"express": "~2.5.11",
+		"gzippo": "~0.1.7",
+		"jade": "~0.27",
+		"less-middleware": ">=0.1.8",
+		"less": ">=1.3.0",
+		"mongoose": "~3.3.0",
+		"mongoskin": "~0.4.4",
+		"connect-mongodb": "~1.1.5",
+		"mc": "~1.0",
+		"ms": "~0.3.0",
+		"moment": "~1.7.2",
+		"bcrypt": "~0.7.2",
+		"crypto": "~0.0.3",
+		"step": "",
+		"socket.io": ">=0.9.10",
+		"requirejs": "~2.1.1",
+		"nodemailer": "~0.3.20",
+		"sprintf": "",
+		"optimist": ">=0.3.5",
+		"uglify-js": "~1.3.3",
+		"log4js": "~0.5.4",
+		"file-utils": "~0.2.4",
+		"formidable": ">=1.0.11",
+		"node-static": ">=0.6.3",
+		"imagemagick": ">=0.1.3"
+	},
+	"devDependencies": {
+		"reloader": "~1.0.2"
+
+	},
+	"private": true,
+	"engines": {
+		"node": ">= 0.8.12"
+	}
 }

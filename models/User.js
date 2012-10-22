@@ -252,11 +252,13 @@ UserScheme.statics.getUserID = function (login, cb) {
 };
 
 
-var UserConfirm = new mongoose.Schema({
-    key: {type: String, index: { unique: true }},
-    login: {type: String, index: { unique: true }},
-    created: {type: Date, default: Date.now}
-});
+var UserConfirm = new mongoose.Schema(
+    {
+        created: {type: Date, default: Date.now, index: {expires: '2d' }},
+        key: {type: String, index: { unique: true }},
+        user: { type: Schema.Types.ObjectId, ref: 'User', index: true }
+    }
+);
 
 module.exports.makeModel = function (db) {
     var UserModel = db.model('User', UserScheme),
