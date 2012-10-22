@@ -6,7 +6,7 @@
 		//ko foreach: photos
 		.photoThumb.fringe2
 			img(data-bind="attr: {src: file}, event: {load: $parent.onThumbLoad}")
-			a(data-bind="attr: {href: file}")
+			a(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
 		// /ko
 	.photoUploadCurtain

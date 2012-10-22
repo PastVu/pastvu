@@ -4,7 +4,7 @@ var mongoose = require('mongoose'),
 var RoleSchema = new Schema({
     name: {type: String, index: { unique: true }},
     level: {type: Number, min: 0, default: 0},
-    comment: {type: String, default: '11'}
+    comment: {type: String, default: ''}
 });
 mongoose.model('Role', RoleSchema);
 

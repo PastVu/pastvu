@@ -38,25 +38,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         show: function () {
             this.$container.fadeIn();
-            /*this.photos.push({file: '/img/1.jpg', title: 'Вид на Кремлёвскую'});
-            this.photos.push({file: '/img/2.jpg', title: 'Царская(Ивановская) площадь в Кремле'});
-            this.photos.push({file: '/img/3.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
-            this.photos.push({file: '/img/4.jpg', title: 'hello'});
-            this.photos.push({file: '/img/5.jpg', title: 'hello'});
-            this.photos.push({file: '/img/6.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
-            this.photos.push({file: '/img/7.jpg', title: 'hello'});
-            this.photos.push({file: '/img/8.jpg', title: 'Церковь Николая Чудотворца в Хамовниках'});
-            this.photos.push({file: '/img/9.jpg', title: 'hello'});
-            this.photos.push({file: '/img/10.jpg', title: 'hello'});
-            this.photos.push({file: '/img/11.jpg', title: 'hello'});
-            this.photos.push({file: '/img/12.jpg', title: 'hello'});*/
-            this.getPhotos(0, 20);
+            this.getPhotos(0, 40);
         },
         hide: function () {
             this.$container.css('display', '');
         },
         getPhotos: function (start, limit) {
             socket.on('takeUserPhoto', function (data) {
+                data.forEach(function (item, index, array) {
+                    item.file = '/_photo/thumb/' + item.file;
+                });
                 this.photos.concat(data, false);
             }.bind(this));
             socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
@@ -66,6 +57,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             data = event = null;
         },
         showUpload: function (data, event) {
+            $('.photoUploadModal').css({display: 'none'});
+            $('.photoUploadCurtain').css({display: 'block'});
+            renderer(this, [{module: 'm/userPhotoUpload', container: '.photoUploadModal'}], this.level + 1);
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            }
+            return false;
+        },
+        closeUpload: function (data, event) {
             $('.photoUploadModal').css({display: 'none'});
             $('.photoUploadCurtain').css({display: 'block'});
             renderer(this, [{module: 'm/userPhotoUpload', container: '.photoUploadModal'}], this.level + 1);

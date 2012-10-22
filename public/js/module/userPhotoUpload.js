@@ -149,7 +149,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                         toSave.file = item.name;
                         toSave.login = this.u.login();
                         this.fileUploaded[item.name] = toSave;
-                        socket.emit('savePhoto', toSave);
+                        socket.emit('createPhoto', toSave);
 
                         toSave = null;
                     }
