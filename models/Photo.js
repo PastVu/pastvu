@@ -5,9 +5,9 @@ var mongoose = require('mongoose'),
 var PhotoSheme = new mongoose.Schema(
     {
         cid: {type: Number, index: { unique: true }},
-        user_id: { type: Schema.Types.ObjectId, ref: 'User' },
-        album_id: {type: Number},
-        stack_id: {type: String},
+        user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
+        album: {type: Number},
+        stack: {type: String},
         stack_order: {type: Number},
 
         lat: {type: String},

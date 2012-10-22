@@ -34,7 +34,6 @@ var logger = log4js.getLogger("app.js");
  * Включаем "наши" модули
  */
 require('./commons/JExtensions.js');
-require('./commons/Utils.js');
 
 /**
  * Окружение (dev, test, prod)
@@ -173,6 +172,7 @@ require(__dirname + '/models/Settings.js').makeModel(db);
 require(__dirname + '/models/Role.js').makeModel(db);
 require(__dirname + '/models/User.js').makeModel(db);
 require(__dirname + '/models/Photo.js').makeModel(db);
+require(__dirname + '/models/_initValues.js').makeModel(db);
 
 
 // loading controllers

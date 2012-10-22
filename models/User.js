@@ -261,13 +261,6 @@ var UserConfirm = new mongoose.Schema(
 );
 
 module.exports.makeModel = function (db) {
-    var UserModel = db.model('User', UserScheme),
-        UserConfirmModel = db.model('UserConfirm', UserConfirm),
-        Role = db.model('Role');
-
-    Role.findOne({name: 'super_admin'}, function (err, role) {
-        UserModel.saveUpsert({login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow', aboutme: 'Must be deactivated after the creation of human administrator'}, function (err, doc) {
-            if (err) console.log('UserModel ' + err);
-        });
-    });
+    db.model('User', UserScheme);
+    db.model('UserConfirm', UserConfirm);
 };
