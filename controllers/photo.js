@@ -32,7 +32,7 @@ module.exports.loadController = function (app, db, io) {
                 socket.emit('createPhotoCallback', data);
             };
             if (data.login) {
-                User.getUserID(data.login, function (err, user) {
+                User.getUserAll(data.login, function (err, user) {
                     if (err || !user) {
                         result({message: 'User with such login does not exist', error: true});
                         return;
@@ -47,6 +47,8 @@ module.exports.loadController = function (app, db, io) {
                                 user: user._id,
                                 file: data.file
                             }.extend(data));
+                            user.pcount = user.pcount + 1;
+                            user.save();
                             photo.save(function (err, doc) {
                                 if (err) {
                                     result({message: err.message || '', error: true});
@@ -68,13 +70,14 @@ module.exports.loadController = function (app, db, io) {
                 result({message: 'Need login and file name to remove photo', error: true});
                 return;
             }
-            User.getUserID(data.login, function (err, user) {
+            User.getUserAll(data.login, function (err, user) {
                 if (err || !user) {
                     result({message: 'User with such login does not exist', error: true});
                     return;
                 }
-                console.dir(data);
-                Photo.find({user: user._id, file: data.file}).remove(result);
+                user.pcount = user.pcount - 1;
+                user.save();
+                Photo.findOneAndRemove({user: user._id, file: data.file}, result);
             });
         });
 

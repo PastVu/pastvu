@@ -4,7 +4,7 @@
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/User', 'm/Users', 'text!tpl/userPhoto.jade', 'css!style/userPhoto'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, renderer, User, users, jade) {
     'use strict';
-
+    var $window = $(window);
     ko.observableArray['fn']['concat'] = function (arr, before) {
         var underlyingArray = this(),
             methodCallResult;
@@ -23,6 +23,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.u = null;
             this.photos = ko.observableArray();
             this.uploadVM = null;
+            this.limit = 40;
+            this.loadingPhoto = false;
+            this.scrollActive = false;
+            this.scrollHandler = function () {
+                if ($window.scrollTop() >= $(document).height() - $window.height() - 50) {
+                    console.log(999);
+                    this.getNextPage();
+                }
+            }.bind(this);
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
@@ -36,10 +45,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         show: function () {
             this.$container.fadeIn();
-            this.getPage(0, 40);
+            this.getPage(0, this.limit);
+            $window.on('scroll', this.scrollHandler);
+            this.scrollActive = true;
             this.showing = true;
         },
         hide: function () {
+            if (this.scrollActive) {
+                $window.off('scroll', this.scrollHandler);
+                this.scrollActive = false;
+            }
             this.$container.css('display', '');
             this.showing = false;
         },
@@ -52,14 +67,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                 if (Utils.isObjectType('function', cb)) {
                     cb.call(ctx, data);
                 }
+                this.loadingPhoto = false;
             }.bind(this);
             socket.on('takeUserPhoto', socketCb);
             socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
+            this.loadingPhoto = true;
         },
         getPage: function (start, limit) {
             this.getPhotos(start, limit, function (data) {
                 this.photos.concat(data, false);
+                if (this.scrollActive && this.photos().length >= this.u.pcount()) {
+                    $window.off('scroll', this.scrollHandler);
+                    this.scrollActive = false;
+                }
             }, this);
+        },
+        getNextPage: function () {
+            if (!this.loadingPhoto) {
+                this.getPage(this.photos().length, this.limit);
+            }
         },
         onThumbLoad: function (data, event) {
             $(event.target).parent().animate({opacity: 1});

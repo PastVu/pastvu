@@ -42,6 +42,7 @@ var UserScheme = new mongoose.Schema({
         { type: Schema.Types.ObjectId, ref: 'Role' }
     ],
     regdate: {type: Date, default: Date.now },
+    pcount: {type: Number, default: 0},
 
     dateFormat: {"type": String, "default": "dd.mm.yyyy" },
     active: {type: Boolean, default: false },
