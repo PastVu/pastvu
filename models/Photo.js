@@ -35,7 +35,7 @@ var PhotoSheme = new mongoose.Schema(
         stats_all: {type: Number},
         comments_count: {type: Number},
 
-        new: {type: Boolean, default: true},
+        fresh: {type: Boolean, default: true},
         active: {type: Boolean, default: false}
     },
     {
