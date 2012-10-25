@@ -22,6 +22,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.level = level;
             this.parentModule = parent;
             this.childModules = {};
+            this.showing = false;
 
             repository[this.id] = this;
 
@@ -40,12 +41,15 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
         },
         show: function () {
             ko.applyBindings(globalVM, this.$dom[0]);
+            this.showing = true;
         },
         hide: function () {
-
+            this.showing = false;
         },
         destroy: function () {
-            this.hide();
+            if (this.showing) {
+                this.hide();
+            }
             _.forOwn(this.childModules, function (item, key, object) {
                 item.destroy();
             });

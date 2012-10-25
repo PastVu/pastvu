@@ -46,9 +46,11 @@ define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockou
         },
         show: function () {
             this.$container.fadeIn();
+            this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
+            this.showing = false;
         },
         saveUser: function () {
             var targetUser = ko_mapping.toJS(this.u),

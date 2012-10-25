@@ -7,7 +7,6 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         create: function () {
             this.iAm = User.VM();
 
-            this.showing = ko.observable(false);
             this.mode = ko.observable('login');
             this.working = ko.observable(false);
 
@@ -26,7 +25,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
 
             //this.$container.css('display', 'block');
             this.$container.fadeIn(300, function () {
-                this.showing(true);
+                this.showing = true;
                 this.formFocus();
 
                 keyTarget.push({
@@ -35,13 +34,12 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                     onEsc: this.formClose.bind(this)
                 });
             }.bind(this));
-
         },
         hide: function () {
             keyTarget.pop();
             this.formReset();
             this.$container.css('display', '');
-            this.showing(false);
+            this.showing = false;
         },
 
         LoadMe: function () {
@@ -62,7 +60,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                     this.$dom.children('form:visible')[0].querySelector('input:first-child:not([disabled])').focus();
                 } catch (e) {
                 }
-            }, 400);
+            }.bind(this), 200);
         },
         formReset: function () {
             this.$dom.find(':focus').blur();

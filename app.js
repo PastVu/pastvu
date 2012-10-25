@@ -130,7 +130,7 @@ app.configure(function () {
 });
 
 // connecting to db with mongoose
-var db = mongoose.createConnection(app.set('db-uri'))
+var db = mongoose.createConnection(app.set('db-uri'), {db: {safe: true}})
     .once('open', function () {
         logger.info("Connected to mongo: " + app.set('db-uri'));
     })

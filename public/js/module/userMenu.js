@@ -36,9 +36,11 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
         },
         show: function () {
             this.$container.fadeIn();
+            this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
+            this.showing = false;
         },
         routeHandler: function () {
             var route = globalVM.router.base() + globalVM.router.body(),

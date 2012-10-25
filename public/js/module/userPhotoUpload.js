@@ -106,16 +106,18 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             }
         },
         show: function () {
-            this.$container.fadeIn(400, function () {
-                this.$dom.find('#fileupload').fileupload('enable');
-            }.bind(this));
+            this.$container.addClass('show');
+            this.$dom.find('#fileupload').fileupload('enable');
+            this.showing = true;
         },
         hide: function () {
             this.$dom.find('#fileupload').fileupload('disable');
             $(document).off('dragenter').off('dragleave');
-            this.$container.css('display', '');
+            this.$container.removeClass('show');
+            this.showing = false;
         },
         localDestroy: function (destroy) {
+            this.hide();
             this.$dom.find('#fileupload').fileupload('destroy');
             destroy.call(this);
         },

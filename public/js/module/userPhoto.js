@@ -22,57 +22,85 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.auth = globalVM.repository['m/auth'];
             this.u = null;
             this.photos = ko.observableArray();
+            this.uploadVM = null;
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             users.user(user, function (vm) {
                 if (vm) {
                     this.u = vm;
-
                     ko.applyBindings(globalVM, this.$dom[0]);
-
                     this.show();
                 }
-
             }, this);
         },
         show: function () {
             this.$container.fadeIn();
-            this.getPhotos(0, 40);
+            this.getPage(0, 40);
+            this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
+            this.showing = false;
         },
-        getPhotos: function (start, limit) {
-            socket.on('takeUserPhoto', function (data) {
+        getPhotos: function (start, limit, cb, ctx) {
+            var socketCb = function (data) {
+                socket.removeListener('takeUserPhoto', socketCb);
                 data.forEach(function (item, index, array) {
-                    item.file = '/_photo/thumb/' + item.file;
+                    item.pfile = '/_photo/thumb/' + item.file;
                 });
-                this.photos.concat(data, false);
-            }.bind(this));
+                if (Utils.isObjectType('function', cb)) {
+                    cb.call(ctx, data);
+                }
+            }.bind(this);
+            socket.on('takeUserPhoto', socketCb);
             socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
+        },
+        getPage: function (start, limit) {
+            this.getPhotos(start, limit, function (data) {
+                this.photos.concat(data, false);
+            }, this);
         },
         onThumbLoad: function (data, event) {
             $(event.target).parent().animate({opacity: 1});
             data = event = null;
         },
         showUpload: function (data, event) {
-            $('.photoUploadModal').css({display: 'none'});
-            $('.photoUploadCurtain').css({display: 'block'});
-            renderer(this, [{module: 'm/userPhotoUpload', container: '.photoUploadModal'}], this.level + 1);
+            this.$dom.find('span.modalCaption').text('Upload photo');
+            $('.photoUploadCurtain').fadeIn(400, function () {
+                renderer(this, [
+                    {module: 'm/userPhotoUpload', container: '.modalContainer', callback: function (vm) {
+                        this.uploadVM = vm;
+                    }.bind(this)}
+                ], this.level + 1);
+            }.bind(this));
             if (event.stopPropagation) {
                 event.stopPropagation();
             }
             return false;
         },
         closeUpload: function (data, event) {
-            $('.photoUploadModal').css({display: 'none'});
-            $('.photoUploadCurtain').css({display: 'block'});
-            renderer(this, [{module: 'm/userPhotoUpload', container: '.photoUploadModal'}], this.level + 1);
-            if (event.stopPropagation) {
-                event.stopPropagation();
-            }
-            return false;
+            $('.photoUploadCurtain').fadeOut(400, function () {
+                this.uploadVM.destroy();
+                var oldFirst = this.photos()[0] ? this.photos()[0].file : 0;
+                this.getPhotos(0, 10, function (data) {
+                    if (oldFirst === 0) {
+                        this.photos.concat(data, false);
+                    } else {
+                        var intersectionIndex = data.reduce(function (previousValue, currentValue, index, array) {
+                            if (previousValue === 0 && currentValue.file === oldFirst) {
+                                return index;
+                            } else {
+                                return previousValue;
+                            }
+                        }.bind(this), 0);
+                        if (intersectionIndex > 0) {
+                            this.photos.concat(data.slice(0, intersectionIndex), true);
+                        }
+                    }
+
+                }, this);
+            }.bind(this));
         }
     });
 });

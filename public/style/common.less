@@ -69,6 +69,7 @@ body {
 		#grid > .fluid > .span (10);
 	}
 }
+
 @media (max-width: 1520px) {
 	.row-fluid {
 		.span2-3 {
@@ -90,6 +91,7 @@ body {
 		}
 	}
 }
+
 @media (max-width: 950px) {
 	.row-fluid {
 		.span2-3 {
@@ -100,6 +102,7 @@ body {
 		}
 	}
 }
+
 @media (max-width: 767px) {
 	.row-fluid {
 		.span2-3, .span9-10 {
@@ -109,13 +112,13 @@ body {
 			margin-left: 0;
 		}
 
-        #top .span2-3{
-            margin-left: 3px !important;
+		#top .span2-3 {
+			margin-left: 3px !important;
 
-            #logo {
-                width: 67px !important;
-            }
-        }
+			#logo {
+				width: 67px !important;
+			}
+		}
 	}
 
 }
@@ -137,6 +140,17 @@ body {
 	background-color: #285991;
 	border: 1px solid #C3C7DD;
 	.box-shadow(0 0 0 1px #000, 0 2px 6px 0 #222);
+
+	&.btn-strict-small {
+		padding: 1px 6px;
+		font-size: @baseFontSize - 2px;
+		line-height: @baseLineHeight - 3px;
+		.box-shadow(0 0 0 1px #000, 0 1px 5px 0 #222);
+
+		[class^="icon-"] {
+			margin-top: 0;
+		}
+	}
 
 	&:hover {
 		color: #fff;

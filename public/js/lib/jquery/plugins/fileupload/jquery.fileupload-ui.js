@@ -139,7 +139,6 @@
             },
             // Callback for successful uploads:
             done: function (e, data) {
-                console.dir(data);
                 var that = $(this).data('fileupload'),
                     template;
 

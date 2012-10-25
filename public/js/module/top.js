@@ -48,10 +48,11 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
         },
         show: function () {
             this.$container.fadeIn();
-            //this.$container.css('display', 'block');
+            this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
+            this.showing = false;
         }
     });
 });
