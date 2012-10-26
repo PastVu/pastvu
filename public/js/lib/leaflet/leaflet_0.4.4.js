@@ -361,10 +361,17 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 		ie3d = ie && ('transition' in doc.style),
 		webkit3d = webkit && ('WebKitCSSMatrix' in window) && ('m11' in new window.WebKitCSSMatrix()),
 		gecko3d = gecko && ('MozPerspective' in doc.style),
-		opera3d = opera && ('OTransition' in doc.style);
+		opera3d = opera && ('OTransition' in doc.style),
+
+		msTouch = (window.navigator && window.navigator.msPointerEnabled && window.navigator.msMaxTouchPoints);
 
 	var touch = !window.L_NO_TOUCH && (function () {
 		var startName = 'ontouchstart';
+
+		// IE10+ (We simulate these into touch* events in L.DomEvent and L.DomEvent.MsTouch)
+		if (msTouch) {
+			return true;
+		}
 
 		// WebKit, etc
 		if (startName in doc) {
@@ -416,6 +423,7 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 		mobileOpera: mobile && opera,
 
 		touch: touch,
+		msTouch: msTouch,
 
 		retina: retina
 	};
@@ -822,11 +830,10 @@ L.DomUtil = {
 
 	getScaleString: function (scale, origin) {
 
-		var preTranslateStr = L.DomUtil.getTranslateString(origin),
-			scaleStr = ' scale(' + scale + ') ',
-			postTranslateStr = L.DomUtil.getTranslateString(origin.multiplyBy(-1));
+		var preTranslateStr = L.DomUtil.getTranslateString(origin.add(origin.multiplyBy(-1 * scale))),
+		    scaleStr = ' scale(' + scale + ') ';
 
-		return preTranslateStr + scaleStr + postTranslateStr;
+		return preTranslateStr + scaleStr;
 	},
 
 	setPosition: function (el, point, disable3D) { // (HTMLElement, Point[, Boolean])
@@ -904,10 +911,10 @@ L.LatLng.prototype = {
 		return margin <= L.LatLng.MAX_MARGIN;
 	},
 
-	toString: function () { // -> String
+	toString: function (precision) { // -> String
 		return 'LatLng(' +
-				L.Util.formatNum(this.lat) + ', ' +
-				L.Util.formatNum(this.lng) + ')';
+				L.Util.formatNum(this.lat, precision) + ', ' +
+				L.Util.formatNum(this.lng, precision) + ')';
 	},
 
 	// Haversine distance formula, see http://en.wikipedia.org/wiki/Haversine_formula
@@ -941,7 +948,8 @@ L.latLng = function (a, b, c) { // (LatLng) or ([Number, Number]) or (Number, Nu
 	}
 	return new L.LatLng(a, b, c);
 };
- 
+
+
 
 /*
  * L.LatLngBounds represents a rectangular area on the map in geographical coordinates.
@@ -1347,16 +1355,10 @@ L.Map = L.Class.extend({
             layer.on('load', this._onTileLayerLoad, this);
 		}
 
-		var onMapLoad = function () {
+		this.whenReady(function () {
 			layer.onAdd(this);
 			this.fire('layeradd', {layer: layer});
-		};
-
-		if (this._loaded) {
-			onMapLoad.call(this);
-		} else {
-			this.on('load', onMapLoad, this);
-		}
+		}, this);
 
 		return this;
 	},
@@ -1702,6 +1704,9 @@ L.Map = L.Class.extend({
 
 		this._tileLayersToLoad = this._tileLayersNum;
 
+		var loading = !this._loaded;
+		this._loaded = true;
+
 		this.fire('viewreset', {hard: !preserveMapOffset});
 
 		this.fire('move');
@@ -1712,8 +1717,7 @@ L.Map = L.Class.extend({
 
 		this.fire('moveend', {hard: !preserveMapOffset});
 
-		if (!this._loaded) {
-			this._loaded = true;
+		if (loading) {
 			this.fire('load');
 		}
 	},
@@ -1787,6 +1791,15 @@ L.Map = L.Class.extend({
 			clearTimeout(this._clearTileBgTimer);
 			this._clearTileBgTimer = setTimeout(L.Util.bind(this._clearTileBg, this), 500);
 		}
+	},
+
+	whenReady: function (callback, context) {
+		if (this._loaded) {
+			callback.call(context || this, this);
+		} else {
+			this.on('load', callback, context);
+		}
+		return this;
 	},
 
 
@@ -2896,10 +2909,7 @@ L.Marker = L.Class.extend({
 	onRemove: function (map) {
 		this._removeIcon();
 
-		// TODO move to Marker.Popup.js
-		if (this.closePopup) {
-			this.closePopup();
-		}
+		this.fire('remove');
 
 		map.off({
 			'viewreset': this.update,
@@ -2918,9 +2928,7 @@ L.Marker = L.Class.extend({
 
 		this.update();
 
-		if (this._popup) {
-			this._popup.setLatLng(latlng);
-		}
+		this.fire('move', { latlng: this._latlng });
 	},
 
 	setZIndexOffset: function (offset) {
@@ -3042,7 +3050,9 @@ L.Marker = L.Class.extend({
 	},
 
 	_onMouseClick: function (e) {
-		L.DomEvent.stopPropagation(e);
+		if (this.hasEventListeners(e.type)) {
+			L.DomEvent.stopPropagation(e);
+		}
 		if (this.dragging && this.dragging.moved()) { return; }
 		if (this._map.dragging && this._map.dragging.moved()) { return; }
 		this.fire(e.type, {
@@ -3412,7 +3422,10 @@ L.Marker.include({
 		options = L.Util.extend({offset: anchor}, options);
 
 		if (!this._popup) {
-			this.on('click', this.openPopup, this);
+			this
+				.on('click', this.openPopup, this)
+				.on('remove', this.closePopup, this)
+				.on('move', this._movePopup, this);
 		}
 
 		this._popup = new L.Popup(options, this)
@@ -3424,9 +3437,16 @@ L.Marker.include({
 	unbindPopup: function () {
 		if (this._popup) {
 			this._popup = null;
-			this.off('click', this.openPopup);
+			this
+				.off('click', this.openPopup)
+				.off('remove', this.closePopup)
+				.off('move', this._movePopup);
 		}
 		return this;
+	},
+
+	_movePopup: function (e) {
+		this._popup.setLatLng(e.latlng);
 	}
 });
 
@@ -3688,6 +3708,8 @@ L.Path = L.Class.extend({
 			this._fill = null;
 		}
 
+		this.fire('remove');
+
 		map.off({
 			'viewreset': this.projectLatlngs,
 			'moveend': this._updatePath
@@ -3844,17 +3866,11 @@ L.Path = L.Path.extend({
 		}
 
 		this._fireMouseEvent(e);
-
-		L.DomEvent.stopPropagation(e);
 	},
 
 	_fireMouseEvent: function (e) {
 		if (!this.hasEventListeners(e.type)) {
 			return;
-		}
-
-		if (e.type === 'contextmenu') {
-			L.DomEvent.preventDefault(e);
 		}
 
 		var map = this._map,
@@ -3868,6 +3884,11 @@ L.Path = L.Path.extend({
 			containerPoint: containerPoint,
 			originalEvent: e
 		});
+
+		if (e.type === 'contextmenu') {
+			L.DomEvent.preventDefault(e);
+		}
+		L.DomEvent.stopPropagation(e);
 	}
 });
 
@@ -3957,11 +3978,23 @@ L.Path.include({
 
 		this._popup.setContent(content);
 
-		if (!this._openPopupAdded) {
-			this.on('click', this._openPopup, this);
-			this._openPopupAdded = true;
+		if (!this._popupHandlersAdded) {
+			this
+				.on('click', this._openPopup, this)
+				.on('remove', this._closePopup, this);
+			this._popupHandlersAdded = true;
 		}
 
+		return this;
+	},
+
+	unbindPopup: function () {
+		if (this._popup) {
+			this._popup = null;
+			this
+				.off('click', this.openPopup)
+				.off('remove', this.closePopup);
+		}
 		return this;
 	},
 
@@ -3980,6 +4013,10 @@ L.Path.include({
 	_openPopup: function (e) {
 		this._popup.setLatLng(e.latlng);
 		this._map.openPopup(this._popup);
+	},
+
+	_closePopup: function () {
+		this._popup._close();
 	}
 });
 
@@ -3989,7 +4026,7 @@ L.Path.include({
  * Thanks to Dmitry Baranovsky and his Raphael library for inspiration!
  */
 
-L.Browser.vml = (function () {
+L.Browser.vml = !L.Browser.svg && (function () {
 	try {
 		var div = document.createElement('div');
 		div.innerHTML = '<v:shape adj="1"/>';
@@ -4930,13 +4967,11 @@ L.Circle = L.Path.extend({
 	},
 
 	getBounds: function () {
-		var map = this._map,
-			delta = this._radius * Math.cos(Math.PI / 4),
-			point = map.project(this._latlng),
-			swPoint = new L.Point(point.x - delta, point.y + delta),
-			nePoint = new L.Point(point.x + delta, point.y - delta),
-			sw = map.unproject(swPoint),
-			ne = map.unproject(nePoint);
+		var lngRadius = this._getLngRadius(),
+			latRadius = (this._mRadius / 40075017) * 360,
+			latlng = this._latlng,
+			sw = new L.LatLng(latlng.lat - latRadius, latlng.lng - lngRadius),
+			ne = new L.LatLng(latlng.lat + latRadius, latlng.lng + lngRadius);
 
 		return new L.LatLngBounds(sw, ne);
 	},
@@ -4968,11 +5003,14 @@ L.Circle = L.Path.extend({
 		return this._mRadius;
 	},
 
-	_getLngRadius: function () {
-		var equatorLength = 40075017,
-			hLength = equatorLength * Math.cos(L.LatLng.DEG_TO_RAD * this._latlng.lat);
+	// TODO Earth hardcoded, move into projection code!
 
-		return (this._mRadius / hLength) * 360;
+	_getLatRadius: function () {
+		return (this._mRadius / 40075017) * 360;
+	},
+
+	_getLngRadius: function () {
+		return this._getLatRadius() / Math.cos(L.LatLng.DEG_TO_RAD * this._latlng.lat);
 	},
 
 	_checkIfEmpty: function () {
@@ -5264,7 +5302,9 @@ L.DomEvent = {
 			return fn.call(context || obj, e || L.DomEvent._getEvent());
 		};
 
-		if (L.Browser.touch && (type === 'dblclick') && this.addDoubleTapListener) {
+		if (L.Browser.msTouch && type.indexOf('touch') === 0) {
+			return this.addMsTouchListener(obj, type, handler, id);
+		} else if (L.Browser.touch && (type === 'dblclick') && this.addDoubleTapListener) {
 			return this.addDoubleTapListener(obj, handler, id);
 
 		} else if ('addEventListener' in obj) {
@@ -5306,7 +5346,9 @@ L.DomEvent = {
 
 		if (!handler) { return; }
 
-		if (L.Browser.touch && (type === 'dblclick') && this.removeDoubleTapListener) {
+		if (L.Browser.msTouch && type.indexOf('touch') === 0) {
+			this.removeMsTouchListener(obj, type, id);
+		} else if (L.Browser.touch && (type === 'dblclick') && this.removeDoubleTapListener) {
 			this.removeDoubleTapListener(obj, id);
 
 		} else if ('removeEventListener' in obj) {
@@ -5533,6 +5575,7 @@ L.Draggable = L.Class.extend({
 	},
 
 	_onUp: function (e) {
+		var simulateClickTouch;
 		if (this._simulateClick && e.changedTouches) {
 			var first = e.changedTouches[0],
 				el = first.target,
@@ -5543,7 +5586,7 @@ L.Draggable = L.Class.extend({
 			}
 
 			if (dist < L.Draggable.TAP_TOLERANCE) {
-				this._simulateEvent('click', first);
+				simulateClickTouch = first;
 			}
 		}
 
@@ -5562,6 +5605,11 @@ L.Draggable = L.Class.extend({
 			this.fire('dragend');
 		}
 		this._moving = false;
+
+		if (simulateClickTouch) {
+			this._moved = false;
+			this._simulateEvent('click', simulateClickTouch);
+		}
 	},
 
 	_setMovingCursor: function () {
@@ -5794,7 +5842,7 @@ L.Map.addInitHook('addHandler', 'doubleClickZoom', L.Map.DoubleClickZoom);
  */
 
 L.Map.mergeOptions({
-	scrollWheelZoom: !L.Browser.touch
+	scrollWheelZoom: !L.Browser.touch || L.Browser.msTouch
 });
 
 L.Map.ScrollWheelZoom = L.Handler.extend({
@@ -5823,6 +5871,7 @@ L.Map.ScrollWheelZoom = L.Handler.extend({
 		this._timer = setTimeout(L.Util.bind(this._performZoom, this), left);
 
 		L.DomEvent.preventDefault(e);
+		L.DomEvent.stopPropagation(e);
 	},
 
 	_performZoom: function () {
@@ -5860,6 +5909,10 @@ L.Map.addInitHook('addHandler', 'scrollWheelZoom', L.Map.ScrollWheelZoom);
 
 
 L.Util.extend(L.DomEvent, {
+
+	_touchstart: L.Browser.msTouch ? 'MSPointerDown' : 'touchstart',
+	_touchend: L.Browser.msTouch ? 'MSPointerUp' : 'touchend',
+
 	// inspired by Zepto touch code by Thomas Fuchs
 	addDoubleTapListener: function (obj, handler, id) {
 		var last,
@@ -5867,23 +5920,55 @@ L.Util.extend(L.DomEvent, {
 			delay = 250,
 			touch,
 			pre = '_leaflet_',
-			touchstart = 'touchstart',
-			touchend = 'touchend';
+			touchstart = this._touchstart,
+			touchend = this._touchend,
+			trackedTouches = [];
 
 		function onTouchStart(e) {
-			if (e.touches.length !== 1) {
+			var count;
+			if (L.Browser.msTouch) {
+				trackedTouches.push(e.pointerId);
+				count = trackedTouches.length;
+			} else {
+				count = e.touches.length;
+			}
+			if (count > 1) {
 				return;
 			}
 
 			var now = Date.now(),
 				delta = now - (last || now);
 
-			touch = e.touches[0];
+			touch = e.touches ? e.touches[0] : e;
 			doubleTap = (delta > 0 && delta <= delay);
 			last = now;
 		}
 		function onTouchEnd(e) {
+			if (L.Browser.msTouch) {
+				var idx = trackedTouches.indexOf(e.pointerId);
+				if (idx === -1) {
+					return;
+				}
+				trackedTouches.splice(idx, 1);
+			}
+
 			if (doubleTap) {
+				if (L.Browser.msTouch) {
+					//Work around .type being readonly with MSPointer* events
+					var newTouch = { },
+						prop;
+					for (var i in touch) {
+						if (true) { //Make JSHint happy, we want to copy all properties
+							prop = touch[i];
+							if (typeof prop === 'function') {
+								newTouch[i] = prop.bind(touch);
+							} else {
+								newTouch[i] = prop;
+							}
+						}
+					}
+					touch = newTouch;
+				}
 				touch.type = 'dblclick';
 				handler(touch);
 				last = null;
@@ -5892,15 +5977,171 @@ L.Util.extend(L.DomEvent, {
 		obj[pre + touchstart + id] = onTouchStart;
 		obj[pre + touchend + id] = onTouchEnd;
 
+		//On msTouch we need to listen on the document otherwise a drag starting on the map and moving off screen will not come through to us
+		// so we will lose track of how many touches are ongoing
+		var endElement = L.Browser.msTouch ? document.documentElement : obj;
+
 		obj.addEventListener(touchstart, onTouchStart, false);
-		obj.addEventListener(touchend, onTouchEnd, false);
+		endElement.addEventListener(touchend, onTouchEnd, false);
+		if (L.Browser.msTouch) {
+			endElement.addEventListener('MSPointerCancel', onTouchEnd, false);
+		}
 		return this;
 	},
 
 	removeDoubleTapListener: function (obj, id) {
 		var pre = '_leaflet_';
-		obj.removeEventListener(obj, obj[pre + 'touchstart' + id], false);
-		obj.removeEventListener(obj, obj[pre + 'touchend' + id], false);
+		obj.removeEventListener(this._touchstart, obj[pre + this._touchstart + id], false);
+		(L.Browser.msTouch ? document.documentElement : obj).removeEventListener(this._touchend, obj[pre + this._touchend + id], false);
+		if (L.Browser.msTouch) {
+			document.documentElement.removeEventListener('MSPointerCancel', obj[pre + this._touchend + id], false);
+		}
+		return this;
+	}
+});
+
+
+L.Util.extend(L.DomEvent, {
+
+	_msTouches: [],
+	_msDocumentListener: false,
+
+	// Provides a touch events wrapper for msPointer events.
+	// Based on changes by veproza https://github.com/CloudMade/Leaflet/pull/1019
+
+	addMsTouchListener: function (obj, type, handler, id) {
+
+		switch (type) {
+		case 'touchstart':
+			return this.addMsTouchListenerStart(obj, type, handler, id);
+		case 'touchend':
+			return this.addMsTouchListenerEnd(obj, type, handler, id);
+		case 'touchmove':
+			return this.addMsTouchListenerMove(obj, type, handler, id);
+		default:
+			throw 'Unknown touch event type';
+		}
+	},
+
+	addMsTouchListenerStart: function (obj, type, handler, id) {
+		var pre = '_leaflet_',
+			touches = this._msTouches;
+
+		var cb = function (e) {
+
+			var alreadyInArray = false;
+			for (var i = 0; i < touches.length; i++) {
+				if (touches[i].pointerId === e.pointerId) {
+					alreadyInArray = true;
+					break;
+				}
+			}
+			if (!alreadyInArray) {
+				touches.push(e);
+			}
+
+			e.touches = touches.slice();
+			e.changedTouches = [e];
+
+			handler(e);
+		};
+
+		obj[pre + 'touchstart' + id] = cb;
+		obj.addEventListener('MSPointerDown', cb, false);
+
+		//Need to also listen for end events to keep the _msTouches list accurate
+		//this needs to be on the body and never go away
+		if (!this._msDocumentListener) {
+			var internalCb = function (e) {
+				for (var i = 0; i < touches.length; i++) {
+					if (touches[i].pointerId === e.pointerId) {
+						touches.splice(i, 1);
+						break;
+					}
+				}
+			};
+			//We listen on the documentElement as any drags that end by moving the touch off the screen get fired there
+			document.documentElement.addEventListener('MSPointerUp', internalCb, false);
+			document.documentElement.addEventListener('MSPointerCancel', internalCb, false);
+
+			this._msDocumentListener = true;
+		}
+
+		return this;
+	},
+
+	addMsTouchListenerMove: function (obj, type, handler, id) {
+		var pre = '_leaflet_';
+
+		var touches = this._msTouches;
+		var cb = function (e) {
+
+			//Don't fire touch moves when mouse isn't down
+			if (e.pointerType === e.MSPOINTER_TYPE_MOUSE && e.buttons === 0) {
+				return;
+			}
+
+			for (var i = 0; i < touches.length; i++) {
+				if (touches[i].pointerId === e.pointerId) {
+					touches[i] = e;
+					break;
+				}
+			}
+
+			e.touches = touches.slice();
+			e.changedTouches = [e];
+
+			handler(e);
+		};
+
+		obj[pre + 'touchmove' + id] = cb;
+		obj.addEventListener('MSPointerMove', cb, false);
+
+		return this;
+	},
+
+	addMsTouchListenerEnd: function (obj, type, handler, id) {
+		var pre = '_leaflet_',
+			touches = this._msTouches;
+
+		var cb = function (e) {
+			for (var i = 0; i < touches.length; i++) {
+				if (touches[i].pointerId === e.pointerId) {
+					touches.splice(i, 1);
+					break;
+				}
+			}
+
+			e.touches = touches.slice();
+			e.changedTouches = [e];
+
+			handler(e);
+		};
+
+		obj[pre + 'touchend' + id] = cb;
+		obj.addEventListener('MSPointerUp', cb, false);
+		obj.addEventListener('MSPointerCancel', cb, false);
+
+		return this;
+	},
+
+	removeMsTouchListener: function (obj, type, id) {
+		var pre = '_leaflet_',
+		    cb = obj[pre + type + id];
+
+		switch (type) {
+		case 'touchstart':
+			obj.removeEventListener('MSPointerDown', cb, false);
+			break;
+		case 'touchmove':
+			obj.removeEventListener('MSPointerMove', cb, false);
+			break;
+		case 'touchend':
+			obj.removeEventListener('MSPointerUp', cb, false);
+			obj.removeEventListener('MSPointerCancel', cb, false);
+			break;
+		}
+
 		return this;
 	}
 });
@@ -6094,8 +6335,8 @@ L.Map.BoxZoom = L.Handler.extend({
 		L.DomUtil.setPosition(box, newPos);
 
 		// TODO refactor: remove hardcoded 4 pixels
-		box.style.width  = (Math.abs(offset.x) - 4) + 'px';
-		box.style.height = (Math.abs(offset.y) - 4) + 'px';
+		box.style.width  = (Math.max(0, Math.abs(offset.x) - 4)) + 'px';
+		box.style.height = (Math.max(0, Math.abs(offset.y) - 4)) + 'px';
 	},
 
 	_onMouseUp: function (e) {
@@ -6295,16 +6536,20 @@ L.Handler.MarkerDrag = L.Handler.extend({
 	},
 
 	_onDrag: function (e) {
+		var marker = this._marker,
+			shadow = marker._shadow,
+			iconPos = L.DomUtil.getPosition(marker._icon),
+			latlng = marker._map.layerPointToLatLng(iconPos);
+
 		// update shadow position
-		var iconPos = L.DomUtil.getPosition(this._marker._icon);
-		if (this._marker._shadow) {
-			L.DomUtil.setPosition(this._marker._shadow, iconPos);
+		if (shadow) {
+			L.DomUtil.setPosition(shadow, iconPos);
 		}
 
-		this._marker._latlng = this._marker._map.layerPointToLatLng(iconPos);
+		marker._latlng = latlng;
 
-		this._marker
-			.fire('move')
+		marker
+			.fire('move', { latlng: latlng })
 			.fire('drag');
 	},
 
@@ -6432,8 +6677,12 @@ L.Handler.PolyEdit = L.Handler.extend({
 		// Check existence of previous and next markers since they wouldn't exist for edge points on the polyline
 		if (marker._prev && marker._next) {
 			this._createMiddleMarker(marker._prev, marker._next);
-			this._updatePrevNext(marker._prev, marker._next);
+		} else if (!marker._prev) {
+			marker._next._middleLeft = null;
+		} else if (!marker._next) {
+			marker._prev._middleRight = null;
 		}
+		this._updatePrevNext(marker._prev, marker._next);
 
 		// The marker itself is guaranteed to exist and present in the layer, since we managed to click on it
 		this._markerGroup.removeLayer(marker);
@@ -6514,8 +6763,12 @@ L.Handler.PolyEdit = L.Handler.extend({
 	},
 
 	_updatePrevNext: function (marker1, marker2) {
-		marker1._next = marker2;
-		marker2._prev = marker1;
+		if (marker1) {
+			marker1._next = marker2;
+		}
+		if (marker2) {
+			marker2._prev = marker1;
+		}
 	},
 
 	_getMiddleLatLng: function (marker1, marker2) {
@@ -6816,7 +7069,7 @@ L.Control.Scale = L.Control.extend({
 		this._addScales(options, className, container);
 
 		map.on(options.updateWhenIdle ? 'moveend' : 'move', this._update, this);
-		this._update();
+		map.whenReady(this._update, this);
 
 		return container;
 	},
@@ -6905,7 +7158,6 @@ L.Control.Scale = L.Control.extend({
 L.control.scale = function (options) {
 	return new L.Control.Scale(options);
 };
-
 
 
 L.Control.Layers = L.Control.extend({
@@ -7045,7 +7297,7 @@ L.Control.Layers = L.Control.extend({
 	// IE7 bugs out if you create a radio dynamically, so you have to do it this hacky way (see http://bit.ly/PqYLBe)
 	_createRadioElement: function (name, checked) {
 
-		var radioHtml = '<input type="radio" name="' + name + '"';
+		var radioHtml = '<input type="radio" class="leaflet-control-layers-selector" name="' + name + '"';
 		if (checked) {
 			radioHtml += ' checked="checked"';
 		}
@@ -7065,6 +7317,7 @@ L.Control.Layers = L.Control.extend({
 		if (obj.overlay) {
 			input = document.createElement('input');
 			input.type = 'checkbox';
+			input.className = 'leaflet-control-layers-selector';
 			input.defaultChecked = checked;
 		} else {
 			input = this._createRadioElement('leaflet-base-layers', checked);
@@ -7074,7 +7327,8 @@ L.Control.Layers = L.Control.extend({
 
 		L.DomEvent.on(input, 'click', this._onInputClick, this);
 
-		var name = document.createTextNode(' ' + obj.name);
+		var name = document.createElement('span');
+		name.innerHTML = ' ' + obj.name;
 
 		label.appendChild(input);
 		label.appendChild(name);
@@ -7086,17 +7340,25 @@ L.Control.Layers = L.Control.extend({
 	_onInputClick: function () {
 		var i, input, obj,
 			inputs = this._form.getElementsByTagName('input'),
-			inputsLen = inputs.length;
+			inputsLen = inputs.length,
+			baseLayer;
 
 		for (i = 0; i < inputsLen; i++) {
 			input = inputs[i];
 			obj = this._layers[input.layerId];
 
-			if (input.checked) {
-				this._map.addLayer(obj.layer, !obj.overlay);
-			} else {
+			if (input.checked && !this._map.hasLayer(obj.layer)) {
+				this._map.addLayer(obj.layer);
+				if (!obj.overlay) {
+					baseLayer = obj.layer;
+				}
+			} else if (!input.checked && this._map.hasLayer(obj.layer)) {
 				this._map.removeLayer(obj.layer);
 			}
+		}
+
+		if (baseLayer) {
+			this._map.fire('baselayerchange', {layer: baseLayer});
 		}
 	},
 
@@ -7410,11 +7672,6 @@ L.Map.include(!L.DomUtil.TRANSITION ? {} : {
 			tileBg = this._tileBg;
 
 		clearTimeout(this._clearTileBgTimer);
-
-		//dumb FireFox hack, I have no idea why this magic zero translate fixes the scale transition problem
-		if (L.Browser.gecko || window.opera) {
-			tileBg.style[transform] += ' translate(0,0)';
-		}
 
 		L.Util.falseFn(tileBg.offsetWidth); //hack to make sure transform is updated before running animation
 
