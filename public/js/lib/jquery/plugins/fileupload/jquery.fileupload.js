@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload Plugin 5.18
+ * jQuery File Upload Plugin 5.19.2
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -44,10 +44,6 @@
     $.widget('blueimp.fileupload', {
 
         options: {
-            // The namespace used for event handler binding on the fileInput,
-            // dropZone and pasteZone document nodes.
-            // If not set, the name of the widget ("fileupload") is used.
-            namespace: undefined,
             // The drop target element(s), by the default the complete document.
             // Set to null to disable drag & drop support:
             dropZone: $(document),
@@ -180,7 +176,6 @@
 
         // A list of options that require a refresh after assigning a new value:
         _refreshOptionsList: [
-            'namespace',
             'fileInput',
             'dropZone',
             'pasteZone',
@@ -310,10 +305,8 @@
                 options.headers['Content-Range'] = options.contentRange;
             }
             if (!multipart) {
-                // For cross domain requests, the X-File-Name header
-                // must be allowed via Access-Control-Allow-Headers
-                // or removed using the beforeSend callback:
-                options.headers['X-File-Name'] = file.name;
+                options.headers['Content-Disposition'] = 'attachment; filename="' +
+                    encodeURI(file.name) + '"';
                 options.contentType = file.type;
                 options.data = options.blob || file;
             } else if ($.support.xhrFormDataFileUpload) {
@@ -346,11 +339,9 @@
                         });
                     }
                     if (options.blob) {
-                        // For cross domain requests, the X-File-* headers
-                        // must be allowed via Access-Control-Allow-Headers
-                        // or removed using the beforeSend callback:
-                        options.headers['X-File-Name'] = file.name;
-                        options.headers['X-File-Type'] = file.type;
+                        options.headers['Content-Disposition'] = 'attachment; filename="' +
+                            encodeURI(file.name) + '"';
+                        options.headers['Content-Description'] = encodeURI(file.type);
                         formData.append(paramName, options.blob, file.name);
                     } else {
                         $.each(options.files, function (index, file) {
@@ -899,6 +890,12 @@
                 // support the File API and we add a pseudo File object with
                 // the input value as name with path information removed:
                 files = [{name: value.replace(/^.*\\/, '')}];
+            } else if (files[0].name === undefined && files[0].fileName) {
+                // File normalization for Safari 4 and Firefox 3:
+                $.each(files, function (index, file) {
+                    file.name = file.fileName;
+                    file.size = file.fileSize;
+                });
             }
             return $.Deferred().resolve(files).promise();
         },
@@ -919,12 +916,12 @@
         },
 
         _onChange: function (e) {
-            var that = e.data.fileupload,
+            var that = this,
                 data = {
                     fileInput: $(e.target),
                     form: $(e.target.form)
                 };
-            that._getFileInputFiles(data.fileInput).always(function (files) {
+            this._getFileInputFiles(data.fileInput).always(function (files) {
                 data.files = files;
                 if (that.options.replaceFileInput) {
                     that._replaceFileInput(data.fileInput);
@@ -936,8 +933,7 @@
         },
 
         _onPaste: function (e) {
-            var that = e.data.fileupload,
-                cbd = e.originalEvent.clipboardData,
+            var cbd = e.originalEvent.clipboardData,
                 items = (cbd && cbd.items) || [],
                 data = {files: []};
             $.each(items, function (index, item) {
@@ -946,18 +942,18 @@
                     data.files.push(file);
                 }
             });
-            if (that._trigger('paste', e, data) === false ||
-                    that._onAdd(e, data) === false) {
+            if (this._trigger('paste', e, data) === false ||
+                    this._onAdd(e, data) === false) {
                 return false;
             }
         },
 
         _onDrop: function (e) {
             e.preventDefault();
-            var that = e.data.fileupload,
+            var that = this,
                 dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer,
                 data = {};
-            that._getDroppedFiles(dataTransfer).always(function (files) {
+            this._getDroppedFiles(dataTransfer).always(function (files) {
                 data.files = files;
                 if (that._trigger('drop', e, data) !== false) {
                     that._onAdd(e, data);
@@ -966,9 +962,8 @@
         },
 
         _onDragOver: function (e) {
-            var that = e.data.fileupload,
-                dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer;
-            if (that._trigger('dragover', e) === false) {
+            var dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer;
+            if (this._trigger('dragover', e) === false) {
                 return false;
             }
             if (dataTransfer) {
@@ -978,27 +973,24 @@
         },
 
         _initEventHandlers: function () {
-            var ns = this.options.namespace;
             if (this._isXHRUpload(this.options)) {
-                this.options.dropZone
-                    .bind('dragover.' + ns, {fileupload: this}, this._onDragOver)
-                    .bind('drop.' + ns, {fileupload: this}, this._onDrop);
-                this.options.pasteZone
-                    .bind('paste.' + ns, {fileupload: this}, this._onPaste);
+                this._on(this.options.dropZone, {
+                    dragover: this._onDragOver,
+                    drop: this._onDrop
+                });
+                this._on(this.options.pasteZone, {
+                    paste: this._onPaste
+                });
             }
-            this.options.fileInput
-                .bind('change.' + ns, {fileupload: this}, this._onChange);
+            this._on(this.options.fileInput, {
+                change: this._onChange
+            });
         },
 
         _destroyEventHandlers: function () {
-            var ns = this.options.namespace;
-            this.options.dropZone
-                .unbind('dragover.' + ns, this._onDragOver)
-                .unbind('drop.' + ns, this._onDrop);
-            this.options.pasteZone
-                .unbind('paste.' + ns, this._onPaste);
-            this.options.fileInput
-                .unbind('change.' + ns, this._onChange);
+            this._off(this.options.dropZone, 'dragover drop');
+            this._off(this.options.pasteZone, 'paste');
+            this._off(this.options.fileInput, 'change');
         },
 
         _setOption: function (key, value) {
@@ -1006,7 +998,7 @@
             if (refresh) {
                 this._destroyEventHandlers();
             }
-            $.Widget.prototype._setOption.call(this, key, value);
+            this._super(key, value);
             if (refresh) {
                 this._initSpecialOptions();
                 this._initEventHandlers();
@@ -1033,7 +1025,6 @@
             var options = this.options;
             // Initialize options set via HTML5 data-attributes:
             $.extend(options, $(this.element[0].cloneNode(false)).data());
-            options.namespace = options.namespace || this.widgetName;
             this._initSpecialOptions();
             this._slots = [];
             this._sequence = this._getXHRPromise(true);
@@ -1041,27 +1032,8 @@
             this._initEventHandlers();
         },
 
-        destroy: function () {
+        _destroy: function () {
             this._destroyEventHandlers();
-            $.Widget.prototype.destroy.call(this);
-        },
-
-        enable: function () {
-            var wasDisabled = false;
-            if (this.options.disabled) {
-                wasDisabled = true;
-            }
-            $.Widget.prototype.enable.call(this);
-            if (wasDisabled) {
-                this._initEventHandlers();
-            }
-        },
-
-        disable: function () {
-            if (!this.options.disabled) {
-                this._destroyEventHandlers();
-            }
-            $.Widget.prototype.disable.call(this);
         },
 
         // This method is exposed to the widget API and allows adding files
