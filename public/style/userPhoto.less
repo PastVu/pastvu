@@ -164,7 +164,7 @@
 			zoom: 1;
 			border-width: 0 1px 1px 1px;
 			border-color: @MainBlueColor;
-			background-color: darken(@MainLigthColor, 5%);
+			background-color: darken(@MainLigthColor, 5%); //#F9F9F9
 			.box-shadow(0 0 10px 1px #222);
 			z-index: @zindexPopover;
 
@@ -212,31 +212,11 @@
 				overflow: auto;
 				.transition(opacity .4s linear);
 
-				&::-webkit-scrollbar {
-					width: 15px;
+				&::-webkit-scrollbar-button:decrement {
+					height: 0;
 				}
-
 				&::-webkit-scrollbar-thumb {
-					border-width: 3px 3px 3px 4px;
-					border-color: darken(@MainLigthColor, 5%);
-					border-style: solid;
-					background-color: desaturate(@MainBlueColor, 5%);
-
-					&:hover {
-						border-color: #eee;
-						border-left: 1px solid #aaa;
-						-webkit-box-shadow: inset 3px 0 0 0 #eee;
-						background-color: darken(@MainBlueColor, 5%);
-					}
-				}
-
-				&::-webkit-scrollbar-track {
-					border-width: 0;
-
-					&:hover {
-						border-left: 1px solid #aaa;
-						background-color: #eee;
-					}
+					border-width: 5px 3px 5px 4px;
 				}
 
 				&.show {

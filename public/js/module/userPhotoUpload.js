@@ -21,7 +21,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                 if (Browser.name === 'FIREFOX' || Browser.name === 'MSIE') {
                     $element
                         .css({'left': '141px'})
-                        //.attr('size', (viewModel.filereader() ? GP.Width() / 8 : 10))
                         .on("click", function (event) {
                             event.stopPropagation(); // Чтобы опять не вызвать клик родительского элемента
                         })
@@ -67,7 +66,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                         this.$dom.find('#fileupload').fileupload('option', {
                             VM: this,
                             url: 'http://localhost:8888/',
-                            dropZone: this.$dom.find('.addfiles_area'),
+                            //dropZone: this.$dom.find('.addfiles_area'),
                             maxFileSize: 52428800, //50Mb
                             maxNumberOfFiles: 10,
                             previewSourceMaxFileSize: 26214400, //25MB The maximum file size of images that are to be displayed as preview:
