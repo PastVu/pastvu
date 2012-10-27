@@ -18,7 +18,8 @@ module.exports.loadController = function (app) {
 
     app.get('/tpl/:name', function (req, res) {
         if (tpls.indexOf(req.route.params.name) !== -1) {
-            res.render('client/' + req.route.params.name, {pretty: false});
+            res.statusCode = 200;
+            res.render('client/' + req.route.params.name, {});
         } else {
             res.send(404);
         }

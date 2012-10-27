@@ -7,8 +7,7 @@ var ms404 = {
     ms500 = {
         title: 'Oldmos Error',
         body: 'Sorry, server failed to fulfill an apparently request'
-    },
-    appHash = '';
+    };
 
 var neoError = {
     e404: function (msgs) {
@@ -19,7 +18,8 @@ var neoError = {
     e404Virgin: function (req, res, msgss) {
         var msgs = ms404;
         if (msgss) msgs = {}.extend(ms404).extend(msgss);
-        res.render('404.jade', { locals: {pretty: false, pageTitle: msgs.title, mess: msgs.body, appHash: appHash}, status: 404 });
+        res.statusCode = 404;
+        res.render('404.jade', {pageTitle: msgs.title, mess: msgs.body});
     },
     e500: function (msg) {
         this.msgs = msgs;
@@ -29,7 +29,8 @@ var neoError = {
     e500Virgin: function (req, res, msgss) {
         var msgs = ms500;
         if (msgss) msgs = {}.extend(ms500).extend(msgss);
-        res.render('500.jade', { locals: {pretty: false, pageTitle: msgs.title, mess: msgs.body, appHash: appHash}, status: 500 });
+        res.statusCode = 500;
+        res.render('500.jade', {pageTitle: msgs.title, mess: msgs.body});
     },
 };
 neoError.e404.prototype.__proto__ = Error.prototype;
@@ -37,7 +38,7 @@ neoError.e500.prototype.__proto__ = Error.prototype;
 module.exports.err = neoError;
 
 module.exports.loadController = function (app) {
-    appHash = app.hash;
+    'use strict';
 
     app.get('/404', function (req, res) {
         throw new neoError.e404();
@@ -46,7 +47,7 @@ module.exports.loadController = function (app) {
         throw new neoError.e500();
     });
 
-    app.error(function (err, req, res, next) {
+    app.use(function(err, req, res, next){
         if (err instanceof neoError.e404 || err.code == 'ENOTDIR') {
             neoError.e404Virgin(req, res, err.msgs);
         } else if (err instanceof neoError.e500) {

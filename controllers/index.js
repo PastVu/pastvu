@@ -10,15 +10,6 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.dynamicHelpers({
-        checkAccess: function (req, res) {
-            return function (role) {
-                var user = req.session.user;
-                return User.checkRole(user, role);
-            }
-        }
-    });
-
     function regenSession(req, res, next) {
         if (req.session.login) {
             var neoStore = req.session.neoStore || {};
@@ -43,7 +34,8 @@ module.exports.loadController = function (app, db, io) {
     }
 
     app.get('/'/*, regenSession*/, function (req, res) {
-        res.render('index.jade', {pretty: false, pageTitle: 'OldMos2', appHash: app.hash});
+        res.statusCode = 200;
+        res.render('index.jade', {pageTitle: 'OldMos2'});
     });
 
     app.get('/updateCookie', function (req, res) {

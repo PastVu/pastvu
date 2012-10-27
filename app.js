@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-var fs = require('fs'),
-    port = 3000,
+var port = 3000,
     express = require('express'),
+    http = require('http'),
+    app, server, io,
+
+    fs = require('fs'),
     connect = require('express/node_modules/connect'),
-    gzippo = require('gzippo'),
     Utils = require('./commons/Utils.js'),
     File = require("file-utils").File,
     log4js = require('log4js'),
@@ -20,8 +22,7 @@ var fs = require('fs'),
     mongoose = require('mongoose'),
     mc = require('mc'), // memcashed
     ms =  require('ms'), // Tiny milisecond conversion utility
-    errS = require('./controllers/errors.js').err,
-    app, io;
+    errS = require('./controllers/errors.js').err;
 
 /**
  * log the cheese logger messages to a file, and the console ones as well.
@@ -43,13 +44,14 @@ var env = argv.env || 'dev',
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
 
+app = express();
+server = http.createServer(app);
 
-app = module.exports = express.createServer();
 app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version;
 app.hash = (env === 'dev' ? app.version : Utils.randomString(10));
 logger.info('Application Hash: ' + app.hash);
 
-io = require('socket.io').listen(app);
+io = require('socket.io').listen(server);
 
 new File("publicContent/avatars").createDirectory();
 new File("publicContent/photos/micro").createDirectory();
@@ -62,20 +64,26 @@ app.configure(function () {
 
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
-    app.set('view options', {layout: false, pretty: true});
     app.set('db-uri', 'mongodb://localhost:27017/oldmos');
+
+    app.locals({
+        pretty: false,
+        appHash: app.hash,
+        appVersion: app.version
+    });
 
     //app.use(express.logger({ immediate: false, format: 'dev' }));
 
     app.use(express.errorHandler({ dumpExceptions: (env !== 'prod'), showStack: (env !== 'prod') }));
+    app.use(express.compress());
     app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: ms('1d') }));
     if (env === 'dev') {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
     } else {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
     }
-    app.use(gzippo.staticGzip(__dirname + pub, {maxAge: ms('1d')})); //app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
-    app.use(gzippo.staticGzip(__dirname + '/views', {maxAge: ms('1d')})); //app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
+    app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
+    app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
 
     app.use('/_avatar', express.static(__dirname + '/publicContent/avatars', {maxAge: ms('1d')}));
     app.use('/_photo', express.static(__dirname + '/publicContent/photos', {maxAge: ms('7d')}));
@@ -84,8 +92,6 @@ app.configure(function () {
     app.use(express.cookieParser());
     app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
     app.use(express.methodOverride());
-
-    app.use(gzippo.compress());
     app.use(app.router);
     var Session = connect.middleware.session.Session;
     io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
@@ -118,7 +124,7 @@ app.configure(function () {
             onStart: function () {
             },
             onReload: function () {
-                app.listen(port);
+                server.listen(port);
             }
         });
     } else {
@@ -177,7 +183,6 @@ require(__dirname + '/models/_initValues.js').makeModel(db);
 
 // loading controllers
 require('./controllers/_session.js').loadController(app, db, io, mongo_store, memcached);
-require('./controllers/errors.js').loadController(app);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, db, io, mongo_store);
 require('./controllers/index.js').loadController(app, db, io);
@@ -185,6 +190,7 @@ require('./controllers/photo.js').loadController(app, db, io);
 require('./controllers/profile.js').loadController(app, db, io);
 require('./controllers/admin.js').loadController(app, db, io);
 require('./controllers/tpl.js').loadController(app);
+require('./controllers/errors.js').loadController(app);
 app.get('*', function (req, res) {
     errS.e404Virgin(req, res);
 });
@@ -199,7 +205,7 @@ process.on('uncaughtException', function (err) {
 });
 
 if (env !== 'dev') {
-    app.listen(port);
+    server.listen(port);
 }
 
 logger.info('Express server listening on port %d in %s-mode \n', port, env.toUpperCase());

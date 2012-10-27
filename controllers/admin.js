@@ -10,7 +10,8 @@ module.exports.loadController = function (app, db, io) {
     User = db.model('User');
 
     app.get('/admin', auth.restrictToRoleLevel(50), function (req, res) {
-        res.render('adminUser.jade', {pretty: false, pageTitle: 'Admin Panel', appHash: app.hash, appVersion: app.version});
+        res.statusCode = 200;
+        res.render('adminUser.jade', {pageTitle: 'Admin Panel'});
     });
 
     io.sockets.on('connection', function (socket) {

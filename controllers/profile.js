@@ -17,8 +17,8 @@ module.exports.loadController = function (app, db, io) {
         if (!login) {
             //throw new errS.e404();
         }
-
-        res.render('indexNew.jade', {pretty: false, pageTitle: login || 'Profile', appHash: app.hash});
+        res.statusCode = 200;
+        res.render('indexNew.jade', {pageTitle: login || 'Profile'});
 
         /*Step(
             function () {
@@ -29,8 +29,8 @@ module.exports.loadController = function (app, db, io) {
                 if (err || !user) {
                     throw new errS.e404();
                 } else {
-                    res.render('indexNew.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
-                    //res.render('userProfile.jade', {pretty: false, pageTitle: user.login, appHash: app.hash});
+                    res.render('indexNew.jade', {pageTitle: user.login});
+                    //res.render('userProfile.jade', {pageTitle: user.login});
                 }
             }
         );*/
