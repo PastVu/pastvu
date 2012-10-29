@@ -10,30 +10,7 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    function regenSession(req, res, next) {
-        if (req.session.login) {
-            var neoStore = req.session.neoStore || {};
-            var login = req.session.login,
-                remember = req.session.remember,
-                message = req.session.message;
-            //console.log('qqqq1=' + req.sessionID+' '+req.session.login);
-            req.session.regenerate(function (err) {
-                if (err) logger.error('Regenerate session error: ' + err);
-                req.session.login = login;
-                req.session.remember = remember;
-                req.session.message = message;
-                if (remember) req.session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-                else req.session.cookie.expires = false;
-                req.session.save();
-                //console.log('qqqq2=' + req.sessionID+' '+req.session.login);
-                next();
-            });
-        } else {
-            next();
-        }
-    }
-
-    app.get('/'/*, regenSession*/, function (req, res) {
+    app.get('/', function (req, res) {
         res.statusCode = 200;
         res.render('index.jade', {pageTitle: 'OldMos2'});
     });

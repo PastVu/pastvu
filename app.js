@@ -4,19 +4,15 @@ var port = 3000,
     http = require('http'),
     app, server, io,
 
+    Session,
+
     fs = require('fs'),
     connect = require('express/node_modules/connect'),
+    cookie = require('express/node_modules/cookie'),
     Utils = require('./commons/Utils.js'),
     File = require("file-utils").File,
     log4js = require('log4js'),
     argv = require('optimist').argv,
-
-    mongodb = require('connect-mongodb/node_modules/mongodb'),
-    mongoStore = require('connect-mongodb'),
-    server_config = new mongodb.Server('localhost', 27017, {auto_reconnect: true, native_parser: true}),
-    mongo_store = new mongoStore({db: new mongodb.Db('oldmos', server_config, {}), reapInterval: 3000}),
-
-    parseCookie = connect.utils.parseCookie,
 
     lessMiddleware = require('less-middleware'),
     mongoose = require('mongoose'),
@@ -83,34 +79,42 @@ app.configure(function () {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
     }
     app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
-    app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
 
     app.use('/_avatar', express.static(__dirname + '/publicContent/avatars', {maxAge: ms('1d')}));
     app.use('/_photo', express.static(__dirname + '/publicContent/photos', {maxAge: ms('7d')}));
 
     app.use(express.bodyParser());
     app.use(express.cookieParser());
-    app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
+    //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
+    app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.sid' }));
     app.use(express.methodOverride());
     app.use(app.router);
-    var Session = connect.middleware.session.Session;
-    io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
-    io.set('authorization', function (data, accept) {
-        if (!data.headers.cookie) {
-            return accept('No cookie transmitted.', false);
-        }
-        data.cookie = parseCookie(data.headers.cookie);
-        data.sessionID = data.cookie['oldmos.sid'];
 
-        mongo_store.load(data.sessionID, function (err, session) {
-            if (err || !session) {
-                return accept('Error: ' + err, false);
+    io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
+    io.set('authorization', function (handshakeData, callback) {
+        if (!handshakeData.headers.cookie) {
+            return callback('No cookie transmitted.', false);
+        }
+        handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
+        handshakeData.sessionID = handshakeData.cookie['oldmos.sidz'] || 'idcap';
+
+        Session.findOne({key: handshakeData.sessionID}).populate('user').exec(function (err, session) {
+            if (err) {
+                return callback('Error: ' + err, false);
             }
-            if (session.login) {
-                console.info("%s entered", session.login);
+            if (!session) {
+                session = new Session({});
             }
-            data.session = session;
-            return accept(null, true);
+            session.key = Utils.randomString(50); // При каждом заходе регенирируем ключ
+            session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
+            session.save();
+            if (session.user) {
+                console.info("%s entered", session.user.login);
+            }
+
+            handshakeData.session = session;
+
+            return callback(null, true);
         });
     });
 
@@ -173,18 +177,19 @@ mongoose.Model.saveUpsert = function (findQuery, properties, cb) {
     }.bind(this));
 };
 // creating models
+require(__dirname + '/models/Sessions.js').makeModel(db);
 require(__dirname + '/models/Counter.js').makeModel(db);
 require(__dirname + '/models/Settings.js').makeModel(db);
 require(__dirname + '/models/Role.js').makeModel(db);
 require(__dirname + '/models/User.js').makeModel(db);
 require(__dirname + '/models/Photo.js').makeModel(db);
 require(__dirname + '/models/_initValues.js').makeModel(db);
-
+Session = db.model('Sessionz');
 
 // loading controllers
-require('./controllers/_session.js').loadController(app, db, io, mongo_store, memcached);
+require('./controllers/_session.js').loadController(app, db, io);
 require('./controllers/mail.js').loadController(app);
-require('./controllers/auth.js').loadController(app, db, io, mongo_store);
+require('./controllers/auth.js').loadController(app, db, io);
 require('./controllers/index.js').loadController(app, db, io);
 require('./controllers/photo.js').loadController(app, db, io);
 require('./controllers/profile.js').loadController(app, db, io);

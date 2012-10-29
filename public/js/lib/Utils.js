@@ -425,7 +425,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 };
             }
         }()),
-        setCooksie: (function () {
+        setCookie: (function () {
             if (typeof window.setCookie === 'function') {
                 var func = window.setCookie;
                 delete window.setCookie;

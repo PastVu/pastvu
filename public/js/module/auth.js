@@ -178,10 +178,6 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                 socket.on('loginResult', function (json) {
                     socket.removeAllListeners('loginResult');
                     if (!json.error) {
-                        $.ajax({
-                            url: '/updateCookie',
-                            cache: false
-                        });
                         this.LoadMe();
                     }
 

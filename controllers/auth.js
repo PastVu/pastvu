@@ -1,4 +1,5 @@
 var _session = require('./_session.js'),
+    Session,
     User,
     Role,
     UserConfirm,
@@ -10,13 +11,12 @@ var _session = require('./_session.js'),
     ms =  require('ms'), // Tiny milisecond conversion utility
     moment = require('moment'),
     app,
-    io,
-    mongo_store;
+    io;
 
 var logger = log4js.getLogger("auth.js");
 moment.lang('ru');
 
-function login(session, data, cb) {
+function login(socket, data, cb) {
     var error = '';
 
     if (!data.login) error += 'Fill in the login field. ';
@@ -34,22 +34,16 @@ function login(session, data, cb) {
 
         // login was successful if we have a user
         if (user) {
-            session.login = user.login;
-            session.remember = data.remember;
-            if (data.remember) {
-                session.cookie.expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-            } else {
-                session.cookie.expires = false;
-            }
-            session.save();
-
-            //Удаляем предыдущие сохранившиеся сессии этого пользователя
-            mongo_store.getCollection().remove({'session': new RegExp('^' + user.login + '$', 'i'), _id: { $ne: session.id }});
-
-            _session.getNeoStore(session, user.login, function SaveSess(neoStore) {
-                session.neoStore = neoStore;
-                logger.info("Login success for %s", data.login);
-                cb({message: "Success login"});
+            socket.handshake.session.key = Utils.randomString(50);
+            socket.handshake.session.user = user;
+            socket.handshake.session.data = {remember: data.remember};
+            socket.handshake.session.stamp = new Date();
+            socket.handshake.session.save(function (err, session) {
+                Session.findOne({key: session.key}).populate('user').exec(function (err, session) {
+                    socket.handshake.session = session;
+                    _session.emitCookie(socket);
+                    cb(session, {message: "Success login"});
+                });
             });
             return;
         }
@@ -57,13 +51,11 @@ function login(session, data, cb) {
         switch (reason) {
         case User.failedLogin.NOT_FOUND:
         case User.failedLogin.PASSWORD_INCORRECT:
-            // note: these cases are usually treated the same - don't tell
-            // the user *why* the login failed, only that it did
+            // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
             cb({message: 'Login or password incorrect', error: true});
             break;
         case User.failedLogin.MAX_ATTEMPTS:
-            // send email or otherwise notify user that account is
-            // temporarily locked
+            // send email or otherwise notify user that account is temporarily locked
             cb({message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
             break;
         }
@@ -240,27 +232,6 @@ function recall(session, data, cb) {
     )
 }
 
-function clearUnconfirmedUsers() {
-    var today = new Date(),
-        todayminus2days = new Date(today);
-    todayminus2days.setDate(today.getDate() - 3);
-    UserConfirm.find({'created': { "$lte": todayminus2days}}).select({key: 1, login: 1, _id: 0}).exec(function (err, docs) {
-        if (err || docs.length < 1) return;
-
-        var users = [];
-        for (var i = 0, dlen = docs.length; i < dlen; i++) {
-            if (docs[i]['key'].length == 80) users.push(docs[i]['login']);
-        }
-        logger.info('Clear ' + users.length + ' unconfirmed users: ' + users.join(", "));
-        if (users.length > 0) User.remove({'login': { $in: users }}, function (err) {
-            logger.error('Fail to clear users: ' + err)
-        });
-        UserConfirm.remove({'created': { "$lte": todayminus2days }}, function (err) {
-            logger.error('Fail to clear unconfirmed records: ' + err)
-        });
-    });
-}
-
 /**
  * redirect to /login if user has insufficient rights
  * @param role_level
@@ -288,19 +259,19 @@ function restrictToRoleLevel(role_level) {
 }
 module.exports.restrictToRoleLevel = restrictToRoleLevel;
 
-module.exports.loadController = function (a, db, io, ms) {
+module.exports.loadController = function (a, db, io) {
     app = a;
+    Session = db.model('Sessionz');
     User = db.model('User');
     Role = db.model('Role');
     UserConfirm = db.model('UserConfirm');
-    mongo_store = ms;
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake,
-            session = hs.session;
+        var session = socket.handshake.session;
 
         socket.on('loginRequest', function (json) {
-            login(socket.handshake.session, json, function (data) {
+            login(socket, json, function (newSession, data) {
+                session = newSession;
                 socket.emit('loginResult', data);
             });
         });
@@ -326,11 +297,11 @@ module.exports.loadController = function (a, db, io, ms) {
         });
 
         socket.on('whoAmI', function (data) {
-            if (session.neoStore.user && session.neoStore.roles) {
-                session.neoStore.user.role_level = session.neoStore.roles[0]['level'];
-                session.neoStore.user.role_name = session.neoStore.roles[0]['name'];
+            if (session.user && session.roles) {
+                session.user.role_level = session.roles[0]['level'];
+                session.user.role_name = session.roles[0]['name'];
             }
-            socket.emit('youAre', session.neoStore.user);
+            socket.emit('youAre', (session.user && session.user.toObject ? session.user.toObject() : null));
         });
     });
 
@@ -409,8 +380,4 @@ module.exports.loadController = function (a, db, io, ms) {
             }
         });
     });
-
-    //Раз в день чистим пользователей, которые не подтвердили регистрацию или не сменили пароль
-    //setInterval(clearUnconfirmedUsers, 24 * 60 * 60 * 1000);
-    //clearUnconfirmedUsers();
 };

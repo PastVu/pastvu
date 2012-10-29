@@ -35,8 +35,8 @@ if (!Function.prototype.neoBind) {
         return function () {
             /**@type {!Array}*/
             var args = bind_args ?
-                        Array.prototype.slice.call(arguments).concat(bind_args) :
-                        Array.prototype.slice.call(arguments),
+                       Array.prototype.slice.call(arguments).concat(bind_args) :
+                       Array.prototype.slice.call(arguments),
                 res;
             args.push(arguments.callee);
 
@@ -71,7 +71,7 @@ if (!Array.isArray) {
  * MIT License
  */
 (function (global) {
-    if (typeof global.JSON == "undefined" || !global.JSON) {
+    if (typeof global.JSON === "undefined" || !global.JSON) {
         global.JSON = {};
     }
 
@@ -124,14 +124,15 @@ if (!Array.isArray) {
         new_str[ns++] = rc;
         return new_str.join("");
     };
-})(global);
+}(global));
 
 /**
  * Extend
  */
 Object.defineProperty(Object.prototype, "extend", {
-    enumerable:false,
-    value:function (from) {
+    enumerable: false,
+    value: function (from) {
+        'use strict';
         var props = Object.getOwnPropertyNames(from),
             dest = this;
         props.forEach(function (name) {

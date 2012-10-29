@@ -44,7 +44,6 @@ module.exports.loadController = function (app, db, io) {
         //socket.emit('initMessage', {init_message: '000'});
 
         socket.on('giveUser', function (data) {
-            logger.info(data);
             User.getUserPublic(data.login, function (err, user) {
                 socket.emit('takeUser', (user && user.toObject()) || {error: true, message: err && err.messagee});
             });
@@ -56,25 +55,21 @@ module.exports.loadController = function (app, db, io) {
                 if (data[key].length === 0) {
                     toDel[key] = 1;
                     delete data[key];
-                    delete session.neoStore.user[key];
                 }
             });
             //var updateData = {}.extend(data).extend({'$unset': toDel});
 
-            User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function (err) {
+            User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function (err, user) {
                 if (err) {
-                    logger.error(err);
-                } else {
-                    //��������� ��������� ������ ������ � memcashed
-                    session.neoStore.user.extend(data);
-                    _session.cashedSession(session.id, session.neoStore);
-                    logger.info('Saved story line for ' + data.login);
+                    socket.emit('saveUserResult', {message: err && err.message, error: true});
+                    return;
                 }
+                session.user = user;
+                socket.emit('saveUserResult', {ok: 1});
+                logger.info('Saved story line for ' + data.login);
             });
-            socket.emit('saveUserResult', {ok: 1});
-        });
 
-        //socket.on('disconnect', function() {});
+        });
     });
 
 };

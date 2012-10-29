@@ -1,101 +1,101 @@
-var User,
+var Session,
+    User,
     Role,
-    Step = require('step'),
     errS = require('./errors.js').err,
     Utils = require('../commons/Utils.js'),
-    app, io, memcashed;
+    ms =  require('ms'), // Tiny milisecond conversion utility
+    app, io, memcashed,
+    cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
+    cookieMaxAgeAnonimouse = ms('14d') / 1000;
 
-function cashedSession(id, neoStore, callback) {
-    if (neoStore) {
-        memcashed.set('sess' + id, JSON.stringify(neoStore), {flags: 0, exptime: Utils.time.hour / 1000}, function (err, status) {
-            if (!err) {
-                if (callback) callback(null);
-            }
-        });
-    } else {
-        memcashed.get('sess' + id, function (err, response) {
-            if (!err) {
-                if (callback) callback(null, JSON.parse(response['sess' + id]));
-            } else {
-                if (callback) callback(err);
-            }
-        });
+function generate(user, data, cb) {
+    'use strict';
+
+    var session = new Session({
+        key: Utils.randomString(50),
+        stamp: new Date()
+    });
+
+    if (user) {
+        session.user = user;
     }
-}
-function mongoSession(id, neoStore, callback) {
-
-}
-function getNeoStore(id, login, callback) {
-    var neoStore;
-    if (!id) {
-        neoStore = {};
-        if (callback) callback.call(null, neoStore);
-        return;
+    if (data) {
+        session.extend(data);
     }
 
-    cashedSession(id, null, function (err, store) {
-        neoStore = store || {};
-
-        if (!login || neoStore.user) {
-            if (callback) callback.call(null, neoStore);
-            return;
+    session.save().populate('user').exec(function (err, session) {
+        if (cb) {
+            cb(err, session);
         }
-
-        Step(
-            function () {
-                User.getUserPublic(login, this);
-            },
-            function (err, user) {
-                neoStore.user = user.toObject();
-                Role.find({name: {$in: neoStore.user.roles}}).select({_id: 0}).sort('level', -1).exec(this);
-            },
-            function (err, roles) {
-                neoStore.roles = roles;
-                cashedSession(id, neoStore);
-                if (callback) callback.call(null, neoStore);
-            }
-        );
     });
 }
+module.exports.generate = generate;
 
-module.exports.cashedSession = cashedSession;
-module.exports.getNeoStore = getNeoStore;
+function destroy(session) {
+    'use strict';
 
-function cashedSessionDel(id, cb) {
-    console.dir(memcashed);
-    if (memcashed && memcashed.del) {
-        memcashed.del('sess' + id, cb || function () {
-        });
-    } else {
-        cb && cb();
+    if (session) {
+        session.remove();
     }
 }
-module.exports.cashedSessionDel = cashedSessionDel;
+module.exports.destroy = destroy;
+
+function setUser(socket, user, data, cb) {
+    'use strict';
+
+    socket.handshake.session.user = user;
+    if (data) {
+        socket.handshake.session.extend(data);
+    }
+    socket.handshake.session.save(function (err, session) {
+        socket.handshake.session = session;
+        if (cb) {
+            cb(err);
+        }
+    });
+}
+module.exports.setUser = setUser;
+
+function setData(socket, data, cb) {
+    'use strict';
+
+    socket.handshake.session.extend(data);
+    socket.handshake.session.save(function (err, session) {
+        socket.handshake.session = session;
+        if (cb) {
+            cb(err);
+        }
+    });
+}
+module.exports.setData = setData;
+
+function emitCookie(socket) {
+    'use strict';
+
+    var newCoockie = {name: 'oldmos.sidz', key: socket.handshake.session.key, path: '/'};
+
+    if (socket.handshake.session.user) {
+        if (socket.handshake.session.data && socket.handshake.session.data.remember) {
+            newCoockie['max-age'] = cookieMaxAgeRegisteredRemember;
+        }
+    } else {
+        newCoockie['max-age'] = cookieMaxAgeAnonimouse;
+    }
+    //newCoockie.expires = new Date(Date.now() + ms('14d')).toGMTString();
+
+    socket.emit('newCookie', newCoockie);
+}
+module.exports.emitCookie = emitCookie;
 
 
-module.exports.loadController = function (a, db, io, mc) {
+module.exports.loadController = function (a, db, io) {
     app = a;
-    memcashed = mc;
+    Session = db.model('Sessionz');
     User = db.model('User');
     Role = db.model('Role');
 
-    app.get('*', function (req, res, next) {
-        var sessionId = req.cookies['oldmos.sid'];
-        getNeoStore(sessionId, req.session.login, function (neoStore) {
-            req.session.neoStore = neoStore;
-            next();
-        });
-    });
-
     io.sockets.on('connection', function (socket) {
-        //var address = socket.handshake.address;
-        //console.log("New connection from " + address.address + ":" + address.port);
-
-        var session = socket.handshake.session,
-            sessionId = socket.handshake.sessionID;
-
-        getNeoStore(sessionId, session.login, function (neoStore) {
-            session.neoStore = neoStore;
-        });
+        //console.log("New connection from " + socket.handshake.session.key);
+        emitCookie(socket);
     });
 };

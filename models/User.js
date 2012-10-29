@@ -130,7 +130,7 @@ var reasons = UserScheme.statics.failedLogin = {
 };
 
 UserScheme.statics.getAuthenticated = function (login, password, cb) {
-    this.findOne({ login: login, active: true }, function (err, user) {
+    this.findOne({ login: new RegExp('^' + login + '$', 'i'), active: true }, function (err, user) {
         if (err) {
             return cb(err);
         }
