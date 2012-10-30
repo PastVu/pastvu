@@ -88,16 +88,18 @@ require([
 
     function loadParams() {
         var dfd = $.Deferred();
-        socket.on('takeGlobeParams', function (json) {
-            ko_mapping.fromJS(json, GP);
+        socket.once('takeGlobeParams', function (data) {
+            ko_mapping.fromJS(data, GP);
             dfd.resolve();
         });
         socket.emit('giveGlobeParams');
         return dfd.promise();
     }
+
     function historyStart() {
         Backbone.history.start({pushState: true, root: '/u/', silent: false});
     }
+
     function app() {
         Backbone.history.start({pushState: true, root: '/u/', silent: false});
         document.body.classList.remove('crystal');

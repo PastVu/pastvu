@@ -31,11 +31,11 @@ function generate(user, data, cb) {
 }
 module.exports.generate = generate;
 
-function destroy(session) {
+function destroy(session, cb) {
     'use strict';
 
     if (session) {
-        session.remove();
+        session.remove(cb);
     }
 }
 module.exports.destroy = destroy;
@@ -95,7 +95,6 @@ module.exports.loadController = function (a, db, io) {
     Role = db.model('Role');
 
     io.sockets.on('connection', function (socket) {
-        //console.log("New connection from " + socket.handshake.session.key);
         emitCookie(socket);
     });
 };

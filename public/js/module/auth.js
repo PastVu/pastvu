@@ -44,7 +44,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
 
         LoadMe: function () {
             var dfd = $.Deferred();
-            socket.on('youAre', function (user) {
+            socket.once('youAre', function (user) {
                 globalParams.LoggedIn(!!user);
                 this.iAm = User.VM(user, this.iAm);
                 console.log(this.iAm.fullName());
@@ -175,8 +175,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         },
         doLogin: function (data, callback) {
             try {
-                socket.on('loginResult', function (json) {
-                    socket.removeAllListeners('loginResult');
+                socket.once('loginResult', function (json) {
                     if (!json.error) {
                         this.LoadMe();
                     }
@@ -194,8 +193,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         },
         doLogout: function (callback) {
             try {
-                socket.on('logoutResult', function (json) {
-                    socket.removeAllListeners('logoutResult');
+                socket.once('logoutResult', function (json) {
                     if (json.error) {
                         console.log('Logout error' + json.message);
                     } else {
@@ -211,8 +209,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         },
         doRegister: function (data, callback) {
             try {
-                socket.on('registerResult', function (json) {
-                    socket.removeAllListeners('registerResult');
+                socket.once('registerResult', function (json) {
                     if (Utils.isObjectType('function', callback)) {
                         callback(json);
                     }
@@ -226,8 +223,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         },
         doPassRecall: function (data, callback) {
             try {
-                socket.on('recallResult', function (json) {
-                    socket.removeAllListeners('recallResult');
+                socket.once('recallResult', function (json) {
                     if (Utils.isObjectType('function', callback)) {
                         callback(json);
                     }

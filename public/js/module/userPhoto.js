@@ -59,8 +59,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.showing = false;
         },
         getPhotos: function (start, limit, cb, ctx) {
-            var socketCb = function (data) {
-                socket.removeListener('takeUserPhoto', socketCb);
+            socket.once('takeUserPhoto', function (data) {
                 data.forEach(function (item, index, array) {
                     item.pfile = '/_photo/thumb/' + item.file;
                 });
@@ -68,8 +67,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                     cb.call(ctx, data);
                 }
                 this.loadingPhoto = false;
-            }.bind(this);
-            socket.on('takeUserPhoto', socketCb);
+            }.bind(this));
             socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
             this.loadingPhoto = true;
         },

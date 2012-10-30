@@ -12,7 +12,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 Users.waitings[login].push({cb: callback, ctx: context});
             } else {
                 Users.waitings[login] = [{cb: callback, ctx: context}];
-                socket.on('takeUser', function (data) {
+                socket.once('takeUser', function (data) {
                     if (!data.error && data.login === login) {
                         Users.users[login] = User.VM(data);
                     }

@@ -57,7 +57,7 @@ require([
 
     function loadParams() {
         var dfd = $.Deferred();
-        socket.on('takeGlobeParams', function (json) {
+        socket.once('takeGlobeParams', function (json) {
             ko_mapping.fromJS(json, GlobalParams);
             dfd.resolve();
         });

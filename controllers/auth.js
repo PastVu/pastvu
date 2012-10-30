@@ -22,13 +22,13 @@ function login(socket, data, cb) {
     if (!data.login) error += 'Fill in the login field. ';
     if (!data.pass) error += 'Fill in the password field.';
     if (error) {
-        cb({message: error, error: true});
+        cb(null, {message: error, error: true});
         return;
     }
 
     User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
         if (err) {
-            cb({message: err && err.message, error: true});
+            cb(null, {message: err && err.message, error: true});
             return;
         }
 
@@ -52,11 +52,11 @@ function login(socket, data, cb) {
         case User.failedLogin.NOT_FOUND:
         case User.failedLogin.PASSWORD_INCORRECT:
             // note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-            cb({message: 'Login or password incorrect', error: true});
+            cb(null, {message: 'Login or password incorrect', error: true});
             break;
         case User.failedLogin.MAX_ATTEMPTS:
             // send email or otherwise notify user that account is temporarily locked
-            cb({message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
+            cb(null, {message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
             break;
         }
     });
@@ -271,15 +271,15 @@ module.exports.loadController = function (a, db, io) {
 
         socket.on('loginRequest', function (json) {
             login(socket, json, function (newSession, data) {
-                session = newSession;
+                if (newSession) {
+                    session = newSession;
+                }
                 socket.emit('loginResult', data);
             });
         });
 
         socket.on('logoutRequest', function (data) {
-            _session.cashedSessionDel(session.id);
-
-            session.destroy(function (err) {
+            _session.destroy(session, function (err) {
                 socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: '/'});
             });
         });
