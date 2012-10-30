@@ -85,15 +85,14 @@ app.configure(function () {
 
     app.use(express.bodyParser());
     app.use(express.cookieParser());
-    //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.sid' }));
-    app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.sid' }));
+    //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.exp' }));
+    app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.exp' }));
     app.use(express.methodOverride());
     app.use(app.router);
 
     io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
     io.set('authorization', function (handshakeData, callback) {
         if (!handshakeData.headers.cookie) {
-            return callback('No cookie transmitted.', false);
         }
         handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
         handshakeData.sessionID = handshakeData.cookie['oldmos.sidz'] || 'idcap';
@@ -184,7 +183,7 @@ require(__dirname + '/models/Role.js').makeModel(db);
 require(__dirname + '/models/User.js').makeModel(db);
 require(__dirname + '/models/Photo.js').makeModel(db);
 require(__dirname + '/models/_initValues.js').makeModel(db);
-Session = db.model('Sessionz');
+Session = db.model('Session');
 
 // loading controllers
 require('./controllers/_session.js').loadController(app, db, io);

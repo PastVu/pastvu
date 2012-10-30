@@ -72,7 +72,7 @@ module.exports.setData = setData;
 function emitCookie(socket) {
     'use strict';
 
-    var newCoockie = {name: 'oldmos.sidz', key: socket.handshake.session.key, path: '/'};
+    var newCoockie = {name: 'oldmos.sid', key: socket.handshake.session.key, path: '/'};
 
     if (socket.handshake.session.user) {
         if (socket.handshake.session.data && socket.handshake.session.data.remember) {
@@ -90,7 +90,7 @@ module.exports.emitCookie = emitCookie;
 
 module.exports.loadController = function (a, db, io) {
     app = a;
-    Session = db.model('Sessionz');
+    Session = db.model('Session');
     User = db.model('User');
     Role = db.model('Role');
 

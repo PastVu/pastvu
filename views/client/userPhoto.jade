@@ -1,20 +1,18 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe2.addPhoto
-			a(data-bind="event: {click: showUpload}")
-			.photoTool Add photos
+		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}")
+			.desc Add photos..
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")
 			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad}")
-			// ko if: fresh
 			i.icon-fire.icon-white
-			// /ko
-			// ko if: !fresh && !active
 			i.icon-exclamation-sign.icon-white
-			// /ko
 			a(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
 		// /ko
+		.photoThumb.fringe2.loadingPhoto(data-bind="style: {display: loadingPhoto() ? 'inline-block' : 'none'}")
+			.desc Loading next..
+
 	.photoUploadCurtain
 		.photoUploadModal.fringe2(data-bind="style: {maxWidth: $root.GlobalParams.Width() - $root.GlobalParams.Width()/5 + 'px'}")
 			.modalTools.fringe2

@@ -261,7 +261,7 @@ module.exports.restrictToRoleLevel = restrictToRoleLevel;
 
 module.exports.loadController = function (a, db, io) {
     app = a;
-    Session = db.model('Sessionz');
+    Session = db.model('Session');
     User = db.model('User');
     Role = db.model('Role');
     UserConfirm = db.model('UserConfirm');

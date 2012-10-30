@@ -24,11 +24,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.photos = ko.observableArray();
             this.uploadVM = null;
             this.limit = 40;
-            this.loadingPhoto = false;
+            this.loadingPhoto = ko.observable(false);
             this.scrollActive = false;
             this.scrollHandler = function () {
                 if ($window.scrollTop() >= $(document).height() - $window.height() - 50) {
-                    console.log(999);
                     this.getNextPage();
                 }
             }.bind(this);
@@ -45,9 +44,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
         },
         show: function () {
             this.$container.fadeIn();
-            this.getPage(0, this.limit);
-            $window.on('scroll', this.scrollHandler);
-            this.scrollActive = true;
+            if (this.u.pcount() > 0) {
+                this.getPage(0, this.limit);
+                $window.on('scroll', this.scrollHandler);
+                this.scrollActive = true;
+            }
             this.showing = true;
         },
         hide: function () {
@@ -66,10 +67,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                 if (Utils.isObjectType('function', cb)) {
                     cb.call(ctx, data);
                 }
-                this.loadingPhoto = false;
+                this.loadingPhoto(false);
             }.bind(this));
             socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
-            this.loadingPhoto = true;
+            this.loadingPhoto(true);
         },
         getPage: function (start, limit) {
             this.getPhotos(start, limit, function (data) {
@@ -81,7 +82,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             }, this);
         },
         getNextPage: function () {
-            if (!this.loadingPhoto) {
+            if (!this.loadingPhoto()) {
                 this.getPage(this.photos().length, this.limit);
             }
         },

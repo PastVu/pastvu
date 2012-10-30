@@ -11,5 +11,5 @@ var SessionSchema = new mongoose.Schema({
 
 module.exports.makeModel = function (db) {
     'use strict';
-    db.model('Sessionz', SessionSchema);
+    db.model('Session', SessionSchema);
 };
