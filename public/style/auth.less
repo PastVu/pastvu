@@ -32,7 +32,8 @@
 		color: @MainBlueColor;
 		border-color: @MainBlueColor;
 		background-color: darken(@MainLigthColor, 5%);
-		.box-shadow(0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%));
+		@shadow: 0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%);
+		.box-shadow(@shadow);
 		z-index: @zindexPopover;
 
 		&.show {
@@ -179,7 +180,7 @@
 			padding: 5px 5px 5px 21px;
 			width: @authFormWidth - 5 - 21 - 2;
 			background-color: rgba(255, 255, 255, 0.6);
-			.box-shadow(inset 0 1px 4px 0 #A8A8A8);
+			.box-shadow(~'inset 0 1px 4px 0 #A8A8A8');
 			.transition(background-color 0.2s ease-out);
 			.placeholder(#adabab, italic);
 

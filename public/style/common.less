@@ -78,7 +78,7 @@ body {
 	margin: 1px;
 	border: 1px solid #C3C7DD;
 	background-color: @MainBlueColor;
-	.box-shadow(0 0 0 1px #000, 0 2px 4px 0px #222);
+	.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
 
 	&:hover {
 		text-decoration: none;
@@ -201,13 +201,13 @@ body {
 	white-space: nowrap;
 	background-color: #285991;
 	border: 1px solid #C3C7DD;
-	.box-shadow(0 0 0 1px #000, 0 2px 6px 0 #222);
+	.box-shadow(~'0 0 0 1px #000, 0 2px 6px 0 #222');
 
 	&.btn-strict-small {
 		padding: 1px 6px;
 		font-size: @baseFontSize - 2px;
 		line-height: @baseLineHeight - 3px;
-		.box-shadow(0 0 0 1px #000, 0 1px 5px 0 #222);
+		.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
 
 		[class^="icon-"] {
 			margin-top: 0;
@@ -231,7 +231,7 @@ body {
 		background-color: spin(#285991, 5) e("\9");
 		outline: 0;
 		border-color: darken(#C3C7DD, 15%);
-		.box-shadow(0 0 0 1px #000000, 0 0 0 0 #222222, 0 1px 4px -2px #000000 inset);
+		.box-shadow(~'0 0 0 1px #000, 0 0 0 0 #222, 0 1px 4px -2px #000 inset');
 		.transition(box-shadow .05s linear);
 	}
 

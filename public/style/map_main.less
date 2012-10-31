@@ -151,7 +151,8 @@
 		width: 5px;
 		border-top-width: 0;
 		border-bottom-width: 0;
-		.box-shadow(0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000);
+		@shadow: 0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000;
+		.box-shadow(@shadow);
 
         &::after {
           content: '';
