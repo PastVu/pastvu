@@ -12,7 +12,6 @@ define(['socket.io', 'Utils'], function (io, Utils) {
 
     s.on('newCookie', function (obj) {
         Utils.setCookie(obj.name, obj.key, {path: obj.path, expires: obj.expires, 'max-age': obj['max-age']});
-        console.log(obj);
     });
 
     return s;

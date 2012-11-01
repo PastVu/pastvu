@@ -14,8 +14,7 @@ module.exports.loadController = function (app, db, io) {
     Counter = db.model('Counter');
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake,
-            session = hs.session;
+        var hs = socket.handshake;
 
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {

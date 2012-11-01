@@ -92,10 +92,9 @@ app.configure(function () {
 
     io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
     io.set('authorization', function (handshakeData, callback) {
-        if (!handshakeData.headers.cookie) {
-        }
+        if (!handshakeData.headers.cookie) {}
         handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
-        handshakeData.sessionID = handshakeData.cookie['oldmos.sidz'] || 'idcap';
+        handshakeData.sessionID = handshakeData.cookie['oldmos.sid'] || 'idcap';
 
         Session.findOne({key: handshakeData.sessionID}).populate('user').exec(function (err, session) {
             if (err) {

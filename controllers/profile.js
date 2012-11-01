@@ -38,8 +38,7 @@ module.exports.loadController = function (app, db, io) {
     });
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake,
-            session = hs.session;
+        var hs = socket.handshake;
 
         //socket.emit('initMessage', {init_message: '000'});
 
@@ -64,9 +63,11 @@ module.exports.loadController = function (app, db, io) {
                     socket.emit('saveUserResult', {message: err && err.message, error: true});
                     return;
                 }
-                session.user = user;
+                if (hs.session.user && hs.session.user.login === user.login) {
+                    hs.session.user = user;
+                }
                 socket.emit('saveUserResult', {ok: 1});
-                logger.info('Saved story line for ' + data.login);
+                logger.info('Saved story line for ' + user.login);
             });
 
         });

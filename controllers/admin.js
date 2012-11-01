@@ -15,8 +15,7 @@ module.exports.loadController = function (app, db, io) {
     });
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake,
-            session = hs.session;
+        var hs = socket.handshake;
 
         socket.on('giveUsers', function () {
             User.getAllPublicUsers(function (err, users) {

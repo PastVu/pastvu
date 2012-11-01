@@ -20,30 +20,29 @@ module.exports.loadController = function (app, db, io) {
     });
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake,
-            session = hs.session;
-        //session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
-        if (session.message) {
-            socket.emit('initMessage', {init_message: session.message});
-            session.message = null;
+        var hs = socket.handshake;
+
+        //hs.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
+        if (hs.session.message) {
+            socket.emit('initMessage', {init_message: hs.session.message});
+            hs.session.message = null;
         }
 
         socket.on('giveGlobeParams', function (data) {
             var params = {
-                LoggedIn: !!session.login,
+                LoggedIn: !!hs.session.user,
                 ip: hs.address
             };
             Step(
                 function () {
-                    Settings.find({}, this.parallel());
-                    if (params.LoggedIn) User.findOne({'login': session.login}).select({ 'pass': 0, 'salt': 0, 'roles': 0}).exec(this.parallel());
+                    Settings.find({}, this);
                 },
                 function (err, settings, user) {
                     var x = settings.length - 1;
                     do {
                         params[settings[x]['key']] = settings[x]['val']
                     } while (x--);
-                    params.user = user;
+                    params.user = hs.session.user;
                     this();
                 },
                 function () {

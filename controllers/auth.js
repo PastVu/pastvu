@@ -267,41 +267,41 @@ module.exports.loadController = function (a, db, io) {
     UserConfirm = db.model('UserConfirm');
 
     io.sockets.on('connection', function (socket) {
-        var session = socket.handshake.session;
+        var hs = socket.handshake;
 
         socket.on('loginRequest', function (json) {
             login(socket, json, function (newSession, data) {
                 if (newSession) {
-                    session = newSession;
+                    hs.session = newSession;
                 }
                 socket.emit('loginResult', data);
             });
         });
 
         socket.on('logoutRequest', function (data) {
-            _session.destroy(session, function (err) {
+            _session.destroy(hs.session, function (err) {
                 socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: '/'});
             });
         });
 
         socket.on('registerRequest', function (data) {
-            register(session, data, function (data) {
+            register(hs.session, data, function (data) {
                 socket.emit('registerResult', data);
             });
         });
 
         socket.on('recallRequest', function (data) {
-            recall(session, data, function (data) {
+            recall(hs.session, data, function (data) {
                 socket.emit('recallResult', data);
             });
         });
 
         socket.on('whoAmI', function (data) {
-            if (session.user && session.roles) {
-                session.user.role_level = session.roles[0]['level'];
-                session.user.role_name = session.roles[0]['name'];
+            if (hs.session.user && hs.session.roles) {
+                //hs.session.user.role_level = hs.session.roles[0]['level'];
+                //hs.session.user.role_name = hs.session.roles[0]['name'];
             }
-            socket.emit('youAre', (session.user && session.user.toObject ? session.user.toObject() : null));
+            socket.emit('youAre', (hs.session.user && hs.session.user.toObject ? hs.session.user.toObject() : null));
         });
     });
 
