@@ -1,25 +1,42 @@
 var log4js = require('log4js'),
     File = require("file-utils").File,
+    Utils = require('../commons/Utils.js'),
     tplFolder = new File('./views/client'),
     tpls = [];
 
-tplFolder.listFiles(function (e, files) {
+tplFolder.list(function (e, files) {
     if (e) {
         console.dir(e);
         process.exit(1);
     }
-    Object.keys(files).forEach(function (element, index, array) {
-        tpls.push(files[element].getName());
-    });
+    tpls = filesRecursive(files, '');
+    console.dir(tpls);
 });
 
+function filesRecursive(files, prefix) {
+    'use strict';
+    var result = [];
+
+    Object.keys(files).forEach(function (element, index, array) {
+        if (Utils.isObjectType('object', files[element])) {
+            Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/'));
+        } else {
+            result.push(prefix + element);
+        }
+    });
+
+    return result;
+}
+
 module.exports.loadController = function (app) {
+    'use strict';
     var logger = log4js.getLogger("tpl.js");
 
-    app.get('/tpl/:name', function (req, res) {
-        if (tpls.indexOf(req.route.params.name) !== -1) {
+    app.get('/tpl/*', function (req, res) {
+        console.log('rote: ' + req.route.params[0]);
+        if (tpls.indexOf(req.route.params[0]) !== -1) {
             res.statusCode = 200;
-            res.render('client/' + req.route.params.name, {});
+            res.render('client/' + req.route.params[0], {});
         } else {
             res.send(404);
         }
