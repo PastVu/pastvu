@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'load-image', 'text!tpl/userPhotoUpload.jade', 'css!style/userPhotoUpload', 'jquery.ui.widget', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload', 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, User, users, loadImage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'load-image', 'text!tpl/user/photoUpload.jade', 'css!style/user/photoUpload', 'jquery.ui.widget', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload', 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, User, users, loadImage, jade) {
     'use strict';
 
     /**
@@ -65,7 +65,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
                         this.$dom.find('#fileupload').fileupload();
                         this.$dom.find('#fileupload').fileupload('option', {
                             VM: this,
-                            url: 'http://localhost:8888/',
+                            url: 'http://172.31.1.130:8888/',
                             //dropZone: this.$dom.find('.addfiles_area'),
                             maxFileSize: 52428800, //50Mb
                             maxNumberOfFiles: 10,

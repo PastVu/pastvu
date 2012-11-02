@@ -30,10 +30,12 @@ publicContent
 # Builded html from tpl #
 ######################
 public/tpl/*.html
+public/tpl/**/*.html
 
 # We using LESS instead of CSS #
 ######################
 public/style/*.css
+public/style/**/*.css
 
 # Except #
 ######################

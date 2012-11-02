@@ -71,7 +71,7 @@ require([
     'Browser', 'Utils',
     'socket',
     'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
-    'globalParams', 'globalVM', 'RouteManager', 'text!tpl/userSection.jade', 'css!style/userSection', 'backbone.queryparams'
+    'globalParams', 'globalVM', 'RouteManager', 'text!tpl/user/section.jade', 'css!style/user/section', 'backbone.queryparams'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, GP, globalVM, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',

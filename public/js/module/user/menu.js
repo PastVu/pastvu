@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/userMenu.jade', 'css!style/userMenu'], function (_, GlobalParams, ko, Cliche, globalVM, users, jade) {
+define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/user/menu.jade', 'css!style/user/menu'], function (_, GlobalParams, ko, Cliche, globalVM, users, jade) {
     'use strict';
 
     return Cliche.extend({

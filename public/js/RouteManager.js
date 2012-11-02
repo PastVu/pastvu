@@ -64,9 +64,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 globalVM,
                 [
                     {module: 'm/top', container: '#top_container'},
-                    {module: 'm/userBrief', container: '#user_brief'},
-                    {module: 'm/userMenu', container: '#user_menu'},
-                    {module: 'm/userProfile', container: '#user_profile'}
+                    {module: 'm/user/brief', container: '#user_brief'},
+                    {module: 'm/user/menu', container: '#user_menu'},
+                    {module: 'm/user/profile', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {
@@ -90,10 +90,10 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 globalVM,
                 [
                     {module: 'm/top', container: '#top_container'},
-                    {module: 'm/userBrief', container: '#user_brief'},
-                    {module: 'm/userMenu', container: '#user_menu'},
-                    {module: 'm/userPhotoUpload', container: '#user_profile'}
-                    //{module: 'm/userPhotoUpload', container: '#user_profile'}
+                    {module: 'm/user/brief', container: '#user_brief'},
+                    {module: 'm/user/menu', container: '#user_menu'},
+                    {module: 'm/user/photoUpload', container: '#user_profile'}
+                    //{module: 'm/user/photoUpload', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {
@@ -117,10 +117,10 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 globalVM,
                 [
                     {module: 'm/top', container: '#top_container'},
-                    {module: 'm/userBrief', container: '#user_brief'},
-                    {module: 'm/userMenu', container: '#user_menu'},
-                    {module: 'm/userPhoto', container: '#user_profile'}
-                    //{module: 'm/userPhotoUpload', container: '#user_profile'}
+                    {module: 'm/user/brief', container: '#user_brief'},
+                    {module: 'm/user/menu', container: '#user_menu'},
+                    {module: 'm/user/photo', container: '#user_profile'}
+                    //{module: 'm/user/photoUpload', container: '#user_profile'}
                 ],
                 0,
                 function (top, home) {

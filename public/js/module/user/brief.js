@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/userBrief.jade', 'css!style/userBrief', 'bs/bootstrap-affix' ], function (_, GlobalParams, ko, Cliche, globalVM, users, jade) {
+define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix' ], function (_, GlobalParams, ko, Cliche, globalVM, users, jade) {
     'use strict';
 
     return Cliche.extend({

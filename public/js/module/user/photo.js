@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/User', 'm/Users', 'text!tpl/userPhoto.jade', 'css!style/userPhoto'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, renderer, User, users, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/User', 'm/Users', 'text!tpl/user/photo.jade', 'css!style/user/photo'], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, renderer, User, users, jade) {
     'use strict';
     var $window = $(window);
     ko.observableArray['fn']['concat'] = function (arr, before) {
@@ -94,7 +94,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 
             this.$dom.find('span.modalCaption').text('Upload photo');
             $('.photoUploadCurtain').fadeIn(400, function () {
                 renderer(this, [
-                    {module: 'm/userPhotoUpload', container: '.modalContainer', callback: function (vm) {
+                    {module: 'm/user/photoUpload', container: '.modalContainer', callback: function (vm) {
                         this.uploadVM = vm;
                     }.bind(this)}
                 ], this.level + 1);

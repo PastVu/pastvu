@@ -1,5 +1,5 @@
 /*!
- * Lo-Dash v0.9.0 <http://lodash.com>
+ * Lo-Dash v0.9.1 <http://lodash.com>
  * (c) 2012 John-David Dalton <http://allyoucanleet.com/>
  * Based on Underscore.js 1.4.2 <http://underscorejs.org>
  * (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
@@ -89,6 +89,7 @@
   var nativeBind = reNative.test(nativeBind = slice.bind) && nativeBind,
       nativeIsArray = reNative.test(nativeIsArray = Array.isArray) && nativeIsArray,
       nativeIsFinite = window.isFinite,
+      nativeIsNaN = window.isNaN,
       nativeKeys = reNative.test(nativeKeys = Object.keys) && nativeKeys,
       nativeMax = Math.max,
       nativeMin = Math.min,
@@ -1337,7 +1338,7 @@
    * // => false
    */
   function isFinite(value) {
-    return nativeIsFinite(value ? +value : parseFloat(value));
+    return nativeIsFinite(value) && !nativeIsNaN(parseFloat(value));
   }
 
   /**
@@ -1883,9 +1884,9 @@
     var result = true;
     callback = createCallback(callback, thisArg);
     forEach(collection, function(value, index, collection) {
-      return (result = callback(value, index, collection));
+      return (result = !!callback(value, index, collection));
     });
-    return !!result;
+    return result;
   }
 
   /**
@@ -2087,7 +2088,7 @@
    * @static
    * @memberOf _
    * @category Collections
-   * @param {Array} collection The collection to iterate over.
+   * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback] The function called per iteration.
    * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Mixed} Returns the maximum value.
@@ -2136,7 +2137,7 @@
    * @static
    * @memberOf _
    * @category Collections
-   * @param {Array} collection The collection to iterate over.
+   * @param {Array|Object|String} collection The collection to iterate over.
    * @param {Function} [callback] The function called per iteration.
    * @param {Mixed} [thisArg] The `this` binding of `callback`.
    * @returns {Mixed} Returns the minimum value.
@@ -2299,7 +2300,7 @@
    * @static
    * @memberOf _
    * @category Collections
-   * @param {Array} collection The collection to shuffle.
+   * @param {Array|Object|String} collection The collection to shuffle.
    * @returns {Array} Returns a new shuffled collection.
    * @example
    *
@@ -2935,18 +2936,7 @@
    * // => [1, 2, 3, 101, 10]
    */
   function union() {
-    var index = -1,
-        flattened = concat.apply(arrayRef, arguments),
-        length = flattened.length,
-        result = [];
-
-    while (++index < length) {
-      var value = flattened[index];
-      if (indexOf(result, value) < 0) {
-        result.push(value);
-      }
-    }
-    return result;
+    return uniq(concat.apply(arrayRef, arguments));
   }
 
   /**
@@ -2983,7 +2973,7 @@
     var index = -1,
         length = array ? array.length : 0,
         result = [],
-        seen = [];
+        seen = result;
 
     // juggle arguments
     if (typeof isSorted == 'function') {
@@ -2991,15 +2981,22 @@
       callback = isSorted;
       isSorted = false;
     }
-    callback = createCallback(callback, thisArg);
+    if (callback) {
+      seen = [];
+      callback = createCallback(callback, thisArg);
+    }
     while (++index < length) {
-      var computed = callback(array[index], index, array);
+      var value = array[index],
+          computed = callback ? callback(value, index, array) : value;
+
       if (isSorted
             ? !index || seen[seen.length - 1] !== computed
             : indexOf(seen, computed) < 0
           ) {
-        seen.push(computed);
-        result.push(array[index]);
+        if (callback) {
+          seen.push(computed);
+        }
+        result.push(value);
       }
     }
     return result;
@@ -3978,7 +3975,7 @@
    * @memberOf _
    * @type String
    */
-  lodash.VERSION = '0.9.0';
+  lodash.VERSION = '0.9.1';
 
   // assign static methods
   lodash.after = after;

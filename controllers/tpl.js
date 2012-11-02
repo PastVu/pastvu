@@ -10,7 +10,6 @@ tplFolder.list(function (e, files) {
         process.exit(1);
     }
     tpls = filesRecursive(files, '');
-    console.dir(tpls);
 });
 
 function filesRecursive(files, prefix) {
@@ -33,7 +32,6 @@ module.exports.loadController = function (app) {
     var logger = log4js.getLogger("tpl.js");
 
     app.get('/tpl/*', function (req, res) {
-        console.log('rote: ' + req.route.params[0]);
         if (tpls.indexOf(req.route.params[0]) !== -1) {
             res.statusCode = 200;
             res.render('client/' + req.route.params[0], {});

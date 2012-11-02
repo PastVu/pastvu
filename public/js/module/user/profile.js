@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/userProfile.jade', 'css!style/userProfile', 'bs/bootstrap-datepicker' ], function (_, Utils, socket, GlobalParams, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
+define(['underscore', 'Utils', '../../socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/user/profile.jade', 'css!style/user/profile', 'bs/bootstrap-datepicker' ], function (_, Utils, socket, GlobalParams, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
     'use strict';
 
     return Cliche.extend({

@@ -30,7 +30,7 @@ module.exports.loadController = function (app, db, io) {
                     throw new errS.e404();
                 } else {
                     res.render('indexNew.jade', {pageTitle: user.login});
-                    //res.render('userProfile.jade', {pageTitle: user.login});
+                    //res.render('profile.jade', {pageTitle: user.login});
                 }
             }
         );*/
