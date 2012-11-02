@@ -263,6 +263,21 @@ body {
 	}
 
 	[class^="icon-"], [class*=" icon-"] {
-		margin: 2px 8px 0 0;
+		margin: 3px 8px 0 0;
 	}
+}
+// Float them, remove border radius, then re-add to first and last elements
+.btn-group > [class^="btn-strict"] {
+	position: relative;
+	margin-right: 0;
+	z-index: 2;
+}
+.btn-group > [class^="btn-strict"].active {
+	background-color: #325175;
+	.box-shadow(0 0 0 1px black);
+	margin-top: 1px;
+	z-index: 1;
+}
+.btn-group > [class^="btn-strict"] + [class^="btn-strict"] {
+	margin-left: -1px;
 }

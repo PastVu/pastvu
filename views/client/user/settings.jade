@@ -1,0 +1,22 @@
+.user_settings(data-bind="with: repository[M!M]")
+	.accordion#accordion2
+		.accordion-group
+			.accordion-heading
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseOne") Privacy
+			.accordion-body.collapse.in#collapseOne
+				.accordion-inner
+					label.checkbox
+						input(type="checkbox", value="")
+						| Show my email address to other registered users
+						.btn-group
+							button.btn-strict(type="button") On
+							button.btn-strict.active(type="button") Off
+					button.btn-strict(type="button", data-bind="event:{click: function(data, evt){auth.show('changePass')}}")
+						i.icon-random.icon-white
+						i.icon-lock.icon-white
+						span Change password
+		.accordion-group
+			.accordion-heading
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Geolocation
+			.accordion-body.collapse#collapseTwo
+				.accordion-inner Section is under construction...

@@ -10,6 +10,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         registerRouters: function () {
             this.route("", "profile");
             this.route(":user", "profile");
+            this.route(":user/settings", "settings");
             this.route(":user/photoUpload", "photoUpload");
             this.route(":user/photo", "photo");
         },
@@ -66,7 +67,32 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                     {module: 'm/top', container: '#top_container'},
                     {module: 'm/user/brief', container: '#user_brief'},
                     {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/profile', container: '#user_profile'}
+                    {module: 'm/user/profile', container: '#user_content'}
+                ],
+                0,
+                function (top, home) {
+                }
+            );
+
+            this.routeChanged(Backbone.history.getFragment());
+        },
+        settings: function (user, params) {
+            console.log('User Settings');
+            var fragment = Backbone.history.getFragment();
+
+            this.addToStack('u/', user, (params && params.leaf) || '');
+            this.base('u/');
+            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
+            this.params({user: user || ""});
+            this.param(null);
+
+            renderer(
+                globalVM,
+                [
+                    {module: 'm/top', container: '#top_container'},
+                    {module: 'm/user/brief', container: '#user_brief'},
+                    {module: 'm/user/menu', container: '#user_menu'},
+                    {module: 'm/user/settings', container: '#user_content'}
                 ],
                 0,
                 function (top, home) {
@@ -92,8 +118,8 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                     {module: 'm/top', container: '#top_container'},
                     {module: 'm/user/brief', container: '#user_brief'},
                     {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/photoUpload', container: '#user_profile'}
-                    //{module: 'm/user/photoUpload', container: '#user_profile'}
+                    {module: 'm/user/photoUpload', container: '#user_content'}
+                    //{module: 'm/user/photoUpload', container: '#user_content'}
                 ],
                 0,
                 function (top, home) {
@@ -119,8 +145,8 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                     {module: 'm/top', container: '#top_container'},
                     {module: 'm/user/brief', container: '#user_brief'},
                     {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/photo', container: '#user_profile'}
-                    //{module: 'm/user/photoUpload', container: '#user_profile'}
+                    {module: 'm/user/photo', container: '#user_content'}
+                    //{module: 'm/user/photoUpload', container: '#user_content'}
                 ],
                 0,
                 function (top, home) {
@@ -128,26 +154,6 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             );
 
             this.routeChanged(Backbone.history.getFragment());
-        },
-
-        video: function (id, params) {
-            console.log('video');
-
-            this.addToStack('video/', id, (params && params.leaf) || '');
-            this.base('video');
-            this.param(id);
-
-            renderer(
-                globalVM,
-                [
-                    {module: 'm/top', container: '#top_container'},
-                    {module: 'm/video', container: '#main_container'}
-                ],
-                0,
-                function (top, video) {
-                    //window.setTimeout(function () { $(window).trigger('resize'); }, 500);
-                }
-            );
         },
 
         routes: {
