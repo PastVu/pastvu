@@ -5,11 +5,26 @@
 define(['underscore', 'Utils', '../../socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, GlobalParams, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
     'use strict';
 
+    ko.bindingHandlers.executeOnEnter = {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+            var allBindings = allBindingsAccessor();
+            $(element).keypress(function (event) {
+                var keyCode = (event.which ? event.which : event.keyCode);
+                if (keyCode === 13) {
+                    allBindings.executeOnEnter.call(viewModel);
+                    return false;
+                }
+                return true;
+            });
+        }
+    };
+
     return Cliche.extend({
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/auth'];
             this.u = null;
+            this.editEmail = ko.observable(false);
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
@@ -18,16 +33,6 @@ define(['underscore', 'Utils', '../../socket', 'globalParams', 'knockout', 'knoc
 
                     this.u = vm;
                     this.originUser = ko_mapping.toJS(this.u);
-
-                    this.edit = ko.observable(false);
-
-                    this.canBeEdit = ko.computed(function () {
-                        return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
-                    }, this);
-
-                    this.edit_mode = ko.computed(function () {
-                        return this.canBeEdit() && this.edit();
-                    }, this);
 
                     ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -46,6 +51,14 @@ define(['underscore', 'Utils', '../../socket', 'globalParams', 'knockout', 'knoc
             this.$container.css('display', '');
             this.showing = false;
         },
+
+        saveEmail: function () {
+            if (this.editEmail() === true) {
+                socket.emit('saveUser', {login: this.u.login(), email: this.u.email()});
+            }
+            this.editEmail(!this.editEmail());
+        },
+
         saveUser: function () {
             var targetUser = ko_mapping.toJS(this.u),
                 key;

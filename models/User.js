@@ -3,7 +3,7 @@ var mongoose = require('mongoose'),
     bcrypt = require('bcrypt'),
     SALT_ROUNDS = 10,
     SALT_SEED = 20,
-    MAX_LOGIN_ATTEMPTS = 5,
+    MAX_LOGIN_ATTEMPTS = 10,
     LOCK_TIME = 2 * 60 * 1000;
 
 var sexes = [

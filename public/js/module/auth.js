@@ -11,6 +11,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             this.working = ko.observable(false);
 
             this.msg = ko.observable('');
+            this.caps = ko.observable(false);
 
             this.mode.subscribe(function () {
                 this.formFocus();
@@ -54,6 +55,11 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
             return dfd.promise();
         },
 
+        pressHandler: function (vm, event) {
+            this.caps(Utils.capsLockDetect(event));
+            return true;
+        },
+
         formFocus: function () {
             window.setTimeout(function () {
                 try {
@@ -65,8 +71,10 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         formReset: function () {
             this.$dom.find(':focus').blur();
             this.$dom.find("input").val(null);
-            this.$dom.find(".mess").height(0).text('').removeClass('text-error text-warning text-info text-success muted');
+            this.$dom.find(".mess").height(0).removeClass('text-error text-warning text-info text-success muted');
+            this.msg('');
             this.formWorking(false);
+            this.caps(false);
         },
         formClose: function () {
             this.hide();
@@ -163,6 +171,26 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                             }
                         }.bind(this)
                     );
+                } else if (this.mode() === 'passChange') {
+                    this.doPassChange(
+                        $.extend(form.serializeObject(), {login: this.iAm.login()}),
+                        function (data) {
+                            if (data.error) {
+                                this.setMessage(data.message, 'error');
+                                window.setTimeout(function () {
+                                    this.formFocus();
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            } else {
+                                form.find('button').css('display', 'none');
+                                form.find('.formfinish').css('display', '');
+                                this.setMessage(data.message, 'success');
+                                window.setTimeout(function () {
+                                    this.formWorking(false);
+                                }.bind(this), 420);
+                            }
+                        }.bind(this)
+                    );
                 }
 
                 this.formWorking(true);
@@ -229,6 +257,20 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
                     }
                 });
                 socket.emit('recallRequest', data);
+            } catch (e) {
+                if (Utils.isObjectType('function', callback)) {
+                    callback(e.message);
+                }
+            }
+        },
+        doPassChange: function (data, callback) {
+            try {
+                socket.once('passChangeResult', function (json) {
+                    if (Utils.isObjectType('function', callback)) {
+                        callback(json);
+                    }
+                });
+                socket.emit('passChangeResult', data);
             } catch (e) {
                 if (Utils.isObjectType('function', callback)) {
                     callback(e.message);

@@ -333,6 +333,35 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return {"x": x, "y": y};
         },
 
+        /**
+         * Caps Lock Detector 1.0
+         * @author Igor Tigirlas, last update 05.08.2005
+         * @param evt
+         */
+        capsLockDetect: function (evt) {
+            if (!evt) {
+                evt = window.event || null;
+            }
+            if (!evt) {
+                return;
+            }
+
+            var n = evt.keyCode || evt.charCode;
+
+            if (evt.type === "keypress") {
+                var c = String.fromCharCode(n),
+                    cUC = c.toUpperCase(),
+                    cLC = c.toLowerCase();
+
+                if (cUC !== cLC) {
+                    return ((evt.shiftKey && cLC === c) || (!evt.shiftKey && cUC === c));
+                }
+            } else if (evt.type === "keydown" && n === 20) {
+                return false;
+            }
+        },
+
+
         getClientWidth: function () {
             if (window.opera && window.innerWidth) {
                 return window.innerWidth;

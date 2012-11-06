@@ -17,6 +17,7 @@ var logger = log4js.getLogger("auth.js");
 moment.lang('ru');
 
 function login(socket, data, cb) {
+    'use strict';
     var error = '';
 
     if (!data.login) error += 'Fill in the login field. ';
@@ -61,8 +62,46 @@ function login(socket, data, cb) {
         }
     });
 }
+function passchange(session, data, cb) {
+    'use strict';
+    var error = '';
+
+    if (!session.user || session.user.login !== data.login) {
+        error += 'You are not authorized for this action.';
+    } else {
+        if (!data.pass || !data.passNew || !data.passNew2) error += 'Fill in all password fields. ';
+        if (data.passNew !== data.passNew2) error += 'New passwords do not match each other.';
+    }
+    if (error) {
+        cb({message: error, error: true});
+        return;
+    }
+
+    session.user.checkPass(data.pass, function (err, isMatch) {
+        if (err) {
+            cb({message: err.message, error: true});
+            return;
+        }
+
+        if (isMatch) {
+            session.user.pass = data.passNew;
+            session.user.save(function (err) {
+                if (err) {
+                    cb({message: err && err.message, error: true});
+                    return;
+                }
+                cb({message: "Password was changed successfully!"});
+                return;
+            });
+        } else {
+            cb({message: 'Current password incorrect', error: true});
+            return;
+        }
+    });
+}
 
 function register(session, data, cb) {
+    'use strict';
     var error = '',
         success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
         confirmKey = '';
@@ -293,6 +332,12 @@ module.exports.loadController = function (a, db, io) {
         socket.on('recallRequest', function (data) {
             recall(hs.session, data, function (data) {
                 socket.emit('recallResult', data);
+            });
+        });
+
+        socket.on('passChangeResult', function (data) {
+            passchange(hs.session, data, function (data) {
+                socket.emit('passChangeResult', data);
             });
         });
 

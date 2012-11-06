@@ -242,7 +242,7 @@
 			}
 		}
 
-		.mess{
+		.mess, .caps-warn{
 			position: relative;
 			width: @authFormWidth;
 			font-weight: bold;
@@ -253,6 +253,14 @@
 			margin: 6px 0;
 			overflow: hidden;
 			.transition(height 0.4s ease-out);
+		}
+
+		.caps-warn {
+			line-height: 20px;
+
+			i {
+				margin: 1px 6px 0 2PX;
+			}
 		}
 
 	}

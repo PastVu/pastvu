@@ -210,7 +210,8 @@ body {
 		.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
 
 		[class^="icon-"] {
-			margin-top: 0;
+			margin-top: 1px;
+			margin-right: 6px;
 		}
 	}
 
@@ -270,12 +271,18 @@ body {
 .btn-group > [class^="btn-strict"] {
 	position: relative;
 	margin-right: 0;
+	line-height: 21px;
+	color: #c3c3c3;
+	background-color: #335F92;
 	z-index: 2;
 }
 .btn-group > [class^="btn-strict"].active {
-	background-color: #325175;
+	color: #fff;
+	line-height: 19px;
+	cursor: default;
+	border-color: #fff;
+	background-color: #285991;
 	.box-shadow(0 0 0 1px black);
-	margin-top: 1px;
 	z-index: 1;
 }
 .btn-group > [class^="btn-strict"] + [class^="btn-strict"] {
