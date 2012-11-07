@@ -12,11 +12,7 @@ module.exports.loadController = function (app, db, io) {
 
     app.get('/', function (req, res) {
         res.statusCode = 200;
-        res.render('index.jade', {pageTitle: 'OldMos2'});
-    });
-
-    app.get('/updateCookie', function (req, res) {
-        res.send('updateCookie', 200);
+        res.render('appMap.jade', {pageTitle: 'Main - OldMos2'});
     });
 
     io.sockets.on('connection', function (socket) {

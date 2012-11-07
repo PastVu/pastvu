@@ -18,7 +18,7 @@ module.exports.loadController = function (app, db, io) {
             //throw new errS.e404();
         }
         res.statusCode = 200;
-        res.render('indexNew.jade', {pageTitle: login || 'Profile'});
+        res.render('appUser.jade', {pageTitle: login || 'Profile'});
 
         /*Step(
             function () {
@@ -29,7 +29,7 @@ module.exports.loadController = function (app, db, io) {
                 if (err || !user) {
                     throw new errS.e404();
                 } else {
-                    res.render('indexNew.jade', {pageTitle: user.login});
+                    res.render('appUser.jade', {pageTitle: user.login});
                     //res.render('profile.jade', {pageTitle: user.login});
                 }
             }
