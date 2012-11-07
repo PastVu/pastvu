@@ -1,4 +1,4 @@
-(function() {
+(function(_, Backbone) {
 
 var queryStringParam = /^\?(.*)/;
 var namedParam    = /:([\w\d]+)/g;
@@ -50,7 +50,7 @@ _.extend(Backbone.Router.prototype, {
   initialize: function(options) {
     this.encodedSplatParts = options && options.encodedSplatParts;
   },
-  
+
   getFragment : function(fragment, forcePushState, excludeQueryString) {
     fragment = _getFragment.apply(this, arguments);
     if (excludeQueryString) {
@@ -58,7 +58,7 @@ _.extend(Backbone.Router.prototype, {
     }
     return fragment;
   },
-  
+
   _routeToRegExp : function(route) {
     var splatMatch = (splatParam.exec(route) || {index: -1});
     var namedMatch = (namedParam.exec(route) || {index: -1});
@@ -181,7 +181,9 @@ _.extend(Backbone.Router.prototype, {
       if (!_.isString(queryParameters)) {
         queryParameters = this._toQueryString(queryParameters);
       }
-      route += '?' + queryParameters;
+      if(queryParameters) {
+        route += '?' + queryParameters;
+      }
     }
     return route;
   },
@@ -192,20 +194,20 @@ _.extend(Backbone.Router.prototype, {
   _toQueryString: function(val, namePrefix) {
     var splitChar = Backbone.Router.arrayValueSplit;
     function encodeSplit(val) { return val.replace(splitChar, encodeURIComponent(splitChar)); }
-  
+
     if (!val) return '';
     namePrefix = namePrefix || '';
     var rtn = '';
     for (var name in val) {
       var _val = val[name];
       if (_.isString(_val) || _.isNumber(_val) || _.isBoolean(_val) || _.isDate(_val)) {
-        // primitave type
+        // primitive type
         _val = this._toQueryParam(_val);
-        if (_.isBoolean(_val) || _val) {
+        if (_.isBoolean(_val) || _.isNumber(_val) || _val) {
           rtn += (rtn ? '&' : '') + this._toQueryParamName(name, namePrefix) + '=' + encodeSplit(encodeURIComponent(_val));
         }
       } else if (_.isArray(_val)) {
-        // arrrays use Backbone.Router.arrayValueSplit separator
+        // arrays use Backbone.Router.arrayValueSplit separator
         var str = '';
         for (var i in _val) {
           var param = this._toQueryParam(_val[i]);
@@ -261,4 +263,4 @@ function iterateQueryString(queryString, callback) {
   });
 }
 
-})();
+})(_, Backbone);

@@ -8,7 +8,7 @@ define(['socket.io', 'Utils'], function (io, Utils) {
 
     s.on('connect', function () { console.log('Connected with ' + connectionType); });
     s.on('connecting', function (type) { connectionType = type; });
-    s.on('disconnect', function () { console.log('Disconnected', arguments); });
+    s.on('disconnect', function () { console.log('Disconnected'); });
 
     s.on('newCookie', function (obj) {
         Utils.setCookie(obj.name, obj.key, {path: obj.path, expires: obj.expires, 'max-age': obj['max-age']});
