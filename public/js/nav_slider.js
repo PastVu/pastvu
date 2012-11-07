@@ -1,5 +1,6 @@
 /*global requirejs:true, require:true, define:true*/
 define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], function ($, Utils, ET, L, ko, Locations) {
+    'use strict';
 
     function NavigationSlider(slider, map) {
         this.map = map;
@@ -93,7 +94,8 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
         this.DOMSlider.innerHTML = this.sliderOnZoom;
     };
     NavigationSlider.prototype.Snatch = function (e) {
-        for (var z = 0; z < this.numZooms; z++) {
+        var z;
+        for (z = 0; z < this.numZooms; z++) {
             Utils.Event.add(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
             /*if(Browser.support.touch){
              Utils.Event.add(this.DomDashsArray[z], 'touchmove', function(){alert(9)}, false);
@@ -116,10 +118,12 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
         return false;
     };
     NavigationSlider.prototype.SnatchOff = function (evt) {
+        var z;
+
         this.DOMPanel.classList.remove('sliding');
         Utils.Event.remove(document.body, ET.mup, this.SnatchOffBind, false);
         Utils.Event.remove(document.body, 'mouseout', this.SnatchOffByWindowOutBind, false);
-        for (var z = 0; z < this.numZooms; z++) {
+        for (z = 0; z < this.numZooms; z++) {
             Utils.Event.remove(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
         }
         /*if(Browser.support.touch){

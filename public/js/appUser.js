@@ -71,7 +71,7 @@ require([
     'Browser', 'Utils',
     'socket',
     'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
-    'globalParams', 'globalVM', 'RouteManager', 'text!tpl/user/section.jade', 'css!style/user/section', 'backbone.queryparams'
+    'globalParams', 'globalVM', 'RouteManager', 'text!tpl/appUser.jade', 'css!style/user/appUser', 'backbone.queryparams'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, GP, globalVM, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
@@ -102,7 +102,6 @@ require([
 
     function app() {
         Backbone.history.start({pushState: true, root: '/u/', silent: false});
-        document.body.classList.remove('crystal');
 
     }
 

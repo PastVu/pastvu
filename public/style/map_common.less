@@ -12,7 +12,7 @@ body {
 }
 
 #main_loader {
-	visibility: hidden;
+	display: none;
     position: absolute;
     height: auto;
     bottom:0;
@@ -22,10 +22,9 @@ body {
     margin: 0;
 	color: @MainLigthColor;
 	text-align: center;
-	opacity: 1;
 	
-	&.visi {
-		visibility: visible;
+	&.show {
+		display: block;
 	}
 	
 	#cnt {
@@ -156,7 +155,7 @@ body {
 			border-radius: 0;
 			height: 4px;
 			-moz-animation: loader_bar 2.25s linear 5;
-			-webkit-animation: loader_bar 2.25s linear 3;
+			-webkit-animation: loader_bar 2.25s linear 5;
 			-ms-animation: loader_bar 2.25s linear 5;
 			-o-animation: loader_bar 2.25s linear 5;
 			animation: loader_bar 2.25s linear 5;

@@ -1,4 +1,6 @@
 (function () {
+    'use strict';
+
     if (!document.head) {
         document.head = document.getElementsByTagName('head')[0];
     }
@@ -16,7 +18,7 @@
             setCookie('oldmos.load.' + appHash, new Date().toUTCString());
             var loading_pics = document.getElementById('loading_pics');
             loading_pics.style.backgroundImage = 'url(/img/loading/Loading1.jpg)';
-            document.getElementById('main_loader').className += ' visi';
+            document.getElementById('main_loader').className += ' show';
             loading_pics.className += ' finish';
             loadImg = null;
 
