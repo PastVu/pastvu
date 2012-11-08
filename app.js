@@ -57,9 +57,13 @@ new File("publicContent/photos/origin").createDirectory();
 new File("publicContent/incoming").createDirectory();
 
 app.configure(function () {
-
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
+    if (env === 'dev') {
+        app.disable('view cache');
+    } else {
+        app.enable('view cache');
+    }
     app.set('db-uri', 'mongodb://localhost:27017/oldmos');
 
     app.locals({

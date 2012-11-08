@@ -65,6 +65,7 @@ define([
                 this.map.selectLayer('osm', 'mapnik');
             }
 
+            this.show();
         },
         show: function () {
             this.$container.fadeIn();

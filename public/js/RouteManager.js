@@ -1,25 +1,16 @@
 /*global requirejs:true, require:true, define:true*/
 /**
- * GlobalParams
+ * Менеджер путей
  */
 define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'renderer'], function ($, Utils, _, Backbone, ko, globalVM, renderer) {
     "use strict";
 
     var Router = Backbone.Router.extend({
 
-        registerRouters: function () {
-            this.route("", "profile");
-            this.route(":user", "profile");
-            this.route(":user/settings", "settings");
-            this.route(":user/photoUpload", "photoUpload");
-            this.route(":user/photo", "photo");
-        },
-
-        initialize: function (options, dfd) {
-            this.base = ko.observable('');
+        initialize: function (handlers, dfd) {
+            this.root = '/';
             this.body = ko.observable('');
             this.params = ko.observable({});
-            this.param = ko.observable('');
 
             this.routeChanged = ko.observable();
 
@@ -29,6 +20,11 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.offset = 0;
             this.currentLeaf = '';
             this.nextLeaf = '';
+
+            //Указываем корень
+            if (handlers && handlers.root) {
+                this.root = handlers.root;
+            }
 
             //Регистрируем глобальные модули
             renderer(
@@ -46,114 +42,21 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 }
             );
 
-            this.registerRouters();
+            //Вставляем обработчики модулейб обернутые в враппер
+            if (handlers && handlers.handlers) {
+                _.forEach(handlers.handlers, function (item, key) {
+                    this[key] = _.wrap(item, this.handlerWrapper);
+                }.bind(this));
+            }
+
+            //Регистрируем переданные модули
+            if (handlers && handlers.routes) {
+                handlers.routes.forEach(function (item, index) {
+                    this.route(item.route, item.handler);
+                }.bind(this));
+            }
 
             $(document).on('click', 'a', {prefix: '', body: 'route'}, this.ahrefHandler);
-        },
-
-        profile: function (user, params) {
-            console.log('User Profile');
-            var fragment = Backbone.history.getFragment();
-
-            this.addToStack('u/', user, (params && params.leaf) || '');
-            this.base('u/');
-            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
-            this.params({user: user || ""});
-            this.param(null);
-
-            renderer(
-                globalVM,
-                [
-                    {module: 'm/top', container: '#top_container'},
-                    {module: 'm/user/brief', container: '#user_brief'},
-                    {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/profile', container: '#user_content'}
-                ],
-                0,
-                function (top, home) {
-                }
-            );
-
-            this.routeChanged(Backbone.history.getFragment());
-        },
-        settings: function (user, params) {
-            console.log('User Settings');
-            var fragment = Backbone.history.getFragment();
-
-            this.addToStack('u/', user, (params && params.leaf) || '');
-            this.base('u/');
-            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
-            this.params({user: user || ""});
-            this.param(null);
-
-            renderer(
-                globalVM,
-                [
-                    {module: 'm/top', container: '#top_container'},
-                    {module: 'm/user/brief', container: '#user_brief'},
-                    {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/settings', container: '#user_content'}
-                ],
-                0,
-                function (top, home) {
-                }
-            );
-
-            this.routeChanged(Backbone.history.getFragment());
-        },
-
-        photoUpload: function (user, params) {
-            console.log('User Photo');
-            var fragment = Backbone.history.getFragment();
-
-            this.addToStack('u/', user, (params && params.leaf) || '');
-            this.base('u/');
-            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
-            this.params({user: user || ""});
-            this.param(null);
-
-            renderer(
-                globalVM,
-                [
-                    {module: 'm/top', container: '#top_container'},
-                    {module: 'm/user/brief', container: '#user_brief'},
-                    {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/photoUpload', container: '#user_content'}
-                    //{module: 'm/user/photoUpload', container: '#user_content'}
-                ],
-                0,
-                function (top, home) {
-                }
-            );
-
-            this.routeChanged(Backbone.history.getFragment());
-        },
-
-        photo: function (user, params) {
-            console.log('User Photo');
-            var fragment = Backbone.history.getFragment();
-
-            this.addToStack('u/', user, (params && params.leaf) || '');
-            this.base('u/');
-            this.body(fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment);
-            this.params({user: user || ""});
-            this.param(null);
-
-            renderer(
-                globalVM,
-                [
-                    {module: 'm/top', container: '#top_container'},
-                    {module: 'm/user/brief', container: '#user_brief'},
-                    {module: 'm/user/menu', container: '#user_menu'},
-                    {module: 'm/user/photo', container: '#user_content'}
-                    //{module: 'm/user/photoUpload', container: '#user_content'}
-                ],
-                0,
-                function (top, home) {
-                }
-            );
-
-            this.routeChanged(Backbone.history.getFragment());
         },
 
         routes: {
@@ -164,8 +67,20 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             //document.location.href = other;
         },
 
-        addToStack: function (base, route, leaf) {
-            var uid = base + route + leaf,
+        handlerWrapper: function (handler, routeParam, getParams) {
+            var fragment = Backbone.history.getFragment(),
+                body = fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment;
+
+            this.addToStack(body, (getParams && getParams.leaf) || '');
+            this.body(body);
+
+            handler.apply(this, Array.prototype.slice.call(arguments, 1));
+
+            this.routeChanged(fragment);
+        },
+
+        addToStack: function (route, leaf) {
+            var uid = this.root + route + leaf,
                 stackNewIndex;
 
             if (this.stackHash[uid]) { // Если уникальный url уже был, значит переместились по истории назад
@@ -174,7 +89,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 this.stack.splice(this.stackCurrentIndex + 1, this.stack.length - this.stackCurrentIndex - 1, uid).forEach(function (item, inde, array) {
                     delete this.stackHash[item];
                 }.bind(this));
-                this.stackHash[uid] = {base: base, route: route, leaf: leaf};
+                this.stackHash[uid] = {root: this.root, route: route, leaf: leaf};
                 stackNewIndex = this.stack.length - 1;
             }
             this.offset = stackNewIndex - this.stackCurrentIndex;
@@ -184,25 +99,27 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.nextLeaf = Utils.randomString(7);
         },
         getByGo: function (param) {
+            var result;
+
             if (Utils.isObjectType('number', param)) {
                 if (this.stackCurrentIndex + param < 0) {
-                    return this.stackHash[this.stack[0]];
+                    result = this.stackHash[this.stack[0]];
                 } else if (this.stackCurrentIndex + param > this.stack.length - 1) {
-                    return this.stackHash[this.stack[this.stack.length - 1]];
+                    result = this.stackHash[this.stack[this.stack.length - 1]];
                 } else {
-                    return this.stackHash[this.stack[this.stackCurrentIndex + param]];
+                    result = this.stackHash[this.stack[this.stackCurrentIndex + param]];
                 }
             }
-            return undefined;
+            return result;
         },
-        getFlattenStackByBase: function (param) {
+        getFlattenStackByRoot: function (param) {
             var past,
                 future;
             if (Utils.isObjectType('string', param)) {
                 past = [];
                 future = [];
                 this.stack.forEach(function (item, index, array) {
-                    if (this.stackHash[item].base === param) {
+                    if (this.stackHash[item].root === param) {
                         if (index < this.stackCurrentIndex) {
                             past.push(this.stackHash[item]);
                         } else if (index > this.stackCurrentIndex) {
@@ -219,39 +136,23 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         },
         ahrefHandler: function (evt) {
             var _this = globalVM.router,
-                a = this,
-                parent = a.parentNode,
-                href = a.getAttribute('href'),
-                base = '/u/',
+                href = this.getAttribute('href'),
+                target = this.getAttribute('target'),
                 body = '',
                 leaf = Utils.getURLParameter('leaf', href);
 
-            if (href.indexOf(base) > -1) {
+            if (target !== '_blank' && href.indexOf(_this.root) > -1) {
                 evt.preventDefault();
-                body = href.substring(3, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
+                body = href.substring(_this.root.length, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
 
-                if (_.isString(base) && _.isString(body) && _.isString(leaf) && _this.stack.indexOf(base + body + leaf) > -1) {
-                    window.history.go(_this.stack.indexOf(base + body + leaf) - _this.stackCurrentIndex);
+                if (_.isString(body) && _.isString(leaf) && _this.stack.indexOf(_this.root + body + leaf) > -1) {
+                    window.history.go(_this.stack.indexOf(_this.root + body + leaf) - _this.stackCurrentIndex);
                 } else {
-                    globalVM.router.navigate(href.substr(3) + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
+                    globalVM.router.navigate(href.substr(_this.root.length) + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
                 }
-            } else {
-
-            }
-/*
-            if (!_.isString(body)) {
-                body = Utils.getDataParam(parent, evt.data.body);
-            }
-            if (!_.isString(leaf)) {
-                leaf = Utils.getDataParam(parent, 'leaf');
             }
 
-            if (_.isString(base) && _.isString(body) && _.isString(leaf)) {
-                window.history.go(_this.stack.indexOf(base + body + leaf) - _this.stackCurrentIndex);
-            } else if (body) {
-                globalVM.router.navigate((base || '') + body + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
-            }*/
-            _this = a = parent = base = body = leaf = null;
+            _this = href = target = body = leaf = null;
         }
     });
 

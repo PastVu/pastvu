@@ -1,7 +1,7 @@
 /*global define*/
-define(['jquery', 'Utils', 'leaflet', 'm/GlobalParams'], function ($, Utils, L, GlobalParams) {
+define(['jquery', 'Utils', 'leaflet', 'globalParams'], function ($, Utils, L, GP) {
     var layers = {};
-    if (GlobalParams.USE_OSM_API()) {
+    if (GP.USE_OSM_API()) {
         layers.osm = {
             desc: 'OSM',
             types: {
@@ -20,7 +20,7 @@ define(['jquery', 'Utils', 'leaflet', 'm/GlobalParams'], function ($, Utils, L, 
             }
         };
     }
-    if (GlobalParams.USE_YANDEX_API()) {
+    if (GP.USE_YANDEX_API()) {
         layers.yandex = {
             desc: 'Яндекс',
             deps: 'lib/leaflet/extends/L.Yandex',
@@ -48,7 +48,7 @@ define(['jquery', 'Utils', 'leaflet', 'm/GlobalParams'], function ($, Utils, L, 
             }
         };
     }
-    if (GlobalParams.USE_GOOGLE_API()) {
+    if (GP.USE_GOOGLE_API()) {
         layers.google = {
             desc: 'Google',
             deps: 'lib/leaflet/extends/L.Google',

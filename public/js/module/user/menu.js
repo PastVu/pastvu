@@ -45,11 +45,11 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
             this.showing = false;
         },
         routeHandler: function () {
-            var route = globalVM.router.base() + globalVM.router.body(),
+            var route = globalVM.router.root + globalVM.router.body(),
                 links = this.links();
 
             links.forEach(function (item, index, array) {
-                if (item.href === '/' + route) {
+                if (item.href === route) {
                     item.active = true;
                 } else {
                     item.active = false;

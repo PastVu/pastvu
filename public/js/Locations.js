@@ -1,9 +1,9 @@
-define(['jquery', 'Browser', 'knockout.mapping', 'm/GlobalParams', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, GlobalParams) {
+define(['jquery', 'Browser', 'knockout.mapping', 'globalParams', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, GP) {
     var Locations = {
-        types: {'_def_': ko_mapping.toJS(GlobalParams.locDef)},
-        range: GlobalParams.locDefRange(),
+        types: {'_def_': ko_mapping.toJS(GP.locDef)},
+        range: GP.locDefRange(),
 
-        current: ko_mapping.toJS(GlobalParams.locDef),
+        current: ko_mapping.toJS(GP.locDef),
 
         subscribers: [],
 
@@ -38,7 +38,7 @@ define(['jquery', 'Browser', 'knockout.mapping', 'm/GlobalParams', 'http://www.g
      * Определяем координаты по ip
      */
     try {
-        if (geoplugin_status && geoplugin_status() == '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
+        if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
             Locations.set({'gpsip': {lat: parseFloat(geoplugin_latitude(), 10), lng: parseFloat(geoplugin_longitude(), 10), z: 10}});
         }
     } catch (e) {
