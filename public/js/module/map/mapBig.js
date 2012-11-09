@@ -141,6 +141,11 @@ define([
                     this.setMapDefCenter(true);
                 }.bind(this));
 
+                //Самостоятельно обновлем размеры карты
+                P.window.square.subscribe(function (newVal) {
+                    this.map._onResize();
+                }.bind(this));
+
                 this.map.whenReady(function () {
                     /*if (!!window.localStorage && !!window.localStorage['arguments.SelectLayer']) {
                         this.selectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','));
