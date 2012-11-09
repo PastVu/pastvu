@@ -1,6 +1,6 @@
 /*global define*/
 /**
- * GlobalParams
+ * Шаблон для модулей
  */
 define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], function ($, Utils, _, ko, globalVM, renderer) {
     "use strict";

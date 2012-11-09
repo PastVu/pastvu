@@ -3,11 +3,11 @@
  * Модель карты
  */
 define([
-    'underscore', 'Browser', 'Utils', 'socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
+    'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
     'm/User', 'm/Users',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider', 'Locations',
     'text!tpl/map/mapBig.jade', 'css!style/map/mapBig'
-], function (_, Browser, Utils, socket, GP, ko, ko_mapping, Cliche, globalVM, renderer, User, users, L, Map, NavigationSlider, Locations, jade) {
+], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, users, L, Map, NavigationSlider, Locations, jade) {
     'use strict';
     var $window = $(window);
 
@@ -22,7 +22,7 @@ define([
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
 
-            if (GP.USE_OSM_API()) {
+            if (P.settings.USE_OSM_API()) {
                 this.layers.push({
                     id: 'osm',
                     desc: 'OSM',
@@ -49,7 +49,7 @@ define([
                     ])
                 });
             }
-            if (GP.USE_GOOGLE_API()) {
+            if (P.settings.USE_GOOGLE_API()) {
                 this.layers.push({
                     id: 'google',
                     desc: 'Google',
@@ -83,7 +83,7 @@ define([
                     ])
                 });
             }
-            if (GP.USE_YANDEX_API()) {
+            if (P.settings.USE_YANDEX_API()) {
                 this.layers.push({
                     id: 'yandex',
                     desc: 'Яндекс',
@@ -130,6 +130,7 @@ define([
         },
         show: function () {
             this.$container.fadeIn(400, function () {
+
                 this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
                 this.map = new L.neoMap('map', {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
 
@@ -149,6 +150,7 @@ define([
                     this.selectLayer('osm', 'mapnik');
 
                 }, this);
+
             }.bind(this));
 
             this.showing = true;

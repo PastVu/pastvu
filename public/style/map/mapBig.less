@@ -24,7 +24,7 @@
 	*/
 	#nav_panel {
 		position: absolute;
-		top: 65px;
+		top: 10px;
 		left: 3px;
 		width: 71px;
 		height: 136px;
@@ -292,9 +292,9 @@
 	}
 
 
-/**
- * LAYER PANEL
- */
+	/**
+	 * LAYER PANEL
+	 */
 	.layersPanel {
 		position: absolute;
 		display: block;
@@ -398,124 +398,6 @@
 			}
 		}
 
-	}
-
-	#layers_fringe {
-		display: block;
-		top: 300px;
-		right: 7px;
-		height: auto;
-		.user-select(none);
-		.transition(right 0.7s ease-out);
-	}
-	#layers_fringe.move {
-		right: 45px;
-	}
-	#layers_panel {
-		position: relative;
-		overflow: hidden;
-		width: auto;
-		height: 24px;
-		padding: 0;
-		text-align: center;
-		.transition(height 0.7s ease-out);
-	}
-	#layers_panel.open {
-		height: 175px;
-	}
-	#layers_panel #current {
-		display: block;
-		position: relative;
-		height: 23px;
-		margin: 0;
-		padding: 1px 4px 0;
-		white-space: nowrap;
-		font-weight: bold;
-		font-size: 18px;
-		line-height: 20px;
-		text-align: right;
-		cursor: pointer;
-		border-width: 0 0 1px;
-		border-style: solid;
-		border-color: #000;
-	}
-	#layers_panel #systems {
-		display: inline-block;
-		position: relative;
-		width: 104px;
-		opacity: 0;
-		overflow: hidden;
-		white-space: nowrap;
-		border-width: 1px 0 0;
-		border-style: solid;
-		border-color: #707070;
-		.transition(~'width 0.7s ease-out, opacity 0.7s ease-out');
-	}
-	#layers_panel.open  #systems{
-		opacity: 1;
-	}
-	#layers_panel.open  #systems.s1{
-		width: 104px;
-	}
-	#layers_panel.open  #systems.s2{
-		width: 208px;
-	}
-	#layers_panel.open  #systems.s3{
-		width: 312px;
-	}
-	#layers_panel.open  #systems.s4{
-		width: 416px;
-	}
-	#layers_panel.open  #systems.s5{
-		width: 520px;
-	}
-	#layers_panel #systems > div {
-		display: inline-block;
-		vertical-align: top;
-		width: 100px;
-		padding: 0 0 2px 0;
-		border: 1px solid transparent;
-		margin: 1px;
-		position: relative;
-		height: 143px;
-		-webkit-border-radius: 4px;
-		border-radius: 4px;
-	}
-	#layers_panel #systems > div > span.head {
-		display: block;
-		position: relative;
-		vertical-align: middle;
-		text-align: center;
-		font-weight: bold;
-		font-size: 17px;
-		line-height: 22px;
-		border: 1px solid transparent;
-		background: #5282c0;
-		padding: 2px 0 1px;
-		margin: 0 0 3px 0;
-	}
-	#layers_panel #systems > div > span.head.selected {
-		border-color: #999;
-	}
-	#layers_panel #systems > div > div {
-		border: 1px solid transparent;
-		-webkit-border-radius: 3px;
-		border-radius: 3px;
-		cursor: pointer;
-		font-weight: normal;
-		font-size: 17px;
-		line-height: 17px;
-		padding: 5px 4px;
-		text-align: center;
-	}
-	#layers_panel #systems > div > div:hover {
-		border-color: #9B9B9B;
-	}
-	#layers_panel #systems > div > div.selected {
-		-webkit-box-shadow: inset 0 1px 1px 1px #1C1C1C;
-		box-shadow: inset 0 1px 1px 1px #1C1C1C;
-		background-color: #474747;
-		border: 1px solid #707070;
 	}
 
 	.leaflet-control-container {

@@ -2,7 +2,7 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/top.jade', 'css!style/top' ], function (_, GlobalParams, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/top.jade', 'css!style/top' ], function (_, P, ko, Cliche, globalVM, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -12,19 +12,19 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
 
             this.loggedIn = ko.computed({
                 read: function () {
-                    return GlobalParams.LoggedIn();
+                    return P.settings.LoggedIn();
                 },
                 owner: this
             });
             this.registrationAllowed = ko.computed({
                 read: function () {
-                    return GlobalParams.REGISTRATION_ALLOWED();
+                    return P.settings.REGISTRATION_ALLOWED();
                 },
                 owner: this
             });
             this.profile = ko.computed({
                 read: function () {
-                    if (GlobalParams.LoggedIn()) {
+                    if (P.settings.LoggedIn()) {
                         return this.auth.iAm.fullName();
                     } else {
                         return '';
@@ -34,7 +34,7 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
             }).extend({ throttle: 50 });
             this.profileAvatar = ko.computed({
                 read: function () {
-                    if (GlobalParams.LoggedIn()) {
+                    if (P.settings.LoggedIn()) {
                         return this.auth.iAm.avatar();
                     } else {
                         return '';

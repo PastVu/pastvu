@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/user/menu.jade', 'css!style/user/menu'], function (_, GlobalParams, ko, Cliche, globalVM, users, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/user/menu.jade', 'css!style/user/menu'], function (_, P, ko, Cliche, globalVM, users, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -20,7 +20,7 @@ define(['underscore', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM',
                     this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});
                     this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/photoUpload"});
                     this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments"});
-                    if (GlobalParams.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
+                    if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
                         this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings"});
                         this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm'});
                     }

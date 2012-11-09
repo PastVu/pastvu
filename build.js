@@ -59,7 +59,7 @@ var fs = require('fs'),
             'Browser': 'lib/Browser',
 
             'knockout': 'lib/knockout/knockout-2.1.0',
-            'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+            'knockout.mapping': 'lib/knockout/knockout.mapping',
             'leaflet': 'lib/leaflet/leaflet_0.4.4',
 
             'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',

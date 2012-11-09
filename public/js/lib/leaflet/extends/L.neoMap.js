@@ -1,5 +1,5 @@
 /*global define*/
-define(['jquery', 'Utils', 'leaflet', 'globalParams'], function ($, Utils, L, GP) {
+define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     'use strict';
 
     var deltaH, deltaV;

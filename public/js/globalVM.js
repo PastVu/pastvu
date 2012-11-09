@@ -1,11 +1,11 @@
 /*global requirejs:true, require:true, define:true*/
 /**
- * GlobalParams
+ * Params
  */
-define(['jquery', 'Utils', 'underscore', 'globalParams', 'i18n', 'knockout'], function ($, Utils, _, GP, i18n, RouteManager, ko) {
+define(['jquery', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'], function ($, Utils, _, P, i18n, RouteManager, ko) {
     "use strict";
     var globalVM = {
-        GlobalParams: GP,
+        P: P,
         i18n: i18n,
         router: null,
 

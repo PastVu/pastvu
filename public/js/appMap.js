@@ -52,7 +52,7 @@ requirejs.config({
         'backbone.queryparams': 'lib/backbone/queryparams',
 
         'knockout': 'lib/knockout/knockout-2.1.0',
-        'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+        'knockout.mapping': 'lib/knockout/knockout.mapping',
         'knockout.postbox': 'lib/knockout/knockout-postbox.min',
 
         'leaflet': 'lib/leaflet/leaflet'
@@ -68,8 +68,8 @@ require([
     'Browser', 'Utils',
     'socket',
     'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
-    'globalParams', 'globalVM', 'renderer', 'RouteManager', 'text!tpl/appMap.jade', 'css!style/appMap', 'backbone.queryparams'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, GP, globalVM, renderer, RouteManager, index_jade) {
+    'Params', 'globalVM', 'renderer', 'RouteManager', 'text!tpl/appMap.jade', 'css!style/appMap', 'backbone.queryparams'
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, P, globalVM, renderer, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
         routeDFD = $.Deferred();
@@ -85,7 +85,7 @@ require([
     function loadParams() {
         var dfd = $.Deferred();
         socket.once('takeGlobeParams', function (data) {
-            ko_mapping.fromJS(data, GP);
+            ko_mapping.fromJS(data, P);
             dfd.resolve();
         });
         socket.emit('giveGlobeParams');

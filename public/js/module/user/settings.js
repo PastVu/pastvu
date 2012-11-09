@@ -2,14 +2,14 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'globalParams', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, GlobalParams, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
     'use strict';
 
     ko.bindingHandlers.executeOnEnter = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var allBindings = allBindingsAccessor();
             $(element).keypress(function (event) {
-                var keyCode = (event.which ? event.which : event.keyCode);
+                var keyCode = event.which || event.keyCode;
                 if (keyCode === 13) {
                     allBindings.executeOnEnter.call(viewModel);
                     return false;

@@ -14,11 +14,11 @@
 			.desc Loading next..
 
 	.photoUploadCurtain
-		.photoUploadModal.fringe2(data-bind="style: {maxWidth: $root.GlobalParams.Width() - $root.GlobalParams.Width()/5 + 'px'}")
+		.photoUploadModal.fringe2(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
 			.modalTools.fringe2
 				span.modalCaption
 				i.icon-off.icon-white(data-bind="event: {click: closeUpload}")
-			.modalContainer(data-bind="style: {maxHeight: $root.GlobalParams.Height() - 120 + 'px'}")
+			.modalContainer(data-bind="style: {maxHeight: $root.P.window.h() - 120 + 'px'}")
 			.modalFoot
 				button.btn-strict.btn-strict-small(type="button", data-bind="event: {click: closeUpload}")
 					i.icon-ok.icon-white

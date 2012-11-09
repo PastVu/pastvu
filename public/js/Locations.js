@@ -1,9 +1,9 @@
-define(['jquery', 'Browser', 'knockout.mapping', 'globalParams', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, GP) {
+define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, P) {
     var Locations = {
-        types: {'_def_': ko_mapping.toJS(GP.locDef)},
-        range: GP.locDefRange(),
+        types: {'_def_': ko_mapping.toJS(P.settings.locDef)},
+        range: P.settings.locDefRange(),
 
-        current: ko_mapping.toJS(GP.locDef),
+        current: ko_mapping.toJS(P.settings.locDef),
 
         subscribers: [],
 

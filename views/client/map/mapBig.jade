@@ -1,5 +1,5 @@
 .mapBig(data-bind="with: repository[M!M]")
-	#map(data-bind="style: {height: $root.GlobalParams.Height() - 33 - 100 + 'px'}")
+	#map(data-bind="style: {height: $root.P.window.h() - 33 - 100 + 'px'}")
 	#nav_panel
 		#mup.fringe2.butt
 		#mright.fringe2.butt
@@ -24,8 +24,3 @@
 				.layerType(data-bind="css: {selected: $data.selected()}, text: $data.desc, click: function () {$parents[1].selectLayer($parent.id, $data.id)}")
 				// /ko
 			// /ko
-
-	#layers_fringe.fringe
-		.inner_bord#layers_panel
-			#current(onclick="this.parentNode.classList.toggle('open');")
-			#systems

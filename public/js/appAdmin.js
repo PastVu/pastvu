@@ -17,7 +17,7 @@ requirejs.config({
         'Browser': 'lib/Browser',
 
         'knockout': 'lib/knockout/knockout-2.1.0',
-        'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
+        'knockout.mapping': 'lib/knockout/knockout.mapping',
 
         'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.23.custom.min',
         'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
@@ -37,7 +37,7 @@ require([
     'm/GlobalParams', 'm/User', 'm/TopPanel', 'm/i18n',
     'KeyHandler', 'auth',
     'jquery.ui', 'jquery.jgrid', 'jquery.jgrid.en'
-], function (domReady, $, Utils, socket, ET, ko, ko_mapping, GlobalParams, User, TopPanel, i18n, keyTarget, auth) {
+], function (domReady, $, Utils, socket, ET, ko, ko_mapping, Params, User, TopPanel, i18n, keyTarget, auth) {
     console.timeStamp('Require app Ready');
     var login, reg, recall,
         profileView, profileVM,
@@ -59,7 +59,7 @@ require([
     function LoadParams() {
         var dfd = $.Deferred();
         socket.on('takeGlobeParams', function (json) {
-            ko_mapping.fromJS(json, GlobalParams);
+            ko_mapping.fromJS(json, Params);
             dfd.resolve();
         });
         socket.emit('giveGlobeParams');

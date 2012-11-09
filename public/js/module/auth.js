@@ -1,5 +1,5 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, Utils, socket, globalParams, ko, Cliche, globalVM, User, keyTarget, jade) {
+define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/User', 'KeyHandler', 'text!tpl/auth.jade', 'css!style/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, User, keyTarget, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -46,7 +46,7 @@ define(['jquery', 'Utils', '../socket', 'globalParams', 'knockout', 'm/_moduleCl
         LoadMe: function () {
             var dfd = $.Deferred();
             socket.once('youAre', function (user) {
-                globalParams.LoggedIn(!!user);
+                P.settings.LoggedIn(!!user);
                 this.iAm = User.VM(user, this.iAm);
                 console.log(this.iAm.fullName());
                 dfd.resolve();
