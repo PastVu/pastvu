@@ -15,60 +15,142 @@ define([
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/auth'];
+            this.map = null;
+            this.mapDefCenter = null;
+            this.layers = ko.observableArray();
+            this.layersOpen = ko.observable(false);
+            this.layerActive = ko.observable({sys: null, type: null});
+            this.layerActiveDesc = ko.observable('');
 
-            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
-            this.map = new L.neoMap('map', {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true});
-
-            var map = this.map,
-                layers = this.map.layers,
-                systems = document.createDocumentFragment(),
-                sysElem,
-                typeElem,
-                sysNum = 0,
-                lay,
-                type;
-
-            for (lay in layers) {
-                if (layers.hasOwnProperty(lay)) {
-
-                    sysElem = $('<div/>', {id: lay}).append($('<span/>', {'class': 'head', 'html': layers[lay].desc}));
-
-                    for (type in layers[lay].types) {
-                        if (layers[lay].types.hasOwnProperty(type)) {
-
-                            typeElem = $('<div/>', {html: layers[lay].types[type].desc, 'maptp': type}).appendTo(sysElem);
-                            Utils.Event.add(typeElem[0], 'click', function (event, s, t) {
-                                map.selectLayer(s, t);
-                            }.neoBind(typeElem[0], [lay, type]));
-                            layers[lay].types[type].dom = typeElem[0];
-
+            if (GP.USE_OSM_API()) {
+                this.layers.push({
+                    id: 'osm',
+                    desc: 'OSM',
+                    selected: ko.observable(false),
+                    types: ko.observableArray([
+                        {
+                            id: 'osmosnimki',
+                            desc: 'Osmosnimki',
+                            selected: ko.observable(false),
+                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false})
+                        },
+                        {
+                            id: 'mapnik',
+                            desc: 'Mapnik',
+                            selected: ko.observable(false),
+                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false})
+                        },
+                        {
+                            id: 'mapquest',
+                            desc: 'Mapquest',
+                            selected: ko.observable(false),
+                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false})
                         }
-                    }
-                    systems.appendChild(sysElem[0]);
-                    sysNum++;
-                }
+                    ])
+                });
+            }
+            if (GP.USE_GOOGLE_API()) {
+                this.layers.push({
+                    id: 'google',
+                    desc: 'Google',
+                    deps: 'lib/leaflet/extends/L.Google',
+                    selected: ko.observable(false),
+                    types: ko.observableArray([
+                        {
+                            id: 'scheme',
+                            desc: 'Схема',
+                            selected: ko.observable(false),
+                            params: 'ROADMAP'
+                        },
+                        {
+                            id: 'sat',
+                            desc: 'Спутник',
+                            selected: ko.observable(false),
+                            params: 'SATELLITE'
+                        },
+                        {
+                            id: 'hyb',
+                            desc: 'Гибрид',
+                            selected: ko.observable(false),
+                            params: 'HYBRID'
+                        },
+                        {
+                            id: 'land',
+                            desc: 'Ландшафт',
+                            selected: ko.observable(false),
+                            params: 'TERRAIN'
+                        }
+                    ])
+                });
+            }
+            if (GP.USE_YANDEX_API()) {
+                this.layers.push({
+                    id: 'yandex',
+                    desc: 'Яндекс',
+                    deps: 'lib/leaflet/extends/L.Yandex',
+                    selected: ko.observable(false),
+                    types: ko.observableArray([
+                        {
+                            id: 'scheme',
+                            desc: 'Схема',
+                            selected: ko.observable(false),
+                            params: 'map'
+                        },
+                        {
+                            id: 'sat',
+                            desc: 'Спутник',
+                            selected: ko.observable(false),
+                            params: 'satellite'
+                        },
+                        {
+                            id: 'hyb',
+                            desc: 'Гибрид',
+                            selected: ko.observable(false),
+                            params: 'hybrid'
+                        },
+                        {
+                            id: 'pub',
+                            desc: 'Народная',
+                            selected: ko.observable(false),
+                            params: 'publicMap'
+                        },
+                        {
+                            id: 'pubhyb',
+                            desc: 'Народный гибрид',
+                            selected: ko.observable(false),
+                            params: 'publicMapHybrid'
+                        }
+                    ])
+                });
             }
 
-            this.$dom.find('#layers_panel #systems')[0].appendChild(systems);
-            this.$dom.find('#layers_panel #systems')[0].classList.add('s' + sysNum);
-
-            this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
-
-            Locations.subscribe(function (val) {
-                this.mapDefCenter = new L.LatLng(val.lat, val.lng);
-                this.setMapDefCenter(true);
-            }.bind(this));
-
-            if (!!window.localStorage && !!window.localStorage['arguments.SelectLayer']) {
-                this.map.selectLayer.apply(this.map, window.localStorage['arguments.SelectLayer'].split(','));
-            } else {
-                this.map.selectLayer('osm', 'mapnik');
-            }
+            ko.applyBindings(globalVM, this.$dom[0]);
 
             this.show();
         },
         show: function () {
-            this.$container.fadeIn();
+            this.$container.fadeIn(400, function () {
+                this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
+                this.map = new L.neoMap('map', {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
+
+                this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
+
+                Locations.subscribe(function (val) {
+                    this.mapDefCenter = new L.LatLng(val.lat, val.lng);
+                    this.setMapDefCenter(true);
+                }.bind(this));
+
+                this.map.whenReady(function () {
+                    /*if (!!window.localStorage && !!window.localStorage['arguments.SelectLayer']) {
+                        this.selectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','));
+                    } else {
+                        this.selectLayer('osm', 'mapnik');
+                    }*/
+                    this.selectLayer('osm', 'mapnik');
+
+                }, this);
+            }.bind(this));
+
             this.showing = true;
         },
         hide: function () {
@@ -76,7 +158,53 @@ define([
             this.showing = false;
         },
         setMapDefCenter: function (forceMoveEvent) {
-            this.map.setView(mapDefCenter, Locations.current.z, false);
+            this.map.setView(this.mapDefCenter, Locations.current.z, false);
+        },
+        toggleLayers: function (vm, event) {
+            this.layersOpen(!this.layersOpen());
+        },
+        selectLayer: function (sys_id, type_id) {
+            var layers = this.layers(),
+                layerActive = this.layerActive(),
+                system,
+                type;
+
+            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) { return; }
+
+            system = _.find(layers, function (item) { return item.id === sys_id; });
+
+            if (system) {
+                type = _.find(system.types(), function (item) { return item.id === type_id; });
+
+                if (type) {
+                    if (layerActive.sys && layerActive.type) {
+                        layerActive.sys.selected(false);
+                        layerActive.type.selected(false);
+                        this.map.removeLayer(layerActive.type.obj);
+                    }
+
+                    system.selected(true);
+                    type.selected(true);
+                    this.layerActiveDesc(system.desc + ': ' + type.desc);
+
+                    /*if (!!window.localStorage) {
+                     window.localStorage['arguments.SelectLayer'] = Array.prototype.slice.call(arguments).join(',');
+                     }*/
+                    this.layerActive({sys: system, type: type});
+
+                    if (system.deps && !type.obj) {
+                        require([system.deps], function (Construct) {
+                            type.obj = new Construct(type.params);
+                            this.map.addLayer(type.obj);
+                            type = null;
+                        }.bind(this));
+                    } else {
+                        this.map.addLayer(type.obj);
+                    }
+                }
+            }
+
+            layers = system = null;
         }
     });
 });

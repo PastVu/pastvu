@@ -18,7 +18,6 @@
 .leaflet-container {
 	overflow: hidden;
 	outline: 0;
-	-ms-touch-action: none;
 	}
 .leaflet-tile,
 .leaflet-marker-icon,
@@ -123,7 +122,7 @@
 .leaflet-control-zoom a {
 	background-color: rgba(255, 255, 255, 0.75);
 	}
-.leaflet-control-zoom a, .leaflet-control-layers-toggle {
+.leaflet-control-zoom a, .leaflet-control-layers a {
 	background-position: 50% 50%;
 	background-repeat: no-repeat;
 	display: block;
@@ -157,12 +156,12 @@
 	-webkit-border-radius: 8px;
 	border-radius: 8px;
 	}
-.leaflet-control-layers-toggle {
+.leaflet-control-layers a {
 	background-image: url(images/layers.png);
 	width: 36px;
 	height: 36px;
 	}
-.leaflet-touch .leaflet-control-layers-toggle {
+.leaflet-touch .leaflet-control-layers a {
 	width: 44px;
 	height: 44px;
 	}
@@ -180,7 +179,7 @@
 	color: #333;
 	background: #fff;
 	}
-.leaflet-control-layers-selector {
+.leaflet-control-layers input {
 	margin-top: 2px;
 	position: relative;
 	top: 1px;
@@ -366,8 +365,9 @@
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
 	background: white;
 
-	box-shadow: 0 3px 14px rgba(0,0,0,0.35);
-	-webkit-box-shadow: 0 3px 18px rgba(0,0,0,0.33);
+	box-shadow: 0 3px 10px #888;
+	-moz-box-shadow: 0 3px 10px #888;
+	-webkit-box-shadow: 0 3px 14px #999;
 	}
 .leaflet-popup-content-wrapper {
 	-moz-border-radius: 20px;

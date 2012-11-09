@@ -55,7 +55,7 @@ requirejs.config({
         'knockout.mapping': 'lib/knockout/knockout.mapping-latest',
         'knockout.postbox': 'lib/knockout/knockout-postbox.min',
 
-        'leaflet': 'lib/leaflet/leaflet_0.4.4'
+        'leaflet': 'lib/leaflet/leaflet'
     }
 });
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

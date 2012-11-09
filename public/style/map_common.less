@@ -1,15 +1,4 @@
-@import "common";
-
-html, body {
-    width: 100%;
-    height: 100%;
-	overflow-x: hidden;
-	overflow-y: hidden;
-}
-
-body {
-	background-color: #303030;
-}
+@import "common.less";
 
 #main_loader {
 	display: none;
@@ -194,31 +183,4 @@ body {
 @keyframes loader_bar {
 	from {left: -50px;}
 	to {left: 806px;}
-}
-
-#main {
-    position:absolute;
-    height: auto;
-    bottom:0;
-    top:0;
-    left:0;
-    right:0;
-    margin: 0;
-	opacity: 0;
-	.transition(opacity 0.5s ease-out);
-	
-	> div {
-		z-index: 1;
-	}
-}
-
-#map {
-	display: block;
-	position: relative;
-    width: 100%;
-    height: 100%;
-	.user-select(none);
-}
-.leaflet-control-container {
-	display: none;
 }
