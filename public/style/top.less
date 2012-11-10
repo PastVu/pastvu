@@ -61,11 +61,6 @@
 			top: 0;
 			text-align: right;
 			white-space: nowrap;
-			font-size: 0;
-
-			> div {
-				font-size: 16px;
-			}
 		}
 
 		.labledIco {
@@ -74,11 +69,12 @@
 			top: 0;
 			height: 30px;
 			padding: 0 7px;
-			line-height: 30px;
-			cursor: pointer;
+			color: @MainLigthColor;
+			font: 16px/30px UCondensed;
 			text-align: center;
 			vertical-align: middle;
-			white-space: no-wrap;
+			white-space: nowrap;
+			cursor: pointer;
 
 			&.strokeBefore::before, &.strokeAfter::after {
 				filter: none; /* Needs for support full multi-stop gradients with IE9 (using SVG) */

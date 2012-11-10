@@ -1,13 +1,13 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe2#panel
-		#panelTools
-			#toUpload.labledIco.strokeAfter.iconBefore(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){window.open('/u/photoUpload')}}")
+		#panelTools.hide-text
+			a#toUpload.labledIco.strokeAfter.iconBefore(href="/u/photoUpload", target="_blank", data-bind="style:{display: loggedIn() ? '' : 'none'}")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
-			#toAdmin.labledIco.strokeAfter.iconBefore(data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}, event:{click: function(data, evt){window.open('/admin')}}")
+			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank", data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}")
 				.ico
 				.text(data-bind="text: $root.i18n.admin()")
-			#toProfile.labledIco.iconBefore(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){window.open('/u/'+auth.iAm.login())}}")
+			a#toProfile.labledIco.iconBefore(target="_blank", data-bind="style:{display: loggedIn()?'':'none'}, attr:{href: '/u/'+auth.iAm.login()}")
 				.ico.fringe2(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
 			#toRegister.labledIco.iconBefore(data-bind="style:{display: loggedIn() || !registrationAllowed() ? 'none':''}, event:{click: function(data, evt){auth.show('reg')}}")
