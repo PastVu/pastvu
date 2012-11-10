@@ -40,33 +40,58 @@ var fs = require('fs'),
         inlineText: true, //Включать ли в модули контент, загруженный плагином text
         logLevel: 1,
         shim: {
+            /*'underscore': {
+             exports: '_'
+             },*/
+            'backbone': {
+                deps: [
+                    'underscore',
+                    'jquery'
+                ],
+                exports: 'Backbone'
+            },
+            'backbone.queryparams': {
+                deps: [
+                    'backbone'
+                ]//,
+                //exports: ' Backbone.Router.arrayValueSplit'
+            }
         },
         paths: {
-            'tpl': '../tpl',
-            'style': '../style',
+            'tpl': '/tpl',
+            'style': '/style',
+
+            'm': 'module',
 
             'jquery': 'lib/jquery/jquery-1.8.2.min',
+            'bs': 'lib/bootstrap',
             'socket.io': 'lib/socket.io',
+            'moment': 'lib/moment',
 
             'domReady': 'lib/require/plugins/domReady',
             'text': 'lib/require/plugins/text',
-            'css': 'lib/require/plugins/css',
-            'css.api': 'lib/require/plugins/css.api',
-            'css.pluginBuilder': 'lib/require/plugins/css.pluginBuilder',
             'async': 'lib/require/plugins/async',
             'goog': 'lib/require/plugins/goog',
             'Utils': 'lib/Utils',
             'Browser': 'lib/Browser',
 
+            'lodash': 'lib/lodash',
+            'underscore': 'lib/lodash',
+            //'underscore': 'lib/underscore-min',
+            'backbone': 'lib/backbone/backbone-min',
+            'backbone.queryparams': 'lib/backbone/queryparams',
+
             'knockout': 'lib/knockout/knockout-2.1.0',
             'knockout.mapping': 'lib/knockout/knockout.mapping',
-            'leaflet': 'lib/leaflet/leaflet_0.4.4',
+            'knockout.postbox': 'lib/knockout/knockout-postbox.min',
 
-            'jquery.datepick': 'lib/jquery/plugins/datepick/jquery.datepick',
-            'jquery.datepick.lang': 'lib/jquery/plugins/datepick/jquery.datepick.lang',
-            'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.23.custom.min',
-            'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
-            'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
+            'leaflet': 'lib/leaflet/leaflet',
+
+            'jquery.ui.widget': 'lib/jquery/ui/jquery.ui.widget',
+            'jquery.fileupload': 'lib/jquery/plugins/fileupload',
+            'load-image': 'lib/jquery/plugins/fileupload/load-image',
+            'tmpl': 'lib/jquery/plugins/fileupload/tmpl',
+            'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob'
         },
         modules: [
             {
@@ -117,7 +142,7 @@ Step(
     /**
      * Ищем less-файлы для компиляции
      */
-        function searchLess() {
+    function searchLess() {
         var lessFolder = new File('./' + requireBuildConfig.appDir + 'style');
         lessFolder.list(function (name, path) {
             return name.indexOf('.less') > -1;
@@ -200,6 +225,7 @@ function jadeCompile(files, done) {
 }
 
 function lessCompile(files, done) {
+    console.log(9999);
     var input, output,
         css, fd,
         i = 0;
