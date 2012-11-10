@@ -7,7 +7,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         //ROLE
         role_level: 0,
         role_name: 'anonymous',
-        regdate: new Date(0),
 
         //Profile
         avatar: '/img/caps/avatar.png',
@@ -25,7 +24,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         lj: '',
         flickr: '',
         blogger: '',
-        aboutme: ''
+        aboutme: '',
+
+        regdate: new Date(0),
+        pcount: 0,
+        bcount: 0,
+        ccount: 0,
+        dateFormat: 'dd.mm.yyyy'
     };
 
     function userVMCreate(model) {

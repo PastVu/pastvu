@@ -88,7 +88,7 @@ require([
     function loadParams() {
         var dfd = $.Deferred();
         socket.once('takeGlobeParams', function (data) {
-            ko_mapping.fromJS(data, P);
+            ko_mapping.fromJS({settings: data}, P);
             dfd.resolve();
         });
         socket.emit('giveGlobeParams');
@@ -106,7 +106,7 @@ require([
                 {route: "", handler: "profile"},
                 {route: ":user", handler: "profile"},
                 {route: ":user/settings", handler: "settings"},
-                {route: ":user/photoUpload", handler: "photoUpload"},
+                {route: "photoUpload", handler: "photoUpload"},
                 {route: ":user/photo", handler: "photo"}
             ],
             handlers: {
@@ -146,7 +146,7 @@ require([
                 },
 
                 photoUpload: function (user, params) {
-                    console.log('User Photo');
+                    console.log('User Photo Upload');
                     this.params({user: user || ""});
 
                     renderer(

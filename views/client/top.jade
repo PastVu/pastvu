@@ -1,7 +1,7 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe2#panel
 		#panelTools
-			#toUpload.labledIco.strokeAfter.iconBefore(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){window.open('/photoUpload')}}")
+			#toUpload.labledIco.strokeAfter.iconBefore(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){window.open('/u/photoUpload')}}")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
 			#toAdmin.labledIco.strokeAfter.iconBefore(data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}, event:{click: function(data, evt){window.open('/admin')}}")

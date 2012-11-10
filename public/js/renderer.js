@@ -56,7 +56,7 @@ define([
                     repository[replacedContainers[item.container]].destroy();
                 }
 
-                var vm = new VM(parent, item.module, item.container, level, item.global);
+                var vm = new VM(parent, item.module, item.container, level, item.options || {}, item.global);
 
                 if (Utils.isObjectType('function', item.callback)) {
                     item.callback.call(window, vm);

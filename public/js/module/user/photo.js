@@ -94,7 +94,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.$dom.find('span.modalCaption').text('Upload photo');
             $('.photoUploadCurtain').fadeIn(400, function () {
                 renderer(this, [
-                    {module: 'm/user/photoUpload', container: '.modalContainer', callback: function (vm) {
+                    {module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
                         this.uploadVM = vm;
                     }.bind(this)}
                 ], this.level + 1);

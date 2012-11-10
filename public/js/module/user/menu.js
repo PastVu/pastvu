@@ -18,7 +18,8 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Us
 
                     this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
                     this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});
-                    this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/photoUpload"});
+                    this.links.push({name: 'Upload', href: "/u/photoUpload"});
+                    this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs"});
                     this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments"});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
                         this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings"});

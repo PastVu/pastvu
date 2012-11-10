@@ -24,11 +24,11 @@
 			.h_separator
 			dl.dl-horizontal
 				dt Photo uploaded:
-				dd  0
+				dd(data-bind="text: user.pcount()")
 				dt Blogs created:
-				dd 0
+				dd(data-bind="text: user.bcount()")
 				dt Favorite areas:
-				dd 0
+				dd(data-bind="text: user.ccount()")
 				dt Comments:
 				dd 0
 	#leftSideDash

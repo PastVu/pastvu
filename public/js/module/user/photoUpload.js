@@ -105,14 +105,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }
         },
         show: function () {
-            this.$container.addClass('show');
-            this.$dom.find('#fileupload').fileupload('enable');
+            if (this.options.popup) {
+                this.$container.addClass('show');
+                this.$dom.find('#fileupload').fileupload('enable');
+            } else {
+                this.$container.fadeIn(400, function () {
+                    this.$dom.find('#fileupload').fileupload('enable');
+                }.bind(this));
+            }
+
             this.showing = true;
         },
         hide: function () {
             this.$dom.find('#fileupload').fileupload('disable');
             $(document).off('dragenter').off('dragleave');
-            this.$container.removeClass('show');
+            if (this.options.popup) {
+                this.$container.removeClass('show');
+            } else {
+                this.$container.css('display', '');
+            }
             this.showing = false;
         },
         localDestroy: function (destroy) {

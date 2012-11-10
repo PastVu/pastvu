@@ -10,7 +10,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
     return Utils.Class.extend({
         jade: '',
         childs: null,
-        initialize: function (parent, moduleName, container, level, global) {
+        initialize: function (parent, moduleName, container, level, options, global) {
             if (global) {
                 this.id = moduleName;
             } else {
@@ -20,6 +20,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.module = moduleName;
             this.container = container;
             this.level = level;
+            this.options = options;
             this.parentModule = parent;
             this.childModules = {};
             this.showing = false;
