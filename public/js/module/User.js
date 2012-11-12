@@ -10,6 +10,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
 
         //Profile
         avatar: '/img/caps/avatar.png',
+        avatarW: 100,
+        avatarH: 100,
         firstName: '',
         lastName: '',
         birthdate: '',

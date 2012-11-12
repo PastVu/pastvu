@@ -49,6 +49,14 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Us
         hide: function () {
             this.$container.css('display', '');
             this.showing = false;
+        },
+        onAvatarLoad: function (data, event) {
+            $(event.target).animate({opacity: 1});
+            data = event = null;
+        },
+        onAvatarError: function (data, event) {
+            $(event.target).attr('src', '/img/caps/avatar.png');
+            data = event = null;
         }
     });
 });

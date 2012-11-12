@@ -26,67 +26,39 @@
 	}
 
 	#avatar {
-		width: 100px;
-		height: 100px;
+		overflow: hidden;
 
-		div {
-			background-position: 50% 50%;
-			background-repeat: no-repeat;
-			background-size: cover;
-
-			#avatar_edit {
-				position: absolute;
-				left: 0;
-				bottom: 0;
-				width: 100%;
-				padding: 0 0 0 16px;
-				opacity: 0.8;
-				cursor: pointer;
-				background-color: rgba(0, 0, 0, 0.2);
-
-				#avatar_edit_pic {
-					position: absolute;
-					left: 1px;
-					top: 2px;
-					width: 13px;
-					height: 14px;
-					background: url("/img/misc/tww.png") no-repeat -456px -48px;
-					background-size: auto;
-				}
-
-				&:hover {
-					border-top: 1px solid;
-					opacity: 1;
-				}
-			}
+		img {
+			min-width: 100px;
+			max-width: 200px;
+			min-height: 100px;
+			max-height: 200px;
+			opacity: 0;
 		}
 
-	}
-
-	#pm {
-		width: 120px;
-		cursor: pointer;
-
-		.inner_bord {
-			position: relative;
-			padding-left: 30px;
-
-			&::after {
-				content: "";
-				left: 7px;
-				position: absolute;
-				top: 3px;
-				width: 13px;
-				height: 14px;
-				background: url("/img/misc/tww.png") no-repeat -72px 0;
-				opacity: 0.9;
-			}
-
-			&:hover::after {
-				opacity: 1;
-			}
-
+		#avatar_edit {
+			display: none;
+			position: absolute;
+			width: 100%;
+			left: 0;
+			bottom: 0;
+			margin: 0;
+			border-bottom-width: 0;
+			border-left-width: 0;
+			border-right-width: 0;
+			padding-left: 0;
+			padding-right: 0;
+			background-color: fade(#285991, 70%);
+			.box-shadow(~'0 -1px 0 0 #000');
 		}
+
+		&:hover #avatar_edit {
+			display: block;
+		}
+		&:hover #avatar_edit:hover {
+			background-color: #285991;
+		}
+
 	}
 
 	> .row-fluid > .block {
@@ -144,6 +116,7 @@
 		width: 1px;
 	}
 }
+
 @media (max-width: 1520px) {
 	.user_brief.affix {
 		width: 18.646408839779006%;
@@ -157,12 +130,14 @@
 		*width: 22.87498530621841%;
 	}
 }
+
 @media (max-width: 950px) {
 	.user_brief.affix {
 		width: 27.209944751381215%;
 		*width: 27.156753262019514%;
 	}
 }
+
 @media (max-width: 767px) {
 	.user_brief #leftSideDash {
 		display: none !important;

@@ -21,6 +21,8 @@ var UserScheme = new mongoose.Schema({
 
     //Profile
     avatar: {type: String},
+    avatarW: {type: Number},
+    avatarH: {type: Number},
     firstName: {type: String},
     lastName: {type: String},
     birthdate: {type: String},
@@ -46,7 +48,7 @@ var UserScheme = new mongoose.Schema({
     bcount: {type: Number, default: 0},
     ccount: {type: Number, default: 0},
 
-    dateFormat: {"type": String, "default": "dd.mm.yyyy" },
+    dateFormat: {type: String, default: "dd.mm.yyyy" },
     active: {type: Boolean, default: false },
     activatedate: {type: Date, default: Date.now }
 });

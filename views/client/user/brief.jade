@@ -1,12 +1,14 @@
 .user_brief(data-bind="with: repository[M!M]")
 	.row-fluid
-		#avatar.fringe
-			.inner_bord(data-bind="style: {backgroundImage: 'url('+user.avatar()+')'}")
-				#avatar_edit(data-bind="style: {display: can_avatar() ? '' : 'none'}")
-					#avatar_edit_pic Change avatar
+		#avatar.fringe2
+			img(data-bind="attr: {src: user.avatar()}, style:{width: user.avatarW()+'px', height: user.avatarH()+'px'}, event: {load: onAvatarLoad, error: onAvatarError}")
+			button.btn-strict.btn-strict-small#avatar_edit(type="button", data-bind="event: {}, style: {display: can_avatar() ? '' : 'none'}")
+				i.icon-picture.icon-white
+				span Change avatar
 	.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
-		#pm.fringe
-			.inner_bord Send message
+		button.btn-strict(type="button", data-bind="event: {}")
+			i.icon-envelope.icon-white
+			span Send message
 	.row-fluid
 		#info_common.block
 			.head Commons
