@@ -133,35 +133,35 @@ function filesRecursive(files, prefix, excludeFolders, filter) {
 
 Step(
     /**
-     * Находим клиентские jade-шаблоны и создаем временную папку tpl для рендеренных
+     * Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
      */
-        function searchJades() {
-        var tpl = new File('./views/client'),
-            tpl_temp = new File('./' + requireBuildConfig.appDir + 'tpl');
+     function searchJades() {
+        var tplFolder = new File('./views/client'),
+            tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
+            _this = this;
 
-        tpl.listFiles(this.parallel());
-        tpl_temp.createDirectory(this.parallel());
-        tpl_temp.removeOnExit();
-    },
+        tplFolder.list(function (e, files) {
+            if (e) {
+                console.dir(e);
+                process.exit(1);
+            }
+            jadeFiles = filesRecursive(files, '', []);
 
-    /**
-     * Создаем массив из имен jade-шаблонов
-     * @param e Ошибка поиска jade-шаблонов
-     * @param files Список  jade-шаблонов
-     */
-        function (e, files) {
-        if (e) {
-            console.dir(e);
-            process.exit(1);
-        }
-        Object.keys(files).forEach(function (element, index, array) {
-            jadeFiles.push(files[element].getName());
+            //Создаём временные директории и поддиректории для скомпилированных Jade-шаблонов
+            tplFolderTemp.createDirectory();
+            tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
+            Object.keys(files).forEach(function (element, index, array) {
+                if (Utils.isObjectType('object', files[element])) {
+                    new File ('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
+                }
+            });
         });
-        this();
+
+
     },
 
     /**
-     * Ищем less-файлы для компиляции и создаем плосский массив
+     * Ищем less-файлы для компиляции и создаем плоский массив
      */
     function searchLess() {
         var lessFolder = new File('./' + requireBuildConfig.appDir + 'style'),
@@ -182,9 +182,9 @@ Step(
     /**
      * Компилируем less и jade
      */
-        function startCompile() {
+    function startCompile() {
         lessCompile(lessFiles, this.parallel());
-        //jadeCompile(jadeFiles, this.parallel());
+        jadeCompile(jadeFiles, this.parallel());
     },
 
     /**
@@ -228,7 +228,7 @@ function jadeCompile(files, done) {
             sys.puts("jade readFile error: " + e.message);
             process.exit(1);
         }
-
+        console.dir('Compiling Jade ' + input);
         var fn = jade.compile(data, jadeCompileOptions);
         fd = fs.openSync(output, "w");
         fs.writeSync(fd, fn(jadeCompileOptions), 0, "utf8");
@@ -258,7 +258,7 @@ function lessCompile(files, done) {
             sys.puts("Error to read less " + (lessCompileOptions.path + input) + " file: " + e.message);
             process.exit(1);
         }
-        console.dir('Compiling ' + lessCompileOptions.path + input);
+        console.dir('Compiling LESS ' + lessCompileOptions.path + input);
         new (less.Parser)({
             paths: [lessCompileOptions.path + path.dirname(input)],
             optimization: lessCompileOptions.optimization,
