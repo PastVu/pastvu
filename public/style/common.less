@@ -85,35 +85,19 @@ body {
 	}
 }
 
-.fringe {
-	position: absolute;
-	width: auto;
-	color: @MainLigthColor;
-	border-width: 1px;
-	border-style: solid;
-	border-color: #000;
-	.box-shadow(0 2px 4px 0px #222);
-
-	> div {
-		background-color: fade(@MainBlueColor, 85%);
-	}
-
-	&.gradientBack > div {
-	}
-
-	.inner_bord {
-		position: absolute;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		left: 0;
-		overflow: hidden;
-		border: 1px solid #C3C7DD;
-	}
-}
-
 .mContainer {
 	display: none;
+}
+
+/* The ghost, nudged to maintain perfect centering */
+.centering_content {
+	&::before {
+		content: '';
+		display: inline-block;
+		height: 100%;
+		vertical-align: middle;
+		margin-right: -0.25em; /* Adjusts for spacing */
+	}
 }
 
 /**

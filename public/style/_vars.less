@@ -1,20 +1,8 @@
 @MainLigthColor: #f2f2f2;
 @MainDarkColor: #1c1c1c;
-//@MainBlueColor: rgb(5, 63, 126);
 @MainBlueColor: #285991;
 @MainGreenColor: rgb(10, 109, 4);
 @MainRedColor: rgb(196, 30, 30);
-
-/* The ghost, nudged to maintain perfect centering */
-.centering_content {
-	&::before {
-	  content: '';
-	  display: inline-block;
-	  height: 100%;
-	  vertical-align: middle;
-	  margin-right: -0.25em; /* Adjusts for spacing */
-	}
-}
 
 .simple_gradient(@start: #fff, @stop: #000) {
 	background: @start; /* Old browser */

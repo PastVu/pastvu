@@ -7,6 +7,7 @@ var fs = require('fs'),
     requirejs = require('requirejs'),
     less = require('less'),
     jade = require('jade'),
+    Utils = require('./commons/Utils.js'),
 
     jadeCompileOptions = {
         pretty: false
@@ -17,9 +18,9 @@ var fs = require('fs'),
         yuicompress: true,
         optimization: 2,
         silent: false,
-        paths: ['./public/style'],
+        path: 'public/style/',
         color: true,
-        strictImports: false
+        strictImports: true
     },
 
     requireBuildConfig = {
@@ -109,6 +110,26 @@ var fs = require('fs'),
     jadeFiles = [],
     lessFiles = [];
 
+function filesRecursive(files, prefix, excludeFolders, filter) {
+    'use strict';
+    var result = [];
+
+    Object.keys(files).forEach(function (element, index, array) {
+        if (Utils.isObjectType('object', files[element])) {
+            if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
+                Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
+            }
+        } else {
+            result.push(prefix + element);
+        }
+    });
+
+    if (filter) {
+        result = result.filter(filter);
+    }
+
+    return result;
+}
 
 Step(
     /**
@@ -140,30 +161,22 @@ Step(
     },
 
     /**
-     * Ищем less-файлы для компиляции
+     * Ищем less-файлы для компиляции и создаем плосский массив
      */
     function searchLess() {
-        var lessFolder = new File('./' + requireBuildConfig.appDir + 'style');
-        lessFolder.list(function (name, path) {
-            return name.indexOf('.less') > -1;
-        }, this);
-    },
+        var lessFolder = new File('./' + requireBuildConfig.appDir + 'style'),
+            _this = this;
 
-    /**
-     * Создаем массив из less-файлов
-     * @param e Ошибка поиска less-файлов
-     * @param files Список  less-файлов
-     */
-        function (e, files) {
-        if (e) {
-            console.dir(e);
-            process.exit(1);
-        }
-        Object.keys(files).forEach(function (element, index, array) {
-            lessFiles.push(files[element]);
+        lessFolder.list(function (e, files) {
+            if (e) {
+                console.dir(e);
+                process.exit(1);
+            }
+            lessFiles = filesRecursive(files, '', ['bootstrap', 'fonts'], function getOnlyLess(element) {
+                return element.indexOf('.less') > -1;
+            });
+            _this();
         });
-        this();
-
     },
 
     /**
@@ -171,21 +184,21 @@ Step(
      */
         function startCompile() {
         lessCompile(lessFiles, this.parallel());
-        jadeCompile(jadeFiles, this.parallel());
+        //jadeCompile(jadeFiles, this.parallel());
     },
 
     /**
      * Собираем require
      */
         function requireBuild() {
-        requirejs.optimize(requireBuildConfig, function (buildResponse) {
+        /*requirejs.optimize(requireBuildConfig, function (buildResponse) {
             //buildResponse is just a text output of the modules
             //included. Load the built file for the contents.
             //Use requireBuildConfig.out to get the optimized file contents.
             console.log('Build finished');
             this();
             //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
-        });
+        });*/
     },
 
     function removeUnnecessary() {
@@ -225,7 +238,6 @@ function jadeCompile(files, done) {
 }
 
 function lessCompile(files, done) {
-    console.log(9999);
     var input, output,
         css, fd,
         i = 0;
@@ -237,20 +249,20 @@ function lessCompile(files, done) {
         if (!input) {
             return done();
         }
-        output = input.replace('.less', '.css');
-        fs.readFile(input, 'utf-8', parseLessFile);
+        output = lessCompileOptions.path + input.replace('.less', '.css');
+        fs.readFile(lessCompileOptions.path + input, 'utf-8', parseLessFile);
     }
 
     function parseLessFile(e, data) {
         if (e) {
-            sys.puts("lessCompile error: " + e.message);
+            sys.puts("Error to read less " + (lessCompileOptions.path + input) + " file: " + e.message);
             process.exit(1);
         }
-
+        console.dir('Compiling ' + lessCompileOptions.path + input);
         new (less.Parser)({
-            paths: lessCompileOptions.paths,
+            paths: [lessCompileOptions.path + path.dirname(input)],
             optimization: lessCompileOptions.optimization,
-            filename: input,
+            filename: path.basename(input),
             strictImports: lessCompileOptions.strictImports
         }).parse(data, function (err, tree) {
                 if (err) {
