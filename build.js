@@ -53,13 +53,7 @@ var fs = require('fs'),
             {
                 name: "appUser",
                 include: ['m/auth', 'm/top', 'm/user/brief']
-            }/*,
-            {
-                name: "appProfile"
-            },
-            {
-                name: "appAdmin"
-            }*/
+            }
         ]
     },
     jadeFiles = [],
@@ -119,13 +113,43 @@ step(
     //Собираем require
     function requireBuild() {
         console.log('~~~ Start r.js build ~~~');
+        var _this = this;
         requirejs.optimize(requireBuildConfig, function (buildResponse) {
             //buildResponse is just a text output of the modules
             //included. Load the built file for the contents.
             //Use requireBuildConfig.out to get the optimized file contents.
-            console.log('Build finished');
             //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
+            console.log('Require build finished');
+            _this();
         });
+    },
+
+    //Удаляем less из собранной директории
+    function removeLessFromBuild() {
+        var styleFolder = new File(requireBuildConfig.dir + '/style'),
+            _this = this;
+
+        console.log('Removing Less from build');
+        styleFolder.list(function (e, files) {
+            if (e) {
+                console.dir(e);
+                process.exit(1);
+            }
+            lessFiles = Utils.filesRecursive(files, requireBuildConfig.dir + '/style/', null, function getOnlyLess(element) {
+                return element.indexOf('.less') > -1;
+            });
+            lessFiles.forEach(function (item, index) {
+                (new File(item)).remove(_this.parallel());
+            });
+        });
+    },
+
+    function finish(e) {
+        if (e) {
+            console.dir(e);
+            process.exit(1);
+        }
+        console.log('Build complete. OK.');
     }
 );
 
