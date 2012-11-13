@@ -1,8 +1,9 @@
-#!/usr/bin/env node
+'use strict';
+
 var fs = require('fs'),
     path = require('path'),
     sys = require('util'),
-    Step = require('step'),
+    step = require('step'),
     File = require("file-utils").File,
     requirejs = require('requirejs'),
     less = require('less'),
@@ -37,105 +38,37 @@ var fs = require('fs'),
         },
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
-        removeCombined: true, //Удаляем файлы, которые заинлайнились в модуль
+        removeCombined: false, //Не удаляем файлы, которые заинлайнились в модуль
         inlineText: true, //Включать ли в модули контент, загруженный плагином text
-        logLevel: 1,
-        shim: {
-            /*'underscore': {
-             exports: '_'
-             },*/
-            'backbone': {
-                deps: [
-                    'underscore',
-                    'jquery'
-                ],
-                exports: 'Backbone'
-            },
-            'backbone.queryparams': {
-                deps: [
-                    'backbone'
-                ]//,
-                //exports: ' Backbone.Router.arrayValueSplit'
-            }
-        },
-        paths: {
-            'tpl': '/tpl',
-            'style': '/style',
-
-            'm': 'module',
-
-            'jquery': 'lib/jquery/jquery-1.8.2.min',
-            'bs': 'lib/bootstrap',
-            'socket.io': 'lib/socket.io',
-            'moment': 'lib/moment',
-
-            'domReady': 'lib/require/plugins/domReady',
-            'text': 'lib/require/plugins/text',
-            'async': 'lib/require/plugins/async',
-            'goog': 'lib/require/plugins/goog',
-            'Utils': 'lib/Utils',
-            'Browser': 'lib/Browser',
-
-            'lodash': 'lib/lodash',
-            'underscore': 'lib/lodash',
-            //'underscore': 'lib/underscore-min',
-            'backbone': 'lib/backbone/backbone-min',
-            'backbone.queryparams': 'lib/backbone/queryparams',
-
-            'knockout': 'lib/knockout/knockout-2.1.0',
-            'knockout.mapping': 'lib/knockout/knockout.mapping',
-            'knockout.postbox': 'lib/knockout/knockout-postbox.min',
-
-            'leaflet': 'lib/leaflet/leaflet',
-
-            'jquery.ui.widget': 'lib/jquery/ui/jquery.ui.widget',
-            'jquery.fileupload': 'lib/jquery/plugins/fileupload',
-            'load-image': 'lib/jquery/plugins/fileupload/load-image',
-            'tmpl': 'lib/jquery/plugins/fileupload/tmpl',
-            'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob'
-        },
+        logLevel: 0,
+        mainConfigFile: 'public/js/_mainConfig.js',
         modules: [
             {
-                name: "appMap",
-                include: ['css!>>appMap']
+                name: "_mainConfig" //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
             },
+            {
+                name: "appMap",
+                include: ['m/auth', 'm/top', 'm/map/mapBig']
+            },
+            {
+                name: "appUser",
+                include: ['m/auth', 'm/top', 'm/user/brief']
+            }/*,
             {
                 name: "appProfile"
             },
             {
                 name: "appAdmin"
-            }
+            }*/
         ]
     },
     jadeFiles = [],
     lessFiles = [];
 
-function filesRecursive(files, prefix, excludeFolders, filter) {
-    'use strict';
-    var result = [];
 
-    Object.keys(files).forEach(function (element, index, array) {
-        if (Utils.isObjectType('object', files[element])) {
-            if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
-                Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
-            }
-        } else {
-            result.push(prefix + element);
-        }
-    });
-
-    if (filter) {
-        result = result.filter(filter);
-    }
-
-    return result;
-}
-
-Step(
-    /**
-     * Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
-     */
-     function searchJades() {
+step(
+    //Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
+    function searchJades() {
         var tplFolder = new File('./views/client'),
             tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
             _this = this;
@@ -145,14 +78,14 @@ Step(
                 console.dir(e);
                 process.exit(1);
             }
-            jadeFiles = filesRecursive(files, '', []);
+            jadeFiles = Utils.filesRecursive(files, '');
 
             //Создаём временные директории и поддиректории для скомпилированных Jade-шаблонов
             tplFolderTemp.createDirectory();
             tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
             Object.keys(files).forEach(function (element, index, array) {
                 if (Utils.isObjectType('object', files[element])) {
-                    new File ('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
+                    new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
                 }
             });
         });
@@ -160,9 +93,7 @@ Step(
 
     },
 
-    /**
-     * Ищем less-файлы для компиляции и создаем плоский массив
-     */
+    //Ищем less-файлы для компиляции и создаем плоский массив
     function searchLess() {
         var lessFolder = new File('./' + requireBuildConfig.appDir + 'style'),
             _this = this;
@@ -172,36 +103,29 @@ Step(
                 console.dir(e);
                 process.exit(1);
             }
-            lessFiles = filesRecursive(files, '', ['bootstrap', 'fonts'], function getOnlyLess(element) {
+            lessFiles = Utils.filesRecursive(files, '', ['bootstrap', 'fonts'], function getOnlyLess(element) {
                 return element.indexOf('.less') > -1;
             });
             _this();
         });
     },
 
-    /**
-     * Компилируем less и jade
-     */
+    //Компилируем less и jade
     function startCompile() {
         lessCompile(lessFiles, this.parallel());
         jadeCompile(jadeFiles, this.parallel());
     },
 
-    /**
-     * Собираем require
-     */
-        function requireBuild() {
-        /*requirejs.optimize(requireBuildConfig, function (buildResponse) {
+    //Собираем require
+    function requireBuild() {
+        console.log('~~~ Start r.js build ~~~');
+        requirejs.optimize(requireBuildConfig, function (buildResponse) {
             //buildResponse is just a text output of the modules
             //included. Load the built file for the contents.
             //Use requireBuildConfig.out to get the optimized file contents.
             console.log('Build finished');
-            this();
             //var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
-        });*/
-    },
-
-    function removeUnnecessary() {
+        });
     }
 );
 

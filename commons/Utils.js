@@ -65,6 +65,26 @@ Utils.randomString = function (length) {
     chars = i = null;
     return str;
 };
+Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, filter) {
+    'use strict';
+    var result = [];
+
+    Object.keys(files).forEach(function (element, index, array) {
+        if (Utils.isObjectType('object', files[element])) {
+            if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
+                Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
+            }
+        } else {
+            result.push(prefix + element);
+        }
+    });
+
+    if (filter) {
+        result = result.filter(filter);
+    }
+
+    return result;
+};
 
 Utils.time = {};
 Utils.time.second = 1000;

@@ -5,27 +5,13 @@ var log4js = require('log4js'),
     tpls = [];
 
 tplFolder.list(function (e, files) {
+    'use strict';
     if (e) {
         console.dir(e);
         process.exit(1);
     }
-    tpls = filesRecursive(files, '');
+    tpls = Utils.filesRecursive(files, '');
 });
-
-function filesRecursive(files, prefix) {
-    'use strict';
-    var result = [];
-
-    Object.keys(files).forEach(function (element, index, array) {
-        if (Utils.isObjectType('object', files[element])) {
-            Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/'));
-        } else {
-            result.push(prefix + element);
-        }
-    });
-
-    return result;
-}
 
 module.exports.loadController = function (app) {
     'use strict';
