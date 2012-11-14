@@ -21,7 +21,7 @@ if (typeof exports !== undefined + '') {
 	window.L = L;
 }
 
-L.version = '0.4.4';
+L.version = '0.5';
 
 
 /*
@@ -526,6 +526,11 @@ L.Point.prototype = {
 		return Math.sqrt(x * x + y * y);
 	},
 
+	equals: function (point) {
+		return point.x === this.x &&
+		       point.y === this.y;
+	},
+
 	toString: function () {
 		return 'Point(' +
 		        L.Util.formatNum(this.x) + ', ' +
@@ -906,7 +911,7 @@ L.DomUtil.TRANSITION_END =
 
 
 /*
-	CM.LatLng represents a geographical point with latitude and longtitude coordinates.
+	L.LatLng represents a geographical point with latitude and longitude coordinates.
 */
 
 L.LatLng = function (rawLat, rawLng, noWrap) { // (Number, Number[, Boolean])
@@ -919,7 +924,7 @@ L.LatLng = function (rawLat, rawLng, noWrap) { // (Number, Number[, Boolean])
 
 	if (noWrap !== true) {
 		lat = Math.max(Math.min(lat, 90), -90);					// clamp latitude into -90..90
-		lng = (lng + 180) % 360 + ((lng < -180 || lng === 180) ? 180 : -180);	// wrap longtitude into -180..180
+		lng = (lng + 180) % 360 + ((lng < -180 || lng === 180) ? 180 : -180);	// wrap longitude into -180..180
 	}
 
 	this.lat = lat;
@@ -2142,7 +2147,7 @@ L.TileLayer = L.Class.extend({
 	_setAutoZIndex: function (pane, compare) {
 
 		var layers = pane.getElementsByClassName('leaflet-layer'),
-		    edgeZIndex = -compare(Infinity, -Infinity), // -Ifinity for max, Infinity for min
+		    edgeZIndex = -compare(Infinity, -Infinity), // -Infinity for max, Infinity for min
 		    zIndex, i, len;
 
 		for (i = 0, len = layers.length; i < len; i++) {
@@ -3094,12 +3099,13 @@ L.Marker = L.Class.extend({
 	},
 
 	_initInteraction: function () {
-		if (!this.options.clickable) {
-			return;
-		}
+
+		if (!this.options.clickable) { return; }
+
+		// TODO refactor into something shared with Map/Path/etc. to DRY it up
 
 		var icon = this._icon,
-		    events = ['dblclick', 'mousedown', 'mouseover', 'mouseout'];
+		    events = ['dblclick', 'mousedown', 'mouseover', 'mouseout', 'contextmenu'];
 
 		L.DomUtil.addClass(icon, 'leaflet-clickable');
 		L.DomEvent.on(icon, 'click', this._onMouseClick, this);
@@ -3119,20 +3125,31 @@ L.Marker = L.Class.extend({
 
 	_onMouseClick: function (e) {
 		var wasDragged = this.dragging && this.dragging.moved();
+
 		if (this.hasEventListeners(e.type) || wasDragged) {
 			L.DomEvent.stopPropagation(e);
 		}
+
 		if (wasDragged) { return; }
+
 		if (this._map.dragging && this._map.dragging.moved()) { return; }
+
 		this.fire(e.type, {
 			originalEvent: e
 		});
 	},
 
 	_fireMouseEvent: function (e) {
+
 		this.fire(e.type, {
 			originalEvent: e
 		});
+
+		// TODO proper custom event propagation
+		// this line will always be called if marker is in a FeatureGroup
+		if (e.type === 'contextmenu' && this.hasEventListeners(e.type)) {
+			L.DomEvent.preventDefault(e);
+		}
 		if (e.type !== 'mousedown') {
 			L.DomEvent.stopPropagation(e);
 		}
@@ -4826,10 +4843,10 @@ L.polyline = function (latlngs, options) {
 
 
 /*
- * L.PolyUtil contains utilify functions for polygons (clipping, etc.).
+ * L.PolyUtil contains utility functions for polygons (clipping, etc.).
  */
 
-/*jshint bitwise:false */ // allow bitwise oprations here
+/*jshint bitwise:false */ // allow bitwise operations here
 
 L.PolyUtil = {};
 
@@ -5390,7 +5407,7 @@ L.geoJson = function (geojson, options) {
  */
 
 L.DomEvent = {
-	/* inpired by John Resig, Dean Edwards and YUI addEvent implementations */
+	/* inspired by John Resig, Dean Edwards and YUI addEvent implementations */
 	addListener: function (obj, type, fn, context) { // (HTMLElement, String, Function[, Object])
 
 		var id = L.stamp(fn),
@@ -5994,9 +6011,10 @@ L.Map.ScrollWheelZoom = L.Handler.extend({
 
 	_performZoom: function () {
 		var map = this._map,
-		    delta = Math.round(this._delta),
+		    delta = this._delta,
 		    zoom = map.getZoom();
 
+		delta = delta > 0 ? Math.ceil(delta) : Math.round(delta);
 		delta = Math.max(Math.min(delta, 4), -4);
 		delta = map._limitZoom(zoom + delta) - zoom;
 
@@ -6469,9 +6487,11 @@ L.Map.BoxZoom = L.Handler.extend({
 		    .off(document, 'mouseup', this._onMouseUp);
 
 		var map = this._map,
-		    layerPoint = map.mouseEventToLayerPoint(e),
+		    layerPoint = map.mouseEventToLayerPoint(e);
 
-		    bounds = new L.LatLngBounds(
+		if (this._startLayerPoint.equals(layerPoint)) { return; }
+
+		var bounds = new L.LatLngBounds(
 		        map.layerPointToLatLng(this._startLayerPoint),
 		        map.layerPointToLatLng(layerPoint));
 
@@ -7015,10 +7035,18 @@ L.Control.Zoom = L.Control.extend({
 
 		this._map = map;
 
-		this._createButton('Zoom in', className + '-in', container, this._zoomIn, this);
-		this._createButton('Zoom out', className + '-out', container, this._zoomOut, this);
+		this._zoomInButton = this._createButton(
+		        '+', 'Zoom in',  className + '-in',  container, this._zoomIn,  this);
+		this._zoomOutButton = this._createButton(
+		        '-', 'Zoom out', className + '-out', container, this._zoomOut, this);
+
+		map.on('zoomend', this._updateDisabled, this);
 
 		return container;
+	},
+
+	onRemove: function (map) {
+		map.off('zoomend', this._updateDisabled, this);
 	},
 
 	_zoomIn: function (e) {
@@ -7029,8 +7057,9 @@ L.Control.Zoom = L.Control.extend({
 		this._map.zoomOut(e.shiftKey ? 3 : 1);
 	},
 
-	_createButton: function (title, className, container, fn, context) {
+	_createButton: function (html, title, className, container, fn, context) {
 		var link = L.DomUtil.create('a', className, container);
+		link.innerHTML = html;
 		link.href = '#';
 		link.title = title;
 
@@ -7042,6 +7071,21 @@ L.Control.Zoom = L.Control.extend({
 		    .on(link, 'click', fn, context);
 
 		return link;
+	},
+
+	_updateDisabled: function () {
+		var map = this._map,
+			className = 'leaflet-control-zoom-disabled';
+
+		L.DomUtil.removeClass(this._zoomInButton, className);
+		L.DomUtil.removeClass(this._zoomOutButton, className);
+
+		if (map._zoom === map.getMinZoom()) {
+			L.DomUtil.addClass(this._zoomOutButton, className);
+		}
+		if (map._zoom === map.getMaxZoom()) {
+			L.DomUtil.addClass(this._zoomInButton, className);
+		}
 	}
 });
 
@@ -7523,7 +7567,7 @@ L.PosAnimation = L.Class.extend({
 		// toggle reflow, Chrome flickers for some reason if you don't do this
 		L.Util.falseFn(el.offsetWidth);
 
-		// there's no native way to track value updates of tranisitioned properties, so we imitate this
+		// there's no native way to track value updates of transitioned properties, so we imitate this
 		this._stepTimer = setInterval(L.bind(this.fire, this, 'step'), 50);
 	},
 
@@ -7535,6 +7579,7 @@ L.PosAnimation = L.Class.extend({
 
 		L.DomUtil.setPosition(this._el, this._getPos());
 		this._onTransitionEnd();
+		L.Util.falseFn(this._el.offsetWidth); // force reflow in case we are about to start a new animation
 	},
 
 	// you can't easily get intermediate values of properties animated with CSS3 Transitions,
@@ -7587,7 +7632,6 @@ L.Map.include({
 
 			if (this._panAnim) {
 				this._panAnim.stop();
-				L.Util.falseFn(this._container.offsetWidth); // force reflow
 			}
 
 			var done = (zoomChanged ?
@@ -7627,7 +7671,7 @@ L.Map.include({
 
 		L.DomUtil.addClass(this._mapPane, 'leaflet-pan-anim');
 
-		var newPos = L.DomUtil.getPosition(this._mapPane).subtract(offset);
+		var newPos = L.DomUtil.getPosition(this._mapPane).subtract(offset)._round();
 		this._panAnim.run(this._mapPane, newPos, duration || 0.25, easeLinearity);
 
 		return this;
