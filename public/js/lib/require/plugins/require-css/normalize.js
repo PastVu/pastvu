@@ -36,15 +36,16 @@ define(['require', 'module'], function(require, module) {
     // absolute urls are left in tact
     if (uri.match(/^\/|([^\:\/]*:)/))
       return uri;
-    
     return relativeURI(absoluteURI(uri, fromBase), toBase);
   };
   
   // given a relative URI, calculate the absolute URI
   function absoluteURI(uri, base) {
+    if (uri.substr(0, 2) == './')
+      uri = uri.substr(2);    
     
-    baseParts = base.split('/');
-    uriParts = uri.split('/');
+    var baseParts = base.split('/');
+    var uriParts = uri.split('/');
     
     baseParts.pop();
     
@@ -62,7 +63,7 @@ define(['require', 'module'], function(require, module) {
   function relativeURI(uri, base) {
     
     // reduce base and uri strings to just their difference string
-    baseParts = base.split('/');
+    var baseParts = base.split('/');
     baseParts.pop();
     base = baseParts.join('/') + '/';
     i = 0;
@@ -75,7 +76,7 @@ define(['require', 'module'], function(require, module) {
 
     // each base folder difference is thus a backtrack
     baseParts = base.split('/');
-    uriParts = uri.split('/');
+    var uriParts = uri.split('/');
     out = '';
     while (baseParts.shift())
       out += '../';
@@ -89,14 +90,15 @@ define(['require', 'module'], function(require, module) {
   
   var normalizeCSS = function(source, fromBase, toBase) {
     
-    urlRegEx = /(url\(\s*"(.*)"\s*\))|(url\(\s*'(.*)'\s*\))|(url\(\s*(.*)\s*\))/g;
-    
+    var urlRegEx = /(url\(\s*"(.*)"\s*\))|(url\(\s*'(.*)'\s*\))|(url\(\s*(.*)\s*\))/g;
+    var result, url, source;
+
     while (result = urlRegEx.exec(source)) {
       url = convertURIBase(result[2] || result[4] || result[6], fromBase, toBase);
       source = source.replace(result[2] || result[4] || result[6], url);
     }
     
-    importRegEx = /(@import\s*'(.*)')|(@import\s*"(.*)")/g;
+    var importRegEx = /(@import\s*'(.*)')|(@import\s*"(.*)")/g;
     
     while (result = importRegEx.exec(source)) {
       url = convertURIBase(result[2] || result[4], fromBase, toBase);
