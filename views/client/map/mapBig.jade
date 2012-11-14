@@ -17,10 +17,10 @@
 		.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
 		.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
 			.h_separator
-			//ko foreach: $data.layers
-			.layerSystem(data-bind="css: {selected: $data.selected()}")
-				.layerHead(data-bind="text: $data.desc")
-				//ko foreach: $data.types
-				.layerType(data-bind="css: {selected: $data.selected()}, text: $data.desc, click: function () {$parents[1].selectLayer($parent.id, $data.id)}")
+			//ko foreach: {data: $data.layers, as: 'system'}
+			.layerSystem(data-bind="css: {selected: system.selected()}")
+				.layerHead(data-bind="text: system.desc")
+				//ko foreach: {data:system.types, as: 'type'}
+				.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
 				// /ko
 			// /ko
