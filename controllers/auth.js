@@ -10,6 +10,7 @@ var _session = require('./_session.js'),
     log4js = require('log4js'),
     ms =  require('ms'), // Tiny milisecond conversion utility
     moment = require('moment'),
+    appEnv = {},
     app,
     io;
 
@@ -159,29 +160,29 @@ function register(session, data, cb) {
             expireOn.add(ms('2d'));
 
             Mail.send({
-                from: 'Oldmos2 <confirm@oldmos2.ru>',
+                from: 'OldMos51 <confirm@oldmos2.ru>',
                 to: data.login + ' <' + data.email + '>',
                 subject: 'Registration confirm', //
                 headers: {
                     'X-Laziness-level': 1000
                 },
                 text: 'Привет, ' + data.login + '!' +
-                    'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.' +
+                    'Спасибо за регистрацию на проекте OldMos51! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.' +
                     'При регистрации вы указали логин и пароль:' +
                     'Логин: ' + data.login +
                     'Пароль: ' + data.pass +
                     'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.' +
                     'Для активации Вашего аккаунта, пройдите по следующей ссылке:' +
-                    'http://oldmos2.ru:3000/confirm/' + confirmKey + ' ' +
+                    'http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + ' ' +
                     'Ссылка действительна ' + moment.humanizeDuration(ms('2d')) + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо зарегистрироваться повторно',
                 html: 'Привет, <b>' + data.login + '</b>!<br/><br/>' +
-                    'Спасибо за регистрацию на проекте oldmos2.ru! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.<br/><br/>' +
+                    'Спасибо за регистрацию на проекте OldMos51! Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.<br/><br/>' +
                     'При регистрации вы указали логин и пароль:<br/>' +
                     'Логин: <b>' + data.login + '</b><br/>' +
                     'Пароль: <b>' + data.pass + '</b><br/><br/>' +
                     'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>' +
                     'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>' +
-                    '<a href="http://oldmos2.ru:3000/confirm/' + confirmKey + '" target="_blank">http://oldmos2.ru/confirm/' + confirmKey + '</a><br/>' +
+                    '<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
                     'Ссылка действительна ' + moment.humanizeDuration(ms('2d')) + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо зарегистрироваться повторно'
             }, this.parallel());
         },
@@ -242,7 +243,7 @@ function recall(session, data, cb) {
             var expireOn = moment().lang('ru');
             expireOn.add(ms('2d'));
             Mail.send({
-                from: 'Oldmos2 <confirm@oldmos2.ru>',
+                from: 'OldMos51 <confirm@oldmos2.ru>',
                 to: data.login + ' <' + data.email + '>',
                 subject: 'Request for password recovery',
                 headers: {
@@ -250,14 +251,14 @@ function recall(session, data, cb) {
                 },
 
                 text: 'Привет, ' + data.login + '!' +
-                    'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте oldmos2.ru. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.' +
+                    'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos51. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.' +
                     'Для получения нового пароля перейдите по следующей ссылке:' +
-                    'http://oldmos2.ru:3000/confirm/' + confirmKey + ' ' +
+                    'http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + ' ' +
                     'Ссылка действительна ' + moment.humanizeDuration(ms('2d')) + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно',
                 html: 'Привет, <b>' + data.login + '</b>!<br/><br/>' +
-                    'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте oldmos2.ru. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
+                    'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos51. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
                     'Для получения нового пароля перейдите по следующей ссылке:<br/>' +
-                    '<a href="http://oldmos2.ru:3000/confirm/' + confirmKey + '" target="_blank">http://oldmos2.ru/confirm/' + confirmKey + '</a><br/>' +
+                    '<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
                     'Ссылка действительна ' + moment.humanizeDuration(ms('2d')) + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно'
             }, this);
         },
@@ -300,6 +301,7 @@ module.exports.restrictToRoleLevel = restrictToRoleLevel;
 
 module.exports.loadController = function (a, db, io) {
     app = a;
+    appEnv = app.get('appEnv');
     Session = db.model('Session');
     User = db.model('User');
     Role = db.model('Role');
@@ -387,7 +389,7 @@ module.exports.loadController = function (a, db, io) {
                             }
                             Mail.send({
                                 // sender info
-                                from: 'Oldmos2 <confirm@oldmos2.ru>',
+                                from: 'OldMos51 <confirm@oldmos2.ru>',
 
                                 // Comma separated list of recipients
                                 to: confirm.user.login + ' <' + confirm.user.email + '>',
@@ -403,13 +405,13 @@ module.exports.loadController = function (a, db, io) {
                                     'Ваш пароль успешно заменен на новый.' +
                                     'Логин: ' + confirm.user.login +
                                     'Пароль: ' + newPass +
-                                    'Теперь Вы можете зайти на проект oldmos2.ru, используя новые реквизиты. Не забудьте сменить пароль в настройках профиля.',
+                                    'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты. Не забудьте сменить пароль в настройках профиля.',
 
                                 html: 'Привет, <b>' + confirm.user.login + '</b>!<br/><br/>' +
                                     'Ваш пароль успешно заменен на новый.<br/>' +
                                     'Логин: <b>' + confirm.user.login + '</b><br/>' +
                                     'Пароль: <b>' + newPass + '</b><br/><br/>' +
-                                    'Теперь Вы можете зайти на проект oldmos2.ru, используя новые реквизиты.<br/>Не забудьте сменить пароль в настройках профиля.'
+                                    'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты.<br/>Не забудьте сменить пароль в настройках профиля.'
                             }, this);
                         },
                         function finish(err) {

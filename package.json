@@ -3,7 +3,7 @@
 	"version": "0.4.2",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/oldplanet",
-	"keywords": ["oldmos", "oldmos2", "oldplanet"],
+	"keywords": ["oldmos", "oldmos2", "oldmos51", "oldplanet"],
 	"author": "Paul Klimashkin <klimashkin@gmail.com>",
 	"main": "app.js",
 	"repository": {

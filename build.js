@@ -149,7 +149,7 @@ step(
             console.dir(e);
             process.exit(1);
         }
-        console.log('Build complete. OK.');
+        console.log('Build complete. OK!');
     }
 );
 

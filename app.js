@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-var port = 3000,
-    express = require('express'),
+var express = require('express'),
     http = require('http'),
     app, server, io,
 
     Session,
 
     fs = require('fs'),
+    os = require('os'),
     connect = require('express/node_modules/connect'),
     cookie = require('express/node_modules/cookie'),
     Utils = require('./commons/Utils.js'),
@@ -32,11 +32,29 @@ var logger = log4js.getLogger("app.js");
  */
 require('./commons/JExtensions.js');
 
+var interfaces = os.networkInterfaces();
+var addresses = [];
+for (var k in interfaces) {
+    if (interfaces.hasOwnProperty(k)){
+        for (var k2 in interfaces[k]) {
+            if (interfaces[k].hasOwnProperty(k2)){
+                var address = interfaces[k][k2];
+                if (address.family === 'IPv4' && !address.internal) {
+                    addresses.push(address.address);
+                }
+            }
+        }
+    }
+}
+console.dir(addresses);
+
 /**
  * Окружение (dev, test, prod)
  */
-var env = argv.env || 'dev',
-    pub = (env === 'prod' ? '/public-build' : '/public');
+var land = argv.land || 'dev',
+    port = argv.port || 3000,
+    domain = argv.domain || 'localhost',
+    pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
 
@@ -44,7 +62,7 @@ app = express();
 server = http.createServer(app);
 
 app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version;
-app.hash = (env === 'dev' ? app.version : Utils.randomString(10));
+app.hash = (land === 'dev' ? app.version : Utils.randomString(10));
 logger.info('Application Hash: ' + app.hash);
 
 io = require('socket.io').listen(server);
@@ -57,9 +75,11 @@ new File("publicContent/photos/origin").createDirectory();
 new File("publicContent/incoming").createDirectory();
 
 app.configure(function () {
+    app.set('appEnv', {land: land, port: port, domain: domain});
+
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');
-    if (env === 'dev') {
+    if (land === 'dev') {
         app.disable('view cache');
     } else {
         app.enable('view cache');
@@ -74,10 +94,10 @@ app.configure(function () {
 
     //app.use(express.logger({ immediate: false, format: 'dev' }));
 
-    app.use(express.errorHandler({ dumpExceptions: (env !== 'prod'), showStack: (env !== 'prod') }));
+    app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
     app.use(express.compress());
     app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: ms('1d') }));
-    if (env === 'dev') {
+    if (land === 'dev') {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
     } else {
         app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
@@ -122,7 +142,7 @@ app.configure(function () {
         });
     });
 
-    if (env === 'dev') {
+    if (land === 'dev') {
         io.set('log level', 1);
     } else {
         io.enable('browser client minification');  // send minified client
@@ -205,4 +225,4 @@ process.on('uncaughtException', function (err) {
 server.listen(port);
 
 
-logger.info('Express server listening on port %d in %s-mode \n', port, env.toUpperCase());
+logger.info('Express server listening %s in %s-mode \n', (domain + ':' + port), land.toUpperCase());
