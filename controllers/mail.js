@@ -7,7 +7,9 @@ var logger = log4js.getLogger("mail.js");
 module.exports.send = function send(mess, callback) {
     logger.info('Sending Mail');
     transport.sendMail(mess, function (error) {
-        if (callback) callback.call(null, error);
+        if (callback) {
+            callback.call(null, error);
+        }
         // if you don't want to use this transport object anymore, uncomment following line
         //transport.close(); // close the connection pool
     });

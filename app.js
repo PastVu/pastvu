@@ -46,14 +46,13 @@ for (var k in interfaces) {
         }
     }
 }
-console.dir(addresses);
 
 /**
  * Окружение (dev, test, prod)
  */
 var land = argv.land || 'dev',
     port = argv.port || 3000,
-    domain = argv.domain || 'localhost',
+    domain = argv.domain || addresses[0] || 'localhost',
     pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
