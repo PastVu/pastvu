@@ -15,6 +15,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
             settings: {
                 domain: 'localhos',
                 port: 3000,
+                uport: 8888,
 
                 USE_OSM_API: true,
                 USE_GOOGLE_API: true,

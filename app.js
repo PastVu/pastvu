@@ -53,7 +53,7 @@ for (var k in interfaces) {
 var land = argv.land || 'dev',
     domain = argv.domain || addresses[0] || 'localhost',
     port = argv.port || 3000,
-    uport = argv.port || 8888,
+    uport = argv.uport || 8888,
     pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
