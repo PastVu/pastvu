@@ -50,6 +50,15 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
                 this.iAm = User.VM(user, this.iAm);
                 console.log(this.iAm.fullName());
                 dfd.resolve();
+
+                //При изменении данных профиля на сервере, обновляем его на клиенте
+                socket.on('youAre', function (user) {
+                    if (this.iAm.login() === user.login) {
+                        this.iAm = User.VM(user, this.iAm);
+                        console.log(this.iAm.fullName());
+                    }
+
+                }.bind(this));
             }.bind(this));
             socket.emit('whoAmI');
             return dfd.promise();

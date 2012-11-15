@@ -3,6 +3,7 @@ var auth = require('./auth.js'),
     Settings,
     User,
     Utils = require('../commons/Utils.js'),
+    step = require('step'),
     log4js = require('log4js');
 
 module.exports.loadController = function (app, db, io) {
@@ -49,27 +50,41 @@ module.exports.loadController = function (app, db, io) {
         });
 
         socket.on('saveUser', function (data) {
-            var toDel = {};
-            Object.keys(data).forEach(function (key) {
-                if (data[key].length === 0) {
-                    toDel[key] = 1;
-                    delete data[key];
-                }
-            });
             //var updateData = {}.extend(data).extend({'$unset': toDel});
-
-            User.update({login: data.login}, {}.extend(data).extend({'$unset': toDel}), {upsert: true}, function (err, user) {
-                if (err) {
-                    socket.emit('saveUserResult', {message: err && err.message, error: true});
-                    return;
+            var itsMe = hs.session.user && hs.session.user.login === data.login,
+                result = function (data) {
+                    socket.emit('saveUserResult', data);
+                };
+            step(
+                function () {
+                    if (itsMe) {
+                        this(null, hs.session.user);
+                    } else {
+                        User.findOne({login: data.login}, this);
+                    }
+                },
+                function (err, user) {
+                    Object.keys(data).forEach(function (key) {
+                        if (user[key] && data[key].length === 0) {
+                            user[key] = undefined;
+                        } else {
+                            user[key] = data[key];
+                        }
+                    });
+                    user.save(this);
+                },
+                function (err, user) {
+                    if (err) {
+                        result({message: err && err.message, error: true});
+                        return;
+                    }
+                    result({ok: 1});
+                    if (itsMe) {
+                        socket.emit('youAre', user);
+                    }
+                    logger.info('Saved story line for ' + user.login);
                 }
-                if (hs.session.user && hs.session.user.login === user.login) {
-                    hs.session.user = user;
-                }
-                socket.emit('saveUserResult', {ok: 1});
-                logger.info('Saved story line for ' + user.login);
-            });
-
+            );
         });
     });
 

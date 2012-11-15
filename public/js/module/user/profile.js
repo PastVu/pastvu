@@ -67,6 +67,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }
             if (Utils.getObjectPropertyLength(targetUser) > 1) {
                 socket.emit('saveUser', targetUser);
+                this.originUser = targetUser;
             }
             this.edit(false);
 

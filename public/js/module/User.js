@@ -54,7 +54,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         if (!vm) {
             vm = userVMCreate(model);
         } else {
-            model = model || {};
+            model = _.defaults(model || {}, DefaultUser);
             ko_mapping.fromJS(model, vm);
         }
         vm.regdate(new Date(vm.regdate()));
