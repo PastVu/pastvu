@@ -107,7 +107,7 @@ require([
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief'},
                             {module: 'm/user/menu', container: '#user_menu'},
-                            {module: 'm/user/photo', container: '#user_content'}
+                            {module: 'm/user/photo', container: '#user_content', options: {canAdd: true}}
                         ],
                         0,
                         function (top, home) {

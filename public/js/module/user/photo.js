@@ -18,6 +18,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
     return Cliche.extend({
         jade: jade,
+        options: {
+            canAdd: false
+        },
         create: function () {
             this.auth = globalVM.repository['m/auth'];
             this.u = null;
@@ -37,6 +40,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             users.user(user, function (vm) {
                 if (vm) {
                     this.u = vm;
+                    this.canAdd = ko.observable(this.options.canAdd && this.u.login() === this.auth.iAm.login());
                     ko.applyBindings(globalVM, this.$dom[0]);
                     this.show();
                 }

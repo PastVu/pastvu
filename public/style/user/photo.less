@@ -127,23 +127,46 @@
 		}
 
 		&.addPhoto {
+			display: none;
 			height: @thumbDimension;
 			width: @thumbDimension * 1.5;
 			opacity: 1;
-			color: #b9b9b9;
-			background-image: url(/img/misc/add_photo.png);
-			background-position: 50% 40%;
-			background-repeat: no-repeat;
+			color: #B9B9B9;
 			cursor: pointer;
 
+			.plusPhoto {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-top: -20px;
+				margin-left: -30px;
+				width: 62px;
+				height: 16px;
+				background-color: #B9B9B9;
+
+				&::after {
+					content: '';
+					position: absolute;
+					top: -23px;
+					left: 23px;
+					width: 16px;
+					height: 62px;
+					background-color: inherit;
+				}
+			}
+
 			.desc {
-				top: 130px;
+				top: auto;
+				bottom: 38px;
 				font-size: 22px;
 			}
 
 			&:hover {
-				background-image: url(/img/misc/add_photo_w.png);
 				color: @MainLigthColor;
+
+				.plusPhoto {
+					background-color: @MainLigthColor;
+				}
 			}
 
 		}
@@ -276,6 +299,14 @@
 @media (max-width: 1550px) {
 	.user_photo {
 		.photoThumb {
+			&.addPhoto {
+				height: @thumbDimensionSmall;
+				width: @thumbDimensionSmall * 1.5;
+
+				.desc {
+					bottom: 20px;
+				}
+			}
 			img {
 				height: @thumbDimensionSmall;
 				width: @thumbDimensionSmall * 1.5;

@@ -1,6 +1,7 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}")
+		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}, style: {display: canAdd() ? 'inline-block' : ''}")
+			.plusPhoto
 			.desc Add photos..
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")

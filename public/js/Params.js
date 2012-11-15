@@ -13,7 +13,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
                 square: $window.width() * $window.height()
             },
             settings: {
-                domain: 'localhos',
+                domain: 'localhost',
                 port: 3000,
                 uport: 8888,
 

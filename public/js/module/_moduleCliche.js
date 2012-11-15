@@ -20,7 +20,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.module = moduleName;
             this.container = container;
             this.level = level;
-            this.options = options;
+            this.options = _.extend({}, this.options, options);
             this.parentModule = parent;
             this.childModules = {};
             this.showing = false;
