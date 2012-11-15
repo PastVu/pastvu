@@ -2,10 +2,12 @@ var auth = require('./auth.js'),
     Settings,
     User,
     Step = require('step'),
-    log4js = require('log4js');
+    log4js = require('log4js'),
+    appEnv = {};
 
 module.exports.loadController = function (app, db, io) {
     var logger = log4js.getLogger("index.js");
+    appEnv = app.get('appEnv');
 
     Settings = db.model('Settings');
     User = db.model('User');
@@ -36,13 +38,13 @@ module.exports.loadController = function (app, db, io) {
                 function (err, settings, user) {
                     var x = settings.length - 1;
                     do {
-                        params[settings[x]['key']] = settings[x]['val']
+                        params[settings[x]['key']] = settings[x]['val'];
                     } while (x--);
                     params.user = hs.session.user;
                     this();
                 },
                 function () {
-                    socket.emit('takeGlobeParams', params.extend({appHash: app.hash}));
+                    socket.emit('takeGlobeParams', params.extend({appHash: app.hash, domain: appEnv.domain, port: appEnv.port, uport: appEnv.uport}));
                 }
             );
         });

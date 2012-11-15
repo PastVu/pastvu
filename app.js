@@ -51,8 +51,9 @@ for (var k in interfaces) {
  * Окружение (dev, test, prod)
  */
 var land = argv.land || 'dev',
-    port = argv.port || 3000,
     domain = argv.domain || addresses[0] || 'localhost',
+    port = argv.port || 3000,
+    uport = argv.port || 8888,
     pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
@@ -74,7 +75,7 @@ new File("publicContent/photos/origin").createDirectory();
 new File("publicContent/incoming").createDirectory();
 
 app.configure(function () {
-    app.set('appEnv', {land: land, port: port, domain: domain});
+    app.set('appEnv', {land: land, domain: domain, port: port, uport: uport});
 
     app.set('views', __dirname + '/views');
     app.set('view engine', 'jade');

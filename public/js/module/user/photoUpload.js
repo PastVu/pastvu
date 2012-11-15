@@ -65,7 +65,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                         this.$dom.find('#fileupload').fileupload();
                         this.$dom.find('#fileupload').fileupload('option', {
                             VM: this,
-                            url: 'http://172.31.1.130:8888/',
+                            url: 'http://' + P.settings.domain() + ':' + P.settings.uport() + '/',
                             //dropZone: this.$dom.find('.addfiles_area'),
                             maxFileSize: 52428800, //50Mb
                             maxNumberOfFiles: 10,

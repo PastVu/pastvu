@@ -13,6 +13,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
                 square: $window.width() * $window.height()
             },
             settings: {
+                domain: 'localhos',
+                port: 3000,
+
                 USE_OSM_API: true,
                 USE_GOOGLE_API: true,
                 USE_YANDEX_API: true,
