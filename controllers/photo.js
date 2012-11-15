@@ -36,13 +36,13 @@ module.exports.loadController = function (app, db, io) {
                         result({message: 'User with such login does not exist', error: true});
                         return;
                     }
-                    Counter.increment('photo', function (err, result) {
-                        if (err || !result) {
+                    Counter.increment('photo', function (err, count) {
+                        if (err || !count) {
                             result({message: 'Increment error', error: true});
                             return;
                         } else {
                             var photo = new Photo({
-                                cid: result.next,
+                                cid: count.next,
                                 user: user._id,
                                 file: data.file
                             }.extend(data));
