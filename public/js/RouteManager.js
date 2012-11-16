@@ -141,7 +141,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 body = '',
                 leaf = Utils.getURLParameter('leaf', href);
 
-            if (target !== '_blank' && href.indexOf(_this.root) > -1) {
+            if (href.length === 0) {
+                evt.preventDefault();
+            } else if (target !== '_blank' && href.indexOf(_this.root) > -1) {
                 evt.preventDefault();
                 body = href.substring(_this.root.length, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
 
