@@ -43,13 +43,13 @@
                     gravity: true
                 },
                 'thumb': {
-                    width: 320,
-                    height: 200,
+                    width: 246,
+                    height: 164,
                     gravity: true
                 },
                 'standard': {
-                    width: 1366,
-                    height: 768
+                    width: 1050,
+                    height: 700
                 }
             },
             accessControl: {
