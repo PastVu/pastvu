@@ -112,7 +112,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             $('.photoUploadCurtain').fadeOut(400, function () {
                 this.uploadVM.destroy();
                 var oldFirst = this.photos()[0] ? this.photos()[0].file : 0;
-                this.getPhotos(0, 10, function (data) {
+                this.getPhotos(0, 11, function (data) {
                     if (oldFirst === 0) {
                         this.photos.concat(data, false);
                     } else {

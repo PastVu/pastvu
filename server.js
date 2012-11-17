@@ -118,7 +118,6 @@
                     res.setHeader('Content-Disposition', 'inline; filename="files.json"');
                 },
                 handler = new UploadHandler(req, res, handleResult);
-            console.log(req.method);
             switch (req.method) {
             case 'OPTIONS':
                 res.end();
