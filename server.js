@@ -86,9 +86,6 @@
             this.callback = callback;
         },
         serve = function (req, res) {
-            console.log('~~~~~');
-            console.log('~~~~~');
-            console.log('serve');
             res.setHeader(
                 'Access-Control-Allow-Origin',
                 options.accessControl.allowOrigin
@@ -220,7 +217,6 @@
         });
     };
     UploadHandler.prototype.post = function () {
-        console.log('UploadHandler.prototype.post');
         var handler = this,
             form = new formidable.IncomingForm(),
             tmpFiles = [],
@@ -238,7 +234,6 @@
                 }
             };
         form.uploadDir = options.tmpDir;
-        console.log(999);
         form.on('fileBegin', function (name, file) {
             tmpFiles.push(file.path);
             var fileInfo = new FileInfo(file, handler.req, true);
@@ -251,8 +246,6 @@
             }
         }).on('file', function (name, file) {
             var fileInfo = map[path.basename(file.path)];
-            console.log(1);
-            console.dir(fileInfo);
 
             fileInfo.size = file.size;
             if (!fileInfo.validate()) {
@@ -263,8 +256,6 @@
             if (options.imageTypes.test(fileInfo.name)) {
                 counter += 1;
                 imageMagick.identify(options.uploadDir + '/origin/' + fileInfo.name, function(err, data){
-                    console.log(2);
-                    console.dir(arguments);
                     if (err) {
                         console.error(err);
                     } else {

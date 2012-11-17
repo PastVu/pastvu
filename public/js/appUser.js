@@ -9,7 +9,8 @@ require([
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, P, globalVM, RouteManager, renderer, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
-        routeDFD = $.Deferred();
+        routeDFD = $.Deferred(),
+        auth;
 
     $('body').append(index_jade);
     ko.applyBindings(globalVM);
@@ -30,6 +31,7 @@ require([
     }
 
     function app() {
+        auth = globalVM.repository['m/auth'];
         Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
     }
 
@@ -79,9 +81,9 @@ require([
                     );
                 },
 
-                photoUpload: function (user, params) {
+                photoUpload: function (params) {
                     console.log('User Photo Upload');
-                    this.params({user: user || ""});
+                    this.params({user: auth.iAm.login() || ""});
 
                     renderer(
                         globalVM,

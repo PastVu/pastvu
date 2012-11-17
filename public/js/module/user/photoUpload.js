@@ -67,18 +67,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                             VM: this,
                             url: 'http://' + P.settings.domain() + ':' + P.settings.uport() + '/',
                             //dropZone: this.$dom.find('.addfiles_area'),
-                            maxFileSize: 52428800, //50Mb
+                            autoUpload: true,
+                            maxFileSize: 26214400, //25Mb
                             maxNumberOfFiles: 10,
+                            acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
+                            previewSourceFileTypes: /(\.|\/)(jpe?g|png)$/i,
                             previewSourceMaxFileSize: 26214400, //25MB The maximum file size of images that are to be displayed as preview:
                             previewMaxWidth: 210, // The maximum width of the preview images:
                             previewMaxHeight: 140, // The maximum height of the preview images:
-                            acceptFileTypes: /(\.|\/)(jpe?g|png)$/i,
-                            prependFiles: true,
+                            prependFiles: false,
+                            singleFileUploads: true,
+                            limitConcurrentUploads: 3,
+                            sequentialUploads: false,
                             process: [
                                 {
                                     action: 'load',
                                     fileTypes: /^image\/(jpeg|png)$/,
-                                    maxFileSize: 52428800 // 50MB
+                                    maxFileSize: 26214400 // 25MB
                                 }
                             ],
                             change: this.fileAdd.bind(this),

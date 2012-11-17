@@ -17,18 +17,18 @@
 				#or.centering_content or
 				span Drop them here
 				#dropzone
-		.row-fluid.fileupload-buttonbar#commonButtons(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
+		//-.row-fluid.fileupload-buttonbar#commonButtons(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 			button.btn-strict.btn-strict-success.start(type="submit", data-bind="click: send, attr: {disabled: fileList().length < 1}")
 				i.icon-upload.icon-white
 				span Start upload all
 			button.btn-strict.btn-strict-warning.cancel(type="reset", data-bind="attr: {disabled: fileList().length < 1}")
 				i.icon-ban-circle.icon-white
 				span Cancel all
-			//-button.btn-strict.btn-strict-danger.delete(type="reset", data-bind="css: {disabled: false}")
+			button.btn-strict.btn-strict-danger.delete(type="reset", data-bind="css: {disabled: false}")
 				i.icon-trash.icon-white
 				span Delete all
 
-			//The global progress information
+		//The global progress information
 		.row-fluid.fileupload-progress.fade
 				//The global progress bar
 				.progress.progress-success.progress-striped.active(role="progressbar", aria-valuemin="0", aria-valuemax="100")
