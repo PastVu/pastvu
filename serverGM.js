@@ -15,34 +15,13 @@
 
 (function (port) {
     'use strict';
-
-    function resizeRecursive(files, prefix, excludeFolders, filter) {
-        var result = [];
-
-        Object.keys(files).forEach(function (element, index, array) {
-            if (Utils.isObjectType('object', files[element])) {
-                if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
-                    Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
-                }
-            } else {
-                result.push(prefix + element);
-            }
-        });
-
-        if (filter) {
-            result = result.filter(filter);
-        }
-
-        return result;
-    }
-
     var path = require('path'),
         fs = require('fs'),
-        _existsSync = fs.existsSync || path.existsSync,  // Since Node 0.8, .existsSync() moved from path to fs
-        async = require('async'),
+    // Since Node 0.8, .existsSync() moved from path to fs:
+        _existsSync = fs.existsSync || path.existsSync,
         formidable = require('formidable'),
         nodeStatic = require('node-static'),
-        imageMagick = require('imagemagick'),
+        gm = require('gm'),
         Utils = require('./commons/Utils.js'),
         options = {
             tmpDir: __dirname + '/publicContent/incoming',
@@ -57,31 +36,23 @@
             // to prevent executing any scripts in the context of the service domain:
             safeFileTypes: /\.(gif|jpe?g|png)$/i,
             imageTypes: /\.(gif|jpe?g|png)$/i,
-            imageSequence: [
-                {
-                    version: 'standard',
-                    width: 1050,
-                    height: 700,
-                    filter: 'Sinc',
-                    postfix: '>'
-                },
-                {
-                    version: 'thumb',
+            imageVersions: {
+
+            'standard': {
+                width: 1050,
+                height: 700
+            },
+                'thumb': {
                     width: 246,
                     height: 164,
-                    filter: 'Sinc',
-                    gravity: 'center',
-                    postfix: '^'
+                    gravity: true
                 },
-                {
-                    version: 'micro',
+                'micro': {
                     width: 60,
                     height: 40,
-                    filter: 'Sinc',
-                    gravity: 'center',
-                    postfix: '^'
+                    gravity: true
                 }
-            ],
+            },
             accessControl: {
                 allowOrigin: '*',
                 allowMethods: 'OPTIONS, HEAD, GET, POST, PUT, DELETE'
@@ -216,9 +187,12 @@
                     '//' + req.headers.host + options.uploadUrl;
             this.url = baseUrl + 'origin/' + encodeURIComponent(this.name);
             this.delete_url = baseUrl + encodeURIComponent(this.name);
-            options.imageSequence.forEach(function (item, index) {
-                if (_existsSync(options.uploadDir + '/' + item.version + '/' + that.name)) {
-                    that[item.version + '_url'] = baseUrl + item.version + '/' + encodeURIComponent(that.name);
+            Object.keys(options.imageVersions).forEach(function (version) {
+                if (_existsSync(
+                    options.uploadDir + '/' + version + '/' + that.name
+                )) {
+                    that[version + '_url'] = baseUrl + version + '/' +
+                        encodeURIComponent(that.name);
                 }
             });
         }
@@ -281,52 +255,63 @@
                 fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.name);
                 if (options.imageTypes.test(fileInfo.name)) {
                     counter += 1;
-                    imageMagick.identify(options.uploadDir + '/origin/' + fileInfo.name, function (err, data) {
+                    var gmFile = gm(options.uploadDir + '/origin/' + fileInfo.name);
+                    gmFile.identify(function (err, data) {
                         if (err) {
                             console.error(err);
                         } else {
                             if (data.format) {
                                 fileInfo.format = data.format;
                             }
-                            if (data.width) {
-                                fileInfo.w = data.width;
+                            if (data.size.width) {
+                                fileInfo.w = data.size.width;
                             }
-                            if (data.height) {
-                                fileInfo.h = data.height;
+                            if (data.size.height) {
+                                fileInfo.h = data.size.height;
                             }
                         }
-                        finish();
+                        //finish();
                     });
+                    Object.keys(options.imageVersions).forEach(function (version) {
+                        counter += 1;
+                        var opts = options.imageVersions[version];
 
-                    counter += 1;
-                    var sequence = [];
-                    options.imageSequence.forEach(function (item, index, array) {
-                        var o = {
-                            srcPath: options.uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + fileInfo.name,
-                            dstPath: options.uploadDir + '/' + item.version + '/' + fileInfo.name,
-                            strip: true,
-                            width: item.width,
-                            height: item.height + (item.postfix || '') // Only Shrink Larger Images
-                        };
-                        if (item.filter) {
-                            o.filter = item.filter;
-                        }
-                        if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
+                        // Превью генерируем путем вырезания аспекта из центра
+                        if (opts.gravity) {
                             // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                            o.customArgs = [
-                                "-gravity", item.gravity,
-                                "-extent", item.width + "x" + item.height
-                            ];
+                            gmFile
+                                .filter('Sinc')
+                                .gravity('Center')
+                                .geometry(opts.width, opts.height, '>')
+                                .noProfile()//no exif
+                                .write(options.uploadDir + '/' + version + '/' + fileInfo.name, finish);
+                            /* imageMagick.resize({
+                             srcPath: options.uploadDir + '/origin/' + fileInfo.name,
+                             dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
+                             strip: true,
+                             filter: 'Sinc',
+                             width: opts.width,
+                             height: opts.height + "^", // Fill Area Flag
+                             customArgs: [
+                             "-gravity", "center",
+                             "-extent", opts.width + "x" + opts.height
+                             ]
+                             }, finish);*/
+                        } else {
+                            gmFile
+                                .filter('Sinc')
+                                .geometry(opts.width, opts.height, '>')
+                                .write(options.uploadDir + '/' + version + '/' + fileInfo.name, finish);
+                            /*imageMagick.resize({
+                             srcPath: options.uploadDir + '/origin/' + fileInfo.name,
+                             dstPath: options.uploadDir + '/' + version + '/' + fileInfo.name,
+                             strip: false,
+                             filter: 'Sinc',
+                             width: opts.width,
+                             height: opts.height + ">" // Only Shrink Larger Images
+                             }, finish);*/
                         }
-
-                        sequence.push(function (callback) {
-                            imageMagick.resize(o, function () {
-                                callback(null);
-                            });
-                        });
-
                     });
-                    async.waterfall(sequence, function () {finish();});
                 }
             }).on('aborted',function () {
                 tmpFiles.forEach(function (file) {
@@ -346,8 +331,8 @@
         if (handler.req.url.slice(0, options.uploadUrl.length) === options.uploadUrl) {
             fileName = path.basename(decodeURIComponent(handler.req.url));
             fs.unlink(options.uploadDir + '/origin/' + fileName, function (ex) {
-                options.imageSequence.forEach(function (item, index) {
-                    fs.unlink(options.uploadDir + '/' + item.version + '/' + fileName);
+                Object.keys(options.imageVersions).forEach(function (version) {
+                    fs.unlink(options.uploadDir + '/' + version + '/' + fileName);
                 });
                 handler.callback(!ex);
             });
