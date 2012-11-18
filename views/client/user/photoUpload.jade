@@ -82,6 +82,7 @@
 						<div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
 							<div class="bar" style="width:0%;"></div>
 						</div>
+						Please wait. Loading and converting photo...
 					{% } %}
 				</td>
 				{% if (!file.error && o.files.valid && !i) { %}
@@ -122,6 +123,8 @@
 					</td>
 					<td class="name">
 						<a href="{%=file.url%}" title="{%=file.name%}" rel="{%=file.thumb_url&&'gallery'%}" download="{%=file.name%}">{%=file.name%}</a>
+						<br>
+						Successfully loaded
 					</td>
 					<td class="size"><span>{%=o.formatFileSize(file.size)%}</span></td>
 				{% } %}
