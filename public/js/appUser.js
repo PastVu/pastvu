@@ -122,5 +122,6 @@ require([
 
     window.appRouter = globalVM.router;
     window.glob = globalVM;
+    window.ss = socket;
     console.timeStamp('=== app load (' + appHash + ') ===');
 });
