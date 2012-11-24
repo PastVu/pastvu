@@ -1,4 +1,5 @@
 var auth = require('./auth.js'),
+    async = require('async'),
     imageMagick = require('imagemagick'),
     Settings,
     User,
@@ -18,7 +19,10 @@ module.exports.loadController = function (app, db, io) {
     User = db.model('User');
 
     var logger = log4js.getLogger("PhotoConverter.js"),
-        conveyerStack = [],
+        uploadDir = __dirname + '/publicContent/photos',
+        maxWorking = 3,
+        working = 0,
+        conveyerTimeout = null,
         imageSequence = [
             {
                 version: 'standard',
@@ -45,13 +49,66 @@ module.exports.loadController = function (app, db, io) {
             }
         ];
 
-    function conveyerStep() {
-        console.log(9999);
-        PhotoConveyer.find().sort('-added').limit(3).exec(function (err, files) {
-            console.dir(arguments);
-        });
+    function conveyerControl() {
+        console.log('conveyerControl');
+        clearTimeout(conveyerTimeout);
+        if (maxWorking - working < 1) {
+            return;
+        }
+        PhotoConveyer.find().sort('-added').limit(maxWorking - working).exec(function (err, files) {
+            if (err || files.length === 0) {
+                conveyerTimeout = setTimeout(conveyerControl, 2000);
+                return;
+            }
 
+            files.forEach(function (item, index) {
+                working += 1;
+                conveyerStep(item.file, function () {
+                    working -= 1;
+                    PhotoConveyer.remove({file: item.file});
+                    conveyerControl();
+                });
+            });
+        });
     }
+
+    function conveyerStep(file, cb) {
+        console.log('ConveyerStep');
+
+        var sequence = [];
+        imageSequence.forEach(function (item, index, array) {
+            var o = {
+                srcPath: uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file,
+                dstPath: uploadDir + '/' + item.version + '/' + file,
+                strip: true,
+                width: item.width,
+                height: item.height + (item.postfix || '') // Only Shrink Larger Images
+            };
+            if (item.filter) {
+                o.filter = item.filter;
+            }
+            if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
+                // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
+                o.customArgs = [
+                    "-gravity", item.gravity,
+                    "-extent", item.width + "x" + item.height
+                ];
+            }
+
+            sequence.push(function (callback) {
+                imageMagick.resize(o, function () {
+                    callback(null);
+                });
+            });
+
+        });
+        async.waterfall(sequence, function () {
+            console.log(file, 'converted');
+            cb();
+        });
+    }
+
+    conveyerControl(); // Запускаем комвейер после рестарта сервера
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
@@ -99,9 +156,8 @@ module.exports.loadController = function (app, db, io) {
 
                 function () {
                     console.log('wow');
-                    conveyerStep();
+                    conveyerControl();
                     result({message: toConvert.length + ' photos added to convert conveyer'});
-
                 }
 
             );

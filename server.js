@@ -16,26 +16,6 @@
 (function (port) {
     'use strict';
 
-    function resizeRecursive(files, prefix, excludeFolders, filter) {
-        var result = [];
-
-        Object.keys(files).forEach(function (element, index, array) {
-            if (Utils.isObjectType('object', files[element])) {
-                if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
-                    Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
-                }
-            } else {
-                result.push(prefix + element);
-            }
-        });
-
-        if (filter) {
-            result = result.filter(filter);
-        }
-
-        return result;
-    }
-
     var path = require('path'),
         fs = require('fs'),
         _existsSync = fs.existsSync || path.existsSync,  // Since Node 0.8, .existsSync() moved from path to fs
