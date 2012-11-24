@@ -47,7 +47,7 @@ module.exports.loadController = function (app, db, io) {
 
     function conveyerStep() {
         console.log(9999);
-        PhotoConveyer.find().exec(function (err, files) {
+        PhotoConveyer.find().sort('-added').limit(3).exec(function (err, files) {
             console.dir(arguments);
         });
 
@@ -58,42 +58,53 @@ module.exports.loadController = function (app, db, io) {
 
         socket.on('convertPhoto', function (data) {
             var result = function (data) {
-                socket.emit('convertPhotoResult', data);
-            };
+                    socket.emit('convertPhotoResult', data);
+                },
+                toConvert;
             if (!hs.session.user) {
                 result({message: 'Not authorized', error: true});
             }
             if (!Utils.isObjectType('array', data) || data.length === 0) {
                 result({message: 'Bad params', error: true});
             }
-
-            Photo.find({user: hs.session.user._id, file: {$in: data}}, function (err, photos) {
-                if (err) {
-                    result({message: err && err.message, error: true});
-                    return;
-                }
-                if (!photos || photos.length === 0) {
-                    result({message: 'No such photos in base', error: true});
-                    return;
-                }
-                step(
-                    function () {
-                        photos.forEach(function (item, index) {
-                            conveyerStack.push(item.file);
-                            new PhotoConveyer({
-                                file: item.file+""
-                            }).save(this.parallel());
-                        });
-                        //PhotoConveyer.update({_id: 'photo'}, {$inc: { next: 1 }}, {upsert: true}, function (err) { if (err) { console.log('Counter photo' + err); } });
-                    },
-                    function () {
-                        conveyerStep();
-                        result({message: photos.length + ' photos added to convert conveyer'});
-
+            step(
+                function () {
+                    Photo.find({user: hs.session.user._id, file: {$in: data}}).select('file').exec(this.parallel());
+                    PhotoConveyer.find({file: {$in: data}}).select('file').exec(this.parallel());
+                },
+                function (err, photos, alreadyInConvert) {
+                    console.dir(arguments);
+                    if (err) {
+                        result({message: err && err.message, error: true});
+                        return;
                     }
-                );
-            });
+                    if (!photos || photos.length === 0) {
+                        result({message: 'No such photos in base', error: true});
+                        return;
+                    }
+                    var a = {};
+                    alreadyInConvert.forEach(function (item, index) {
+                        a[item.file] = 1;
+                    });
+                    toConvert = [];
+                    photos.forEach(function (item, index) {
+                        if (!a.hasOwnProperty(item.file)) {
+                            toConvert.push({file: item.file, added: Date.now()});
+                        }
+                    });
+                    console.log('~~~~~');
+                    console.dir(toConvert);
+                    PhotoConveyer.collection.insert(toConvert, this);
+                },
 
+                function () {
+                    console.log('wow');
+                    conveyerStep();
+                    result({message: toConvert.length + ' photos added to convert conveyer'});
+
+                }
+
+            );
         });
     });
 
