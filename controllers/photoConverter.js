@@ -1,4 +1,5 @@
-var auth = require('./auth.js'),
+var path = require('path'),
+    auth = require('./auth.js'),
     async = require('async'),
     imageMagick = require('imagemagick'),
     Settings,
@@ -19,10 +20,10 @@ module.exports.loadController = function (app, db, io) {
     User = db.model('User');
 
     var logger = log4js.getLogger("PhotoConverter.js"),
-        uploadDir = __dirname + '/publicContent/photos',
-        maxWorking = 3,
-        working = 0,
-        conveyerTimeout = null,
+        uploadDir = __dirname + '/../publicContent/photos',
+        maxWorking = 3, // Возможно параллельно конвертировать
+        goingToWork = 0, // Происходит выборка для дальнейшей конвертации
+        working = 0, //Сейчас конвертируется
         imageSequence = [
             {
                 version: 'standard',
@@ -49,37 +50,51 @@ module.exports.loadController = function (app, db, io) {
             }
         ];
 
-    function conveyerControl() {
-        console.log('conveyerControl');
-        clearTimeout(conveyerTimeout);
-        if (maxWorking - working < 1) {
+    /**
+     * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
+     * @param andConverting  Флаг, указывающий, что выбрать надо даже файлы у которых уже проставлен флаг конвертирования (например, если сервер был остановлен во время конвертирования и после запуска их надо опять сконвертировать)
+     */
+    function conveyerControl(andConverting) {
+        var toWork = maxWorking - goingToWork - working,
+            query;
+        if (toWork < 1) {
             return;
         }
-        PhotoConveyer.find().sort('-added').limit(maxWorking - working).exec(function (err, files) {
+        query = [false];
+        if (andConverting) {
+            query.push(true);
+        }
+        goingToWork += toWork;
+        PhotoConveyer.find({converting: {$in: query}}).sort('added').limit(toWork).exec(function (err, files) {
+            goingToWork -= toWork - files.length;
             if (err || files.length === 0) {
-                conveyerTimeout = setTimeout(conveyerControl, 2000);
                 return;
             }
 
             files.forEach(function (item, index) {
+                goingToWork -= 1;
                 working += 1;
-                conveyerStep(item.file, function () {
-                    working -= 1;
-                    PhotoConveyer.remove({file: item.file});
-                    conveyerControl();
+                item.converting = true; //Ставим флаг, что конвертация файла началась
+                item.save(function (err) {
+                    conveyerStep(item.file, function () {
+                        item.remove(function () {
+                            working -= 1;
+                            conveyerControl();
+                        });
+
+                    });
                 });
             });
         });
     }
 
     function conveyerStep(file, cb) {
-        console.log('ConveyerStep');
-
-        var sequence = [];
+        var sequence = [],
+            start = Date.now();
         imageSequence.forEach(function (item, index, array) {
             var o = {
-                srcPath: uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file,
-                dstPath: uploadDir + '/' + item.version + '/' + file,
+                srcPath: path.normalize(uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file),
+                dstPath: path.normalize(uploadDir + '/' + item.version + '/' + file),
                 strip: true,
                 width: item.width,
                 height: item.height + (item.postfix || '') // Only Shrink Larger Images
@@ -103,12 +118,12 @@ module.exports.loadController = function (app, db, io) {
 
         });
         async.waterfall(sequence, function () {
-            console.log(file, 'converted');
+            logger.info('%s converted in %dms', file, (Date.now() - start));
             cb();
         });
     }
 
-    conveyerControl(); // Запускаем комвейер после рестарта сервера
+    setTimeout(function () { conveyerControl(true); }, 2000); // Запускаем комвейер после рестарта сервера
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
@@ -129,8 +144,7 @@ module.exports.loadController = function (app, db, io) {
                     Photo.find({user: hs.session.user._id, file: {$in: data}}).select('file').exec(this.parallel());
                     PhotoConveyer.find({file: {$in: data}}).select('file').exec(this.parallel());
                 },
-                function (err, photos, alreadyInConvert) {
-                    console.dir(arguments);
+                function (err, photos, alreadyInConveyer) {
                     if (err) {
                         result({message: err && err.message, error: true});
                         return;
@@ -140,24 +154,21 @@ module.exports.loadController = function (app, db, io) {
                         return;
                     }
                     var a = {};
-                    alreadyInConvert.forEach(function (item, index) {
+                    alreadyInConveyer.forEach(function (item, index) {
                         a[item.file] = 1;
                     });
                     toConvert = [];
                     photos.forEach(function (item, index) {
                         if (!a.hasOwnProperty(item.file)) {
-                            toConvert.push({file: item.file, added: Date.now()});
+                            toConvert.push({file: item.file, added: Date.now(), converting: false});
                         }
                     });
-                    console.log('~~~~~');
-                    console.dir(toConvert);
                     PhotoConveyer.collection.insert(toConvert, this);
                 },
 
                 function () {
-                    console.log('wow');
-                    conveyerControl();
                     result({message: toConvert.length + ' photos added to convert conveyer'});
+                    conveyerControl();
                 }
 
             );

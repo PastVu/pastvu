@@ -274,6 +274,9 @@
                             if (data.height) {
                                 fileInfo.h = data.height;
                             }
+                            if (data.properties && data.properties.signature) {
+                                fileInfo.signature = data.properties.signature;
+                            }
                         }
                         finish();
                     });
