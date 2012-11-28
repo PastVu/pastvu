@@ -281,7 +281,7 @@
                         finish();
                     });
 
-                    counter += 1;
+                    /*counter += 1;
                     var sequence = [];
                     options.imageSequence.forEach(function (item, index, array) {
                         var o = {
@@ -309,7 +309,7 @@
                         });
 
                     });
-                    async.waterfall(sequence, function () {finish();});
+                    async.waterfall(sequence, function () {finish();});*/
                 }
             }).on('aborted',function () {
                 tmpFiles.forEach(function (file) {

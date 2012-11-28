@@ -159,23 +159,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
              });*/
         },
         onUpload: function (data) {
-            if (data) {
+            var toSaveArr = [];
+            if (data && Utils.isObjectType('array', data)) {
                 data.forEach(function (item, index, array) {
                     if (item.name) {
-                        var toSave = _.pick(item, 'format', 'w', 'h', 'size');
+                        var toSave = _.pick(item, 'format', 'signature', 'w', 'h', 'size');
                         toSave.file = item.name;
-                        toSave.login = this.u.login();
+                        toSaveArr.push(toSave);
                         this.fileUploaded[item.name] = toSave;
-                        socket.emit('createPhoto', toSave);
-
                         toSave = null;
                     }
                 }.bind(this));
+                socket.emit('createPhoto', toSaveArr);
             }
         },
         onDestroy: function (name) {
             if (name && this.fileUploaded.hasOwnProperty(name)) {
-                socket.emit('removePhoto', {login: this.u.login(), file: name});
+                socket.emit('removePhoto', {file: name});
                 delete this.fileUploaded[name];
             }
         }

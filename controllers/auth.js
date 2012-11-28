@@ -69,6 +69,8 @@ function passchange(session, data, cb) {
 
     if (!session.user || session.user.login !== data.login) {
         error += 'You are not authorized for this action.';
+        cb({message: 'You are not authorized for this action.', error: true});
+        return;
     } else {
         if (!data.pass || !data.passNew || !data.passNew2) error += 'Fill in all password fields. ';
         if (data.passNew !== data.passNew2) error += 'New passwords do not match each other.';
@@ -337,7 +339,7 @@ module.exports.loadController = function (a, db, io) {
             });
         });
 
-        socket.on('passChangeResult', function (data) {
+        socket.on('passChangeRequest', function (data) {
             passchange(hs.session, data, function (data) {
                 socket.emit('passChangeResult', data);
             });
