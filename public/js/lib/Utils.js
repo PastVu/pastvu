@@ -287,7 +287,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             if (bits >= 1000) {
                 return (bits / 1000).toFixed(2) + ' kbit/s';
             }
-            return bits + ' bit/s';
+            return bits.toFixed(2) + ' bit/s';
         },
 
         secondsToTime: function (secs) {

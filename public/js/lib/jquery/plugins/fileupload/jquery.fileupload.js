@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload Plugin 5.19.3
+ * jQuery File Upload Plugin 5.19.5
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -10,7 +10,7 @@
  */
 
 /*jslint nomen: true, unparam: true, regexp: true */
-/*global define, window, document, Blob, FormData, location */
+/*global define, window, document, File, Blob, FormData, location */
 
 (function (factory) {
     'use strict';
@@ -209,10 +209,10 @@
             if (typeof options.formData === 'function') {
                 return options.formData(options.form);
             }
-			if ($.isArray(options.formData)) {
+            if ($.isArray(options.formData)) {
                 return options.formData;
             }
-			if (options.formData) {
+            if (options.formData) {
                 formData = [];
                 $.each(options.formData, function (name, value) {
                     formData.push({name: name, value: value});
@@ -345,10 +345,12 @@
                         formData.append(paramName, options.blob, file.name);
                     } else {
                         $.each(options.files, function (index, file) {
-                            // File objects are also Blob instances.
+                            // Files are also Blob instances, but some browsers
+                            // (Firefox 3.6) support the File API but not Blobs.
                             // This check allows the tests to run with
                             // dummy objects:
-                            if (file instanceof Blob) {
+                            if ((window.Blob && file instanceof Blob) ||
+                                    (window.File && file instanceof File)) {
                                 formData.append(
                                     options.paramName[index] || paramName,
                                     file,
@@ -758,7 +760,8 @@
                         that._onSend(e, this);
                     return this.jqXHR;
                 };
-                return (result = that._trigger('add', e, newData));
+                result = that._trigger('add', e, newData);
+                return result;
             });
             return result;
         },
@@ -949,10 +952,12 @@
         },
 
         _onDrop: function (e) {
-            e.preventDefault();
             var that = this,
                 dataTransfer = e.dataTransfer = e.originalEvent.dataTransfer,
                 data = {};
+            if (dataTransfer && dataTransfer.files && dataTransfer.files.length) {
+                e.preventDefault();
+            }
             this._getDroppedFiles(dataTransfer).always(function (files) {
                 data.files = files;
                 if (that._trigger('drop', e, data) !== false) {
@@ -966,10 +971,10 @@
             if (this._trigger('dragover', e) === false) {
                 return false;
             }
-            if (dataTransfer) {
+            if (dataTransfer && dataTransfer.files && dataTransfer.files.length) {
                 dataTransfer.dropEffect = 'copy';
+                e.preventDefault();
             }
-            e.preventDefault();
         },
 
         _initEventHandlers: function () {

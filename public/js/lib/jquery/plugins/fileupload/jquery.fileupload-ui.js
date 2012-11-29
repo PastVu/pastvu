@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload User Interface Plugin 6.11
+ * jQuery File Upload User Interface Plugin 6.11.1
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -369,7 +369,7 @@
             if (bits >= 1000) {
                 return (bits / 1000).toFixed(2) + ' kbit/s';
             }
-            return bits + ' bit/s';
+            return bits.toFixed(2) + ' bit/s';
         },
 
         _formatTime: function (seconds) {
