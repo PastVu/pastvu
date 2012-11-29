@@ -1,5 +1,5 @@
 /*!
- * Lo-Dash 0.9.2 <http://lodash.com>
+ * Lo-Dash 0.10.0 <http://lodash.com>
  * (c) 2012 John-David Dalton <http://allyoucanleet.com/>
  * Based on Underscore.js 1.4.2 <http://underscorejs.org>
  * (c) 2009-2012 Jeremy Ashkenas, DocumentCloud Inc.
@@ -536,11 +536,14 @@
   function createBound(func, thisArg, partialArgs) {
     var isFunc = isFunction(func),
         isPartial = !partialArgs,
-        methodName = func;
+        key = thisArg;
 
     // juggle arguments
     if (isPartial) {
       partialArgs = thisArg;
+    }
+    if (!isFunc) {
+      thisArg = func;
     }
 
     function bound() {
@@ -550,7 +553,7 @@
           thisBinding = isPartial ? this : thisArg;
 
       if (!isFunc) {
-        func = thisArg[methodName];
+        func = thisArg[key];
       }
       if (partialArgs.length) {
         args = args.length
@@ -2429,7 +2432,7 @@
    *  else `false`.
    * @example
    *
-   * _.some([null, 0, 'yes', false]);
+   * _.some([null, 0, 'yes', false], Boolean);
    * // => true
    */
   function some(collection, callback, thisArg) {
@@ -3245,6 +3248,44 @@
   }
 
   /**
+   * Creates a function that, when called, invokes the method at `object[key]`
+   * and prepends any additional `bindKey` arguments to those passed to the bound
+   * function. This method differs from `_.bind` by allowing bound functions to
+   * reference methods that will be redefined or don't yet exist.
+   * See http://michaux.ca/articles/lazy-function-definition-pattern.
+   *
+   * @static
+   * @memberOf _
+   * @category Functions
+   * @param {Object} object The object the method belongs to.
+   * @param {String} key The key of the method.
+   * @param {Mixed} [arg1, arg2, ...] Arguments to be partially applied.
+   * @returns {Function} Returns the new bound function.
+   * @example
+   *
+   * var object = {
+   *   'name': 'moe',
+   *   'greet': function(greeting) {
+   *     return greeting + ' ' + this.name;
+   *   }
+   * };
+   *
+   * var func = _.bindKey(object, 'greet', 'hi');
+   * func();
+   * // => 'hi moe'
+   *
+   * object.greet = function(greeting) {
+   *   return greeting + ', ' + this.name + '!';
+   * };
+   *
+   * func();
+   * // => 'hi, moe!'
+   */
+  function bindKey(object, key) {
+    return createBound(object, key, slice.call(arguments, 2));
+  }
+
+  /**
    * Creates a function that is the composition of the passed functions,
    * where each function consumes the return value of the function that follows.
    * In math terms, composing the functions `f()`, `g()`, and `h()` produces `f(g(h()))`.
@@ -3363,43 +3404,6 @@
   function defer(func) {
     var args = slice.call(arguments, 1);
     return setTimeout(function() { func.apply(undefined, args); }, 1);
-  }
-
-  /**
-   * Creates a function that, when called, invokes `object[methodName]` and
-   * prepends any additional `lateBind` arguments to those passed to the bound
-   * function. This method differs from `_.bind` by allowing bound functions to
-   * reference methods that will be redefined or don't yet exist.
-   *
-   * @static
-   * @memberOf _
-   * @category Functions
-   * @param {Object} object The object the method belongs to.
-   * @param {String} methodName The method name.
-   * @param {Mixed} [arg1, arg2, ...] Arguments to be partially applied.
-   * @returns {Function} Returns the new bound function.
-   * @example
-   *
-   * var object = {
-   *   'name': 'moe',
-   *   'greet': function(greeting) {
-   *     return greeting + ' ' + this.name;
-   *   }
-   * };
-   *
-   * var func = _.lateBind(object, 'greet', 'hi');
-   * func();
-   * // => 'hi moe'
-   *
-   * object.greet = function(greeting) {
-   *   return greeting + ', ' + this.name + '!';
-   * };
-   *
-   * func();
-   * // => 'hi, moe!'
-   */
-  function lateBind(object, methodName) {
-    return createBound(methodName, object, slice.call(arguments, 2));
   }
 
   /**
@@ -4076,13 +4080,14 @@
    * @memberOf _
    * @type String
    */
-  lodash.VERSION = '0.9.2';
+  lodash.VERSION = '0.10.0';
 
   // assign static methods
   lodash.assign = assign;
   lodash.after = after;
   lodash.bind = bind;
   lodash.bindAll = bindAll;
+  lodash.bindKey = bindKey;
   lodash.chain = chain;
   lodash.clone = clone;
   lodash.compact = compact;
@@ -4132,7 +4137,6 @@
   lodash.keys = keys;
   lodash.last = last;
   lodash.lastIndexOf = lastIndexOf;
-  lodash.lateBind = lateBind;
   lodash.map = map;
   lodash.max = max;
   lodash.memoize = memoize;

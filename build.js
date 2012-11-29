@@ -36,6 +36,7 @@ var fs = require('fs'),
             beautify: false,
             no_mangle: false
         },
+        skipDirOptimize: false, //Оптимизировать только модули (modules array), не трогая остальные js
         optimizeCss: "none", //Не трогаем css
         preserveLicenseComments: false, //Удаляем лицензионные комментарии
         removeCombined: false, //Не удаляем файлы, которые заинлайнились в модуль
