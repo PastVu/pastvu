@@ -55,14 +55,17 @@
 			background-color: rgba(0, 0, 0, 0.1);
 			.transition(all .1s linear);
 		}
-
-		i {
+		.info {
 			display: none;
 			position: absolute;
-			bottom: 32px;
-			right: 6px;
-			border-radius: 8px;
-			.box-shadow(~'0 0 0 1px #fff, 0 0 3px 1px #fff');
+			line-height: 14px;
+
+			&.fresh, &.noActive {
+				bottom: 32px;
+				right: 6px;
+				border-radius: 50em;
+				.box-shadow(~'0 0 0 1px #fff, 0 0 3px 1px #fff');
+			}
 		}
 
 		.photoTool {
@@ -103,7 +106,7 @@
 				background: -ms-linear-gradient(left, rgba(40,89,145,0.3) 0%,rgba(173,102,102,0.8) 12%,rgb(233, 0, 0) 50%,rgba(173,102,102,0.8) 88%,rgba(40,89,145,0.3) 100%); /* IE10+ */
 				background: linear-gradient(to right, rgba(40,89,145,0.3) 0%,rgba(173,102,102,0.8) 12%,rgb(233, 0, 0) 50%,rgba(173,102,102,0.8) 88%,rgba(40,89,145,0.3) 100%); /* W3C */
 			}
-			i.icon-fire {
+			.info.fresh {
 				display: block;
 				border: 1px solid rgba(211, 20, 20, 0.7);
 				background-color: rgba(211, 20, 20, 0.7);
@@ -119,10 +122,40 @@
 				background: -ms-linear-gradient(left, rgba(40,89,145,0.3) 0%,rgba(214,187,137,0.8) 12%,rgb(255, 202, 0) 50%,rgba(214,187,137,0.8) 88%,rgba(40,89,145,0.3) 100%); /* IE10+ */
 				background: linear-gradient(to right, rgba(40,89,145,0.3) 0%,rgba(214,187,137,0.8) 12%,rgb(255, 202, 0) 50%,rgba(214,187,137,0.8) 88%,rgba(40,89,145,0.3) 100%); /* W3C */
 			}
-			i.icon-exclamation-sign {
+			.info.noActive {
 				display: block;
 				border: 1px solid rgb(255, 155, 0);
 				background-color: rgb(255, 155, 0);
+			}
+		}
+		&.photoConvqueue {
+			.info.convqueue {
+				display: block;
+				top: 30%;
+				width: 100%;
+				text-align: center;
+				line-height: 16px;
+			}
+		}
+		&.photoConv {
+			.info.conv {
+				display: block;
+				top: 30%;
+				width: 100%;
+				text-align: center;
+				line-height: 16px;
+			}
+			.info.convqueue {
+				display: none;
+			}
+		}
+		&.photoError {
+			.info.error {
+				display: block;
+				top: 30%;
+				width: 100%;
+				text-align: center;
+				line-height: 16px;
 			}
 		}
 
@@ -299,6 +332,8 @@
 @media (max-width: 1550px) {
 	.user_photo {
 		.photoThumb {
+			font-size: 14px;
+
 			&.addPhoto {
 				height: @thumbDimensionSmall;
 				width: @thumbDimensionSmall * 1.5;
@@ -317,7 +352,6 @@
 			}
 			.photoTool {
 				padding: 0 0 0 3px;
-				font-size: 14px;
 			}
 		}
 	}

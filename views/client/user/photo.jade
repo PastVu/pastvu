@@ -5,9 +5,27 @@
 			.desc Add photos..
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")
-			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad}")
-			i.icon-fire.icon-white
-			i.icon-exclamation-sign.icon-white
+			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}")
+			.info.error
+				i.icon-ban-circle.icon-white
+				br
+				| preview loading error
+			.info.convqueue
+				i.icon-road.icon-white
+				br
+				| preview will be created soon
+				br
+				| please, refresh later
+			.info.conv
+				i.icon-certificate.icon-white
+				br
+				| preview is creating now
+				br
+				| please, refresh later
+			.info.fresh
+				i.icon-fire.icon-white
+			.info.noActive
+				i.icon-exclamation-sign.icon-white
 			a(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
 		// /ko

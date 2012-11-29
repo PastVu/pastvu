@@ -75,9 +75,11 @@ module.exports.convertPhoto = function (data, cb) {
             data.forEach(function (item, index) {
                 if (!exclude.hasOwnProperty(item)) {
                     toConvert.push({file: item, added: Date.now(), converting: false});
+
                 }
             });
-            PhotoConveyer.collection.insert(toConvert, this);
+            PhotoConveyer.collection.insert(toConvert, this.parallel());
+            Photo.update({file: {$in: toConvert}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
         },
         function (err) {
             if (err) {
@@ -118,16 +120,26 @@ function conveyerControl(andConverting) {
         files.forEach(function (item, index) {
             goingToWork -= 1;
             working += 1;
-            item.converting = true; //Ставим флаг, что конвертация файла началась
-            item.save(function (err) {
-                conveyerStep(item.file, function () {
-                    item.remove(function () {
-                        working -= 1;
-                        conveyerControl();
-                    });
+            step(
+                function () {
+                    item.converting = true; //Ставим флаг, что конвертация файла началась
+                    item.save(this.parallel());
+                    Photo.findOneAndUpdate({file: item.file}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
+                },
+                function (err, photoConv, photo) {
+                    conveyerStep(item.file, function () {
+                        photo.conv = undefined;
+                        photo.convqueue = undefined;
+                        photo.save();
+                        item.remove(function () {
+                            working -= 1;
+                            conveyerControl();
+                        });
 
-                });
-            });
+                    });
+                }
+            );
+
         });
     });
 }

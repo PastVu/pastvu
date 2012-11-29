@@ -67,6 +67,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             socket.once('takeUserPhoto', function (data) {
                 data.forEach(function (item, index, array) {
                     item.pfile = '/_photo/thumb/' + item.file;
+                    item.conv = item.conv || false;
+                    item.convqueue = item.convqueue || false;
                 });
                 if (Utils.isObjectType('function', cb)) {
                     cb.call(ctx, data);
@@ -93,6 +95,19 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         onThumbLoad: function (data, event) {
             $(event.target).parent().animate({opacity: 1});
             data = event = null;
+        },
+        onThumbError: function (data, event) {
+            var $parent = $(event.target).parent();
+            event.target.style.visibility = 'hidden';
+            if (data.conv) {
+                $parent.addClass('photoConv');
+            } else if (data.convqueue) {
+                $parent.addClass('photoConvqueue');
+            } else {
+                $parent.addClass('photoError');
+            }
+            $parent.animate({opacity: 1});
+            data = event = $parent = null;
         },
         showUpload: function (data, event) {
             this.$dom.find('span.modalCaption').text('Upload photo');
