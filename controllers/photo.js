@@ -4,7 +4,7 @@ var Settings,
     User,
     Photo,
     Counter,
-    PhotoConverter = require('./PhotoConverter.js'),
+    PhotoConverter = require('./photoConverter.js'),
     step = require('step'),
     Utils = require('../commons/Utils.js'),
     log4js = require('log4js');
