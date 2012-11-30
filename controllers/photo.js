@@ -117,6 +117,7 @@ module.exports.loadController = function (app, db, io) {
                     }
                     hs.session.user.pcount = hs.session.user.pcount - 1;
                     hs.session.user.save();
+                    PhotoConverter.removePhoto(data.file, this.parallel());
                     result({message: 'Photo removed'});
                 }
             );

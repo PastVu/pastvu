@@ -91,6 +91,14 @@ module.exports.convertPhoto = function (data, cb) {
     );
 };
 
+module.exports.removePhoto = function (data, cb) {
+    PhotoConveyer.findOneAndRemove({file: data, converting: false}, function (err, doc) {
+        if (cb) {
+            cb();
+        }
+    });
+};
+
 /**
  * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
  * @param andConverting  Флаг, указывающий, что выбрать надо даже файлы у которых уже проставлен флаг конвертирования (например, если сервер был остановлен во время конвертирования и после запуска их надо опять сконвертировать)
@@ -169,7 +177,7 @@ function conveyerStep(file, cb) {
 
     });
     async.waterfall(sequence, function () {
-        logger.info('%s converted in %dms', file, (Date.now() - start));
+        //logger.info('%s converted in %dms', file, (Date.now() - start));
         cb();
     });
 }
