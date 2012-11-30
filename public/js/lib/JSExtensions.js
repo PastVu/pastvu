@@ -591,7 +591,7 @@ if (!window.requestAnimationFrame || !window.cancelAnimationFrame) {
 
         if (!window.cancelAnimationFrame) {
             window.cancelAnimationFrame = function (id) {
-                clearTimeout(id);
+                window.clearTimeout(id);
             };
         }
     }());

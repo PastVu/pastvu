@@ -43,7 +43,7 @@ requirejs.config({
 
         'lodash': 'lib/lodash',
         'underscore': 'lib/lodash',
-        'backbone': 'lib/backbone/backbone-min',
+        'backbone': 'lib/backbone/backbone',
         'backbone.queryparams': 'lib/backbone/queryparams',
 
         'knockout': 'lib/knockout/knockout-2.2.0',

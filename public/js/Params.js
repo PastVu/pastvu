@@ -22,7 +22,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
                 USE_YANDEX_API: true,
                 appVersion: 0,
                 appHash: 0,
-                verBuild: 0,
 
                 locDef: {lat: 40, lng: -17, z: 3},
                 locDefRange: ['gpsip', '_def_'],

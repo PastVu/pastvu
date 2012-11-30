@@ -1,6 +1,6 @@
 /*global requirejs:true, require:true, define:true*/
 /**
- * Params
+ * globalVM
  */
 define(['jquery', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'], function ($, Utils, _, P, i18n, RouteManager, ko) {
     "use strict";
