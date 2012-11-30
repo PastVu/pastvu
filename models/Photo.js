@@ -14,7 +14,7 @@ var PhotoSheme = new mongoose.Schema(
             lng: {type: String},
             direction: {type: String},
 
-            file: {type: String},
+            file: {type: String, index: { unique: true }},
             loaded: {type: Date, default: Date.now, required: true},
             format: {type: String},
             signature: {type: String},

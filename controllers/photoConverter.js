@@ -7,6 +7,7 @@ var path = require('path'),
     User,
     Photo,
     PhotoConveyer,
+    _ = require('lodash'),
     Utils = require('../commons/Utils.js'),
     step = require('step'),
     log4js = require('log4js'),
@@ -53,7 +54,8 @@ module.exports.loadController = function (app, db, io) {
 };
 
 module.exports.convertPhoto = function (data, cb) {
-    var toConvert = [];
+    var toConvert = [],
+        toConvertObj = [];
 
     step(
         function () {
@@ -66,19 +68,12 @@ module.exports.convertPhoto = function (data, cb) {
                 }
                 return;
             }
-            var exclude = {};
 
-            alreadyInConveyer.forEach(function (item, index) {
-                exclude[item.file] = 1;
+            toConvert = _.difference(data, _.pluck(alreadyInConveyer, 'file'));
+            toConvert.forEach(function (item, index) {
+                toConvertObj.push({file: item, added: Date.now(), converting: false});
             });
-
-            data.forEach(function (item, index) {
-                if (!exclude.hasOwnProperty(item)) {
-                    toConvert.push({file: item, added: Date.now(), converting: false});
-
-                }
-            });
-            PhotoConveyer.collection.insert(toConvert, this.parallel());
+            PhotoConveyer.collection.insert(toConvertObj, this.parallel());
             Photo.update({file: {$in: toConvert}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
         },
         function (err) {
@@ -89,7 +84,7 @@ module.exports.convertPhoto = function (data, cb) {
                 return;
             }
             if (cb) {
-                cb({message: toConvert.length + ' photos added to convert conveyer'});
+                cb({message: toConvertObj.length + ' photos added to convert conveyer'});
             }
             conveyerControl();
         }

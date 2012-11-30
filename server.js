@@ -286,36 +286,6 @@
                         }
                         finish();
                     });
-
-                    /*counter += 1;
-                    var sequence = [];
-                    options.imageSequence.forEach(function (item, index, array) {
-                        var o = {
-                            srcPath: options.uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + fileInfo.name,
-                            dstPath: options.uploadDir + '/' + item.version + '/' + fileInfo.name,
-                            strip: true,
-                            width: item.width,
-                            height: item.height + (item.postfix || '') // Only Shrink Larger Images
-                        };
-                        if (item.filter) {
-                            o.filter = item.filter;
-                        }
-                        if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
-                            // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                            o.customArgs = [
-                                "-gravity", item.gravity,
-                                "-extent", item.width + "x" + item.height
-                            ];
-                        }
-
-                        sequence.push(function (callback) {
-                            imageMagick.resize(o, function () {
-                                callback(null);
-                            });
-                        });
-
-                    });
-                    async.waterfall(sequence, function () {finish();});*/
                 }
             }).on('aborted',function () {
                 tmpFiles.forEach(function (file) {
