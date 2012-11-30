@@ -261,21 +261,27 @@
                 fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.name);
                 if (options.imageTypes.test(fileInfo.name)) {
                     counter += 1;
-                    imageMagick.identify(options.uploadDir + '/origin/' + fileInfo.name, function (err, data) {
+                    imageMagick.identify(['-format', '{"width": "%w", "height": "%h", "size": "%b", "format": "%C"}', options.uploadDir + '/origin/' + fileInfo.name], function (err, data) {
+                        // "signature": "%#"
                         if (err) {
                             console.error(err);
                         } else {
+                            data = JSON.parse(data);
+
                             if (data.format) {
                                 fileInfo.format = data.format;
                             }
+                            if (data.size) {
+                                fileInfo.size = parseInt(data.size, 10);
+                            }
                             if (data.width) {
-                                fileInfo.w = data.width;
+                                fileInfo.w = parseInt(data.width, 10);
                             }
                             if (data.height) {
-                                fileInfo.h = data.height;
+                                fileInfo.h = parseInt(data.height, 10);
                             }
-                            if (data.properties && data.properties.signature) {
-                                fileInfo.signature = data.properties.signature;
+                            if (data.signature) {
+                                fileInfo.signature = data.signature;
                             }
                         }
                         finish();
