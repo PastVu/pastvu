@@ -43,9 +43,10 @@
 		table.table.table-striped.table-hover(role="presentation")
 			tbody.files(data-toggle="modal-gallery", data-target="#modal-gallery")
 
-	//-.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
+	.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 		.allprogress.progress.progress-striped.active
 			.bar(data-bind="style: {width: fileProgressAll() + '%'}")
+		.allprogressText(data-bind="text: fileProgressAllText()")
 		table.table.table-striped.table-hover
 			caption Added photos
 			tbody
@@ -54,8 +55,8 @@
 					td
 						div.forcanvas(data-bind="attr: {'data-fileuid': uid}")
 					td(data-bind="text: name")
-					td(data-bind="")
-					td(data-bind="text: humansize")
+						div(data-bind="text: name")
+						div(data-bind="text: humansize")
 					td(data-bind="")
 						button.btn-strict.btn-strict-success(data-bind="attr: {disabled: uploaded()}")
 							i.icon-upload.icon-white

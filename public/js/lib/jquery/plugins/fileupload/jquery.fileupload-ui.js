@@ -9,7 +9,7 @@
  * http://www.opensource.org/licenses/MIT
  */
 
-/*jslint nomen: true, unparam: true, regexp: true */
+/*jslint nomen: true, unparam: true, regexp: true */                                                           maxFileSize
 /*global define, window, URL, webkitURL, FileReader */
 
 (function (factory) {
@@ -109,6 +109,7 @@
             },
             // Callback for the start of each file upload request:
             send: function (e, data) {
+                alert(98);
                 var that = $(this).data('fileupload');
                 if (!data.isValidated) {
                     if (!data.maxNumberOfFilesAdjusted) {
@@ -138,9 +139,11 @@
             },
             // Callback for successful uploads:
             done: function (e, data) {
+                console.log(9999);
                 var that = $(this).data('fileupload'),
                     template;
 
+                console.dir(data);
                 if (that.options.VM && that.options.VM.onUpload && data.result && data.result.length > 0) {
                     that.options.VM.onUpload(data.result);
                 }
