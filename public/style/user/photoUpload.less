@@ -82,31 +82,55 @@
 			width: 140px;
 		}
 	}
+
 	.allprogress .bar {
 		background-color: #2171CC;
 	}
+
+	table.filesTable {
+		td.preview {
+			width: 210px;
+
+			.forcanvas {
+				position: relative;
+				display: block;
+				width: 210px;
+				height: 140px;
+				overflow: hidden;
+				background: url(/img/caps/image_upload.png) 50% 50% no-repeat;
+				//.transition(all .5s linear);
+
+				&.noPreview {
+					height: 80px;
+					background: #2171CC url(/img/caps/preview.png) 50% 35% no-repeat;
+
+					.msg {
+						color: #F2F2F2;
+						vertical-align: bottom;
+						bottom: 7px;
+						position: absolute;
+						width: 100%;
+						text-align: center;
+						display: block;
+					}
+				}
+			}
+		}
+		td.fileButtons {
+			width: 150px;
+			text-align: right;
+			white-space: nowrap;
+		}
+	}
+
 	.progress {
 		margin-bottom: 3px;
 	}
 	.progress-extended {
 		margin-bottom: 3px;
 	}
-	td.preview {
-		width: 210px;
-	}
-	td.start, td.cancel, td.delete {
-		width: 120px;
-		text-align: center;
-	}
-	.forcanvas {
-		position: relative;
-		display: block;
-		width: 210px;
-		height: 60px;
-		opacity: 0;
-		overflow: hidden;
-		.transition(all .5s linear);
-	}
+
+
 	.template-download .preview img {
 		max-width: 210px;
 		max-height: 140px;

@@ -28,43 +28,34 @@
 				i.icon-trash.icon-white
 				span Delete all
 
-		//The global progress information
-		.row-fluid.fileupload-progress.fade
-				//The global progress bar
-				.progress.progress-success.progress-striped.active(role="progressbar", aria-valuemin="0", aria-valuemax="100")
-					.bar(style="width:0%;")
-				//The extended global progress information
-				.progress-extended &nbsp;
-
-		//The loading indicator is shown during file processing
-		.row-fluid.fileupload-loading
-
-		//The table listing the files available for upload/download
-		table.table.table-striped.table-hover(role="presentation")
-			tbody.files(data-toggle="modal-gallery", data-target="#modal-gallery")
-
 	.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
-		.allprogress.progress.progress-striped.active
-			.bar(data-bind="style: {width: fileProgressAll() + '%'}")
-		.allprogressText(data-bind="text: fileProgressAllText()")
-		table.table.table-striped.table-hover
+		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
+			.progress.progress-striped.active
+				.bar(data-bind="style: {width: fileProgressAll() + '%'}")
+			.extText(data-bind="text: fileProgressAllText()")
+		table.table.table-striped.table-hover.filesTable
 			caption Added photos
 			tbody
 				//ko foreach: fileList
 				tr
-					td
-						div.forcanvas(data-bind="attr: {'data-fileuid': uid}")
-					td(data-bind="text: name")
+					td.preview
+						div.forcanvas(data-bind="attr: {'data-fileuid': uid}, css: {noPreview: !hasPreview()}")
+							//ko if: !hasPreview()
+							.msg Too big for preview
+							// /ko
+					td.desc
 						div(data-bind="text: name")
 						div(data-bind="text: humansize")
-					td(data-bind="")
-						button.btn-strict.btn-strict-success(data-bind="attr: {disabled: uploaded()}")
+						div.fileMsg(data-bind="text: msg(), css: msgCss()")
+					td.fileButtons
+						//ko if: !$parent.options.auto && !uploaded()
+						button.btn-strict.btn-strict-success(data-bind="click: function () {$data.startUpload()}, attr: {disabled: uploading()}")
 							i.icon-upload.icon-white
 							span Upload this
-					td(data-bind="")
-						button.btn-strict.btn-strict-warning.cancel(data-bind="attr: {disabled: uploaded()}")
-							i.icon-ban-circle.icon-white
-							span Cancel this
+						// /ko
+						button.btn-strict(data-bind="css: {'btn-strict-warning': !uploaded(), 'btn-strict-danger': uploaded()}")
+							i.icon-white(data-bind="css: {'icon-ban-circle': !uploaded(), 'icon-remove-circle': uploaded()}")
+							span(data-bind="text: uploaded() ? 'Delete this' : 'Cancel this'")
 
 				// /ko
 	// The template to display files available for upload
