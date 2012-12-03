@@ -47,6 +47,8 @@
 						div(data-bind="text: name")
 						div(data-bind="text: humansize")
 						div.fileMsg(data-bind="text: msg(), css: msgCss()")
+						.progress.progress-striped.progress-success.active(data-bind="style: {visibility: uploading()? 'visible' : 'hidden'}")
+							.bar(data-bind="style: {width: progress() + '%'}")
 					td.fileButtons
 						//ko if: !$parent.options.auto && !uploaded()
 						button.btn-strict.btn-strict-success(data-bind="click: function () {$data.startUpload()}, attr: {disabled: uploading()}")

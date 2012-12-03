@@ -50,6 +50,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.fileProgressAll = ko.observable(0);
             this.fileProgressAllText = ko.observable('');
 
+            this.previewToGen = 0;
+            this.filesToSubmit = [];
+
             this.options = {
                 auto: true,
                 maxFiles: 10,
@@ -157,39 +160,52 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             $.each(files, function (index, file) {
                 file.uid = Utils.randomString(7);
                 file.humansize = Utils.formatFileSize(file.size);
+                file.progress = ko.observable(0);
                 file.uploading = ko.observable(false);
                 file.uploaded = ko.observable(false);
                 file.valid = true;
                 file.error = ko.observable(false);
-                file.hasPreview = ko.observable(false);
+                file.hasPreview = ko.observable(options.previewMaxSize && file.size < options.previewMaxSize);
                 file.msg = ko.observable('');
                 file.msgCss = ko.observable('');
 
                 this.validate(file, options);
 
-                this.fileList.push(file);
-                if (file.valid) {
-                    if (options.previewMaxSize && file.size < options.previewMaxSize) {
-                        file.hasPreview(true);
-                        this.filePreview(file, function () {
-                            if (options.auto) {
-                                data.submit();
-                            }
-                        });
-                    } else {
-                        file.msgCss = ko.observable('');
-                        if (options.auto) {
-                            data.submit();
-                        }
-                    }
+                file.startUpload = function () {
+                    data.submit();
+                };
 
-                    if (!options.auto) {
-                        file.startUpload = function () {
-                            data.submit();
-                        };
-                    }
+                if (options.auto) {
+                    this.queueAfterPreview(file);
+                } else {
+                    this.filePreview(file);
                 }
+
+                this.fileList.push(file);
             }.bind(this));
+
+
+        },
+        queueAfterPreview: function (file) {
+            this.filesToSubmit.push(file);
+            if (file.hasPreview()) {
+                this.previewToGen += 1;
+                this.filePreview(file, this.submitQueue.bind(this));
+            } else {
+                this.submitQueue();
+            }
+        },
+        submitQueue: function (file) {
+            if (file) {
+                this.previewToGen -= 1;
+            }
+            if (this.previewToGen < 1) {
+                this.filesToSubmit.forEach(function (file, index) {
+                    file.startUpload();
+                });
+                this.previewToGen = 0;
+                this.filesToSubmit = [];
+            }
         },
         onFileSubmit: function (e, data) {
             data.files.forEach(function (file, index) {
@@ -220,11 +236,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     }
                 }, this);
                 data.files.forEach(function (file, index) {
-                    file.uploading(false);
-                    file.uploaded(true);
                     window.setTimeout(function () {
+                        file.uploading(false);
+                        file.uploaded(true);
                         this.setMessage(file, 'Successfully loaded', 'success');
-                    }.bind(this), 600);
+                    }.bind(this), 500);
                 }, this);
                 socket.emit('createPhoto', toSaveArr);
             }
@@ -251,8 +267,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }.bind(this), 600);
         },
         onFileProgress: function (e, data) {
-            //console.log('onFileProgress ', data.loaded, data.total);
-            //console.dir(data);
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            data.files.forEach(function (file, index) {
+                file.progress(progress);
+            }, this);
+            e = data = progress = null;
         },
         onFileProgressAll: function (e, data) {
             //console.log('onFileProgressAll ', data.loaded, data.total);
@@ -299,28 +318,28 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         filePreview: function (file, cb) {
             var that = this,
                 options = this.options;
+
+            this.setMessage(file, 'Preparing file..', 'muted');
             loadImage(
                 file,
                 function (img) {
                     var node = that.$dom.find('.forcanvas[data-fileuid="' + file.uid + '"]');
                     if (node && node.length > 0) {
                         node.append(img);
-                        window.setTimeout(function () {
-                            node.css({height: img.height, opacity: 1});
-                            if (cb) {
-                                window.setTimeout(function () {
-                                    cb(file, true);
-                                }, 600);
-                            }
-                            img = node = null;
-                        }, 100);
+                        node.css({height: img.height, opacity: 1});
+                        if (cb) {
+                            window.setTimeout(function () {
+                                cb(file, true);
+                            }, 600);
+                        }
+                        img = node = null;
                     } else {
                         if (cb) {
                             cb(file, false);
                         }
                     }
-
-                },
+                    this.setMessage(file, '', 'muted');
+                }.bind(this),
                 {
                     maxWidth: options.previewMaxWidth,
                     maxHeight: options.previewMaxHeight,
