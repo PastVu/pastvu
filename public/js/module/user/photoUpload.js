@@ -53,7 +53,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.previewToGen = 0;
             this.filesToSubmit = [];
 
-            this.options = {
+            this.fileOptions = {
                 auto: true,
                 maxFiles: 10,
                 maxSize: 926214400, //25Mb
@@ -152,7 +152,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 
         onFileAdd: function (e, data) {
-            var options = this.options,
+            var options = this.fileOptions,
                 optionsPlugin = this.$fileupload.data('fileupload').options,
                 files = data.files;
 
@@ -317,7 +317,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         filePreview: function (file, cb) {
             var that = this,
-                options = this.options;
+                options = this.fileOptions;
 
             this.setMessage(file, 'Preparing file..', 'muted');
             loadImage(
