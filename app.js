@@ -225,5 +225,4 @@ process.on('uncaughtException', function (err) {
 
 server.listen(port);
 
-
 logger.info('Express server listening %s in %s-mode \n', (domain + ':' + port), land.toUpperCase());

@@ -21,6 +21,8 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.currentLeaf = '';
             this.nextLeaf = '';
 
+            this.blockHrefs = false;
+
             //Указываем корень
             if (handlers && handlers.root) {
                 this.root = handlers.root;
@@ -42,7 +44,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 }
             );
 
-            //Вставляем обработчики модулейб обернутые в враппер
+            //Вставляем обработчики модулей обернутые в враппер
             if (handlers && handlers.handlers) {
                 _.forEach(handlers.handlers, function (item, key) {
                     this[key] = _.wrap(item, this.handlerWrapper);
@@ -112,18 +114,18 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             }
             return result;
         },
-        getFlattenStackByRoot: function (param) {
+        getFlattenStack: function (root, groupBy) {
             var past,
                 future;
-            if (Utils.isObjectType('string', param)) {
+            if (Utils.isObjectType('string', root)) {
                 past = [];
                 future = [];
                 this.stack.forEach(function (item, index, array) {
-                    if (this.stackHash[item].root === param) {
+                    if (this.stackHash[item].root === root && this.stackHash[item].route.indexOf(groupBy) === 0) {
                         if (index < this.stackCurrentIndex) {
-                            past.push(this.stackHash[item]);
+                            past.push(_(_.clone(this.stackHash[item], false)).extend({localRoute: this.stackHash[item].route.substr(groupBy.length)}));
                         } else if (index > this.stackCurrentIndex) {
-                            future.push(this.stackHash[item]);
+                            future.push(_(_.clone(this.stackHash[item], false)).extend({localRoute: this.stackHash[item].route.substr(groupBy.length)}));
                         }
                     }
                 }.bind(this));
@@ -141,7 +143,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 body = '',
                 leaf = Utils.getURLParameter('leaf', href);
 
-            if (href.length === 0) {
+            if (href.length === 0 || this.blockHrefs) {
                 evt.preventDefault();
             } else if (target !== '_blank' && href.indexOf(_this.root) > -1) {
                 evt.preventDefault();
@@ -155,6 +157,13 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             }
 
             _this = href = target = body = leaf = null;
+        },
+        ahrefBlock: function (flag) {
+            if (Utils.isObjectType('boolean', flag)) {
+                this.blockHrefs = flag;
+            } else {
+                this.blockHrefs = !this.blockHrefs;
+            }
         }
     });
 

@@ -66,7 +66,8 @@ step(
     function searchJades() {
         var tplFolder = new File('./views/client'),
             tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
-            _this = this;
+            _this = this,
+            hasSubFolders = false;
 
         tplFolder.list(function (e, files) {
             if (e) {
@@ -80,9 +81,13 @@ step(
             tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
             Object.keys(files).forEach(function (element, index, array) {
                 if (Utils.isObjectType('object', files[element])) {
+                    hasSubFolders = true;
                     new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
                 }
             });
+            if (!hasSubFolders) {
+                _this();
+            }
         });
 
 
