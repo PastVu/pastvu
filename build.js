@@ -1,17 +1,21 @@
-'use strict';
-
+#!/usr/bin/env node
 var fs = require('fs'),
     path = require('path'),
     sys = require('util'),
     step = require('step'),
-    File = require("file-utils").File,
+    File = require('file-utils').File,
     requirejs = require('requirejs'),
     less = require('less'),
     jade = require('jade'),
+    _ = require('lodash'),
     Utils = require('./commons/Utils.js'),
+    version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version,
 
     jadeCompileOptions = {
-        pretty: false
+        pretty: false,
+        pageTitle: 'OldMos51',
+        appHash: Utils.randomString(10),
+        appVersion: version
     },
 
     lessCompileOptions = {
@@ -60,14 +64,12 @@ var fs = require('fs'),
     jadeFiles = [],
     lessFiles = [];
 
-
 step(
     //Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
     function searchJades() {
         var tplFolder = new File('./views/client'),
             tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
-            _this = this,
-            hasSubFolders = false;
+            _this = this;
 
         tplFolder.list(function (e, files) {
             if (e) {
@@ -81,16 +83,11 @@ step(
             tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
             Object.keys(files).forEach(function (element, index, array) {
                 if (Utils.isObjectType('object', files[element])) {
-                    hasSubFolders = true;
                     new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
                 }
             });
-            if (!hasSubFolders) {
-                _this();
-            }
+            _this.parallel()();
         });
-
-
     },
 
     //Ищем less-файлы для компиляции и создаем плоский массив
@@ -113,7 +110,7 @@ step(
     //Компилируем less и jade
     function startCompile() {
         lessCompile(lessFiles, this.parallel());
-        jadeCompile(jadeFiles, this.parallel());
+        jadeCompile(jadeFiles, 'views/client/', requireBuildConfig.appDir + 'tpl/', this.parallel());
     },
 
     //Собираем require
@@ -150,6 +147,30 @@ step(
         });
     },
 
+    //Компилируем основные jade в статичные html
+    function compileMainJades() {
+        "use strict";
+        var tplFolder = new File('./views'),
+            toCompile = [],
+            _this = this;
+
+        tplFolder.list(1, function (e, files) {
+            if (e) {
+                console.dir(e);
+                process.exit(1);
+            }
+            _.forEach(files, function(val, key) {
+                if (!Utils.isObjectType('object', val)) {
+                    toCompile.push(key);
+                }
+            });
+            if (toCompile.length > 0) {
+                jadeCompile(toCompile, 'views/', requireBuildConfig.dir + '', _this.parallel(), 'html');
+            }
+            _this.parallel()();
+        });
+    },
+
     function finish(e) {
         if (e) {
             console.dir(e);
@@ -160,7 +181,7 @@ step(
 );
 
 
-function jadeCompile(files, done) {
+function jadeCompile(files, inFolder, outFolder, done, replaceJade) {
     var name, input, output,
         fd,
         i = 0;
@@ -172,8 +193,11 @@ function jadeCompile(files, done) {
         if (!name) {
             return done();
         }
-        input = 'views/client/' + name;
-        output = requireBuildConfig.appDir + 'tpl/' + name;
+        input = inFolder + name;
+        output = outFolder + name;
+        if (replaceJade) {
+            output = output.substr(0, output.lastIndexOf('.jade') + 1) + replaceJade;
+        }
         fs.readFile(input, 'utf-8', render);
     }
 
@@ -183,7 +207,7 @@ function jadeCompile(files, done) {
             process.exit(1);
         }
         console.dir('Compiling Jade ' + input);
-        var fn = jade.compile(data, jadeCompileOptions);
+        var fn = jade.compile(data, _(_.clone(jadeCompileOptions, false)).extend({filename: input}));
         fd = fs.openSync(output, "w");
         fs.writeSync(fd, fn(jadeCompileOptions), 0, "utf8");
         fs.closeSync(fd);

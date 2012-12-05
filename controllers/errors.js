@@ -1,7 +1,7 @@
 'use strict';
 
 var ms404 = {
-        title: 'NotFound',
+        title: '404 NotFound',
         body: 'The page you requested was not found'
     },
     ms500 = {
@@ -21,7 +21,7 @@ var neoError = {
             msgs = {}.extend(ms404).extend(msgss);
         }
         res.statusCode = 404;
-        res.render('404.jade', {pageTitle: msgs.title, mess: msgs.body});
+        res.render('status/404.jade', {pageTitle: msgs.title, mess: msgs.body});
     },
     e500: function e500(msgs) {
         this.msgs = msgs;
@@ -34,7 +34,7 @@ var neoError = {
             msgs = {}.extend(ms500).extend(msgss);
         }
         res.statusCode = 500;
-        res.render('500.jade', {pageTitle: msgs.title, mess: msgs.body});
+        res.render('status/500.jade', {pageTitle: msgs.title, mess: msgs.body});
     }
 };
 neoError.e404.prototype = Object.create(Error.prototype);
