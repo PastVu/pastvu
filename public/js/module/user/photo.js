@@ -26,7 +26,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.u = null;
             this.photos = ko.observableArray();
             this.uploadVM = null;
-            this.limit = 40;
+            this.limit = 42; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
             this.loadingPhoto = ko.observable(false);
             this.scrollActive = false;
             this.scrollHandler = function () {
@@ -49,7 +49,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         show: function () {
             this.$container.fadeIn();
             if (this.u.pcount() > 0) {
-                this.getPage(0, this.limit);
+                this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
                 $window.on('scroll', this.scrollHandler);
                 this.scrollActive = true;
             }

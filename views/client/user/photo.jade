@@ -27,8 +27,7 @@
 			a(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
 		// /ko
-		.photoThumb.fringe2.loadingPhoto(data-bind="style: {display: loadingPhoto() ? 'inline-block' : 'none'}")
-			.desc Loading next..
+		.photoThumb.loadingPhoto(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden'}") Loading next
 
 	.photoUploadCurtain
 		.photoUploadModal.fringe2(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
