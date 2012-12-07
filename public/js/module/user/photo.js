@@ -34,6 +34,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     this.getNextPage();
                 }
             }.bind(this);
+            this.width = ko.observable('0px');
+            this.height = ko.observable('0px');
+            P.window.square.subscribe(this.marginCalc, this);
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
@@ -47,7 +50,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }, this);
         },
         show: function () {
-            this.$container.fadeIn();
+            this.$container.fadeIn(function () {
+                //this.marginCalc(P.window.square());
+            }.bind(this));
+            this.marginCalc(P.window.square());
             if (this.u.pcount() > 0) {
                 this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
                 $window.on('scroll', this.scrollHandler);
@@ -108,6 +114,35 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }
             $parent.animate({opacity: 1});
             data = event = $parent = null;
+        },
+        marginCalc: function (v) {
+            var windowW = P.window.w(),
+                domW = this.$dom.width() - 1, //this.$container.width()
+                thumbW,
+                thumbH,
+                thumbN,
+                thumbWMax = 246,
+                marginMin;
+
+
+            if (windowW < 1366) {
+                thumbN = 5;
+                marginMin = 12;
+            } else {
+                thumbN = 6;
+                marginMin = 12;
+            }
+            thumbW = Math.min(domW / thumbN - marginMin - 2, thumbWMax);
+            thumbH = thumbW / 1.5 >> 0;
+            thumbW = thumbH * 1.5;
+
+            //margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
+
+            this.width(thumbW + 'px');
+            this.height(thumbH + 'px');
+
+            console.log(windowW, domW, thumbW, thumbH);
+            windowW = domW = thumbW = thumbH = null;
         },
         showUpload: function (data, event) {
             this.$dom.find('span.modalCaption').text('Upload photo');

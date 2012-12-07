@@ -1,11 +1,11 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}, style: {display: canAdd() ? 'inline-block' : ''}")
+		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}, style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
 			.plusPhoto
 			.desc Add photos..
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")
-			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}")
+			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
 			.info.error
 				i.icon-ban-circle.icon-white
 				br
