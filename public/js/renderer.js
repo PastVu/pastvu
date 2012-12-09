@@ -40,6 +40,13 @@ define([
                         if (existingVM.module === item.module) {
                             savesExisting = true;
                             modules.splice(i, 1);
+
+                            //Вызываем коллбэк для уже существующего модуля
+                            if (Utils.isObjectType('function', item.callback)) {
+                                item.callback.call(window, existingVM);
+                            }
+
+                            //Помещаем модуль в промисы для передачи в общий коллбэк рендера
                             dfd = $.Deferred();
                             pushPromise(promises, dfd.promise(), existingVM.module);
                             dfd.resolve(existingVM);
@@ -66,6 +73,8 @@ define([
          */
         _.forOwn(modules, function (item, key, object) {
             var dfd = $.Deferred();
+            pushPromise(promises, dfd.promise(), item.module);
+
             require([item.module], function (VM) {
                 if (replacedContainers[item.container]) {
                     repository[replacedContainers[item.container]].destroy();
@@ -73,12 +82,16 @@ define([
 
                 var vm = new VM(parent, item.module, item.container, level, item.options || {}, item.global);
 
+                //Коллбэк, вызываемый только при создании модлуля, один раз
+                if (Utils.isObjectType('function', item.callbackWhenNew)) {
+                    item.callback.call(window, vm);
+                }
+                //Вызываем коллбэк для модуля
                 if (Utils.isObjectType('function', item.callback)) {
                     item.callback.call(window, vm);
                 }
                 dfd.resolve(vm);
             });
-            pushPromise(promises, dfd.promise(), item.module);
         });
 
         if (Utils.isObjectType('function', callback)) {
