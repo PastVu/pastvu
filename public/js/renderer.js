@@ -6,9 +6,20 @@ define([
     "use strict";
     var repository = globalVM.repository;
 
+    //Помещаем объект промиса в массив, на место имени модуля если есть,
+    //чтобы в коллбэке рендера сохранить последовательнсть модулей,
+    //даже если какие-то уже были отрендерены ранее в своих контейнерах
+    function pushPromise(arr, promise, moduleName) {
+        var indexToPush = arr.length;
+        if (moduleName) {
+            indexToPush = arr.indexOf(moduleName);
+        }
+        arr.splice(indexToPush, +!!moduleName, promise);
+    }
+
     return function render(parent, modules, level, callback) {
         var replacedContainers = {},
-            promises = [];
+            promises = _.pluck(modules, 'module'); // Массив промисов для возврата модулей в callback функцию
         parent = parent || globalVM;
         level = level || 0;
 
@@ -20,7 +31,8 @@ define([
                 var savesExisting = false,
                     sameContainer = false,
                     i = modules.length - 1,
-                    item;
+                    item,
+                    dfd;
 
                 while (i >= 0) {
                     item = modules[i];
@@ -28,6 +40,9 @@ define([
                         if (existingVM.module === item.module) {
                             savesExisting = true;
                             modules.splice(i, 1);
+                            dfd = $.Deferred();
+                            pushPromise(promises, dfd.promise(), existingVM.module);
+                            dfd.resolve(existingVM);
                         } else {
                             sameContainer = true;
                         }
@@ -63,7 +78,7 @@ define([
                 }
                 dfd.resolve(vm);
             });
-            promises.push(dfd.promise());
+            pushPromise(promises, dfd.promise(), item.module);
         });
 
         if (Utils.isObjectType('function', callback)) {
