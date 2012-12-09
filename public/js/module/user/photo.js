@@ -99,11 +99,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }
         },
         onThumbLoad: function (data, event) {
-            $(event.target).parent().animate({opacity: 1});
+            $(event.target).parents('.photoThumb').animate({opacity: 1});
             data = event = null;
         },
         onThumbError: function (data, event) {
-            var $parent = $(event.target).parent();
+            var $parent = $(event.target).parents('.photoThumb');
             event.target.style.visibility = 'hidden';
             if (data.conv) {
                 $parent.addClass('photoConv');
@@ -121,18 +121,22 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 thumbW,
                 thumbH,
                 thumbN,
+                thumbWMin = 120,
                 thumbWMax = 246,
                 marginMin;
 
 
-            if (windowW < 1366) {
+            if (windowW < 1000) {
+                thumbN = 4;
+                marginMin = 8;
+            } else if (windowW < 1366) {
                 thumbN = 5;
-                marginMin = 12;
+                marginMin = 10;
             } else {
                 thumbN = 6;
                 marginMin = 12;
             }
-            thumbW = Math.min(domW / thumbN - marginMin - 2, thumbWMax);
+            thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax));
             thumbH = thumbW / 1.5 >> 0;
             thumbW = thumbH * 1.5;
 

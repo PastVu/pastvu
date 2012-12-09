@@ -5,29 +5,30 @@
 			.desc Add photos..
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")
-			img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
-			.info.error
-				i.icon-ban-circle.icon-white
-				br
-				| preview loading error
-			.info.convqueue
-				i.icon-road.icon-white
-				br
-				| preview will be created soon
-				br
-				| please, refresh later
-			.info.conv
-				| preview is creating now
-				br
-				| please, refresh later
-			.info.fresh
-				i.icon-fire.icon-white
-			.info.noActive
-				i.icon-exclamation-sign.icon-white
-			a(target='_blank', data-bind="attr: {href: '/p/' + cid}")
+			.photoBox
+				img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
+				.info.error
+					i.icon-ban-circle.icon-white
+					br
+					| preview loading error
+				.info.convqueue
+					i.icon-road.icon-white
+					br
+					| preview will be created soon
+					br
+					| please, refresh later
+				.info.conv
+					| preview is creating now
+					br
+					| please, refresh later
+				.info.fresh
+					i.icon-fire.icon-white
+				.info.noActive
+					i.icon-exclamation-sign.icon-white
+				a.ahref(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
 		// /ko
-		.photoThumb.loadingPhoto(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden'}") Loading next
+		.photoThumb.loadingPhoto.centering_content(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}") Loading next
 
 	.photoUploadCurtain
 		.photoUploadModal.fringe2(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
