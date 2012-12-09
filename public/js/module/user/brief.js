@@ -31,11 +31,13 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Us
 
                     ko.applyBindings(globalVM, this.$dom[0]);
 
-                    this.$dom.affix({
-                        offset: {
-                            top: 40
-                        }
-                    });
+                    if (this.options.affix) {
+                        this.$dom.affix({
+                            offset: {
+                                top: 40
+                            }
+                        });
+                    }
 
                     this.show();
                 }

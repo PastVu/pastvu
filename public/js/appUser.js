@@ -54,12 +54,12 @@ require([
                         globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
-                            {module: 'm/user/brief', container: '#user_brief'},
+                            {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/profile', container: '#user_content'}
                         ],
                         0,
-                        function (top, home) {
+                        function (top, brief, menu, profile) {
                         }
                     );
                 },
@@ -71,12 +71,12 @@ require([
                         globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
-                            {module: 'm/user/brief', container: '#user_brief'},
+                            {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/settings', container: '#user_content'}
                         ],
                         0,
-                        function (top, home) {
+                        function (top, brief, menu, settings) {
                         }
                     );
                 },
@@ -89,12 +89,12 @@ require([
                         globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
-                            {module: 'm/user/brief', container: '#user_brief'},
+                            {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/photoUpload', container: '#user_content'}
                         ],
                         0,
-                        function (top, home) {
+                        function (top, brief, menu, photoUpload) {
                         }
                     );
                 },
@@ -107,12 +107,12 @@ require([
                         globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
-                            {module: 'm/user/brief', container: '#user_brief'},
+                            {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/photo', container: '#user_content', options: {canAdd: true}}
                         ],
                         0,
-                        function (top, home) {
+                        function (top, brief, menu, photo) {
                         }
                     );
                 }

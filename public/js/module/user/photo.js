@@ -145,7 +145,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.width(thumbW + 'px');
             this.height(thumbH + 'px');
 
-            console.log(windowW, domW, thumbW, thumbH);
             windowW = domW = thumbW = thumbH = null;
         },
         showUpload: function (data, event) {
