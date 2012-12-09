@@ -4,11 +4,11 @@ define([
     'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM'
 ], function ($, Utils, _, Backbone, ko, globalVM) {
     "use strict";
-    var repository = globalVM.repository,
-        promises = [];
+    var repository = globalVM.repository;
 
     return function render(parent, modules, level, callback) {
-        var replacedContainers = {};
+        var replacedContainers = {},
+            promises = [];
         parent = parent || globalVM;
         level = level || 0;
 
