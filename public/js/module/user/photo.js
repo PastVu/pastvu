@@ -150,11 +150,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         showUpload: function (data, event) {
             this.$dom.find('span.modalCaption').text('Upload photo');
             $('.photoUploadCurtain').fadeIn(400, function () {
-                renderer(this, [
-                    {module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
-                        this.uploadVM = vm;
-                    }.bind(this)}
-                ], this.level + 1);
+                renderer(
+                    [
+                        {module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
+                            this.uploadVM = vm;
+                        }.bind(this)}
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 1
+                    }
+                );
             }.bind(this));
             if (event.stopPropagation) {
                 event.stopPropagation();

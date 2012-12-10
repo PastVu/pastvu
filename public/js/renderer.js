@@ -4,7 +4,13 @@ define([
     'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM'
 ], function ($, Utils, _, Backbone, ko, globalVM) {
     "use strict";
-    var repository = globalVM.repository;
+
+    var repository = globalVM.repository,
+        defaultOptions = {
+            parent: globalVM,
+            level : 0,
+            context: window
+        };
 
     //Помещаем объект промиса в массив, на место имени модуля если есть,
     //чтобы в коллбэке рендера сохранить последовательнсть модулей,
@@ -17,17 +23,18 @@ define([
         arr.splice(indexToPush, +!!moduleName, promise);
     }
 
-    return function render(parent, modules, level, callback) {
+    return function render(modules, options) {
         var replacedContainers = {},
-            promises = _.pluck(modules, 'module'); // Массив промисов для возврата модулей в callback функцию
-        parent = parent || globalVM;
-        level = level || 0;
+            promises = _.pluck(modules, 'module'), // Массив промисов для возврата модулей в callback функцию
+            promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
+
+        options = _.defaults(options, defaultOptions);
 
         /**
          * Уничтожаем не глобальные модули, которых нет в новом списке
          */
         _.forOwn(repository, function (existingVM, existingVMKey) {
-            if (!existingVM.global && existingVM.level === level) {
+            if (!existingVM.global && existingVM.level === options.level) {
                 var savesExisting = false,
                     sameContainer = false,
                     i = modules.length - 1,
@@ -80,7 +87,7 @@ define([
                     repository[replacedContainers[item.container]].destroy();
                 }
 
-                var vm = new VM(parent, item.module, item.container, level, item.options || {}, item.global);
+                var vm = new VM(options.parent, item.module, item.container, options.level, item.options || {}, item.global);
 
                 //Коллбэк, вызываемый только при создании модлуля, один раз
                 if (Utils.isObjectType('function', item.callbackWhenNew)) {
@@ -90,12 +97,24 @@ define([
                 if (Utils.isObjectType('function', item.callback)) {
                     item.callback.call(window, vm);
                 }
+
+                promisesWhenNew[item.module] = true;
                 dfd.resolve(vm);
             });
         });
 
-        if (Utils.isObjectType('function', callback)) {
-            $.when.apply($, promises).then(callback);
+        if (Utils.isObjectType('function', options.callback)) {
+            $.when.apply($, promises)
+                .pipe(function () {
+                    var dfd = $.Deferred(),
+                        args = _.toArray(arguments);
+
+                    args.push(promisesWhenNew); //Вставляем последним параметром хэш новых модулей
+                    dfd.resolveWith.apply(dfd, [options.context, args]);
+
+                    return dfd;
+                })
+                .then(options.callback);
         }
     };
 });

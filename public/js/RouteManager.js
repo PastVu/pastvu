@@ -30,18 +30,22 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 
             //Регистрируем глобальные модули
             renderer(
-                globalVM,
                 [
                     {module: 'm/auth', container: '#auth', global: true}
                 ],
-                0,
-                function (auth) {
-                    if (dfd) {
-                        $.when(auth.LoadMe()).done(function () {
-                            dfd.resolve();
-                        });
+                {
+                    parent: globalVM,
+                    level: 0,
+                    context: this,
+                    callback: function (auth) {
+                        if (dfd) {
+                            $.when(auth.LoadMe()).done(function () {
+                                dfd.resolve();
+                            });
+                        }
                     }
                 }
+
             );
 
             //Вставляем обработчики модулей обернутые в враппер

@@ -60,13 +60,15 @@ require([
                     this.params({user: user || ""});
 
                     renderer(
-                        globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/map/mapBig', container: '#mapBig'}
                         ],
-                        0,
-                        function (top, home) {
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, mapBig, news) {
+                            }
                         }
                     );
                 }

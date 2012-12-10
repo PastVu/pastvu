@@ -51,15 +51,17 @@ require([
                     this.params({user: user || ""});
 
                     renderer(
-                        globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/profile', container: '#user_content'}
                         ],
-                        0,
-                        function (top, brief, menu, profile) {
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, brief, menu, profile, news) {
+                            }
                         }
                     );
                 },
@@ -68,15 +70,17 @@ require([
                     this.params({user: user || ""});
 
                     renderer(
-                        globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/settings', container: '#user_content'}
                         ],
-                        0,
-                        function (top, brief, menu, settings) {
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, brief, menu, settings, news) {
+                            }
                         }
                     );
                 },
@@ -86,15 +90,18 @@ require([
                     this.params({user: auth.iAm.login() || ""});
 
                     renderer(
-                        globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/photoUpload', container: '#user_content'}
                         ],
-                        0,
-                        function (top, brief, menu, photoUpload) {
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, brief, menu, photoUpload, news) {
+                                console.log(arguments);
+                            }
                         }
                     );
                 },
@@ -104,15 +111,18 @@ require([
                     this.params({user: user || ""});
 
                     renderer(
-                        globalVM,
                         [
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/photo', container: '#user_content', options: {canAdd: true}}
                         ],
-                        0,
-                        function (top, brief, menu, photo) {
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, brief, menu, photo, news) {
+                                console.log(arguments);
+                            }
                         }
                     );
                 }
