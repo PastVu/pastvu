@@ -139,7 +139,19 @@
 }
 
 @media (max-width: 767px) {
-	.user_brief #leftSideDash {
-		display: none !important;
+	.user_brief {
+		&.affix {
+			position: relative;
+			width: auto;
+			margin-top: 40px;
+		}
+		#leftSideDash {
+			display: none !important;
+		}
+		.statBlock {
+			display: inline-block;
+			width: 49%;
+			vertical-align: top;
+		}
 	}
 }

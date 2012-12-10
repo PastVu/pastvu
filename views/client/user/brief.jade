@@ -9,7 +9,7 @@
 		button.btn-strict(type="button", data-bind="event: {}")
 			i.icon-envelope.icon-white
 			span Send message
-	.row-fluid
+	.row-fluid.statBlock
 		#info_common.block
 			.head Commons
 			.h_separator
@@ -20,7 +20,7 @@
 				dd(data-bind="text: user.regdate().getDate()+'.'+(user.regdate().getMonth()+1)+'.'+user.regdate().getFullYear()")
 				dt Status:
 				dd Online
-	.row-fluid
+	.row-fluid.statBlock
 		#short_stat.block
 			.head Brief statistics
 			.h_separator
