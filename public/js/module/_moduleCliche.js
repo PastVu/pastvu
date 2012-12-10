@@ -33,7 +33,13 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.create();
 
             if (this.childs) {
-                renderer(this, this.childs, this.level + 1);
+                renderer(
+                    this.childs,
+                    {
+                        parent: this,
+                        level: this.level + 1
+                    }
+                );
             }
         },
 

@@ -100,7 +100,6 @@ require([
                             parent: globalVM,
                             level: 0,
                             callback: function (top, brief, menu, photoUpload, news) {
-                                console.log(arguments);
                             }
                         }
                     );
@@ -121,7 +120,6 @@ require([
                             parent: globalVM,
                             level: 0,
                             callback: function (top, brief, menu, photo, news) {
-                                console.log(arguments);
                             }
                         }
                     );
