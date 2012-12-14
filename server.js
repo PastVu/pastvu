@@ -219,7 +219,7 @@
                     files.push(fileInfo);
                 }
             });
-            handler.callback(files);
+            handler.callback({files: files});
         });
     };
     UploadHandler.prototype.post = function () {
@@ -236,7 +236,7 @@
                     files.forEach(function (fileInfo) {
                         fileInfo.initUrls(handler.req);
                     });
-                    handler.callback(files, redirect);
+                    handler.callback({files: files}, redirect);
                 }
             };
         form.uploadDir = options.tmpDir;
@@ -308,10 +308,10 @@
                 options.imageSequence.forEach(function (item, index) {
                     fs.unlink(options.uploadDir + '/' + item.version + '/' + fileName);
                 });
-                handler.callback(!ex);
+                handler.callback({success: !ex});
             });
         } else {
-            handler.callback(false);
+            handler.callback({success: false});
         }
     };
     if (options.ssl) {

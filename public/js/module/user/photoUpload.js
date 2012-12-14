@@ -224,26 +224,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         onFileDone: function (e, data) {
             var result = JSON.parse(data.result),
+                files = result.files || [],
                 toSaveArr = [];
-            if (Utils.isObjectType('array', result)) {
-                result.forEach(function (item, index, array) {
-                    if (item.name) {
-                        var toSave = _.pick(item, 'format', 'signature', 'w', 'h', 'size');
-                        toSave.file = item.name;
-                        toSaveArr.push(toSave);
-                        this.fileUploaded[item.name] = toSave;
-                        toSave = null;
-                    }
-                }, this);
-                data.files.forEach(function (file, index) {
-                    window.setTimeout(function () {
-                        file.uploading(false);
-                        file.uploaded(true);
-                        this.setMessage(file, 'Successfully loaded', 'success');
-                    }.bind(this), 500);
-                }, this);
-                socket.emit('createPhoto', toSaveArr);
-            }
+            files.forEach(function (file, index, array) {
+                if (file.name) {
+                    var toSave = _.pick(file, 'format', 'signature', 'w', 'h', 'size');
+                    toSave.file = file.name;
+                    toSaveArr.push(toSave);
+                    this.fileUploaded[file.name] = toSave;
+                    toSave = null;
+                }
+            }, this);
+            data.files.forEach(function (file, index) {
+                window.setTimeout(function () {
+                    file.uploading(false);
+                    file.uploaded(true);
+                    this.setMessage(file, 'Successfully loaded', 'success');
+                }.bind(this), 500);
+            }, this);
+            socket.emit('createPhoto', toSaveArr);
         },
         onFileFail: function (e, data) {
             //console.log('onFileFail ', 'data.errorThrown', data.errorThrown, 'data.textStatus', data.textStatus);
