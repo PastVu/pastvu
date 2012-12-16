@@ -16,8 +16,9 @@ var PhotoSheme = new mongoose.Schema(
 
             file: {type: String, index: { unique: true }},
             loaded: {type: Date, default: Date.now, required: true},
+            type: {type: String},
             format: {type: String},
-            signature: {type: String},
+            sign: {type: String},
             size: {type: Number},
             w: {type: Number},
             h: {type: Number},

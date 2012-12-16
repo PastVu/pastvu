@@ -119,7 +119,6 @@ function conveyerControl(andConverting) {
         if (err || files.length === 0) {
             return;
         }
-
         files.forEach(function (item, index) {
             goingToWork -= 1;
             working += 1;
@@ -148,8 +147,39 @@ function conveyerControl(andConverting) {
 }
 
 function conveyerStep(file, cb) {
-    var sequence = [],
-        start = Date.now();
+    var sequence = [];
+        //start = Date.now();
+
+    sequence.push(function (callback) {
+        imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', uploadDir + '/origin/' + file], function (err, data) {
+            var info = {};
+            if (err) {
+                console.error(err);
+            } else {
+                data = JSON.parse(data);
+
+                if (data.f) {
+                    info.format = data.f;
+                }
+                if (data.w) {
+                    info.w = parseInt(data.w, 10);
+                }
+                if (data.h) {
+                    info.h = parseInt(data.h, 10);
+                }
+                if (data.signature) {
+                    info.sign = data.signature;
+                }
+            }
+            callback(err, info);
+        });
+    });
+    sequence.push(function (info, callback) {
+        Photo.findOneAndUpdate({file: file}, { $set: info}, { new: false, upsert: false }, function (err) {
+            callback(err);
+        });
+    });
+
     imageSequence.forEach(function (item, index, array) {
         var o = {
             srcPath: path.normalize(uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file),

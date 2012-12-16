@@ -228,7 +228,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 toSaveArr = [];
             files.forEach(function (file, index, array) {
                 if (file.name) {
-                    var toSave = _.pick(file, 'format', 'signature', 'w', 'h', 'size');
+                    var toSave = _.pick(file, 'type', 'size');
                     toSave.file = file.name;
                     toSaveArr.push(toSave);
                     this.fileUploaded[file.name] = toSave;
