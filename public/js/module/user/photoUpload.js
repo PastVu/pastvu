@@ -54,7 +54,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.filesToSubmit = [];
 
             this.fileOptions = {
-                auto: true,
+                auto: false,
                 maxFiles: 10,
                 maxSize: 926214400, //25Mb
                 minSize: 10240, //10kB
@@ -100,8 +100,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                              maxFileSize: 26214400 // 25MB
                              }
                              ],*/
-                            //change: this.onFileAdd.bind(this),
-                            //drop: this.onFileAdd.bind(this),
                             add: this.onFileAdd.bind(this),
                             submit: this.onFileSubmit.bind(this),
                             send: this.onFileSend.bind(this),
@@ -151,6 +149,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
 
 
+        startFile: function (file) {
+            file.ext.jqXHR = file.ext.data.submit();
+        },
+        cancelFile: function (file) {
+            if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
+                socket.emit('removePhoto', {file: file.ext.file});
+                delete this.fileUploaded[file.ext.file];
+            } else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
+                file.ext.jqXHR.abort();
+            }
+            this.destroyFile(file);
+        },
+        destroyFile: function (file) {
+            this.fileList.remove(file);
+        },
+
+
         onFileAdd: function (e, data) {
             var options = this.fileOptions,
                 optionsPlugin = this.$fileupload.data('fileupload').options,
@@ -158,22 +173,21 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
             this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
             $.each(files, function (index, file) {
-                file.uid = Utils.randomString(7);
-                file.humansize = Utils.formatFileSize(file.size);
-                file.progress = ko.observable(0);
-                file.uploading = ko.observable(false);
-                file.uploaded = ko.observable(false);
-                file.valid = true;
-                file.error = ko.observable(false);
-                file.hasPreview = ko.observable(options.previewMaxSize && file.size < options.previewMaxSize);
-                file.msg = ko.observable('');
-                file.msgCss = ko.observable('');
+                file.ext = {
+                    uid: Utils.randomString(7),
+                    data: data,
+                    humansize: Utils.formatFileSize(file.size),
+                    progress: ko.observable(0),
+                    uploading: ko.observable(false),
+                    uploaded: ko.observable(false),
+                    valid: true,
+                    error: ko.observable(false),
+                    hasPreview: ko.observable(options.previewMaxSize && file.size < options.previewMaxSize),
+                    msg: ko.observable(''),
+                    msgCss: ko.observable('')
+                };
 
                 this.validate(file, options);
-
-                file.startUpload = function () {
-                    data.submit();
-                };
 
                 if (options.auto) {
                     this.queueAfterPreview(file);
@@ -188,7 +202,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         queueAfterPreview: function (file) {
             this.filesToSubmit.push(file);
-            if (file.hasPreview()) {
+            if (file.ext.hasPreview()) {
                 this.previewToGen += 1;
                 this.filePreview(file, this.submitQueue.bind(this));
             } else {
@@ -201,57 +215,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }
             if (this.previewToGen < 1) {
                 this.filesToSubmit.forEach(function (file, index) {
-                    file.startUpload();
-                });
+                    this.startFile(file);
+                }, this);
                 this.previewToGen = 0;
                 this.filesToSubmit = [];
             }
-        },
-        onFileSubmit: function (e, data) {
-            data.files.forEach(function (file, index) {
-                file.uploading(true);
-                file.uploaded(false);
-                this.setMessage(file, 'Please wait. Loading..', 'muted');
-            }, this);
-        },
-        onFileSend: function (e, data) {
-            if (data.dataType && data.dataType.substr(0, 6) === 'iframe') {
-                // Iframe Transport does not support progress events.
-                // In lack of an indeterminate progress bar, we set
-                // the progress to 100%, showing the full animated bar:
-                alert('iFrame send. Need to handle');
-            }
-        },
-        onFileDone: function (e, data) {
-            var result = JSON.parse(data.result),
-                files = result.files || [],
-                toSaveArr = [];
-            files.forEach(function (file, index, array) {
-                if (file.name) {
-                    var toSave = _.pick(file, 'type', 'size');
-                    toSave.file = file.name;
-                    toSaveArr.push(toSave);
-                    this.fileUploaded[file.name] = toSave;
-                    toSave = null;
-                }
-            }, this);
-            data.files.forEach(function (file, index) {
-                window.setTimeout(function () {
-                    file.uploading(false);
-                    file.uploaded(true);
-                    this.setMessage(file, 'Successfully loaded', 'success');
-                }.bind(this), 500);
-            }, this);
-            socket.emit('createPhoto', toSaveArr);
-        },
-        onFileFail: function (e, data) {
-            //console.log('onFileFail ', 'data.errorThrown', data.errorThrown, 'data.textStatus', data.textStatus);
-            data.files.forEach(function (file, index) {
-                file.uploading(false);
-                file.uploaded(false);
-                file.error(true);
-                this.setMessage(file, data.textStatus, 'error');
-            }, this);
         },
         onFilesStart: function (e) {
             //console.log('start');
@@ -265,10 +233,64 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 this.filesUploading(false);
             }.bind(this), 600);
         },
+        onFileSubmit: function (e, data) {
+            data.files.forEach(function (file, index) {
+                file.ext.uploading(true);
+                file.ext.uploaded(false);
+                this.setMessage(file, 'Please wait. Loading..', 'muted');
+            }, this);
+        },
+        onFileSend: function (e, data) {
+            if (data.dataType && data.dataType.substr(0, 6) === 'iframe') {
+                // Iframe Transport does not support progress events.
+                // In lack of an indeterminate progress bar, we set
+                // the progress to 100%, showing the full animated bar:
+                alert('iFrame send. Need to handle');
+            }
+        },
+        onFileDone: function (e, data) {
+            var result = JSON.parse(data.result),
+                receivedFiles = result.files || [],
+                toSaveArr = [];
+
+            receivedFiles.forEach(function (receivedFile, index, array) {
+                if (receivedFile.name && receivedFile.file) {
+
+                    data.files.forEach(function (file, index) {
+                        if (file.name === receivedFile.name) {
+                            file.ext.file = receivedFile.file;
+                            file.ext.jqXHR = null;
+                            delete file.ext.jqXHR;
+                            this.fileUploaded[receivedFile.file] = file;
+                            window.setTimeout(function () {
+                                file.ext.uploading(false);
+                                file.ext.uploaded(true);
+                                this.setMessage(file, 'Successfully loaded', 'success');
+                            }.bind(this), 500);
+                        }
+                    }, this);
+
+                    toSaveArr.push(_.pick(receivedFile, 'file', 'type', 'size'));
+                }
+            }, this);
+
+            if (toSaveArr.length > 0) {
+                socket.emit('createPhoto', toSaveArr);
+            }
+        },
+        onFileFail: function (e, data) {
+            //console.log('onFileFail ', 'data.errorThrown', data.errorThrown, 'data.textStatus', data.textStatus);
+            data.files.forEach(function (file, index) {
+                file.ext.uploading(false);
+                file.ext.uploaded(false);
+                file.ext.error(true);
+                this.setMessage(file, data.textStatus, 'error');
+            }, this);
+        },
         onFileProgress: function (e, data) {
             var progress = parseInt(data.loaded / data.total * 100, 10);
             data.files.forEach(function (file, index) {
-                file.progress(progress);
+                file.ext.progress(progress);
             }, this);
             e = data = progress = null;
         },
@@ -276,12 +298,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             //console.log('onFileProgressAll ', data.loaded, data.total);
             this.fileProgressAll(parseInt(data.loaded / data.total * 100, 10));
             this.fileProgressAllText(this.calcProgress(data));
-        },
-        onDestroy: function (name) {
-            if (name && this.fileUploaded.hasOwnProperty(name)) {
-                socket.emit('removePhoto', {file: name});
-                delete this.fileUploaded[name];
-            }
         },
         calcProgress: function (data) {
             return Utils.formatBitrate(data.bitrate) + ' | ' +
@@ -292,25 +308,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         validate: function (file, options) {
             if (this.fileList.length > options.maxFiles) {
-                file.error(true);
-                file.valid = false;
+                file.ext.error(true);
+                file.ext.valid = false;
                 this.setMessage(file, 'Maximum number of files exceeded', 'error');
             }
             // Files are accepted if either the file type or the file name matches against the acceptFileTypes regular expression,
             // as only browsers with support for the File API report the type:
             if (!(options.acceptTypes.test(file.type) || options.acceptTypes.test(file.name))) {
-                file.error(true);
-                file.valid = false;
+                file.ext.error(true);
+                file.ext.valid = false;
                 this.setMessage(file, 'Filetype not allowed', 'error');
             }
             if (options.maxSize && file.size > options.maxSize) {
-                file.error(true);
-                file.valid = false;
+                file.ext.error(true);
+                file.ext.valid = false;
                 this.setMessage(file, 'File is too big', 'error');
             }
             if (typeof file.size === 'number' && file.size < options.minSize) {
-                file.error(true);
-                file.valid = false;
+                file.ext.error(true);
+                file.ext.valid = false;
                 this.setMessage(file, 'File is too small', 'error');
             }
         },
@@ -322,7 +338,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             loadImage(
                 file,
                 function (img) {
-                    var node = that.$dom.find('.forcanvas[data-fileuid="' + file.uid + '"]');
+                    var node = that.$dom.find('.forcanvas[data-fileuid="' + file.ext.uid + '"]');
                     if (node && node.length > 0) {
                         node.append(img);
                         node.css({height: img.height, opacity: 1});
@@ -366,8 +382,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 break;
             }
 
-            file.msg(text);
-            file.msgCss(css);
+            file.ext.msg(text);
+            file.ext.msgCss(css);
 
             text = type = css = null;
         }

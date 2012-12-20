@@ -50,7 +50,9 @@ module.exports.loadController = function (app, db, io) {
     PhotoConveyer = db.model('PhotoConveyer');
     User = db.model('User');
 
-    setTimeout(function () { conveyerControl(true); }, 2000); // Запускаем конвейер после рестарта сервера
+    setTimeout(function () {
+        conveyerControl(true);
+    }, 2000); // Запускаем конвейер после рестарта сервера
 };
 
 module.exports.convertPhoto = function (data, cb) {
@@ -92,7 +94,7 @@ module.exports.convertPhoto = function (data, cb) {
 };
 
 module.exports.removePhoto = function (data, cb) {
-    PhotoConveyer.findOneAndRemove({file: data, converting: false}, function (err, doc) {
+    PhotoConveyer.findOneAndRemove({file: data}, function (err, doc) {
         if (cb) {
             cb();
         }
@@ -123,22 +125,42 @@ function conveyerControl(andConverting) {
             goingToWork -= 1;
             working += 1;
             step(
-                function () {
+                function setFlag() {
                     item.converting = true; //Ставим флаг, что конвертация файла началась
                     item.save(this.parallel());
                     Photo.findOneAndUpdate({file: item.file}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
                 },
-                function (err, photoConv, photo) {
-                    conveyerStep(item.file, function () {
-                        photo.conv = undefined;
-                        photo.convqueue = undefined;
-                        photo.save();
-                        item.remove(function () {
-                            working -= 1;
-                            conveyerControl();
-                        });
-
-                    });
+                function toConveyer(err, photoConv, photo) {
+                    if (err || !photoConv || !photo) {
+                        if (photo) {
+                            //Присваиваем undefined, чтобы удалить свойства
+                            photo.conv = undefined;
+                            photo.convqueue = undefined;
+                            photo.save(this.parallel());
+                        }
+                        if (photoConv) {
+                            photoConv.remove(this.parallel());
+                        }
+                        this.parallel()();
+                    } else {
+                        conveyerStep(photoConv.file, function (err) {
+                            if (photo) {
+                                //Присваиваем undefined, чтобы удалить свойства
+                                photo.conv = undefined;
+                                photo.convqueue = undefined;
+                                photo.save(this.parallel());
+                            }
+                            if (err || !photoConv) {
+                                this.parallel()();
+                            } else if (photoConv) {
+                                photoConv.remove(this.parallel());
+                            }
+                        }, this);
+                    }
+                },
+                function finish() {
+                    working -= 1;
+                    conveyerControl();
                 }
             );
 
@@ -146,9 +168,9 @@ function conveyerControl(andConverting) {
     });
 }
 
-function conveyerStep(file, cb) {
+function conveyerStep(file, cb, ctx) {
     var sequence = [];
-        //start = Date.now();
+    //start = Date.now();
 
     sequence.push(function (callback) {
         imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', uploadDir + '/origin/' + file], function (err, data) {
@@ -200,14 +222,14 @@ function conveyerStep(file, cb) {
         }
 
         sequence.push(function (callback) {
-            imageMagick.resize(o, function () {
-                callback(null);
+            imageMagick.resize(o, function (err) {
+                callback(err);
             });
         });
 
     });
-    async.waterfall(sequence, function () {
+    async.waterfall(sequence, function (err, result) {
         //logger.info('%s converted in %dms', file, (Date.now() - start));
-        cb();
+        cb.call(ctx, err);
     });
 }

@@ -18,7 +18,7 @@
 
     var path = require('path'),
         fs = require('fs'),
-        _existsSync = fs.existsSync || path.existsSync,  // Since Node 0.8, .existsSync() moved from path to fs
+        _existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
         async = require('async'),
         formidable = require('formidable'),
         nodeStatic = require('node-static'),
@@ -59,10 +59,10 @@
             return ' (' + ((parseInt(index, 10) || 0) + 1) + ')' + (ext || '');
         },
         FileInfo = function (file) {
-            this.name = Utils.randomString(36) + file.name.substr(file.name.lastIndexOf('.'));
+            this.name = file.name;
+            this.file = Utils.randomString(36) + file.name.substr(file.name.lastIndexOf('.'));
             this.size = file.size;
             this.type = file.type;
-            this.delete_type = 'DELETE';
         },
         UploadHandler = function (req, res, callback) {
             this.req = req;
@@ -157,19 +157,16 @@
     };
     FileInfo.prototype.safeName = function () {
         // Prevent directory traversal and creating hidden system files:
-        this.name = path.basename(this.name).replace(/^\.+/, '');
+        this.file = path.basename(this.file).replace(/^\.+/, '');
         // Prevent overwriting existing files:
-        while (_existsSync(options.uploadDir + '/origin/' + this.name)) {
-            this.name = this.name.replace(nameCountRegexp, nameCountFunc);
+        while (_existsSync(options.uploadDir + '/origin/' + this.file)) {
+            this.file = this.file.replace(nameCountRegexp, nameCountFunc);
         }
     };
     FileInfo.prototype.initUrls = function (req) {
         if (!this.error) {
-            var that = this,
-                baseUrl = (options.ssl ? 'https:' : 'http:') +
-                    '//' + req.headers.host + options.uploadUrl;
-            this.url = baseUrl + 'origin/' + encodeURIComponent(this.name);
-            this.delete_url = baseUrl + encodeURIComponent(this.name);
+            var baseUrl = (options.ssl ? 'https:' : 'http:') + '//' + req.headers.host + options.uploadUrl;
+            this.url = baseUrl + 'origin/' + encodeURIComponent(this.file);
         }
     };
     UploadHandler.prototype.get = function () {
@@ -209,13 +206,15 @@
                 }
             };
         form.uploadDir = options.tmpDir;
-        form.on('fileBegin',function (name, file) {
-            tmpFiles.push(file.path);
-            var fileInfo = new FileInfo(file, handler.req, true);
-            fileInfo.safeName();
-            map[path.basename(file.path)] = fileInfo;
-            files.push(fileInfo);
-        }).on('field',function (name, value) {
+        form
+            .on('fileBegin',function (name, file) {
+                console.dir(arguments);
+                tmpFiles.push(file.path);
+                var fileInfo = new FileInfo(file, handler.req, true);
+                fileInfo.safeName();
+                map[path.basename(file.path)] = fileInfo;
+                files.push(fileInfo);
+            }).on('field',function (name, value) {
                 if (name === 'redirect') {
                     redirect = value;
                 }
@@ -227,7 +226,7 @@
                     fs.unlink(file.path);
                     return;
                 }
-                fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.name);
+                fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.file);
             }).on('aborted',function () {
                 tmpFiles.forEach(function (file) {
                     fs.unlink(file);

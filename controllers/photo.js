@@ -99,16 +99,17 @@ module.exports.loadController = function (app, db, io) {
         });
 
         socket.on('removePhoto', function (data) {
-            var result = function (data) {
-                socket.emit('removePhotoCallback', data);
+            var result = function (resultData) {
+                socket.emit('removePhotoCallback', resultData);
             };
             if (!hs.session.user || !hs.session.user.login) {
                 result({message: 'You are not authorized for this action.', error: true});
                 return;
             }
             step(
-                function increment() {
-                    Photo.findOneAndRemove({user: hs.session.user._id, file: data.file}, this);
+                function () {
+                    Photo.findOneAndRemove({user: hs.session.user._id, file: data.file}, this.parallel());
+                    PhotoConverter.removePhoto(data.file, this.parallel());
                 },
                 function (err, photo) {
                     if (err || !photo) {
@@ -117,7 +118,6 @@ module.exports.loadController = function (app, db, io) {
                     }
                     hs.session.user.pcount = hs.session.user.pcount - 1;
                     hs.session.user.save();
-                    PhotoConverter.removePhoto(data.file, this.parallel());
                     result({message: 'Photo removed'});
                 }
             );

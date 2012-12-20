@@ -39,25 +39,25 @@
 				//ko foreach: fileList
 				tr
 					td.preview
-						div.forcanvas(data-bind="attr: {'data-fileuid': uid}, css: {noPreview: !hasPreview()}")
-							//ko if: !hasPreview()
+						div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noPreview: !ext.hasPreview()}")
+							//ko if: !ext.hasPreview()
 							.msg Too big for preview
 							// /ko
 					td.desc
 						div(data-bind="text: name")
-						div(data-bind="text: humansize")
-						div.fileMsg(data-bind="text: msg(), css: msgCss()")
-						.progress.progress-striped.progress-success.active(data-bind="style: {visibility: uploading()? 'visible' : 'hidden'}")
-							.bar(data-bind="style: {width: progress() + '%'}")
+						div(data-bind="text: ext.humansize")
+						div.fileMsg(data-bind="text: ext.msg(), css: ext.msgCss()")
+						.progress.progress-striped.progress-success.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
+							.bar(data-bind="style: {width: ext.progress() + '%'}")
 					td.fileButtons
-						//ko if: !$parent.options.auto && !uploaded()
-						button.btn-strict.btn-strict-success(data-bind="click: function () {$data.startUpload()}, attr: {disabled: uploading()}")
+						//ko if: !$parent.options.auto && !ext.uploaded()
+						button.btn-strict.btn-strict-success(data-bind="click: function () {$parent.startFile($data)}, attr: {disabled: ext.uploading()}")
 							i.icon-upload.icon-white
 							span Upload this
 						// /ko
-						button.btn-strict(data-bind="css: {'btn-strict-warning': !uploaded(), 'btn-strict-danger': uploaded()}")
-							i.icon-white(data-bind="css: {'icon-ban-circle': !uploaded(), 'icon-remove-circle': uploaded()}")
-							span(data-bind="text: uploaded() ? 'Delete this' : 'Cancel this'")
+						button.btn-strict(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-strict-warning': !ext.uploaded(), 'btn-strict-danger': ext.uploaded()}")
+							i.icon-white(data-bind="css: {'icon-ban-circle': !ext.uploaded(), 'icon-remove-circle': ext.uploaded()}")
+							span(data-bind="text: ext.uploaded() ? 'Delete this' : 'Cancel this'")
 
 				// /ko
 	// The template to display files available for upload
