@@ -76,7 +76,7 @@ module.exports.convertPhoto = function (data, cb) {
                 toConvertObj.push({file: item, added: Date.now(), converting: false});
             });
             PhotoConveyer.collection.insert(toConvertObj, this.parallel());
-            Photo.update({file: {$in: toConvert}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
+            Photo.update({file: {$in: toConvert}, del: {$ne: true}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
         },
         function (err) {
             if (err) {
@@ -93,10 +93,10 @@ module.exports.convertPhoto = function (data, cb) {
     );
 };
 
-module.exports.removePhoto = function (data, cb) {
-    PhotoConveyer.findOneAndRemove({file: data}, function (err, doc) {
+module.exports.removePhotos = function (data, cb) {
+    PhotoConveyer.findOneAndRemove({file: {$in: data}}, function (err, doc) {
         if (cb) {
-            cb();
+            cb(err);
         }
     });
 };
@@ -128,7 +128,7 @@ function conveyerControl(andConverting) {
                 function setFlag() {
                     item.converting = true; //Ставим флаг, что конвертация файла началась
                     item.save(this.parallel());
-                    Photo.findOneAndUpdate({file: item.file}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
+                    Photo.findOneAndUpdate({file: item.file, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
                 },
                 function toConveyer(err, photoConv, photo) {
                     if (err || !photoConv || !photo) {
@@ -197,7 +197,7 @@ function conveyerStep(file, cb, ctx) {
         });
     });
     sequence.push(function (info, callback) {
-        Photo.findOneAndUpdate({file: file}, { $set: info}, { new: false, upsert: false }, function (err) {
+        Photo.findOneAndUpdate({file: file, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
             callback(err);
         });
     });

@@ -5,9 +5,14 @@ var Settings,
     Photo,
     Counter,
     PhotoConverter = require('./photoConverter.js'),
+    _ = require('lodash'),
+    fs = require('fs'),
+    ms =  require('ms'), // Tiny milisecond conversion utility
     step = require('step'),
     Utils = require('../commons/Utils.js'),
-    log4js = require('log4js');
+    log4js = require('log4js'),
+    photoDir = process.cwd() + '/publicContent/photos',
+    imageFolders = [photoDir + '/standard/', photoDir + '/thumb/', photoDir + '/micro/', photoDir + '/origin/'];
 
 function createPhotos(session, data, cb) {
     if (!session.user || !session.user.login) {
@@ -56,7 +61,59 @@ function createPhotos(session, data, cb) {
             cb({message: data.length + ' photo successfully saved ' + data[0].file});
         }
     );
+}
 
+function removePhotos(session, data, cb) {
+    if (!session.user || !session.user.login) {
+        cb({message: 'You are not authorized for this action.', error: true});
+        return;
+    }
+
+    if (!data || (!Array.isArray(data) && !Utils.isObjectType('object', data))) {
+        cb({message: 'Bad params', error: true});
+        return;
+    }
+
+    if (!Array.isArray(data) && Utils.isObjectType('object', data)) {
+        data = [data];
+    }
+
+    step(
+        function setDelFlag() {
+            Photo.update({user: session.user._id, file: {$in: data}, del: {$ne: true}}, { $set: { del: true }}, { multi: true }, this);
+        },
+        function (err, photoQuantity) {
+            if (err || photoQuantity === 0) {
+                cb({message: 'No such photo for this user', error: true});
+                return;
+            }
+            session.user.pcount = session.user.pcount - 1;
+            session.user.save();
+            PhotoConverter.removePhotos(data, this);
+        },
+        function (err) {
+            cb({message: 'Photo removed'});
+        }
+    );
+}
+
+function dropPhotos(cb) {
+    Photo.where('del').equals(true).select('file -_id').find(function (err, photos) {
+        var files = _.pluck(photos, 'file');
+        if (files.length === 0) {
+            return;
+        }
+        files.forEach(function (file, index) {
+            imageFolders.forEach(function (folder) {
+                fs.unlink(folder + file);
+            });
+        });
+        Photo.where('file').in(files).remove(function (err, deleteQuantity) {
+            if (cb) {
+                cb('Removed ' + deleteQuantity + 'photos');
+            }
+        });
+    });
 }
 
 module.exports.loadController = function (app, db, io) {
@@ -69,13 +126,17 @@ module.exports.loadController = function (app, db, io) {
 
     PhotoConverter.loadController(app, db, io);
 
+    //Регулярно проводим чистку удаленных файлов
+    setInterval(dropPhotos, ms('1m'));
+    dropPhotos();
+
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 
         socket.on('giveUserPhoto', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (!err) {
-                    Photo.find({user: user._id}).select('-_id -user').sort('-loaded').skip(data.start).limit(data.limit).exec(function (err, photo) {
+                    Photo.find({user: user._id, del: {$ne: true}}).select('-_id -user').sort('-loaded').skip(data.start).limit(data.limit).exec(function (err, photo) {
                         socket.emit('takeUserPhoto', photo);
                     });
                 }
@@ -98,29 +159,15 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
-        socket.on('removePhoto', function (data) {
-            var result = function (resultData) {
+        socket.on('removePhotos', function (data) {
+            removePhotos(hs.session, data, function (resultData) {
                 socket.emit('removePhotoCallback', resultData);
-            };
-            if (!hs.session.user || !hs.session.user.login) {
-                result({message: 'You are not authorized for this action.', error: true});
-                return;
-            }
-            step(
-                function () {
-                    Photo.findOneAndRemove({user: hs.session.user._id, file: data.file}, this.parallel());
-                    PhotoConverter.removePhoto(data.file, this.parallel());
-                },
-                function (err, photo) {
-                    if (err || !photo) {
-                        result({message: 'No such photo for this user', error: true});
-                        return;
-                    }
-                    hs.session.user.pcount = hs.session.user.pcount - 1;
-                    hs.session.user.save();
-                    result({message: 'Photo removed'});
-                }
-            );
+            });
+        });
+        socket.on('dropPhotos', function (data) {
+            dropPhotos(function (msg) {
+                socket.emit('dropPhotosResult', {message: msg});
+            });
         });
 
         socket.on('convertPhoto', function (data) {
@@ -137,7 +184,7 @@ module.exports.loadController = function (app, db, io) {
             }
             step(
                 function () {
-                    Photo.find({user: hs.session.user._id, file: {$in: data}}).select('file').exec(this);
+                    Photo.find({user: hs.session.user._id, file: {$in: data}, del: {$ne: true}}).select('file').exec(this);
                 },
                 function (err, photos, alreadyInConveyer) {
                     if (err) {

@@ -208,7 +208,6 @@
         form.uploadDir = options.tmpDir;
         form
             .on('fileBegin',function (name, file) {
-                console.dir(arguments);
                 tmpFiles.push(file.path);
                 var fileInfo = new FileInfo(file, handler.req, true);
                 fileInfo.safeName();

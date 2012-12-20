@@ -37,10 +37,11 @@ var PhotoSheme = new mongoose.Schema(
             stats_all: {type: Number},
             comments_count: {type: Number},
 
-            fresh: {type: Boolean, default: true},
-            active: {type: Boolean},
-            conv: {type: Boolean},
-            convqueue: {type: Boolean}
+            fresh: {type: Boolean, default: true}, //Новое
+            active: {type: Boolean},  //Активное
+            conv: {type: Boolean}, //Конвертируется
+            convqueue: {type: Boolean}, //В очереди на конвертацию
+            del: {type: Boolean} //К удалению
         },
         {
             strict: true
