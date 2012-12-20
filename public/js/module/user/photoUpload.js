@@ -54,7 +54,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.filesToSubmit = [];
 
             this.fileOptions = {
-                auto: false,
+                auto: true,
                 maxFiles: 10,
                 maxSize: 926214400, //25Mb
                 minSize: 10240, //10kB

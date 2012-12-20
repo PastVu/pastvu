@@ -14,6 +14,12 @@ var Settings,
     photoDir = process.cwd() + '/publicContent/photos',
     imageFolders = [photoDir + '/standard/', photoDir + '/thumb/', photoDir + '/micro/', photoDir + '/origin/'];
 
+/**
+ * Создает фотографии в базе данных
+ * @param session Сессия польщователя
+ * @param data Объект или массив фотографий
+ * @param cb Коллбэк
+ */
 function createPhotos(session, data, cb) {
     if (!session.user || !session.user.login) {
         cb({message: 'You are not authorized for this action.', error: true});
@@ -63,18 +69,24 @@ function createPhotos(session, data, cb) {
     );
 }
 
+/**
+ * Проставляет фотографиям в базе флаг удаления и удаляет из из конвейера конвертаций
+ * @param session Сессия пользователя
+ * @param data Массив имен фотографий
+ * @param cb Коллбэк
+ */
 function removePhotos(session, data, cb) {
     if (!session.user || !session.user.login) {
         cb({message: 'You are not authorized for this action.', error: true});
         return;
     }
 
-    if (!data || (!Array.isArray(data) && !Utils.isObjectType('object', data))) {
+    if (!data || (!Array.isArray(data) && !Utils.isObjectType('string', data))) {
         cb({message: 'Bad params', error: true});
         return;
     }
 
-    if (!Array.isArray(data) && Utils.isObjectType('object', data)) {
+    if (!Array.isArray(data) && Utils.isObjectType('string', data)) {
         data = [data];
     }
 
@@ -97,6 +109,10 @@ function removePhotos(session, data, cb) {
     );
 }
 
+/**
+ * Ококнчательно удаляет фотографии у которых проставлен флаг удаления из базы и с диска
+ * @param cb Коллбэк
+ */
 function dropPhotos(cb) {
     Photo.where('del').equals(true).select('file -_id').find(function (err, photos) {
         var files = _.pluck(photos, 'file');
@@ -127,7 +143,7 @@ module.exports.loadController = function (app, db, io) {
     PhotoConverter.loadController(app, db, io);
 
     //Регулярно проводим чистку удаленных файлов
-    setInterval(dropPhotos, ms('1m'));
+    setInterval(dropPhotos, ms('5m'));
     dropPhotos();
 
     io.sockets.on('connection', function (socket) {

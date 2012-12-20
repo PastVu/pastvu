@@ -50,11 +50,17 @@ module.exports.loadController = function (app, db, io) {
     PhotoConveyer = db.model('PhotoConveyer');
     User = db.model('User');
 
+    // Запускаем конвейер после рестарта сервера с флагом, что надо начинать с уже начатых
     setTimeout(function () {
         conveyerControl(true);
-    }, 2000); // Запускаем конвейер после рестарта сервера
+    }, 2000);
 };
 
+/**
+ * Добавление в конвейер конвертации фотографий
+ * @param data Массив имен фотографий
+ * @param cb Коллбэк успешности добавления
+ */
 module.exports.convertPhoto = function (data, cb) {
     var toConvert = [],
         toConvertObj = [];
@@ -93,6 +99,11 @@ module.exports.convertPhoto = function (data, cb) {
     );
 };
 
+/**
+ * Удаление фотографий из конвейера конвертаций
+ * @param data Массив имен фотографий
+ * @param cb Коллбэк успешности удаления
+ */
 module.exports.removePhotos = function (data, cb) {
     PhotoConveyer.findOneAndRemove({file: {$in: data}}, function (err, doc) {
         if (cb) {
@@ -103,7 +114,10 @@ module.exports.removePhotos = function (data, cb) {
 
 /**
  * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
- * @param andConverting  Флаг, указывающий, что выбрать надо даже файлы у которых уже проставлен флаг конвертирования (например, если сервер был остановлен во время конвертирования и после запуска их надо опять сконвертировать)
+ * @param andConverting  Флаг, указывающий, что выбрать надо даже файлы,
+ *                       у которых уже проставлен флаг конвертирования
+ *                       (например, если сервер был остановлен во время конвертирования
+ *                       и после запуска их надо опять сконвертировать)
  */
 function conveyerControl(andConverting) {
     var toWork = maxWorking - goingToWork - working,
@@ -168,9 +182,14 @@ function conveyerControl(andConverting) {
     });
 }
 
+/**
+ * Очередной шаг конвейера
+ * @param file Имя файла
+ * @param cb Коллбэк завершения шага
+ * @param ctx Контекст вызова коллбэка
+ */
 function conveyerStep(file, cb, ctx) {
     var sequence = [];
-    //start = Date.now();
 
     sequence.push(function (callback) {
         imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', uploadDir + '/origin/' + file], function (err, data) {
@@ -229,7 +248,6 @@ function conveyerStep(file, cb, ctx) {
 
     });
     async.waterfall(sequence, function (err, result) {
-        //logger.info('%s converted in %dms', file, (Date.now() - start));
         cb.call(ctx, err);
     });
 }
