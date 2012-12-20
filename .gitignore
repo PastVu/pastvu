@@ -15,6 +15,7 @@ Thumbs.db
 
 # Log files #
 ######################
+*.log
 logs/*.log
 logs/*.log.*
 
