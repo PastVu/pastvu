@@ -1,0 +1,36 @@
+.user_brief(data-bind="with: repository[M!M]")
+	.row-fluid
+		#avatar.fringe2
+			img(data-bind="attr: {src: user.avatar()}, style:{width: user.avatarW()+'px', height: user.avatarH()+'px'}, event: {load: onAvatarLoad, error: onAvatarError}")
+			button.btn-strict.btn-strict-small#avatar_edit(type="button", data-bind="event: {}, style: {display: can_avatar() ? '' : 'none'}")
+				i.icon-picture.icon-white
+				span Change avatar
+	.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
+		button.btn-strict(type="button", data-bind="event: {}")
+			i.icon-envelope.icon-white
+			span Send message
+	.row-fluid.statBlock
+		#info_common.block
+			.head Commons
+			.h_separator
+			dl.dl-horizontal
+				dt Group:
+				dd Administrators
+				dt Registration:
+				dd(data-bind="text: user.regdate().getDate()+'.'+(user.regdate().getMonth()+1)+'.'+user.regdate().getFullYear()")
+				dt Status:
+				dd Online
+	.row-fluid.statBlock
+		#short_stat.block
+			.head Brief statistics
+			.h_separator
+			dl.dl-horizontal
+				dt Photo uploaded:
+				dd(data-bind="text: user.pcount()")
+				dt Blogs created:
+				dd(data-bind="text: user.bcount()")
+				dt Favorite areas:
+				dd(data-bind="text: user.ccount()")
+				dt Comments:
+				dd 0
+	#leftSideDash

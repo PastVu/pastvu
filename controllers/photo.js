@@ -7,7 +7,7 @@ var Settings,
     PhotoConverter = require('./photoConverter.js'),
     _ = require('lodash'),
     fs = require('fs'),
-    ms =  require('ms'), // Tiny milisecond conversion utility
+    ms = require('ms'), // Tiny milisecond conversion utility
     step = require('step'),
     Utils = require('../commons/Utils.js'),
     log4js = require('log4js'),
@@ -149,16 +149,6 @@ module.exports.loadController = function (app, db, io) {
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 
-        socket.on('giveUserPhoto', function (data) {
-            User.getUserID(data.login, function (err, user) {
-                if (!err) {
-                    Photo.find({user: user._id, del: {$ne: true}}).select('-_id -user').sort('-loaded').skip(data.start).limit(data.limit).exec(function (err, photo) {
-                        socket.emit('takeUserPhoto', photo);
-                    });
-                }
-            });
-        });
-
         socket.on('createPhoto', function (data) {
             createPhotos(hs.session, data, function (createData) {
                 if (!createData.error) {
@@ -188,8 +178,8 @@ module.exports.loadController = function (app, db, io) {
 
         socket.on('convertPhoto', function (data) {
             var result = function (data) {
-                    socket.emit('convertPhotoResult', data);
-                };
+                socket.emit('convertPhotoResult', data);
+            };
             if (!hs.session.user) {
                 result({message: 'You are not authorized for this action.', error: true});
                 return;
@@ -219,6 +209,55 @@ module.exports.loadController = function (app, db, io) {
                 }
 
             );
+        });
+
+        /**
+         * Отдаем фотографии пользователя в компактном виде
+         */
+        function takeUserPhotos(data) {
+            socket.emit('takeUserPhotos', data);
+        }
+        socket.on('giveUserPhotos', function (data) {
+            User.getUserID(data.login, function (err, user) {
+                if (err) {
+                    takeUserPhotos({message: err && err.message, error: true});
+                    return;
+                }
+                Photo.getPhotosCompact({user: user._id, del: {$ne: true}}, {skip: data.start, limit: data.limit}, function (err, photo) {
+                    //console.dir(arguments);
+                    if (err) {
+                        takeUserPhotos({message: err && err.message, error: true});
+                        return;
+                    }
+                    takeUserPhotos(photo);
+                });
+                Photo.getPhoto({cid: 736}, function (err, photo) {
+                    if (err) {
+                        takePhoto({message: err && err.message, error: true});
+                        return;
+                    }
+                    console.dir(photo);
+                    takePhoto(photo.toObject());
+                });
+            });
+        });
+
+
+        /**
+         * Отдаем фотографию
+         */
+        function takePhoto(data) {
+            socket.emit('takePhoto', data);
+        }
+        socket.on('givePhoto', function (data) {
+            Photo.getPhoto({cid: data}, function (err, photo) {
+                if (err) {
+                    takePhoto({message: err && err.message, error: true});
+                    return;
+                }
+                console.dir(photo);
+                takePhoto(photo.toObject());
+            });
         });
 
     });

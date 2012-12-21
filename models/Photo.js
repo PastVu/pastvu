@@ -1,6 +1,9 @@
+'use strict';
+
 var mongoose = require('mongoose'),
     Schema = mongoose.Schema,
-    Counter = require('mongoose').model('Counter');
+    Counter = require('mongoose').model('Counter'),
+    _ = require('lodash');
 
 var PhotoSheme = new mongoose.Schema(
         {
@@ -35,7 +38,7 @@ var PhotoSheme = new mongoose.Schema(
             stats_day: {type: Number},
             stats_week: {type: Number},
             stats_all: {type: Number},
-            comments_count: {type: Number},
+            ccount: {type: Number},  //Кол-во комментариев
 
             fresh: {type: Boolean, default: true}, //Новое
             active: {type: Boolean},  //Активное
@@ -57,6 +60,32 @@ var PhotoSheme = new mongoose.Schema(
             strict: true
         }
     );
+
+
+PhotoSheme.statics.getPhoto = function (query, cb) {
+    if (!query || !query.cid) {
+        cb(null, 'cid is not specified');
+    }
+    this.findOne(query).populate('user', 'login avatar avatarW avatarH').select('-_id').exec(cb);
+};
+
+PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {
+    if (!query || !query.cid) {
+        cb(null, 'cid is not specified');
+    }
+    options = options || {};
+    this.findOne(query, null, options).select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
+};
+
+PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
+    if (!query) {
+        cb(null, 'query is not specified');
+    }
+    options = options || {};
+    this.find(query, null, options).sort('-loaded').select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
+};
+
+
 
 module.exports.makeModel = function (db) {
     db.model('Photo', PhotoSheme);

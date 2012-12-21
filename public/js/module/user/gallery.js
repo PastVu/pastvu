@@ -70,7 +70,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.showing = false;
         },
         getPhotos: function (start, limit, cb, ctx) {
-            socket.once('takeUserPhoto', function (data) {
+            socket.once('takeUserPhotos', function (data) {
                 data.forEach(function (item, index, array) {
                     item.pfile = '/_photo/thumb/' + item.file;
                     item.conv = item.conv || false;
@@ -81,7 +81,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 }
                 this.loadingPhoto(false);
             }.bind(this));
-            socket.emit('giveUserPhoto', {login: this.u.login(), start: start, limit: limit});
+            socket.emit('giveUserPhotos', {login: this.u.login(), start: start, limit: limit});
             this.loadingPhoto(true);
         },
         getPage: function (start, limit) {
