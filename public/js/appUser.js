@@ -43,7 +43,7 @@ require([
                 {route: ":user", handler: "profile"},
                 {route: ":user/settings", handler: "settings"},
                 {route: "photoUpload", handler: "photoUpload"},
-                {route: ":user/photo", handler: "photo"}
+                {route: ":user/photo", handler: "gallery"}
             ],
             handlers: {
                 profile: function (user, params) {
@@ -105,8 +105,8 @@ require([
                     );
                 },
 
-                photo: function (user, params) {
-                    console.log('User Photo');
+                gallery: function (user, params) {
+                    console.log('User gallery');
                     this.params({user: user || ""});
 
                     renderer(
@@ -114,12 +114,12 @@ require([
                             {module: 'm/top', container: '#top_container'},
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
-                            {module: 'm/user/photo', container: '#user_content', options: {canAdd: true}}
+                            {module: 'm/user/gallery', container: '#user_content', options: {canAdd: true}}
                         ],
                         {
                             parent: globalVM,
                             level: 0,
-                            callback: function (top, brief, menu, photo, news) {
+                            callback: function (top, brief, menu, gallery, news) {
                             }
                         }
                     );
