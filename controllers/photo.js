@@ -250,7 +250,7 @@ module.exports.loadController = function (app, db, io) {
             socket.emit('takePhoto', data);
         }
         socket.on('givePhoto', function (data) {
-            Photo.getPhoto({cid: data}, function (err, photo) {
+            Photo.getPhoto({cid: data.cid}, function (err, photo) {
                 if (err) {
                     takePhoto({message: err && err.message, error: true});
                     return;

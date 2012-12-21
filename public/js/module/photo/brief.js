@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Users', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix' ], function (_, P, ko, Cliche, globalVM, users, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/storage', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix' ], function (_, P, ko, Cliche, globalVM, storage, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -12,7 +12,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/Us
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            users.user(user, function (vm) {
+            storage.user(user, function (vm) {
                 if (vm) {
                     this.user = vm;
 

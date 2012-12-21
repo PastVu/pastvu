@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'load-image', 'text!tpl/user/photoUpload.jade', 'css!style/user/photoUpload', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload'/*, 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'*/], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, users, loadImage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/storage', 'load-image', 'text!tpl/user/photoUpload.jade', 'css!style/user/photoUpload', 'jquery.fileupload/jquery.iframe-transport', 'jquery.fileupload/jquery.fileupload'/*, 'jquery.fileupload/jquery.fileupload-ui', 'jquery.fileupload/locale'*/], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, loadImage, jade) {
     'use strict';
 
     /**
@@ -77,7 +77,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
             var user = this.auth.iAm.login();
             if (P.settings.LoggedIn()) {
-                users.user(user, function (vm) {
+                storage.user(user, function (vm) {
                     if (vm) {
                         this.u = vm;
 

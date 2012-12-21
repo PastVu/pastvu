@@ -4,10 +4,10 @@
  */
 define([
     'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'm/User', 'm/Users',
+    'm/User', 'm/storage',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider', 'Locations',
     'text!tpl/map/mapBig.jade', 'css!style/map/mapBig'
-], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, users, L, Map, NavigationSlider, Locations, jade) {
+], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, NavigationSlider, Locations, jade) {
     'use strict';
     var $window = $(window);
 

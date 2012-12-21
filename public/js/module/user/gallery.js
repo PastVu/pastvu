@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/User', 'm/Users', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, users, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, storage, jade) {
     'use strict';
     var $window = $(window);
     ko.observableArray['fn']['concat'] = function (arr, before) {
@@ -40,7 +40,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            users.user(user, function (vm) {
+            storage.user(user, function (vm) {
                 if (vm) {
                     this.u = vm;
                     this.canAdd = ko.observable(this.options.canAdd && this.u.login() === this.auth.iAm.login());

@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/Users', 'text!tpl/user/profile.jade', 'css!style/user/profile', 'bs/bootstrap-datepicker' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, users, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/User', 'm/storage', 'text!tpl/user/profile.jade', 'css!style/user/profile', 'bs/bootstrap-datepicker' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
     'use strict';
 
     return Cliche.extend({
@@ -13,7 +13,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            users.user(user, function (vm) {
+            storage.user(user, function (vm) {
                 if (vm) {
 
                     this.u = vm;

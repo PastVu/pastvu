@@ -39,13 +39,13 @@ require([
         return {
             root: '/p/',
             routes: [
-                {route: ":photo", handler: "photo"},
-                {route: ":photo/edit", handler: "edit"}
+                {route: ":cid", handler: "photo"},
+                {route: ":cid/edit", handler: "edit"}
             ],
             handlers: {
-                photo: function (photo, getParams) {
-                    console.log('Photo ', photo);
-                    this.params({photo: photo || ""});
+                photo: function (cid, getParams) {
+                    console.log('Photo ', cid);
+                    this.params({photo: cid || ""});
 
                     renderer(
                         [
@@ -60,9 +60,9 @@ require([
                         }
                     );
                 },
-                edit: function (photo, getParams) {
-                    console.log('Photo ', photo);
-                    this.params({photo: photo || ""});
+                edit: function (cid, getParams) {
+                    console.log('Photo ', cid);
+                    this.params({photo: cid || ""});
 
                     renderer(
                         [
