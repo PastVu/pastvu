@@ -26,12 +26,12 @@ var PhotoSheme = new mongoose.Schema(
             w: {type: Number},
             h: {type: Number},
 
-            title: {type: String, default: 'No title yet'},
+            title: {type: String},
             year: {type: String},
             year_from: {type: Number},
             year_to: {type: Number},
             address: {type: String},
-            description: {type: String},
+            desc: {type: String},
             source: {type: String},
             author: {type: String},
 

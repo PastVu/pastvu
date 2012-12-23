@@ -1,5 +1,5 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'm/User'], function ($, _, ko, ko_mapping, Utils, socket, User) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'm/User', 'm/Photo'], function ($, _, ko, ko_mapping, Utils, socket, User, Photo) {
     'use strict';
 
     var storage = {
@@ -35,8 +35,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
             } else {
                 storage.waitings['p' + cid] = [{cb: callback, ctx: context}];
                 socket.once('takePhoto', function (data) {
+                    data.cid = String(data.cid);
                     if (!data.error && data.cid === cid) {
-                        storage.photos[cid] = User.VM(data);
+                        storage.photos[cid] = Photo.VM(data);
                     }
                     if (storage.waitings['p' + cid]) {
                         storage.waitings['p' + cid].forEach(function (item, index, collection) {

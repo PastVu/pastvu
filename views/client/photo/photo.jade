@@ -1,1 +1,20 @@
 .photo(data-bind="with: repository[M!M]")
+	.row-fluid.photoData
+		.span9-10
+			.row-fluid.photoImgContent
+				img.photoImg(data-bind="attr: {src: p.sfile()}")
+			h4.photoTitle(data-bind="text: p.title()")
+			.row-fluid.photoInfo(data-bind="attr: {contenteditable: edit_mode()}, htmlValue: p.desc, style: {display: p.desc().length || edit_mode() > 0 ? '' : 'none'}")
+			.row-fluid.photoInfo(data-bind="text: p.address(), style: {display: p.address().length > 0 ? '' : 'none'}")
+			.row-fluid.photoInfo(data-bind="text: p.source(), style: {display: p.source().length > 0 ? '' : 'none'}")
+			.row-fluid.photoInfo(data-bind="text: p.author(), style: {display: p.author().length > 0 ? '' : 'none'}")
+			.row-fluid.photoInfo
+				| We believe that the photo was taken in&nbsp;
+				span(data-bind="text: p.year()")
+				| &nbsp;(shooting direction:&nbsp;
+				span(data-bind="text: p.year()")
+				| &nbsp;)
+			.h_separator
+		.span2-3
+			.user_brief(data-bind="click: www") Right section
+	.row-fluid.photoComments

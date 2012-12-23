@@ -3,5 +3,33 @@
 @import "../bootstrap/mixins.less";
 
 .photo {
+	position: relative;
+	margin: 0 1% 0 1.5%;
 
+	.h_separator {
+		margin: 12px 0;
+	}
+
+	.photoTitle {
+
+	}
+	.photoImgContent {
+		margin-bottom: 17px;
+		text-align: center;
+	}
+	.photoImg {
+		display: inline-block;
+		max-width: 100%;
+	}
+
+	.photoInfo {
+		margin-bottom: 7px;
+		text-align: justify;
+	}
+}
+
+@media (max-width: 767px) {
+	.photo {
+		margin: 0 3px;
+	}
 }

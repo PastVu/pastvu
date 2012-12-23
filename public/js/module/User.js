@@ -1,5 +1,7 @@
 /*global requirejs:true, require:true, define:true*/
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], function ($, _, ko, ko_mapping, Utils) {
+    'use strict';
+
     var DefaultUser = {
         login: 'anonymous',
         email: '',
@@ -28,7 +30,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         blogger: '',
         aboutme: '',
 
-        regdate: new Date(0),
+        regdate: Date.now(),
         pcount: 0,
         bcount: 0,
         ccount: 0,
