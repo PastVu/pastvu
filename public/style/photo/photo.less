@@ -10,6 +10,10 @@
 		margin: 12px 0;
 	}
 
+	.noContent {
+		display: none;
+	}
+
 	.photoTitle {
 
 	}
@@ -25,6 +29,63 @@
 	.photoInfo {
 		margin-bottom: 7px;
 		text-align: justify;
+	}
+
+	.editable {
+		padding: 0 2px;
+		border: 1px solid transparent;
+		background-color: transparent;
+		.transition(all .2s linear);
+
+		&[contenteditable="true"] {
+			border-color: #BDBDBD;
+			background-color: #F0F0F0;
+		}
+	}
+
+	.photoActions button {
+		display: none;
+	}
+
+	.photoData {
+
+		&.canBeEdit {
+			.photoActions .btnSave {
+				display: inline-block;
+			}
+		}
+		&.canBeApprove {
+			.photoActions .btnApprove {
+				display: inline-block;
+			}
+		}
+		&.canBeActive {
+			.photoActions .btnActive {
+				display: inline-block;
+			}
+		}
+		&.canBeRemove {
+			.photoActions .btnRemove {
+				display: inline-block;
+			}
+		}
+
+		&.editMode {
+			.photoActions .btnCancel {
+				display: inline-block;
+			}
+			.noContent {
+				display: inline-block;
+			}
+		}
+
+		&.inApprove {
+
+		}
+		&.inActive {
+
+		}
+
 	}
 }
 

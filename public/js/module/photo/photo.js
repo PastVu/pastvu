@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
     'use strict';
 
     // https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
@@ -29,6 +29,59 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         }
     };
 
+    ko.bindingHandlers.cEdit = {
+        init: function (element, valueAccessor, allBindingsAccessor) {
+        },
+        update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+            var obj = ko.utils.unwrapObservable(valueAccessor()),
+                $element = $(element);
+
+            if (obj.edit && !$element.attr('contenteditable')) {
+                $element
+                    .attr('contenteditable', "true")
+                    .on('blur', function () {
+                        var modelValue = obj.val,
+                            elementValue = $.trim($element.text()),
+                            allBindings;
+
+                        if (ko.isWriteableObservable(modelValue)) {
+                            modelValue(elementValue);
+                        } else { //handle non-observable one-way binding
+                            allBindings = allBindingsAccessor();
+                            if (allBindings._ko_property_writers && allBindings._ko_property_writers.htmlValue) {
+                                allBindings._ko_property_writers.cEdit.val(elementValue);
+                            }
+                        }
+                        checkForCap();
+                    })
+                    .on('focus', function () {
+                        if (obj.cap && _.isEmpty(obj.val())) {
+                            $element.html('&nbsp;');
+                        }
+                    });
+                checkForCap();
+
+                /*if (obj.cap && _.isEmpty(obj.val())) {
+                    $element.text(obj.cap);
+                }*/
+            } else if (!obj.edit && $element.attr('contenteditable') === 'true') {
+                $element.off('blur').removeAttr('contenteditable');
+            }/* else if (obj.edit && obj.cap && _.isEmpty(obj.val())) {
+                $element.text(obj.cap);
+            }*/ else {
+                checkForCap();
+                $element.text(obj.val());
+            }
+
+            function checkForCap() {
+                if (obj.edit && obj.cap && _.isEmpty(obj.val())) {
+                    $element.text(obj.cap);
+                }
+            }
+
+        }
+    };
+
     return Cliche.extend({
         jade: jade,
         create: function () {
@@ -41,7 +94,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (vm) {
 
                     this.p = vm;
-                    this.origin = ko_mapping.toJS(this.p);
+                    this.originData = ko_mapping.toJS(this.p);
 
                     this.edit = ko.observable(false);
 
@@ -49,8 +102,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         return this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 50;
                     }, this);
 
-                    this.edit_mode = ko.computed(function () {
-                        return this.canBeEdit() && this.edit();
+                    this.canBeApprove = ko.computed(function () {
+                        return this.p.fresh() && this.auth.iAm.role_level() >= 0;
+                    }, this);
+
+                    this.canBeActive = ko.computed(function () {
+                        return !this.p.fresh() && this.auth.iAm.role_level() >= 50;
+                    }, this);
+
+                    this.canBeRemove = ko.computed(function () {
+                        return this.auth.iAm.role_level() >= 0;
                     }, this);
 
                     ko.applyBindings(globalVM, this.$dom[0]);
@@ -67,39 +128,80 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.$container.css('display', '');
             this.showing = false;
         },
+
+        editSave: function (data, event) {
+            if (this.canBeEdit()) {
+                if (!this.edit()) {
+                    this.edit(true);
+                } else {
+                    this.save();
+                    this.edit(false);
+                }
+            }
+        },
+        editCancel: function (data, event) {
+            if (this.canBeEdit() && this.edit()) {
+                this.cancel();
+                this.edit(false);
+            }
+        },
+        setApprove: function (data, event) {
+            if (this.canBeApprove()) {
+                //TODO: Подтверждение только через запрос
+                this.p.fresh(!this.p.fresh());
+                this.save();
+            }
+        },
+        toggleActive: function (data, event) {
+            if (this.canBeActive()) {
+                //TODO: Активация только через запрос
+                this.p.active(!this.p.active());
+                this.save();
+            }
+        },
+        remove: function (data, event) {
+            if (this.canBeRemove()) {
+                //TODO: Удаление только через запрос
+            }
+        },
+
         www: function () {
-            console.log(9);
+            console.dir(ko_mapping.toJS(this.p));
+            this.p.address(String(Math.random() * 100 >> 0));
         },
 
         save: function () {
-            var targetUser = ko_mapping.toJS(this.u),
+            var target = ko_mapping.toJS(this.p),
                 key;
 
-            for (key in targetUser) {
-                if (targetUser.hasOwnProperty(key) && key !== 'login') {
-                    if (this.originUser[key] && (targetUser[key] === this.originUser[key])) {
-                        delete targetUser[key];
-                    } else if (!this.originUser[key] && (targetUser[key] === User.def[key])) {
-                        delete targetUser[key];
+            for (key in target) {
+                if (target.hasOwnProperty(key) && key !== 'cid' && key !== 'user') {
+                    if (this.originData[key] && (target[key] === this.originData[key])) {
+                        delete target[key];
+                    } else if (!this.originData[key] && (target[key] === Photo.def[key])) {
+                        delete target[key];
                     }
                 }
             }
-            if (Utils.getObjectPropertyLength(targetUser) > 1) {
-                socket.emit('saveUser', targetUser);
-                this.originUser = targetUser;
+            if (Utils.getObjectPropertyLength(target) > 1) {
+                socket.once('savePhotoResult', function (data) {
+                    console.dir(data);
+                    if (data && !data.error) {
+                        this.originData = target;
+                    }
+                });
+                socket.emit('savePhoto', target);
             }
-            this.edit(false);
 
-            targetUser = key = null;
+            target = key = null;
         },
         cancel: function () {
-            _.forEach(this.originUser, function (item, key) {
-                if (Utils.isObjectType('function', this.u[key]) && this.u[key]() !== item) {
-                    this.u[key](item);
+            _.forEach(this.originData, function (item, key) {
+                if (Utils.isObjectType('function', this.p[key]) && this.p[key]() !== item) {
+                    this.p[key](item);
                 }
             }.bind(this));
-
-            this.edit(false);
         }
     });
-});
+})
+;

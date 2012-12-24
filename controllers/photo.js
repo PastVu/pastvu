@@ -225,6 +225,7 @@ module.exports.loadController = function (app, db, io) {
         function takeUserPhotos(data) {
             socket.emit('takeUserPhotos', data);
         }
+
         socket.on('giveUserPhotos', function (data) {
             User.getUserID(data.login, function (err, user) {
                 if (err) {
@@ -232,7 +233,7 @@ module.exports.loadController = function (app, db, io) {
                     return;
                 }
                 Photo.getPhotosCompact({user: user._id, del: {$ne: true}}, {skip: data.start, limit: data.limit}, function (err, photo) {
-                    //console.dir(arguments);
+                    //console.dir(photo);
                     if (err) {
                         takeUserPhotos({message: err && err.message, error: true});
                         return;
@@ -249,14 +250,56 @@ module.exports.loadController = function (app, db, io) {
         function takePhoto(data) {
             socket.emit('takePhoto', data);
         }
+
         socket.on('givePhoto', function (data) {
             Photo.getPhoto({cid: data.cid}, function (err, photo) {
                 if (err) {
                     takePhoto({message: err && err.message, error: true});
                     return;
                 }
-                console.dir(photo);
+                //console.dir(photo);
                 takePhoto(photo.toObject());
+            });
+        });
+
+        /**
+         * Сохраняем информацию о фотографии
+         */
+        function savePhotoResult(data) {
+            socket.emit('savePhotoResult', data);
+        }
+
+        socket.on('savePhoto', function (data) {
+            if (!hs.session.user) {
+                savePhotoResult({message: 'Not authorized', error: true});
+                return;
+            }
+            if (!data.cid) {
+                savePhotoResult({message: 'cid is not defined', error: true});
+                return;
+            }
+            Photo.getPhoto({cid: data.cid}, function (err, photo) {
+                if (err) {
+                    savePhotoResult({message: err && err.message, error: true});
+                    return;
+                }
+                if (photo.user.login !== hs.session.user.login) {
+                    savePhotoResult({message: 'Not authorized', error: true});
+                    return;
+                }
+                var toSave = _.pick(data, 'lat', 'lng', 'direction', 'title', 'year', 'address', 'desc', 'source', 'author');
+                console.dir(toSave);
+                if (Object.keys(toSave).length > 0) {
+                    photo.extend(toSave);
+                    console.dir(photo);
+                    photo.save(function (err) {
+                        if (err) {
+                            savePhotoResult({message: err.message || '', error: true});
+                            return;
+                        }
+                        savePhotoResult({message: 'Photo saved successfully'});
+                    });
+                }
             });
         });
 

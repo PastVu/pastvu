@@ -1,20 +1,36 @@
 .photo(data-bind="with: repository[M!M]")
-	.row-fluid.photoData
+	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeActive: canBeActive(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: !p.active()}")
 		.span9-10
 			.row-fluid.photoImgContent
 				img.photoImg(data-bind="attr: {src: p.sfile()}")
-			h4.photoTitle(data-bind="text: p.title()")
-			.row-fluid.photoInfo(data-bind="attr: {contenteditable: edit_mode()}, htmlValue: p.desc, style: {display: p.desc().length || edit_mode() > 0 ? '' : 'none'}")
-			.row-fluid.photoInfo(data-bind="text: p.address(), style: {display: p.address().length > 0 ? '' : 'none'}")
-			.row-fluid.photoInfo(data-bind="text: p.source(), style: {display: p.source().length > 0 ? '' : 'none'}")
-			.row-fluid.photoInfo(data-bind="text: p.author(), style: {display: p.author().length > 0 ? '' : 'none'}")
+			h4.photoTitle.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.title")
+			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.desc, css: {'noContent': p.desc().length === 0}")
+			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Insert address', templ: 'wow {val} owo'}, css: {'noContent': p.address().length === 0}")
+			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.source, css: {'noContent': p.source().length === 0}")
+			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.author, css: {'noContent': p.author().length === 0}")
 			.row-fluid.photoInfo
 				| We believe that the photo was taken in&nbsp;
-				span(data-bind="text: p.year()")
+				span.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.year, css: {'noContent': p.year().length === 0}")
 				| &nbsp;(shooting direction:&nbsp;
-				span(data-bind="text: p.year()")
-				| &nbsp;)
+				span.editable(data-bind="text: p.year()")
+				| )
 			.h_separator
 		.span2-3
+			.row-fluid.photoActions
+				button.btn-strict.btnSave(type="button", data-bind="css: {'btn-strict-success': edit()}, click: editSave")
+					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit(), 'icon-ok': edit()}")
+					span(data-bind="text: edit() ? 'Save' : 'Edit'")
+				button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="click: editCancel")
+					i.icon-remove.icon-white
+					span Cancel
+				button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="click: setApprove")
+					i.icon-ok.icon-white
+					span Approve
+				button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': p.active(), 'btn-strict-success': !p.active()}, click: toggleActive")
+					i.icon-white(data-bind="css: {'icon-exclamation-sign': p.active(), 'icon-ok-sign': !p.active()}")
+					span(data-bind="text: !p.active() ? 'Activate' : 'Deactivate'")
+				button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="click: remove")
+					i.icon-remove-circle.icon-white
+					span Remove
 			.user_brief(data-bind="click: www") Right section
 	.row-fluid.photoComments
