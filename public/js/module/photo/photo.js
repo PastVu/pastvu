@@ -48,7 +48,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             modelValue(elementValue);
                         } else { //handle non-observable one-way binding
                             allBindings = allBindingsAccessor();
-                            if (allBindings._ko_property_writers && allBindings._ko_property_writers.htmlValue) {
+                            if (allBindings._ko_property_writers && allBindings._ko_property_writers.cEdit && allBindings._ko_property_writers.cEdit.val) {
                                 allBindings._ko_property_writers.cEdit.val(elementValue);
                             }
                         }
@@ -69,8 +69,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }/* else if (obj.edit && obj.cap && _.isEmpty(obj.val())) {
                 $element.text(obj.cap);
             }*/ else {
-                checkForCap();
                 $element.text(obj.val());
+                checkForCap();
             }
 
             function checkForCap() {
