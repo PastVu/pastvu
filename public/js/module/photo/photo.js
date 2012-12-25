@@ -36,49 +36,55 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             var obj = ko.utils.unwrapObservable(valueAccessor()),
                 $element = $(element);
 
-            if (obj.edit && !$element.attr('contenteditable')) {
-                $element
-                    .attr('contenteditable', "true")
-                    .on('blur', function () {
-                        var modelValue = obj.val,
-                            elementValue = $.trim($element.text()),
-                            allBindings;
+            $element.text(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val);
 
-                        if (ko.isWriteableObservable(modelValue)) {
-                            modelValue(elementValue);
-                        } else { //handle non-observable one-way binding
-                            allBindings = allBindingsAccessor();
-                            if (allBindings._ko_property_writers && allBindings._ko_property_writers.cEdit && allBindings._ko_property_writers.cEdit.val) {
-                                allBindings._ko_property_writers.cEdit.val(elementValue);
+            if (obj.edit) {
+                if (!$element.attr('contenteditable')) {
+                    $element
+                        .css({display: ''})
+                        .attr('contenteditable', "true")
+                        .on('blur', function () {
+                            console.log('blur');
+                            var modelValue = obj.val,
+                                elementValue = $.trim($element.text());
+
+                            $element.text(elementValue);
+                            if (ko.isWriteableObservable(modelValue)) {
+                                if (elementValue === modelValue()) {
+                                    checkForCap();
+                                } else {
+                                    modelValue(elementValue);
+                                }
                             }
-                        }
-                        checkForCap();
-                    })
-                    .on('focus', function () {
-                        if (obj.cap && _.isEmpty(obj.val())) {
-                            $element.html('&nbsp;');
-                        }
-                    });
-                checkForCap();
-
-                /*if (obj.cap && _.isEmpty(obj.val())) {
-                    $element.text(obj.cap);
-                }*/
-            } else if (!obj.edit && $element.attr('contenteditable') === 'true') {
-                $element.off('blur').removeAttr('contenteditable');
-            }/* else if (obj.edit && obj.cap && _.isEmpty(obj.val())) {
-                $element.text(obj.cap);
-            }*/ else {
-                $element.text(obj.val());
-                checkForCap();
-            }
-
-            function checkForCap() {
-                if (obj.edit && obj.cap && _.isEmpty(obj.val())) {
-                    $element.text(obj.cap);
+                        })
+                        .on('focus', function () {
+                            console.log('focus');
+                            $element.removeClass('cap');
+                            if (_.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                                $element.html('&nbsp;');
+                            }
+                        });
+                    checkForCap();
+                } else {
+                    checkForCap();
+                }
+            } else {
+                if ($element.attr('contenteditable') === 'true') {
+                    $element.off('blur').off('focus').removeAttr('contenteditable').removeClass('cap');;
+                }
+                if (_.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                    $element.css({display: 'none'});
                 }
             }
 
+            function checkForCap() {
+                if (obj.edit && obj.cap && _.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                    $element.addClass('cap');
+                    $element.text(obj.cap);
+                } else {
+                    $element.removeClass('cap');
+                }
+            }
         }
     };
 
@@ -96,8 +102,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.p = vm;
                     this.originData = ko_mapping.toJS(this.p);
 
-                    this.edit = ko.observable(false);
-
                     this.canBeEdit = ko.computed(function () {
                         return this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 50;
                     }, this);
@@ -113,6 +117,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.canBeRemove = ko.computed(function () {
                         return this.auth.iAm.role_level() >= 0;
                     }, this);
+
+                    this.edit = ko.observable(false);
 
                     ko.applyBindings(globalVM, this.$dom[0]);
 

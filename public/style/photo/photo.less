@@ -10,10 +10,6 @@
 		margin: 12px 0;
 	}
 
-	.noContent {
-		display: none;
-	}
-
 	.photoTitle {
 
 	}
@@ -29,18 +25,6 @@
 	.photoInfo {
 		margin-bottom: 7px;
 		text-align: justify;
-	}
-
-	.editable {
-		padding: 0 2px;
-		border: 1px solid transparent;
-		background-color: transparent;
-		.transition(all .2s linear);
-
-		&[contenteditable="true"] {
-			border-color: #BDBDBD;
-			background-color: #F0F0F0;
-		}
 	}
 
 	.photoActions button {
@@ -74,8 +58,26 @@
 			.photoActions .btnCancel {
 				display: inline-block;
 			}
-			.noContent {
-				display: inline-block;
+			.editable {
+				padding: 0 2px;
+				border: 1px solid #BDBDBD;
+				background-color: #F0F0F0;
+
+				&:hover {
+					border-color: rgba(222, 176, 43, 0.56);
+				}
+
+				&.cap {
+					color: #a0a0a0;
+
+					&:hover {
+						color: darken(#8d8d8d, 20%);
+					}
+					&:focus {
+						color: #000000;
+					}
+				}
+
 			}
 		}
 

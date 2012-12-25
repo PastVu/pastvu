@@ -3,14 +3,14 @@
 		.span9-10
 			.row-fluid.photoImgContent
 				img.photoImg(data-bind="attr: {src: p.sfile()}")
-			h4.photoTitle.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.title")
-			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.desc, css: {'noContent': p.desc().length === 0}")
-			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Insert address', templ: 'wow {val} owo'}, css: {'noContent': p.address().length === 0}")
-			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.source, css: {'noContent': p.source().length === 0}")
-			.row-fluid.photoInfo.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.author, css: {'noContent': p.author().length === 0}")
+			h4.row-fluid.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
+			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?'}")
+			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
 			.row-fluid.photoInfo
 				| We believe that the photo was taken in&nbsp;
-				span.editable(data-bind="attr: {contenteditable: edit()}, htmlValue: p.year, css: {'noContent': p.year().length === 0}")
+				span.editable(data-bind="htmlValue: p.year, css: {'noContent': p.year().length === 0}")
 				| &nbsp;(shooting direction:&nbsp;
 				span.editable(data-bind="text: p.year()")
 				| )
