@@ -14,7 +14,7 @@
 				span(data-bind="text: p.year()")
 				span(data-bind="text: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
 				span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
-				//ko if: p.dir().length > 0
+				//ko if: p.dir && p.dir() && p.dir().length > 0
 				span &nbsp;(shooting direction &minus;&nbsp;
 				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )

@@ -118,7 +118,35 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         return this.auth.iAm.role_level() >= 0;
                     }, this);
 
-                    this.edit = ko.observable(false);
+                    this.edit = ko.observable(this.p.fresh() && this.canBeEdit());
+
+                    this.p.year.subscribe(function (val) {
+                        var v = parseInt(val, 10);
+                        if (!v || isNaN(v)) {
+                            v = Photo.def.year;
+                        }
+                        if (String(val) !== String(v)) {
+                            this.p.year(v);
+                            return;
+                        }
+                        if (v > parseInt(this.p.year2(), 10)) {
+                            this.p.year2(v);
+                        }
+                    }, this);
+                    this.p.year2.subscribe(function (val) {
+                        var v = parseInt(val, 10);
+                        if (!v || isNaN(v)) {
+                            v = Photo.def.year;
+                        }
+                        if (String(val) !== String(v)) {
+                            this.p.year2(v);
+                            return;
+                        }
+                        if (v < this.p.year()) {
+                            this.p.year2(this.p.year());
+                            return;
+                        }
+                    }, this);
 
                     ko.applyBindings(globalVM, this.$dom[0]);
 
