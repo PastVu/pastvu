@@ -24,12 +24,11 @@ var PhotoSheme = new mongoose.Schema(
 
             lat: {type: String},
             lng: {type: String},
-            direction: {type: String},
+            dir: {type: String},
 
             title: {type: String},
-            year: {type: String},
-            year_from: {type: Number},
-            year_to: {type: Number},
+            year: {type: Number},
+            year2: {type: Number},
             address: {type: String},
             desc: {type: String},
             source: {type: String},
@@ -61,6 +60,24 @@ var PhotoSheme = new mongoose.Schema(
         }
     );
 
+
+/**
+ * Перед каждым сохранением делаем проверки
+ * @instance
+ * @param {string}
+ * @param {function} cb
+ */
+PhotoSheme.pre('save', function (next) {
+
+    // check year2
+    if (this.isModified('year') || this.isModified('year2')) {
+        if (!this.year2 || this.year2 < this.year) {
+            this.year2 = this.year;
+        }
+    }
+
+    return next();
+});
 
 PhotoSheme.statics.getPhoto = function (query, cb) {
     if (!query || !query.cid) {

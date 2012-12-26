@@ -60,7 +60,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         .on('focus', function () {
                             console.log('focus');
                             $element.removeClass('cap');
-                            if (_.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                            if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
                                 $element.html('&nbsp;');
                             }
                         });
@@ -70,15 +70,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 }
             } else {
                 if ($element.attr('contenteditable') === 'true') {
-                    $element.off('blur').off('focus').removeAttr('contenteditable').removeClass('cap');;
+                    $element.off('blur').off('focus').removeAttr('contenteditable').removeClass('cap');
                 }
-                if (_.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
                     $element.css({display: 'none'});
                 }
             }
 
             function checkForCap() {
-                if (obj.edit && obj.cap && _.isEmpty(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val)) {
+                if (obj.edit && obj.cap && _.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
                     $element.addClass('cap');
                     $element.text(obj.cap);
                 } else {

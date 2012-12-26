@@ -58,13 +58,23 @@
 			.photoActions .btnCancel {
 				display: inline-block;
 			}
+			select {
+				margin-bottom: 4px;
+				background-color: #F0F0F0;
+				&:focus {
+					background-color: #fdfdfd;
+				}
+			}
 			.editable {
-				padding: 0 2px;
+				padding: 0 3px;
 				border: 1px solid #BDBDBD;
 				background-color: #F0F0F0;
 
 				&:hover {
 					border-color: rgba(222, 176, 43, 0.56);
+				}
+				&:focus {
+					background-color: #fdfdfd;
 				}
 
 				&.cap {
@@ -74,7 +84,7 @@
 						color: darken(#8d8d8d, 20%);
 					}
 					&:focus {
-						color: #000000;
+						color: #000;
 					}
 				}
 

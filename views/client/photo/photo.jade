@@ -8,12 +8,24 @@
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
-			.row-fluid.photoInfo
-				| We believe that the photo was taken in&nbsp;
-				span.editable(data-bind="htmlValue: p.year, css: {'noContent': p.year().length === 0}")
-				| &nbsp;(shooting direction:&nbsp;
-				span.editable(data-bind="text: p.year()")
+			.row-fluid.photoInfo(data-bind="style: {display: edit() ? 'none' : ''}")
+				| We believe that the photo was taken
+				span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
+				span(data-bind="text: p.year()")
+				span(data-bind="text: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
+				span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
+				//ko if: p.dir().length > 0
+				span &nbsp;(shooting direction &minus;&nbsp;
+				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )
+				// /ko
+			.row-fluid.photoInfo(data-bind="style: {display: edit() ? '' : 'none'}")
+				| The photo was taken between&nbsp;
+				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
+				| &nbsp;and&nbsp;
+				span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
+				| &nbsp;&nbsp;Shooting direction&nbsp;
+				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 			.h_separator
 		.span2-3
 			.row-fluid.photoActions

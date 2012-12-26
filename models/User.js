@@ -58,7 +58,7 @@ var UserScheme = new mongoose.Schema({
 /**
  * Перед каждым сохранением, если изменился пароль, генерируем хэш и соль по BlowFish
  * @instance
- * @param {string} candidatePassword
+ * @param {string}
  * @param {function} cb
  */
 UserScheme.pre('save', function (next) {

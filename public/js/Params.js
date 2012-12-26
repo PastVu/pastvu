@@ -29,6 +29,18 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 
                 REGISTRATION_ALLOWED: false,
                 LoggedIn: false
+            },
+            photoDirsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
+            photoDirsTxt: {
+                n: 'North',
+                ne: 'Northeast',
+                e: 'East',
+                se: 'Southeast',
+                s: 'South',
+                sw: 'Southwest',
+                w: 'West',
+                nw: 'Northwest',
+                aero: 'Aerial photo'
             }
         });
 
