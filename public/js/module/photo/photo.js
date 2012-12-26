@@ -93,6 +93,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         create: function () {
             this.auth = globalVM.repository['m/auth'];
             this.p = null;
+            this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
             var cid = globalVM.router.params().photo;
 
@@ -169,12 +170,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (!this.edit()) {
                     this.edit(true);
                 } else {
+                    this.exe(true);
                     this.save(function (data) {
                         if (!data.error) {
                             this.edit(false);
                         } else {
                             window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
                         }
+                        this.exe(false);
                     }, this);
 
                 }
@@ -228,12 +231,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 target.cid = this.p.cid();
                 socket.once('savePhotoResult', function (data) {
                     if (data && !data.error) {
-                        this.originData = target;
+                        _.assign(this.originData, target);
                     }
                     if (cb) {
                         cb.call(ctx, data);
                     }
-                });
+                }.bind(this));
                 socket.emit('savePhoto', target);
             } else {
                 if (cb) {
