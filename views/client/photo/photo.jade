@@ -1,6 +1,6 @@
 .photo(data-bind="with: repository[M!M]")
 	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeActive: canBeActive(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: !p.active()}")
-		.span9-10
+		.span8-9
 			.row-fluid.photoImgContent
 				img.photoImg(data-bind="attr: {src: p.sfile()}")
 			h4.row-fluid.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
@@ -27,22 +27,23 @@
 				| &nbsp;&nbsp;Shooting direction&nbsp;
 				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 			.h_separator
-		.span2-3
+		.span3-4
 			.row-fluid.photoActions
 				button.btn-strict.btnSave(type="button", data-bind="css: {'btn-strict-success': edit()}, click: editSave")
 					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit(), 'icon-ok': edit()}")
-					span(data-bind="text: edit() ? 'Save' : 'Edit'")
+					span(data-bind="text: edit() ? 'Save edit' : 'Edit'")
 				button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="click: editCancel")
 					i.icon-remove.icon-white
-					span Cancel
-				button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="click: setApprove")
-					i.icon-ok.icon-white
-					span Approve
-				button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': p.active(), 'btn-strict-success': !p.active()}, click: toggleActive")
-					i.icon-white(data-bind="css: {'icon-exclamation-sign': p.active(), 'icon-ok-sign': !p.active()}")
-					span(data-bind="text: !p.active() ? 'Activate' : 'Deactivate'")
-				button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="click: remove")
-					i.icon-remove-circle.icon-white
-					span Remove
+					span Cancel edit
+				div(data-bind="style: {display: edit() ? 'none' : 'inline-block'}")
+					button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: edit()}, click: setApprove, attr: {disabled: edit()}")
+						i.icon-ok.icon-white
+						span Approve
+					button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': p.active(), 'btn-strict-success': !p.active(), disabled: edit()}, click: toggleActive, attr: {disabled: edit()}")
+						i.icon-white(data-bind="css: {'icon-exclamation-sign': p.active(), 'icon-ok-sign': !p.active()}")
+						span(data-bind="text: !p.active() ? 'Activate' : 'Deactivate'")
+					button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: edit()}, click: remove, attr: {disabled: edit()}")
+						i.icon-remove-circle.icon-white
+						span Remove
 			.user_brief(data-bind="click: www") Right section
 	.row-fluid.photoComments

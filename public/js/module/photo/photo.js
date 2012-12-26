@@ -103,7 +103,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.originData = ko_mapping.toJS(this.p);
 
                     this.canBeEdit = ko.computed(function () {
-                        return this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 50;
+                        return this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 0;
                     }, this);
 
                     this.canBeApprove = ko.computed(function () {
@@ -111,13 +111,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     }, this);
 
                     this.canBeActive = ko.computed(function () {
-                        return !this.p.fresh() && this.auth.iAm.role_level() >= 50;
+                        return !this.p.fresh() && this.auth.iAm.role_level() >= 0;
                     }, this);
 
                     this.canBeRemove = ko.computed(function () {
                         return this.auth.iAm.role_level() >= 0;
                     }, this);
 
+                    // Если фото новое и есть права, открываем его на редактирование
                     this.edit = ko.observable(this.p.fresh() && this.canBeEdit());
 
                     this.p.year.subscribe(function (val) {
