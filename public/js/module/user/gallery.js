@@ -71,11 +71,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         getPhotos: function (start, limit, cb, ctx) {
             socket.once('takeUserPhotos', function (data) {
-                data.forEach(function (item, index, array) {
-                    item.pfile = '/_photo/thumb/' + item.file;
-                    item.conv = item.conv || false;
-                    item.convqueue = item.convqueue || false;
-                });
+                if (!data || data.error) {
+                    window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+                } else {
+                    data.forEach(function (item, index, array) {
+                        item.pfile = '/_photo/thumb/' + item.file;
+                        item.conv = item.conv || false;
+                        item.convqueue = item.convqueue || false;
+                    });
+                }
                 if (Utils.isObjectType('function', cb)) {
                     cb.call(ctx, data);
                 }
@@ -86,6 +90,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         getPage: function (start, limit) {
             this.getPhotos(start, limit, function (data) {
+                if (!data || data.error) {
+                    return;
+                }
                 this.photos.concat(data, false);
                 if (this.scrollActive && this.photos().length >= this.u.pcount()) {
                     $window.off('scroll', this.scrollHandler);
@@ -172,6 +179,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 this.uploadVM.destroy();
                 var oldFirst = this.photos()[0] ? this.photos()[0].file : 0;
                 this.getPhotos(0, 11, function (data) {
+                    if (!data || data.error) {
+                        return;
+                    }
                     if (oldFirst === 0) {
                         this.photos.concat(data, false);
                     } else {

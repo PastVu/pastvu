@@ -91,7 +91,7 @@ PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {
         cb(null, 'cid is not specified');
     }
     options = options || {};
-    this.findOne(query, null, options).select('-_id -__v cid file title year ccount fresh active conv convqueue del').exec(cb);
+    this.findOne(query, null, options).select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
 };
 
 PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
@@ -99,7 +99,7 @@ PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
         cb(null, 'query is not specified');
     }
     options = options || {};
-    this.find(query, null, options).sort('-loaded').select('-_id -___v cid file title year ccount fresh active conv convqueue del').exec(cb);
+    this.find(query, null, options).sort('-loaded').select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
 };
 
 
