@@ -206,11 +206,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
 
         save: function () {
-            var target = ko_mapping.toJS(this.p),
+            var target = _.pick(ko_mapping.toJS(this.p), 'lat', 'lng', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
                 key;
 
             for (key in target) {
-                if (target.hasOwnProperty(key) && key !== 'cid' && key !== 'user') {
+                if (target.hasOwnProperty(key)) {
                     if (this.originData[key] && (target[key] === this.originData[key])) {
                         delete target[key];
                     } else if (!this.originData[key] && (target[key] === Photo.def[key])) {
@@ -218,7 +218,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     }
                 }
             }
-            if (Utils.getObjectPropertyLength(target) > 1) {
+            if (Utils.getObjectPropertyLength(target) > 0) {
+                target.cid = this.p.cid();
                 socket.once('savePhotoResult', function (data) {
                     console.dir(data);
                     if (data && !data.error) {

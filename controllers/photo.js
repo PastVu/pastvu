@@ -278,7 +278,7 @@ module.exports.loadController = function (app, db, io) {
                 savePhotoResult({message: 'cid is not defined', error: true});
                 return;
             }
-            Photo.getPhoto({cid: data.cid}, function (err, photo) {
+            Photo.findOne({cid: data.cid}).populate('user', 'login').exec(function (err, photo) {
                 if (err) {
                     savePhotoResult({message: err && err.message, error: true});
                     return;
@@ -287,11 +287,9 @@ module.exports.loadController = function (app, db, io) {
                     savePhotoResult({message: 'Not authorized', error: true});
                     return;
                 }
-                var toSave = _.pick(data, 'lat', 'lng', 'direction', 'title', 'year', 'address', 'desc', 'source', 'author');
-                console.dir(toSave);
+                var toSave = _.pick(data, 'lat', 'lng', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
                 if (Object.keys(toSave).length > 0) {
-                    photo.extend(toSave);
-                    console.dir(photo);
+                    _.assign(photo, toSave);
                     photo.save(function (err) {
                         if (err) {
                             savePhotoResult({message: err.message || '', error: true});

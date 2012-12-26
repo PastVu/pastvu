@@ -15,7 +15,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
 
         lat: '0',
         lng: '0',
-        dir: '',
+        dir: undefined,
 
         file: '',
         loaded: Date.now(),
