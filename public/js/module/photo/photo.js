@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
     'use strict';
 
     // https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
@@ -169,8 +169,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (!this.edit()) {
                     this.edit(true);
                 } else {
-                    this.save();
-                    this.edit(false);
+                    this.save(function (data) {
+                        if (!data.error) {
+                            this.edit(false);
+                        } else {
+                            window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+                        }
+                    }, this);
+
                 }
             }
         },
@@ -205,7 +211,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.p.address(String(Math.random() * 100 >> 0));
         },
 
-        save: function () {
+        save: function (cb, ctx) {
             var target = _.pick(ko_mapping.toJS(this.p), 'lat', 'lng', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
                 key;
 
@@ -221,15 +227,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             if (Utils.getObjectPropertyLength(target) > 0) {
                 target.cid = this.p.cid();
                 socket.once('savePhotoResult', function (data) {
-                    console.dir(data);
                     if (data && !data.error) {
                         this.originData = target;
                     }
+                    if (cb) {
+                        cb.call(ctx, data);
+                    }
                 });
                 socket.emit('savePhoto', target);
+            } else {
+                if (cb) {
+                    cb.call(ctx, {message: 'Nothing to save'});
+                }
             }
-
-            target = key = null;
         },
         cancel: function () {
             _.forEach(this.originData, function (item, key) {

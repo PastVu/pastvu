@@ -265,10 +265,23 @@ module.exports.loadController = function (app, db, io) {
         /**
          * Сохраняем информацию о фотографии
          */
+        function approvePhotoResult(data) {
+            socket.emit('approvePhotoResult', data);
+        }
+        socket.on('approvePhoto', function (cid) {
+            if (!hs.session.user) {
+                approvePhotoResult({message: 'Not authorized', error: true});
+                return;
+            }
+        });
+
+
+        /**
+         * Сохраняем информацию о фотографии
+         */
         function savePhotoResult(data) {
             socket.emit('savePhotoResult', data);
         }
-
         socket.on('savePhoto', function (data) {
             if (!hs.session.user) {
                 savePhotoResult({message: 'Not authorized', error: true});

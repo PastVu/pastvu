@@ -56,7 +56,11 @@ requirejs.config({
         'jquery.fileupload': 'lib/jquery/plugins/fileupload',
         'load-image': 'lib/jquery/plugins/fileupload/load-image',
         'tmpl': 'lib/jquery/plugins/fileupload/tmpl',
-        'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob'
+        'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob',
+
+        'noty': 'lib/jquery/plugins/noty/jquery.noty',
+        'noty.layouts': 'lib/jquery/plugins/noty/layouts',
+        'noty.themes': 'lib/jquery/plugins/noty/themes'
     }
 });
 require(['lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации не в каждый модуль, а только в этот файл
