@@ -58,6 +58,10 @@ var fs = require('fs'),
             {
                 name: "appUser",
                 include: ['m/auth', 'm/top', 'm/user/brief']
+            },
+            {
+                name: "appPhoto",
+                include: ['m/auth', 'm/top', 'm/photo/photo']
             }
         ]
     },
