@@ -41,8 +41,8 @@ var PhotoSheme = new mongoose.Schema(
 
             conv: {type: Boolean}, //Конвертируется
             convqueue: {type: Boolean}, //В очереди на конвертацию
-            fresh: {type: Boolean, default: true}, //Новое
-            active: {type: Boolean},  //Активное
+            fresh: {type: Boolean}, //Новое
+            disabled: {type: Boolean},  //Не активное
             del: {type: Boolean} //К удалению
         },
         {
@@ -91,7 +91,7 @@ PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {
         cb(null, 'cid is not specified');
     }
     options = options || {};
-    this.findOne(query, null, options).select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
+    this.findOne(query, null, options).select('-_id cid file title year ccount fresh disable conv convqueue del').exec(cb);
 };
 
 PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
@@ -99,7 +99,7 @@ PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
         cb(null, 'query is not specified');
     }
     options = options || {};
-    this.find(query, null, options).sort('-loaded').select('-_id cid file title year ccount fresh active conv convqueue del').exec(cb);
+    this.find(query, null, options).sort('-loaded').select('-_id cid file title year ccount fresh disable conv convqueue del').exec(cb);
 };
 
 

@@ -191,16 +191,22 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         setApprove: function (data, event) {
             if (this.canBeApprove()) {
-                //TODO: Подтверждение только через запрос
-                this.p.fresh(!this.p.fresh());
-                this.save();
+                this.exe(true);
+                socket.once('approvePhotoResult', function (data) {
+                    if (data && !data.error) {
+                        this.p.fresh(false);
+                        this.originData.fresh = false;
+                    } else {
+                        window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+                    }
+                    this.exe(false);
+                }.bind(this));
+                socket.emit('approvePhoto', this.p.cid());
             }
         },
         toggleActive: function (data, event) {
             if (this.canBeActive()) {
                 //TODO: Активация только через запрос
-                this.p.active(!this.p.active());
-                this.save();
             }
         },
         remove: function (data, event) {

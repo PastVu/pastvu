@@ -47,7 +47,8 @@ function createPhotos(session, data, cb) {
             data.forEach(function (item, index) {
                 var photo = new Photo({
                     cid: count.next - index,
-                    user: session.user._id
+                    user: session.user._id,
+                    fresh: true
                 }.extend(item));
                 if (data.length > 1) {
                     photo.save(this.parallel());
@@ -273,6 +274,17 @@ module.exports.loadController = function (app, db, io) {
                 approvePhotoResult({message: 'Not authorized', error: true});
                 return;
             }
+            Photo.update({cid: cid, fresh: true, del: {$ne: true}}, { $unset: { fresh: 1 }}, {}, function (err, numberAffected) {
+                if (err) {
+                    approvePhotoResult({message: err.message || '', error: true});
+                    return;
+                }
+                if (!numberAffected) {
+                    approvePhotoResult({message: 'No photo affected', error: true});
+                    return;
+                }
+                approvePhotoResult({message: 'Photo appreved successfully'});
+            });
         });
 
 
@@ -291,7 +303,7 @@ module.exports.loadController = function (app, db, io) {
                 savePhotoResult({message: 'cid is not defined', error: true});
                 return;
             }
-            Photo.findOne({cid: data.cid}).populate('user', 'login').exec(function (err, photo) {
+            Photo.findOne({cid: data.cid, del: {$ne: true}}).populate('user', 'login').exec(function (err, photo) {
                 if (err) {
                     savePhotoResult({message: err && err.message, error: true});
                     return;

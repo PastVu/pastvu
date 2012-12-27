@@ -38,10 +38,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
             stats_all: 0,
             ccount: 0,
 
-            fresh: false, //Новое
-            active: true, //Активное
             conv: false, //Конвертируется
             convqueue: false, //В очереди на конвертацию
+            fresh: false, //Новое
+            disabled: false, //Не активное
             del: false //К удалению
         },
         DefaultCompact = {
@@ -51,10 +51,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
             year: 1900,
             year2: 1900,
             ccount: 0,
-            fresh: false, //Новое
-            active: true, //Активное
             conv: false, //Конвертируется
             convqueue: false, //В очереди на конвертацию
+            fresh: false, //Новое
+            disabled: false, //Не активное
             del: false //К удалению
         };
 

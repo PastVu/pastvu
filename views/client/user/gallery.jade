@@ -4,7 +4,7 @@
 			.plusPhoto
 			.desc Add photos..
 		//ko foreach: photos
-		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && !active, 'photoFresh': fresh}")
+		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !fresh && disabled, 'photoFresh': fresh}")
 			.photoBox
 				img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
 				.info.error
