@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/Photo', 'm/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
     'use strict';
     var $window = $(window);
     ko.observableArray['fn']['concat'] = function (arr, before) {
@@ -75,9 +75,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
                 } else {
                     data.forEach(function (item, index, array) {
+                        item = _.defaults(item, Photo.defCompact);
                         item.pfile = '/_photo/thumb/' + item.file;
-                        item.conv = item.conv || false;
-                        item.convqueue = item.convqueue || false;
                     });
                 }
                 if (Utils.isObjectType('function', cb)) {
