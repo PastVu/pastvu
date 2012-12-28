@@ -1,5 +1,5 @@
 .photo(data-bind="with: repository[M!M]")
-	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeActive: canBeActive(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: p.disabled()}")
+	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeDisable: canBeDisable(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: p.disabled()}")
 		.span8-9
 			.row-fluid.photoImgContent
 				img.photoImg(data-bind="attr: {src: p.sfile()}")
@@ -39,7 +39,7 @@
 					button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
 						i.icon-ok.icon-white
 						span Approve
-					button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleActive, attr: {disabled: exe()}")
+					button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
 						i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
 						span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
 					button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")

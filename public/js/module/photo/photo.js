@@ -111,7 +111,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         return this.p.fresh() && this.auth.iAm.role_level() >= 0;
                     }, this);
 
-                    this.canBeActive = ko.computed(function () {
+                    this.canBeDisable = ko.computed(function () {
                         return !this.p.fresh() && this.auth.iAm.role_level() >= 0;
                     }, this);
 
@@ -204,9 +204,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 socket.emit('approvePhoto', this.p.cid());
             }
         },
-        toggleActive: function (data, event) {
-            if (this.canBeActive()) {
-                //TODO: Активация только через запрос
+        toggleDisable: function (data, event) {
+            if (this.canBeDisable()) {
+                this.exe(true);
+                socket.once('disablePhotoResult', function (data) {
+                    if (data && !data.error) {
+                        this.p.disabled(data.disabled || false);
+                        this.originData.disabled = data.disabled || false;
+                    } else {
+                        window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+                    }
+                    this.exe(false);
+                }.bind(this));
+                socket.emit('disablePhoto', this.p.cid());
             }
         },
         remove: function (data, event) {

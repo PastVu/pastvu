@@ -264,7 +264,7 @@ module.exports.loadController = function (app, db, io) {
         });
 
         /**
-         * Сохраняем информацию о фотографии
+         * Подтверждаем фотографию
          */
         function approvePhotoResult(data) {
             socket.emit('approvePhotoResult', data);
@@ -284,6 +284,42 @@ module.exports.loadController = function (app, db, io) {
                     return;
                 }
                 approvePhotoResult({message: 'Photo appreved successfully'});
+            });
+        });
+
+
+        /**
+         * Активация/деактивация фото
+         */
+        function disablePhotoResult(data) {
+            socket.emit('disablePhotoResult', data);
+        }
+        socket.on('disablePhoto', function (cid) {
+            if (!hs.session.user) {
+                disablePhotoResult({message: 'Not authorized', error: true});
+                return;
+            }
+            if (!cid) {
+                disablePhotoResult({message: 'cid is not defined', error: true});
+                return;
+            }
+            Photo.findOne({cid: cid, fresh: {$ne: true}, del: {$ne: true}}).select('disabled').exec(function (err, photo) {
+                if (err) {
+                    disablePhotoResult({message: err && err.message, error: true});
+                    return;
+                }
+                if (photo.disabled) {
+                    photo.disabled = undefined;
+                } else {
+                    photo.disabled = true;
+                }
+                photo.save(function (err, result) {
+                    if (err) {
+                        disablePhotoResult({message: err.message || '', error: true});
+                        return;
+                    }
+                    disablePhotoResult({message: 'Photo saved successfully', disabled: result.disabled});
+                });
             });
         });
 
