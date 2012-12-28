@@ -5,6 +5,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
     var Default = {
             cid: 0,
             user: {
+                login: 'anonimous',
                 avatar: '/img/caps/avatar.png',
                 avatarW: 100,
                 avatarH: 100

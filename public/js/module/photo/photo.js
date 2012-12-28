@@ -220,9 +220,59 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }
         },
         remove: function (data, event) {
-            if (this.canBeRemove()) {
-                //TODO: Удаление только через запрос
+            if (!this.canBeRemove()) {
+                return false;
             }
+
+            var that = this;
+
+            this.exe(true);
+            window.noty(
+                {
+                    text: 'The photo will be removed permanently.<br>Confirm the delete operation?',
+                    type: 'confirm',
+                    layout: 'center',
+                    modal: true,
+                    force: true,
+                    animation: {
+                        open: {height: 'toggle'},
+                        close: {},
+                        easing: 'swing',
+                        speed: 500
+                    },
+                    buttons: [
+                        {addClass: 'btn-strict btn-strict-danger', text: 'Ok', onClick: function ($noty) {
+                            // this = button element
+                            // $noty = $noty element
+                            if ($noty.$buttons && $noty.$buttons.find) {
+                                $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+                            }
+                            socket.once('removePhotoCallback', function (data) {
+                                $noty.$buttons.remove();
+                                if (data && !data.error) {
+                                    this.p.del(true);
+                                    this.originData.del = true;
+                                    $noty.$message.children().html('Photos successfully removed');
+                                    window.setTimeout(function () {
+                                        document.location.href = '/u/' + this.p.user.login() + '/photo';
+                                    }.bind(this), 2000);
+                                } else {
+                                    $noty.$message.children().html(data.message || 'Error occurred');
+                                    window.setTimeout(function () {
+                                        $noty.close();
+                                        this.exe(false);
+                                    }.bind(this), 2000);
+                                }
+                            }.bind(that));
+                            socket.emit('removePhotos', that.p.file());
+                        }},
+                        {addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {
+                            $noty.close();
+                            that.exe(false);
+                        }}
+                    ]
+                }
+            );
         },
 
         www: function () {
