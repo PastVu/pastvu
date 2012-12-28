@@ -5,30 +5,11 @@
 define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
     'use strict';
 
-    // https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
-    ko.bindingHandlers.htmlValue = {
-        init: function (element, valueAccessor, allBindingsAccessor) {
-            ko.utils.registerEventHandler(element, "blur", function () {
-                var modelValue = valueAccessor(),
-                    elementValue = element.innerHTML,
-                    allBindings;
-
-                if (ko.isWriteableObservable(modelValue)) {
-                    modelValue(elementValue);
-                } else { //handle non-observable one-way binding
-                    allBindings = allBindingsAccessor();
-                    if (allBindings._ko_property_writers && allBindings._ko_property_writers.htmlValue) {
-                        allBindings._ko_property_writers.htmlValue(elementValue);
-                    }
-                }
-            });
-        },
-        update: function (element, valueAccessor) {
-            var value = ko.utils.unwrapObservable(valueAccessor()) || "";
-            element.innerHTML = value;
-        }
-    };
-
+    /**
+     * Редактирование содержимого элементов с помошью contenteditable
+     * Inspired by https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
+     * @type {Object}
+     */
     ko.bindingHandlers.cEdit = {
         init: function (element, valueAccessor, allBindingsAccessor) {
         },
@@ -104,19 +85,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.originData = ko_mapping.toJS(this.p);
 
                     this.canBeEdit = ko.computed(function () {
-                        return this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 0;
+                        return P.settings.LoggedIn() && (this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 0);
                     }, this);
 
                     this.canBeApprove = ko.computed(function () {
-                        return this.p.fresh() && this.auth.iAm.role_level() >= 0;
+                        return P.settings.LoggedIn() && (this.p.fresh() && this.auth.iAm.role_level() >= 0);
                     }, this);
 
                     this.canBeDisable = ko.computed(function () {
-                        return !this.p.fresh() && this.auth.iAm.role_level() >= 0;
+                        return P.settings.LoggedIn() && (!this.p.fresh() && this.auth.iAm.role_level() >= 0);
                     }, this);
 
                     this.canBeRemove = ko.computed(function () {
-                        return this.auth.iAm.role_level() >= 0;
+                        return P.settings.LoggedIn() && (this.auth.iAm.role_level() >= 0);
                     }, this);
 
                     // Если фото новое и есть права, открываем его на редактирование

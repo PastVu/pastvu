@@ -35,7 +35,7 @@
 				button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
 					i.icon-remove.icon-white
 					span Cancel edit
-				div(data-bind="style: {display: edit() ? 'none' : 'inline-block'}")
+				div(data-bind="style: {display: canBeApprove() || canBeDisable() || canBeRemove() ? 'inline-block' : 'none'}")
 					button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
 						i.icon-ok.icon-white
 						span Approve
