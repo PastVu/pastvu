@@ -261,6 +261,27 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return text.substring(0, cut);
         },
 
+        /**
+         *
+         * @param time Время в миллисекундах
+         * @param update Колбэк, вызываемый каждую секунду. Передается параметр - секунд осталось
+         * @param complete
+         */
+        timer: function timer(time, update, complete) {
+            var start = new Date().getTime(),
+                interval = setInterval(function () {
+                    var now = time - (new Date().getTime() - start);
+                    if (now <= 0) {
+                        clearInterval(interval);
+                        if (complete) {
+                            complete();
+                        }
+                    } else if (update) {
+                        update(now / 1000 >> 0);
+                    }
+                }, 100); // the smaller this number, the more accurate the timer will be
+        },
+
         formatFileSize: function (bytes) {
             if (typeof bytes !== 'number') {
                 return '';

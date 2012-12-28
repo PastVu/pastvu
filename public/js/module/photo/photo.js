@@ -247,24 +247,47 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if ($noty.$buttons && $noty.$buttons.find) {
                                 $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
                             }
+
                             socket.once('removePhotoCallback', function (data) {
-                                $noty.$buttons.remove();
+                                $noty.$buttons.find('.btn-strict-danger').remove();
+                                var okButton = $noty.$buttons.find('button')
+                                    .attr('disabled', false)
+                                    .removeClass('disabled')
+                                    .off('click');
+
                                 if (data && !data.error) {
                                     this.p.del(true);
                                     this.originData.del = true;
-                                    $noty.$message.children().html('Photos successfully removed');
-                                    window.setTimeout(function () {
-                                        document.location.href = '/u/' + this.p.user.login() + '/photo';
-                                    }.bind(this), 2000);
+
+                                    $noty.$message.children().html('Photo successfully removed');
+
+                                    okButton
+                                        .text('Ok (4)')
+                                        .on('click', function () {
+                                            document.location.href = '/u/' + this.p.user.login() + '/photo';
+                                        }.bind(this));
+
+                                    Utils.timer(
+                                        5000,
+                                        function (timeleft) {
+                                            okButton.text('Ok (' + timeleft + ')');
+                                        },
+                                        function () {
+                                            okButton.trigger('click');
+                                        }
+                                    );
                                 } else {
                                     $noty.$message.children().html(data.message || 'Error occurred');
-                                    window.setTimeout(function () {
-                                        $noty.close();
-                                        this.exe(false);
-                                    }.bind(this), 2000);
+                                    okButton
+                                        .text('Close')
+                                        .on('click', function () {
+                                            $noty.close();
+                                            this.exe(false);
+                                        }.bind(this));
                                 }
                             }.bind(that));
                             socket.emit('removePhotos', that.p.file());
+
                         }},
                         {addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {
                             $noty.close();
@@ -318,5 +341,4 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }.bind(this));
         }
     });
-})
-;
+});
