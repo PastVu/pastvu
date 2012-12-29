@@ -2,8 +2,7 @@
 	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeDisable: canBeDisable(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: p.disabled()}")
 		.span8-9
 			.row-fluid.photoImgRow
-				.photoImgContent
-					img.photoImg(data-bind="attr: {src: p.sfile()}")
+				img.photoImg(data-bind="attr: {src: p.sfile()}")
 			h4.row-fluid.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?'}")

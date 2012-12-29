@@ -158,6 +158,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         hide: function () {
             this.$container.css('display', '');
             this.showing = false;
+            globalVM.pb.publish('/top/message', ['', 'muted']);
         },
 
         editSave: function (data, event) {
