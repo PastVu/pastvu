@@ -93,7 +93,7 @@ function removePhotos(session, data, cb) {
 
     step(
         function setDelFlag() {
-            Photo.update({user: session.user._id, file: {$in: data}, del: {$ne: true}}, { $set: { del: true }}, { multi: true }, this);
+            Photo.update({user: session.user._id, file: {$in: data}, del: {$exists: false}}, { $set: { del: true }}, { multi: true }, this);
         },
         function (err, photoQuantity) {
             if (err || photoQuantity === 0) {
@@ -199,7 +199,7 @@ module.exports.loadController = function (app, db, io) {
             }
             step(
                 function () {
-                    Photo.find({user: hs.session.user._id, file: {$in: data}, del: {$ne: true}}).select('file').exec(this);
+                    Photo.find({user: hs.session.user._id, file: {$in: data}, del: {$exists: false}}).select('file').exec(this);
                 },
                 function (err, photos, alreadyInConveyer) {
                     if (err) {
@@ -233,7 +233,7 @@ module.exports.loadController = function (app, db, io) {
                     takeUserPhotos({message: err && err.message, error: true});
                     return;
                 }
-                Photo.getPhotosCompact({user: user._id, del: {$ne: true}}, {skip: data.start, limit: data.limit}, function (err, photo) {
+                Photo.getPhotosCompact({user: user._id, del: {$exists: false}}, {skip: data.start, limit: data.limit}, function (err, photo) {
                     //console.dir(photo);
                     if (err) {
                         takeUserPhotos({message: err && err.message, error: true});
@@ -274,7 +274,7 @@ module.exports.loadController = function (app, db, io) {
                 approvePhotoResult({message: 'Not authorized', error: true});
                 return;
             }
-            Photo.update({cid: cid, fresh: true, del: {$ne: true}}, { $unset: { fresh: 1 }}, {}, function (err, numberAffected) {
+            Photo.update({cid: cid, fresh: true, del: {$exists: false}}, { $unset: { fresh: 1 }}, {}, function (err, numberAffected) {
                 if (err) {
                     approvePhotoResult({message: err.message || '', error: true});
                     return;
@@ -303,7 +303,7 @@ module.exports.loadController = function (app, db, io) {
                 disablePhotoResult({message: 'cid is not defined', error: true});
                 return;
             }
-            Photo.findOne({cid: cid, fresh: {$ne: true}, del: {$ne: true}}).select('disabled').exec(function (err, photo) {
+            Photo.findOne({cid: cid, fresh: {$exists: false}, del: {$exists: false}}).select('disabled').exec(function (err, photo) {
                 if (err) {
                     disablePhotoResult({message: err && err.message, error: true});
                     return;
@@ -339,7 +339,7 @@ module.exports.loadController = function (app, db, io) {
                 savePhotoResult({message: 'cid is not defined', error: true});
                 return;
             }
-            Photo.findOne({cid: data.cid, del: {$ne: true}}).populate('user', 'login').exec(function (err, photo) {
+            Photo.findOne({cid: data.cid, del: {$exists: false}}).populate('user', 'login').exec(function (err, photo) {
                 if (err) {
                     savePhotoResult({message: err && err.message, error: true});
                     return;
