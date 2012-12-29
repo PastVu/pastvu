@@ -43,12 +43,41 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
                 owner: this
             });
 
+            this.msg = ko.observable('');
+            this.msgCss = ko.observable('');
+
             ko.applyBindings(globalVM, this.$dom[0]);
             this.show();
         },
         show: function () {
             this.$container.fadeIn();
             this.showing = true;
+
+            globalVM.pb.subscribe('/top/message', function (text, type) {
+                var css = '';
+                switch (type) {
+                case 'error':
+                    css = 'text-error';
+                    break;
+                case 'warn':
+                    css = 'text-warning';
+                    break;
+                case 'info':
+                    css = 'text-info';
+                    break;
+                case 'success':
+                    css = 'text-success';
+                    break;
+                default:
+                    css = 'muted';
+                    break;
+                }
+
+                this.msg(text);
+                this.msgCss(css);
+
+                text = type = css = null;
+            }.bind(this));
         },
         hide: function () {
             this.$container.css('display', '');

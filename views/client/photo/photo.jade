@@ -1,8 +1,9 @@
 .photo(data-bind="with: repository[M!M]")
 	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeDisable: canBeDisable(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: p.disabled()}")
 		.span8-9
-			.row-fluid.photoImgContent
-				img.photoImg(data-bind="attr: {src: p.sfile()}")
+			.row-fluid.photoImgRow
+				.photoImgContent
+					img.photoImg(data-bind="attr: {src: p.sfile()}")
 			h4.row-fluid.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
 			.row-fluid.photoInfo.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?'}")
@@ -28,14 +29,14 @@
 				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 			.h_separator
 		.span3-4
-			.row-fluid.photoActions
+			.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
 				button.btn-strict.btnSave(type="button", data-bind="css: {'btn-strict-success': edit(), disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit(), 'icon-ok': edit()}")
 					span(data-bind="text: edit() ? 'Save edit' : 'Edit'")
 				button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
 					i.icon-remove.icon-white
 					span Cancel edit
-				div(data-bind="style: {display: canBeApprove() || canBeDisable() || canBeRemove() ? 'inline-block' : 'none'}")
+				div(data-bind="style: {display: !edit() && (canBeApprove() || canBeDisable() || canBeRemove()) ? 'inline-block' : 'none'}")
 					button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
 						i.icon-ok.icon-white
 						span Approve
@@ -45,5 +46,4 @@
 					button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
 						i.icon-remove-circle.icon-white
 						span Remove
-			.user_brief(data-bind="click: www") Right section
 	.row-fluid.photoComments

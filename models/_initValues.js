@@ -1,11 +1,15 @@
-var mongoose = require('mongoose');
+'use strict';
+
+var mongoose = require('mongoose'),
+    Utils = require('../commons/Utils.js');
 
 module.exports.makeModel = function (db) {
 
     var Settings = db.model('Settings'),
         Role = db.model('Role'),
         User = db.model('User'),
-        UserConfirm = db.model('UserConfirm');
+        UserConfirm = db.model('UserConfirm'),
+        Photo = db.model('Photo');
 
     Settings.saveUpsert({key: 'USE_OSM_API'}, {val: true, desc: 'OSM Active'}, function (err) {
         if (err) console.log('Settings ' + err);

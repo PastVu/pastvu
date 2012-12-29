@@ -103,6 +103,20 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     // Если фото новое и есть права, открываем его на редактирование
                     this.edit = ko.observable(this.p.fresh() && this.canBeEdit());
 
+                    this.msgByStatus =  ko.computed(function () {
+                        if (this.edit()) {
+                            globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
+                        } else if (this.p.fresh()) {
+                            globalVM.pb.publish('/top/message', ['Photo is new. Administrator must approve it', 'warn']);
+                        } else if (this.p.disabled()) {
+                            globalVM.pb.publish('/top/message', ['Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn']);
+                        } else if (this.p.del()) {
+                            globalVM.pb.publish('/top/message', ['Photo is deleted by Administrator', 'error']);
+                        } else {
+                            globalVM.pb.publish('/top/message', ['', 'muted']);
+                        }
+                    }, this);
+
                     this.p.year.subscribe(function (val) {
                         var v = parseInt(val, 10);
                         if (!v || isNaN(v)) {
@@ -277,11 +291,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     ]
                 }
             );
-        },
-
-        www: function () {
-            console.dir(ko_mapping.toJS(this.p));
-            this.p.address(String(Math.random() * 100 >> 0));
         },
 
         save: function (cb, ctx) {

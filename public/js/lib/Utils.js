@@ -957,5 +957,4 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
     }
 
     return Utils;
-})
-;
+});
