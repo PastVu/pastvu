@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, moment, Photo, storage, jade) {
     'use strict';
 
     /**
@@ -103,7 +103,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     // Если фото новое и есть права, открываем его на редактирование
                     this.edit = ko.observable(this.p.fresh() && this.canBeEdit());
 
-                    this.msgByStatus =  ko.computed(function () {
+                    this.msgByStatus = ko.computed(function () {
                         if (this.edit()) {
                             globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
                         } else if (this.p.fresh()) {
@@ -115,6 +115,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         } else {
                             globalVM.pb.publish('/top/message', ['', 'muted']);
                         }
+                    }, this);
+
+                    this.userInfo = ko.computed(function () {
+                        return _.template(
+                            'Added by <a target="_self" href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, this week ${ sw } times, total ${ sa } times',
+                            { login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.loaded()).format('D MMMM YYYY'), sd: this.p.stats_day(), sw: this.p.stats_week(), sa: this.p.stats_all()}
+                        );
                     }, this);
 
                     this.p.year.subscribe(function (val) {
@@ -330,6 +337,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.p[key](item);
                 }
             }.bind(this));
+        },
+        onAvatarLoad: function (data, event) {
+            $(event.target).animate({opacity: 1});
+            data = event = null;
+        },
+        onAvatarError: function (data, event) {
+            $(event.target).attr('src', '/img/caps/avatar.png');
+            data = event = null;
         }
     });
 });

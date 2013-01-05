@@ -1,15 +1,10 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], function ($, _, ko, ko_mapping, Utils) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User'], function ($, _, ko, ko_mapping, Utils, User) {
     'use strict';
 
-    var Default = {
+    var _default = {
             cid: 0,
-            user: {
-                login: 'anonimous',
-                avatar: '/img/caps/avatar.png',
-                avatarW: 100,
-                avatarH: 100
-            },
+            user: User.defCompact,
             album: 0,
             stack: '',
             stack_order: 0,
@@ -45,7 +40,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
             disabled: false, //Не активное
             del: false //К удалению
         },
-        DefaultCompact = {
+        _defaultCompact = {
             cid: 0,
             title: 'No tytle yet',
             file: '',
@@ -60,12 +55,21 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         };
 
     function vmCreate(model) {
-        model = _.defaults(model || {}, Default);
+        model = _.defaults(model || {}, _default);
+        _.defaults(model.user, User.defCompact);
         var vm = ko_mapping.fromJS(model);
 
         vm.sfile = ko.computed(function () {
             return '/_photo/standard/' + this.file();
         }, vm);
+
+        vm.user.fullName = ko.computed(function () {
+            if (this.firstName() && this.lastName()) {
+                return this.firstName() + " " + this.lastName();
+            } else {
+                return this.login();
+            }
+        }, vm.user);
 
         return vm;
     }
@@ -74,12 +78,12 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         if (!vmExist) {
             vmExist = vmCreate(model);
         } else {
-            model = _.defaults(model || {}, Default);
+            model = _.defaults(model || {}, _default);
             ko_mapping.fromJS(model, vmExist);
         }
         vmExist.loaded(new Date(vmExist.loaded()));
         return vmExist;
     }
 
-    return {def: Default, defCompact: DefaultCompact, VM: vm};
+    return {def: _default, defCompact: _defaultCompact, VM: vm};
 });

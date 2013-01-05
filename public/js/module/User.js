@@ -2,43 +2,51 @@
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], function ($, _, ko, ko_mapping, Utils) {
     'use strict';
 
-    var DefaultUser = {
-        login: 'anonymous',
-        email: '',
+    var _default = {
+            login: 'anonymous',
+            email: '',
 
-        //ROLE
-        role_level: 0,
-        role_name: 'anonymous',
+            //ROLE
+            role_level: 0,
+            role_name: 'anonymous',
 
-        //Profile
-        avatar: '/img/caps/avatar.png',
-        avatarW: 100,
-        avatarH: 100,
-        firstName: '',
-        lastName: '',
-        birthdate: '',
-        sex: 'male',
-        country: '',
-        city: '',
-        work: '',
-        www: '',
-        icq: '',
-        skype: '',
-        aim: '',
-        lj: '',
-        flickr: '',
-        blogger: '',
-        aboutme: '',
+            //Profile
+            avatar: '/img/caps/avatar.png',
+            avatarW: 100,
+            avatarH: 100,
+            firstName: '',
+            lastName: '',
+            birthdate: '',
+            sex: 'male',
+            country: '',
+            city: '',
+            work: '',
+            www: '',
+            icq: '',
+            skype: '',
+            aim: '',
+            lj: '',
+            flickr: '',
+            blogger: '',
+            aboutme: '',
 
-        regdate: Date.now(),
-        pcount: 0,
-        bcount: 0,
-        ccount: 0,
-        dateFormat: 'dd.mm.yyyy'
-    };
+            regdate: Date.now(),
+            pcount: 0,
+            bcount: 0,
+            ccount: 0,
+            dateFormat: 'dd.mm.yyyy'
+        },
+        _defaultCompact = {
+            login: 'anonymous',
+            avatar: '/img/caps/avatar.png',
+            avatarW: 100,
+            avatarH: 100,
+            firstName: '',
+            lastName: ''
+        };
 
     function userVMCreate(model) {
-        model = _.defaults(model || {}, DefaultUser);
+        model = _.defaults(model || {}, _default);
         var vm = ko_mapping.fromJS(model);
 
         vm.fullName = ko.computed(function () {
@@ -56,12 +64,12 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], functi
         if (!vm) {
             vm = userVMCreate(model);
         } else {
-            model = _.defaults(model || {}, DefaultUser);
+            model = _.defaults(model || {}, _default);
             ko_mapping.fromJS(model, vm);
         }
         vm.regdate(new Date(vm.regdate()));
         return vm;
     }
 
-    return {def: DefaultUser, VM: UserVM};
+    return {def: _default, defCompact: _defaultCompact, VM: UserVM};
 });

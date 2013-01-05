@@ -45,4 +45,8 @@
 					button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
 						i.icon-remove-circle.icon-white
 						span Remove
+			.row-fluid.photoUser
+				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
+					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
+				.userInfo(data-bind="html: userInfo()")
 	.row-fluid.photoComments
