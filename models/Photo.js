@@ -22,6 +22,8 @@ var PhotoSheme = new mongoose.Schema(
             w: {type: Number},
             h: {type: Number},
 
+            //loc: {geo: {lng: Number, lat: Number}},
+            geo: {type: [Number], index: '2d'},
             lat: {type: String},
             lng: {type: String},
             dir: {type: String},
@@ -79,11 +81,19 @@ PhotoSheme.pre('save', function (next) {
     return next();
 });
 
+PhotoSheme.statics.resetStatDay = function (cb) {
+    this.update({}, { $set: { stats_day: 0} }, {multi: true}, cb);
+};
+
+PhotoSheme.statics.resetStatWeek = function (cb) {
+    this.update({}, { $set: { stats_week: 0} }, {multi: true}, cb);
+};
+
 PhotoSheme.statics.getPhoto = function (query, cb) {
     if (!query || !query.cid) {
         cb(null, 'cid is not specified');
     }
-    this.findOne(query).populate('user', 'login avatar avatarW avatarH').select('-_id -__v').exec(cb);
+    this.findOneAndUpdate(query, { $inc: { stats_day: 1, stats_week: 1,  stats_all: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v').exec(cb);
 };
 
 PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {

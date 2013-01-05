@@ -8,9 +8,11 @@ var Settings,
     _ = require('lodash'),
     fs = require('fs'),
     ms = require('ms'), // Tiny milisecond conversion utility
+    moment = require('moment'),
     step = require('step'),
     Utils = require('../commons/Utils.js'),
     log4js = require('log4js'),
+    logger,
     photoDir = process.cwd() + '/publicContent/photos',
     imageFolders = [photoDir + '/standard/', photoDir + '/thumb/', photoDir + '/micro/', photoDir + '/origin/'];
 
@@ -133,8 +135,41 @@ function dropPhotos(cb) {
     });
 }
 
+/**
+ * Ежедневно обнуляет статистику дневных просмотров
+ */
+function resetStatDay() {
+    Photo.resetStatDay(function (err, updatedCount) {
+        logger.info('Reset day display statistics for ' + updatedCount + ' photos');
+        if (err) {
+            logger.error(err);
+            return;
+        }
+        planResetStatDay();
+    });
+}
+function planResetStatDay() {
+    setTimeout(resetStatDay, moment().add('d', 1).sod().diff(moment()) + 1000);
+}
+/**
+ * Еженедельно обнуляет статистику недельных просмотров
+ */
+function resetStatWeek() {
+    Photo.resetStatWeek(function (err, updatedCount) {
+        logger.info('Reset week display statistics for ' + updatedCount + ' photos');
+        if (err) {
+            logger.error(err);
+            return;
+        }
+        planResetStatWeek();
+    });
+}
+function planResetStatWeek() {
+    setTimeout(resetStatWeek, moment().add('w', 1).day(1).sod().diff(moment()) + 1000);
+}
+
 module.exports.loadController = function (app, db, io) {
-    var logger = log4js.getLogger("photo.js");
+    logger = log4js.getLogger("photo.js");
 
     Settings = db.model('Settings');
     User = db.model('User');
@@ -142,6 +177,9 @@ module.exports.loadController = function (app, db, io) {
     Counter = db.model('Counter');
 
     PhotoConverter.loadController(app, db, io);
+
+    planResetStatDay(); //Планируем очистку статистики за ltym
+    planResetStatWeek(); //Планируем очистку статистики за неделю
 
 
     app.get('/p/:cid?/*', function (req, res) {
