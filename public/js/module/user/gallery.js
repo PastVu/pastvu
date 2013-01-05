@@ -123,24 +123,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         marginCalc: function (v) {
             var windowW = P.window.w(),
-                domW = this.$dom.width() - 1, //this.$container.width()
+                domW = this.$dom.width(), //this.$container.width()
                 thumbW,
                 thumbH,
                 thumbN,
                 thumbWMin = 120,
-                thumbWMax = 246,
+                thumbWMax = 252,
                 marginMin;
 
 
             if (windowW < 1000) {
                 thumbN = 4;
-                marginMin = 8;
+                marginMin = 6;
             } else if (windowW < 1366) {
                 thumbN = 5;
-                marginMin = 10;
+                marginMin = 8;
             } else {
                 thumbN = 6;
-                marginMin = 12;
+                marginMin = 10;
             }
             thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax));
             thumbH = thumbW / 1.5 >> 0;
