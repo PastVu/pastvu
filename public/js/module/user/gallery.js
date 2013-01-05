@@ -128,19 +128,19 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 thumbH,
                 thumbN,
                 thumbWMin = 120,
-                thumbWMax = 252,
+                thumbWMax = 246,
                 marginMin;
 
 
             if (windowW < 1000) {
                 thumbN = 4;
-                marginMin = 6;
+                marginMin = 8;
             } else if (windowW < 1366) {
                 thumbN = 5;
-                marginMin = 8;
+                marginMin = 10;
             } else {
                 thumbN = 6;
-                marginMin = 10;
+                marginMin = 14;
             }
             thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax));
             thumbH = thumbW / 1.5 >> 0;

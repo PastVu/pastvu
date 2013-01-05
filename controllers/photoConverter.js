@@ -28,8 +28,8 @@ var path = require('path'),
         },
         {
             version: 'thumb',
-            width: 252,
-            height: 168,
+            width: 246,
+            height: 164,
             filter: 'Sinc',
             gravity: 'center',
             postfix: '^'
