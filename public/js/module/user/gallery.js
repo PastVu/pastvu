@@ -123,7 +123,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         marginCalc: function (v) {
             var windowW = P.window.w(),
-                domW = this.$dom.width(), //this.$container.width()
+                domW = this.$dom.width() - 1, //this.$container.width()
                 thumbW,
                 thumbH,
                 thumbN,
@@ -131,6 +131,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 thumbWMax = 246,
                 marginMin;
 
+            //Так как в @media firefox считает ширину с учетом ширины скролла,
+            //то прибавляем эту ширину и здесь для правильного подсчета маргинов
+            if ($.browser.mozilla) {
+                windowW += window.innerWidth - windowW;
+            }
 
             if (windowW < 1000) {
                 thumbN = 4;
