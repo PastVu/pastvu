@@ -43,7 +43,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             storage.user(user, function (vm) {
                 if (vm) {
                     this.u = vm;
-                    this.canAdd = ko.observable(this.options.canAdd && this.u.login() === this.auth.iAm.login());
+                    this.canAdd = ko.computed(function () {
+                        return this.options.canAdd && this.u.login() === this.auth.iAm.login();
+                    }, this);
                     ko.applyBindings(globalVM, this.$dom[0]);
                     this.show();
                 }
