@@ -5,16 +5,6 @@
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/Photo', 'm/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
     'use strict';
     var $window = $(window);
-    ko.observableArray['fn']['concat'] = function (arr, before) {
-        var underlyingArray = this(),
-            methodCallResult;
-
-        this.valueWillMutate();
-        methodCallResult = Array.prototype[(before ? 'unshift' : 'push')][(Array.isArray(arr) ? 'apply' : 'call')](underlyingArray, arr);
-        this.valueHasMutated();
-
-        return methodCallResult;
-    };
 
     return Cliche.extend({
         jade: jade,
