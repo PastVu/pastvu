@@ -5,7 +5,7 @@ require([
     'Browser', 'Utils',
     'socket',
     'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
-    'Params', 'globalVM', 'RouteManager', 'renderer', 'text!tpl/appPhoto.jade', 'css!style/appPhoto', 'backbone.queryparams', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
+    'Params', 'globalVM', 'RouteManager', 'renderer', 'text!tpl/appPhoto.jade', 'css!style/appPhoto', 'backbone.queryparams', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, P, globalVM, RouteManager, renderer, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',

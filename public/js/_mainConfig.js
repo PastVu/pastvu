@@ -47,6 +47,7 @@ requirejs.config({
         'backbone.queryparams': 'lib/backbone/queryparams',
 
         'knockout': 'lib/knockout/knockout-2.2.0',
+        'knockout.extends': 'lib/knockout/extends',
         'knockout.mapping': 'lib/knockout/knockout.mapping',
         'knockout.postbox': 'lib/knockout/knockout-postbox.min',
 
