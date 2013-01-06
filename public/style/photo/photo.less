@@ -49,6 +49,60 @@
 		}
 	}
 
+	.userRibbon {
+		height: 80px;
+		margin-top: 5px;
+
+		.wind {
+			position: absolute;
+			top: 0;
+			height: 100%;
+			width: 0;
+			opacity: 0;
+			cursor: pointer;
+			.transition(all 0.15s linear);
+
+			&.appear {
+				width: 20px;
+				opacity: 1;
+
+				&:hover {
+					width: 35px;
+				}
+			}
+
+			&:after {
+				content: "";
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				background-repeat: no-repeat;
+			}
+
+			&.ribbon_l {
+				left: 0;
+				#gradient > .horizontal(rgba(0,0,0,1), rgba(0,0,0,0));
+				background-color: transparent;
+				&:after {
+					background-position: 15% 31px;
+					background-image: url(/img/misc/ribbon_l.png);
+				}
+			}
+
+			&.ribbon_r {
+				right: 0;
+				#gradient > .horizontal(rgba(0,0,0,0), rgba(0,0,0,1));
+				background-color: transparent;
+				&:after {
+					background-position: 80% 31px;
+					background-image: url(/img/misc/ribbon_r.png);
+				}
+			}
+		}
+	}
+
 	.photoData {
 
 		&.canBeEdit {

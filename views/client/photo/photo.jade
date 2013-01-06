@@ -49,4 +49,8 @@
 				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
+			.row-fluid.userRibbon.fringe2
+				.ribbonList
+				.wind.ribbon_l(data-bind="event: {mouseover: windRibbon, mouseout: windRibbonOff, click: JumpRibbon}")
+				.wind.ribbon_r(data-bind="event: {mouseover: windRibbon, mouseout: windRibbonOff, click: JumpRibbon}")
 	.row-fluid.photoComments

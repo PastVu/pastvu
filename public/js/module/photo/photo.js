@@ -74,6 +74,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         create: function () {
             this.auth = globalVM.repository['m/auth'];
             this.p = null;
+            this.userRibbon = ko.observableArray();
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
             var cid = globalVM.router.params().photo;
@@ -338,6 +339,131 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 }
             }.bind(this));
         },
+        getUserRibbon: function (left, right, cb, ctx) {
+            socket.once('takeUserPhotosAround', function (data) {
+                if (!data || data.error) {
+                    console.log('While loading user ribbon: ', data.message || 'Error occurred');
+                } else {
+                    if (data.left && data.left.length > 0) {
+                        data.left.reverse();
+                        data.left.forEach(function (item, index) {
+                            item = _.defaults(item, Photo.defCompact);
+                            item.pfile = '/_photo/thumb/' + item.file;
+                        });
+                        this.userRibbon.concat(data.left, true);
+                    }
+                    if (data.right && data.right.length > 0) {
+                        data.right.forEach(function (item, index) {
+                            item = _.defaults(item, Photo.defCompact);
+                            item.pfile = '/_photo/thumb/' + item.file;
+                        });
+                        this.userRibbon.concat(data.left, true);
+                    }
+                }
+                if (Utils.isObjectType('function', cb)) {
+                    cb.call(ctx, data);
+                }
+            }.bind(this));
+            socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
+        },
+        windRibbon: function (vm, evt) {
+            this.windRibbonOff();
+
+            var direction = evt.target.id === 'ribbon_r' ? -1 : 1,
+                $scrollElm = this.$dom.find('#screen-list'),
+                scrollElm = $scrollElm[0],
+                maxMargin = -P.sizes.spread() + 5 >> 0,
+                minMargin = P.sizes.w() - $scrollElm.width() - P.sizes.spread() + 5 >> 0,
+
+                timeStart = window.mozAnimationStartTime || new Date().getTime(),
+                timeElapsed = 0,
+                x0 = parseInt($scrollElm.css('marginLeft'), 10),
+                x0Elapsed = 0,
+                x1 = 0,
+                vMax = 0.20,
+                tMax = 1000,
+                _this = this;
+
+            if (direction < 0) {
+                this.windTimer = window.requestAnimationFrame(windR);
+            } else {
+                this.windTimer = window.requestAnimationFrame(windL);
+            }
+
+            function windR(now) {
+                timeElapsed = now - timeStart;
+                x0Elapsed = timeElapsed < tMax ? vMax / tMax / 2 * timeElapsed * timeElapsed : vMax * (timeElapsed - tMax / 2);
+                x1 = x0 - x0Elapsed >> 0;
+
+                if (x1 < minMargin) {
+                    scrollElm.style.marginLeft = minMargin + 'px';
+                    windStop();
+                } else {
+                    scrollElm.style.marginLeft = x1 + 'px';
+                    _this.windTimer = window.requestAnimationFrame(windR);
+                }
+            }
+
+            function windL(now) {
+                timeElapsed = now - timeStart;
+                x0Elapsed = timeElapsed < tMax ? vMax / tMax / 2 * timeElapsed * timeElapsed : vMax * (timeElapsed - tMax / 2);
+                x1 = x0 + x0Elapsed >> 0;
+
+                if (x1 > maxMargin) {
+                    scrollElm.style.marginLeft = maxMargin + 'px';
+                    windStop();
+                } else {
+                    scrollElm.style.marginLeft = x1 + 'px';
+                    _this.windTimer = window.requestAnimationFrame(windL);
+                }
+            }
+
+            function windStop() {
+                _this.windRibbonOff();
+                direction = $scrollElm = scrollElm = maxMargin = minMargin = timeStart = timeElapsed = x0 = x0Elapsed = x1 = vMax = tMax = _this = null;
+            }
+        },
+        windRibbonOff: function () {
+            window.cancelAnimationFrame(this.windTimer);
+            this.windTimer = null;
+            this.windButtonsCheck();
+        },
+        JumpRibbon: function (vm, evt) {
+            this.windRibbonOff();
+
+            var direction = evt.target.id === 'ribbon_r' ? -1 : 1,
+                $vids = this.$dom.find('#screen-list'),
+                margin = parseInt($vids.css('marginLeft'), 10),
+                maxMargin = -P.sizes.spread() + 5 >> 0,
+                minMargin = P.sizes.w() - $vids.width() - P.sizes.spread() + 5 >> 0;
+
+            margin = margin + (direction < 0 ? -Math.min(Math.abs(margin - minMargin), 600) : Math.min(Math.abs(maxMargin - margin), 600));
+
+            $vids.stop().animate({marginLeft: margin + 'px'}, 500, 'swing', this.windButtonsCheck.bind(this));
+            direction = $vids = margin = maxMargin = minMargin = null;
+        },
+        windButtonsCheck: function () {
+            var $vids = this.$dom.find('#screen-list'),
+                l = this.$dom.find('#ribbon_l')[0],
+                r = this.$dom.find('#ribbon_r')[0],
+                margin = parseInt($vids.css('marginLeft'), 10),
+                maxMargin = -P.sizes.spread() + 5 >> 0,
+                minMargin = P.sizes.w() - $vids.width() - P.sizes.spread() + 5 >> 0;
+
+            if (margin < maxMargin && !l.classList.contains('appear')) {
+                l.classList.add('appear');
+            } else if (margin >= maxMargin && l.classList.contains('appear')) {
+                l.classList.remove('appear');
+            }
+            if (margin > minMargin && !r.classList.contains('appear')) {
+                r.classList.add('appear');
+            } else if (margin <= minMargin && l.classList.contains('appear')) {
+                r.classList.remove('appear');
+            }
+
+            $vids = l = r = margin = maxMargin = minMargin = null;
+        },
+        windTimer: null,
         onAvatarLoad: function (data, event) {
             $(event.target).animate({opacity: 1});
             data = event = null;

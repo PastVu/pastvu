@@ -325,6 +325,45 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
+        /**
+         * Берем массив до и после указанной фотографии указанной длины
+         */
+        function takeUserPhotosAround(data) {
+            socket.emit('takeUserPhotosAround', data);
+        }
+        socket.on('giveUserPhotosAround', function (data) {
+            if (!data.cid || (!data.limitL && !data.limitR)) {
+                takeUserPhotosAround({message: 'Bad params', error: true});
+                return;
+            }
+
+            step(
+                function findUserId() {
+                    Photo.findOne({cid: data.cid, fresh: {$exists: false}, del: {$exists: false}}).select('-_id user').exec(this);
+                },
+                function findAroundPhotos(err, photo) {
+                    if (err || !photo || !photo.user) {
+                        takeUserPhotosAround({message: 'No such photo', error: true});
+                        return;
+                    }
+                    if (data.limitL) {
+                        Photo.find({cid: {$gt: data.cid}, user: photo.user, fresh: {$exists: false}, del: {$exists: false}}).sort('loaded').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
+                    }
+                    if (data.limitR) {
+                        Photo.find({cid: {$lt: data.cid}, user: photo.user, fresh: {$exists: false}, del: {$exists: false}}).sort('-loaded').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+                    }
+                },
+                function (err, photosL, photosR) {
+                    console.dir(arguments);
+                    if (err) {
+                        takeUserPhotosAround({message: err.message || '', error: true});
+                        return;
+                    }
+                    takeUserPhotosAround({left: photosL, right: photosR});
+                }
+            );
+        });
+
 
         /**
          * Активация/деактивация фото
