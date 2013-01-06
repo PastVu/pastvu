@@ -31,7 +31,25 @@ var path = require('path'),
             width: 246,
             height: 164,
             filter: 'Sinc',
-            gravity: 'center',
+            gravity: function (w, h, w2, h2) {
+                var result = {gravity: 'center', extent: w2 + "x" + h2},
+                    aspect = w / h,
+                    newH; //высота после пропорционального уменьшения ширины
+
+                if (aspect <= 0.75) {
+                    //Портретная вытянутая более чем на 1.3(3)
+                    //Гравитация - север с отступом сверху 10% (но не более чем до края)
+                    newH = h * w2 / w;
+                    result.gravity = 'north';
+                    result.extent += '+0+' + (Math.min(newH * 0.1, (newH - h2) / 2)  >> 0);
+                } else if (aspect < 0.97) {
+                    //Портретная не сильно вытянутая
+                    //Гравитация - центр с отступом от центра наверх 10% (но не более чем до края)
+                    newH = h * w2 / w;
+                    result.extent += '+0-' + (Math.min(newH * 0.1, (newH - h2) / 2)  >> 0);
+                }
+                return result;
+            },
             postfix: '^'
         },
         {
@@ -217,7 +235,7 @@ function conveyerStep(file, cb, ctx) {
     });
     sequence.push(function (info, callback) {
         Photo.findOneAndUpdate({file: file, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
-            callback(err);
+            callback(err, info);
         });
     });
 
@@ -232,17 +250,21 @@ function conveyerStep(file, cb, ctx) {
         if (item.filter) {
             o.filter = item.filter;
         }
-        if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
-            // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-            o.customArgs = [
-                "-gravity", item.gravity,
-                "-extent", item.width + "x" + item.height
-            ];
-        }
 
-        sequence.push(function (callback) {
+        sequence.push(function (info, callback) {
+            var gravity,
+                extent;
+            if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
+                // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
+                gravity = Utils.isObjectType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : item.gravity;
+                extent = Utils.isObjectType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
+                o.customArgs = [
+                    "-gravity", gravity.gravity,
+                    "-extent", extent
+                ];
+            }
             imageMagick.resize(o, function (err) {
-                callback(err);
+                callback(err, info);
             });
         });
 
