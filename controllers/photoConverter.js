@@ -53,6 +53,14 @@ var path = require('path'),
             postfix: '^'
         },
         {
+            version: 'mini',
+            width: 90,
+            height: 60,
+            filter: 'Sinc',
+            gravity: 'center',
+            postfix: '^'
+        },
+        {
             version: 'micro',
             width: 60,
             height: 40,
