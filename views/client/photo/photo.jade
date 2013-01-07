@@ -50,6 +50,6 @@
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
 			.row-fluid.userPhotoTiles(data-bind="foreach: userRibbon")
-				.photoThumb(data-bind="style: {marginRight: $parent.thumbM}")
+				a.photoThumb(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
 					img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 	.row-fluid.photoComments
