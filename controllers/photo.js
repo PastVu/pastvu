@@ -354,7 +354,6 @@ module.exports.loadController = function (app, db, io) {
                     }
                 },
                 function (err, photosL, photosR) {
-                    console.dir(arguments);
                     if (err) {
                         takeUserPhotosAround({message: err.message || '', error: true});
                         return;
