@@ -6,12 +6,6 @@
 	position: relative;
 	margin: 0 .5% 0 1.5%;
 
-	.h_separator {
-		margin: 12px 0;
-	}
-	.photoTitle {
-
-	}
 	.photoImgRow {
 		margin-bottom: 17px;
 		text-align: center;
@@ -21,9 +15,36 @@
 		max-width: 100%;
 	}
 
-	.photoInfo {
-		margin-bottom: 7px;
-		text-align: justify;
+	.photoInfoBlock {
+		margin-top: 9px;
+		font-size: 13px;
+		line-height: 16px;
+
+		.photoInfo {
+			margin-top: 0;
+			margin-bottom: 0;
+			text-align: justify;
+
+			.photoTitle {
+				font-weight: bold;
+				font-size: 18px;
+				line-height: 20px;
+				text-rendering: optimizelegibility;
+			}
+
+			.infoName, .editable {
+				display: inline-block;
+			}
+
+			.infoName {
+				margin-right: 5px;
+				font-weight: bold;
+			}
+		}
+	}
+
+	.h_separator {
+		margin: 12px 0;
 	}
 
 	.rightPanel {
@@ -116,6 +137,22 @@
 		&.editMode {
 			.photoActions .btnCancel {
 				display: inline-block;
+			}
+			.photoInfoBlock {
+
+				.photoInfo {
+					&:not(:first-child) {
+						margin-top: 5px;
+					}
+
+					.editable {
+						display: block;
+					}
+
+					.infoName {
+						display: none;
+					}
+				}
 			}
 			select {
 				margin-bottom: 4px;
