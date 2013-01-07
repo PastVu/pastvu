@@ -27,7 +27,7 @@
 				| &nbsp;&nbsp;Shooting direction&nbsp;
 				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 			.h_separator
-		.span3-4
+		.span3-4.rightPanel
 			.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
 				button.btn-strict.btnSave(type="button", data-bind="css: {'btn-strict-success': edit(), disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit(), 'icon-ok': edit()}")
@@ -47,10 +47,9 @@
 						span Remove
 			.row-fluid.photoUser
 				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
-					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
+					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
-			.row-fluid.userRibbon.fringe2
-				.ribbonList
-				.wind.ribbon_l(data-bind="event: {mouseover: windRibbon, mouseout: windRibbonOff, click: JumpRibbon}")
-				.wind.ribbon_r(data-bind="event: {mouseover: windRibbon, mouseout: windRibbonOff, click: JumpRibbon}")
+			.row-fluid.userPhotoTiles(data-bind="foreach: userRibbon")
+				.photoThumb(data-bind="style: {marginRight: $parent.thumbM}")
+					img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 	.row-fluid.photoComments

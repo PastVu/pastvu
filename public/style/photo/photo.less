@@ -26,6 +26,15 @@
 		text-align: justify;
 	}
 
+	.rightPanel {
+		.row-fluid {
+			margin-bottom: 7px;
+		}
+		.row-fluid:first-child, .row-fluid:last-child {
+			margin-bottom: 0;
+		}
+	}
+
 	.photoActions {
 		button {
 			display: none;
@@ -49,56 +58,31 @@
 		}
 	}
 
-	.userRibbon {
-		height: 80px;
-		margin-top: 5px;
+	.userPhotoTiles {
+		height: auto;
+		white-space: nowrap;
+		overflow: hidden;
 
-		.wind {
-			position: absolute;
-			top: 0;
-			height: 100%;
-			width: 0;
+		.photoThumb {
+			display: inline-block;
 			opacity: 0;
 			cursor: pointer;
-			.transition(all 0.15s linear);
+			background-color: #E1E2E4;
+			background-position: 50% 50%;
+			background-repeat: no-repeat;
 
-			&.appear {
-				width: 20px;
-				opacity: 1;
-
-				&:hover {
-					width: 35px;
-				}
+			&:last-child {
+				margin-right: 0 !important;
 			}
 
-			&:after {
-				content: "";
-				position: absolute;
-				left: 0;
-				top: 0;
-				right: 0;
-				bottom: 0;
-				background-repeat: no-repeat;
+			&.photoConvqueue {
+				background-image: url(/img/misc/photoConvQueue.png);
 			}
-
-			&.ribbon_l {
-				left: 0;
-				#gradient > .horizontal(rgba(0,0,0,1), rgba(0,0,0,0));
-				background-color: transparent;
-				&:after {
-					background-position: 15% 31px;
-					background-image: url(/img/misc/ribbon_l.png);
-				}
+			&.photoConv {
+				background-image: url(/img/misc/photoConv.png);
 			}
-
-			&.ribbon_r {
-				right: 0;
-				#gradient > .horizontal(rgba(0,0,0,0), rgba(0,0,0,1));
-				background-color: transparent;
-				&:after {
-					background-position: 80% 31px;
-					background-image: url(/img/misc/ribbon_r.png);
-				}
+			&.photoError {
+				background-image: url(/img/misc/photoError.png);
 			}
 		}
 	}

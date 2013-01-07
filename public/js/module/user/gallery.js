@@ -26,7 +26,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             }.bind(this);
             this.width = ko.observable('0px');
             this.height = ko.observable('0px');
-            P.window.square.subscribe(this.marginCalc, this);
+            P.window.square.subscribe(this.sizesCalc, this);
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
@@ -43,9 +43,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         show: function () {
             this.$container.fadeIn(function () {
-                //this.marginCalc(P.window.square());
+                //this.sizesCalc(P.window.square());
             }.bind(this));
-            this.marginCalc(P.window.square());
+            this.sizesCalc(P.window.square());
             if (this.u.pcount() > 0) {
                 this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
                 $window.on('scroll', this.scrollHandler);
@@ -113,7 +113,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             $parent.animate({opacity: 1});
             data = event = $parent = null;
         },
-        marginCalc: function (v) {
+        sizesCalc: function (v) {
             var windowW = P.window.w(),
                 domW = this.$dom.width() - 1, //this.$container.width()
                 thumbW,

@@ -75,6 +75,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.auth = globalVM.repository['m/auth'];
             this.p = null;
             this.userRibbon = ko.observableArray();
+            this.userRibbonLeft = [];
+            this.userRibbonRight = [];
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
             var cid = globalVM.router.params().photo;
@@ -153,6 +155,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         }
                     }, this);
 
+                    this.thumbW = ko.observable('0px');
+                    this.thumbH = ko.observable('0px');
+                    this.thumbM = ko.observable('1px');
+                    this.userThumbN = ko.observable(3);
+                    P.window.square.subscribe(this.sizesCalc, this);
+
                     ko.applyBindings(globalVM, this.$dom[0]);
 
                     this.show();
@@ -161,12 +169,49 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         show: function () {
             this.$container.fadeIn();
+            this.sizesCalc(P.window.square());
+            this.getUserRibbon(7, 7, this.applyUserRibbon, this);
             this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
             this.showing = false;
             globalVM.pb.publish('/top/message', ['', 'muted']);
+        },
+
+        sizesCalc: function (v) {
+            var windowW = P.window.w(),
+                rightPanelW = this.$dom.find('.rightPanel').width(),
+                thumbW,
+                thumbH,
+                thumbWV1 = 84,
+                thumbWV2 = 90,
+                thumbMarginMin = 1,
+                thumbMargin,
+                thumbNMin = 3,
+                thumbNV1,
+                thumbNV2;
+
+            thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
+            thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
+
+            if (thumbNV1 === thumbNV2) {
+                thumbW = thumbWV2;
+            } else {
+                thumbW = thumbWV1;
+            }
+
+            thumbH = thumbW / 1.5 >> 0;
+            thumbMargin = (rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0;
+
+            this.thumbW(thumbW + 'px');
+            this.thumbH(thumbH + 'px');
+            this.thumbM(thumbMargin + 'px');
+            this.userThumbN(thumbNV1);
+
+            this.applyUserRibbon();
+
+            windowW = rightPanelW = thumbW = thumbH = null;
         },
 
         editSave: function (data, event) {
@@ -348,16 +393,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         data.left.reverse();
                         data.left.forEach(function (item, index) {
                             item = _.defaults(item, Photo.defCompact);
-                            item.pfile = '/_photo/thumb/' + item.file;
+                            item.pfile = '/_photo/mini/' + item.file;
                         });
-                        this.userRibbon.concat(data.left, true);
+                        this.userRibbonLeft = data.left;
                     }
                     if (data.right && data.right.length > 0) {
                         data.right.forEach(function (item, index) {
                             item = _.defaults(item, Photo.defCompact);
-                            item.pfile = '/_photo/thumb/' + item.file;
+                            item.pfile = '/_photo/mini/' + item.file;
                         });
-                        this.userRibbon.concat(data.left, true);
+                        this.userRibbonRight = data.right;
                     }
                 }
                 if (Utils.isObjectType('function', cb)) {
@@ -366,111 +411,39 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }.bind(this));
             socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
         },
-        windRibbon: function (vm, evt) {
-            this.windRibbonOff();
+        applyUserRibbon: function (cb, ctx) {
+            var n = this.userThumbN(),
+                nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.userRibbonRight.length), this.userRibbonLeft.length),
+                newRibbon = this.userRibbonLeft.slice(-nLeft);
 
-            var direction = evt.target.id === 'ribbon_r' ? -1 : 1,
-                $scrollElm = this.$dom.find('#screen-list'),
-                scrollElm = $scrollElm[0],
-                maxMargin = -P.sizes.spread() + 5 >> 0,
-                minMargin = P.sizes.w() - $scrollElm.width() - P.sizes.spread() + 5 >> 0,
-
-                timeStart = window.mozAnimationStartTime || new Date().getTime(),
-                timeElapsed = 0,
-                x0 = parseInt($scrollElm.css('marginLeft'), 10),
-                x0Elapsed = 0,
-                x1 = 0,
-                vMax = 0.20,
-                tMax = 1000,
-                _this = this;
-
-            if (direction < 0) {
-                this.windTimer = window.requestAnimationFrame(windR);
-            } else {
-                this.windTimer = window.requestAnimationFrame(windL);
-            }
-
-            function windR(now) {
-                timeElapsed = now - timeStart;
-                x0Elapsed = timeElapsed < tMax ? vMax / tMax / 2 * timeElapsed * timeElapsed : vMax * (timeElapsed - tMax / 2);
-                x1 = x0 - x0Elapsed >> 0;
-
-                if (x1 < minMargin) {
-                    scrollElm.style.marginLeft = minMargin + 'px';
-                    windStop();
-                } else {
-                    scrollElm.style.marginLeft = x1 + 'px';
-                    _this.windTimer = window.requestAnimationFrame(windR);
-                }
-            }
-
-            function windL(now) {
-                timeElapsed = now - timeStart;
-                x0Elapsed = timeElapsed < tMax ? vMax / tMax / 2 * timeElapsed * timeElapsed : vMax * (timeElapsed - tMax / 2);
-                x1 = x0 + x0Elapsed >> 0;
-
-                if (x1 > maxMargin) {
-                    scrollElm.style.marginLeft = maxMargin + 'px';
-                    windStop();
-                } else {
-                    scrollElm.style.marginLeft = x1 + 'px';
-                    _this.windTimer = window.requestAnimationFrame(windL);
-                }
-            }
-
-            function windStop() {
-                _this.windRibbonOff();
-                direction = $scrollElm = scrollElm = maxMargin = minMargin = timeStart = timeElapsed = x0 = x0Elapsed = x1 = vMax = tMax = _this = null;
-            }
+            Array.prototype.push.apply(newRibbon, this.userRibbonRight.slice(0, n - nLeft));
+            this.userRibbon(newRibbon);
+            n = nLeft = newRibbon = null;
         },
-        windRibbonOff: function () {
-            window.cancelAnimationFrame(this.windTimer);
-            this.windTimer = null;
-            this.windButtonsCheck();
-        },
-        JumpRibbon: function (vm, evt) {
-            this.windRibbonOff();
-
-            var direction = evt.target.id === 'ribbon_r' ? -1 : 1,
-                $vids = this.$dom.find('#screen-list'),
-                margin = parseInt($vids.css('marginLeft'), 10),
-                maxMargin = -P.sizes.spread() + 5 >> 0,
-                minMargin = P.sizes.w() - $vids.width() - P.sizes.spread() + 5 >> 0;
-
-            margin = margin + (direction < 0 ? -Math.min(Math.abs(margin - minMargin), 600) : Math.min(Math.abs(maxMargin - margin), 600));
-
-            $vids.stop().animate({marginLeft: margin + 'px'}, 500, 'swing', this.windButtonsCheck.bind(this));
-            direction = $vids = margin = maxMargin = minMargin = null;
-        },
-        windButtonsCheck: function () {
-            var $vids = this.$dom.find('#screen-list'),
-                l = this.$dom.find('#ribbon_l')[0],
-                r = this.$dom.find('#ribbon_r')[0],
-                margin = parseInt($vids.css('marginLeft'), 10),
-                maxMargin = -P.sizes.spread() + 5 >> 0,
-                minMargin = P.sizes.w() - $vids.width() - P.sizes.spread() + 5 >> 0;
-
-            if (margin < maxMargin && !l.classList.contains('appear')) {
-                l.classList.add('appear');
-            } else if (margin >= maxMargin && l.classList.contains('appear')) {
-                l.classList.remove('appear');
-            }
-            if (margin > minMargin && !r.classList.contains('appear')) {
-                r.classList.add('appear');
-            } else if (margin <= minMargin && l.classList.contains('appear')) {
-                r.classList.remove('appear');
-            }
-
-            $vids = l = r = margin = maxMargin = minMargin = null;
-        },
-        windTimer: null,
-        onAvatarLoad: function (data, event) {
+        onImgLoad: function (data, event) {
             $(event.target).animate({opacity: 1});
             data = event = null;
         },
         onAvatarError: function (data, event) {
             $(event.target).attr('src', '/img/caps/avatar.png');
             data = event = null;
-        }
+        },
+        onThumbLoad: function (data, event) {
+            $(event.target).parents('.photoThumb').animate({opacity: 1});
+            data = event = null;
+        },
+        onThumbError: function (data, event) {
+            var $parent = $(event.target).parents('.photoThumb');
+            event.target.style.visibility = 'hidden';
+            if (data.conv) {
+                $parent.addClass('photoConv');
+            } else if (data.convqueue) {
+                $parent.addClass('photoConvqueue');
+            } else {
+                $parent.addClass('photoError');
+            }
+            $parent.animate({opacity: 1});
+            data = event = $parent = null;
+        },
     });
 });
