@@ -15,7 +15,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 storage.waitings['u' + login] = [{cb: callback, ctx: context}];
                 socket.once('takeUser', function (data) {
                     if (!data.error && data.login === login) {
-                        storage.users[login] = User.VM(data);
+                        storage.users[login] = {origin: _.defaults(data, User.def), vm: User.VM(data)};
                     }
                     if (storage.waitings['u' + login]) {
                         storage.waitings['u' + login].forEach(function (item, index, collection) {
@@ -37,7 +37,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 socket.once('takePhoto', function (data) {
                     data.cid = String(data.cid);
                     if (!data.error && data.cid === cid) {
-                        storage.photos[cid] = Photo.VM(data);
+                        storage.photos[cid] = {origin: _.defaults(data, Photo.def), vm: Photo.VM(data)};
                     }
                     if (storage.waitings['p' + cid]) {
                         storage.waitings['p' + cid].forEach(function (item, index, collection) {

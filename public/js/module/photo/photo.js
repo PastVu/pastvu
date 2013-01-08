@@ -73,110 +73,125 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/auth'];
-            this.p = null;
+            this.p = Photo.VM(Photo.def);
             this.userRibbon = ko.observableArray();
             this.userRibbonLeft = [];
             this.userRibbonRight = [];
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-            var cid = globalVM.router.params().photo;
+            this.IOwner = ko.computed(function () {
+                return this.auth.iAm.login() === this.p.user.login();
+            }, this);
 
-            storage.photo(cid, function (vm) {
-                if (vm) {
+            this.canBeEdit = ko.computed(function () {
+                return P.settings.LoggedIn() && (this.IOwner() || this.auth.iAm.role_level() >= 0);
+            }, this);
 
-                    this.p = vm;
-                    this.originData = ko_mapping.toJS(this.p);
+            this.canBeApprove = ko.computed(function () {
+                return P.settings.LoggedIn() && (this.p.fresh() && this.auth.iAm.role_level() >= 0);
+            }, this);
 
-                    this.canBeEdit = ko.computed(function () {
-                        return P.settings.LoggedIn() && (this.auth.iAm.login() === this.p.user.login() || this.auth.iAm.role_level() >= 0);
-                    }, this);
+            this.canBeDisable = ko.computed(function () {
+                return P.settings.LoggedIn() && (!this.p.fresh() && this.auth.iAm.role_level() >= 0);
+            }, this);
 
-                    this.canBeApprove = ko.computed(function () {
-                        return P.settings.LoggedIn() && (this.p.fresh() && this.auth.iAm.role_level() >= 0);
-                    }, this);
+            this.canBeRemove = ko.computed(function () {
+                return P.settings.LoggedIn() && (this.auth.iAm.role_level() >= 0);
+            }, this);
 
-                    this.canBeDisable = ko.computed(function () {
-                        return P.settings.LoggedIn() && (!this.p.fresh() && this.auth.iAm.role_level() >= 0);
-                    }, this);
+            // Если фото новое и есть права, открываем его на редактирование
+            this.edit = ko.observable(this.p.fresh() && this.IOwner());
 
-                    this.canBeRemove = ko.computed(function () {
-                        return P.settings.LoggedIn() && (this.auth.iAm.role_level() >= 0);
-                    }, this);
-
-                    // Если фото новое и есть права, открываем его на редактирование
-                    this.edit = ko.observable(this.p.fresh() && this.canBeEdit());
-
-                    this.msgByStatus = ko.computed(function () {
-                        if (this.edit()) {
-                            globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
-                        } else if (this.p.fresh()) {
-                            globalVM.pb.publish('/top/message', ['Photo is new. Administrator must approve it', 'warn']);
-                        } else if (this.p.disabled()) {
-                            globalVM.pb.publish('/top/message', ['Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn']);
-                        } else if (this.p.del()) {
-                            globalVM.pb.publish('/top/message', ['Photo is deleted by Administrator', 'error']);
-                        } else {
-                            globalVM.pb.publish('/top/message', ['', 'muted']);
-                        }
-                    }, this);
-
-                    this.userInfo = ko.computed(function () {
-                        return _.template(
-                            'Added by <a target="_self" href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times',
-                            { login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.loaded()).format('D MMMM YYYY'), sd: this.p.stats_day(), sw: this.p.stats_week(), sa: this.p.stats_all()}
-                        );
-                    }, this);
-
-                    this.p.year.subscribe(function (val) {
-                        var v = parseInt(val, 10);
-                        if (!v || isNaN(v)) {
-                            v = Photo.def.year;
-                        }
-                        if (String(val) !== String(v)) {
-                            this.p.year(v);
-                            return;
-                        }
-                        if (v > parseInt(this.p.year2(), 10)) {
-                            this.p.year2(v);
-                        }
-                    }, this);
-                    this.p.year2.subscribe(function (val) {
-                        var v = parseInt(val, 10);
-                        if (!v || isNaN(v)) {
-                            v = Photo.def.year;
-                        }
-                        if (String(val) !== String(v)) {
-                            this.p.year2(v);
-                            return;
-                        }
-                        if (v < this.p.year()) {
-                            this.p.year2(this.p.year());
-                            return;
-                        }
-                    }, this);
-
-                    this.thumbW = ko.observable('0px');
-                    this.thumbH = ko.observable('0px');
-                    this.thumbM = ko.observable('1px');
-                    this.userThumbN = ko.observable(3);
-                    P.window.square.subscribe(this.sizesCalc, this);
-
-                    ko.applyBindings(globalVM, this.$dom[0]);
-
-                    this.show();
+            this.msgByStatus = ko.computed(function () {
+                if (this.edit()) {
+                    globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
+                } else if (this.p.fresh()) {
+                    globalVM.pb.publish('/top/message', ['Photo is new. Administrator must approve it', 'warn']);
+                } else if (this.p.disabled()) {
+                    globalVM.pb.publish('/top/message', ['Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn']);
+                } else if (this.p.del()) {
+                    globalVM.pb.publish('/top/message', ['Photo is deleted by Administrator', 'error']);
+                } else {
+                    globalVM.pb.publish('/top/message', ['', 'muted']);
                 }
             }, this);
+
+            this.userInfo = ko.computed(function () {
+                return _.template(
+                    'Added by <a target="_self" href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times',
+                    { login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.loaded()).format('D MMMM YYYY'), sd: this.p.stats_day(), sw: this.p.stats_week(), sa: this.p.stats_all()}
+                );
+            }, this);
+
+            this.p.year.subscribe(function (val) {
+                var v = parseInt(val, 10);
+                if (!v || isNaN(v)) {
+                    v = Photo.def.year;
+                }
+                if (String(val) !== String(v)) {
+                    this.p.year(v);
+                    return;
+                }
+                if (v > parseInt(this.p.year2(), 10)) {
+                    this.p.year2(v);
+                }
+            }, this);
+            this.p.year2.subscribe(function (val) {
+                var v = parseInt(val, 10);
+                if (!v || isNaN(v)) {
+                    v = Photo.def.year;
+                }
+                if (String(val) !== String(v)) {
+                    this.p.year2(v);
+                    return;
+                }
+                if (v < this.p.year()) {
+                    this.p.year2(this.p.year());
+                    return;
+                }
+            }, this);
+
+            this.thumbW = ko.observable('0px');
+            this.thumbH = ko.observable('0px');
+            this.thumbM = ko.observable('1px');
+            this.userThumbN = ko.observable(3);
+            P.window.square.subscribe(this.sizesCalc, this);
+
+            ko.applyBindings(globalVM, this.$dom[0]);
+
+            // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
+            // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+            this.routeHandlerThrottled = _.throttle(this.routeHandler, 700);
+            this.routeSubscription = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
+            this.routeHandlerThrottled();
         },
         show: function () {
+            if (this.showing) {
+                return;
+            }
             this.$container.fadeIn();
             this.sizesCalc(P.window.square());
-            this.getUserRibbon(7, 7, this.applyUserRibbon, this);
             this.showing = true;
         },
         hide: function () {
             this.$container.css('display', '');
             this.showing = false;
             globalVM.pb.publish('/top/message', ['', 'muted']);
+        },
+
+        routeHandler: function () {
+            var cid = globalVM.router.params().photo,
+                appHistory = globalVM.router.getFlattenStack('/p/', ''),
+                offset = globalVM.router.offset;
+
+            storage.photo(cid, function (data) {
+                if (data) {
+                    this.originData = data.origin;
+                    this.p = Photo.VM(data.origin, this.p);
+                    this.show();
+                    this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+                }
+            }, this, this.p);
         },
 
         sizesCalc: function (v) {
@@ -313,8 +328,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                                     okButton
                                         .text('Ok (4)')
                                         .on('click', function () {
-                                            document.location.href = '/u/' + this.p.user.login() + '/photo';
-                                        }.bind(this));
+                                        document.location.href = '/u/' + this.p.user.login() + '/photo';
+                                    }.bind(this));
 
                                     Utils.timer(
                                         5000,
@@ -330,9 +345,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                                     okButton
                                         .text('Close')
                                         .on('click', function () {
-                                            $noty.close();
-                                            this.exe(false);
-                                        }.bind(this));
+                                        $noty.close();
+                                        this.exe(false);
+                                    }.bind(this));
                                 }
                             }.bind(that));
                             socket.emit('removePhotos', that.p.file());
@@ -389,20 +404,34 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (!data || data.error) {
                     console.log('While loading user ribbon: ', data.message || 'Error occurred');
                 } else {
+                    var left = [],
+                        right = [];
                     if (data.left && data.left.length > 0) {
                         data.left.reverse();
-                        data.left.forEach(function (item, index) {
-                            item = _.defaults(item, Photo.defCompact);
-                            item.pfile = '/_photo/mini/' + item.file;
-                        });
-                        this.userRibbonLeft = data.left;
+                        data.left.forEach(function (item) {
+                            var existItem = _.find(this.userRibbonLeft, function (element) { return element.cid === item.cid; });
+                            if (existItem) {
+                                left.push(existItem);
+                            } else {
+                                item = _.defaults(item, Photo.defCompact);
+                                item.pfile = '/_photo/mini/' + item.file;
+                                left.push(item);
+                            }
+                        }, this);
+                        this.userRibbonLeft = left;
                     }
                     if (data.right && data.right.length > 0) {
-                        data.right.forEach(function (item, index) {
-                            item = _.defaults(item, Photo.defCompact);
-                            item.pfile = '/_photo/mini/' + item.file;
-                        });
-                        this.userRibbonRight = data.right;
+                        data.right.forEach(function (item) {
+                            var existItem = _.find(this.userRibbonRight, function (element) { return element.cid === item.cid; });
+                            if (existItem) {
+                                right.push(existItem);
+                            } else {
+                                item = _.defaults(item, Photo.defCompact);
+                                item.pfile = '/_photo/mini/' + item.file;
+                                right.push(item);
+                            }
+                        }, this);
+                        this.userRibbonRight = right;
                     }
                 }
                 if (Utils.isObjectType('function', cb)) {
@@ -444,6 +473,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }
             $parent.animate({opacity: 1});
             data = event = $parent = null;
-        },
+        }
     });
 });

@@ -107,7 +107,7 @@
 						select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 				.h_separator
 			.span3-4.rightPanel
-				.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
+				.row-fluid.photoActions
 					button.btn-strict.btn-strict-success.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 						i.icon-ok.icon-white
 						span Save edit

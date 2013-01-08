@@ -28,10 +28,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            storage.user(user, function (vm) {
-                if (vm) {
+            storage.user(user, function (data) {
+                if (data) {
 
-                    this.u = vm;
+                    this.u = data.vm;
                     this.originUser = ko_mapping.toJS(this.u);
 
                     ko.applyBindings(globalVM, this.$dom[0]);

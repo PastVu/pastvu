@@ -339,7 +339,7 @@ module.exports.loadController = function (app, db, io) {
 
             step(
                 function findUserId() {
-                    Photo.findOne({cid: data.cid, fresh: {$exists: false}, del: {$exists: false}}).select('-_id user').exec(this);
+                    Photo.findOne({cid: data.cid}).select('-_id user').exec(this);
                 },
                 function findAroundPhotos(err, photo) {
                     if (err || !photo || !photo.user) {

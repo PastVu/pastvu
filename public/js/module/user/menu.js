@@ -12,9 +12,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
             this.links = ko.observableArray();
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            storage.user(user, function (vm) {
-                if (vm) {
-                    this.user = vm;
+            storage.user(user, function (data) {
+                if (data) {
+                    this.user = data.vm;
 
                     this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
                     this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});

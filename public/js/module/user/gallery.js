@@ -30,9 +30,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
-            storage.user(user, function (vm) {
-                if (vm) {
-                    this.u = vm;
+            storage.user(user, function (data) {
+                if (data) {
+                    this.u = data.vm;
                     this.canAdd = ko.computed(function () {
                         return this.options.canAdd && this.u.login() === this.auth.iAm.login();
                     }, this);
