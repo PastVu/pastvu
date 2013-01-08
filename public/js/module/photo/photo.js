@@ -464,7 +464,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             data = event = null;
         },
         onThumbLoad: function (data, event) {
-            $(event.target).parents('.photoTile').animate({opacity: 1});
+            $(event.target).parents('.photoTile').css({visibility: 'visible'});
             data = event = null;
         },
         onThumbError: function (data, event) {

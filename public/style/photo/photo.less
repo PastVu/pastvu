@@ -88,7 +88,8 @@
 
 		.photoTile {
 			display: inline-block;
-			opacity: 0;
+			visibility: hidden;
+			opacity: 0.95;
 			cursor: pointer;
 			background-color: #E1E2E4;
 			background-position: 50% 50%;
@@ -96,6 +97,10 @@
 
 			&:last-child {
 				margin-right: 0 !important;
+			}
+
+			&:hover {
+				opacity: 1;
 			}
 
 			&.photoConvqueue {
