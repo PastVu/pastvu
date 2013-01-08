@@ -102,6 +102,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             // Если фото новое и есть права, открываем его на редактирование
             this.edit = ko.observable(this.p.fresh() && this.IOwner());
 
+            P.settings.LoggedIn.subscribe(this.loginHandler, this);
+
             this.msgByStatus = ko.computed(function () {
                 if (this.edit()) {
                     globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
@@ -192,6 +194,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.getUserRibbon(7, 7, this.applyUserRibbon, this);
                 }
             }, this, this.p);
+        },
+        loginHandler: function (v) {
+            // После логина/логаута перезапрашиваем ленту фотографий пользователя
+            this.getUserRibbon(7, 7, this.applyUserRibbon, this);
         },
 
         sizesCalc: function (v) {

@@ -346,12 +346,18 @@ module.exports.loadController = function (app, db, io) {
                         takeUserPhotosAround({message: 'No such photo', error: true});
                         return;
                     }
-                    if (data.limitL) {
-                        Photo.find({cid: {$gt: data.cid}, user: photo.user, fresh: {$exists: false}, del: {$exists: false}}).sort('loaded').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
+                    var filters = {user: photo.user, del: {$exists: false}};
+                    if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
+                        filters.fresh = {$exists: false};
+                        filters.disabled = {$exists: false};
                     }
-                    if (data.limitR) {
-                        Photo.find({cid: {$lt: data.cid}, user: photo.user, fresh: {$exists: false}, del: {$exists: false}}).sort('-loaded').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+                    if (data.limitL > 0) {
+                        Photo.find(filters).gt('cid', data.cid).sort('loaded').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
                     }
+                    if (data.limitR > 0) {
+                        Photo.find(filters).lt('cid', data.cid).sort('-loaded').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+                    }
+                    filters = null;
                 },
                 function (err, photosL, photosR) {
                     if (err) {
