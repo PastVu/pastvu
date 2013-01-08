@@ -429,11 +429,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             data = event = null;
         },
         onThumbLoad: function (data, event) {
-            $(event.target).parents('.photoThumb').animate({opacity: 1});
+            $(event.target).parents('.photoTile').animate({opacity: 1});
             data = event = null;
         },
         onThumbError: function (data, event) {
-            var $parent = $(event.target).parents('.photoThumb');
+            var $parent = $(event.target).parents('.photoTile');
             event.target.style.visibility = 'hidden';
             if (data.conv) {
                 $parent.addClass('photoConv');

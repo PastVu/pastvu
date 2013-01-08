@@ -1,82 +1,120 @@
 .photo(data-bind="with: repository[M!M]")
-	.row-fluid.photoData(data-bind="css: {canBeEdit: canBeEdit(), canBeApprove: canBeApprove(), canBeDisable: canBeDisable(), canBeRemove: canBeRemove(), editMode: edit(), inApprove: !p.fresh(), inActive: p.disabled()}")
-		.span8-9
-			.row-fluid.photoImgRow
-				img.photoImg(data-bind="attr: {src: p.sfile()}")
-			.row-fluid.photoInfoBlock
-				//ko if: edit() || p.title().length > 0
-				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
-				// /ko
-				//ko if: edit() || p.desc().length > 0
-				.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
-				// /ko
-			.row-fluid.photoInfoBlock
-				//ko if: edit() || p.address().length > 0
-				.row-fluid.photoInfo
-					.infoName Adress:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-				// /ko
-				//ko if: edit() || p.source().length > 0
-				.row-fluid.photoInfo
-					.infoName Source:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
-				// /ko
-				//ko if: edit() || p.author().length > 0
-				.row-fluid.photoInfo
-					.infoName Author:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
-				// /ko
-			.row-fluid.photoInfoBlock
-				//ko ifnot: edit()
-				.row-fluid.photoInfo
-					| We believe that the photo was taken
-					span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
-					span(data-bind="text: p.year()")
-					span(data-bind="text: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
-					span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
-					//ko if: p.dir && p.dir() && p.dir().length > 0
-					span &nbsp;(shooting direction &minus;&nbsp;
-					span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
-					| )
+	//ko template: edit() ? 'photoEdit' : 'photoView'
+	// /ko
+
+	//-VIEW MODE
+	script(id="photoView", type="text/html")
+		.row-fluid.photoData
+			.span8-9
+				.row-fluid.photoImgRow
+					img.photoImg(data-bind="attr: {src: p.sfile()}")
+				.row-fluid.photoInfoBlock
+					//ko if: p.title().length > 0
+					.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 					// /ko
-				// /ko
-				//ko if: edit()
-				.row-fluid.photoInfo
-					| The photo was taken between&nbsp;
-					span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
-					| &nbsp;and&nbsp;
-					span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
-					| &nbsp;&nbsp;Shooting direction&nbsp;
-					select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
-				// /ko
-			.h_separator
-		.span3-4.rightPanel
-			.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
-				button.btn-strict.btnSave(type="button", data-bind="css: {'btn-strict-success': edit(), disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !edit(), 'icon-ok': edit()}")
-					span(data-bind="text: edit() ? 'Save edit' : 'Edit'")
-				button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
-					i.icon-remove.icon-white
-					span Cancel edit
-				div(data-bind="style: {display: !edit() && (canBeApprove() || canBeDisable() || canBeRemove()) ? 'inline-block' : 'none'}")
-					button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+					//ko if: p.desc().length > 0
+					.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
+					// /ko
+				.row-fluid.photoInfoBlock
+					//ko if: p.address().length > 0
+					.row-fluid.photoInfo
+						.infoName Adress:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+					// /ko
+					//ko if: p.source().length > 0
+					.row-fluid.photoInfo
+						.infoName Source:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+					// /ko
+					//ko if: p.author().length > 0
+					.row-fluid.photoInfo
+						.infoName Author:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+					// /ko
+				.row-fluid.photoInfoBlock
+					.row-fluid.photoInfo
+						| We believe that the photo was taken
+						span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
+						span(data-bind="text: p.year()")
+						span(data-bind="text: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
+						span(data-bind="text: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
+						//ko if: p.dir && p.dir() && p.dir().length > 0
+						span &nbsp;(shooting direction &minus;&nbsp;
+						span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+						| )
+						// /ko
+				.h_separator
+			.span3-4.rightPanel
+				.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
+					button.btn-strict.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+						i.icon-pencil.icon-white
+						span Edit
+					div(style="display:inline-block")
+						//ko if: canBeApprove()
+						button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+							i.icon-ok.icon-white
+							span Approve
+						// /ko
+						//ko if: canBeDisable()
+						button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+							i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
+							span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
+						// /ko
+						//ko if: canBeRemove()
+						button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+							i.icon-remove-circle.icon-white
+							span Remove
+						// /ko
+				.row-fluid.photoUser
+					a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
+						img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+					.userInfo(data-bind="html: userInfo()")
+				.row-fluid.photoTiles(data-bind="")
+					.lineBehind
+						span(data-bind="html: 'Snippet <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'gallery</a> of user'")
+					//ko foreach: userRibbon
+					a.photoTile(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
+						img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+					// /ko
+		.row-fluid.photoComments
+
+	//-EDIT MODE
+	script(id="photoEdit", type="text/html")
+		.row-fluid.photoData.editMode
+			.span8-9
+				.row-fluid.photoImgRow
+					img.photoImg(data-bind="attr: {src: p.sfile()}")
+				.row-fluid.photoInfoBlock
+					.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+					.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
+				.row-fluid.photoInfoBlock
+					.row-fluid.photoInfo
+						.infoName Adress:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+					.row-fluid.photoInfo
+						.infoName Source:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+					.row-fluid.photoInfo
+						.infoName Author:
+						.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+				.row-fluid.photoInfoBlock
+					.row-fluid.photoInfo
+						| The photo was taken between&nbsp;
+						span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
+						| &nbsp;and&nbsp;
+						span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
+						| &nbsp;&nbsp;Shooting direction&nbsp;
+						select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
+				.h_separator
+			.span3-4.rightPanel
+				.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
+					button.btn-strict.btn-strict-success.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 						i.icon-ok.icon-white
-						span Approve
-					button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-						i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-						span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
-					button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-						i.icon-remove-circle.icon-white
-						span Remove
-			.row-fluid.photoUser
-				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
-					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
-				.userInfo(data-bind="html: userInfo()")
-			.row-fluid.userPhotoTiles(data-bind="")
-				.lineBehind
-					span(data-bind="html: 'Snippet <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'gallery</a> of user'")
-				//ko foreach: userRibbon
-				a.photoThumb(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
-					img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-				// /ko
-	.row-fluid.photoComments
+						span Save edit
+					button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
+						i.icon-remove.icon-white
+						span Cancel edit
+				.row-fluid.photoUser
+					a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
+						img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+					.userInfo(data-bind="html: userInfo()")

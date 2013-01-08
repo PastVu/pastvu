@@ -16,9 +16,6 @@
 	}
 
 	.photoInfoBlock {
-		//font-size: 14px;
-		//line-height: 16px;
-
 		.photoInfo {
 			margin-top: 0;
 			margin-bottom: 0;
@@ -64,7 +61,6 @@
 
 	.photoActions {
 		button {
-			display: none;
 			min-width: 110px;
 			margin-bottom: 9px;
 		}
@@ -85,12 +81,12 @@
 		}
 	}
 
-	.userPhotoTiles {
+	.photoTiles {
 		height: auto;
 		white-space: nowrap;
 		overflow: hidden;
 
-		.photoThumb {
+		.photoTile {
 			display: inline-block;
 			opacity: 0;
 			cursor: pointer;
@@ -115,40 +111,14 @@
 	}
 
 	.photoData {
-
-		&.canBeEdit {
-			.photoActions .btnSave {
-				display: inline-block;
-			}
-		}
-		&.canBeApprove {
-			.photoActions .btnApprove {
-				display: inline-block;
-			}
-		}
-		&.canBeDisable {
-			.photoActions .btnActive {
-				display: inline-block;
-			}
-		}
-		&.canBeRemove {
-			.photoActions .btnRemove {
-				display: inline-block;
-			}
-		}
-
 		&.editMode {
-			.photoActions .btnCancel {
-				display: inline-block;
-			}
 			.photoInfoBlock {
-
 				.photoInfo {
 					&:not(:first-child) {
 						margin-top: 5px;
 					}
 
-					.editable {
+					div.editable {
 						display: block;
 					}
 
@@ -189,14 +159,6 @@
 
 			}
 		}
-
-		&.inApprove {
-
-		}
-		&.inActive {
-
-		}
-
 	}
 }
 
