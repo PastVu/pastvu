@@ -16,16 +16,19 @@
 	}
 
 	.photoInfoBlock {
-		margin-top: 9px;
-		font-size: 13px;
-		line-height: 16px;
+		//font-size: 14px;
+		//line-height: 16px;
 
 		.photoInfo {
 			margin-top: 0;
 			margin-bottom: 0;
 			text-align: justify;
 
-			.photoTitle {
+			&:first-child {
+				margin-top: 9px;
+			}
+
+			&.photoTitle {
 				font-weight: bold;
 				font-size: 18px;
 				line-height: 20px;
