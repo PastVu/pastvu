@@ -9,58 +9,54 @@
 	position: relative;
 	z-index: @zindexPopover;
 
-	.span2-3 {
+	#logo {
 		position: absolute;
 		top: 0;
-		margin-left: 0;
-		text-align: center;
+		left: -31px;
+		width: 60px;
+		height: 60px;
+		margin-top: 0;
+		padding-left: 0;
+		border-width: 0 1px 1px;
+		background-color: darken(@MainBlueColor, 6%);
+		background-image: url(/img/map/logo.png);
+		background-position: 50% 50%;
+		background-repeat: no-repeat;
 		z-index: @zindexPopover;
+	}
 
-		#logo {
-			display: inline-block;
-			width: 60px;
-			height: 60px;
-			margin-top: 0;
-
-			border-width: 0 1px 1px;
-			background-color: darken(@MainBlueColor, 6%);
-			background-image: url(/img/map/logo.png);
-			background-position: 50% 50%;
-			background-repeat: no-repeat;
-
-			&:hover {
-				color: @white;
-			}
-
-			#appName {
-				position: relative;
-				top: 1px;
-				left: 72px;
-				font-size: 18px;
-				height: 30px;
-				line-height: 30px;
-				text-transform: capitalize;
-				white-space: nowrap;
-			}
-
-			#appMsg {
-				position: absolute;
-				top: 39px;
-				left: 72px;
-				white-space: nowrap;
-			}
-
-		}
+	#appMsg {
+		position: absolute;
+		top: 39px;
+		left: 72px;
+		white-space: nowrap;
+		z-index: @zindexPopover;
 	}
 
 	#panel {
 		position: relative;
 		width: 100%;
 		height: 30px;
-        margin: 1px 0;
+		margin: 1px 0;
 		border-width: 0 0 1px 0;
-        .box-shadow(~'0 1px 0 0 #000, 0 -1px 0 0 #000, 1px 2px 4px 0px #222');
-		.user-select(none);
+		.box-shadow(~'0 1px 0 0 #000, 0 -1px 0 0 #000, 1px 2px 4px 0px #222');
+
+		#appName {
+			position: relative;
+			display: inline-block;
+			top: 1px;
+			left: 1px;
+			font-size: 18px;
+			height: 30px;
+			line-height: 30px;
+			text-transform: capitalize;
+			white-space: nowrap;
+			cursor: pointer;
+
+			&:hover {
+				color: @white;
+			}
+		}
 
 		#panelTools {
 			display: block;
@@ -69,6 +65,7 @@
 			top: 0;
 			text-align: right;
 			white-space: nowrap;
+			.user-select(none);
 		}
 
 		.labledIco {
@@ -87,12 +84,12 @@
 			&.strokeBefore::before, &.strokeAfter::after {
 				filter: none; /* Needs for support full multi-stop gradients with IE9 (using SVG) */
 				background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzA1M2Y3ZSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjE2JSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgIDxzdG9wIG9mZnNldD0iNDklIiBzdG9wLWNvbG9yPSIjZjJmMmYyIiBzdG9wLW9wYWNpdHk9IjEiLz4KICAgIDxzdG9wIG9mZnNldD0iODUlIiBzdG9wLWNvbG9yPSIjMDc1YWIzIiBzdG9wLW9wYWNpdHk9IjAuOCIvPgogICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDUzZjdlIiBzdG9wLW9wYWNpdHk9IjAiLz4KICA8L2xpbmVhckdyYWRpZW50PgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InVybCgjZ3JhZC11Y2dnLWdlbmVyYXRlZCkiIC8+Cjwvc3ZnPg==);
-				background: -moz-linear-gradient(top, fade(@MainBlueColor,0%) 0%, rgba(7,90,179,0.8) 16%, @MainLigthColor 49%, rgba(7,90,179,0.8) 85%, fade(@MainBlueColor,0%) 100%); /* FF3.6+ */
-				background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,fade(@MainBlueColor,0%)), color-stop(16%,rgba(7,90,179,0.8)), color-stop(49%,rgba(242,242,242,1)), color-stop(85%,rgba(7,90,179,0.8)), color-stop(100%,fade(@MainBlueColor,0%))); /* Chrome,Safari4+ */
-				background: -webkit-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* Chrome10+,Safari5.1+ */
-				background: -o-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* Opera 11.10+ */
-				background: -ms-linear-gradient(top, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* IE10+ */
-				background: linear-gradient(to bottom, fade(@MainBlueColor,0%) 0%,rgba(7,90,179,0.8) 16%,rgba(242,242,242,1) 49%,rgba(7,90,179,0.8) 85%,fade(@MainBlueColor,0%) 100%); /* W3C */
+				background: -moz-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, @MainLigthColor 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* FF3.6+ */
+				background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, fade(@MainBlueColor, 0%)), color-stop(16%, rgba(7, 90, 179, 0.8)), color-stop(49%, rgba(242, 242, 242, 1)), color-stop(85%, rgba(7, 90, 179, 0.8)), color-stop(100%, fade(@MainBlueColor, 0%))); /* Chrome,Safari4+ */
+				background: -webkit-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* Chrome10+,Safari5.1+ */
+				background: -o-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* Opera 11.10+ */
+				background: -ms-linear-gradient(top, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* IE10+ */
+				background: linear-gradient(to bottom, fade(@MainBlueColor, 0%) 0%, rgba(7, 90, 179, 0.8) 16%, rgba(242, 242, 242, 1) 49%, rgba(7, 90, 179, 0.8) 85%, fade(@MainBlueColor, 0%) 100%); /* W3C */
 				content: " ";
 				display: inline-block;
 				height: 100%;
@@ -176,11 +173,16 @@
 	}
 }
 
-@media only screen and (max-width: 800px) {
-	#top #panel {
-		.labledIco {
-			.text {
-				display: none;
+@media only screen and (max-width: 768px) {
+	#top {
+		#logo {
+			left: 0;
+		}
+		#panel {
+			.labledIco {
+				.text {
+					display: none;
+				}
 			}
 		}
 	}

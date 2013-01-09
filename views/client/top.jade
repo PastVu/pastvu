@@ -1,5 +1,6 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe2#panel
+		#appName.indentLogo Retro photo of mankind's habitat
 		#panelTools.hide-text
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/u/photoUpload", target="_blank", data-bind="style:{display: loggedIn() ? '' : 'none'}")
 				.ico
@@ -19,9 +20,7 @@
 			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){auth.doLogout()}}")
 				.text(data-bind="text: $root.i18n.logout()")
 				.ico
-	.span2-3
-		a.fringe2#logo(href='/', target='_self')
-			#appName Retro photo of mankind's habitat
-			#appMsg(data-bind="css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
-				//i.icon-warning-sign(style="margin-top: 3px; margin-right: 4px;")
-				span(data-bind="text: msg()")
+	a.fringe2.indentLogo#logo(href='/', target='_self')
+	#appMsg.indentLogo(data-bind="css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
+		//i.icon-warning-sign(style="margin-top: 3px; margin-right: 4px;")
+		//span(data-bind="text: msg()")
