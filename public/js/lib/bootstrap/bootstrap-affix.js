@@ -68,7 +68,15 @@
     this.affixed = affix
     this.unpin = affix == 'bottom' ? position.top - scrollTop : null
 
-    this.$element.removeClass(reset).addClass('affix' + (affix ? '-' + affix : ''))
+    this.$element.removeClass(reset).addClass('affix' + (affix ? '-' + affix : ''));
+    // Klimashkin: Переключаем нужные классы во время аффикса
+    if (this.options.addClasses) {
+        if (!affix) {
+            this.$element.addClass(this.options.addClasses);
+        } else {
+            this.$element.removeClass(this.options.addClasses);
+        }
+    }
   }
 
 
