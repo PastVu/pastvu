@@ -4,7 +4,20 @@
 
 .photo {
 	position: relative;
-	margin: 0 .5% 0 1.5%;
+
+	.photoActions {
+		position: relative;
+		margin-top: -35px;
+
+		button {
+			min-width: 110px;
+			margin-bottom: 9px;
+		}
+	}
+
+	.photoData {
+		margin: 0 .5% 0 1.5%;
+	}
 
 	.photoImgRow {
 		margin-bottom: 17px;
@@ -59,13 +72,6 @@
 		}
 	}
 
-	.photoActions {
-		button {
-			min-width: 110px;
-			margin-bottom: 9px;
-		}
-	}
-
 	.avatar {
 		float: left;
 		margin-right: 7px;
@@ -79,6 +85,10 @@
 			max-height: 75px;
 			opacity: 0;
 		}
+	}
+
+	.photoMap {
+		height: 500px;
 	}
 
 	.photoTiles {
@@ -169,6 +179,8 @@
 
 @media (max-width: 767px) {
 	.photo {
-		margin: 0 3px;
+		.photoData {
+			margin: 0 3px;
+		}
 	}
 }

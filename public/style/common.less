@@ -164,6 +164,11 @@ a.disabled:hover {
 	cursor: default;
 }
 
+/**
+ * Так как некоторые размеры сетки могут пересчитаться верно только в Common,
+ * (потому-что только в нем импортятся responsive),
+ * то, все значения полученные здесь в вычислениях надо дублировать вручную в других стилях модулей
+ */
 .row-fluid {
 	.span2-3 {
 		#grid > .fluid > .span (2);
@@ -179,7 +184,7 @@ a.disabled:hover {
 	}
 }
 .indentLogo {
-	margin-left: 16.01049868766404% / 2;
+	#grid > .fluid > .offsetAsWidth (2, 2); //Маргин на половину результата ширины span2-3
 	padding-left: @logoW/2 + 4px;
 }
 
@@ -199,7 +204,7 @@ a.disabled:hover {
 		}
 	}
 	.indentLogo {
-		margin-left: 20.209973753280842% / 2;
+		#grid > .fluid > .offsetAsWidth (2.5, 2);
 	}
 }
 
@@ -219,7 +224,7 @@ a.disabled:hover {
 		}
 	}
 	.indentLogo {
-		margin-left: 24.409448818897637% / 2;
+		#grid > .fluid > .offsetAsWidth (3, 2);
 	}
 }
 
@@ -239,7 +244,7 @@ a.disabled:hover {
 		}
 	}
 	.indentLogo {
-		margin-left: 28.608923884514432% / 2;
+		#grid > .fluid > .offsetAsWidth (3.5, 2);
 	}
 }
 

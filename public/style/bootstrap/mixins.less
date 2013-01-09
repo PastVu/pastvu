@@ -627,8 +627,13 @@
       margin-left: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) + (@fluidGridGutterWidth);
       *margin-left: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%) + @fluidGridGutterWidth - (.5 / @gridRowWidth * 100 * 1%);
     }
+	// Klimashkin: маргин равный ширине
+    .offsetAsWidth (@columns, @divider) {
+		margin-left: ((@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1))) / @divider;
+      	*margin-left: ((@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%)) / @divider;
+    }
 
-    .span (@columns) {
+	.span (@columns) {
       width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1));
       *width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%);
     }

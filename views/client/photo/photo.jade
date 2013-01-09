@@ -1,8 +1,43 @@
 .photo(data-bind="with: repository[M!M]")
+	//ko if: canBeEdit()
+	.indentLogo.photoActions(data-bind="template: { name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+	// /ko
+
 	//ko template: edit() ? 'photoEdit' : 'photoView'
 	// /ko
 
-	//-VIEW MODE
+	//-ACTIONS VIEW MODE
+	script(id="photoActionsView", type="text/html")
+		button.btn-strict.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+			i.icon-pencil.icon-white
+			span Edit
+		div(style="display:inline-block")
+		//ko if: canBeApprove()
+		button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+			i.icon-ok.icon-white
+			span Approve
+		// /ko
+		//ko if: canBeDisable()
+		button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+			i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
+			span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
+		// /ko
+		//ko if: canBeRemove()
+		button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+			i.icon-remove-circle.icon-white
+			span Remove
+		// /ko
+
+	//-ACTIONS EDIT MODE
+	script(id="photoActionsEdit", type="text/html")
+		button.btn-strict.btn-strict-success.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+			i.icon-ok.icon-white
+			span Save edit
+		button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
+			i.icon-remove.icon-white
+			span Cancel edit
+
+	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
 		.row-fluid.photoData
 			.span8-9
@@ -45,26 +80,6 @@
 						// /ko
 				.h_separator
 			.span3-4.rightPanel
-				.row-fluid.photoActions(data-bind="style: {display: $root.P.settings.LoggedIn() ? '' : 'none'}")
-					button.btn-strict.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-						i.icon-pencil.icon-white
-						span Edit
-					div(style="display:inline-block")
-						//ko if: canBeApprove()
-						button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
-							i.icon-ok.icon-white
-							span Approve
-						// /ko
-						//ko if: canBeDisable()
-						button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-							i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-							span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
-						// /ko
-						//ko if: canBeRemove()
-						button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-							i.icon-remove-circle.icon-white
-							span Remove
-						// /ko
 				.row-fluid.photoUser
 					a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 						img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
@@ -107,14 +122,8 @@
 						select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
 				.h_separator
 			.span3-4.rightPanel
-				.row-fluid.photoActions
-					button.btn-strict.btn-strict-success.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-						i.icon-ok.icon-white
-						span Save edit
-					button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
-						i.icon-remove.icon-white
-						span Cancel edit
 				.row-fluid.photoUser
 					a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 						img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 					.userInfo(data-bind="html: userInfo()")
+				.row-fluid.photoMap

@@ -35,7 +35,8 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
                         this.$dom.affix({
                             offset: {
                                 top: 40
-                            }
+                            },
+                            addClasses: 'span2-3'
                         });
                     }
 

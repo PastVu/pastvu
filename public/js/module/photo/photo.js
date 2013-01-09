@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
     'use strict';
 
     /**
@@ -82,26 +82,30 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
             }, this);
+            this.IAdmin = ko.computed(function () {
+                return this.auth.iAm.login() && this.auth.iAm.role_level() >= 0;
+            }, this);
 
             this.canBeEdit = ko.computed(function () {
-                return P.settings.LoggedIn() && (this.IOwner() || this.auth.iAm.role_level() >= 0);
+                return this.IOwner() || this.IAdmin();
             }, this);
 
             this.canBeApprove = ko.computed(function () {
-                return P.settings.LoggedIn() && (this.p.fresh() && this.auth.iAm.role_level() >= 0);
+                return this.p.fresh() && this.IAdmin();
             }, this);
 
             this.canBeDisable = ko.computed(function () {
-                return P.settings.LoggedIn() && (!this.p.fresh() && this.auth.iAm.role_level() >= 0);
+                return !this.p.fresh() && this.IAdmin();
             }, this);
 
             this.canBeRemove = ko.computed(function () {
-                return P.settings.LoggedIn() && (this.auth.iAm.role_level() >= 0);
+                return this.IAdmin();
             }, this);
 
             // Если фото новое и есть права, открываем его на редактирование
-            this.edit = ko.observable(this.p.fresh() && this.IOwner());
+            this.edit = ko.observable(false);
 
+            this.edit.subscribe(this.editHandler, this);
             P.settings.LoggedIn.subscribe(this.loginHandler, this);
 
             this.msgByStatus = ko.computed(function () {
@@ -190,6 +194,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (data) {
                     this.originData = data.origin;
                     this.p = Photo.VM(data.origin, this.p);
+
+                    // Если фото новое и есть права, открываем его на редактирование
+                    this.edit(this.p.fresh() && this.IOwner());
+
                     this.show();
                     this.getUserRibbon(7, 7, this.applyUserRibbon, this);
                 }
@@ -198,6 +206,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         loginHandler: function (v) {
             // После логина/логаута перезапрашиваем ленту фотографий пользователя
             this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+        },
+        editHandler: function (v) {
+            if (v) {
+                renderer(
+                    [
+                        {module: 'm/map/mapEdit', container: '.photoMap', options: {}, callback: function (vm) {
+                            this.mapVM = vm;
+                        }.bind(this)}
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 1
+                    }
+                );
+            }
         },
 
         sizesCalc: function (v) {
