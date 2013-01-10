@@ -1,8 +1,8 @@
 .photo(data-bind="with: repository[M!M]")
 	//ko if: canBeEdit()
 	.indentLogo.photoTop
-		.photoActions(data-bind="template: { name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
-		.photoMsg Hello
+		.photoAction(data-bind="template: { name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 	// /ko
 
 	//ko template: edit() ? 'photoEdit' : 'photoView'

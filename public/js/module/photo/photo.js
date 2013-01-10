@@ -108,17 +108,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.edit.subscribe(this.editHandler, this);
             P.settings.LoggedIn.subscribe(this.loginHandler, this);
 
+            this.msg = ko.observable('');
+            this.msgCss = ko.observable('');
+
             this.msgByStatus = ko.computed(function () {
                 if (this.edit()) {
-                    globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
+                    this.setMessage('Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn');
+                    //globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
                 } else if (this.p.fresh()) {
-                    globalVM.pb.publish('/top/message', ['Photo is new. Administrator must approve it', 'warn']);
+                    this.setMessage('Photo is new. Administrator must approve it', 'warn');
                 } else if (this.p.disabled()) {
-                    globalVM.pb.publish('/top/message', ['Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn']);
+                    this.setMessage('Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn');
                 } else if (this.p.del()) {
-                    globalVM.pb.publish('/top/message', ['Photo is deleted by Administrator', 'error']);
+                    this.setMessage('Photo is deleted by Administrator', 'warn');
                 } else {
-                    globalVM.pb.publish('/top/message', ['', 'muted']);
+                    this.setMessage('', 'muted');
                 }
             }, this);
 
@@ -502,6 +506,31 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }
             $parent.animate({opacity: 1});
             data = event = $parent = null;
+        },
+        setMessage: function (text, type) {
+            var css = '';
+            switch (type) {
+            case 'error':
+                css = 'text-error';
+                break;
+            case 'warn':
+                css = 'text-warning';
+                break;
+            case 'info':
+                css = 'text-info';
+                break;
+            case 'success':
+                css = 'text-success';
+                break;
+            default:
+                css = 'muted';
+                break;
+            }
+
+            this.msg(text);
+            this.msgCss(css);
+
+            text = type = css = null;
         }
     });
 });
