@@ -7,8 +7,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 
     var Router = Backbone.Router.extend({
 
-        initialize: function (handlers, dfd) {
+        initialize: function (options, dfd) {
             this.root = '/';
+            this.useLeaf = false;
             this.body = ko.observable('');
             this.params = ko.observable({});
 
@@ -24,8 +25,12 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.blockHrefs = false;
 
             //Указываем корень
-            if (handlers && handlers.root) {
-                this.root = handlers.root;
+            if (options && options.root) {
+                this.root = options.root;
+            }
+            //Указываем отслеживать ли историю переходов по url (leaf)
+            if (options && Utils.isObjectType('boolean', options.useLeaf)) {
+                this.useLeaf = options.useLeaf;
             }
 
             //Регистрируем глобальные модули
@@ -49,15 +54,15 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             );
 
             //Вставляем обработчики модулей обернутые в враппер
-            if (handlers && handlers.handlers) {
-                _.forEach(handlers.handlers, function (item, key) {
+            if (options && options.handlers) {
+                _.forEach(options.handlers, function (item, key) {
                     this[key] = _.wrap(item, this.handlerWrapper);
                 }.bind(this));
             }
 
             //Регистрируем переданные модули
-            if (handlers && handlers.routes) {
-                handlers.routes.forEach(function (item, index) {
+            if (options && options.routes) {
+                options.routes.forEach(function (item, index) {
                     this.route(item.route, item.handler);
                 }.bind(this));
             }
@@ -75,9 +80,10 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 
         handlerWrapper: function (handler, routeParam, getParams) {
             var fragment = Backbone.history.getFragment(),
-                body = fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment;
+                body = fragment.indexOf('?') > -1 ? fragment.substring(0, fragment.indexOf('?')) : fragment,
+                leaf =  this.useLeaf ? (getParams && getParams.l) || '' : this.nextLeaf;
 
-            this.addToStack(body, (getParams && getParams.leaf) || '');
+            this.addToStack(body, leaf);
             this.body(body);
 
             handler.apply(this, Array.prototype.slice.call(arguments, 1));
@@ -89,7 +95,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             var uid = this.root + route + leaf,
                 stackNewIndex;
 
-            if (this.stackHash[uid]) { // Если уникальный url уже был, значит переместились по истории назад
+            if (this.useLeaf && this.stackHash[uid]) { // Если уникальный url уже был, значит переместились по истории назад
                 stackNewIndex = this.stack.indexOf(uid);
             } else { // Если уникальный url новый, то удаляем все url начиная с текущего (на случай если мы "в прошлом") и вставляем этот новый
                 this.stack.splice(this.stackCurrentIndex + 1, this.stack.length - this.stackCurrentIndex - 1, uid).forEach(function (item, inde, array) {
@@ -102,7 +108,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             this.stackCurrentIndex = stackNewIndex;
 
             this.currentLeaf = this.stackHash[this.stack[this.stackCurrentIndex]].leaf;
-            this.nextLeaf = Utils.randomString(7);
+            this.nextLeaf = Utils.randomString(3);
         },
         getByGo: function (param) {
             var result;
@@ -145,18 +151,23 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 href = this.getAttribute('href'),
                 target = this.getAttribute('target'),
                 body = '',
-                leaf = Utils.getURLParameter('leaf', href);
+                leaf = _this.useLeaf && Utils.getURLParameter('l', href);
 
             if (href.length === 0 || this.blockHrefs) {
                 evt.preventDefault();
             } else if (target !== '_blank' && href.indexOf(_this.root) > -1) {
                 evt.preventDefault();
-                body = href.substring(_this.root.length, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
 
-                if (_.isString(body) && _.isString(leaf) && _this.stack.indexOf(_this.root + body + leaf) > -1) {
-                    window.history.go(_this.stack.indexOf(_this.root + body + leaf) - _this.stackCurrentIndex);
+                if (!_this.useLeaf) {
+                    // Если не используем leaf, то просто навигируемся
+                    globalVM.router.navigate(href.substr(_this.root.length), {trigger: true, replace: false});
                 } else {
-                    globalVM.router.navigate(href.substr(_this.root.length) + '?leaf=' + _this.nextLeaf, {trigger: true, replace: false});
+                    body = href.substring(_this.root.length, (href.indexOf('?') > -1 ? href.indexOf('?') : href.length));
+                    if (_.isString(body) && _.isString(leaf) && _this.stack.indexOf(_this.root + body + leaf) > -1) {
+                        window.history.go(_this.stack.indexOf(_this.root + body + leaf) - _this.stackCurrentIndex);
+                    } else {
+                        globalVM.router.navigate(href.substr(_this.root.length) + '?l=' + _this.nextLeaf, {trigger: true, replace: false});
+                    }
                 }
             }
 
