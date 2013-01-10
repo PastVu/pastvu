@@ -5,8 +5,7 @@
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 	// /ko
 
-	//ko template: edit() ? 'photoEdit' : 'photoView'
-	// /ko
+	.photoData(data-bind="template: { name: edit() ? 'photoEdit' : 'photoView'}")
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
@@ -41,7 +40,7 @@
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
-		.row-fluid.photoData
+		.row-fluid
 			.span8-9
 				.row-fluid.photoImgRow
 					img.photoImg(data-bind="attr: {src: p.sfile()}")
