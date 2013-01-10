@@ -271,14 +271,19 @@ module.exports.loadController = function (app, db, io) {
                     takeUserPhotos({message: err && err.message, error: true});
                     return;
                 }
-                Photo.getPhotosCompact({user: user._id, del: {$exists: false}}, {skip: data.start, limit: data.limit}, function (err, photo) {
-                    //console.dir(photo);
+                var filters = {user: user._id, del: {$exists: false}};
+                if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
+                    filters.fresh = {$exists: false};
+                    filters.disabled = {$exists: false};
+                }
+                Photo.getPhotosCompact(filters, {skip: data.start, limit: data.limit}, function (err, photo) {
                     if (err) {
                         takeUserPhotos({message: err && err.message, error: true});
                         return;
                     }
                     takeUserPhotos(photo);
                 });
+                filters = null;
             });
         });
 

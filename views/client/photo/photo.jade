@@ -1,11 +1,11 @@
 .photo(data-bind="with: repository[M!M]")
 	//ko if: canBeEdit()
 	.indentLogo.photoTop
-		.photoAction(data-bind="template: { name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 	// /ko
 
-	.photoData(data-bind="template: { name: edit() ? 'photoEdit' : 'photoView'}")
+	.photoData(data-bind="template: {name: edit() ? 'photoEdit' : 'photoView'}, css: {editMode: edit()}")
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
@@ -96,7 +96,7 @@
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
-		.row-fluid.photoData.editMode
+		.row-fluid
 			.span8-9
 				.row-fluid.photoImgRow
 					img.photoImg(data-bind="attr: {src: p.sfile()}")
