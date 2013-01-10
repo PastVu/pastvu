@@ -57,7 +57,7 @@ var fs = require('fs'),
             },
             {
                 name: "appUser",
-                include: ['m/auth', 'm/top', 'm/user/brief']
+                include: ['m/auth', 'm/top', 'm/user/brief', 'm/user/menu']
             },
             {
                 name: "appPhoto",

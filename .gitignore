@@ -12,6 +12,7 @@ public-build
 ehthumbs.db
 Icon?
 Thumbs.db
+*.gypi
 
 # Log files #
 ######################

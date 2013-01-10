@@ -83,7 +83,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 return this.auth.iAm.login() === this.p.user.login();
             }, this);
             this.IAdmin = ko.computed(function () {
-                return this.auth.iAm.login() && this.auth.iAm.role_level() >= 0;
+                return P.settings.LoggedIn() && this.auth.iAm.role_level() >= 0;
             }, this);
 
             this.canBeEdit = ko.computed(function () {
