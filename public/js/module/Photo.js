@@ -44,6 +44,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             cid: 0,
             title: 'No tytle yet',
             file: '',
+            loaded: Date.now(),
             year: 1900,
             year2: 1900,
             ccount: 0,
@@ -56,12 +57,15 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 
     function vmCreate(model) {
         model = _.defaults(model || {}, _default);
+        model.loaded = new Date(model.loaded);
         _.defaults(model.user, User.defCompact);
+
         var vm = ko_mapping.fromJS(model);
 
         vm.sfile = ko.computed(function () {
             return '/_photo/standard/' + this.file();
         }, vm);
+
 
         vm.user.fullName = ko.computed(function () {
             if (this.firstName() && this.lastName()) {

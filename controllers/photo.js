@@ -287,6 +287,46 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
+        /**
+         * Отдаем фотографии с ограниченным доступом
+         */
+        function takeUserPhotosPrivate(data) {
+            socket.emit('takeUserPhotosPrivate', data);
+        }
+
+        socket.on('giveUserPhotosPrivate', function (data) {
+            User.getUserID(data.login, function (err, user) {
+                if (err) {
+                    takeUserPhotosPrivate({message: err && err.message, error: true});
+                    return;
+                }
+                if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
+                    takeUserPhotosPrivate({message: 'Not authorized', error: true});
+                    return;
+                }
+                var filters = {user: user._id, loaded: {}, $or: [], del: {$exists: false}};
+                if (hs.session.user && user._id.equals(hs.session.user._id)) {
+                    filters.$or.push({fresh: {$exists: true}});
+                    filters.$or.push({disabled: {$exists: true}});
+                }
+
+                if (data.startTime) {
+                    filters.loaded.$gte = data.startTime;
+                }
+                if (data.endTime) {
+                    filters.loaded.$lte = data.endTime;
+                }
+                Photo.getPhotosCompact(filters, {}, function (err, photo) {
+                    if (err) {
+                        takeUserPhotosPrivate({message: err && err.message, error: true});
+                        return;
+                    }
+                    takeUserPhotosPrivate(photo);
+                });
+                filters = null;
+            });
+        });
+
 
         /**
          * Отдаем фотографию

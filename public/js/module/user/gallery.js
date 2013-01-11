@@ -28,6 +28,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.height = ko.observable('0px');
             P.window.square.subscribe(this.sizesCalc, this);
 
+            P.settings.LoggedIn.subscribe(this.loginHandler, this);
+
             var user = globalVM.router.params().user || this.auth.iAm.login();
 
             storage.user(user, function (data) {
@@ -61,6 +63,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.$container.css('display', '');
             this.showing = false;
         },
+
+        loginHandler: function (v) {
+            // После логина/логаута перезапрашиваем ленту фотографий пользователя
+            if (this.u.pcount() > 0) {
+                this.getPhotosPrivate();
+            }
+        },
+
         getPhotos: function (start, limit, cb, ctx) {
             socket.once('takeUserPhotos', function (data) {
                 if (!data || data.error) {
@@ -68,6 +78,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 } else {
                     data.forEach(function (item, index, array) {
                         item = _.defaults(item, Photo.defCompact);
+                        item.loaded = new Date(item.loaded);
                         item.pfile = '/_photo/thumb/' + item.file;
                     });
                 }
@@ -95,6 +106,45 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             if (!this.loadingPhoto()) {
                 this.getPage(this.photos().length, this.limit);
             }
+        },
+        getPhotosPrivate: function (cb, ctx) {
+            if (this.photos().length === 0) {
+                return;
+            }
+            socket.once('takeUserPhotosPrivate', function (data) {
+                if (!data || data.error) {
+                    window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+                } else {
+                    var currArray = this.photos();
+
+                    data.forEach(function (item, index, array) {
+                        item = _.defaults(item, Photo.defCompact);
+                        item.loaded = new Date(item.loaded);
+                        item.pfile = '/_photo/thumb/' + item.file;
+                    });
+
+                    Array.prototype.push.apply(currArray, data);
+
+                    currArray.sort(function (a, b) {
+                        if (a.loaded < b.loaded) {
+                            return 1;
+                        } else if (a.loaded > b.loaded) {
+                            return -1;
+                        } else {
+                            return 0;
+                        }
+                    });
+
+                    this.photos(currArray);
+                    currArray = null;
+                }
+                if (Utils.isObjectType('function', cb)) {
+                    cb.call(ctx, data);
+                }
+                this.loadingPhoto(false);
+            }.bind(this));
+            socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).loaded, endTime: undefined});
+            this.loadingPhoto(true);
         },
         onThumbLoad: function (data, event) {
             $(event.target).parents('.photoThumb').animate({opacity: 1});
