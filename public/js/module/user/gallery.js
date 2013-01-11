@@ -67,7 +67,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         loginHandler: function (v) {
             // После логина/логаута перезапрашиваем ленту фотографий пользователя
             if (this.u.pcount() > 0) {
-                this.getPhotosPrivate();
+                this.getPhotosPrivate(function () {
+                    this.getNextPage();
+                }, this);
             }
         },
 
@@ -138,10 +140,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     this.photos(currArray);
                     currArray = null;
                 }
+                this.loadingPhoto(false);
                 if (Utils.isObjectType('function', cb)) {
                     cb.call(ctx, data);
                 }
-                this.loadingPhoto(false);
             }.bind(this));
             socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).loaded, endTime: undefined});
             this.loadingPhoto(true);
