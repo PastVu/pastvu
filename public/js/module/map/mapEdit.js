@@ -22,6 +22,9 @@ define([
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
 
+            this.marker = L.marker([0, 0], {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
+            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
+
             if (P.settings.USE_OSM_API()) {
                 this.layers.push({
                     id: 'osm',
@@ -131,11 +134,7 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
 
-                this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
-                this.geo = ko.observableArray([37.617672979831696, 55.75582971084302]);
                 this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
-                this.marker = L.marker(this.geo().reverse(), {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
-
                 this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
 
                 Locations.subscribe(function (val) {
@@ -170,6 +169,16 @@ define([
             this.$container.css('display', '');
             this.showing = false;
         },
+
+        setGeo: function (geo) {
+            this.marker.setLatLng(geo.reverse());
+            if (geo[0] || geo[1]) {
+                this.map.panTo(geo);
+            }
+        },
+        getGeo: function () {
+            return this.marker.getLatLng();
+        },
         setMapDefCenter: function (forceMoveEvent) {
             this.map.setView(this.mapDefCenter, Locations.current.z, false);
         },
@@ -182,12 +191,18 @@ define([
                 system,
                 type;
 
-            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) { return; }
+            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) {
+                return;
+            }
 
-            system = _.find(layers, function (item) { return item.id === sys_id; });
+            system = _.find(layers, function (item) {
+                return item.id === sys_id;
+            });
 
             if (system) {
-                type = _.find(system.types(), function (item) { return item.id === type_id; });
+                type = _.find(system.types(), function (item) {
+                    return item.id === type_id;
+                });
 
                 if (type) {
                     if (layerActive.sys && layerActive.type) {

@@ -28,12 +28,12 @@ function createPhotos(session, data, cb) {
         return;
     }
 
-    if (!data || (!Array.isArray(data) && !Utils.isObjectType('object', data))) {
+    if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
         cb({message: 'Bad params', error: true});
         return;
     }
 
-    if (!Array.isArray(data) && Utils.isObjectType('object', data)) {
+    if (!Array.isArray(data) && Utils.isType('object', data)) {
         data = [data];
     }
 
@@ -84,12 +84,12 @@ function removePhotos(session, data, cb) {
         return;
     }
 
-    if (!data || (!Array.isArray(data) && !Utils.isObjectType('string', data))) {
+    if (!data || (!Array.isArray(data) && !Utils.isType('string', data))) {
         cb({message: 'Bad params', error: true});
         return;
     }
 
-    if (!Array.isArray(data) && Utils.isObjectType('string', data)) {
+    if (!Array.isArray(data) && Utils.isType('string', data)) {
         data = [data];
     }
 
@@ -199,7 +199,7 @@ module.exports.loadController = function (app, db, io) {
         socket.on('createPhoto', function (data) {
             createPhotos(hs.session, data, function (createData) {
                 if (!createData.error) {
-                    if (!Array.isArray(data) && Utils.isObjectType('object', data)) {
+                    if (!Array.isArray(data) && Utils.isType('object', data)) {
                         data = [data];
                     }
                     var toConvert = [];
@@ -475,7 +475,7 @@ module.exports.loadController = function (app, db, io) {
                     savePhotoResult({message: 'Not authorized', error: true});
                     return;
                 }
-                var toSave = _.pick(data, 'lat', 'lng', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
+                var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
                 if (Object.keys(toSave).length > 0) {
                     _.assign(photo, toSave);
                     photo.save(function (err) {

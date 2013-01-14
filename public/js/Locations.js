@@ -39,7 +39,7 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin
      */
     try {
         if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
-            Locations.set({'gpsip': {lat: parseFloat(geoplugin_latitude(), 10), lng: parseFloat(geoplugin_longitude(), 10), z: 10}});
+            Locations.set({'gpsip': {lng: parseFloat(geoplugin_longitude(), 10), lat: parseFloat(geoplugin_latitude(), 10), z: 10}});
         }
     } catch (e) {
         console.log('Locations geoplugin parse error');

@@ -22,10 +22,7 @@ var PhotoSheme = new mongoose.Schema(
             w: {type: Number},
             h: {type: Number},
 
-            //loc: {geo: {lng: Number, lat: Number}},
-            geo: {type: [Number], index: '2d'},
-            lat: {type: String},
-            lng: {type: String},
+            geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
             dir: {type: String},
 
             title: {type: String},

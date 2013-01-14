@@ -49,7 +49,7 @@ define([
                             modules.splice(i, 1);
 
                             //Вызываем коллбэк для уже существующего модуля
-                            if (Utils.isObjectType('function', item.callback)) {
+                            if (Utils.isType('function', item.callback)) {
                                 item.callback.call(window, existingVM);
                             }
 
@@ -89,13 +89,13 @@ define([
 
                 var vm = new VM(options.parent, item.module, item.container, options.level, item.options || {}, item.global);
 
-                //Коллбэк, вызываемый только при создании модлуля, один раз
-                if (Utils.isObjectType('function', item.callbackWhenNew)) {
-                    item.callback.call(window, vm);
+                //Коллбэк, вызываемый только при создании модуля, один раз
+                if (Utils.isType('function', item.callbackWhenNew)) {
+                    item.callback.call(item.ctx, vm);
                 }
                 //Вызываем коллбэк для модуля
-                if (Utils.isObjectType('function', item.callback)) {
-                    item.callback.call(window, vm);
+                if (Utils.isType('function', item.callback)) {
+                    item.callback.call(item.ctx, vm);
                 }
 
                 promisesWhenNew[item.module] = true;
@@ -103,7 +103,7 @@ define([
             });
         });
 
-        if (Utils.isObjectType('function', options.callback)) {
+        if (Utils.isType('function', options.callback)) {
             $.when.apply($, promises)
                 .pipe(function () {
                     var dfd = $.Deferred(),

@@ -10,8 +10,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             stack_order: 0,
 
             geo: [0, 0],
-            lat: '0',
-            lng: '0',
             dir: undefined,
 
             file: '',
@@ -58,6 +56,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 
     function vmCreate(model) {
         model = _.defaults(model || {}, _default);
+        model.geo[0] = model.geo[0] || _default.geo[0];
+        model.geo[1] = model.geo[1] || _default.geo[1];
         model.loaded = new Date(model.loaded);
         _.defaults(model.user, User.defCompact);
 

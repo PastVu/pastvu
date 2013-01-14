@@ -79,6 +79,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userRibbonRight = [];
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
+            this.mapEditVM = null;
+
             this.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
             }, this);
@@ -215,9 +217,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             if (v) {
                 renderer(
                     [
-                        {module: 'm/map/mapEdit', container: '.photoMap', options: {}, callback: function (vm) {
-                            this.mapVM = vm;
-                        }.bind(this)}
+                        {module: 'm/map/mapEdit', container: '.photoMap', options: {}, ctx: this, callback: function (vm) {
+                            this.mapEditVM = vm;
+                            this.mapEditPosition();
+                        }}
                     ],
                     {
                         parent: this,
@@ -260,6 +263,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.applyUserRibbon();
 
             windowW = rightPanelW = thumbW = thumbH = null;
+        },
+
+        mapEditPosition: function () {
+            this.mapEditVM.setGeo(this.p.geo());
         },
 
         editSave: function (data, event) {
@@ -396,7 +403,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
 
         save: function (cb, ctx) {
-            var target = _.pick(ko_mapping.toJS(this.p), 'lat', 'lng', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
+            var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
                 key;
 
             for (key in target) {
@@ -427,7 +434,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         cancel: function () {
             _.forEach(this.originData, function (item, key) {
-                if (Utils.isObjectType('function', this.p[key]) && this.p[key]() !== item) {
+                if (Utils.isType('function', this.p[key]) && this.p[key]() !== item) {
                     this.p[key](item);
                 }
             }.bind(this));
@@ -467,7 +474,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         this.userRibbonRight = right;
                     }
                 }
-                if (Utils.isObjectType('function', cb)) {
+                if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
             }.bind(this));
