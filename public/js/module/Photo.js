@@ -9,6 +9,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             stack: '',
             stack_order: 0,
 
+            geo: [0, 0],
             lat: '0',
             lng: '0',
             dir: undefined,

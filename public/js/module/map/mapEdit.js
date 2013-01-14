@@ -132,7 +132,9 @@ define([
             this.$container.fadeIn(400, function () {
 
                 this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
+                this.geo = ko.observableArray([37.617672979831696, 55.75582971084302]);
                 this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
+                this.marker = L.marker(this.geo().reverse(), {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
 
                 this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
 
@@ -147,12 +149,16 @@ define([
                 }.bind(this));
 
                 this.map.whenReady(function () {
-                    /*if (!!window.localStorage && !!window.localStorage['arguments.SelectLayer']) {
-                        this.selectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','));
-                    } else {
-                        this.selectLayer('osm', 'mapnik');
-                    }*/
-                    this.selectLayer('osm', 'mapnik');
+                    var _this = this;
+                    this.selectLayer('osm', 'osmosnimki');
+                    this.map.on('click', function (e) {
+                        _this.marker.setLatLng(e.latlng);
+                    });
+                    this.marker
+                        .on('dragend', function (e) {
+                            console.log(_.pick(this.getLatLng(), 'lng', 'lat'));
+                        })
+                        .addTo(this.map);
 
                 }, this);
 

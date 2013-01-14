@@ -67,8 +67,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         loginHandler: function (v) {
             // После логина/логаута перезапрашиваем ленту фотографий пользователя
             if (this.u.pcount() > 0) {
-                this.getPhotosPrivate(function () {
-                    this.getNextPage();
+                this.getPhotosPrivate(function (data) {
+                    if (data && !data.error && data.length > 0 && this.photos().length < this.limit * 1.5) {
+                        this.getNextPage();
+                    }
                 }, this);
             }
         },
@@ -114,8 +116,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 return;
             }
             socket.once('takeUserPhotosPrivate', function (data) {
-                if (!data || data.error) {
-                    window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+                if (!data || data.error || data.length === 0) {
+                    //window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
                 } else {
                     var currArray = this.photos();
 

@@ -213,7 +213,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         editHandler: function (v) {
             if (v) {
-                /*renderer(
+                renderer(
                     [
                         {module: 'm/map/mapEdit', container: '.photoMap', options: {}, callback: function (vm) {
                             this.mapVM = vm;
@@ -223,7 +223,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         parent: this,
                         level: this.level + 1
                     }
-                );*/
+                );
             }
         },
 
