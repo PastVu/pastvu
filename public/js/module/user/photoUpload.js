@@ -176,7 +176,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                 file.ext = {
                     uid: Utils.randomString(7),
                     data: data,
-                    humansize: Utils.formatFileSize(file.size),
+                    humansize: Utils.format.fileSize(file.size),
                     progress: ko.observable(0),
                     uploading: ko.observable(false),
                     uploaded: ko.observable(false),
@@ -300,11 +300,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
             this.fileProgressAllText(this.calcProgress(data));
         },
         calcProgress: function (data) {
-            return Utils.formatBitrate(data.bitrate) + ' | ' +
-                Utils.secondsToTime((data.total - data.loaded) * 8 / data.bitrate) + ' | ' +
-                Utils.formatPercentage(data.loaded / data.total) + ' | ' +
-                Utils.formatFileSize(data.loaded) + ' / ' +
-                Utils.formatFileSize(data.total);
+            return Utils.format.bitrate(data.bitrate) + ' | ' +
+                Utils.format.secondsToTime((data.total - data.loaded) * 8 / data.bitrate) + ' | ' +
+                Utils.format.percentage(data.loaded / data.total) + ' | ' +
+                Utils.format.fileSize(data.loaded) + ' / ' +
+                Utils.format.fileSize(data.total);
         },
         validate: function (file, options) {
             if (this.fileList.length > options.maxFiles) {

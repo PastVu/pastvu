@@ -7,29 +7,28 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
     var Utils = {
 
         /**
-         * Merge src properties into dest
-         * @param {!Object} dest
-         * @return {!Object}
-         */
-        extend: function (dest) {
-            var sources = Array.prototype.slice.call(arguments, 1), i, j, len, src;
-            for (j = 0, len = sources.length; j < len; j++) {
-                src = sources[j] || {};
-                for (i in src) {
-                    if (src.hasOwnProperty(i)) {
-                        dest[i] = src[i];
-                    }
-                }
-            }
-            return dest;
-        },
-
-        /**
          * Class powers the OOP facilities of the library. Thanks to John Resig and Dean Edwards for inspiration!
          */
         Class: (function () {
-            var Class = function () {
-            };
+            /**
+             * Merge src properties into dest
+             * @param {!Object} dest
+             * @return {!Object}
+             */
+            function extend(dest) {
+                var sources = Array.prototype.slice.call(arguments, 1), i, j, len, src;
+                for (j = 0, len = sources.length; j < len; j++) {
+                    src = sources[j] || {};
+                    for (i in src) {
+                        if (src.hasOwnProperty(i)) {
+                            dest[i] = src[i];
+                        }
+                    }
+                }
+                return dest;
+            }
+
+            var Class = function () {};
 
             /**
              *
@@ -65,23 +64,23 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 
                 // mix static properties into the class
                 if (props.statics) {
-                    Utils.extend(NewClass, props.statics);
+                    extend(NewClass, props.statics);
                     delete props.statics;
                 }
 
                 // mix includes into the prototype
                 if (props.includes) {
-                    Utils.extend.apply(null, [proto].concat(props.includes));
+                    extend.apply(null, [proto].concat(props.includes));
                     delete props.includes;
                 }
 
                 // merge options
                 if (props.options && proto.options) {
-                    props.options = Utils.extend({}, proto.options, props.options);
+                    props.options = extend({}, proto.options, props.options);
                 }
 
                 // mix given properties into the prototype
-                Utils.extend(proto, props);
+                extend(proto, props);
 
                 return NewClass;
             };
@@ -89,11 +88,11 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 
             // method for adding properties to prototype
             Class.include = function (props) {
-                Utils.extend(this.prototype, props);
+                extend(this.prototype, props);
             };
 
             Class.mergeOptions = function (options) {
-                Utils.extend(this.prototype.options, options);
+                extend(this.prototype.options, options);
             };
 
             return Class;
@@ -105,7 +104,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          * @param {Object} obj Проверяемый объект.
          * @return {boolean}
          */
-        isObjectType: function (type, obj) {
+        isType: function (type, obj) {
             return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
         },
 
@@ -128,58 +127,39 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             return false;
         },
 
-        getObjectPropertyLength: function (obj) {
-            var result = 0, prop;
-            if (Object.getOwnPropertyNames) { //ECMAScript 5
-                result = Object.getOwnPropertyNames(obj).length;
-            } else { //ECMAScript 3
+
+        getObjectPropertyLength: (function () {
+            function ecma5(obj) {
+                return Object.keys(obj).length;
+            }
+            function ecma3(obj) {
+                var result = 0, prop;
                 for (prop in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+                    if (obj.hasOwnProperty(prop)) {
                         result += 1;
                     }
                 }
+                return result;
             }
-            return result;
-        },
 
-        /*getObjectOneOwnPropertyName: function(obj){
-         return this.getOwnPropertyNames(obj)[0];
-         },
-         getObjectOneOwnProperty: function(obj){
-         return obj[this.getObjectOneOwnPropertyName(obj)];
-         },*/
-        getObjectOneOwnProperty: function (obj) {
-            var prop;
-            if (Utils.getObjectPropertyLength(obj) > 0) {
-                if (Object.getOwnPropertyNames) { //ECMAScript 5
-                    return Object.getOwnPropertyNames(obj)[0];
-                } else { //ECMAScript 3
-                    for (prop in obj) {
-                        if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-                            return prop;
-                        }
+            return Object.keys ? ecma5 : ecma3;
+        }()),
+
+        getObjectOneOwnProperty: (function () {
+            function ecma5(obj) {
+                return Object.keys(obj)[0];
+            }
+            function ecma3(obj) {
+                var prop;
+                for (prop in obj) {
+                    if (obj.hasOwnProperty(prop)) {
+                        return prop;
                     }
                 }
             }
-        },
 
-        cloneObject: function cloneObject(o) {
-            if (!o || 'object' !== typeof o) {
-                return o;
-            }
-            var c = 'function' === typeof o.pop ? [] : {}, p, v;
-            for (p in o) {
-                if (o.hasOwnProperty(p)) {
-                    v = o[p];
-                    if (v && 'object' === typeof v) {
-                        c[p] = cloneObject(v);
-                    } else {
-                        c[p] = v;
-                    }
-                }
-            }
-            return c;
-        },
+            return Object.keys ? ecma5 : ecma3;
+        }()),
 
         printObject: function (o) {
             var out = '', p;
@@ -195,12 +175,14 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          * Загружает изображение и по завешению загрузки вызывает callback
          * @param url
          * @param callback
+         * @param ctx
+         * @param callbackParam
          */
-        loadImage: function (url, callback, context, callbackParam) {
+        loadImage: function (url, callback, ctx, callbackParam) {
             var loadImg = new Image();
             loadImg.onload = function (evt) {
-                if (Utils.isObjectType('function', callback)) {
-                    callback.call(context, callbackParam);
+                if (Utils.isType('function', callback)) {
+                    callback.call(ctx, callbackParam);
                 }
                 loadImg = null;
             };
@@ -214,7 +196,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          * @return {String|null}
          */
         getURLParameter: function (name, url) {
-            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [, ""])[1].replace(/\+/g, '%20')) || null;
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [undefined, ""])[1].replace(/\+/g, '%20')) || null;
         },
 
         /**
@@ -224,15 +206,14 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          */
         getDataParam: (function () {
             "use strict";
-            if (!!document.createElement('div').dataset) {
-                return function (ele, name) {
-                    return ele.dataset[name];
-                };
-            } else {
-                return function (ele, name) {
-                    return ele.getAttribute('data-' + name);
-                };
+            function html5data(ele, name) {
+                return ele.dataset[name];
             }
+            function attrData(ele, name) {
+                return ele.getAttribute('data-' + name);
+            }
+
+            return !!document.createElement('div').dataset ? html5data : attrData;
         }()),
 
         randomString: function (length) {
@@ -242,11 +223,11 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 i;
 
             if (!length) {
-                length = Math.floor(Math.random() * chars.length);
+                length = Math.random() * chars.length >> 0;
             }
 
             for (i = 0; i < length; i += 1) {
-                str += chars[Math.floor(Math.random() * chars.length)];
+                str += chars[Math.random() * chars.length >> 0];
             }
             chars = i = null;
             return str;
@@ -282,53 +263,59 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 }, 100); // the smaller this number, the more accurate the timer will be
         },
 
-        formatFileSize: function (bytes) {
-            if (typeof bytes !== 'number') {
-                return '';
+        format: (function () {
+            function formatFileSize(bytes) {
+                if (typeof bytes !== 'number') {
+                    return '';
+                }
+                if (bytes >= 1000000000) {
+                    return (bytes / 1000000000).toFixed(2) + ' GB';
+                }
+                if (bytes >= 1000000) {
+                    return (bytes / 1000000).toFixed(2) + ' MB';
+                }
+                return (bytes / 1000).toFixed(2) + ' KB';
             }
-            if (bytes >= 1000000000) {
-                return (bytes / 1000000000).toFixed(2) + ' GB';
+            function formatBitrate(bits) {
+                if (typeof bits !== 'number') {
+                    return '';
+                }
+                if (bits >= 1000000000) {
+                    return (bits / 1000000000).toFixed(2) + ' Gbit/s';
+                }
+                if (bits >= 1000000) {
+                    return (bits / 1000000).toFixed(2) + ' Mbit/s';
+                }
+                if (bits >= 1000) {
+                    return (bits / 1000).toFixed(2) + ' kbit/s';
+                }
+                return bits.toFixed(2) + ' bit/s';
             }
-            if (bytes >= 1000000) {
-                return (bytes / 1000000).toFixed(2) + ' MB';
-            }
-            return (bytes / 1000).toFixed(2) + ' KB';
-        },
+            function secondsToTime(secs) {
+                "use strict";
+                if (secs < 60) {
+                    return '0:' + (secs > 9 ? secs : '0' + secs);
+                }
 
-        formatBitrate: function (bits) {
-            if (typeof bits !== 'number') {
-                return '';
-            }
-            if (bits >= 1000000000) {
-                return (bits / 1000000000).toFixed(2) + ' Gbit/s';
-            }
-            if (bits >= 1000000) {
-                return (bits / 1000000).toFixed(2) + ' Mbit/s';
-            }
-            if (bits >= 1000) {
-                return (bits / 1000).toFixed(2) + ' kbit/s';
-            }
-            return bits.toFixed(2) + ' bit/s';
-        },
+                var hours = (secs / (60 * 60)) >> 0,
+                    divisor_for_minutes = secs % (60 * 60),
+                    minutes = (divisor_for_minutes / 60) >> 0,
+                    divisor_for_seconds = divisor_for_minutes % 60,
+                    seconds = Math.ceil(divisor_for_seconds);
 
-        secondsToTime: function (secs) {
-            "use strict";
-            if (secs < 60) {
-                return '0:' + (secs > 9 ? secs : '0' + secs);
+                return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
+            }
+            function formatPercentage(floatValue) {
+                return (floatValue * 100).toFixed(2) + ' %';
             }
 
-            var hours = (secs / (60 * 60)) >> 0,
-                divisor_for_minutes = secs % (60 * 60),
-                minutes = (divisor_for_minutes / 60) >> 0,
-                divisor_for_seconds = divisor_for_minutes % 60,
-                seconds = Math.ceil(divisor_for_seconds);
-
-            return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
-        },
-
-        formatPercentage: function (floatValue) {
-            return (floatValue * 100).toFixed(2) + ' %';
-        },
+            return {
+                fileSize: formatFileSize,
+                bitrate: formatBitrate,
+                secondsToTime: secondsToTime,
+                percentage: formatPercentage
+            };
+        }()),
 
         mousePageXY: function (e) {
             var x = 0, y = 0, et;
@@ -367,12 +354,15 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 return;
             }
 
-            var n = evt.keyCode || evt.charCode;
+            var n = evt.keyCode || evt.charCode,
+                c,
+                cUC,
+                cLC;
 
             if (evt.type === "keypress") {
-                var c = String.fromCharCode(n),
-                    cUC = c.toUpperCase(),
-                    cLC = c.toLowerCase();
+                c = String.fromCharCode(n);
+                cUC = c.toUpperCase();
+                cLC = c.toLowerCase();
 
                 if (cUC !== cLC) {
                     return ((evt.shiftKey && cLC === c) || (!evt.shiftKey && cUC === c));
@@ -384,13 +374,14 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
 
 
         getClientWidth: function () {
+            var result = 0;
             if (window.opera && window.innerWidth) {
-                return window.innerWidth;
+                result = window.innerWidth;
             } else {
-                return (document.compatMode === 'CSS1Compat' && !window.opera ?
-                        document.documentElement.clientWidth :
-                        document.body.clientWidth);
+                result = (document.compatMode === 'CSS1Compat' && !window.opera ?
+                          document.documentElement.clientWidth : document.body.clientWidth);
             }
+            return result;
         },
 
         getClientHeight: function () {
@@ -452,239 +443,258 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
          * window.
          */
         getOffset: function (elem) {
-            if (elem.getBoundingClientRect) {
-                return getOffsetRect(elem);
-            } else {
-                return getOffsetSum(elem);
-            }
+            return elem.getBoundingClientRect ? getOffsetRect(elem) : getOffsetSum(elem);
         },
 
         getDistance: function (x1, x2, y1, y2) {
             return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
         },
 
-        getCookie: (function () {
-            if (typeof window.getCookie === 'function') {
-                var func = window.getCookie;
-                delete window.getCookie;
-                return func;
-            } else {
-                return function (name) {
-                    var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
-                    return matches ? decodeURIComponent(matches[1]) : undefined;
-                };
-            }
-        }()),
-        setCookie: (function () {
-            if (typeof window.setCookie === 'function') {
-                var func = window.setCookie;
-                delete window.setCookie;
-                return func;
-            } else {
-                return function (name, value, props) {
-                    props = props || {};
-                    var exp = props.expires,
-                        d,
-                        updatedCookie,
-                        propName,
-                        propValue;
-                    if (typeof exp === "number" && exp) {
-                        d = new Date();
-                        d.setTime(d.getTime() + exp * 1000);
-                        exp = props.expires = d;
-                    }
-                    if (exp && exp.toUTCString) {
-                        props.expires = exp.toUTCString();
-                    }
+        cookie: (function () {
+            'use strict';
 
-                    value = encodeURIComponent(value);
-                    updatedCookie = name + "=" + value;
-                    for (propName in props) {
-                        if (props.hasOwnProperty(propName)) {
-                            updatedCookie += "; " + propName;
-                            propValue = props[propName];
-                            if (propValue !== true) {
-                                updatedCookie += "=" + propValue;
-                            }
+            function getCookie(name) {
+                var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+\^])/g, '\\$1') + "=([^;]*)"));
+                return matches ? decodeURIComponent(matches[1]) : undefined;
+            }
+
+            function setCookie(name, value, props) {
+                props = props || {};
+                value = encodeURIComponent(value);
+
+                var updatedCookie = name + "=" + value,
+                    exp = props.expires,
+                    dat,
+                    propName,
+                    propValue;
+                if (typeof exp === "number" && exp) {
+                    dat = new Date();
+                    dat.setTime(dat.getTime() + exp * 1000);
+                    exp = props.expires = dat;
+                }
+                if (exp && exp.toUTCString) {
+                    props.expires = exp.toUTCString();
+                }
+
+                for (propName in props) {
+                    if (props.hasOwnProperty(propName)) {
+                        updatedCookie += "; " + propName;
+                        propValue = props[propName];
+                        if (propValue !== true) {
+                            updatedCookie += "=" + propValue;
                         }
                     }
-                    document.cookie = updatedCookie;
-                };
+                }
+                document.cookie = updatedCookie;
             }
-        }()),
-        deleteCookie: (function () {
-            if (typeof window.deleteCookie === 'function') {
-                var func = window.deleteCookie;
-                delete window.deleteCookie;
-                return func;
-            } else {
-                return function (name) {
-                    Utils.setCookie(name, null, { expires: -1 });
-                };
+
+            function deleteCookie(name, value, props) {
+                setCookie(name, null, { expires: -1 });
+
             }
+
+            return {
+                get: getCookie,
+                set: setCookie,
+                delete: deleteCookie
+            };
         }()),
 
-        /**
-         * Converts an RGB in hex color value to HSL. Conversion formula
-         * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-         * Assumes HTMLcolor (like '00ff99') and
-         * returns h, s, and l in the set [0, 1].
-         */
-        hex2hsl: function (HTMLcolor) {
-            var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
-                g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
-                b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
-                max = Math.max(r, g, b),
-                min = Math.min(r, g, b),
-                d = max - min,
-                h,
-                s,
-                l = (max + min) / 2;
-            if (max === min) {
-                h = s = 0;
-            } else {
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                switch (max) {
-                case r:
-                    h = (g - b) / d + (g < b ? 6 : 0);
+        geo: (function () {
+            'use strict';
+
+            /**
+             * Haversine formula to calculate the distance
+             * @param lat1
+             * @param lon1
+             * @param lat2
+             * @param lon2
+             * @return {Number}
+             */
+            function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+                var R = 6371, // Mean radius of the earth in km
+                    dLat = deg2rad(lat2 - lat1), // deg2rad below
+                    dLon = deg2rad(lon2 - lon1),
+                    a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2),
+                    c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+                    d = R * c; // Distance in km
+                return d;
+            }
+
+            function deg2rad(deg) {
+                return deg * (Math.PI / 180);
+            }
+
+            return {
+                getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+                deg2rad: deg2rad
+            };
+        }()),
+
+        color: {
+            /**
+             * Converts an RGB in hex color value to HSL. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+             * Assumes HTMLcolor (like '00ff99') and
+             * returns h, s, and l in the set [0, 1].
+             */
+            hex2hsl: function (HTMLcolor) {
+                var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
+                    g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
+                    b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
+                    max = Math.max(r, g, b),
+                    min = Math.min(r, g, b),
+                    d = max - min,
+                    h,
+                    s,
+                    l = (max + min) / 2;
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                    case r:
+                        h = (g - b) / d + (g < b ? 6 : 0);
+                        break;
+                    case g:
+                        h = (b - r) / d + 2;
+                        break;
+                    case b:
+                        h = (r - g) / d + 4;
+                        break;
+                    }
+                    h /= 6;
+                }
+                return {h: h, s: s, l: l};
+            },
+
+            /**
+             * Converts an HSL color value to RGB. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+             * Assumes h, s, and l are contained in the set [0, 1] and
+             * returns r, g, and b in the set [0, 255].
+             */
+            hslToRgb: function (h, s, l) {
+                var r, g, b, hue2rgb, q, p;
+
+                if (s === 0) {
+                    r = g = b = l; // achromatic
+                } else {
+                    hue2rgb = function (p, q, t) {
+                        if (t < 0) {
+                            t += 1;
+                        }
+                        if (t > 1) {
+                            t -= 1;
+                        }
+                        if (t < 1 / 6) {
+                            return p + (q - p) * 6 * t;
+                        }
+                        if (t < 1 / 2) {
+                            return q;
+                        }
+                        if (t < 2 / 3) {
+                            return p + (q - p) * (2 / 3 - t) * 6;
+                        }
+                        return p;
+                    };
+
+                    q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    p = 2 * l - q;
+                    r = hue2rgb(p, q, h + 1 / 3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1 / 3);
+                }
+
+                return {r: r * 255, g: g * 255, b: b * 255};
+            },
+
+            /**
+             * Converts an RGB color value to HSV. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+             * Assumes HTMLcolor and
+             * returns h, s, and v in the set [0, 1].
+             */
+            rgbToHsv: function (HTMLcolor) {
+                var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
+                    g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
+                    b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
+                    max = Math.max(r, g, b),
+                    min = Math.min(r, g, b),
+                    d = max - min,
+                    h,
+                    s = max === 0 ? 0 : d / max;
+
+                if (max === min) {
+                    h = 0; // achromatic
+                } else {
+                    switch (max) {
+                    case r:
+                        h = (g - b) / d + (g < b ? 6 : 0);
+                        break;
+                    case g:
+                        h = (b - r) / d + 2;
+                        break;
+                    case b:
+                        h = (r - g) / d + 4;
+                        break;
+                    }
+                    h /= 6;
+                }
+
+                return [h, s, max];
+            },
+
+            /**
+             * Converts an HSV color value to RGB. Conversion formula
+             * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+             * Assumes h, s, and v are contained in the set [0, 1] and
+             * returns r, g, and b in the set [0, 255].
+             */
+            hsvToRgb: function (h, s, v) {
+                var r, g, b,
+                    i = h * 6 >> 0,
+                    f = h * 6 - i,
+                    p = v * (1 - s),
+                    q = v * (1 - f * s),
+                    t = v * (1 - (1 - f) * s);
+
+                switch (i % 6) {
+                case 0:
+                    r = v;
+                    g = t;
+                    b = p;
                     break;
-                case g:
-                    h = (b - r) / d + 2;
+                case 1:
+                    r = q;
+                    g = v;
+                    b = p;
                     break;
-                case b:
-                    h = (r - g) / d + 4;
+                case 2:
+                    r = p;
+                    g = v;
+                    b = t;
+                    break;
+                case 3:
+                    r = p;
+                    g = q;
+                    b = v;
+                    break;
+                case 4:
+                    r = t;
+                    g = p;
+                    b = v;
+                    break;
+                case 5:
+                    r = v;
+                    g = p;
+                    b = q;
                     break;
                 }
-                h /= 6;
+
+                return [r * 255, g * 255, b * 255];
             }
-            return {h: h, s: s, l: l};
-        },
-
-        /**
-         * Converts an HSL color value to RGB. Conversion formula
-         * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-         * Assumes h, s, and l are contained in the set [0, 1] and
-         * returns r, g, and b in the set [0, 255].
-         */
-        hslToRgb: function (h, s, l) {
-            var r, g, b, hue2rgb, q, p;
-
-            if (s === 0) {
-                r = g = b = l; // achromatic
-            } else {
-                hue2rgb = function (p, q, t) {
-                    if (t < 0) {
-                        t += 1;
-                    }
-                    if (t > 1) {
-                        t -= 1;
-                    }
-                    if (t < 1 / 6) {
-                        return p + (q - p) * 6 * t;
-                    }
-                    if (t < 1 / 2) {
-                        return q;
-                    }
-                    if (t < 2 / 3) {
-                        return p + (q - p) * (2 / 3 - t) * 6;
-                    }
-                    return p;
-                };
-
-                q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                p = 2 * l - q;
-                r = hue2rgb(p, q, h + 1 / 3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1 / 3);
-            }
-
-            return {r: r * 255, g: g * 255, b: b * 255};
-        },
-
-        /**
-         * Converts an RGB color value to HSV. Conversion formula
-         * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
-         * Assumes HTMLcolor and
-         * returns h, s, and v in the set [0, 1].
-         */
-        rgbToHsv: function (HTMLcolor) {
-            var r = parseInt(HTMLcolor.substring(0, 2), 16) / 255,
-                g = parseInt(HTMLcolor.substring(2, 4), 16) / 255,
-                b = parseInt(HTMLcolor.substring(4, 6), 16) / 255,
-                max = Math.max(r, g, b),
-                min = Math.min(r, g, b),
-                d = max - min,
-                h,
-                s = max === 0 ? 0 : d / max;
-
-            if (max === min) {
-                h = 0; // achromatic
-            } else {
-                switch (max) {
-                case r:
-                    h = (g - b) / d + (g < b ? 6 : 0);
-                    break;
-                case g:
-                    h = (b - r) / d + 2;
-                    break;
-                case b:
-                    h = (r - g) / d + 4;
-                    break;
-                }
-                h /= 6;
-            }
-
-            return [h, s, max];
-        },
-
-        /**
-         * Converts an HSV color value to RGB. Conversion formula
-         * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
-         * Assumes h, s, and v are contained in the set [0, 1] and
-         * returns r, g, and b in the set [0, 255].
-         */
-        hsvToRgb: function (h, s, v) {
-            var r, g, b,
-                i = Math.floor(h * 6),
-                f = h * 6 - i,
-                p = v * (1 - s),
-                q = v * (1 - f * s),
-                t = v * (1 - (1 - f) * s);
-
-            switch (i % 6) {
-            case 0:
-                r = v;
-                g = t;
-                b = p;
-                break;
-            case 1:
-                r = q;
-                g = v;
-                b = p;
-                break;
-            case 2:
-                r = p;
-                g = v;
-                b = t;
-                break;
-            case 3:
-                r = p;
-                g = q;
-                b = v;
-                break;
-            case 4:
-                r = t;
-                g = p;
-                b = v;
-                break;
-            case 5:
-                r = v;
-                g = p;
-                b = q;
-                break;
-            }
-
-            return [r * 255, g * 255, b * 255];
         },
 
         Event: (function () {
@@ -774,7 +784,7 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                     if (!elem.events) {
                         elem.events = {};
                         elem.handle = function (event) {
-                            if (typeof event !== "undefined") {
+                            if (Utils.isType('function', event)) {
                                 return commonHandle.call(elem, event);
                             }
                         };

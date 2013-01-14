@@ -217,13 +217,13 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
                         this.LoadMe();
                     }
 
-                    if (Utils.isObjectType('function', callback)) {
+                    if (Utils.isType('function', callback)) {
                         callback(json);
                     }
                 }.bind(this));
                 socket.emit('loginRequest', data);
             } catch (e) {
-                if (Utils.isObjectType('function', callback)) {
+                if (Utils.isType('function', callback)) {
                     callback(e.message);
                 }
             }
@@ -239,7 +239,7 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
                 });
                 socket.emit('logoutRequest', {});
             } catch (e) {
-                if (Utils.isObjectType('function', callback)) {
+                if (Utils.isType('function', callback)) {
                     callback(e.message);
                 }
             }
@@ -247,13 +247,13 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
         doRegister: function (data, callback) {
             try {
                 socket.once('registerResult', function (json) {
-                    if (Utils.isObjectType('function', callback)) {
+                    if (Utils.isType('function', callback)) {
                         callback(json);
                     }
                 });
                 socket.emit('registerRequest', data);
             } catch (e) {
-                if (Utils.isObjectType('function', callback)) {
+                if (Utils.isType('function', callback)) {
                     callback(e.message);
                 }
             }
@@ -261,13 +261,13 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
         doPassRecall: function (data, callback) {
             try {
                 socket.once('recallResult', function (json) {
-                    if (Utils.isObjectType('function', callback)) {
+                    if (Utils.isType('function', callback)) {
                         callback(json);
                     }
                 });
                 socket.emit('recallRequest', data);
             } catch (e) {
-                if (Utils.isObjectType('function', callback)) {
+                if (Utils.isType('function', callback)) {
                     callback(e.message);
                 }
             }
@@ -275,13 +275,13 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
         doPassChange: function (data, callback) {
             try {
                 socket.once('passChangeResult', function (json) {
-                    if (Utils.isObjectType('function', callback)) {
+                    if (Utils.isType('function', callback)) {
                         callback(json);
                     }
                 });
                 socket.emit('passChangeResult', data);
             } catch (e) {
-                if (Utils.isObjectType('function', callback)) {
+                if (Utils.isType('function', callback)) {
                     callback(e.message);
                 }
             }

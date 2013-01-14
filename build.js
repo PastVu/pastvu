@@ -86,7 +86,7 @@ step(
             tplFolderTemp.createDirectory();
             tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
             Object.keys(files).forEach(function (element, index, array) {
-                if (Utils.isObjectType('object', files[element])) {
+                if (Utils.isType('object', files[element])) {
                     new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
                 }
             });
@@ -164,7 +164,7 @@ step(
                 process.exit(1);
             }
             _.forEach(files, function(val, key) {
-                if (!Utils.isObjectType('object', val)) {
+                if (!Utils.isType('object', val)) {
                     toCompile.push(key);
                 }
             });

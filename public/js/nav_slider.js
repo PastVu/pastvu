@@ -47,7 +47,7 @@ define(['jquery', 'Utils', 'EventTypes', 'leaflet', 'knockout', 'Locations'], fu
         this.map.zoomBy(diff);
     };
     NavigationSlider.prototype.pan = function (dir) {
-        if (Utils.isObjectType('function', this.map[dir])) {
+        if (Utils.isType('function', this.map[dir])) {
             this.map[dir]();
         }
     };

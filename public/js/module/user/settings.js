@@ -81,7 +81,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         cancelUser: function () {
             _.forEach(this.originUser, function (item, key) {
-                if (Utils.isObjectType('function', this.u[key]) && this.u[key]() !== item) {
+                if (Utils.isType('function', this.u[key]) && this.u[key]() !== item) {
                     this.u[key](item);
                 }
             }.bind(this));

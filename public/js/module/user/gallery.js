@@ -86,7 +86,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                         item.pfile = '/_photo/thumb/' + item.file;
                     });
                 }
-                if (Utils.isObjectType('function', cb)) {
+                if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
                 this.loadingPhoto(false);
@@ -143,7 +143,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     currArray = null;
                 }
                 this.loadingPhoto(false);
-                if (Utils.isObjectType('function', cb)) {
+                if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
                 }
             }.bind(this));

@@ -264,8 +264,8 @@ function conveyerStep(file, cb, ctx) {
                 extent;
             if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
                 // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                gravity = Utils.isObjectType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : item.gravity;
-                extent = Utils.isObjectType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
+                gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : item.gravity;
+                extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
                 o.customArgs = [
                     "-gravity", gravity.gravity,
                     "-extent", extent

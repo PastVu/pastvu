@@ -11,7 +11,7 @@ define(['socket.io', 'Utils'], function (io, Utils) {
     s.on('disconnect', function () { console.log('Disconnected'); });
 
     s.on('newCookie', function (obj) {
-        Utils.setCookie(obj.name, obj.key, {path: obj.path, expires: obj.expires, 'max-age': obj['max-age']});
+        Utils.cookie.set(obj.name, obj.key, {path: obj.path, expires: obj.expires, 'max-age': obj['max-age']});
     });
 
     return s;

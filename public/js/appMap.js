@@ -32,12 +32,12 @@ require([
     }
 
     function app() {
-        var loadTime = Utils.getCookie('oldmos.load.' + appHash);
+        var loadTime = Utils.cookie.get('oldmos.load.' + appHash);
         if (loadTime) {
             loadTime = new Date(loadTime);
         } else {
             loadTime = new Date();
-            Utils.setCookie('oldmos.load.' + appHash, loadTime.toUTCString());
+            Utils.cookie.set('oldmos.load.' + appHash, loadTime.toUTCString());
         }
 
         if (!$.urlParam('stopOnLoad')) {

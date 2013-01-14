@@ -2,51 +2,13 @@ var fs = require('fs');
 var Utils = new Object(null);
 
 /**
- * ��������� �� ������������ ������� ���� (������ typeof)
- * @param {string} type ��� ����.��������� �������� (�� ������������):
- * Arguments, Array, Boolean, Date, Error, Function, JSON, Math, Number, Object, RegExp, String.
- * @param {Object} obj ����������� ������.
+ * Проверяет на соответствие объекта типу (вместо typeof)
+ * @param {string} type Имя типа.
+ * @param {Object} obj Проверяемый объект.
  * @return {boolean}
  */
-Utils.isObjectType = function (type, obj) {
+Utils.isType = function (type, obj) {
     return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
-};
-
-/**
- * ��������� ������
- * @param {Object} obj ����������� ������.
- * @return {Object}
- */
-Utils.clone = function (obj) {
-    if (obj == null || typeof(obj) != 'object') return obj;
-    var temp = new obj.constructor();
-    for (var key in obj) {
-        temp[key] = Utils.clone(obj[key]);
-    }
-    return temp;
-};
-
-/**
- * �������� ��� �������� �� src � dst,
- * ������� ��, ��� � ������� ���������� src �� Object
- * @param {Object} dst
- * @param {Object} src
- * @param {boolean=} force Is replace existing dst values Default true.
- */
-
-Utils.mixin = function (dst, src, force) {
-    // tobj - ��������������� ������ ��� ���������� �������,
-    // ������� ���� � ������� Object � ��� ���������
-    var tobj = {};
-    if (typeof force !== 'boolean') force = true;
-    for (var x in src) {
-        // �������� � dst �������� src, ����� ���, ������� ������������ �� Object
-        if ((typeof tobj[x] == "undefined") || (tobj[x] != src[x])) {
-            if (!force && typeof dst[x] !== "undefined") continue;
-            dst[x] = src[x];
-        }
-    }
-    return dst;
 };
 
 Utils.randomString = function (length) {
@@ -65,13 +27,14 @@ Utils.randomString = function (length) {
     chars = i = null;
     return str;
 };
+
 Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, filter) {
     'use strict';
     var result = [];
 
     Object.keys(files).forEach(function (element, index, array) {
-        if (Utils.isObjectType('object', files[element])) {
-            if (!Utils.isObjectType('array', excludeFolders) || (Utils.isObjectType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
+        if (Utils.isType('object', files[element])) {
+            if (!Utils.isType('array', excludeFolders) || (Utils.isType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
                 Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
             }
         } else {
@@ -152,53 +115,6 @@ Utils.DURATION_TEMPLATE = {
 };
 
 /**
- * Cast duration to human format (ex. 3h 25m 35sec)
- * @param {number} duration Duration in seconds
- * @param {Object=} template Duration template
- * @return {string}
- */
-Utils.formatDuration = function () {
-
-    var SEC_IN_DAY = 24 * 60 * 60;
-    var SEC_IN_HOUR = 60 * 60;
-    var SEC_IN_MINUTE = 60;
-
-    var addLeftZero = Utils.addLeftZero;
-
-    return function formatDuration(duration, template) {
-
-        var days = 0,
-            hours = 0,
-            minutes = 0,
-            seconds = 0,
-            res = [],
-            template = template || Utils.DURATION_TEMPLATE;
-
-        if (!duration) return '0' + template.seconds;
-
-        duration = Math.round(duration);
-
-        days = Math.floor(duration / SEC_IN_DAY);
-        duration -= days * SEC_IN_DAY;
-
-        hours = Math.floor(duration / SEC_IN_HOUR);
-        duration -= hours * SEC_IN_HOUR;
-
-        minutes = Math.floor(duration / SEC_IN_MINUTE);
-        duration -= minutes * SEC_IN_MINUTE;
-
-        seconds = duration;
-
-        if (days) res.push(days + template.days);
-        if (res.length || hours)   res.push(addLeftZero(hours) + template.hours);
-        if (res.length || minutes) res.push(addLeftZero(minutes) + template.minutes);
-        if (res.length || seconds) res.push(addLeftZero(seconds) + template.seconds);
-        if (res.length === 0) return '0' + template.seconds;
-        return res.join(' ');
-    }
-}();
-
-/**
  * List on files in folder recursive (in parallel mode)
  * @param dir Folder to search files
  * @param done Callback function with params (err, resultArr)
@@ -271,10 +187,10 @@ Utils.walkSerial = function (dir, done) {
  * Example walkParallel
  */
 /*walkParallel('./public/style', function(err, results) {
- if (err) {
- throw err;
- }
- console.log(results);
+     if (err) {
+        throw err;
+     }
+     console.log(results);
  });*/
 
 Object.freeze(Utils);

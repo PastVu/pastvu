@@ -29,7 +29,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
                 this.root = options.root;
             }
             //Указываем отслеживать ли историю переходов по url (leaf)
-            if (options && Utils.isObjectType('boolean', options.useLeaf)) {
+            if (options && Utils.isType('boolean', options.useLeaf)) {
                 this.useLeaf = options.useLeaf;
             }
 
@@ -113,7 +113,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         getByGo: function (param) {
             var result;
 
-            if (Utils.isObjectType('number', param)) {
+            if (Utils.isType('number', param)) {
                 if (this.stackCurrentIndex + param < 0) {
                     result = this.stackHash[this.stack[0]];
                 } else if (this.stackCurrentIndex + param > this.stack.length - 1) {
@@ -127,7 +127,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
         getFlattenStack: function (root, groupBy) {
             var past,
                 future;
-            if (Utils.isObjectType('string', root)) {
+            if (Utils.isType('string', root)) {
                 past = [];
                 future = [];
                 this.stack.forEach(function (item, index, array) {
@@ -174,7 +174,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
             _this = href = target = body = leaf = null;
         },
         ahrefBlock: function (flag) {
-            if (Utils.isObjectType('boolean', flag)) {
+            if (Utils.isType('boolean', flag)) {
                 this.blockHrefs = flag;
             } else {
                 this.blockHrefs = !this.blockHrefs;
