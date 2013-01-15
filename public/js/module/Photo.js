@@ -3,7 +3,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
     'use strict';
 
     var defaults = {
-            micro: {
+            base: {
                 cid: '',
 
                 file: '',
@@ -23,7 +23,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 
                 ccount: 0
             },
-            standard: {
+            full: {
                 user: User.defCompact,
                 album: 0,
                 stack: '',
@@ -57,34 +57,41 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             origin: picPrefix + '/origin/'
         };
 
-    _.assign(defaults.compact, defaults.micro);
-    _.assign(defaults.standard, defaults.compact);
+    _.assign(defaults.compact, defaults.base);
+    _.assign(defaults.full, defaults.compact);
 
-    function factory(origin, defType, picFormat) {
+
+    /**
+     * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
+     * @param origin Входящий объект
+     * @param defType Название дефолтного объекта для сляния
+     * @param picType Тим картинки
+     * @param customDefaults Собственные свойства, заменяющие аналогичные в дефолтном объекте
+     * @return {*}
+     */
+    function factory(origin, defType, picType, customDefaults) {
         origin = origin || {};
-        defType = defType || 'standard';
-        picFormat = picFormat || 'standard';
+        defType = defType || 'full';
+        picType = picType || 'standard';
         origin.cid = String(origin.cid);
 
-        origin = _.defaults(origin, defaults[defType]);
+        origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
 
-        if (defType === 'compact' || defType === 'standard') {
+        if (defType === 'compact' || defType === 'full') {
             origin.loaded = new Date(origin.loaded);
         }
-        if (defType === 'standard') {
+        if (defType === 'full') {
             origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];
             origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
             origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
             _.defaults(origin.user, User.defCompact);
         }
-        origin.sfile = picFormats[picFormat] + origin.file;
+        origin.sfile = picFormats[picType] + origin.file;
 
         return origin;
     }
 
     function vmCreate(model) {
-        model = factory(model, 'standard', 'standard');
-
         var vm = ko_mapping.fromJS(model);
 
         vm.user.fullName = ko.computed(function () {
@@ -98,16 +105,25 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
         return vm;
     }
 
-    function vm(model, vmExist) {
+    /**
+     * Создает из объекта ViewModel
+     * Если указана текущая ViewModel, то обновляет её новыми данными
+     * @param data Данные
+     * @param vmExist Существующая ViewModel
+     * @param withoutFactory Флаг, указывающий что не надо применять к данным фабрику
+     * @return {*}
+     */
+    function vm(data, vmExist, withoutFactory) {
+        if (!withoutFactory) {
+            factory(data, 'full', 'standard');
+        }
         if (!vmExist) {
-            vmExist = vmCreate(model);
+            vmExist = vmCreate(data);
         } else {
-            model = factory(model, 'standard', 'standard');
-            ko_mapping.fromJS(model, vmExist);
+            ko_mapping.fromJS(data, vmExist);
         }
         return vmExist;
     }
 
     return {factory: factory, vm: vm, def: defaults};
-})
-;
+});

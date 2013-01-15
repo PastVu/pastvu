@@ -73,7 +73,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/auth'];
-            this.p = Photo.vm(Photo.def.standard);
+            this.p = Photo.vm(Photo.def.full);
             this.userRibbon = ko.observableArray();
             this.userRibbonLeft = [];
             this.userRibbonRight = [];
@@ -138,7 +138,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.p.year.subscribe(function (val) {
                 var v = parseInt(val, 10);
                 if (!v || isNaN(v)) {
-                    v = Photo.def.standard.year;
+                    v = Photo.def.full.year;
                 }
                 if (String(val) !== String(v)) {
                     this.p.year(v);
@@ -151,7 +151,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.p.year2.subscribe(function (val) {
                 var v = parseInt(val, 10);
                 if (!v || isNaN(v)) {
-                    v = Photo.def.standard.year;
+                    v = Photo.def.full.year;
                 }
                 if (String(val) !== String(v)) {
                     this.p.year2(v);
@@ -410,7 +410,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (target.hasOwnProperty(key)) {
                     if (this.originData[key] && (target[key] === this.originData[key])) {
                         delete target[key];
-                    } else if (!this.originData[key] && (target[key] === Photo.def.standard[key])) {
+                    } else if (!this.originData[key] && (target[key] === Photo.def.full[key])) {
                         delete target[key];
                     }
                 }
@@ -453,7 +453,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 left.push(existItem);
                             } else {
-                                Photo.factory(item, 'standard', 'mini');
+                                Photo.factory(item, 'full', 'mini');
                                 left.push(item);
                             }
                         }, this);
@@ -465,7 +465,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 right.push(existItem);
                             } else {
-                                Photo.factory(item, 'standard', 'mini');
+                                Photo.factory(item, 'full', 'mini');
                                 right.push(item);
                             }
                         }, this);

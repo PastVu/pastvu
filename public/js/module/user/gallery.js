@@ -81,7 +81,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
                 } else {
                     data.forEach(function (item, index, array) {
-                        Photo.factory(item, 'compact', 'thumb');
+                        Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
                     });
                 }
                 if (Utils.isType('function', cb)) {
@@ -120,7 +120,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     var currArray = this.photos();
 
                     data.forEach(function (item, index, array) {
-                        Photo.factory(item, 'compact', 'thumb');
+                        Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
                     });
 
                     Array.prototype.push.apply(currArray, data);
