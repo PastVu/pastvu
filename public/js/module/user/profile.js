@@ -60,7 +60,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (targetUser.hasOwnProperty(key) && key !== 'login') {
                     if (this.originUser[key] && (targetUser[key] === this.originUser[key])) {
                         delete targetUser[key];
-                    } else if (!this.originUser[key] && (targetUser[key] === User.def[key])) {
+                    } else if (!this.originUser[key] && (targetUser[key] === User.def.full[key])) {
                         delete targetUser[key];
                     }
                 }

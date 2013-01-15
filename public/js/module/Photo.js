@@ -24,7 +24,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
                 ccount: 0
             },
             full: {
-                user: User.defCompact,
+                user: {},
                 album: 0,
                 stack: '',
                 stack_order: 0,
@@ -84,24 +84,17 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];
             origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
             origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
-            _.defaults(origin.user, User.defCompact);
+            User.factory(origin.user, 'base');
         }
         origin.sfile = picFormats[picType] + origin.file;
 
         return origin;
     }
 
-    function vmCreate(model) {
-        var vm = ko_mapping.fromJS(model);
+    function vmCreate(data) {
+        var vm = ko_mapping.fromJS(data);
 
-        vm.user.fullName = ko.computed(function () {
-            if (this.firstName() && this.lastName()) {
-                return this.firstName() + " " + this.lastName();
-            } else {
-                return this.login();
-            }
-        }, vm.user);
-
+        User.vmAdditional(vm.user);
         return vm;
     }
 

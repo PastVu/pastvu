@@ -15,7 +15,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 storage.waitings['u' + login] = [{cb: callback, ctx: context}];
                 socket.once('takeUser', function (data) {
                     if (!data.error && data.login === login) {
-                        storage.users[login] = {origin: _.defaults(data, User.def), vm: User.VM(data)};
+                        User.factory(data, 'full');
+                        storage.users[login] = {origin: data, vm: User.vm(data, undefined, true)};
                     }
                     if (storage.waitings['u' + login]) {
                         storage.waitings['u' + login].forEach(function (item, index, collection) {

@@ -5,7 +5,7 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
     return Cliche.extend({
         jade: jade,
         create: function () {
-            this.iAm = User.VM();
+            this.iAm = User.vm();
 
             this.mode = ko.observable('login');
             this.working = ko.observable(false);
@@ -47,14 +47,14 @@ define(['jquery', 'Utils', '../socket', 'Params', 'knockout', 'm/_moduleCliche',
             var dfd = $.Deferred();
             socket.once('youAre', function (user) {
                 P.settings.LoggedIn(!!user);
-                this.iAm = User.VM(user, this.iAm);
+                this.iAm = User.vm(user, this.iAm);
                 console.log(this.iAm.fullName());
                 dfd.resolve();
 
                 //При изменении данных профиля на сервере, обновляем его на клиенте
                 socket.on('youAre', function (user) {
                     if (this.iAm.login() === user.login) {
-                        this.iAm = User.VM(user, this.iAm);
+                        this.iAm = User.vm(user, this.iAm);
                         console.log(this.iAm.fullName());
                     }
 
