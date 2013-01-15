@@ -453,7 +453,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 left.push(existItem);
                             } else {
-                                item = Photo.factory(item, 'standard', 'mini');
+                                Photo.factory(item, 'standard', 'mini');
                                 left.push(item);
                             }
                         }, this);
@@ -465,7 +465,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 right.push(existItem);
                             } else {
-                                item = Photo.factory(item, 'standard', 'mini');
+                                Photo.factory(item, 'standard', 'mini');
                                 right.push(item);
                             }
                         }, this);

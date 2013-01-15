@@ -35,13 +35,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
             } else {
                 storage.waitings['p' + cid] = [{cb: callback, ctx: context}];
                 socket.once('takePhoto', function (data) {
-                    data.cid = String(data.cid);
-                    if (!data.error && data.cid === cid) {
-                        storage.photos[cid] = {origin: _.defaults(data, Photo.def.standard), vm: Photo.vm(data)};
+                    if (!data.error && String(data.cid) === cid) {
+                        Photo.factory(data, 'standard', 'standard');
+                        storage.photos[cid] = {origin: data, vm: Photo.vm(data)};
                     }
                     if (storage.waitings['p' + cid]) {
                         storage.waitings['p' + cid].forEach(function (item, index, collection) {
-                            item.cb.call(item.ctx, !data.error && data.cid === cid && storage.photos[cid]);
+                            item.cb.call(item.ctx, !data.error && storage.photos[cid]);
                         });
                         delete storage.waitings['p' + cid];
                     }

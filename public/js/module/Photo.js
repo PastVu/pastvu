@@ -4,7 +4,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 
     var defaults = {
             micro: {
-                cid: 0,
+                cid: '',
 
                 file: '',
                 title: '',
@@ -64,6 +64,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
         origin = origin || {};
         defType = defType || 'standard';
         picFormat = picFormat || 'standard';
+        origin.cid = String(origin.cid);
 
         origin = _.defaults(origin, defaults[defType]);
 
@@ -73,6 +74,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
         if (defType === 'standard') {
             origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];
             origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
+            origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
             _.defaults(origin.user, User.defCompact);
         }
         origin.sfile = picFormats[picFormat] + origin.file;
