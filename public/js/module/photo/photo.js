@@ -77,7 +77,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userRibbon = ko.observableArray();
             this.userRibbonLeft = [];
             this.userRibbonRight = [];
-            this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
+            this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
             this.mapEditVM = null;
 
@@ -215,11 +215,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         editHandler: function (v) {
             if (v) {
+                if (this.mapVM) {
+                    this.mapVM.destroy();
+                }
                 renderer(
                     [
                         {module: 'm/map/mapEdit', container: '.photoMap', options: {}, ctx: this, callback: function (vm) {
                             this.mapEditVM = vm;
                             this.mapEditPosition();
+                            this.exe(false);
                         }}
                     ],
                     {
@@ -227,6 +231,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                         level: this.level + 1
                     }
                 );
+            } else {
+                if (this.mapEditVM) {
+                    this.mapEditVM.destroy();
+                }
+
             }
         },
 

@@ -14,16 +14,17 @@ define([
     return Cliche.extend({
         jade: jade,
         create: function () {
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
+
             this.auth = globalVM.repository['m/auth'];
             this.map = null;
-            this.mapDefCenter = null;
+            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
             this.layers = ko.observableArray();
             this.layersOpen = ko.observable(false);
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
 
             this.marker = L.marker([0, 0], {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
-            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
 
             if (P.settings.USE_OSM_API()) {
                 this.layers.push({
@@ -168,6 +169,13 @@ define([
         hide: function () {
             this.$container.css('display', '');
             this.showing = false;
+        },
+        localDestroy: function (destroy) {
+            this.hide();
+            this.marker = null;
+            this.map = null;
+            this.navSlider = null; //TODO: real destroy
+            destroy.call(this);
         },
 
         setGeo: function (geo) {
