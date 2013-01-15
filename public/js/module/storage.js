@@ -37,7 +37,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                 socket.once('takePhoto', function (data) {
                     data.cid = String(data.cid);
                     if (!data.error && data.cid === cid) {
-                        storage.photos[cid] = {origin: _.defaults(data, Photo.def), vm: Photo.VM(data)};
+                        storage.photos[cid] = {origin: _.defaults(data, Photo.def.standard), vm: Photo.vm(data)};
                     }
                     if (storage.waitings['p' + cid]) {
                         storage.waitings['p' + cid].forEach(function (item, index, collection) {

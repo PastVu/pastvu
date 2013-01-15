@@ -90,7 +90,7 @@
 						span(data-bind="html: 'Snippet <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'gallery</a> of user'")
 					//ko foreach: userRibbon
 					a.photoTile(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
-						img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+						img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 					// /ko
 		.row-fluid.photoComments
 

@@ -73,7 +73,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         jade: jade,
         create: function () {
             this.auth = globalVM.repository['m/auth'];
-            this.p = Photo.VM(Photo.def);
+            this.p = Photo.vm(Photo.def.standard);
             this.userRibbon = ko.observableArray();
             this.userRibbonLeft = [];
             this.userRibbonRight = [];
@@ -138,7 +138,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.p.year.subscribe(function (val) {
                 var v = parseInt(val, 10);
                 if (!v || isNaN(v)) {
-                    v = Photo.def.year;
+                    v = Photo.def.standard.year;
                 }
                 if (String(val) !== String(v)) {
                     this.p.year(v);
@@ -151,7 +151,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.p.year2.subscribe(function (val) {
                 var v = parseInt(val, 10);
                 if (!v || isNaN(v)) {
-                    v = Photo.def.year;
+                    v = Photo.def.standard.year;
                 }
                 if (String(val) !== String(v)) {
                     this.p.year2(v);
@@ -199,7 +199,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             storage.photo(cid, function (data) {
                 if (data) {
                     this.originData = data.origin;
-                    this.p = Photo.VM(data.origin, this.p);
+                    this.p = Photo.vm(data.origin, this.p);
 
                     // Если фото новое и есть права, открываем его на редактирование
                     this.edit(this.p.fresh() && this.IOwner());
@@ -410,7 +410,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 if (target.hasOwnProperty(key)) {
                     if (this.originData[key] && (target[key] === this.originData[key])) {
                         delete target[key];
-                    } else if (!this.originData[key] && (target[key] === Photo.def[key])) {
+                    } else if (!this.originData[key] && (target[key] === Photo.def.standard[key])) {
                         delete target[key];
                     }
                 }
@@ -453,8 +453,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 left.push(existItem);
                             } else {
-                                item = _.defaults(item, Photo.defCompact);
-                                item.pfile = '/_photo/mini/' + item.file;
+                                item = Photo.factory(item, 'standard', 'mini');
                                 left.push(item);
                             }
                         }, this);
@@ -466,8 +465,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 right.push(existItem);
                             } else {
-                                item = _.defaults(item, Photo.defCompact);
-                                item.pfile = '/_photo/mini/' + item.file;
+                                item = Photo.factory(item, 'standard', 'mini');
                                 right.push(item);
                             }
                         }, this);

@@ -2,71 +2,88 @@
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User'], function ($, _, ko, ko_mapping, Utils, User) {
     'use strict';
 
-    var _default = {
-            cid: 0,
-            user: User.defCompact,
-            album: 0,
-            stack: '',
-            stack_order: 0,
+    var defaults = {
+            micro: {
+                cid: 0,
 
-            geo: [0, 0],
-            dir: undefined,
+                file: '',
+                title: '',
 
-            file: '',
-            loaded: Date.now(),
-            type: 'image/jpeg',
-            format: 'JPEG',
-            size: 0,
-            w: 600,
-            h: 600,
+                conv: false, //Конвертируется
+                convqueue: false, //В очереди на конвертацию
+                fresh: false, //Новое
+                disabled: false, //Не активное
+                del: false //К удалению
+            },
+            compact: {
+                loaded: Date.now(),
 
-            title: '',
-            year: 1900,
-            year2: 1900,
-            desc: '',
-            address: '',
-            source: '',
-            author: '',
+                year: 1900,
+                year2: 1900,
 
-            stats_day: 0,
-            stats_week: 0,
-            stats_all: 0,
-            ccount: 0,
+                ccount: 0
+            },
+            standard: {
+                user: User.defCompact,
+                album: 0,
+                stack: '',
+                stack_order: 0,
 
-            conv: false, //Конвертируется
-            convqueue: false, //В очереди на конвертацию
-            fresh: false, //Новое
-            disabled: false, //Не активное
-            del: false //К удалению
+                geo: [0, 0],
+                dir: undefined,
+
+                type: 'image/jpeg',
+                format: 'JPEG',
+                size: 0,
+                w: 600,
+                h: 600,
+
+                desc: '',
+                address: '',
+                source: '',
+                author: '',
+
+                stats_day: 0,
+                stats_week: 0,
+                stats_all: 0
+            }
         },
-        _defaultCompact = {
-            cid: 0,
-            title: 'No tytle yet',
-            file: '',
-            loaded: Date.now(),
-            year: 1900,
-            year2: 1900,
-            ccount: 0,
-            conv: false, //Конвертируется
-            convqueue: false, //В очереди на конвертацию
-            fresh: false, //Новое
-            disabled: false, //Не активное
-            del: false //К удалению
+        picPrefix = '/_photo',
+        picFormats = {
+            micro: picPrefix + '/micro/',
+            mini: picPrefix + '/mini/',
+            thumb: picPrefix + '/thumb/',
+            standard: picPrefix + '/standard/',
+            origin: picPrefix + '/origin/'
         };
 
+    _.assign(defaults.compact, defaults.micro);
+    _.assign(defaults.standard, defaults.compact);
+
+    function factory(origin, defType, picFormat) {
+        origin = origin || {};
+        defType = defType || 'standard';
+        picFormat = picFormat || 'standard';
+
+        origin = _.defaults(origin, defaults[defType]);
+
+        if (defType === 'compact' || defType === 'standard') {
+            origin.loaded = new Date(origin.loaded);
+        }
+        if (defType === 'standard') {
+            origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];
+            origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
+            _.defaults(origin.user, User.defCompact);
+        }
+        origin.sfile = picFormats[picFormat] + origin.file;
+
+        return origin;
+    }
+
     function vmCreate(model) {
-        model = _.defaults(model || {}, _default);
-        model.geo[0] = model.geo[0] || _default.geo[0];
-        model.geo[1] = model.geo[1] || _default.geo[1];
-        model.loaded = new Date(model.loaded);
-        _.defaults(model.user, User.defCompact);
+        model = factory(model, 'standard', 'standard');
 
         var vm = ko_mapping.fromJS(model);
-
-        vm.sfile = ko.computed(function () {
-            return '/_photo/standard/' + this.file();
-        }, vm);
-
 
         vm.user.fullName = ko.computed(function () {
             if (this.firstName() && this.lastName()) {
@@ -83,12 +100,12 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
         if (!vmExist) {
             vmExist = vmCreate(model);
         } else {
-            model = _.defaults(model || {}, _default);
+            model = factory(model, 'standard', 'standard');
             ko_mapping.fromJS(model, vmExist);
         }
-        vmExist.loaded(new Date(vmExist.loaded()));
         return vmExist;
     }
 
-    return {def: _default, defCompact: _defaultCompact, VM: vm};
-});
+    return {factory: factory, vm: vm, def: defaults};
+})
+;

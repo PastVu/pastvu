@@ -6,7 +6,7 @@
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !$data.fresh && $data.disabled, 'photoFresh': $data.fresh}")
 			.photoBox
-				img(data-bind="attr: {src: pfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
+				img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
 				.info.error
 					i.icon-ban-circle.icon-white
 					br

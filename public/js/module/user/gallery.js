@@ -81,9 +81,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
                 } else {
                     data.forEach(function (item, index, array) {
-                        item = _.defaults(item, Photo.defCompact);
-                        item.loaded = new Date(item.loaded);
-                        item.pfile = '/_photo/thumb/' + item.file;
+                        item = Photo.factory(item, 'compact', 'thumb');
                     });
                 }
                 if (Utils.isType('function', cb)) {
@@ -122,9 +120,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
                     var currArray = this.photos();
 
                     data.forEach(function (item, index, array) {
-                        item = _.defaults(item, Photo.defCompact);
-                        item.loaded = new Date(item.loaded);
-                        item.pfile = '/_photo/thumb/' + item.file;
+                        item = Photo.factory(item, 'compact', 'thumb');
                     });
 
                     Array.prototype.push.apply(currArray, data);
