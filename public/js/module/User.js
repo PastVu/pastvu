@@ -1,5 +1,5 @@
 /*global requirejs:true, require:true, define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils'], function ($, _, ko, ko_mapping, Utils) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _, ko, ko_mapping) {
     'use strict';
 
     var defaults = {
