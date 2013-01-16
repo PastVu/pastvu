@@ -32,19 +32,31 @@ require([
     }
 
     function app() {
-        var loadTime = Utils.cookie.get('oldmos.load.' + appHash);
-        if (loadTime) {
-            loadTime = new Date(loadTime);
+        var loadTime;
+
+        if (window.wasLoading) {
+            loadTime = Number(new Date(Utils.cookie.get('oldmos.load.' + appHash)));
+            if (isNaN(loadTime)) {
+                loadTime = 100;
+            } else {
+                loadTime = Math.max(100, 2600 - (Date.now() - loadTime));
+            }
+            console.log(loadTime);
+            if (!$.urlParam('stopOnLoad')) {
+                window.setTimeout(startApp, loadTime);
+            }
         } else {
-            loadTime = new Date();
-            Utils.cookie.set('oldmos.load.' + appHash, loadTime.toUTCString());
+            Utils.cookie.set('oldmos.load.' + appHash, (new Date()).toUTCString());
+            startApp();
         }
 
-        if (!$.urlParam('stopOnLoad')) {
-            window.setTimeout(function () {
-                document.getElementById('main_loader').classList.remove('show');
-                Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
-            }, Math.max(100, 2500 - (new Date() - loadTime)));
+        function startApp() {
+            if (window.wasLoading) {
+                $('#main_loader').remove();
+                delete window.wasLoading;
+            }
+
+            Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
         }
     }
 
