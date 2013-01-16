@@ -1,8 +1,12 @@
 /*
  Leaflet, a JavaScript library for mobile-friendly interactive maps. http://leafletjs.com
- (c) 2010-2012, CloudMade, Vladimir Agafonkin
+ (c) 2010-2013, Vladimir Agafonkin, CloudMade
 */
-define(function(require, exports, module) {
+define(function (require, exports, module) {
+/*
+ * The L namespace contains all Leaflet classes and functions.
+ * This code allows you to handle any possible namespace conflicts.
+ */
 
 var L, originalL;
 
@@ -24,8 +28,8 @@ L.version = '0.5';
 
 
 /*
-	L.Util contains various utility functions used throughout Leaflet code.
-*/
+ * L.Util contains various utility functions used throughout Leaflet code.
+ */
 
 L.Util = {
 	extend: function (dest) { // (Object[, Object, ...]) ->
@@ -102,14 +106,14 @@ L.Util = {
 		return obj.options;
 	},
 
-	getParamString: function (obj) {
+	getParamString: function (obj, existingUrl) {
 		var params = [];
 		for (var i in obj) {
 			if (obj.hasOwnProperty(i)) {
 				params.push(i + '=' + obj[i]);
 			}
 		}
-		return '?' + params.join('&');
+		return ((!existingUrl || existingUrl.indexOf('?') === -1) ? '?' : '&') + params.join('&');
 	},
 
 	template: function (str, data) {
@@ -120,6 +124,10 @@ L.Util = {
 			}
 			return value;
 		});
+	},
+
+	isArray: function (obj) {
+		return (Object.prototype.toString.call(obj) === '[object Array]');
 	},
 
 	emptyImageUrl: 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
@@ -185,8 +193,8 @@ L.setOptions = L.Util.setOptions;
 
 
 /*
-	L.Class powers the OOP facilities of the library.
-	Thanks to John Resig and Dean Edwards for inspiration!
+ * L.Class powers the OOP facilities of the library.
+ * Thanks to John Resig and Dean Edwards for inspiration!
  */
 
 L.Class = function () {};
@@ -290,8 +298,8 @@ L.Class.addInitHook = function (fn) { // (Function) || (String, args...)
 
 
 /*
-	L.Mixin.Events is used to add custom events functionality to Leaflet classes.
-*/
+ * L.Mixin.Events is used to add custom events functionality to Leaflet classes.
+ */
 
 var key = '_leaflet_events';
 
@@ -392,29 +400,26 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 
 
 /*
-	L.Browser handles different browser and feature detections for internal Leaflet use.
-*/
+ * L.Browser handles different browser and feature detections for internal Leaflet use.
+ */
 
 (function () {
 
 	var ie = !!window.ActiveXObject,
-	    // http://tanalin.com/en/articles/ie-version-js/
 	    ie6 = ie && !window.XMLHttpRequest,
 	    ie7 = ie && !document.querySelector,
 
 	    // terrible browser detection to work around Safari / iOS / Android browser bugs
-	    // see TileLayer._addTile and debug/hacks/jitter.html
-
 	    ua = navigator.userAgent.toLowerCase(),
-	    webkit = ua.indexOf("webkit") !== -1,
-	    chrome = ua.indexOf("chrome") !== -1,
-	    android = ua.indexOf("android") !== -1,
-	    android23 = ua.search("android [23]") !== -1,
+	    webkit = ua.indexOf('webkit') !== -1,
+	    chrome = ua.indexOf('chrome') !== -1,
+	    android = ua.indexOf('android') !== -1,
+	    android23 = ua.search('android [23]') !== -1,
 
 	    mobile = typeof orientation !== undefined + '',
 	    msTouch = (window.navigator && window.navigator.msPointerEnabled && window.navigator.msMaxTouchPoints),
 	    retina = (('devicePixelRatio' in window && window.devicePixelRatio > 1) ||
-	              ('matchMedia' in window && window.matchMedia("") && window.matchMedia("(min-resolution:144dpi)").matches)),
+	              ('matchMedia' in window && window.matchMedia('(min-resolution:144dpi)') && window.matchMedia('(min-resolution:144dpi)').matches)),
 
 	    doc = document.documentElement,
 	    ie3d = ie && ('transition' in doc.style),
@@ -454,6 +459,7 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 
 
 	L.Browser = {
+		ie: ie,
 		ie6: ie6,
 		ie7: ie7,
 		webkit: webkit,
@@ -484,8 +490,8 @@ L.Mixin.Events.fire = L.Mixin.Events.fireEvent;
 
 
 /*
-	L.Point represents a point with x and y coordinates.
-*/
+ * L.Point represents a point with x and y coordinates.
+ */
 
 L.Point = function (/*Number*/ x, /*Number*/ y, /*Boolean*/ round) {
 	this.x = (round ? Math.round(x) : x);
@@ -585,7 +591,7 @@ L.point = function (x, y, round) {
 	if (x instanceof L.Point) {
 		return x;
 	}
-	if (x instanceof Array) {
+	if (L.Util.isArray(x)) {
 		return new L.Point(x[0], x[1]);
 	}
 	if (isNaN(x)) {
@@ -596,8 +602,8 @@ L.point = function (x, y, round) {
 
 
 /*
-	L.Bounds represents a rectangular area on the screen in pixel coordinates.
-*/
+ * L.Bounds represents a rectangular area on the screen in pixel coordinates.
+ */
 
 L.Bounds = function (a, b) { //(Point, Point) or Point[]
 	if (!a) { return; }
@@ -693,8 +699,8 @@ L.bounds = function (a, b) { // (Bounds) or (Point, Point) or (Point[])
 
 
 /*
-	L.Transformation is an utility class to perform simple point transformations through a 2d-matrix.
-*/
+ * L.Transformation is an utility class to perform simple point transformations through a 2d-matrix.
+ */
 
 L.Transformation = function (a, b, c, d) {
 	this._a = a;
@@ -726,8 +732,8 @@ L.Transformation.prototype = {
 
 
 /*
-	L.DomUtil contains various utility functions for working with DOM.
-*/
+ * L.DomUtil contains various utility functions for working with DOM.
+ */
 
 L.DomUtil = {
 	get: function (id) {
@@ -953,8 +959,11 @@ L.DomUtil = {
 L.DomUtil.TRANSFORM = L.DomUtil.testProp(
         ['transform', 'WebkitTransform', 'OTransform', 'MozTransform', 'msTransform']);
 
+// webkitTransition comes first because some browser versions that drop vendor prefix don't do
+// the same for the transitionend event, in particular the Android 4.1 stock browser
+
 L.DomUtil.TRANSITION = L.DomUtil.testProp(
-        ['transition', 'webkitTransition', 'OTransition', 'MozTransition', 'msTransition']);
+        ['webkitTransition', 'transition', 'OTransition', 'MozTransition', 'msTransition']);
 
 L.DomUtil.TRANSITION_END =
         L.DomUtil.TRANSITION === 'webkitTransition' || L.DomUtil.TRANSITION === 'OTransition' ?
@@ -962,8 +971,8 @@ L.DomUtil.TRANSITION_END =
 
 
 /*
-	L.LatLng represents a geographical point with latitude and longitude coordinates.
-*/
+ * L.LatLng represents a geographical point with latitude and longitude coordinates.
+ */
 
 L.LatLng = function (rawLat, rawLng) { // (Number, Number)
 	var lat = parseFloat(rawLat),
@@ -1037,7 +1046,7 @@ L.latLng = function (a, b) { // (LatLng) or ([Number, Number]) or (Number, Numbe
 	if (a instanceof L.LatLng) {
 		return a;
 	}
-	if (a instanceof Array) {
+	if (L.Util.isArray(a)) {
 		return new L.LatLng(a[0], a[1]);
 	}
 	if (isNaN(a)) {
@@ -1049,8 +1058,8 @@ L.latLng = function (a, b) { // (LatLng) or ([Number, Number]) or (Number, Numbe
 
 
 /*
-	L.LatLngBounds represents a rectangular area on the map in geographical coordinates.
-*/
+ * L.LatLngBounds represents a rectangular area on the map in geographical coordinates.
+ */
 
 L.LatLngBounds = function (southWest, northEast) { // (LatLng, LatLng) or (LatLng[])
 	if (!southWest) { return; }
@@ -1191,15 +1200,15 @@ L.latLngBounds = function (a, b) { // (LatLngBounds) or (LatLng, LatLng)
 
 
 /*
-	L.Projection contains various geographical projections used by CRS classes.
-*/
+ * L.Projection contains various geographical projections used by CRS classes.
+ */
 
 L.Projection = {};
 
 
 /*
-	Spherical Mercator is the most popular map projection, used by EPSG:3857 CRS used by default.
-*/
+ * Spherical Mercator is the most popular map projection, used by EPSG:3857 CRS used by default.
+ */
 
 L.Projection.SphericalMercator = {
 	MAX_LATITUDE: 85.0511287798,
@@ -1227,8 +1236,8 @@ L.Projection.SphericalMercator = {
 
 
 /*
-	Simple equirectangular (Plate Carree) projection, used by CRS like EPSG:4326 and Simple.
-*/
+ * Simple equirectangular (Plate Carree) projection, used by CRS like EPSG:4326 and Simple.
+ */
 
 L.Projection.LonLat = {
 	project: function (latlng) {
@@ -1242,8 +1251,8 @@ L.Projection.LonLat = {
 
 
 /*
-	L.CRS is a base object for all defined CRS (Coordinate Reference Systems) in Leaflet.
-*/
+ * L.CRS is a base object for all defined CRS (Coordinate Reference Systems) in Leaflet.
+ */
 
 L.CRS = {
 	latLngToPoint: function (latlng, zoom) { // (LatLng, Number) -> Point
@@ -1271,8 +1280,8 @@ L.CRS = {
 
 
 /*
-	A simple CRS that can be used for flat non-Earth maps like panoramas or game maps.
-*/
+ * A simple CRS that can be used for flat non-Earth maps like panoramas or game maps.
+ */
 
 L.CRS.Simple = L.extend({}, L.CRS, {
 	projection: L.Projection.LonLat,
@@ -1285,9 +1294,9 @@ L.CRS.Simple = L.extend({}, L.CRS, {
 
 
 /*
-	L.CRS.EPSG3857 (Spherical Mercator) is the most common CRS for web mapping
-	and is used by Leaflet by default.
-*/
+ * L.CRS.EPSG3857 (Spherical Mercator) is the most common CRS for web mapping
+ * and is used by Leaflet by default.
+ */
 
 L.CRS.EPSG3857 = L.extend({}, L.CRS, {
 	code: 'EPSG:3857',
@@ -1308,8 +1317,8 @@ L.CRS.EPSG900913 = L.extend({}, L.CRS.EPSG3857, {
 
 
 /*
-	L.CRS.EPSG4326 is a CRS popular among advanced GIS specialists.
-*/
+ * L.CRS.EPSG4326 is a CRS popular among advanced GIS specialists.
+ */
 
 L.CRS.EPSG4326 = L.extend({}, L.CRS, {
 	code: 'EPSG:4326',
@@ -1787,7 +1796,7 @@ L.Map = L.Class.extend({
 	},
 
 	_initLayers: function (layers) {
-		layers = layers ? (layers instanceof Array ? layers : [layers]) : [];
+		layers = layers ? (L.Util.isArray(layers) ? layers : [layers]) : [];
 
 		this._layers = {};
 		this._zoomBoundLayers = {};
@@ -1999,9 +2008,9 @@ L.map = function (id, options) {
 
 
 /*
-	Mercator projection that takes into account that the Earth is not a perfect sphere.
-	Less popular than spherical mercator; used by projections like EPSG:3395.
-*/
+ * Mercator projection that takes into account that the Earth is not a perfect sphere.
+ * Less popular than spherical mercator; used by projections like EPSG:3395.
+ */
 
 L.Projection.Mercator = {
 	MAX_LATITUDE: 85.0840591556,
@@ -2240,7 +2249,7 @@ L.TileLayer = L.Class.extend({
 
 	_setAutoZIndex: function (pane, compare) {
 
-		var layers = pane.getElementsByClassName('leaflet-layer'),
+		var layers = pane.children,
 		    edgeZIndex = -compare(Infinity, -Infinity), // -Infinity for max, Infinity for min
 		    zIndex, i, len;
 
@@ -2601,6 +2610,10 @@ L.tileLayer = function (url, options) {
 };
 
 
+/*
+ * L.TileLayer.WMS is used for putting WMS tile layers on the map.
+ */
+
 L.TileLayer.WMS = L.TileLayer.extend({
 
 	defaultWmsParams: {
@@ -2663,7 +2676,7 @@ L.TileLayer.WMS = L.TileLayer.extend({
 
 		    url = L.Util.template(this._url, {s: this._getSubdomain(tilePoint)});
 
-		return url + L.Util.getParamString(this.wmsParams) + "&bbox=" + bbox;
+		return url + L.Util.getParamString(this.wmsParams, url) + "&bbox=" + bbox;
 	},
 
 	setParams: function (params, noRedraw) {
@@ -2682,6 +2695,11 @@ L.tileLayer.wms = function (url, options) {
 	return new L.TileLayer.WMS(url, options);
 };
 
+
+/*
+ * L.TileLayer.Canvas is a class that you can use as a base for creating
+ * dynamically drawn Canvas-based tile layers.
+ */
 
 L.TileLayer.Canvas = L.TileLayer.extend({
 	options: {
@@ -2742,6 +2760,10 @@ L.tileLayer.canvas = function (options) {
 	return new L.TileLayer.Canvas(options);
 };
 
+
+/*
+ * L.ImageOverlay is used to overlay images over the map (to specific geographical bounds).
+ */
 
 L.ImageOverlay = L.Class.extend({
 	includes: L.Mixin.Events,
@@ -2873,14 +2895,20 @@ L.imageOverlay = function (url, bounds, options) {
 };
 
 
+/*
+ * L.Icon is an image-based icon class that you can use with L.Marker for custom markers.
+ */
+
 L.Icon = L.Class.extend({
 	options: {
 		/*
 		iconUrl: (String) (required)
+		iconRetinaUrl: (String) (optional, used for retina devices if detected)
 		iconSize: (Point) (can be set through CSS)
 		iconAnchor: (Point) (centered by default, can be set in CSS with negative margins)
 		popupAnchor: (Point) (if not specified, popup opens in the anchor point)
 		shadowUrl: (Point) (no shadow by default)
+		shadowRetinaUrl: (String) (optional, used for retina devices if detected)
 		shadowSize: (Point)
 		shadowAnchor: (Point)
 		*/
@@ -2958,6 +2986,9 @@ L.Icon = L.Class.extend({
 	},
 
 	_getIconUrl: function (name) {
+		if (L.Browser.retina && this.options[name + 'RetinaUrl']) {
+			return this.options[name + 'RetinaUrl'];
+		}
 		return this.options[name + 'Url'];
 	}
 });
@@ -2967,6 +2998,9 @@ L.icon = function (options) {
 };
 
 
+/*
+ * L.Icon.Default is the blue marker icon used by default in Leaflet.
+ */
 
 L.Icon.Default = L.Icon.extend({
 
@@ -2983,6 +3017,10 @@ L.Icon.Default = L.Icon.extend({
 
 		if (this.options[key]) {
 			return this.options[key];
+		}
+
+		if (L.Browser.retina && name === 'icon') {
+			name += '@2x';
 		}
 
 		var path = L.Icon.Default.imagePath;
@@ -3232,7 +3270,7 @@ L.Marker = L.Class.extend({
 
 		if (wasDragged) { return; }
 
-		if (this._map.dragging && this._map.dragging.moved()) { return; }
+		if ((!this.dragging || !this.dragging._enabled) && this._map.dragging && this._map.dragging.moved()) { return; }
 
 		this.fire(e.type, {
 			originalEvent: e
@@ -3283,6 +3321,11 @@ L.marker = function (latlng, options) {
 };
 
 
+/*
+ * L.DivIcon is a lightweight HTML-based icon class (as opposed to the image-based L.Icon)
+ * to use with L.Marker.
+ */
+
 L.DivIcon = L.Icon.extend({
 	options: {
 		iconSize: new L.Point(12, 12), // also can be set through CSS
@@ -3322,6 +3365,9 @@ L.divIcon = function (options) {
 };
 
 
+/*
+ * L.Popup is used for displaying popups on the map.
+ */
 
 L.Map.mergeOptions({
 	closePopupOnClick: true
@@ -3338,13 +3384,15 @@ L.Popup = L.Class.extend({
 		closeButton: true,
 		offset: new L.Point(0, 6),
 		autoPanPadding: new L.Point(5, 5),
-		className: ''
+		className: '',
+		zoomAnimation: true
 	},
 
 	initialize: function (options, source) {
 		L.setOptions(this, options);
 
 		this._source = source;
+		this._animated = L.Browser.any3d && this.options.zoomAnimation;
 	},
 
 	onAdd: function (map) {
@@ -3364,7 +3412,7 @@ L.Popup = L.Class.extend({
 
 		map.on('viewreset', this._updatePosition, this);
 
-		if (L.Browser.any3d) {
+		if (this._animated) {
 			map.on('zoomanim', this._zoomAnimation, this);
 		}
 
@@ -3433,7 +3481,8 @@ L.Popup = L.Class.extend({
 
 	_initLayout: function () {
 		var prefix = 'leaflet-popup',
-			containerClass = prefix + ' ' + this.options.className + ' leaflet-zoom-animated',
+			containerClass = prefix + ' ' + this.options.className + ' leaflet-zoom-' +
+			        (this._animated ? 'animated' : 'hide'),
 			container = this._container = L.DomUtil.create('div', containerClass),
 			closeButton;
 
@@ -3519,15 +3568,15 @@ L.Popup = L.Class.extend({
 		if (!this._map) { return; }
 
 		var pos = this._map.latLngToLayerPoint(this._latlng),
-		    is3d = L.Browser.any3d,
+		    animated = this._animated,
 		    offset = this.options.offset;
 
-		if (is3d) {
+		if (animated) {
 			L.DomUtil.setPosition(this._container, pos);
 		}
 
-		this._containerBottom = -offset.y - (is3d ? 0 : pos.y);
-		this._containerLeft = -Math.round(this._containerWidth / 2) + offset.x + (is3d ? 0 : pos.x);
+		this._containerBottom = -offset.y - (animated ? 0 : pos.y);
+		this._containerLeft = -Math.round(this._containerWidth / 2) + offset.x + (animated ? 0 : pos.x);
 
 		//Bottom position the popup in case the height of the popup changes (images loading etc)
 		this._container.style.bottom = this._containerBottom + 'px';
@@ -3549,7 +3598,7 @@ L.Popup = L.Class.extend({
 
 		    layerPos = new L.Point(this._containerLeft, -containerHeight - this._containerBottom);
 
-		if (L.Browser.any3d) {
+		if (this._animated) {
 			layerPos._add(L.DomUtil.getPosition(this._container));
 		}
 
@@ -3589,7 +3638,7 @@ L.popup = function (options, source) {
 
 
 /*
- * Popup extension to L.Marker, adding openPopup & bindPopup methods.
+ * Popup extension to L.Marker, adding popup-related methods.
  */
 
 L.Marker.include({
@@ -3650,6 +3699,9 @@ L.Marker.include({
 });
 
 
+/*
+ * Adds popup-related methods to L.Map.
+ */
 
 L.Map.include({
 	openPopup: function (popup) {
@@ -3672,7 +3724,8 @@ L.Map.include({
 
 
 /*
- * L.LayerGroup is a class to combine several layers so you can manipulate the group (e.g. add/remove it) as one layer.
+ * L.LayerGroup is a class to combine several layers into one so that
+ * you can manipulate the group (e.g. add/remove it) as one layer.
  */
 
 L.LayerGroup = L.Class.extend({
@@ -3768,7 +3821,8 @@ L.layerGroup = function (layers) {
 
 
 /*
- * L.FeatureGroup extends L.LayerGroup by introducing mouse events and bindPopup method shared between a group of layers.
+ * L.FeatureGroup extends L.LayerGroup by introducing mouse events and additional methods
+ * shared between a group of interactive layers (like vectors or markers).
  */
 
 L.FeatureGroup = L.LayerGroup.extend({
@@ -3788,7 +3842,7 @@ L.FeatureGroup = L.LayerGroup.extend({
 		L.LayerGroup.prototype.addLayer.call(this, layer);
 
 		if (this._popupContent && layer.bindPopup) {
-			layer.bindPopup(this._popupContent);
+			layer.bindPopup(this._popupContent, this._popupOptions);
 		}
 
 		return this.fire('layeradd', {layer: layer});
@@ -3807,9 +3861,10 @@ L.FeatureGroup = L.LayerGroup.extend({
 		return this.fire('layerremove', {layer: layer});
 	},
 
-	bindPopup: function (content) {
+	bindPopup: function (content, options) {
 		this._popupContent = content;
-		return this.invoke('bindPopup', content);
+		this._popupOptions = options;
+		return this.invoke('bindPopup', content, options);
 	},
 
 	setStyle: function (style) {
@@ -3912,6 +3967,8 @@ L.Path = L.Class.extend({
 	onRemove: function (map) {
 		map._pathRoot.removeChild(this._container);
 
+		// Need to fire remove event before we set _map to null as the event hooks might need the object
+		this.fire('remove');
 		this._map = null;
 
 		if (L.Browser.vml) {
@@ -3919,8 +3976,6 @@ L.Path = L.Class.extend({
 			this._stroke = null;
 			this._fill = null;
 		}
-
-		this.fire('remove');
 
 		map.off({
 			'viewreset': this.projectLatlngs,
@@ -3963,6 +4018,10 @@ L.Map.include({
 	}
 });
 
+
+/*
+ * Extends L.Path with SVG-specific rendering code.
+ */
 
 L.Path.SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -4127,9 +4186,9 @@ L.Map.include({
 
 	_animatePathZoom: function (e) {
 		var scale = this.getZoomScale(e.zoom),
-		    offset = this._getCenterOffset(e.center)._multiplyBy(-scale);
+		    offset = this._getCenterOffset(e.center)._multiplyBy(-scale)._add(this._pathViewport.min);
 
-		this._pathRoot.style[L.DomUtil.TRANSFORM] +=
+		this._pathRoot.style[L.DomUtil.TRANSFORM] =
 		        L.DomUtil.getTranslateString(offset) + ' scale(' + scale + ') ';
 
 		this._pathZooming = true;
@@ -4176,7 +4235,7 @@ L.Map.include({
 
 
 /*
- * Popup extension to L.Path (polylines, polygons, circles), adding bindPopup method.
+ * Popup extension to L.Path (polylines, polygons, circles), adding popup-related methods.
  */
 
 L.Path.include({
@@ -4204,7 +4263,7 @@ L.Path.include({
 		if (this._popup) {
 			this._popup = null;
 			this
-			    .off('click', this.openPopup)
+			    .off('click', this._openPopup)
 			    .off('remove', this.closePopup);
 
 			this._popupHandlersAdded = false;
@@ -4404,6 +4463,10 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 		    .off('viewreset', this.projectLatlngs, this)
 		    .off('moveend', this._updatePath, this);
 
+		if (this.options.clickable) {
+			this._map.off('click', this._onClick, this);
+		}
+
 		this._requestUpdate();
 
 		this._map = null;
@@ -4495,7 +4558,12 @@ L.Path = (L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? L.Path :
 
 	_onClick: function (e) {
 		if (this._containsPoint(e.layerPoint)) {
-			this.fire('click', e);
+			this.fire('click', {
+				latlng: e.latlng,
+				layerPoint: e.layerPoint,
+				containerPoint: e.containerPoint,
+				originalEvent: e
+			});
 		}
 	}
 });
@@ -4545,9 +4613,9 @@ L.Map.include((L.Path.SVG && !window.L_PREFER_CANVAS) || !L.Browser.canvas ? {} 
 
 
 /*
-	L.LineUtil contains different utility functions for line segments
-	and polylines (clipping, simplification, distances, etc.)
-*/
+ * L.LineUtil contains different utility functions for line segments
+ * and polylines (clipping, simplification, distances, etc.)
+ */
 
 /*jshint bitwise:false */ // allow bitwise oprations for this file
 
@@ -4748,6 +4816,10 @@ L.LineUtil = {
 };
 
 
+/*
+ * L.Polygon is used to display polylines on a map.
+ */
+
 L.Polyline = L.Path.extend({
 	initialize: function (latlngs, options) {
 		L.Path.prototype.initialize.call(this, options);
@@ -4834,7 +4906,7 @@ L.Polyline = L.Path.extend({
 	_convertLatLngs: function (latlngs) {
 		var i, len;
 		for (i = 0, len = latlngs.length; i < len; i++) {
-			if (latlngs[i] instanceof Array && typeof latlngs[i][0] !== 'number') {
+			if (L.Util.isArray(latlngs[i]) && typeof latlngs[i][0] !== 'number') {
 				return;
 			}
 			latlngs[i] = L.latLng(latlngs[i]);
@@ -4918,8 +4990,8 @@ L.polyline = function (latlngs, options) {
 
 
 /*
-	L.PolyUtil contains utility functions for polygons (clipping, etc.).
-*/
+ * L.PolyUtil contains utility functions for polygons (clipping, etc.).
+ */
 
 /*jshint bitwise:false */ // allow bitwise operations here
 
@@ -4986,7 +5058,7 @@ L.Polygon = L.Polyline.extend({
 	initialize: function (latlngs, options) {
 		L.Polyline.prototype.initialize.call(this, latlngs, options);
 
-		if (latlngs && (latlngs[0] instanceof Array) && (typeof latlngs[0][0] !== 'number')) {
+		if (latlngs && L.Util.isArray(latlngs[0]) && (typeof latlngs[0][0] !== 'number')) {
 			this._latlngs = this._convertLatLngs(latlngs[0]);
 			this._holes = latlngs.slice(1);
 		}
@@ -5091,7 +5163,7 @@ L.polygon = function (latlngs, options) {
 
 
 /*
- * L.Rectangle extends Polygon and creates a rectangle when passed a LatLngBounds
+ * L.Rectangle extends Polygon and creates a rectangle when passed a LatLngBounds object.
  */
 
 L.Rectangle = L.Polygon.extend({
@@ -5237,6 +5309,11 @@ L.CircleMarker = L.Circle.extend({
 	projectLatlngs: function () {
 		this._point = this._map.latLngToLayerPoint(this._latlng);
 	},
+	
+	_updateStyle : function () {
+		L.Circle.prototype._updateStyle.call(this);
+		this.setRadius(this.options.radius);
+	},
 
 	setRadius: function (radius) {
 		this._radius = radius;
@@ -5249,6 +5326,9 @@ L.circleMarker = function (latlng, options) {
 };
 
 
+/*
+ * Extends L.Polyline to be able to manually detect clicks on Canvas-rendered polylines.
+ */
 
 L.Polyline.include(!L.Path.CANVAS ? {} : {
 	_containsPoint: function (p, closed) {
@@ -5278,6 +5358,9 @@ L.Polyline.include(!L.Path.CANVAS ? {} : {
 });
 
 
+/*
+ * Extends L.Polygon to be able to manually detect clicks on Canvas-rendered polygons.
+ */
 
 L.Polygon.include(!L.Path.CANVAS ? {} : {
 	_containsPoint: function (p) {
@@ -5315,7 +5398,7 @@ L.Polygon.include(!L.Path.CANVAS ? {} : {
 
 
 /*
- * Circle canvas specific drawing parts.
+ * Extends L.Circle with Canvas-specific code.
  */
 
 L.Circle.include(!L.Path.CANVAS ? {} : {
@@ -5351,12 +5434,15 @@ L.GeoJSON = L.FeatureGroup.extend({
 	},
 
 	addData: function (geojson) {
-		var features = geojson instanceof Array ? geojson : geojson.features,
+		var features = L.Util.isArray(geojson) ? geojson : geojson.features,
 		    i, len;
 
 		if (features) {
 			for (i = 0, len = features.length; i < len; i++) {
-				this.addData(features[i]);
+				// Only add this if geometry or geometries are set and not null
+				if (features[i].geometries || features[i].geometry) {
+					this.addData(features[i]);
+				}
 			}
 			return this;
 		}
@@ -5436,13 +5522,17 @@ L.extend(L.GeoJSON, {
 			latlngs = this.coordsToLatLngs(coords, 1);
 			return new L.MultiPolyline(latlngs);
 
-		case "MultiPolygon":
+		case 'MultiPolygon':
 			latlngs = this.coordsToLatLngs(coords, 2);
 			return new L.MultiPolygon(latlngs);
 
-		case "GeometryCollection":
+		case 'GeometryCollection':
 			for (i = 0, len = geometry.geometries.length; i < len; i++) {
-				layer = this.geometryToLayer(geometry.geometries[i], pointToLayer);
+				layer = this.geometryToLayer({
+					geometry: geometry.geometries[i],
+					type: 'Feature',
+					properties: geojson.properties
+				}, pointToLayer);
 				layers.push(layer);
 			}
 			return new L.FeatureGroup(layers);
@@ -5482,8 +5572,8 @@ L.geoJson = function (geojson, options) {
 
 
 /*
-	L.DomEvent contains functions for working with DOM events.
-*/
+ * L.DomEvent contains functions for working with DOM events.
+ */
 
 L.DomEvent = {
 	/* inspired by John Resig, Dean Edwards and YUI addEvent implementations */
@@ -5670,8 +5760,8 @@ L.DomEvent.off = L.DomEvent.removeListener;
 
 
 /*
-	L.Draggable allows you to add dragging capabilities to any element. Supports mobile devices too.
-*/
+ * L.Draggable allows you to add dragging capabilities to any element. Supports mobile devices too.
+ */
 
 L.Draggable = L.Class.extend({
 	includes: L.Mixin.Events,
@@ -5895,7 +5985,7 @@ L.Handler = L.Class.extend({
 
 
 /*
- * L.Handler.MapDrag is used internally by L.Map to make the map draggable.
+ * L.Handler.MapDrag is used to make the map draggable (with panning inertia), enabled by default.
  */
 
 L.Map.mergeOptions({
@@ -6047,7 +6137,7 @@ L.Map.addInitHook('addHandler', 'dragging', L.Map.Drag);
 
 
 /*
- * L.Handler.DoubleClickZoom is used internally by L.Map to add double-click zooming.
+ * L.Handler.DoubleClickZoom is used to handle double-click zoom on the map, enabled by default.
  */
 
 L.Map.mergeOptions({
@@ -6069,6 +6159,7 @@ L.Map.DoubleClickZoom = L.Handler.extend({
 });
 
 L.Map.addInitHook('addHandler', 'doubleClickZoom', L.Map.DoubleClickZoom);
+
 
 /*
  * L.Handler.ScrollWheelZoom is used by L.Map to enable mouse scroll wheel zoom on the map.
@@ -6143,8 +6234,8 @@ L.Map.addInitHook('addHandler', 'scrollWheelZoom', L.Map.ScrollWheelZoom);
 
 
 /*
-	Extends the event handling code with double tap support for mobile browsers.
-*/
+ * Extends the event handling code with double tap support for mobile browsers.
+ */
 
 L.extend(L.DomEvent, {
 
@@ -6241,8 +6332,8 @@ L.extend(L.DomEvent, {
 
 
 /*
-	Extends L.DomEvent to provide touch support for Internet Explorer and Windows-based devices.
-*/
+ * Extends L.DomEvent to provide touch support for Internet Explorer and Windows-based devices.
+ */
 
 L.extend(L.DomEvent, {
 
@@ -6522,7 +6613,8 @@ L.Map.addInitHook('addHandler', 'touchZoom', L.Map.TouchZoom);
 
 
 /*
- * L.Handler.ShiftDragZoom is used internally by L.Map to add shift-drag zoom (zoom to a selected bounding box).
+ * L.Handler.ShiftDragZoom is used to add shift-drag zoom interaction to the map
+  * (zoom to a selected bounding box), enabled by default.
  */
 
 L.Map.mergeOptions({
@@ -6612,6 +6704,10 @@ L.Map.BoxZoom = L.Handler.extend({
 
 L.Map.addInitHook('addHandler', 'boxZoom', L.Map.BoxZoom);
 
+
+/*
+ * L.Map.Keyboard is handling keyboard interaction with the map, enabled by default.
+ */
 
 L.Map.mergeOptions({
 	keyboard: true,
@@ -6811,6 +6907,10 @@ L.Handler.MarkerDrag = L.Handler.extend({
 	}
 });
 
+
+/*
+ * L.Handler.PolyEdit is an editing handler for polylines and polygons.
+ */
 
 L.Handler.PolyEdit = L.Handler.extend({
 	options: {
@@ -7060,9 +7160,9 @@ L.Polyline.addInitHook(function () {
 
 
 /*
-	L.Control is a base class for implementing map controls. Handles positioning.
-	All other controls extend from this class.
-*/
+ * L.Control is a base class for implementing map controls. Handles positioning.
+ * All other controls extend from this class.
+ */
 
 L.Control = L.Class.extend({
 	options: {
@@ -7131,6 +7231,10 @@ L.control = function (options) {
 };
 
 
+/*
+ * Adds control-related methods to L.Map.
+ */
+
 L.Map.include({
 	addControl: function (control) {
 		control.addTo(this);
@@ -7163,8 +7267,8 @@ L.Map.include({
 
 
 /*
-	L.Control.Zoom is used for the default zoom buttons on the map.
-*/
+ * L.Control.Zoom is used for the default zoom buttons on the map.
+ */
 
 L.Control.Zoom = L.Control.extend({
 	options: {
@@ -7251,8 +7355,8 @@ L.control.zoom = function (options) {
 
 
 /*
-	L.Control.Attribution is used for displaying attribution on the map (added by default).
-*/
+ * L.Control.Attribution is used for displaying attribution on the map (added by default).
+ */
 
 L.Control.Attribution = L.Control.extend({
 	options: {
@@ -7366,8 +7470,8 @@ L.control.attribution = function (options) {
 
 
 /*
-	L.Control.Scale is used for displaying metric/imperial scale on the map.
-*/
+ * L.Control.Scale is used for displaying metric/imperial scale on the map.
+ */
 
 L.Control.Scale = L.Control.extend({
 	options: {
@@ -7480,8 +7584,8 @@ L.control.scale = function (options) {
 
 
 /*
-	L.Control.Layers is a control to allow users to switch between different layers on the map.
-*/
+ * L.Control.Layers is a control to allow users to switch between different layers on the map.
+ */
 
 L.Control.Layers = L.Control.extend({
 	options: {
@@ -7727,8 +7831,8 @@ L.control.layers = function (baseLayers, overlays, options) {
 
 
 /*
-	L.PosAnimation is used by Leaflet internally for pan animations.
-*/
+ * L.PosAnimation is used by Leaflet internally for pan animations.
+ */
 
 L.PosAnimation = L.Class.extend({
 	includes: L.Mixin.Events,
@@ -7803,6 +7907,9 @@ L.PosAnimation = L.Class.extend({
 });
 
 
+/*
+ * Extends L.Map to handle panning animations.
+ */
 
 L.Map.include({
 
@@ -7891,8 +7998,8 @@ L.Map.include({
 
 
 /*
-	L.PosAnimation fallback implementation that powers Leaflet pan animations
-	in browsers that don't support CSS3 Transitions.
+ * L.PosAnimation fallback implementation that powers Leaflet pan animations
+ * in browsers that don't support CSS3 Transitions.
  */
 
 L.PosAnimation = L.DomUtil.TRANSITION ? L.PosAnimation : L.PosAnimation.extend({
@@ -7958,6 +8065,10 @@ L.PosAnimation = L.DomUtil.TRANSITION ? L.PosAnimation : L.PosAnimation.extend({
 	}
 });
 
+
+/*
+ * Extends L.Map to handle zoom animations.
+ */
 
 L.Map.mergeOptions({
 	zoomAnimation: L.DomUtil.TRANSITION && !L.Browser.android23 && !L.Browser.mobileOpera
@@ -8127,7 +8238,7 @@ L.Map.include(!L.DomUtil.TRANSITION ? {} : {
 
 
 /*
- * Provides L.Map with convenient shortcuts for W3C geolocation.
+ * Provides L.Map with convenient shortcuts for using browser geolocation features.
  */
 
 L.Map.include({
