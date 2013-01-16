@@ -71,6 +71,7 @@
 	}
 
 	.rightPanel {
+		float: right;
 		.row-fluid {
 			margin-bottom: 7px;
 		}
@@ -185,12 +186,21 @@
 			}
 		}
 	}
+	.photoComments {
+		clear: left;
+	}
 }
 
 @media (max-width: 767px) {
 	.photo {
 		.photoData {
 			margin: 0 3px;
+		}
+		.rightPanel {
+			float: none;
+		}
+		.photoComments {
+			clear: both;
 		}
 	}
 }
