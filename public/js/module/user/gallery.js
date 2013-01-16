@@ -175,7 +175,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
             //Так как в @media firefox считает ширину с учетом ширины скролла,
             //то прибавляем эту ширину и здесь для правильного подсчета маргинов
-            if ($.browser.mozilla) {
+            if (Browser.engine === 'GECKO') {
                 windowW += window.innerWidth - windowW;
             }
 
