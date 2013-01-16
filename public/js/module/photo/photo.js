@@ -169,6 +169,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userThumbN = ko.observable(3);
             P.window.square.subscribe(this.sizesCalc, this);
 
+            this.childs = [
+                {
+                    module: 'm/map/mapEdit',
+                    container: '.photoMap',
+                    options: {editMode: this.edit()},
+                    ctx: this,
+                    callback: function (vm) {
+                        this.childModules[vm.id] = vm;
+                        this.mapEditVM = vm;
+                        //this.mapEditPosition();
+                        this.exe(false);
+                    }.bind(this)
+                }
+            ];
+
             ko.applyBindings(globalVM, this.$dom[0]);
 
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -215,27 +230,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
         editHandler: function (v) {
             if (v) {
-                if (this.mapVM) {
-                    this.mapVM.destroy();
-                }
-                renderer(
-                    [
-                        {module: 'm/map/mapEdit', container: '.photoMap', options: {}, ctx: this, callback: function (vm) {
-                            this.mapEditVM = vm;
-                            this.mapEditPosition();
-                            this.exe(false);
-                        }}
-                    ],
-                    {
-                        parent: this,
-                        level: this.level + 1
-                    }
-                );
             } else {
-                if (this.mapEditVM) {
-                    this.mapEditVM.destroy();
-                }
-
             }
         },
 
