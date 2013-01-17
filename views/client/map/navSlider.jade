@@ -8,9 +8,9 @@
 		.zoomin.fringe2.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
 		.zoomout.fringe2.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")
 		.stick.fringe2
-		.sliderArea(data-bind="event: {'mousewheel': onWheel, 'DOMMouseScroll': onWheel}")
+		.sliderArea(data-bind="event: {'mousewheel': onWheel, 'DOMMouseScroll': onWheel}, css: {sliding: sliding()}")
 			//ko foreach: dashes
-			.dash(data-bind="style: {height: $parent.step + 'px'}, attr: {'data-zoom': $data}")
+			.dash(data-bind="style: {height: $parent.step() + 'px'}, attr: {'data-zoom': $data}")
 			// /ko
 			.slider.fringe2(data-bind="text: sliderOnZoom(), style: {bottom: (step * sliderOnZoom() - offset) + 'px'}")
 	.pinArea

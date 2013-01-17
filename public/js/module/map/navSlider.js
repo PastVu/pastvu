@@ -11,7 +11,8 @@ define([
         create: function () {
             this.map = this.options.map;
             this.dashes = ko.observableArray();
-            this.open = ko.observable(false);
+            this.pinned = ko.observable(false);
+            this.sliding = ko.observable(false);
 
             this.DOMh = 12;
             this.offset = 0;
@@ -19,9 +20,13 @@ define([
             this.step = ko.observable(0);
             this.sliderOnZoom = ko.observable(this.map.getZoom());
 
-            this.setZoomDebounce = _.debounce(function (newZoom) {
-                this.map.setZoom(newZoom);
-            }.bind(this), 750, false);
+            this.zoomChangeTimeout = null;
+
+            this.setZoomBind = this.setZoom.bind(this);
+            this.SnatchBind = this.Snatch.bind(this);
+            this.SnatchOffBind = this.SnatchOff.bind(this);
+            //this.SnatchOffByWindowOutBind = this.SnatchOffByWindowOut.bind(this);
+            this.dashOverBind = this.dashOver.bind(this);
 
             ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -37,7 +42,10 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
                 this.$sliderArea = this.$dom.find('.sliderArea');
-                this.$sliderArea.on('click', '.dash', this.dashClick.bind(this));
+                this.$sliderArea
+                    .on('click', '.dash', this.dashClick.bind(this))
+                    .on(ET.mdown, this.SnatchBind);
+
                 this.recalcZooms();
             }.bind(this));
             this.showing = true;
@@ -49,7 +57,6 @@ define([
 
 
         recalcZooms: function () {
-            var z;
             this.numZooms = this.map.getMaxZoom() - this.map.getMinZoom() + 1;
             this.dashes(_.range(0, this.numZooms).reverse());
             this.step(this.usefulH / this.numZooms);
@@ -67,8 +74,12 @@ define([
         dashClick: function (e) {
             var zoom = Number($(e.target).attr('data-zoom'));
             if (zoom && !isNaN(zoom)) {
-                this.setZoomDebounce(zoom);
+                window.clearTimeout(this.zoomChangeTimeout);
+                this.setZoom(zoom);
             }
+        },
+        setZoom: function (newZoom) {
+            this.map.setZoom(newZoom);
         },
         changeZoom: function (diff) {
             this.map.zoomBy(diff);
@@ -78,14 +89,54 @@ define([
             dir = e.type === 'DOMMouseScroll' ? -1 * e.detail : e.wheelDelta;
             dir = dir > 0 ? 'up' : 'down';
 
-            newZoom = Math.max(0, Math.min(this.sliderOnZoom + (dir === 'up' ? 1 : -1), 18));
-            if (newZoom === this.sliderOnZoom) {
-                return false;
+            newZoom = Math.max(0, Math.min(this.sliderOnZoom() + (dir === 'up' ? 1 : -1), 18));
+            if (newZoom && !isNaN(newZoom) && newZoom !== this.sliderOnZoom()) {
+                window.clearTimeout(this.zoomChangeTimeout);
+                this.sliderOnZoom(newZoom);
+                this.zoomChangeTimeout = _.delay(this.setZoomBind, 750, newZoom);
             }
 
-            this.setZoomDebounce(newZoom);
-            //this.pos();
             return false;
+        },
+        Snatch: function ($e) {
+            this.$sliderArea
+                .on('mouseenter', '.dash', this.dashOverBind);
+            $(document)
+                .on(ET.mup, this.SnatchOffBind)
+                .on('mouseleave', this.SnatchOffBind);
+
+            $e.stopPropagation();
+            $e.preventDefault();
+            return false;
+        },
+        SnatchOff: function ($e) {
+            this.sliding(false);
+            this.$sliderArea
+                .off('mouseenter', '.dash', this.dashOverBind);
+            $(document)
+                .off(ET.mup, this.SnatchOffBind)
+                .off('mouseleave', this.SnatchOffBind);
+        },
+        /*SnatchOffByWindowOut: function (evt) {
+         var pos = Utils.mousePageXY(evt);
+
+         if (pos.x <= 0 || pos.x >= Utils.getClientWidth() ||
+         pos.y <= 0 || pos.y >= Utils.getClientHeight()) {
+         this.SnatchOff(evt);
+         }
+         pos = null;
+         }*/
+        dashOver: function ($e) {
+            var newZoom = Number($($e.target).attr('data-zoom'));
+            if (newZoom && !isNaN(newZoom)) {
+                window.clearTimeout(this.zoomChangeTimeout);
+                this.sliderOnZoom(newZoom);
+                this.zoomChangeTimeout = _.delay(this.setZoomBind, 750, newZoom);
+            }
+        },
+
+        togglePin: function () {
+            this.pinned(!this.pinned());
         }
     });
 
@@ -118,90 +169,6 @@ define([
      //if(Browser.support.touch) Utils.Event.add(this.DOMPanel, 'touchstart', this.SnatchBind, false);
 
      }
-
-     NavigationSlider.prototype.dashOver = function (obj) {
-     window.clearTimeout(this.zoomChangeTimeout);
-     var newZoom = Number(obj.target.id.substr(1));
-     this.sliderOnZoom = newZoom;
-     this.zoomChangeTimeout = window.setTimeout(function () {
-     this.map.setZoom(newZoom);
-     }.bind(this), 750);
-     this.pos();
-     };
-     NavigationSlider.prototype.Snatch = function (e) {
-     var z;
-     for (z = 0; z < this.numZooms; z++) {
-     Utils.Event.add(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
-     */
-    /*if(Browser.support.touch){
-     Utils.Event.add(this.DomDashsArray[z], 'touchmove', function(){alert(9)}, false);
-     }*/
-    /*
-     }
-     Utils.Event.add(document.body, ET.mup, this.SnatchOffBind, false);
-     Utils.Event.add(document.body, 'mouseout', this.SnatchOffByWindowOutBind, false);
-     this.DOMPanel.classList.add('sliding');
-
-     */
-    /*if(Browser.support.touch){
-     Utils.Event.add(this.DOMPanel, 'touchmove', this.SnatchTouchMoveBind, false);
-     Utils.Event.add(document.body, 'touchend', this.SnatchOffBind, false);
-     }*/
-    /*
-     if (e.stopPropagation) {
-     e.stopPropagation();
-     }
-     if (e.preventDefault) {
-     e.preventDefault();
-     }
-     return false;
-     };
-     NavigationSlider.prototype.SnatchOff = function (evt) {
-     var z;
-
-     this.DOMPanel.classList.remove('sliding');
-     Utils.Event.remove(document.body, ET.mup, this.SnatchOffBind, false);
-     Utils.Event.remove(document.body, 'mouseout', this.SnatchOffByWindowOutBind, false);
-     for (z = 0; z < this.numZooms; z++) {
-     Utils.Event.remove(this.DomDashsArray[z], 'mouseover', this.dashOverBind, false);
-     }
-     */
-    /*if(Browser.support.touch){
-     Utils.Event.remove(this.DOMPanel, 'touchmove', this.SnatchTouchMoveBind, false);
-     Utils.Event.remove(document.body, 'touchend', this.SnatchOffBind, false);
-     }*/
-    /*
-     };
-     NavigationSlider.prototype.SnatchOffByWindowOut = function (evt) {
-     var pos = Utils.mousePageXY(evt);
-
-     if (pos.x <= 0 || pos.x >= Utils.getClientWidth() ||
-     pos.y <= 0 || pos.y >= Utils.getClientHeight()) {
-     this.SnatchOff(evt);
-     }
-     pos = null;
-     };
-     //    NavigationSlider.prototype.OnWheel = function (e) {
-     //        var dir, newZoom;
-     //        dir = e.type === 'DOMMouseScroll' ? -1 * e.detail : e.wheelDelta;
-     //        dir = dir > 0 ? 'up' : 'down';
-     //
-     //        newZoom = Math.max(0, Math.min(this.sliderOnZoom + (dir === 'up' ? 1 : -1), 18));
-     //        if (newZoom === this.sliderOnZoom) {
-     //            return false;
-     //        }
-     //
-     //        window.clearTimeout(this.zoomChangeTimeout);
-     //        this.sliderOnZoom = newZoom;
-     //        this.zoomChangeTimeout = window.setTimeout(function () {
-     //            this.map.setZoom(newZoom);
-     //        }.bind(this), 750);
-     //        this.pos();
-     //        return false;
-     //    };
-     NavigationSlider.prototype.togglePin = function () {
-     document.querySelector('#nav_panel').classList.toggle('pin');
-     };
 
      return NavigationSlider;*/
 });
