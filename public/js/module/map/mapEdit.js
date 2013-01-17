@@ -5,7 +5,7 @@
 define([
     'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
     'm/User', 'm/storage',
-    'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider', 'Locations',
+    'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/navSlider', 'Locations',
     'text!tpl/map/mapEdit.jade', 'css!style/map/mapEdit'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, NavigationSlider, Locations, jade) {
     'use strict';

@@ -5,7 +5,7 @@
 define([
     'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
     'm/User', 'm/storage',
-    'leaflet', 'lib/leaflet/extends/L.neoMap', 'nav_slider', 'Locations',
+    'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/navSlider', 'Locations',
     'text!tpl/map/mapBig.jade', 'css!style/map/mapBig'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, NavigationSlider, Locations, jade) {
     'use strict';
@@ -134,7 +134,7 @@ define([
                 this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
                 this.map = new L.neoMap('map', {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
 
-                this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
+                //this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
 
                 Locations.subscribe(function (val) {
                     this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -147,14 +147,20 @@ define([
                 }.bind(this));
 
                 this.map.whenReady(function () {
-                    /*if (!!window.localStorage && !!window.localStorage['arguments.SelectLayer']) {
-                        this.selectLayer.apply(this, window.localStorage['arguments.SelectLayer'].split(','));
-                    } else {
-                        this.selectLayer('osm', 'mapnik');
-                    }*/
                     this.selectLayer('osm', 'mapnik');
-
                 }, this);
+
+                renderer(
+                    [
+                        {module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map}, ctx: this, callback: function (vm) {
+                            this.navSlider = vm;
+                        }.bind(this)}
+                    ],
+                    {
+                        parent: this,
+                        level: this.level + 1
+                    }
+                );
 
             }.bind(this));
 

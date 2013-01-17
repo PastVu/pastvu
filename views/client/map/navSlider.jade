@@ -1,0 +1,17 @@
+.mapNavigator(data-bind="with: repository[M!M]")
+	.panel
+		.mup.fringe2.butt(data-bind="event: {'click': function () { pan('up') }}")
+		.mright.fringe2.butt(data-bind="event: {'click': function () { pan('right') }}")
+		.mdown.fringe2.butt(data-bind="event: {'click': function () { pan('down') }}")
+		.mleft.fringe2.butt(data-bind="event: {'click': function () { pan('left') }}")
+		.mhome.fringe2.butt(data-bind="click: toHome")
+		.zoomin.fringe2.butt.inout(data-bind="event: {'click': function () { changeZoom(1) }}")
+		.zoomout.fringe2.butt.inout(data-bind="event: {'click': function () { changeZoom(-1) }}")
+		.stick.fringe2
+		.sliderArea(data-bind="event: {'mousewheel': onWheel, 'DOMMouseScroll': onWheel}")
+			//ko foreach: dashes
+			.dash(data-bind="style: {height: $parent.step + 'px'}, attr: {'data-zoom': $data}")
+			// /ko
+			.slider.fringe2(data-bind="text: sliderOnZoom(), style: {bottom: (step * sliderOnZoom() - offset) + 'px'}")
+	.pinArea
+		.pin.fringe2

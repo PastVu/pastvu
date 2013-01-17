@@ -13,7 +13,7 @@
 				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
-			.row-fluid.photoMap
+			.row-fluid.photoMap.mContainer
 			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length > 0 ? '' : 'none'}")
 				.lineBehind
 					span(data-bind="html: 'Snippet <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'gallery</a> of user'")
