@@ -36,16 +36,16 @@ define([
             }, this);
 
             this.map.whenReady(function () {
+                this.show();
             }, this);
 
-            this.show();
         },
         show: function () {
             this.$container.fadeIn(400, function () {
                 this.$sliderArea = this.$dom.find('.sliderArea');
                 this.$sliderArea
                     .on('mousewheel', this.onWheel.bind(this))
-                    .on('DOMMouseScroll', this.onWheel.bind(this))
+                    .on('DOMMouseScroll', this.onWheel.bind(this)) // Для FF
                     .on('click', '.dash', this.dashClick.bind(this))
                     .on(ET.mdown, this.SnatchBind);
 
