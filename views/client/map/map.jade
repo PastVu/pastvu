@@ -1,18 +1,6 @@
-.mapEdit(data-bind="with: repository[M!M]")
+.mapContainer(data-bind="with: repository[M!M]")
 	.map(data-bind="")
-	#nav_panel
-		#mup.fringe2.butt
-		#mright.fringe2.butt
-		#mdown.fringe2.butt
-		#mleft.fringe2.butt
-		#mhome.fringe2.butt
-		#nav_pin_sub
-		#nav_pin.fringe2.butt
-		#zoomin.fringe2.butt.inout
-		#zoomout.fringe2.butt.inout
-		#nav_stick.fringe2
-		#nav_slider_area
-
+	.mapNavigation.mContainer
 	.layersPanel.fringe2(data-bind="css: {open: layersOpen()}")
 		.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
 		.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")

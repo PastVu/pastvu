@@ -73,8 +73,8 @@ require([
 
                     renderer(
                         [
-                            {module: 'm/top', container: '#top_container'},
-                            {module: 'm/map/mapBig', container: '#mapBig'}
+                            {module: 'm/top', container: '#topContainer'},
+                            {module: 'm/map/map', container: '#mapContainer'}
                         ],
                         {
                             parent: globalVM,

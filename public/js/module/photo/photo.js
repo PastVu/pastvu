@@ -79,7 +79,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userRibbonRight = [];
             this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-            this.mapEditVM = null;
+            this.mapVM = null;
 
             this.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
@@ -171,13 +171,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
             this.childs = [
                 {
-                    module: 'm/map/mapEdit',
+                    module: 'm/map/map',
                     container: '.photoMap',
                     options: {editMode: this.edit()},
                     ctx: this,
                     callback: function (vm) {
                         this.childModules[vm.id] = vm;
-                        this.mapEditVM = vm;
+                        this.mapVM = vm;
                         //this.mapEditPosition();
                         this.exe(false);
                     }.bind(this)
@@ -270,7 +270,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
         },
 
         mapEditPosition: function () {
-            this.mapEditVM.setGeo(this.p.geo());
+            this.mapVM.setGeo(this.p.geo());
         },
 
         editSave: function (data, event) {
