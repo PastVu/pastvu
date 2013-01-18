@@ -6,7 +6,7 @@ define([
     'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
     'm/User', 'm/storage',
     'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/navSlider', 'Locations',
-    'text!tpl/map/mapBig.jade', 'css!style/map/mapBig'
+    'text!tpl/map/map.jade', 'css!style/map/mapEdit'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, NavigationSlider, Locations, jade) {
     'use strict';
     var $window = $(window);
@@ -14,13 +14,17 @@ define([
     return Cliche.extend({
         jade: jade,
         create: function () {
+            this.destroy = _.wrap(this.destroy, this.localDestroy);
+
             this.auth = globalVM.repository['m/auth'];
             this.map = null;
-            this.mapDefCenter = null;
+            this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
             this.layers = ko.observableArray();
             this.layersOpen = ko.observable(false);
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
+
+            this.marker = L.marker([0, 0], {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
 
             if (P.settings.USE_OSM_API()) {
                 this.layers.push({
@@ -131,10 +135,7 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
 
-                this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
-                this.map = new L.neoMap('map', {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
-
-                //this.navSlider = new NavigationSlider(this.$dom.find('#nav_slider_area')[0], this.map);
+                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
 
                 Locations.subscribe(function (val) {
                     this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -147,7 +148,17 @@ define([
                 }.bind(this));
 
                 this.map.whenReady(function () {
-                    this.selectLayer('osm', 'mapnik');
+                    var _this = this;
+                    this.selectLayer('osm', 'osmosnimki');
+                    this.map.on('click', function (e) {
+                        _this.marker.setLatLng(e.latlng);
+                    });
+                    this.marker
+                        .on('dragend', function (e) {
+                            console.log(_.pick(this.getLatLng(), 'lng', 'lat'));
+                        })
+                        .addTo(this.map);
+
                 }, this);
 
                 renderer(
@@ -170,6 +181,25 @@ define([
             this.$container.css('display', '');
             this.showing = false;
         },
+        localDestroy: function (destroy) {
+            this.hide();
+            this.marker = null;
+            this.map = null;
+            if (this.navSlider && this.navSlider.destroy) {
+                this.navSlider.destroy();
+            }
+            destroy.call(this);
+        },
+
+        setGeo: function (geo) {
+            this.marker.setLatLng(geo.reverse());
+            if (geo[0] || geo[1]) {
+                this.map.panTo(geo);
+            }
+        },
+        getGeo: function () {
+            return this.marker.getLatLng();
+        },
         setMapDefCenter: function (forceMoveEvent) {
             this.map.setView(this.mapDefCenter, Locations.current.z, false);
         },
@@ -182,12 +212,18 @@ define([
                 system,
                 type;
 
-            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) { return; }
+            if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) {
+                return;
+            }
 
-            system = _.find(layers, function (item) { return item.id === sys_id; });
+            system = _.find(layers, function (item) {
+                return item.id === sys_id;
+            });
 
             if (system) {
-                type = _.find(system.types(), function (item) { return item.id === type_id; });
+                type = _.find(system.types(), function (item) {
+                    return item.id === type_id;
+                });
 
                 if (type) {
                     if (layerActive.sys && layerActive.type) {
