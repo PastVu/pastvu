@@ -3,19 +3,24 @@
 @import "../bootstrap/mixins.less";
 @import "../leaflet.less";
 
-
 .mapNavigator {
 	position: absolute;
 	width: 71px;
-	height: 136px;
 	box-sizing: content-box;
+	background-color: #f90;
+	z-index: @zindexPopover;
 	.user-select(none);
+
+
+	.stateWrap {
+		position: relative;
+	}
 
 	.butt {
 		position: absolute;
-		cursor: pointer;
 		height: 26px;
 		width: 27px;
+		cursor: pointer;
 		.transition(all 0.25s ease-out);
 
 		&::after {
@@ -45,7 +50,8 @@
 		}
 	}
 
-	.mup{
+	.mup {
+		display: none;
 		height: 13px;
 		left: 20px;
 		top: 19px;
@@ -57,7 +63,8 @@
 			background-position: -289px -96px;
 		}
 	}
-	.mright{
+	.mright {
+		display: none;
 		height: 26px;
 		left: 34px;
 		top: 20px;
@@ -69,7 +76,8 @@
 			background-position: -264px -96px;
 		}
 	}
-	.mdown{
+	.mdown {
+		display: none;
 		height: 13px;
 		left: 20px;
 		top: 33px;
@@ -81,7 +89,8 @@
 			background-position: -312px -96px;
 		}
 	}
-	.mleft{
+	.mleft {
+		display: none;
 		height: 26px;
 		left: 20px;
 		top: 20px;
@@ -93,7 +102,7 @@
 			background-position: -240px -96px;
 		}
 	}
-	.mhome{
+	.mhome {
 		left: 20px;
 		top: 38px;
 		height: 26px;
@@ -121,6 +130,7 @@
 
 	.stick {
 		position: absolute;
+		display: none;
 		left: 31px;
 		top: 99px;
 		bottom: 29px;
@@ -146,6 +156,7 @@
 
 	.sliderArea {
 		position: absolute;
+		display: none;
 		width: 100%;
 		left: 0;
 		top: 103px;
@@ -155,24 +166,12 @@
 		opacity: 0;
 		.transition(opacity 0.25s ease-out 0.3s);
 
-		> div {
+		.dash, .slider {
 			cursor: pointer;
 		}
 
-		&.sliding {
-			cursor: url(/img/map/closehand.gif), pointer;
-
-			> div {
-				cursor: url(/img/map/closehand.gif), pointer;
-			}
-
-			> .slider {
-				.transition(none);
-			}
-		}
-
-		> .dash {
-			position:relative;
+		.dash {
+			position: relative;
 			background-image: url(/img/map/ZoomDash.png);
 			background-position: 50% 50%;
 			background-repeat: no-repeat;
@@ -184,7 +183,7 @@
 			}
 		}
 
-		> .slider {
+		.slider {
 			position: absolute;
 			bottom: 2px;
 			left: 20px;
@@ -201,21 +200,38 @@
 				color: @white;
 			}
 		}
+
+		&.sliding {
+			cursor: url(/img/map/closehand.gif), pointer;
+
+			.dash, .slider {
+				cursor: url(/img/map/closehand.gif), pointer;
+			}
+
+			.slider {
+				.transition(none);
+			}
+		}
 	}
 
 	.panel {
 		position: relative;
 		height: 136px;
+		width: 100%;
 		z-index: 2;
+		background: #f00;
 		.transition(height 0.25s ease-out);
 	}
 
 	.pinArea {
 		position: relative;
-		top: -29px;
-		opacity: 0;
+		display: none;
+		margin-top: -29px;
+		opacity: 1;
 		overflow: hidden;
-		.transition(~"top 0.25s ease-out, opacity 0.25s ease-out");
+		z-index: 1;
+		background: #fff;
+		.transition(~"margin-top 0.25s ease-out, opacity 0.25s ease-out");
 
 		.pin {
 			position: relative;
@@ -228,57 +244,63 @@
 			background-image: url(/img/map/pin.png);
 			background-position: 50% 3px;
 			background-repeat: no-repeat;
-			z-index: 1;
 		}
 	}
 
-
-	&:hover, &.pinned {
-		.panel {
-			height: 310px;
+	.stateWrap.canOpen {
+		.sliderArea, .pinArea, .stick, .mup, .mright, .mdown, .mleft {
+			display: block;
 		}
 
-		.butt {
-			.transition(all 0.25s ease-out 0.3s);
-		}
+		&:hover, &.pinned {
+			zoom: 1;
 
-		.mup{
-			top: 1px;
-			opacity: 1;
+			.panel {
+				height: 310px;
+			}
+
+			.butt {
+				.transition(all 0.25s ease-out 0.3s);
+			}
+
+			.mup {
+				top: 1px;
+				opacity: 1;
+			}
+			.mright {
+				left: 53px;
+				opacity: 1;
+			}
+			.mdown {
+				top: 52px;
+				opacity: 1;
+			}
+			.mleft {
+				left: 1px;
+				opacity: 1;
+			}
+			.mhome {
+				top: 20px;
+				.transition(top 0.25s ease-out);
+			}
+			.sliderArea {
+				opacity: 1;
+			}
 		}
-		.mright{
-			left: 53px;
-			opacity: 1;
+		&:hover {
+			.pinArea {
+				margin-top: 0;
+				opacity: 1;
+				.transition(~"margin-top 0.25s ease-out 0.3s, opacity 0.25s ease-out 0.3s");
+			}
 		}
-		.mdown{
-			top: 52px;
-			opacity: 1;
+		&.pinned:hover .pinArea{
+			.transition(~"margin-top 0.25s ease-out, opacity 0.25s ease-out");
 		}
-		.mleft{
-			left: 1px;
-			opacity: 1;
-		}
-		.mhome{
-			top: 20px;
-			.transition(top 0.25s ease-out);
-		}
-		.sliderArea {
-			opacity: 1;
-		}
-	}
-	&.pinned:hover {
-		.transition(~"top 0.25s ease-out, opacity 0.25s ease-out");
-	}
-	&:hover {
-		.pinArea {
-			top: 0;
-			opacity: 1;
-			.transition(~"top 0.25s ease-out 0.25s, opacity 0.25s ease-out 0.25s");
-		}
-	}
-	&.pinned {
-		.pinArea .pin {
-			background-color: @MainGreenColor;
+		&.pinned {
+			.pinArea .pin {
+				background-color: @MainGreenColor;
+			}
 		}
 	}
 }

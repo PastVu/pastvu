@@ -11,7 +11,9 @@ define([
         create: function () {
             this.map = this.options.map;
             this.dashes = ko.observableArray();
-            this.pinned = ko.observable(false);
+
+            this.canOpen = ko.observable(true); //Возможно ли вообще раскрывать контрол навигации
+            this.pinned = ko.observable(this.canOpen() && false); //Закреплен в открытом состоянии
             this.sliding = ko.observable(false);
 
             this.DOMh = 12;
@@ -25,7 +27,6 @@ define([
             this.setZoomBind = this.setZoom.bind(this);
             this.SnatchBind = this.Snatch.bind(this);
             this.SnatchOffBind = this.SnatchOff.bind(this);
-            //this.SnatchOffByWindowOutBind = this.SnatchOffByWindowOut.bind(this);
             this.dashOverBind = this.dashOver.bind(this);
 
             ko.applyBindings(globalVM, this.$dom[0]);
@@ -43,6 +44,8 @@ define([
             this.$container.fadeIn(400, function () {
                 this.$sliderArea = this.$dom.find('.sliderArea');
                 this.$sliderArea
+                    .on('mousewheel', this.onWheel.bind(this))
+                    .on('DOMMouseScroll', this.onWheel.bind(this))
                     .on('click', '.dash', this.dashClick.bind(this))
                     .on(ET.mdown, this.SnatchBind);
 
@@ -54,7 +57,6 @@ define([
             this.$container.css('display', '');
             this.showing = false;
         },
-
 
         recalcZooms: function () {
             this.numZooms = this.map.getMaxZoom() - this.map.getMinZoom() + 1;
@@ -71,10 +73,10 @@ define([
             var home = Locations.types.home || Locations.types.gpsip || Locations.types._def_;
             this.map.setView(new L.LatLng(home.lat, home.lng), Locations.current.z, false);
         },
-        dashClick: function (e) {
-            var zoom = Number($(e.target).attr('data-zoom'));
-            if (zoom && !isNaN(zoom)) {
-                window.clearTimeout(this.zoomChangeTimeout);
+        dashClick: function ($e) {
+            var zoom = Number($($e.target).attr('data-zoom'));
+            if (!isNaN(zoom)) {
+                this.cancelZoomChangeTimeout();
                 this.setZoom(zoom);
             }
         },
@@ -84,21 +86,25 @@ define([
         changeZoom: function (diff) {
             this.map.zoomBy(diff);
         },
-        onWheel: function (vm, e) {
-            var dir, newZoom;
-            dir = e.type === 'DOMMouseScroll' ? -1 * e.detail : e.wheelDelta;
-            dir = dir > 0 ? 'up' : 'down';
+        cancelZoomChangeTimeout: function () {
+            window.clearTimeout(this.zoomChangeTimeout);
+            this.zoomChangeTimeout = null;
+        },
+        onWheel: function ($e) {
+            var e = $e.originalEvent,
+                dir = Number((e.type === 'DOMMouseScroll' ? -1 * e.detail : e.wheelDelta) || 0),
+                newZoom = Math.max(0, Math.min(this.sliderOnZoom() + (dir ? (dir > 0 ? 1 : -1) : 0), this.map.getMaxZoom()));
 
-            newZoom = Math.max(0, Math.min(this.sliderOnZoom() + (dir === 'up' ? 1 : -1), 18));
-            if (newZoom && !isNaN(newZoom) && newZoom !== this.sliderOnZoom()) {
-                window.clearTimeout(this.zoomChangeTimeout);
+            if (newZoom !== this.sliderOnZoom()) {
+                this.cancelZoomChangeTimeout();
                 this.sliderOnZoom(newZoom);
-                this.zoomChangeTimeout = _.delay(this.setZoomBind, 750, newZoom);
+                this.zoomChangeTimeout = _.delay(this.setZoomBind, 600, newZoom);
             }
 
             return false;
         },
         Snatch: function ($e) {
+            this.sliding(true);
             this.$sliderArea
                 .on('mouseenter', '.dash', this.dashOverBind);
             $(document)
@@ -116,59 +122,27 @@ define([
             $(document)
                 .off(ET.mup, this.SnatchOffBind)
                 .off('mouseleave', this.SnatchOffBind);
-        },
-        /*SnatchOffByWindowOut: function (evt) {
-         var pos = Utils.mousePageXY(evt);
 
-         if (pos.x <= 0 || pos.x >= Utils.getClientWidth() ||
-         pos.y <= 0 || pos.y >= Utils.getClientHeight()) {
-         this.SnatchOff(evt);
-         }
-         pos = null;
-         }*/
-        dashOver: function ($e) {
-            var newZoom = Number($($e.target).attr('data-zoom'));
-            if (newZoom && !isNaN(newZoom)) {
-                window.clearTimeout(this.zoomChangeTimeout);
-                this.sliderOnZoom(newZoom);
-                this.zoomChangeTimeout = _.delay(this.setZoomBind, 750, newZoom);
+            //Если слайдер действительно двигался и всё еще ожидается смена зума, отменяем ожидание и меняем зум немедленно
+            if (this.reallySliding && this.zoomChangeTimeout) {
+                this.cancelZoomChangeTimeout();
+                this.setZoom(this.sliderOnZoom());
             }
+            this.reallySliding = null;
+        },
+        dashOver: function ($e) {
+            this.reallySliding = true; // Флаг, что слайдер действительно подвинулся во время зажатия
+            var newZoom = Number($($e.target).attr('data-zoom')) || 0;
+            if (!isNaN(newZoom)) {
+                this.cancelZoomChangeTimeout();
+                this.sliderOnZoom(newZoom);
+                this.zoomChangeTimeout = _.delay(this.setZoomBind, 600, newZoom);
+            }
+            newZoom = null;
         },
 
         togglePin: function () {
             this.pinned(!this.pinned());
         }
     });
-
-    /*function NavigationSlider(slider, map) {
-     this.map = map;
-     this.DOMPanel = slider;
-     this.DOMSlider = $('<div/>', {'id': 'navSlider', 'class': 'fringe2'})[0];
-     this.DOMPanel.appendChild(this.DOMSlider);
-
-     Utils.Event.add(this.DOMPanel, 'mousewheel', this.OnWheel.neoBind(this), false);
-     Utils.Event.add(this.DOMPanel, 'DOMMouseScroll', this.OnWheel.neoBind(this), false);
-
-     this.DomDashsArray = [];
-
-     this.DOMh = 12;
-     this.offset = 0;
-     this.usefulH = 171;
-     this.sliderOnZoom = 0;
-
-     this.SnatchBind = this.Snatch.neoBind(this);
-     this.SnatchOffBind = this.SnatchOff.neoBind(this);
-     this.SnatchOffByWindowOutBind = this.SnatchOffByWindowOut.neoBind(this);
-     this.dashOverBind = this.dashOver.neoBind(this);
-
-     this.zoomChangeTimeout = null;
-
-     Utils.Event.add(this.DOMPanel, ET.mdown, this.SnatchBind, false);
-
-     Utils.Event.add(document.querySelector('#nav_pin.fringe2.butt'), 'click', this.togglePin.bind(this), false);
-     //if(Browser.support.touch) Utils.Event.add(this.DOMPanel, 'touchstart', this.SnatchBind, false);
-
-     }
-
-     return NavigationSlider;*/
 });
