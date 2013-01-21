@@ -14,23 +14,29 @@ define([
     return Cliche.extend({
         jade: jade,
         options: {
-            canOpen: true
+            canOpen: true,
+            editing: false,
+            deferredWhenReady: null // Deffered wich will be resolved when map ready
         },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
-            this.auth = globalVM.repository['m/auth'];
-            this.map = null;
-
+            // Modes
             this.embedded = ko.observable(this.options.embedded);
+            this.editing = ko.observable(this.options.editing);
 
+            // Map objects
+            this.map = null;
             this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
             this.layers = ko.observableArray();
             this.layersOpen = ko.observable(false);
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
 
-            this.marker = L.marker([0, 0], {draggable: true, icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
+            // Subscribers
+            this.editing.subscribe(this.editHandler, this);
+
+            this.auth = globalVM.repository['m/auth'];
 
             if (P.settings.USE_OSM_API()) {
                 this.layers.push({
@@ -154,23 +160,17 @@ define([
                 }.bind(this));
 
                 this.map.whenReady(function () {
-                    var _this = this;
                     this.selectLayer('osm', 'osmosnimki');
-                    this.map.on('click', function (e) {
-                        _this.marker.setLatLng(e.latlng);
-                    });
-                    this.marker
-                        .on('dragend', function (e) {
-                            console.log(_.pick(this.getLatLng(), 'lng', 'lat'));
-                        })
-                        .addTo(this.map);
-
+                    if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
+                        this.options.deferredWhenReady.resolve();
+                    }
                 }, this);
 
                 renderer(
                     [
                         {module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, canOpen: !this.options.embedded}, ctx: this, callback: function (vm) {
-                            this.navSlider = vm;
+                            this.childModules[vm.id] = vm;
+                            this.navSliderVM = vm;
                         }.bind(this)}
                     ],
                     {
@@ -189,23 +189,56 @@ define([
         },
         localDestroy: function (destroy) {
             this.hide();
-            this.marker = null;
+            this.editMarkerDestroy();
             this.map = null;
-            if (this.navSlider && this.navSlider.destroy) {
-                this.navSlider.destroy();
-            }
             destroy.call(this);
         },
 
-        setGeo: function (geo) {
-            this.marker.setLatLng(geo.reverse());
+
+        editHandler: function (val) {
+            if (val) {
+                this.editMarkerCreate();
+            } else {
+                this.editMarkerDestroy();
+            }
+        },
+        editMarkerOn: function (geo) {
+            this.editing(true);
+            this.markerEdit.setLatLng(geo).setOpacity(1);
             if (geo[0] || geo[1]) {
                 this.map.panTo(geo);
             }
+            return this;
         },
-        getGeo: function () {
-            return this.marker.getLatLng();
+        editMarkerOff: function (geo) {
+            this.editing(false);
+            return this;
         },
+        editMarkerCreate: function () {
+            if (!this.markerEdit) {
+                this.markerEdit = L.marker([0, 0], {opacity: 0, draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
+                this.layerEdit = L.layerGroup([this.markerEdit]).addTo(this.map);
+                this.markerEdit.on('dragend', function (e) {
+                    console.log(_.pick(this.getLatLng(), 'lng', 'lat'));
+                });
+                this.map.on('click', function (e) {
+                    this.markerEdit.setLatLng(e.latlng);
+                }, this);
+            }
+        },
+        editMarkerDestroy: function () {
+            if (this.markerEdit) {
+                this.markerEdit.off('dragend');
+                this.map.removeLayer(this.layerEdit);
+                delete this.markerEdit;
+                delete this.layerEdit;
+                this.map.off('click');
+            }
+        },
+        editGetGeo: function () {
+            return this.markerEdit.getLatLng();
+        },
+
         setMapDefCenter: function (forceMoveEvent) {
             this.map.setView(this.mapDefCenter, Locations.current.z, false);
         },

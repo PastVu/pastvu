@@ -104,10 +104,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 return this.IAdmin();
             }, this);
 
-            // Если фото новое и есть права, открываем его на редактирование
             this.edit = ko.observable(false);
-
             this.edit.subscribe(this.editHandler, this);
+
             P.settings.LoggedIn.subscribe(this.loginHandler, this);
 
             this.msg = ko.observable('');
@@ -169,18 +168,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userThumbN = ko.observable(3);
             P.window.square.subscribe(this.sizesCalc, this);
 
+            var mapDeffered = new $.Deferred();
+            this.mapReadyPromise = mapDeffered.promise();
             this.childs = [
                 {
                     module: 'm/map/map',
                     container: '.photoMap',
-                    options: {editMode: this.edit(), embedded: true},
+                    options: {editing: this.edit(), embedded: true, deferredWhenReady: mapDeffered},
                     ctx: this,
                     callback: function (vm) {
                         this.childModules[vm.id] = vm;
                         this.mapVM = vm;
-                        //this.mapEditPosition();
                         this.exe(false);
-                    }.bind(this)
+                    }
                 }
             ];
 
@@ -204,34 +204,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.$container.css('display', '');
             this.showing = false;
             globalVM.pb.publish('/top/message', ['', 'muted']);
-        },
-
-        routeHandler: function () {
-            var cid = globalVM.router.params().photo,
-                appHistory = globalVM.router.getFlattenStack('/p/', ''),
-                offset = globalVM.router.offset;
-
-            storage.photo(cid, function (data) {
-                if (data) {
-                    this.originData = data.origin;
-                    this.p = Photo.vm(data.origin, this.p);
-
-                    // Если фото новое и есть права, открываем его на редактирование
-                    this.edit(this.p.fresh() && this.IOwner());
-
-                    this.show();
-                    this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-                }
-            }, this, this.p);
-        },
-        loginHandler: function (v) {
-            // После логина/логаута перезапрашиваем ленту фотографий пользователя
-            this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-        },
-        editHandler: function (v) {
-            if (v) {
-            } else {
-            }
         },
 
         sizesCalc: function (v) {
@@ -269,8 +241,40 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             windowW = rightPanelW = thumbW = thumbH = null;
         },
 
-        mapEditPosition: function () {
-            this.mapVM.setGeo(this.p.geo());
+        routeHandler: function () {
+            var cid = globalVM.router.params().photo,
+                appHistory = globalVM.router.getFlattenStack('/p/', ''),
+                offset = globalVM.router.offset;
+
+            storage.photo(cid, function (data) {
+                if (data) {
+                    this.originData = data.origin;
+                    this.p = Photo.vm(data.origin, this.p);
+
+                    // Если фото новое и есть права, открываем его на редактирование
+                    this.edit(this.p.fresh() && this.IOwner());
+
+                    this.show();
+                    this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+                }
+            }, this, this.p);
+        },
+        loginHandler: function (v) {
+            // После логина/логаута перезапрашиваем ленту фотографий пользователя
+            this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+        },
+        editHandler: function (v) {
+            if (v) {
+                $.when(this.mapReadyPromise).done(this.mapEditOn.bind(this));
+            } else {
+                $.when(this.mapReadyPromise).done(this.mapEditOff.bind(this));
+            }
+        },
+        mapEditOn: function () {
+            this.mapVM.editMarkerOn(this.p.geo());
+        },
+        mapEditOff: function () {
+            this.mapVM.editMarkerOff();
         },
 
         editSave: function (data, event) {
