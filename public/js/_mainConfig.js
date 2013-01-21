@@ -29,7 +29,7 @@ requirejs.config({
 
         'm': 'module',
 
-        'jquery': 'lib/jquery/jquery-1.8.3',
+        'jquery': 'lib/jquery/jquery-1.9.0',
         'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
         'moment': 'lib/moment',
@@ -46,7 +46,7 @@ requirejs.config({
         'backbone': 'lib/backbone/backbone',
         'backbone.queryparams': 'lib/backbone/queryparams',
 
-        'knockout': 'lib/knockout/knockout-2.2.0',
+        'knockout': 'lib/knockout/knockout-2.2.1',
         'knockout.extends': 'lib/knockout/extends',
         'knockout.mapping': 'lib/knockout/knockout.mapping',
         'knockout.postbox': 'lib/knockout/knockout-postbox.min',

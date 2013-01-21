@@ -168,7 +168,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
         onFileAdd: function (e, data) {
             var options = this.fileOptions,
-                optionsPlugin = this.$fileupload.data('fileupload').options,
+                optionsPlugin = (this.$fileupload.data('blueimp-fileupload') || this.$fileupload.data('fileupload') || {}).options,
                 files = data.files;
 
             this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
