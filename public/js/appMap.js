@@ -79,7 +79,7 @@ require([
                         {
                             parent: globalVM,
                             level: 0,
-                            callback: function (top, mapBig, news) {
+                            callback: function (top, map, news) {
                             }
                         }
                     );

@@ -53,7 +53,7 @@ var fs = require('fs'),
             },
             {
                 name: "appMap",
-                include: ['m/auth', 'm/top', 'm/map/mapBig']
+                include: ['m/auth', 'm/top', 'm/map/map']
             },
             {
                 name: "appUser",
