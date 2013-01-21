@@ -173,7 +173,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 {
                     module: 'm/map/map',
                     container: '.photoMap',
-                    options: {editMode: this.edit()},
+                    options: {editMode: this.edit(), embedded: true},
                     ctx: this,
                     callback: function (vm) {
                         this.childModules[vm.id] = vm;

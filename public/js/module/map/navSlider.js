@@ -8,11 +8,14 @@ define([
 
     return Cliche.extend({
         jade: jade,
+        options: {
+            canOpen: true
+        },
         create: function () {
             this.map = this.options.map;
             this.dashes = ko.observableArray();
 
-            this.canOpen = ko.observable(true); //Возможно ли вообще раскрывать контрол навигации
+            this.canOpen = ko.observable(this.options.canOpen); //Возможно ли вообще раскрывать контрол навигации
             this.pinned = ko.observable(this.canOpen() && false); //Закреплен в открытом состоянии
             this.sliding = ko.observable(false);
 

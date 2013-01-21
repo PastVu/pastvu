@@ -13,11 +13,17 @@ define([
 
     return Cliche.extend({
         jade: jade,
+        options: {
+            canOpen: true
+        },
         create: function () {
             this.destroy = _.wrap(this.destroy, this.localDestroy);
 
             this.auth = globalVM.repository['m/auth'];
             this.map = null;
+
+            this.embedded = ko.observable(this.options.embedded);
+
             this.mapDefCenter = new L.LatLng(Locations.current.lat, Locations.current.lng);
             this.layers = ko.observableArray();
             this.layersOpen = ko.observable(false);
@@ -163,7 +169,7 @@ define([
 
                 renderer(
                     [
-                        {module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map}, ctx: this, callback: function (vm) {
+                        {module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, canOpen: !this.options.embedded}, ctx: this, callback: function (vm) {
                             this.navSlider = vm;
                         }.bind(this)}
                     ],
