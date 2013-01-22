@@ -25,6 +25,8 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             this.childModules = {};
             this.showing = false;
 
+            this.subscriptions = {}; //Подписки ko
+
             repository[this.id] = this;
 
             this.$container = $(container).append(this.jade.replace(/M!M/g, "'" + this.id + "'"));
@@ -60,6 +62,14 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
             _.forOwn(this.childModules, function (item, key, object) {
                 item.destroy();
             });
+            if (this.subscriptions) {
+                _.forOwn(this.subscriptions, function (item, key, object) {
+                    if (!Utils.isType('function', item.dispose)) {
+                        item.dispose();
+                    }
+                }, this);
+                delete this.subscriptions;
+            }
             ko.removeNode(this.$dom[0]);
             this.$container.empty();
 
