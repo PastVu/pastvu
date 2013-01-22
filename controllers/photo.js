@@ -485,6 +485,9 @@ module.exports.loadController = function (app, db, io) {
                         }
                         savePhotoResult({message: 'Photo saved successfully'});
                     });
+                } else {
+                    savePhotoResult({message: 'Nothing to save', error: true});
+                    return;
                 }
             });
         });

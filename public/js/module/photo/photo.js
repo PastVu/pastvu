@@ -249,7 +249,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             storage.photo(cid, function (data) {
                 if (data) {
                     this.originData = data.origin;
-                    this.p = Photo.vm(data.origin, this.p);
+                    this.p = Photo.vm(data.origin, this.p, true);
 
                     // Если фото новое и есть права, открываем его на редактирование
                     this.edit(this.p.fresh() && this.IOwner());
@@ -283,6 +283,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.edit(true);
                 } else {
                     this.exe(true);
+                    this.p.geo(this.mapVM.editGetGeo());
                     this.save(function (data) {
                         if (!data.error) {
                             this.edit(false);
@@ -416,12 +417,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
             for (key in target) {
                 if (target.hasOwnProperty(key)) {
-                    if (this.originData[key] && (target[key] === this.originData[key])) {
+                    if (!_.isUndefined(this.originData[key]) && _.isEqual(target[key], this.originData[key])) {
+                        delete target[key];
+                    } else if (_.isUndefined(this.originData[key]) && _.isEqual(target[key], Photo.def.full[key])) {
+                        delete target[key];
+                    }
+                    /*if (this.originData[key] && (target[key] === this.originData[key])) {
                         delete target[key];
                     } else if (!this.originData[key] && (target[key] === Photo.def.full[key])) {
                         delete target[key];
-                    }
+                    }*/
                 }
+            }
+
+            if (target.geo) {
+                target.geo.reverse();
             }
             if (Utils.getObjectPropertyLength(target) > 0) {
                 target.cid = this.p.cid();
@@ -461,7 +471,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 left.push(existItem);
                             } else {
-                                Photo.factory(item, 'full', 'mini');
+                                Photo.factory(item, 'base', 'mini');
                                 left.push(item);
                             }
                         }, this);
@@ -473,7 +483,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                             if (existItem) {
                                 right.push(existItem);
                             } else {
-                                Photo.factory(item, 'full', 'mini');
+                                Photo.factory(item, 'base', 'mini');
                                 right.push(item);
                             }
                         }, this);

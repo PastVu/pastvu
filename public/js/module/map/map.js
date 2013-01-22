@@ -236,7 +236,8 @@ define([
             }
         },
         editGetGeo: function () {
-            return this.markerEdit.getLatLng();
+            var latlng = this.markerEdit.getLatLng();
+            return [latlng.lat, latlng.lng];
         },
 
         setMapDefCenter: function (forceMoveEvent) {
