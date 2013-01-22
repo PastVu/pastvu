@@ -433,11 +433,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     } else if (_.isUndefined(this.originData[key]) && _.isEqual(target[key], Photo.def.full[key])) {
                         delete target[key];
                     }
-                    /*if (this.originData[key] && (target[key] === this.originData[key])) {
-                        delete target[key];
-                    } else if (!this.originData[key] && (target[key] === Photo.def.full[key])) {
-                        delete target[key];
-                    }*/
                 }
             }
 
@@ -448,6 +443,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 target.cid = this.p.cid();
                 socket.once('savePhotoResult', function (data) {
                     if (data && !data.error) {
+                        if (target.geo) {
+                            target.geo.reverse();
+                        }
                         _.assign(this.originData, target);
                     }
                     if (cb) {
