@@ -79,8 +79,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.userRibbonRight = [];
             this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-            this.mapVM = null;
-
             this.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
             }, this);
@@ -105,9 +103,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }, this);
 
             this.edit = ko.observable(false);
-            this.edit.subscribe(this.editHandler, this);
-
-            P.settings.LoggedIn.subscribe(this.loginHandler, this);
 
             this.msg = ko.observable('');
             this.msgCss = ko.observable('');
@@ -134,40 +129,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 );
             }, this);
 
-            this.p.year.subscribe(function (val) {
-                var v = parseInt(val, 10);
-                if (!v || isNaN(v)) {
-                    v = Photo.def.full.year;
-                }
-                if (String(val) !== String(v)) {
-                    this.p.year(v);
-                    return;
-                }
-                if (v > parseInt(this.p.year2(), 10)) {
-                    this.p.year2(v);
-                }
-            }, this);
-            this.p.year2.subscribe(function (val) {
-                var v = parseInt(val, 10);
-                if (!v || isNaN(v)) {
-                    v = Photo.def.full.year;
-                }
-                if (String(val) !== String(v)) {
-                    this.p.year2(v);
-                    return;
-                }
-                if (v < this.p.year()) {
-                    this.p.year2(this.p.year());
-                    return;
-                }
-            }, this);
-
             this.thumbW = ko.observable('0px');
             this.thumbH = ko.observable('0px');
             this.thumbM = ko.observable('1px');
             this.userThumbN = ko.observable(3);
-            P.window.square.subscribe(this.sizesCalc, this);
 
+            this.mapVM = null;
             var mapDeffered = new $.Deferred();
             this.mapReadyPromise = mapDeffered.promise();
             this.childs = [
@@ -189,8 +156,41 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
             // Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
             this.routeHandlerThrottled = _.throttle(this.routeHandler, 700);
-            this.routeSubscription = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
             this.routeHandlerThrottled();
+
+            // Subscriptions
+            this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
+            this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
+            this.subscriptions.login = P.settings.LoggedIn.subscribe(this.loginHandler, this);
+            this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+            this.subscriptions.year = this.p.year.subscribe(function (val) {
+                var v = parseInt(val, 10);
+                if (!v || isNaN(v)) {
+                    v = Photo.def.full.year;
+                }
+                if (String(val) !== String(v)) {
+                    this.p.year(v);
+                    return;
+                }
+                if (v > parseInt(this.p.year2(), 10)) {
+                    this.p.year2(v);
+                }
+            }, this);
+            this.subscriptions.year2 = this.p.year2.subscribe(function (val) {
+                var v = parseInt(val, 10);
+                if (!v || isNaN(v)) {
+                    v = Photo.def.full.year;
+                }
+                if (String(val) !== String(v)) {
+                    this.p.year2(v);
+                    return;
+                }
+                if (v < this.p.year()) {
+                    this.p.year2(this.p.year());
+                    return;
+                }
+            }, this);
+
         },
         show: function () {
             if (this.showing) {
@@ -251,7 +251,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                     this.originData = data.origin;
                     this.p = Photo.vm(data.origin, this.p, true);
 
-                    // Если фото новое и есть права, открываем его на редактирование
+                    // Вызываем обработчик изменения фото (this.p)
+                    this.changePhotoHandler();
+
+                    // Если фото новое и пользователь - владелец, открываем его на редактирование
                     this.edit(this.p.fresh() && this.IOwner());
 
                     this.show();
@@ -271,10 +274,18 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             }
         },
         mapEditOn: function () {
-            this.mapVM.editMarkerOn(this.p.geo());
+            this.mapVM.editMarkerOn();
         },
         mapEditOff: function () {
             this.mapVM.editMarkerOff();
+        },
+        // Обработчик изменения фото
+        changePhotoHandler: function (cid) {
+            $.when(this.mapReadyPromise).done(this.setMapMarkerGeo.bind(this));
+        },
+        // Установить точку на карту
+        setMapMarkerGeo: function () {
+            this.mapVM.setPointGeo(this.p.geo());
         },
 
         editSave: function (data, event) {
@@ -475,8 +486,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                                 left.push(item);
                             }
                         }, this);
-                        this.userRibbonLeft = left;
                     }
+                    this.userRibbonLeft = left;
                     if (data.right && data.right.length > 0) {
                         data.right.forEach(function (item) {
                             var existItem = _.find(this.userRibbonRight, function (element) { return element.cid === item.cid; });
@@ -487,8 +498,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                                 right.push(item);
                             }
                         }, this);
-                        this.userRibbonRight = right;
                     }
+                    this.userRibbonRight = right;
                 }
                 if (Utils.isType('function', cb)) {
                     cb.call(ctx, data);
