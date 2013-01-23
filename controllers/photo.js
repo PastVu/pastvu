@@ -3,6 +3,7 @@
 var Settings,
     User,
     Photo,
+    Cluster,
     Counter,
     PhotoConverter = require('./photoConverter.js'),
     _ = require('lodash'),
@@ -174,6 +175,7 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
     Photo = db.model('Photo');
+    Cluster = db.model('Cluster');
     Counter = db.model('Counter');
 
     PhotoConverter.loadController(app, db, io);
@@ -477,6 +479,14 @@ module.exports.loadController = function (app, db, io) {
                 }
                 var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
                 if (Object.keys(toSave).length > 0) {
+
+                    console.dir(photo.geo);
+                    console.dir(toSave.geo);
+                    if (toSave.geo && toSave.geo.length === 2 && toSave.geo[0] >= -180 && toSave.geo[0] <= 180 /*Latitude*/ && toSave.geo[1] > -90 && toSave.geo[1] < 90 /*Latitude*/ && !_.isEqual(toSave.geo, photo.geo)) {
+                        console.dir('Geo changed');
+
+                    }
+
                     _.assign(photo, toSave);
                     photo.save(function (err) {
                         if (err) {
