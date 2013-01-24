@@ -30,6 +30,7 @@ requirejs.config({
         'm': 'module',
 
         'jquery': 'lib/jquery/jquery-1.9.0',
+        'jquery-ui': 'lib/jquery/ui',
         'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
         'moment': 'lib/moment',
@@ -52,8 +53,9 @@ requirejs.config({
         'knockout.postbox': 'lib/knockout/knockout-postbox.min',
 
         'leaflet': 'lib/leaflet/leaflet',
+        'libcanvas': 'lib/libcanvas',
 
-        'jquery.ui.widget': 'lib/jquery/ui/jquery.ui.widget',
+        'jquery.ui.widget': 'lib/jquery/ui/widget',
         'jquery.fileupload': 'lib/jquery/plugins/fileupload',
         'load-image': 'lib/jquery/plugins/fileupload/load-image',
         'tmpl': 'lib/jquery/plugins/fileupload/tmpl',

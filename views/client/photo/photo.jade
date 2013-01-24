@@ -32,21 +32,21 @@
 			i.icon-pencil.icon-white
 			span Edit
 		div(style="display:inline-block")
-		//ko if: canBeApprove()
-		button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
-			i.icon-ok.icon-white
-			span Approve
-		// /ko
-		//ko if: canBeDisable()
-		button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-			i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-			span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
-		// /ko
-		//ko if: canBeRemove()
-		button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-			i.icon-remove-circle.icon-white
-			span Remove
-		// /ko
+			//ko if: canBeApprove()
+			button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+				i.icon-ok.icon-white
+				span Approve
+			// /ko
+			//ko if: canBeDisable()
+			button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
+				span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
+			// /ko
+			//ko if: canBeRemove()
+			button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+				i.icon-remove-circle.icon-white
+				span Remove
+			// /ko
 
 	//-ACTIONS EDIT MODE
 	script(id="photoActionsEdit", type="text/html")

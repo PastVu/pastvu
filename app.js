@@ -197,6 +197,7 @@ require(__dirname + '/models/Settings.js').makeModel(db);
 require(__dirname + '/models/Role.js').makeModel(db);
 require(__dirname + '/models/User.js').makeModel(db);
 require(__dirname + '/models/Photo.js').makeModel(db);
+require(__dirname + '/models/Cluster.js').makeModel(db);
 require(__dirname + '/models/_initValues.js').makeModel(db);
 Session = db.model('Session');
 
@@ -206,7 +207,6 @@ require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, db, io);
 require('./controllers/index.js').loadController(app, db, io);
 require('./controllers/photo.js').loadController(app, db, io);
-//require('./controllers/photoConverter.js').loadController(app, db, io);
 require('./controllers/profile.js').loadController(app, db, io);
 require('./controllers/admin.js').loadController(app, db, io);
 require('./controllers/tpl.js').loadController(app);
