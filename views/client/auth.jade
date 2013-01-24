@@ -6,7 +6,7 @@
 			dd
 				span(data-bind="click: function () {mode('reg')}") Registration
 		div.inputwrap.user
-			input(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login")
+			input(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt Password:
 			dd
@@ -30,11 +30,11 @@
 			dd
 				span(data-bind="click: function () {mode('login')}") Authorization
 		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", placeholder="User", name="login")
+			input(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt E-mail:
 		div.inputwrap.envelope
-			input(autocomplete="off", type="email", required="required", placeholder="email", name="email")
+			input(autocomplete="off", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt Password:
 		div.inputwrap.lock
@@ -59,7 +59,7 @@
 			dd
 				span(data-bind="click: function () {mode('login')}") Authorization
 		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login")
+			input(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
 		button.btn-strict(type="submit") Send
 		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
 		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
@@ -71,7 +71,7 @@
 		dl.dl-horizontal
 			dt User name:
 		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", disabled, name="login")
+			input(autocomplete="off", type="text", required="required", disabled, name="login", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt New password:
 		div.inputwrap.lock
@@ -93,7 +93,7 @@
 		dl.dl-horizontal
 			dt Current password:
 		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
+			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt New password:
 		div.inputwrap.lock
