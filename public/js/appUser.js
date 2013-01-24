@@ -43,7 +43,8 @@ require([
                 {route: ":user", handler: "profile"},
                 {route: ":user/settings", handler: "settings"},
                 {route: "photoUpload", handler: "photoUpload"},
-                {route: ":user/photo", handler: "gallery"}
+                {route: ":user/photo", handler: "gallery"},
+                {route: "clusterCalc", handler: "clusterCalc"}
             ],
             handlers: {
                 profile: function (user, params) {
@@ -95,6 +96,26 @@ require([
                             {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
                             {module: 'm/user/menu', container: '#user_menu'},
                             {module: 'm/user/photoUpload', container: '#user_content'}
+                        ],
+                        {
+                            parent: globalVM,
+                            level: 0,
+                            callback: function (top, brief, menu, photoUpload, news) {
+                            }
+                        }
+                    );
+                },
+
+                clusterCalc: function (params) {
+                    console.log('clusterCalc');
+                    this.params({});
+
+                    renderer(
+                        [
+                            {module: 'm/top', container: '#top_container'},
+                            {module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
+                            {module: 'm/user/menu', container: '#user_menu'},
+                            {module: 'm/map/mapClusterCalc', container: '#user_content'}
                         ],
                         {
                             parent: globalVM,
