@@ -28,6 +28,7 @@ define([
             this.layerActiveDesc = ko.observable('');
 
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
+            this.exePercent = ko.observable(0); //Указывает, что сейчас идет обработка запроса на действие к серверу
             this.wCurr = ko.observable(40);
             this.wNew = ko.observable(40);
             this.hCurr = ko.observable(40);
@@ -192,11 +193,6 @@ define([
             destroy.call(this);
         },
 
-        cancel: function () {
-            this.wNew(this.wCurr());
-            this.hNew(this.hCurr());
-            this.$dom.find('.clusterRect').css({width: this.wCurr(), height: this.hCurr()});
-        },
         save: function () {
             var _this = this,
                 $clusterRect = this.$dom.find('.clusterRect'),
@@ -212,15 +208,15 @@ define([
                 zooms = _.range(2, 17), // 0 - 16
                 result = [],
 
-                calcDeffered = new $.Deferred(),
-
                 setZoom = function (z) {
-                    _this.map.setView(centerGeo, z);
+                    if (_this.exe()) {
+                        _this.map.setView(centerGeo, z);
+                    }
                 },
                 calcOnZoom = function (z) {
                     var rectCenter = _this.map.latLngToContainerPoint(_this.map.getCenter()),
-                        rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y  - h / 2)),
-                        rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y  + h / 2));
+                        rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2)),
+                        rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
 
                     return {z: z, w: Math.abs(rectTopLeft.lng - rectBottomRight.lng), h: Math.abs(rectTopLeft.lat - rectBottomRight.lat)};
                 },
@@ -228,29 +224,110 @@ define([
                     var z = _this.map.getZoom();
 
                     result.push(calcOnZoom(z));
+                    this.exePercent(Math.ceil(100 * (zooms.indexOf(z) + 1) / zooms.length)); // Обновляем прогресс-бар подсчета
 
                     if (z === _.last(zooms)) {
                         _this.map.off('moveend', changeZoomRecursive, this);
-                        calcDeffered.resolve(result);
+                        _this.calcDeffered.resolve(result);
+                        delete _this.calcDeffered;
+                        delete _this.setZoomTimeout;
                     } else {
                         $clusterRect.effect('highlight', {color: '#ffffff'}, 500); // Эффект вспышки
-                        _.delay(setZoom, 550, z + 1);
+                        _this.setZoomTimeout = _.delay(setZoom, 550, z + 1);
                     }
                 }, 900, false);
 
+            this.calcDeffered = new $.Deferred();
             // Ставим статус, что идет пересчет
             this.exe(true);
+            this.exePercent(0);
             // Ставим прямоугольник по центру
-            $clusterRect.css({left: (wMap / 2) - w / 2, top:  (hMap / 2) - h / 2});
+            $clusterRect.css({left: (wMap / 2) - w / 2, top: (hMap / 2) - h / 2});
             // Подписываемся на изменение зума карты
             this.map.on('moveend', changeZoomRecursive, this);
             // Начинаем подсчет
             setZoom(_.first(zooms));
             // По окончании пересчета вызываем функцию отправки данных
-            $.when(calcDeffered.promise()).done(this.send.bind(this));
+            $.when(this.calcDeffered.promise()).done(this.send.bind(this));
         },
         send: function (arr) {
-            console.dir(arr);
+            var _this = this;
+            window.noty(
+                {
+                    text: 'Новые размеры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br> Отправить данные на сервер для формирования новой кластерной сетки для всех фотографий?',
+                    type: 'confirm',
+                    layout: 'center',
+                    modal: true,
+                    force: true,
+                    animation: {
+                        open: {height: 'toggle'},
+                        close: {},
+                        easing: 'swing',
+                        speed: 500
+                    },
+                    buttons: [
+                        {addClass: 'btn-strict btn-strict-warning', text: 'Да', onClick: function ($noty) {
+                            // this = button element
+                            // $noty = $noty element
+                            if ($noty.$buttons && $noty.$buttons.find) {
+                                $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+                            }
+
+                            socket.once('setClustersParamsResult', function (data) {
+                                $noty.$buttons.find('.btn-strict-warning').remove();
+                                var okButton = $noty.$buttons.find('button')
+                                    .attr('disabled', false)
+                                    .removeClass('disabled')
+                                    .off('click');
+
+                                if (data && !data.error) {
+                                    $noty.$message.children().html('Данные успешно отправлены на сервер для пересчета');
+
+                                    okButton.text('Ok').on('click', function () {
+                                        $noty.close();
+                                        _this.finish();
+                                    }.bind(this));
+                                } else {
+                                    $noty.$message.children().html(data.message || 'Error occurred');
+                                    okButton.text('Close').on('click', function () {
+                                        $noty.close();
+                                        _this.cancel();
+                                    }.bind(this));
+                                }
+                            }.bind(_this));
+                            socket.emit('setClustersParams', arr);
+
+                        }},
+                        {addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+                            $noty.close();
+                            _this.cancel();
+                        }}
+                    ]
+                }
+            );
+        },
+        cancel: function () {
+            if (this.exe()) {
+                this.exe(false);
+                this.exePercent(0);
+                this.map.off('moveend');
+                window.clearTimeout(this.setZoomTimeout);
+                if (this.calcDeffered) {
+                    this.calcDeffered.reject();
+                }
+                delete this.calcDeffered;
+                delete this.setZoomTimeout;
+            }
+            this.wNew(this.wCurr());
+            this.hNew(this.hCurr());
+            this.$dom.find('.clusterRect').css({width: this.wCurr(), height: this.hCurr()});
+        },
+        finish: function () {
+            this.exe(false);
+            this.exePercent(0);
+            this.wCurr(this.wNew());
+            this.hCurr(this.hNew());
+            this.$dom.find('.clusterRect').css({width: this.wCurr(), height: this.hCurr()});
         },
 
         toggleLayers: function (vm, event) {

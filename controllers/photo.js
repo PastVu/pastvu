@@ -452,6 +452,15 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
+        /**
+         * Устанавливаем новые параметры кластеров и отправляем их на пересчет
+         */
+        function setClustersParamsResult(data) {
+            socket.emit('setClustersParamsResult', data);
+        }
+        socket.on('setClustersParams', function (data) {
+            setClustersParamsResult({message: 'Not authorized', error: true});
+        });
 
         /**
          * Сохраняем информацию о фотографии

@@ -385,9 +385,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
                                     $noty.$message.children().html('Photo successfully removed');
 
-                                    okButton
-                                        .text('Ok (4)')
-                                        .on('click', function () {
+                                    okButton.text('Ok (4)').on('click', function () {
                                         document.location.href = '/u/' + this.p.user.login() + '/photo';
                                     }.bind(this));
 
@@ -402,9 +400,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                                     );
                                 } else {
                                     $noty.$message.children().html(data.message || 'Error occurred');
-                                    okButton
-                                        .text('Close')
-                                        .on('click', function () {
+                                    okButton.text('Close').on('click', function () {
                                         $noty.close();
                                         this.exe(false);
                                     }.bind(this));
