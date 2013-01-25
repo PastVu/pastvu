@@ -3,7 +3,10 @@
 var Settings,
     User,
     Photo,
-    Cluster,
+    Cluster, // Коллекция кластеров
+    ClusterParams, // Коллекция параметров кластера
+    Clusters, // Параметры кластера
+    ClusterConditions, // Параметры установки кластера
     Counter,
     PhotoConverter = require('./photoConverter.js'),
     _ = require('lodash'),
@@ -169,6 +172,27 @@ function planResetStatWeek() {
     setTimeout(resetStatWeek, moment().add('w', 1).day(1).sod().diff(moment()) + 1000);
 }
 
+function readClusterParams(cb) {
+    step(
+        function () {
+            ClusterParams.find({sgeo: {$exists: false}}, {_id: 0}).sort('z').exec(this.parallel());
+            ClusterParams.find({sgeo: {$exists: true}}, {_id: 0}).exec(this.parallel());
+        },
+        function (err, clusters, conditions) {
+            if (err) {
+                logger.error(err && err.message);
+            } else {
+                Clusters = clusters;
+                ClusterConditions = conditions;
+            }
+
+            if (cb) {
+                cb(err, clusters, conditions);
+            }
+        }
+    );
+}
+
 module.exports.loadController = function (app, db, io) {
     logger = log4js.getLogger("photo.js");
 
@@ -176,13 +200,10 @@ module.exports.loadController = function (app, db, io) {
     User = db.model('User');
     Photo = db.model('Photo');
     Cluster = db.model('Cluster');
+    ClusterParams = db.model('ClusterParams');
     Counter = db.model('Counter');
 
     PhotoConverter.loadController(app, db, io);
-
-    planResetStatDay(); //Планируем очистку статистики за ltym
-    planResetStatWeek(); //Планируем очистку статистики за неделю
-
 
     app.get('/p/:cid?/*', function (req, res) {
         var cid = req.params.cid,
@@ -191,7 +212,13 @@ module.exports.loadController = function (app, db, io) {
         res.render('appPhoto.jade', {pageTitle: 'Photo'});
     });
 
-    //Регулярно проводим чистку удаленных файлов
+    planResetStatDay(); //Планируем очистку статистики за ltym
+    planResetStatWeek(); //Планируем очистку статистики за неделю
+
+    // Читаем параметры кластеров
+    readClusterParams();
+
+    // Регулярно проводим чистку удаленных файлов
     setInterval(dropPhotos, ms('5m'));
     dropPhotos();
 
@@ -354,6 +381,7 @@ module.exports.loadController = function (app, db, io) {
         function approvePhotoResult(data) {
             socket.emit('approvePhotoResult', data);
         }
+
         socket.on('approvePhoto', function (cid) {
             if (!hs.session.user) {
                 approvePhotoResult({message: 'Not authorized', error: true});
@@ -378,6 +406,7 @@ module.exports.loadController = function (app, db, io) {
         function takeUserPhotosAround(data) {
             socket.emit('takeUserPhotosAround', data);
         }
+
         socket.on('giveUserPhotosAround', function (data) {
             if (!data.cid || (!data.limitL && !data.limitR)) {
                 takeUserPhotosAround({message: 'Bad params', error: true});
@@ -423,6 +452,7 @@ module.exports.loadController = function (app, db, io) {
         function disablePhotoResult(data) {
             socket.emit('disablePhotoResult', data);
         }
+
         socket.on('disablePhoto', function (cid) {
             if (!hs.session.user) {
                 disablePhotoResult({message: 'Not authorized', error: true});
@@ -458,9 +488,37 @@ module.exports.loadController = function (app, db, io) {
         function setClustersParamsResult(data) {
             socket.emit('setClustersParamsResult', data);
         }
+
         socket.on('setClustersParams', function (data) {
             console.dir(data);
-            setClustersParamsResult({message: 'Not authorized', error: true});
+            if (!hs.session.user) {
+                savePhotoResult({message: 'Not authorized', error: true});
+                return;
+            }
+            step(
+                function clearClusters() {
+                    Cluster.find({}).remove(this.parallel());
+                    ClusterParams.find({}).remove(this.parallel());
+                },
+                function setClusterParams(err, numRemovedClusters, numRemovedParams) {
+                    if (err) {
+                        setClustersParamsResult({message: err && err.message, error: true});
+                        return;
+                    }
+                    logger.info('Removed ' + numRemovedClusters + ' clusters and ' + numRemovedParams + ' cluster params');
+                    ClusterParams.collection.insert(data.clusters, {safe: true}, this.parallel());
+                    ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
+                },
+                function (err, clusters, conditions) {
+                    readClusterParams(this);
+                },
+                function (err, clusters, conditions) {
+
+                }
+            );
+
+            //db.db.dropCollection(collectionName);
+            setClustersParamsResult({message: 'Ok'});
         });
 
         /**
@@ -469,6 +527,7 @@ module.exports.loadController = function (app, db, io) {
         function savePhotoResult(data) {
             socket.emit('savePhotoResult', data);
         }
+
         socket.on('savePhoto', function (data) {
             if (!hs.session.user) {
                 savePhotoResult({message: 'Not authorized', error: true});
