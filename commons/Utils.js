@@ -1,5 +1,6 @@
-var fs = require('fs');
-var Utils = new Object(null);
+var fs = require('fs'),
+    Utils = new Object(null),
+    _ = require('lodash');
 
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
@@ -49,37 +50,85 @@ Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, fi
     return result;
 };
 
-Utils.time = {};
-Utils.time.second = 1000;
-Utils.time.minute = 60 * Utils.time.second;
-Utils.time.hour = 60 * Utils.time.minute;
-Utils.time.day = 24 * Utils.time.hour;
-Utils.time.week = 7 * Utils.time.day;
-Utils.time.month = 30.4368499 * Utils.time.day;
-Utils.time.oneYear = 365 * Utils.time.day;
+Utils.math = (function () {
+    'use strict';
 
-
-Utils.ComboCallback = function (callback) {
-    this.callback = callback;
-    this.items = 0;
-    this.results = [];
-};
-
-Utils.ComboCallback.prototype.add = function () {
-    var self = this;
-    var itemId = this.items++;
-    return function () {
-        self.check(itemId, arguments);
-    };
-};
-
-Utils.ComboCallback.prototype.check = function (id, arguments_in) {
-    this.results[id] = arguments_in;
-    this.items--;
-    if (this.items == 0) {
-        this.callback.call(this, this.results);
+    /**
+     * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
+     * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
+     * @param number Число для обрезания
+     * @param precision Точность
+     * @return {Number}
+     */
+    function toPrecision(number, precision) {
+        var divider = Math.pow(10, precision || 6);
+        return ~~(number * divider) / divider;
     }
-};
+
+    /**
+     * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
+     * @param number Число
+     * @param precision Точность
+     * @return {Number}
+     */
+    function toPrecisionRound(number, precision) {
+        var divider = Math.pow(10, precision || 6);
+        return Math.round(number * divider) / divider;
+    }
+
+    return {
+        toPrecision: toPrecision,
+        toPrecisionRound: toPrecisionRound
+    };
+}());
+
+Utils.geo = (function () {
+    'use strict';
+
+    /**
+     * Haversine formula to calculate the distance
+     * @param lat1
+     * @param lon1
+     * @param lat2
+     * @param lon2
+     * @return {Number}
+     */
+    function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+        var R = 6371, // Mean radius of the earth in km
+            dLat = deg2rad(lat2 - lat1), // deg2rad below
+            dLon = deg2rad(lon2 - lon1),
+            a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2),
+            c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+            d = R * c; // Distance in km
+        return d;
+    }
+
+    function deg2rad(deg) {
+        return deg * (Math.PI / 180);
+    }
+
+    function geoToPrecision(geo, precision) {
+        _.forEach(geo, function (item, index, array) {
+            array[index] = Utils.math.toPrecision(item, precision || 6);
+        });
+        return geo;
+    }
+
+    function geoToPrecisionRound(geo, precision) {
+        _.forEach(geo, function (item, index, array) {
+            array[index] = Utils.math.toPrecisionRound(item, precision || 6);
+        });
+        return geo;
+    }
+
+    return {
+        getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+        deg2rad: deg2rad,
+        geoToPrecision: geoToPrecision,
+        geoToPrecisionRound: geoToPrecisionRound
+    };
+}());
 
 Utils.presentDateStart = function () {
     var present_date = new Date();
@@ -105,13 +154,6 @@ Utils.addLeftZero = function (num) {
     if (!num) num = 0;
     var str = '0' + num;
     return str.substr(str.length - 2, 2);
-}
-
-Utils.DURATION_TEMPLATE = {
-    days: 'd',
-    hours: 'h',
-    minutes: 'min',
-    seconds: 'sec'
 };
 
 /**
@@ -187,10 +229,10 @@ Utils.walkSerial = function (dir, done) {
  * Example walkParallel
  */
 /*walkParallel('./public/style', function(err, results) {
-     if (err) {
-        throw err;
-     }
-     console.log(results);
+ if (err) {
+ throw err;
+ }
+ console.log(results);
  });*/
 
 Object.freeze(Utils);

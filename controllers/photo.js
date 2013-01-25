@@ -510,15 +510,22 @@ module.exports.loadController = function (app, db, io) {
                     ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
                 },
                 function (err, clusters, conditions) {
+                    if (err) {
+                        setClustersParamsResult({message: err && err.message, error: true});
+                        return;
+                    }
                     readClusterParams(this);
                 },
                 function (err, clusters, conditions) {
-
+                    if (err) {
+                        setClustersParamsResult({message: err && err.message, error: true});
+                        return;
+                    }
+                    setClustersParamsResult({message: 'Ok'});
                 }
             );
 
             //db.db.dropCollection(collectionName);
-            setClustersParamsResult({message: 'Ok'});
         });
 
         /**
@@ -546,14 +553,25 @@ module.exports.loadController = function (app, db, io) {
                     savePhotoResult({message: 'Not authorized', error: true});
                     return;
                 }
-                var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
+                var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
+                    geo;
                 if (Object.keys(toSave).length > 0) {
-
-                    console.dir(photo.geo);
-                    console.dir(toSave.geo);
                     if (toSave.geo && toSave.geo.length === 2 && toSave.geo[0] >= -180 && toSave.geo[0] <= 180 /*Latitude*/ && toSave.geo[1] > -90 && toSave.geo[1] < 90 /*Latitude*/ && !_.isEqual(toSave.geo, photo.geo)) {
-                        console.dir('Geo changed');
-
+                        console.log('Geo changed:', toSave.geo);
+                        geo = toSave.geo;
+                        step(
+                            function () {
+                                var targetClusters = [];
+                                Clusters.forEach(function (item, index, array) {
+                                    targetClusters.push({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])});
+                                    Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }}, { new: true, upsert: true }, this.parallel());
+                                }, this);
+                                console.dir(targetClusters);
+                            },
+                            function (err) {
+                                console.log('err ', err);
+                            }
+                        );
                     }
 
                     _.assign(photo, toSave);

@@ -7,6 +7,7 @@ var mongoose = require('mongoose'),
 var ClusterSheme = new mongoose.Schema(
         {
             geo: {type: [Number], index: '2d'}, // Координаты левого верхнего угла
+            //rel: {type: [Number]}, // Координаты левого верхнего угла (множитель отнсительно 0,0) для справки
             z: {type: Number, index: true}, // Зум кластера
             c: {type: Number}, // Количество фотографий в кластере
             p: [
