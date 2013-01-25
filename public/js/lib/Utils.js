@@ -3,7 +3,7 @@
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
+define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
     var Utils = {
 
         /**
@@ -500,6 +500,37 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
             };
         }()),
 
+        math: (function () {
+            'use strict';
+
+            /**
+             * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
+             * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
+             * @param number Число для обрезания
+             * @param precision Точность
+             * @return {Number}
+             */
+            function toPrecision(number, precision) {
+                var divider =  Math.pow(10, precision || 6);
+                return ~~(number * divider) / divider;
+            }
+            /**
+             * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
+             * @param number Число
+             * @param precision Точность
+             * @return {Number}
+             */
+            function toPrecisionRound(number, precision) {
+                var divider =  Math.pow(10, precision || 6);
+                return Math.round(number * divider) / divider;
+            }
+
+            return {
+                toPrecision: toPrecision,
+                toPrecisionRound: toPrecisionRound
+            };
+        }()),
+
         geo: (function () {
             'use strict';
 
@@ -526,9 +557,24 @@ define(['jquery', 'lib/jquery/plugins/extends'], function ($) {
                 return deg * (Math.PI / 180);
             }
 
+            function geoToPrecision(geo, precision) {
+                _.forEach(geo, function (item, index, array) {
+                    array[index] = Utils.math.toPrecision(item, precision || 6);
+                });
+                return geo;
+            }
+            function geoToPrecisionRound(geo, precision) {
+                _.forEach(geo, function (item, index, array) {
+                    array[index] = Utils.math.toPrecisionRound(item, precision || 6);
+                });
+                return geo;
+            }
+
             return {
                 getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
-                deg2rad: deg2rad
+                deg2rad: deg2rad,
+                geoToPrecision: geoToPrecision,
+                geoToPrecisionRound: geoToPrecisionRound
             };
         }()),
 

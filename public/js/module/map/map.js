@@ -221,10 +221,13 @@ define([
                 this.markerEdit = L.marker(this.pointGeo, {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
                 this.layerEdit = L.layerGroup([this.markerEdit]).addTo(this.map);
                 this.markerEdit.on('dragend', function (e) {
-                    console.log(_.pick(this.getLatLng(), 'lng', 'lat'));
+                    var latlng = this.getLatLng();
+                    Utils.geo.geoToPrecision(latlng);
+                    this.update();
+                    console.log(_.pick(latlng, 'lng', 'lat'));
                 });
                 this.map.on('click', function (e) {
-                    this.markerEdit.setLatLng(e.latlng);
+                    this.markerEdit.setLatLng(Utils.geo.geoToPrecision(e.latlng));
                 }, this);
             }
             return this;
@@ -241,7 +244,7 @@ define([
             return this;
         },
         editGetGeo: function () {
-            var latlng = this.markerEdit.getLatLng();
+            var latlng = Utils.geo.geoToPrecision(this.markerEdit.getLatLng());
             return [latlng.lat, latlng.lng];
         },
         // Устанавливает точку текущей фотографии

@@ -459,6 +459,7 @@ module.exports.loadController = function (app, db, io) {
             socket.emit('setClustersParamsResult', data);
         }
         socket.on('setClustersParams', function (data) {
+            console.dir(data);
             setClustersParamsResult({message: 'Not authorized', error: true});
         });
 

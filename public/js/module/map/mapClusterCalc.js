@@ -195,6 +195,8 @@ define([
 
         save: function () {
             var _this = this,
+
+
                 $clusterRect = this.$dom.find('.clusterRect'),
                 w = this.wNew(),
                 h = this.hNew(),
@@ -218,7 +220,7 @@ define([
                         rectTopLeft = _this.map.containerPointToLatLng(new L.Point(rectCenter.x - w / 2, rectCenter.y - h / 2)),
                         rectBottomRight = _this.map.containerPointToLatLng(new L.Point(rectCenter.x + w / 2, rectCenter.y + h / 2));
 
-                    return {z: z, w: Math.abs(rectTopLeft.lng - rectBottomRight.lng), h: Math.abs(rectTopLeft.lat - rectBottomRight.lat)};
+                    return {z: z, w: Utils.math.toPrecision(Math.abs(rectTopLeft.lng - rectBottomRight.lng)), h: Utils.math.toPrecision(Math.abs(rectTopLeft.lat - rectBottomRight.lat))};
                 },
                 changeZoomRecursive = _.debounce(function () {
                     var z = _this.map.getZoom();
@@ -237,6 +239,12 @@ define([
                     }
                 }, 900, false);
 
+            this.saveParams = {
+                sgeo: Utils.geo.geoToPrecision([centerGeo.lng, centerGeo.lat]),
+                sz: this.map.getZoom(),
+                sw: this.wNew(),
+                sh: this.hNew()
+            };
             this.calcDeffered = new $.Deferred();
             // Ставим статус, что идет пересчет
             this.exe(true);
@@ -295,8 +303,7 @@ define([
                                     }.bind(this));
                                 }
                             }.bind(_this));
-                            socket.emit('setClustersParams', arr);
-
+                            socket.emit('setClustersParams', {clusters: arr, params: _this.saveParams});
                         }},
                         {addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
                             $noty.close();
@@ -317,6 +324,7 @@ define([
                 }
                 delete this.calcDeffered;
                 delete this.setZoomTimeout;
+                delete this.saveParams;
             }
             this.wNew(this.wCurr());
             this.hNew(this.hCurr());
@@ -328,6 +336,7 @@ define([
             this.wCurr(this.wNew());
             this.hCurr(this.hNew());
             this.$dom.find('.clusterRect').css({width: this.wCurr(), height: this.hCurr()});
+            delete this.saveParams;
         },
 
         toggleLayers: function (vm, event) {
