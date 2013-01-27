@@ -564,7 +564,7 @@ module.exports.loadController = function (app, db, io) {
                                 var targetClusters = [];
                                 Clusters.forEach(function (item, index, array) {
                                     targetClusters.push({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])});
-                                    Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }}, { new: true, upsert: true }, this.parallel());
+                                    Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }, $push: {p: photo._id} }, { new: true, upsert: true }, this.parallel());
                                 }, this);
                                 console.dir(targetClusters);
                             },
