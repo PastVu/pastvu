@@ -558,8 +558,14 @@ module.exports.loadController = function (app, db, io) {
                 if (Object.keys(toSave).length > 0) {
                     if (toSave.geo && toSave.geo.length === 2 && toSave.geo[0] >= -180 && toSave.geo[0] <= 180 /*Latitude*/ && toSave.geo[1] > -90 && toSave.geo[1] < 90 /*Latitude*/ && !_.isEqual(toSave.geo, photo.geo)) {
                         console.log('Geo changed:', toSave.geo);
-                        geo = toSave.geo;
-                        step(
+                        geo = Utils.geo.geoToPrecisionRound(toSave.geo);
+                        console.log(JSON.stringify(geo));
+                        db.db.eval('setPhotoGeoCluster(' + photo.cid + ',' + JSON.stringify(geo) + ')', function (err, result) {
+                            console.log('WOW');
+                            console.dir(arguments);
+                        });
+                        console.log('Further');
+                        /*step(
                             function () {
                                 var targetClusters = [];
                                 Clusters.forEach(function (item, index, array) {
@@ -571,7 +577,7 @@ module.exports.loadController = function (app, db, io) {
                             function (err) {
                                 console.log('err ', err);
                             }
-                        );
+                        );*/
                     }
 
                     _.assign(photo, toSave);
