@@ -10,6 +10,7 @@ var ClusterSheme = new mongoose.Schema(
             //rel: {type: [Number]}, // Координаты левого верхнего угла (множитель отнсительно 0,0) для справки
             z: {type: Number, index: true}, // Зум кластера
             c: {type: Number}, // Количество фотографий в кластере
+            file: {type: String}, // Обложка кластера
             p: [
                 { type: Schema.Types.ObjectId, ref: 'Photo' } // Массив id фотографий в кластере
             ]

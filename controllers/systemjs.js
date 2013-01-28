@@ -15,7 +15,7 @@ module.exports.loadController = function (app, db) {
 
         var query = cid ? {'cid': cid} : {},
             clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
-            photos = db.photos.find(query, {cid: 1, geo: 1, file: 1}).toArray();
+            photos = db.photos.find(query, {geo: 1, file: 1}).toArray();
 
         photos.forEach(function (photo, index, arr) {
             var geo = photo.geo,
@@ -27,7 +27,7 @@ module.exports.loadController = function (app, db) {
             });
             //printjson(photoExistingClusters);
             clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (newGeo[0] / item.w >> 0), item.h * (newGeo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id } }, {multi: false, upsert: true});
+                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (newGeo[0] / item.w >> 0), item.h * (newGeo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
             });
             return {message: 'Ok', error: false};
         });
@@ -36,7 +36,7 @@ module.exports.loadController = function (app, db) {
     saveSystemJSFunc(function clusterAll() {
         var clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
             photoCounter = 0,
-            photoCursor = db.photos.find({geo: {$size: 2}}, {cid: 1, geo: 1, file: 1});
+            photoCursor = db.photos.find({geo: {$size: 2}}, {geo: 1, file: 1});
 
         db.clusters.drop();
 
@@ -45,7 +45,7 @@ module.exports.loadController = function (app, db) {
             var geo = photo.geo;
             photoCounter++;
             clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id } }, {multi: false, upsert: true});
+                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
             });
         });
 
