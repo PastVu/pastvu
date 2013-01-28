@@ -6,7 +6,7 @@
 			"maxLogSize": 524288,
 			"backups": 3,
 			"pollInterval": 15,
-			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js"]
+			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "systemjs.js"]
 		},
 		{
 			"type": "console"

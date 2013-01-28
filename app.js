@@ -203,6 +203,7 @@ Session = db.model('Session');
 
 // loading controllers
 require('./controllers/_session.js').loadController(app, db, io);
+require('./controllers/systemjs.js').loadController(app, db);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, db, io);
 require('./controllers/index.js').loadController(app, db, io);

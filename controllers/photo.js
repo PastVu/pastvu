@@ -560,7 +560,7 @@ module.exports.loadController = function (app, db, io) {
                         console.log('Geo changed:', toSave.geo);
                         geo = Utils.geo.geoToPrecisionRound(toSave.geo);
                         console.log(JSON.stringify(geo));
-                        db.db.eval('setPhotoGeoCluster(' + photo.cid + ',' + JSON.stringify(geo) + ')', function (err, result) {
+                        db.db.eval('clusterPhoto(' + photo.cid + ',' + JSON.stringify(geo) + ')', function (err, result) {
                             console.log('WOW');
                             console.dir(arguments);
                         });
