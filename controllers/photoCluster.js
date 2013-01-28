@@ -72,7 +72,6 @@ module.exports.loadController = function (app, db, io) {
                             result({message: err && err.message, error: true});
                             return;
                         }
-                        logger.info('Removed ' + numRemovedParams + ' cluster params');
                         ClusterParams.collection.insert(data.clusters, {safe: true}, this.parallel());
                         ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
                     },
@@ -83,12 +82,24 @@ module.exports.loadController = function (app, db, io) {
                         }
                         readClusterParams(this);
                     },
-                    function (err, clusters, conditions) {
+                    function runClusterRecalc(err, clusters, conditions) {
                         if (err) {
                             result({message: err && err.message, error: true});
                             return;
                         }
-                        result({message: 'Ok'});
+                        dbNative.eval('clusterAll()', this);
+                    },
+                    function recalcResult(err, ret) {
+                        if (err) {
+                            result({message: err && err.message, error: true});
+                            return;
+                        }
+                        if (ret && ret.error) {
+                            result({message: result.message || '', error: true});
+                            return;
+                        }
+                        console.dir(ret);
+                        result(ret);
                     }
                 );
 

@@ -49,7 +49,7 @@ module.exports.loadController = function (app, db) {
             });
         });
 
-        //return {photos: photoCounter, clusters: db.clusters.count()};
+        return {message: 'Ok', photos: photoCounter, clusters: db.clusters.count()};
     });
 
     saveSystemJSFunc(function toPrecision(number, precision) {
