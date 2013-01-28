@@ -3,11 +3,8 @@
 var Settings,
     User,
     Photo,
-    Cluster, // Коллекция кластеров
-    ClusterParams, // Коллекция параметров кластера
-    Clusters, // Параметры кластера
-    ClusterConditions, // Параметры установки кластера
     Counter,
+    PhotoCluster = require('./photoCluster.js'),
     PhotoConverter = require('./photoConverter.js'),
     _ = require('lodash'),
     fs = require('fs'),
@@ -172,37 +169,15 @@ function planResetStatWeek() {
     setTimeout(resetStatWeek, moment().add('w', 1).day(1).sod().diff(moment()) + 1000);
 }
 
-function readClusterParams(cb) {
-    step(
-        function () {
-            ClusterParams.find({sgeo: {$exists: false}}, {_id: 0}).sort('z').exec(this.parallel());
-            ClusterParams.find({sgeo: {$exists: true}}, {_id: 0}).exec(this.parallel());
-        },
-        function (err, clusters, conditions) {
-            if (err) {
-                logger.error(err && err.message);
-            } else {
-                Clusters = clusters;
-                ClusterConditions = conditions;
-            }
-
-            if (cb) {
-                cb(err, clusters, conditions);
-            }
-        }
-    );
-}
-
 module.exports.loadController = function (app, db, io) {
     logger = log4js.getLogger("photo.js");
 
     Settings = db.model('Settings');
     User = db.model('User');
     Photo = db.model('Photo');
-    Cluster = db.model('Cluster');
-    ClusterParams = db.model('ClusterParams');
     Counter = db.model('Counter');
 
+    PhotoCluster.loadController(app, db, io);
     PhotoConverter.loadController(app, db, io);
 
     app.get('/p/:cid?/*', function (req, res) {
@@ -214,9 +189,6 @@ module.exports.loadController = function (app, db, io) {
 
     planResetStatDay(); //Планируем очистку статистики за ltym
     planResetStatWeek(); //Планируем очистку статистики за неделю
-
-    // Читаем параметры кластеров
-    readClusterParams();
 
     // Регулярно проводим чистку удаленных файлов
     setInterval(dropPhotos, ms('5m'));
@@ -482,118 +454,76 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
-        /**
-         * Устанавливаем новые параметры кластеров и отправляем их на пересчет
-         */
-        function setClustersParamsResult(data) {
-            socket.emit('setClustersParamsResult', data);
-        }
-
-        socket.on('setClustersParams', function (data) {
-            console.dir(data);
-            if (!hs.session.user) {
-                savePhotoResult({message: 'Not authorized', error: true});
-                return;
+        (function () {
+            /**
+             * Сохраняем информацию о фотографии
+             */
+            function result(data) {
+                socket.emit('savePhotoResult', data);
             }
-            step(
-                function clearClusters() {
-                    Cluster.find({}).remove(this.parallel());
-                    ClusterParams.find({}).remove(this.parallel());
-                },
-                function setClusterParams(err, numRemovedClusters, numRemovedParams) {
-                    if (err) {
-                        setClustersParamsResult({message: err && err.message, error: true});
-                        return;
-                    }
-                    logger.info('Removed ' + numRemovedClusters + ' clusters and ' + numRemovedParams + ' cluster params');
-                    ClusterParams.collection.insert(data.clusters, {safe: true}, this.parallel());
-                    ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
-                },
-                function (err, clusters, conditions) {
-                    if (err) {
-                        setClustersParamsResult({message: err && err.message, error: true});
-                        return;
-                    }
-                    readClusterParams(this);
-                },
-                function (err, clusters, conditions) {
-                    if (err) {
-                        setClustersParamsResult({message: err && err.message, error: true});
-                        return;
-                    }
-                    setClustersParamsResult({message: 'Ok'});
-                }
-            );
 
-            //db.db.dropCollection(collectionName);
-        });
-
-        /**
-         * Сохраняем информацию о фотографии
-         */
-        function savePhotoResult(data) {
-            socket.emit('savePhotoResult', data);
-        }
-
-        socket.on('savePhoto', function (data) {
-            if (!hs.session.user) {
-                savePhotoResult({message: 'Not authorized', error: true});
-                return;
-            }
-            if (!data.cid) {
-                savePhotoResult({message: 'cid is not defined', error: true});
-                return;
-            }
-            Photo.findOne({cid: data.cid, del: {$exists: false}}).populate('user', 'login').exec(function (err, photo) {
-                if (err) {
-                    savePhotoResult({message: err && err.message, error: true});
+            socket.on('savePhoto', function (data) {
+                if (!hs.session.user) {
+                    result({message: 'Not authorized', error: true});
                     return;
                 }
-                if (photo.user.login !== hs.session.user.login) {
-                    savePhotoResult({message: 'Not authorized', error: true});
+                if (!Utils.isType('object', data) || !data.cid) {
+                    result({message: 'Bad params', error: true});
                     return;
                 }
                 var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
-                    geo;
-                if (Object.keys(toSave).length > 0) {
-                    if (toSave.geo && toSave.geo.length === 2 && toSave.geo[0] >= -180 && toSave.geo[0] <= 180 /*Latitude*/ && toSave.geo[1] > -90 && toSave.geo[1] < 90 /*Latitude*/ && !_.isEqual(toSave.geo, photo.geo)) {
-                        console.log('Geo changed:', toSave.geo);
-                        geo = Utils.geo.geoToPrecisionRound(toSave.geo);
-                        console.log(JSON.stringify(geo));
-                        db.db.eval('clusterPhoto(' + photo.cid + ',' + JSON.stringify(geo) + ')', function (err, result) {
-                            console.log('WOW');
-                            console.dir(arguments);
-                        });
-                        console.log('Further');
-                        /*step(
-                            function () {
-                                var targetClusters = [];
-                                Clusters.forEach(function (item, index, array) {
-                                    targetClusters.push({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])});
-                                    Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }, $push: {p: photo._id} }, { new: true, upsert: true }, this.parallel());
-                                }, this);
-                                console.dir(targetClusters);
-                            },
-                            function (err) {
-                                console.log('err ', err);
-                            }
-                        );*/
-                    }
+                    geo = toSave.geo,
+                    photo;
 
-                    _.assign(photo, toSave);
-                    photo.save(function (err) {
-                        if (err) {
-                            savePhotoResult({message: err.message || '', error: true});
-                            return;
-                        }
-                        savePhotoResult({message: 'Photo saved successfully'});
-                    });
-                } else {
-                    savePhotoResult({message: 'Nothing to save', error: true});
+                if (geo && (!Utils.isType('array', geo) || geo.length !== 2 || geo[0] < -180 || geo[0] > 180 || geo[1] < -90 || geo[1] > 90)) {
+                    delete toSave.geo;
+                    geo = undefined;
+                }
+
+                if (Object.keys(toSave).length === 0) {
+                    result({message: 'Nothing to save', error: true});
                     return;
                 }
+
+                step(
+                    function findPhoto() {
+                        Photo.findOne({cid: data.cid, del: {$exists: false}}).populate('user', 'login').exec(this);
+                    },
+                    function checkData(err, p) {
+                        if (err) {
+                            result({message: err && err.message, error: true});
+                            return;
+                        }
+                        if (p.user.login !== hs.session.user.login) {
+                            result({message: 'Not authorized', error: true});
+                            return;
+                        }
+                        photo = p;
+
+                        if (geo && !_.isEqual(geo, photo.geo)) {
+                            PhotoCluster.clusterPhoto(photo.cid, geo, this);
+                        } else {
+                            this();
+                        }
+                    },
+                    function savePhoto(obj) {
+                        if (obj && obj.error) {
+                            result({message: obj.message || '', error: true});
+                            return;
+                        }
+                        _.assign(photo, toSave);
+                        photo.save(function (err) {
+                            if (err) {
+                                result({message: err.message || '', error: true});
+                                return;
+                            }
+                            result({message: 'Photo saved successfully'});
+                        });
+                    }
+                );
+
             });
-        });
+        }());
 
     });
 };

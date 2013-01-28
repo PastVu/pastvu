@@ -281,7 +281,7 @@ define([
                                 $noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
                             }
 
-                            socket.once('setClustersParamsResult', function (data) {
+                            socket.once('clusterAllResult', function (data) {
                                 $noty.$buttons.find('.btn-strict-warning').remove();
                                 var okButton = $noty.$buttons.find('button')
                                     .attr('disabled', false)
@@ -303,7 +303,7 @@ define([
                                     }.bind(this));
                                 }
                             }.bind(_this));
-                            socket.emit('setClustersParams', {clusters: arr, params: _this.saveParams});
+                            socket.emit('clusterAll', {clusters: arr, params: _this.saveParams});
                         }},
                         {addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
                             $noty.close();

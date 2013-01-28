@@ -10,7 +10,7 @@ module.exports.loadController = function (app, db) {
 
     saveSystemJSFunc(function clusterPhoto(cid, newGeo) {
         if (!cid || !newGeo || newGeo.length !== 2) {
-            return {message: 'Bad params', error: true};
+            return {message: 'Bad geo params to set cluster', error: true};
         }
 
         var query = cid ? {'cid': cid} : {},
