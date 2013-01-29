@@ -94,7 +94,7 @@ app.configure(function () {
     });
 
     //app.use(express.logger({ immediate: false, format: 'dev' }));
-
+    app.disable('x-powered-by'); // Disable default X-Powered-By
     app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
     app.use(express.compress());
     app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: ms('1d') }));
@@ -114,6 +114,12 @@ app.configure(function () {
     app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.exp' }));
     app.use(express.methodOverride());
     app.use(app.router);
+
+    // Set custom X-Powered-By for non-static
+    app.get('*', function (req, res, next) {
+        res.setHeader('X-Powered-By', 'Klimashkin Paul');
+        next();
+    });
 
     io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
     io.set('authorization', function (handshakeData, callback) {
