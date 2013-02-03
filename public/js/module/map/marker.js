@@ -139,70 +139,77 @@ define([
      * Обрабатывает входящие данные
      */
     MarkerManager.prototype.processIncomingData = function (data) {
-        var photos = {}, clusters = {}, clustersLocal = {}, curr,
-            i, j;
+        var needClientClustering = this.currZoom !== this.map.getMaxZoom() && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
+            localClusteringResult,
+            photos = {},
+            clusters = {},
+            clustersLocal = {},
+            curr,
+            i;
 
-        // Заполняем новый объект камер
+        // Заполняем новый объект фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
-                i--;
-                photos[data.photos[i].id] = data.photos[i];
-            }
-        }
-
-        /*
-         var keysNew = _.pluck(data.photos, 'id'),
-         keysExists = Object.keys(this.mapObjects.photos),
-         toDel = _.difference(keysExists, keysNew),
-         toAdd = _.difference(keysNew, keysExists);
-         */
-        // Проверяем, если такая фото уже есть в объекте mapObjects, удаляем её из нового объекта, а если такой фото в новом объекте нет, удаляем её и из старого
-        // Удаляем принадлежность существующих фото локальному кластеру
-        for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i)) {
-                if (photos.hasOwnProperty(i)) {
-                    delete photos[i];
-                    delete this.mapObjects.photos[i].cluster;
-                } else {
-                    delete this.mapObjects.photos[i];
+                curr = data.photos[i--];
+                if (this.mapObjects.photos[curr.id] !== undefined) {
+                    curr.geo.reverse();
+                    photos[curr.id] = curr;
                 }
             }
         }
 
-        // Запускаем фабрику по новым камерам и сливаем их в основной объект камер mapObjects.photos
-        //if (!Utils.isObjectEmpty(photos)) CamsFactory(cams, this.mapObjects.photos);
+        // Проверяем, если такого фото в новом объекте нет, удаляем его из старого
+        for (i in this.mapObjects.photos) {
+            if (this.mapObjects.photos.hasOwnProperty(i) && !photos.hasOwnProperty(i)) {
+                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                delete this.mapObjects.photos[i];
+            }
+        }
         _.assign(this.mapObjects.photos, photos);
 
-        if (P.settings.CLUSTERING_ON_CLIENT()) {
-            this.localClustering(this.mapObjects.photos);
-        } else {
-            for (i in this.mapObjects.photos) {
-                if (this.mapObjects.photos.hasOwnProperty(i) && !this.mapObjects.photos[i].marker) {
-                    curr = this.mapObjects.photos[i];
-                    this.addMarker(
-                        //curr.marker = new L.NeoMarker((curr.lat && curr.lng ? new L.LatLng(curr.lat, curr.lng) : mapDefCenter), {id: curr.id, type: 'cam', obj: curr, img: curr.icon})
-                        curr.marker = L.marker((curr.lat && curr.lng ? new L.LatLng(curr.lat, curr.lng) : mapDefCenter), {riseOnHover: true, id: curr.id, type: 'photo', obj: curr, img: curr.icon})
-                    );
-                }
-            }
-        }
-
-        // Заполняем новый объект групп
-        // Создаем маркеры групп и добавляем их в текущий менеджер маркеров
+        // Заполняем новый объект кластеров
         if (Array.isArray(data.clusters) && data.clusters.length > 0) {
             i = data.clusters.length;
             while (i) {
                 i--;
-                curr = data.clusters[i];
-                this.addMarker(
-                    curr.marker = new L.NeoMarker((curr.lat && curr.lng ? new L.LatLng(curr.lat, curr.lng) : mapDefCenter), {id: 'cl' + i, type: 'group', obj: curr, count: curr.count})
-                );
-                clusters[i] = curr;
+                clusters[i] = data.clusters[i];
             }
         }
-        // Сливаем группы в основной объект груп this.mapObjects.clusters
-        this.mapObjects.clusters = clusters;
+
+        if (needClientClustering) {
+            localClusteringResult = this.localClustering(this.mapObjects.photos);
+            _.assign(clusters, localClusteringResult.clusters);
+
+            i = localClusteringResult.photosGoesToLocalCluster.length;
+            while (i) {
+                curr = localClusteringResult.photosGoesToLocalCluster[i--];
+                if (curr.marker) {
+                    this.layerPhotos.removeLayer(curr.marker);
+                }
+                delete photos[curr.id];
+                delete this.mapObjects.photos[curr.id];
+            }
+        }
+
+        // Создаем маркеры для новых фото
+        for (i in photos) {
+            if (photos.hasOwnProperty(i)) {
+                curr = photos[i];
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: curr.id, type: 'photo', obj: curr, img: curr.icon}});
+                this.layerPhotos.addLayer(curr.marker);
+            }
+        }
+
+        // Создаем маркеры для кластеров
+        for (i in clusters) {
+            if (clusters.hasOwnProperty(i)) {
+                curr = clusters[i];
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
+                this.layerClusters.addLayer(curr.marker);
+            }
+        }
+        this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
         delete data.photos;
@@ -215,52 +222,52 @@ define([
      * Локальная кластеризация камер, пришедших клиенту. Проверяем на совпадение координат камер с учетом дельты. Связываем такие камеры
      */
     MarkerManager.prototype.localClustering = function (data) {
- /*       var deltaLAT = Math.abs(this.map.layerPointToLatLng(new L.Point(1, this.aggregateDelta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
-            deltaLNG = Math.abs(this.map.layerPointToLatLng(new L.Point(this.aggregateDelta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
-            cutLAT = deltaLAT.toPrecision(1).length - 3,
-            cutLNG = deltaLNG.toPrecision(1).length - 3,
-            i,
-            j,
-            photo,
-            currCoordId = '',
-            cluster;
-        for (i in data) {
-            if (data.hasOwnProperty(i)) {
-                photo = data[i];
-                currCoordId = photo.geo[1].toFixed(cutLAT) + photo.geo[0].toFixed(cutLNG);
-                if (!clusters[currCoordId]) {
-                    clusters[currCoordId] = {lats: 0, lngs: 0, camsnum: 0, cams: {}};
-                }
-                cluster = clusters[currCoordId];
-                cluster.cams[i] = photo;
-                cluster.camsnum += 1;
-                cluster.lats += photo.geo[1];
-                cluster.lngs += photo.geo[0];
-            }
-        }
-        this.mapObjects.clustersLocal = clusters;
+        /*       var deltaLAT = Math.abs(this.map.layerPointToLatLng(new L.Point(1, this.aggregateDelta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
+         deltaLNG = Math.abs(this.map.layerPointToLatLng(new L.Point(this.aggregateDelta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
+         cutLAT = deltaLAT.toPrecision(1).length - 3,
+         cutLNG = deltaLNG.toPrecision(1).length - 3,
+         i,
+         j,
+         photo,
+         currCoordId = '',
+         cluster;
+         for (i in data) {
+         if (data.hasOwnProperty(i)) {
+         photo = data[i];
+         currCoordId = photo.geo[0].toFixed(cutLAT) + photo.geo[1].toFixed(cutLNG);
+         if (!clusters[currCoordId]) {
+         clusters[currCoordId] = {lats: 0, lngs: 0, camsnum: 0, cams: {}};
+         }
+         cluster = clusters[currCoordId];
+         cluster.cams[i] = photo;
+         cluster.camsnum += 1;
+         cluster.lats += photo.geo[0];
+         cluster.lngs += photo.geo[1];
+         }
+         }
+         this.mapObjects.clustersLocal = clusters;
 
-        // Создаем маркеры фото и кластеров и добавляем их в текущий менеджер маркеров
-        for (i in clusters) {
-            if (!clusters.hasOwnProperty(i)) {
-                cluster = clusters[i];
-                curr = Utils.getObjectOneOwnProperty(cluster['cams']);
-                if (cluster['camsnum'] > 1) {
-                    for (j in cluster['cams']) {
-                        if (cluster['cams'].hasOwnProperty(j)) {
-                            cluster['cams'][j].cluster = i;
-                        }
-                    }
-                    this.addMarker(
-                        cluster.marker = new L.NeoMarker(new L.LatLng(cluster['lats'] / cluster['camsnum'], cluster['lngs'] / cluster['camsnum']), {id: 'p' + i, type: 'cluster', obj: cluster})
-                    );
-                } else if (!curr.marker) {
-                    this.addMarker(
-                        curr.marker = new L.NeoMarker((curr.lat && curr.lng ? new L.LatLng(curr.lat, curr.lng) : mapDefCenter), {id: curr.id, type: 'cam', obj: curr, img: curr.icon})
-                    );
-                }
-            }
-        }*/
+         // Создаем маркеры фото и кластеров и добавляем их в текущий менеджер маркеров
+         for (i in clusters) {
+         if (!clusters.hasOwnProperty(i)) {
+         cluster = clusters[i];
+         curr = Utils.getObjectOneOwnProperty(cluster['cams']);
+         if (cluster['camsnum'] > 1) {
+         for (j in cluster['cams']) {
+         if (cluster['cams'].hasOwnProperty(j)) {
+         cluster['cams'][j].cluster = i;
+         }
+         }
+         this.addMarker(
+         cluster.marker = new L.NeoMarker(new L.LatLng(cluster['lats'] / cluster['camsnum'], cluster['lngs'] / cluster['camsnum']), {id: 'p' + i, type: 'cluster', obj: cluster})
+         );
+         } else if (!curr.marker) {
+         this.addMarker(
+         curr.marker = new L.NeoMarker((curr.lat && curr.lng ? new L.LatLng(curr.lat, curr.lng) : mapDefCenter), {id: curr.id, type: 'cam', obj: curr, img: curr.icon})
+         );
+         }
+         }
+         }*/
     };
 
     /**
@@ -305,8 +312,7 @@ define([
                         if (searchRespectHash[m]) {
                             toDelete = false;
                         }
-                    }
-                    else {
+                    } else {
                         if (cams2.cameras[m] && !cams2.cameras[m].cluster) {
                             toDelete = false;
                         }
