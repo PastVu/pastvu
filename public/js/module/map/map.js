@@ -4,10 +4,10 @@
  */
 define([
     'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-    'm/User', 'm/storage',
-    'leaflet', 'lib/leaflet/extends/L.neoMap', 'Locations',
+    'm/User', 'm/storage', 'Locations',
+    'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
     'text!tpl/map/map.jade', 'css!style/map/map'
-], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, L, Map, Locations, jade) {
+], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
     'use strict';
     var $window = $(window);
 
@@ -33,6 +33,7 @@ define([
             this.layerActive = ko.observable({sys: null, type: null});
             this.layerActiveDesc = ko.observable('');
 
+            this.marker_mgr = null;
             this.pointGeo = null;
 
             this.auth = globalVM.repository['m/auth'];
@@ -141,7 +142,6 @@ define([
 
             ko.applyBindings(globalVM, this.$dom[0]);
 
-
             // Subscriptions
             this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
 
@@ -150,7 +150,8 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
 
-                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: true, trackResize: false});
+                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+                this.marker_mgr = new MarkerManager(this.map, {});
 
                 Locations.subscribe(function (val) {
                     this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -199,6 +200,7 @@ define([
 
         // Обработчик переключения режима редактирования
         editHandler: function (val) {
+            alert(9);
             if (val) {
                 this.editMarkerCreate();
             } else {
@@ -310,6 +312,7 @@ define([
                         }.bind(this));
                     } else {
                         this.map.addLayer(type.obj);
+                        this.marker_mgr.layerChange();
                     }
                 }
             }

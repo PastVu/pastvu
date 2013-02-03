@@ -131,14 +131,24 @@
 				}
 
 				&.selected {
-					-webkit-box-shadow: inset 0 1px 1px 1px #1C1C1C;
-					box-shadow: inset 0 1px 1px 1px #1C1C1C;
+					.box-shadow(inset 0 1px 1px 1px #1C1C1C);
 					background-color: #474747;
 					border: 1px solid #707070;
 				}
 			}
 		}
+	}
 
+	.markerHint {
+		.photoThumb {
+			display: block;
+			float: left;
+			width: 246px;
+			height: 164px;
+		}
+		.title {
+			display: inline-block;
+		}
 	}
 
 	.mapContainer.embedded {

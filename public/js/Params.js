@@ -17,11 +17,15 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
                 port: 3000,
                 uport: 8888,
 
+                appVersion: 0,
+                appHash: 0,
+
                 USE_OSM_API: true,
                 USE_GOOGLE_API: true,
                 USE_YANDEX_API: true,
-                appVersion: 0,
-                appHash: 0,
+                CLUSTERING_ON_CLIENT: false,
+                CLUSTERING_ON_CLIENT_PIX_DELTA: 5,
+
 
                 locDef: {lat: 40, lng: -17, z: 3},
                 locDefRange: ['gpsip', '_def_'],

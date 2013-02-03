@@ -117,7 +117,7 @@ app.configure(function () {
 
     // Set custom X-Powered-By for non-static
     app.get('*', function (req, res, next) {
-        res.setHeader('X-Powered-By', 'Klimashkin Paul');
+        res.setHeader('X-Powered-By', 'Paul Klimashkin | klimashkin@gmail.com');
         next();
     });
 

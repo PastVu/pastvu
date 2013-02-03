@@ -1,7 +1,7 @@
 var auth = require('./auth.js'),
     Settings,
     User,
-    Step = require('step'),
+    step = require('step'),
     log4js = require('log4js'),
     appEnv = {};
 
@@ -31,7 +31,7 @@ module.exports.loadController = function (app, db, io) {
                 LoggedIn: !!hs.session.user,
                 ip: hs.address
             };
-            Step(
+            step(
                 function () {
                     Settings.find({}, this);
                 },

@@ -569,12 +569,16 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
                 });
                 return geo;
             }
+            function latlngToArr(ll, lngFirst) {
+                return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
+            }
 
             return {
+                geoToPrecision: geoToPrecision,
+                geoToPrecisionRound: geoToPrecisionRound,
                 getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
                 deg2rad: deg2rad,
-                geoToPrecision: geoToPrecision,
-                geoToPrecisionRound: geoToPrecisionRound
+                latlngToArr: latlngToArr
             };
         }()),
 
