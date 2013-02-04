@@ -36,6 +36,7 @@ define([
         this.map.on('moveend', this.onMapMoveEnd, this);
 
         this.reCalcBound();
+        this.refreshDataByZoom();
     }
 
     /**
@@ -45,12 +46,12 @@ define([
      * @return {boolean} Флаг того, что границы изменились.
      */
     MarkerManager.prototype.reCalcBound = function (force) {
+        var result = false;
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBound = this.map.getBounds().pad(0.1);
-            return true;
-        } else {
-            return false;
+            result = true;
         }
+        return result;
     };
 
     /**
@@ -129,7 +130,7 @@ define([
                     console.log('Полученные данные нового зума устарели');
                     return;
                 }
-                this.processIncomingDataZoom(data,  bound); // Обрабатываем
+                this.processIncomingDataZoom(data, bound); // Обрабатываем
                 this.redraw(); // Запускаем перерисовку
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
@@ -170,6 +171,7 @@ define([
             photos = {},
             clusters = {},
             clustersLocal = {},
+            divIcon,
             curr,
             i;
 
@@ -177,11 +179,11 @@ define([
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
-                curr = data.photos[i--];
-                if (this.mapObjects.photos[curr.id] === undefined) {
+                curr = data.photos[--i];
+                if (this.mapObjects.photos[curr.cid] === undefined) {
                     curr.geo.reverse();
                     if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                        photos[curr.id] = curr;
+                        photos[curr.cid] = curr;
                     }
                 }
             }
@@ -190,7 +192,7 @@ define([
         // Проверяем, если такого фото в новом объекте нет, удаляем его из старого
         for (i in this.mapObjects.photos) {
             if (this.mapObjects.photos.hasOwnProperty(i)) {
-                if (!photos.hasOwnProperty(i) || (boundChanged && !this.calcBound.contains(this.mapObjects.photos[i].geo))) {
+                if (photos[i] === undefined || (boundChanged && !this.calcBound.contains(this.mapObjects.photos[i].geo))) {
                     this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
                     delete this.mapObjects.photos[i];
                 }
@@ -206,17 +208,18 @@ define([
 
             i = localClusteringResult.photosGoesToLocalCluster.length;
             while (i) {
-                curr = localClusteringResult.photosGoesToLocalCluster[i--];
+                curr = localClusteringResult.photosGoesToLocalCluster[--i];
                 if (curr.marker) {
                     this.layerPhotos.removeLayer(curr.marker);
                 }
-                delete photos[curr.id];
-                delete this.mapObjects.photos[curr.id];
+                delete photos[curr.cid];
+                delete this.mapObjects.photos[curr.cid];
             }
         } else if (Array.isArray(data.clusters) && data.clusters.length > 0) {
             i = data.clusters.length;
             while (i) {
-                curr = data.clusters[i--];
+                curr = data.clusters[--i];
+                curr.geo.reverse();
                 if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
                     clusters[i] = curr;
                 }
@@ -227,7 +230,8 @@ define([
         for (i in photos) {
             if (photos.hasOwnProperty(i)) {
                 curr = photos[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: curr.id, type: 'photo', obj: curr, img: curr.icon}});
+                divIcon = L.divIcon({className: 'photoIcon ne', iconSize: new L.Point(8, 8)});
+                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr, img: curr.icon}});
                 this.layerPhotos.addLayer(curr.marker);
             }
         }
@@ -236,7 +240,8 @@ define([
         for (i in clusters) {
             if (clusters.hasOwnProperty(i)) {
                 curr = clusters[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
+                divIcon = L.divIcon({className: 'clusterIcon ne', iconSize: new L.Point(60, 40), html: '<img src="/_photo/micro/' + curr.file + '"/>'});
+                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
                 this.layerClusters.addLayer(curr.marker);
             }
         }
@@ -265,11 +270,11 @@ define([
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
-                curr = data.photos[i--];
-                if (this.mapObjects.photos[curr.id] === undefined) {
+                curr = data.photos[--i];
+                if (this.mapObjects.photos[curr.cid] === undefined) {
                     curr.geo.reverse();
                     if (this.calcBound.contains(curr.geo)) {
-                        photos[curr.id] = curr;
+                        photos[curr.cid] = curr;
                     }
                 }
             }
@@ -294,12 +299,12 @@ define([
 
             i = localClusteringResult.photosGoesToLocalCluster.length;
             while (i) {
-                curr = localClusteringResult.photosGoesToLocalCluster[i--];
+                curr = localClusteringResult.photosGoesToLocalCluster[--i];
                 if (curr.marker) {
                     this.layerPhotos.removeLayer(curr.marker);
                 }
-                delete photos[curr.id];
-                delete this.mapObjects.photos[curr.id];
+                delete photos[curr.cid];
+                delete this.mapObjects.photos[curr.cid];
             }
         } else {
             // Проверяем, если старые кластеры выходят за пределы актуального bound
@@ -314,7 +319,7 @@ define([
             if (Array.isArray(data.clusters) && data.clusters.length > 0) {
                 i = data.clusters.length;
                 while (i) {
-                    curr = data.clusters[i--];
+                    curr = data.clusters[--i];
                     if (this.calcBound.contains(curr.geo)) {
                         clusters[i] = curr;
                     }
@@ -326,7 +331,7 @@ define([
         for (i in photos) {
             if (photos.hasOwnProperty(i)) {
                 curr = photos[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: curr.id, type: 'photo', obj: curr, img: curr.icon}});
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr, img: curr.icon}});
                 this.layerPhotos.addLayer(curr.marker);
             }
         }
@@ -335,7 +340,7 @@ define([
         for (i in clusters) {
             if (clusters.hasOwnProperty(i)) {
                 curr = clusters[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
                 this.layerClusters.addLayer(curr.marker);
             }
         }

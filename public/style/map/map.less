@@ -34,6 +34,42 @@
 		left: 3px;
 	}
 
+	.photoIcon {
+		width: 8px;
+		height: 8px;
+		background-color: #003aff;
+		.border-radius(50%);
+
+		&::after {
+			display: none;
+			position: absolute;
+			content: '';
+			top: -6px;
+			right: -5px;
+
+			width: 0;
+			height: 0;
+			border-style: solid;
+			border-width: 0 3px 8px 3px;
+			border-color: transparent transparent #f00 transparent;
+			.rotate(45deg);
+		}
+		&.ne::after {
+			display: block;
+			//background-color: #f00;
+		}
+	}
+	.clusterIcon {
+		width: 60px;
+		height: 40px;
+
+		img {
+			width: 60px;
+			height: 40px;
+			opacity: 1;
+		}
+	}
+
 	/**
 	 * LAYER PANEL
 	 */
