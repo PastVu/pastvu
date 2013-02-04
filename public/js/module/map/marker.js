@@ -129,7 +129,7 @@ define([
                     console.log('Полученные данные нового зума устарели');
                     return;
                 }
-                this.processIncomingData(data,  bound); // Обрабатываем
+                this.processIncomingDataZoom(data,  bound); // Обрабатываем
                 this.redraw(); // Запускаем перерисовку
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
@@ -151,7 +151,7 @@ define([
                     console.log('Полученные данные перемещения устарели, так как запрашивались для другого зума');
                     return;
                 }
-                this.processIncomingData(data); // Обрабатываем
+                this.processIncomingDataMove(data); // Обрабатываем
                 this.redraw(); // Запускаем перерисовку
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
@@ -163,7 +163,7 @@ define([
     /**
      * Обрабатывает входящие данные
      */
-    MarkerManager.prototype.processIncomingData = function (data, bound) {
+    MarkerManager.prototype.processIncomingDataZoom = function (data, bound) {
         var needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
             boundChanged = !bound.equals(this.calcBound), //Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
             localClusteringResult,
@@ -173,7 +173,7 @@ define([
             curr,
             i;
 
-        // Заполняем новый объект фото
+        // Заполняем объект новых фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
@@ -198,20 +198,11 @@ define([
         }
         _.assign(this.mapObjects.photos, photos);
 
-        // Заполняем новый объект кластеров
-        if (Array.isArray(data.clusters) && data.clusters.length > 0) {
-            i = data.clusters.length;
-            while (i) {
-                curr = data.clusters[i--];
-                if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                    clusters[i] = curr;
-                }
-            }
-        }
 
+        // Если кластеры должны строиться на клиенте, то не берем их из результата сервера
         if (needClientClustering) {
             localClusteringResult = this.localClustering(this.mapObjects.photos);
-            _.assign(clusters, localClusteringResult.clusters);
+            clusters = localClusteringResult.clusters;
 
             i = localClusteringResult.photosGoesToLocalCluster.length;
             while (i) {
@@ -221,6 +212,14 @@ define([
                 }
                 delete photos[curr.id];
                 delete this.mapObjects.photos[curr.id];
+            }
+        } else if (Array.isArray(data.clusters) && data.clusters.length > 0) {
+            i = data.clusters.length;
+            while (i) {
+                curr = data.clusters[i--];
+                if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
+                    clusters[i] = curr;
+                }
             }
         }
 
@@ -242,6 +241,105 @@ define([
             }
         }
         this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
+
+        //Чистим ссылки
+        delete data.photos;
+        delete data.clusters;
+        photos = clusters = clustersLocal = curr = data = null;
+    };
+
+    /**
+     * Обрабатывает входящие данные
+     */
+    MarkerManager.prototype.processIncomingDataMove = function (data) {
+        var needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
+            boundChanged = !bound.equals(this.calcBound), //Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+            localClusteringResult,
+            photos = {},
+            clusters = {},
+            clustersLocal = {},
+            curr,
+            i;
+
+        // Заполняем объект новых фото
+        if (Array.isArray(data.photos) && data.photos.length > 0) {
+            i = data.photos.length;
+            while (i) { // while loop, reversed
+                curr = data.photos[i--];
+                if (this.mapObjects.photos[curr.id] === undefined) {
+                    curr.geo.reverse();
+                    if (this.calcBound.contains(curr.geo)) {
+                        photos[curr.id] = curr;
+                    }
+                }
+            }
+        }
+
+        // Проверяем, если старые фото выходят за пределы актуального bound
+        for (i in this.mapObjects.photos) {
+            if (this.mapObjects.photos.hasOwnProperty(i)) {
+                if (!this.calcBound.contains(this.mapObjects.photos[i].geo)) {
+                    this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                    delete this.mapObjects.photos[i];
+                }
+            }
+        }
+        _.assign(this.mapObjects.photos, photos);
+
+
+        // Если кластеры должны строиться на клиенте, то не берем их из результата сервера
+        if (needClientClustering) {
+            localClusteringResult = this.localClustering(this.mapObjects.photos);
+            clusters = localClusteringResult.clusters;
+
+            i = localClusteringResult.photosGoesToLocalCluster.length;
+            while (i) {
+                curr = localClusteringResult.photosGoesToLocalCluster[i--];
+                if (curr.marker) {
+                    this.layerPhotos.removeLayer(curr.marker);
+                }
+                delete photos[curr.id];
+                delete this.mapObjects.photos[curr.id];
+            }
+        } else {
+            // Проверяем, если старые кластеры выходят за пределы актуального bound
+            for (i in this.mapObjects.clusters) {
+                if (this.mapObjects.clusters.hasOwnProperty(i)) {
+                    if (!this.calcBound.contains(this.mapObjects.clusters[i].geo)) {
+                        this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
+                        delete this.mapObjects.clusters[i];
+                    }
+                }
+            }
+            if (Array.isArray(data.clusters) && data.clusters.length > 0) {
+                i = data.clusters.length;
+                while (i) {
+                    curr = data.clusters[i--];
+                    if (this.calcBound.contains(curr.geo)) {
+                        clusters[i] = curr;
+                    }
+                }
+            }
+        }
+
+        // Создаем маркеры для новых фото
+        for (i in photos) {
+            if (photos.hasOwnProperty(i)) {
+                curr = photos[i];
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: curr.id, type: 'photo', obj: curr, img: curr.icon}});
+                this.layerPhotos.addLayer(curr.marker);
+            }
+        }
+
+        // Создаем маркеры для кластеров
+        for (i in clusters) {
+            if (clusters.hasOwnProperty(i)) {
+                curr = clusters[i];
+                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {id: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
+                this.layerClusters.addLayer(curr.marker);
+            }
+        }
+        _.assign(this.mapObjects.clusters, clusters);  // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
         delete data.photos;

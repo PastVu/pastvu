@@ -470,16 +470,20 @@ module.exports.loadController = function (app, db, io) {
                 }
 
                 step(
-                    function findPhoto() {
-                        Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid file title year').exec(this);
+                    function findObjects() {
+                        if (data.z < 17) {
+                            PhotoCluster.getBound(data, this);
+                        } else {
+                            Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid file title year').exec(this);
+                        }
                     },
-                    function checkData(err, p) {
+                    function checkData(err, photos, clusters) {
                         if (err) {
                             result({message: err && err.message, error: true});
                             return;
                         }
-                        console.dir(p);
-                        result({photos: p, startAt: data.startAt});
+                        console.dir(photos);
+                        result({photos: photos || [], clusters: clusters || [], startAt: data.startAt});
                     }
                 );
 

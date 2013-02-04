@@ -134,13 +134,51 @@ module.exports.clusterPhoto = function (cid, newGeo, cb) {
     });
     return true;
     /*step(
-         function () {
-             Clusters.forEach(function (item, index, array) {
-                Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }, $push: {p: photo._id} }, { new: true, upsert: true }, this.parallel());
-             }, this);
-         },
-         function (err) {
-            console.log('err ', err);
-         }
+     function () {
+     Clusters.forEach(function (item, index, array) {
+     Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }, $push: {p: photo._id} }, { new: true, upsert: true }, this.parallel());
+     }, this);
+     },
+     function (err) {
+     console.log('err ', err);
+     }
      );*/
+};
+
+
+/**
+ * Берет кластеры по границам
+ * @param data id фото
+ * @param cb Коллбэк
+ * @return {Object}
+ */
+module.exports.getBound = function (data, cb) {
+    step(
+        function () {
+            Clusters.find({z: data.z, geo: { "$within": {"$box": [ data.sw, data.ne ]} }, c: {$gt: 1}}).select('-_id c file').exec(this.parallel());
+            Clusters.find({z: data.z, geo: { "$within": {"$box": [ data.sw, data.ne ]} }, c: 1}).populate('p', '-_id cid file title year').select('-_id').exec(this.parallel());
+        },
+        function (err, clusters, alone) {
+            if (err) {
+                if (cb) {
+                    cb(err);
+                }
+                return;
+            }
+            var photos = [],
+                curr,
+                i;
+            if (alone) {
+                i = alone.length;
+                while (i) {
+                    curr = alone[i--];
+                    photos.push(curr[0]);
+                }
+            }
+            if (cb) {
+                cb(null, photos, clusters);
+            }
+            console.log('err ', err);
+        }
+    );
 };
