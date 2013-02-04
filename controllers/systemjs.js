@@ -38,7 +38,7 @@ module.exports.loadController = function (app, db) {
             photoCounter = 0,
             photoCursor = db.photos.find({geo: {$size: 2}}, {geo: 1, file: 1});
 
-        db.clusters.drop();
+        db.clusters.remove();
 
         // forEach в данном случае - это честный while по курсору: function (func) {while (this.hasNext()) {func(this.next());}}
         photoCursor.forEach(function (photo) {

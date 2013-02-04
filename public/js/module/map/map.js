@@ -200,7 +200,6 @@ define([
 
         // Обработчик переключения режима редактирования
         editHandler: function (val) {
-            alert(9);
             if (val) {
                 this.editMarkerCreate();
             } else {

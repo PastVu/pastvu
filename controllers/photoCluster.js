@@ -153,10 +153,13 @@ module.exports.clusterPhoto = function (cid, newGeo, cb) {
  * @return {Object}
  */
 module.exports.getBound = function (data, cb) {
+    console.log('clusters ~~~~~~~~~');
+    console.log(data.z, data.sw, data.ne);
+    var box = [ data.sw, data.ne ];
     step(
         function () {
-            Clusters.find({z: data.z, geo: { "$within": {"$box": [ data.sw, data.ne ]} }, c: {$gt: 1}}).select('-_id c file').exec(this.parallel());
-            Clusters.find({z: data.z, geo: { "$within": {"$box": [ data.sw, data.ne ]} }, c: 1}).populate('p', '-_id cid file title year').select('-_id').exec(this.parallel());
+            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: {$gt: 1}}).select('-_id c file').exec(this.parallel());
+            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: 1}).populate('p', {_id: 1, cid: 1, file: 1, title: 1, year: 1}).select('-_id p').exec(this.parallel());
         },
         function (err, clusters, alone) {
             if (err) {
@@ -171,14 +174,16 @@ module.exports.getBound = function (data, cb) {
             if (alone) {
                 i = alone.length;
                 while (i) {
-                    curr = alone[i--];
-                    photos.push(curr[0]);
+                    curr = alone[--i].p[0];
+                    if (curr) {
+                        delete curr._id;
+                        photos.push(curr);
+                    }
                 }
             }
             if (cb) {
                 cb(null, photos, clusters);
             }
-            console.log('err ', err);
         }
     );
 };
