@@ -23,8 +23,9 @@ define([
         this.pane = this.map._panes.markerPane;
         this.calcBound = null;
         this.currZoom = this.map.getZoom();
-        this.refreshTimeout = null;
-        this.refreshBind = this.refresh.bind(this, true);
+        this.refreshByZoomTimeout = null;
+        this.refreshDataByMoveBind = this.refreshDataByMove.bind(this, true);
+        this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this, true);
         this.refreshingRequest = null;
         this.aggregateDelta = P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA();
 
@@ -56,7 +57,7 @@ define([
      * Вызывается по событию начала изменения масштаба карты
      */
     MarkerManager.prototype.onZoomStart = function (opt) {
-        window.clearTimeout(this.refreshTimeout);
+        window.clearTimeout(this.refreshByZoomTimeout);
         if (!this.animationOn) {
             this.changeMarkersDisplayByType('none');
         }
@@ -101,32 +102,35 @@ define([
      * При изменении масштаба отсрачиваем обновление данных, т.к. масштаб может меняться многократно за короткий промежуток времени
      */
     MarkerManager.prototype.onMapMoveEnd = function () {
-        var NeedToRedraw = false;
+        window.clearTimeout(this.refreshByZoomTimeout);
         if (this.currZoom !== this.map.getZoom()) {
-            window.clearTimeout(this.refreshTimeout);
-            NeedToRedraw = this.reCalcBound(true);
-            this.currZoom = this.map.getZoom();
-            this.refreshTimeout = window.setTimeout(this.refreshBind, 400);
-            return;
+            this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
         } else {
-            NeedToRedraw = this.reCalcBound();
-        }
-        if (NeedToRedraw) {
-            this.refresh(false);
+            if (this.reCalcBound()) {
+                this.refreshDataByMoveBind(false);
+            }
         }
     };
 
     /**
      * Обновление данных маркеров.
-     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
      */
-    MarkerManager.prototype.refresh = function (reposExisting) {
+    MarkerManager.prototype.refreshDataByZoom = function () {
+        this.currZoom = this.map.getZoom();
+        this.reCalcBound(true);
         this.startPendingAt = Date.now();
 
+        var zoom = this.currZoom,
+            bound = _.clone(this.calcBound);
+
         socket.once('getBoundResult', function (data) {
-            if (data && !data.error && this.startPendingAt === data.startAt) {
-                this.processIncomingData(data); // Обрабатываем
-                this.redraw(reposExisting); // Запускаем перерисовку
+            if (data && !data.error) {
+                if (this.startPendingAt !== data.startAt || zoom !== this.currZoom || !bound.intersects(this.calcBound)) {
+                    console.log('Полученные данные нового зума устарели');
+                    return;
+                }
+                this.processIncomingData(data,  bound); // Обрабатываем
+                this.redraw(); // Запускаем перерисовку
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
             }
@@ -136,10 +140,32 @@ define([
     };
 
     /**
+     * Обновление данных маркеров.
+     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
+     */
+    MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
+        var zoom = this.currZoom;
+        socket.once('getBoundResult', function (data) {
+            if (data && !data.error) {
+                if (zoom !== this.currZoom) {
+                    console.log('Полученные данные перемещения устарели, так как запрашивались для другого зума');
+                    return;
+                }
+                this.processIncomingData(data); // Обрабатываем
+                this.redraw(); // Запускаем перерисовку
+            } else {
+                console.log('Ошибка загрузки новых камер: ' + data.message);
+            }
+        }.bind(this));
+        socket.emit('getBound', {z: this.currZoom, sw: Utils.geo.latlngToArr(this.calcBound.getSouthWest(), true), ne: Utils.geo.latlngToArr(this.calcBound.getNorthEast(), true)});
+    };
+
+    /**
      * Обрабатывает входящие данные
      */
-    MarkerManager.prototype.processIncomingData = function (data) {
-        var needClientClustering = this.currZoom !== this.map.getMaxZoom() && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
+    MarkerManager.prototype.processIncomingData = function (data, bound) {
+        var needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
+            boundChanged = !bound.equals(this.calcBound), //Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
             localClusteringResult,
             photos = {},
             clusters = {},
@@ -152,18 +178,22 @@ define([
             i = data.photos.length;
             while (i) { // while loop, reversed
                 curr = data.photos[i--];
-                if (this.mapObjects.photos[curr.id] !== undefined) {
+                if (this.mapObjects.photos[curr.id] === undefined) {
                     curr.geo.reverse();
-                    photos[curr.id] = curr;
+                    if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
+                        photos[curr.id] = curr;
+                    }
                 }
             }
         }
 
         // Проверяем, если такого фото в новом объекте нет, удаляем его из старого
         for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i) && !photos.hasOwnProperty(i)) {
-                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                delete this.mapObjects.photos[i];
+            if (this.mapObjects.photos.hasOwnProperty(i)) {
+                if (!photos.hasOwnProperty(i) || (boundChanged && !this.calcBound.contains(this.mapObjects.photos[i].geo))) {
+                    this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                    delete this.mapObjects.photos[i];
+                }
             }
         }
         _.assign(this.mapObjects.photos, photos);
@@ -172,8 +202,10 @@ define([
         if (Array.isArray(data.clusters) && data.clusters.length > 0) {
             i = data.clusters.length;
             while (i) {
-                i--;
-                clusters[i] = data.clusters[i];
+                curr = data.clusters[i--];
+                if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
+                    clusters[i] = curr;
+                }
             }
         }
 
@@ -275,7 +307,7 @@ define([
      * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать
      */
     MarkerManager.prototype.redraw = function (reposExisting) {
-        this.updateObjects(reposExisting);
+        this.updateObjects();
 
         if (!this.animationOn) {
             this.changeMarkersDisplayByType('block', ['cam', 'car', 'cluster']);
