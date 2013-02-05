@@ -22,12 +22,12 @@ module.exports.loadController = function (app, db) {
                 photoExistingClusters = [];
 
             clusters.forEach(function (item) {
-                db.clusters.update({p: photo._id, z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: {c: -1}, $pull: { p: photo._id } }, {multi: false, upsert: false});
+                db.clusters.update({p: photo._id, z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * ((geo[1] / item.h >> 0) + 1)])}, { $inc: {c: -1}, $pull: { p: photo._id } }, {multi: false, upsert: false});
                 //photoExistingClusters.push(db.clusters.find({p: photo._id, z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, {_id: 1}).toArray()[0]);
             });
             //printjson(photoExistingClusters);
             clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (newGeo[0] / item.w >> 0), item.h * (newGeo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
+                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (newGeo[0] / item.w >> 0), item.h * ((newGeo[1] / item.h >> 0) + 1)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
             });
             return {message: 'Ok', error: false};
         });
@@ -45,7 +45,7 @@ module.exports.loadController = function (app, db) {
             var geo = photo.geo;
             photoCounter++;
             clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
+                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * ((geo[1] / item.h >> 0) + 1)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
             });
         });
 
