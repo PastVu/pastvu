@@ -29,7 +29,7 @@ requirejs.config({
 
         'm': 'module',
 
-        'jquery': 'lib/jquery/jquery-1.9.0',
+        'jquery': 'lib/jquery/jquery-1.9.1',
         'jquery-ui': 'lib/jquery/ui',
         'bs': 'lib/bootstrap',
         'socket.io': 'lib/socket.io',
