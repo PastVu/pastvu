@@ -3,6 +3,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
     'use strict';
 
     var defaults = {
+            // Следующие типы включают друг друга по нарастающей
             base: {
                 cid: '',
 
@@ -46,7 +47,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
                 stats_day: 0,
                 stats_week: 0,
                 stats_all: 0
-            }
+            },
+            // Тип для точки на карте, заполняется из full ниже
+            mapdot: {dir: ''},
+            // Тип для кластера на карте
+            mapclust: {}
         },
         picPrefix = '/_photo',
         picFormats = {
@@ -59,6 +64,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 
     _.assign(defaults.compact, defaults.base);
     _.assign(defaults.full, defaults.compact);
+
+    // Заполняем полями тип точки и кластера на карте
+    _.assign(defaults.mapdot,  _.pick(defaults.full, 'cid', 'geo', 'file', 'title', 'year'));
+    _.assign(defaults.mapclust,  _.pick(defaults.full, 'geo', 'file'));
 
 
     /**

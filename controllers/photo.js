@@ -474,7 +474,7 @@ module.exports.loadController = function (app, db, io) {
                         if (data.z < 17) {
                             PhotoCluster.getBound(data, this);
                         } else {
-                            Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid geo file title year').exec(this);
+                            Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid geo file dir title year').exec(this);
                         }
                     },
                     function checkData(err, photos, clusters) {

@@ -3,8 +3,8 @@
  * Модель карты
  */
 define([
-    'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet'
-], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L) {
+    'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'm/Photo'
+], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
     'use strict';
 
     var cams2 = {cameras: {}, clusters: {}, groups: {}};
@@ -183,7 +183,7 @@ define([
                 if (this.mapObjects.photos[curr.cid] === undefined) {
                     curr.geo.reverse();
                     if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                        photos[curr.cid] = curr;
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'micro');
                     }
                 }
             }
@@ -221,7 +221,7 @@ define([
                 curr = data.clusters[--i];
                 curr.geo.reverse();
                 if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                    clusters[i] = curr;
+                    clusters[i] = Photo.factory(curr, 'mapclust', 'micro');
                 }
             }
         }
@@ -230,7 +230,7 @@ define([
         for (i in photos) {
             if (photos.hasOwnProperty(i)) {
                 curr = photos[i];
-                divIcon = L.divIcon({className: 'photoIcon ne', iconSize: new L.Point(8, 8)});
+                divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: new L.Point(8, 8)});
                 curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr, img: curr.icon}});
                 this.layerPhotos.addLayer(curr.marker);
             }
@@ -240,7 +240,7 @@ define([
         for (i in clusters) {
             if (clusters.hasOwnProperty(i)) {
                 curr = clusters[i];
-                divIcon = L.divIcon({className: 'clusterIcon ne', iconSize: new L.Point(60, 40), html: '<img src="/_photo/micro/' + curr.file + '"/>'});
+                divIcon = L.divIcon({className: 'clusterIcon', iconSize: new L.Point(60, 40), html: '<img src="' + curr.sfile + '"/>'});
                 curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
                 this.layerClusters.addLayer(curr.marker);
             }

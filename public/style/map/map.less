@@ -44,19 +44,64 @@
 			display: none;
 			position: absolute;
 			content: '';
-			top: -6px;
-			right: -5px;
-
-			width: 0;
+			background-image: url(/img/map/arr.png);
+			background-repeat: no-repeat;
+			width: 10px;
+			height: 10px;
+/*			width: 0;
 			height: 0;
 			border-style: solid;
 			border-width: 0 3px 8px 3px;
-			border-color: transparent transparent #f00 transparent;
-			.rotate(45deg);
+			border-color: transparent transparent #000 transparent;
+			.rotate(45deg);*/
+		}
+		&.n::after {
+			display: block;
+			top: -10px;
+			right: -1px;
+			background-position: 0 0;
 		}
 		&.ne::after {
 			display: block;
-			//background-color: #f00;
+			top: -7px;
+			right: -6px;
+			background-position: -10px 0;
+		}
+		&.e::after {
+			display: block;
+			top: -1px;
+			right: -10px;
+			background-position: -20px 0;
+		}
+		&.se::after {
+			display: block;
+			top: 5px;
+			right: -6px;
+			background-position: -30px 0;
+		}
+		&.s::after {
+			display: block;
+			top: 8px;
+			right: -1px;
+			background-position: -40px 0;
+		}
+		&.sw::after {
+			display: block;
+			top: 5px;
+			right: 5px;
+			background-position: -50px 0;
+		}
+		&.w::after {
+			display: block;
+			top: -1px;
+			right: 8px;
+			background-position: -60px 0;
+		}
+		&.nw::after {
+			display: block;
+			top: -7px;
+			right: 5px;
+			background-position: -70px 0;
 		}
 	}
 	.clusterIcon {
