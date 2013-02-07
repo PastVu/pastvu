@@ -10,7 +10,7 @@ module.exports.loadController = function (app, db) {
 
     saveSystemJSFunc(function clusterPhoto(cid, geoPhotoNew) {
         if (!cid || !geoPhotoNew || geoPhotoNew.length !== 2) {
-            return {message: 'Bad geo params to set cluster', error: true};
+            return {message: 'Bad params to set photo cluster', error: true};
         }
 
         var query = cid ? {'cid': cid} : {},
@@ -22,8 +22,6 @@ module.exports.loadController = function (app, db) {
                 geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
                 geoPhotoNewCorrection = [geoPhotoNew[0] < 0 ? -1 : 0, geoPhotoNew[1] > 0 ? 1 : 0],
                 cluster,
-                lng,
-                lat,
                 c,
                 geo,
                 gravity,
@@ -52,7 +50,7 @@ module.exports.loadController = function (app, db) {
 
                 // Cluster increment
                 geo = geoToPrecisionRound([item.w * ((geoPhotoNew[0] / item.w >> 0) + geoPhotoNewCorrection[0]), item.h * ((geoPhotoNew[1] / item.h >> 0) + geoPhotoNewCorrection[1])]);
-                cluster = db.clusters.findOne({p: photo._id, z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
+                cluster = db.clusters.findOne({z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
                 c = (cluster && cluster.c) || 0;
                 gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] + item.hHalf];
                 gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
@@ -76,10 +74,27 @@ module.exports.loadController = function (app, db) {
 
         // forEach в данном случае - это честный while по курсору: function (func) {while (this.hasNext()) {func(this.next());}}
         photoCursor.forEach(function (photo) {
-            var geo = photo.geo;
+            var geoPhoto = photo.geo,
+                geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
+                geo,
+                cluster,
+                c,
+                gravity,
+                gravityNew;
+
             photoCounter++;
+
             clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * ((geo[1] / item.h >> 0) + 1)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
+                item.wHalf = toPrecisionRound(item.w / 2);
+                item.hHalf = toPrecisionRound(item.h / 2);
+
+                geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
+                cluster = db.clusters.findOne({z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
+                c = (cluster && cluster.c) || 0;
+                gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] + item.hHalf];
+                gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhoto[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
+
+                db.clusters.update({z: item.z, geo: geo}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
             });
         });
 
