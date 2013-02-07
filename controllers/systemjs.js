@@ -8,8 +8,8 @@ var step = require('step'),
 module.exports.loadController = function (app, db) {
     logger = log4js.getLogger("systemjs.js");
 
-    saveSystemJSFunc(function clusterPhoto(cid, newGeo) {
-        if (!cid || !newGeo || newGeo.length !== 2) {
+    saveSystemJSFunc(function clusterPhoto(cid, geoPhotoNew) {
+        if (!cid || !geoPhotoNew || geoPhotoNew.length !== 2) {
             return {message: 'Bad geo params to set cluster', error: true};
         }
 
@@ -18,16 +18,50 @@ module.exports.loadController = function (app, db) {
             photos = db.photos.find(query, {geo: 1, file: 1}).toArray();
 
         photos.forEach(function (photo, index, arr) {
-            var geo = photo.geo,
-                photoExistingClusters = [];
+            var geoPhoto = photo.geo,
+                geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
+                geoPhotoNewCorrection = [geoPhotoNew[0] < 0 ? -1 : 0, geoPhotoNew[1] > 0 ? 1 : 0],
+                cluster,
+                lng,
+                lat,
+                c,
+                geo,
+                gravity,
+                gravityNew,
+                log = '';
 
             clusters.forEach(function (item) {
-                db.clusters.update({p: photo._id, z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * ((geo[1] / item.h >> 0) + 1)])}, { $inc: {c: -1}, $pull: { p: photo._id } }, {multi: false, upsert: false});
-                //photoExistingClusters.push(db.clusters.find({p: photo._id, z: item.z, geo: geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, {_id: 1}).toArray()[0]);
-            });
-            //printjson(photoExistingClusters);
-            clusters.forEach(function (item) {
-                db.clusters.update({z: item.z, geo: geoToPrecisionRound([item.w * (newGeo[0] / item.w >> 0), item.h * ((newGeo[1] / item.h >> 0) + 1)])}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
+                log = '';
+
+                item.wHalf = toPrecisionRound(item.w / 2);
+                item.hHalf = toPrecisionRound(item.h / 2);
+
+                // Cluster decrement
+                geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
+                cluster = db.clusters.findOne({p: photo._id, z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1, file: 1});
+                log += item.z + ' ' + (+!!cluster) + ': ' + geo[0] + ', ' + geo[1] + ' |~| ';
+                if (cluster) {
+                    c = cluster.c || 0;
+                    gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] + item.hHalf];
+                    gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / (c), (gravity[1] * (c + 1) - geoPhoto[1]) / (c)]);
+
+                    log += c + ' |~| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
+
+                    db.clusters.update({p: photo._id, z: item.z, geo: geo}, { $inc: {c: -1}, $pull: { p: photo._id }, $set: {gravity: gravityNew} }, {multi: false, upsert: false});
+                }
+
+                // Cluster increment
+                geo = geoToPrecisionRound([item.w * ((geoPhotoNew[0] / item.w >> 0) + geoPhotoNewCorrection[0]), item.h * ((geoPhotoNew[1] / item.h >> 0) + geoPhotoNewCorrection[1])]);
+                cluster = db.clusters.findOne({p: photo._id, z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
+                c = (cluster && cluster.c) || 0;
+                gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] + item.hHalf];
+                gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
+
+                log += ' |===| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
+
+                db.clusters.update({z: item.z, geo: geo}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
+
+                print(log);
             });
             return {message: 'Ok', error: false};
         });
