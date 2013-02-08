@@ -24,42 +24,43 @@ module.exports.loadController = function (app, db) {
                 cluster,
                 c,
                 geo,
+                geoNew,
                 gravity,
                 gravityNew,
                 log = '';
 
             clusters.forEach(function (item) {
-                log = '';
+                //log = '';
 
-                item.wHalf = toPrecisionRound(item.w / 2);
-                item.hHalf = toPrecisionRound(item.h / 2);
-
-                // Cluster decrement
                 geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
+                geoNew = geoToPrecisionRound([item.w * ((geoPhotoNew[0] / item.w >> 0) + geoPhotoNewCorrection[0]), item.h * ((geoPhotoNew[1] / item.h >> 0) + geoPhotoNewCorrection[1])]);
                 cluster = db.clusters.findOne({p: photo._id, z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1, file: 1});
-                log += item.z + ' ' + (+!!cluster) + ': ' + geo[0] + ', ' + geo[1] + ' |~| ';
-                if (cluster) {
-                    c = cluster.c || 0;
-                    gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] + item.hHalf];
-                    gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / (c), (gravity[1] * (c + 1) - geoPhoto[1]) / (c)]);
 
-                    log += c + ' |~| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
+                if (!cluster || (cluster && (geo[0] !== geoNew[0] || geo[1] !== geoNew[1]))) {
+                    item.wHalf = toPrecisionRound(item.w / 2);
+                    item.hHalf = toPrecisionRound(item.h / 2);
+                    //log += item.z + ' ' + (+!!cluster) + ': ' + geo[0] + ', ' + geo[1] + ' |~| ';
 
-                    db.clusters.update({p: photo._id, z: item.z, geo: geo}, { $inc: {c: -1}, $pull: { p: photo._id }, $set: {gravity: gravityNew} }, {multi: false, upsert: false});
+                    // Cluster decrement
+                    if (cluster) {
+                        c = cluster.c || 0;
+                        gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] + item.hHalf];
+                        gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / (c), (gravity[1] * (c + 1) - geoPhoto[1]) / (c)]);
+
+                        db.clusters.update({p: photo._id, z: item.z, geo: geo}, { $inc: {c: -1}, $pull: { p: photo._id }, $set: {gravity: gravityNew} }, {multi: false, upsert: false});
+                        //log += c + ' |~| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
+                    }
+
+                    // Cluster increment
+                    cluster = db.clusters.findOne({z: item.z, geo: geoNew}, {_id: 0, c: 1, gravity: 1});
+                    c = (cluster && cluster.c) || 0;
+                    gravity = (cluster && cluster.gravity) || [geoNew[0] + item.wHalf, geoNew[1] + item.hHalf];
+                    gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
+
+                    db.clusters.update({z: item.z, geo: geoNew}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
+                    //log += ' |===| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
                 }
-
-                // Cluster increment
-                geo = geoToPrecisionRound([item.w * ((geoPhotoNew[0] / item.w >> 0) + geoPhotoNewCorrection[0]), item.h * ((geoPhotoNew[1] / item.h >> 0) + geoPhotoNewCorrection[1])]);
-                cluster = db.clusters.findOne({z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
-                c = (cluster && cluster.c) || 0;
-                gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] + item.hHalf];
-                gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
-
-                log += ' |===| ' + gravity[0] + ', ' + gravity[1] + ' |~| ' + gravityNew[0] + ', ' + gravityNew[1];
-
-                db.clusters.update({z: item.z, geo: geo}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
-
-                print(log);
+                //print(log);
             });
             return {message: 'Ok', error: false};
         });
