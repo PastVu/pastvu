@@ -62,8 +62,8 @@ var path = require('path'),
         },
         {
             version: 'micro',
-            width: 60,
-            height: 40,
+            width: 48,
+            height: 48,
             filter: 'Sinc',
             gravity: 'center',
             postfix: '^'
@@ -262,9 +262,10 @@ function conveyerStep(file, cb, ctx) {
         sequence.push(function (info, callback) {
             var gravity,
                 extent;
+
             if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
                 // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : item.gravity;
+                gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : {gravity: item.gravity};
                 extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
                 o.customArgs = [
                     "-gravity", gravity.gravity,

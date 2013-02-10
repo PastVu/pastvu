@@ -240,7 +240,7 @@ define([
         for (i in clusters) {
             if (clusters.hasOwnProperty(i)) {
                 curr = clusters[i];
-                divIcon = L.divIcon({className: 'clusterIcon', iconSize: new L.Point(60, 40), html: '<img src="' + curr.sfile + '"/>'});
+                divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: new L.Point(50, 50), html: '<img class="clusterImg" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
                 curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
                 this.layerClusters.addLayer(curr.marker);
             }

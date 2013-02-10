@@ -51,7 +51,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             // Тип для точки на карте, заполняется из full ниже
             mapdot: {dir: ''},
             // Тип для кластера на карте
-            mapclust: {}
+            mapclust: {c: 0}
         },
         picPrefix = '/_photo',
         picFormats = {

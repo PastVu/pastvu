@@ -153,8 +153,6 @@ module.exports.clusterPhoto = function (cid, newGeo, cb) {
  * @return {Object}
  */
 module.exports.getBound = function (data, cb) {
-    console.log('clusters ~~~~~~~~~');
-    console.log(data.z, data.sw, data.ne);
     var box = [ data.sw, data.ne ];
     step(
         function () {

@@ -39,6 +39,7 @@
 		height: 8px;
 		background-color: #003aff;
 		.border-radius(50%);
+		.box-shadow(0 0 1px 1px #fff);
 
 		&::after {
 			display: none;
@@ -105,13 +106,26 @@
 		}
 	}
 	.clusterIcon {
-		width: 60px;
-		height: 40px;
+		width: 50px;
+		height: 50px;
+		//border-color: #fff;
+		.box-sizing(border-box);
 
-		img {
-			width: 60px;
-			height: 40px;
+		.clusterImg {
+			width: 48px;
+			height: 48px;
 			opacity: 1;
+		}
+
+		.clusterCount {
+			position: absolute;
+			bottom: 0;
+			width: 100%;
+			color: #fff;
+			text-align: center;
+			line-height: 12px;
+			font-size: 12px;
+			text-shadow: 1px 1px 0 black, -1px 1px 0 black, 1px -1px 0 black, -1px -1px 0 black;
 		}
 	}
 
