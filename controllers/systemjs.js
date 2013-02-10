@@ -43,8 +43,8 @@ module.exports.loadController = function (app, db) {
                     // Если фотография в старых координатах уже лежит в кластере, удаляем фото из него
                     if (cluster) {
                         c = cluster.c || 0;
-                        gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] + item.hHalf];
-                        gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / (c), (gravity[1] * (c + 1) - geoPhoto[1]) / (c)]);
+                        gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] - item.hHalf];
+                        gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / c, (gravity[1] * (c + 1) - geoPhoto[1]) / c]);
 
                         if (c > 1) {
                             // Если после удаления фото из кластера, в этом кластере еще остаются другие фото, берем у одного из них file
@@ -78,7 +78,7 @@ module.exports.loadController = function (app, db) {
                     // Вставляем фото в новый кластер
                     cluster = db.clusters.findOne({z: item.z, geo: geoNew}, {_id: 0, c: 1, gravity: 1});
                     c = (cluster && cluster.c) || 0;
-                    gravity = (cluster && cluster.gravity) || [geoNew[0] + item.wHalf, geoNew[1] + item.hHalf];
+                    gravity = (cluster && cluster.gravity) || [geoNew[0] + item.wHalf, geoNew[1] - item.hHalf];
                     gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
 
                     db.clusters.update({z: item.z, geo: geoNew}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
@@ -114,7 +114,7 @@ module.exports.loadController = function (app, db) {
                 geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
                 cluster = db.clusters.findOne({z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
                 c = (cluster && cluster.c) || 0;
-                gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] + item.hHalf];
+                gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] - item.hHalf];
                 gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhoto[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
 
                 db.clusters.update({z: item.z, geo: geo}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});

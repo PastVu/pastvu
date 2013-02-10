@@ -158,10 +158,10 @@ module.exports.getBound = function (data, cb) {
     var box = [ data.sw, data.ne ];
     step(
         function () {
-            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: {$gt: 1}}).select('-_id c geo file').exec(this.parallel());
-            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: 1}).populate('p', {_id: 1, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}).select('-_id p').exec(this.parallel());
+            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: {$gt: 1}}).select('-_id c gravity file').exec(this.parallel());
+            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: 1}, {_id: 0, p: 1}).populate('p', {_id: 1, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}).exec(this.parallel());
         },
-        function (err, clusters, alone) {
+        function (err, clusters, alones) {
             if (err) {
                 if (cb) {
                     cb(err);
@@ -171,19 +171,37 @@ module.exports.getBound = function (data, cb) {
             var photos = [],
                 curr,
                 i;
-            if (alone) {
-                i = alone.length;
+
+            // Переименовываем gravity в привычный клиенту geo
+            if (clusters) {
+                i = clusters.length;
                 while (i) {
-                    curr = alone[--i].p[0];
+                    --i;
+                    clusters[i] = clusters[i].toObject({ transform: gravityToGeo });
+                }
+            }
+
+            // Создаем массив фотографий из массива одиночных кластеров
+            if (alones) {
+                i = alones.length;
+                while (i) {
+                    curr = alones[--i].p[0];
                     if (curr) {
+                        curr = curr.toObject();
                         delete curr._id;
                         photos.push(curr);
                     }
                 }
             }
+
             if (cb) {
                 cb(null, photos, clusters);
             }
         }
     );
 };
+function gravityToGeo(doc, ret, options) {
+    ret.geo = ret.gravity;
+    delete ret.gravity;
+    return ret;
+}
