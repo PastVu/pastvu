@@ -64,9 +64,12 @@ define([
      */
     MarkerManager.prototype.onZoomStart = function (opt) {
         window.clearTimeout(this.refreshByZoomTimeout);
-        if (!this.animationOn) {
-            this.changeMarkersDisplayByType('none');
-        }
+        this.layerClusters.clearLayers();
+        delete this.mapObjects.clusters;
+        this.mapObjects.clusters = {};
+        /*if (!this.animationOn) {
+         this.changeMarkersDisplayByType('none');
+         }*/
     };
 
     /**
@@ -136,7 +139,7 @@ define([
                     return;
                 }
                 this.processIncomingDataZoom(data, bound); // Обрабатываем
-                this.redraw(); // Запускаем перерисовку
+                //this.redraw(); // Запускаем перерисовку
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
             }
@@ -178,14 +181,19 @@ define([
             clustersLocal = {},
             divIcon,
             curr,
+            existing,
             i;
 
-        // Заполняем объект новых фото
+        // Заполняем новый объект фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
                 curr = data.photos[--i];
-                if (this.mapObjects.photos[curr.cid] === undefined) {
+                existing = this.mapObjects.photos[curr.cid];
+                if (existing !== undefined) {
+                    // Если такое фото уже есть, то просто записываем его в новый объект
+                    photos[curr.cid] = existing;
+                } else {
                     curr.geo.reverse();
                     if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
                         photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
@@ -194,16 +202,14 @@ define([
             }
         }
 
-        // Проверяем, если такого фото в новом объекте нет, удаляем его из старого
+        // В текущем объекте остались только фото на удаление
         for (i in this.mapObjects.photos) {
             if (this.mapObjects.photos.hasOwnProperty(i)) {
-                if (photos[i] === undefined || (boundChanged && !this.calcBound.contains(this.mapObjects.photos[i].geo))) {
-                    this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                    delete this.mapObjects.photos[i];
-                }
+                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                delete this.mapObjects.photos[i];
             }
         }
-        _.assign(this.mapObjects.photos, photos);
+        this.mapObjects.photos = photos;
 
 
         // Если кластеры должны строиться на клиенте, то не берем их из результата сервера
@@ -255,7 +261,7 @@ define([
         //Чистим ссылки
         delete data.photos;
         delete data.clusters;
-        photos = clusters = clustersLocal = curr = data = null;
+        photos = clusters = clustersLocal = curr = existing = data = null;
     };
 
     /**
@@ -425,7 +431,6 @@ define([
     /**
      * Обновляет хэш отображаемых маркеров.
      * Удаляет ненужные и добавляет нужные (новые).
-     *
      * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
      * @param {?boolean=} searchRespectHash Учитывать хэш поиска.
      */
@@ -503,46 +508,6 @@ define([
 
         console.log('Still new (not added) objects: ' + Utils.getObjectPropertyLength(this.objectsNew) + ', current objects: ' + Utils.getObjectPropertyLength(this.objects));
         markersAlreadyAdded = m = fragment = null;
-    };
-
-    MarkerManager.prototype.addMarker = function (marker) {
-        if (!this.objectsNew[marker.id]) {
-            this.objectsNew[marker.id] = marker;
-        }
-    };
-
-    MarkerManager.prototype.addMarkersAndRefreshThemImmediate = function (obj) {
-        var searchRespectHash,
-            respectHash;
-
-        if (SearchInVM.open() && SearchInVM.applyMap && SearchInVM.applyMap() && SearchInVM.resultHash) {
-            searchRespectHash = SearchInVM.resultHash;
-        }
-        respectHash = Boolean(searchRespectHash);
-
-
-        var fragment = document.createDocumentFragment();
-        var marker;
-        for (var m in obj) {
-            if (!obj.hasOwnProperty(m)) continue;
-            marker = obj[m];
-            this.objectsNew[marker.id] = marker;
-
-            if (marker.type == 'cam' && cams[m]) {
-                if ((respectHash && !searchRespectHash[m])) continue;
-                if (!respectHash && !CheckMask(cams[m].mask, mask)) continue;
-                if (!this.calcBound.contains(marker.point)) continue;
-                if (!cams[m].zooms[this.currZoom]) continue;
-            }
-
-            fragment.appendChild(marker.createDom());
-            this.MarkerAddEvents(marker);
-            this.objects[m] = marker;
-            delete this.objectsNew[marker.id];
-        }
-        this.pane.appendChild(fragment);
-
-        console.log('Not added object: ' + Utils.getObjectPropertyLength(this.objectsNew) + ', now total objects is ' + Utils.getObjectPropertyLength(this.objects));
     };
 
     MarkerManager.prototype.MarkerAddEvents = function (marker) {
