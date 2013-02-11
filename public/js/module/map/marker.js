@@ -20,6 +20,11 @@ define([
         this.objects = {};
         this.objectsNew = {};
 
+        this.sizePoint = new L.Point(8, 8);
+        this.sizeClusters = new L.Point(42, 42);
+        this.sizeClusterm = new L.Point(52, 52);
+        this.sizeCluster = new L.Point(62, 62);
+
         this.pane = this.map._panes.markerPane;
         this.calcBound = null;
         this.currZoom = this.map.getZoom();
@@ -183,7 +188,7 @@ define([
                 if (this.mapObjects.photos[curr.cid] === undefined) {
                     curr.geo.reverse();
                     if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'micro');
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
                     }
                 }
             }
@@ -221,7 +226,7 @@ define([
                 curr = data.clusters[--i];
                 curr.geo.reverse();
                 if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                    clusters[i] = Photo.factory(curr, 'mapclust', 'micro');
+                    clusters[i] = Photo.factory(curr, 'mapclust');
                 }
             }
         }
@@ -230,8 +235,8 @@ define([
         for (i in photos) {
             if (photos.hasOwnProperty(i)) {
                 curr = photos[i];
-                divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: new L.Point(8, 8)});
-                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr, img: curr.icon}});
+                divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
+                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
                 this.layerPhotos.addLayer(curr.marker);
             }
         }
@@ -240,8 +245,8 @@ define([
         for (i in clusters) {
             if (clusters.hasOwnProperty(i)) {
                 curr = clusters[i];
-                divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: new L.Point(50, 50), html: '<img class="clusterImg" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
-                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
+                divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+                curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}});
                 this.layerClusters.addLayer(curr.marker);
             }
         }

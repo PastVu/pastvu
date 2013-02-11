@@ -89,7 +89,8 @@ module.exports.loadController = function (app, db) {
     });
 
     saveSystemJSFunc(function clusterAll() {
-        var clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
+        var startTime = Date.now(),
+            clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
             photoCounter = 0,
             photoCursor = db.photos.find({geo: {$size: 2}}, {geo: 1, file: 1});
 
@@ -121,7 +122,7 @@ module.exports.loadController = function (app, db) {
             });
         });
 
-        return {message: 'Ok', photos: photoCounter, clusters: db.clusters.count()};
+        return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
     });
 
     saveSystemJSFunc(function toPrecision(number, precision) {

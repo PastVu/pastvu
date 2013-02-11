@@ -51,7 +51,7 @@ function createPhotos(session, data, cb) {
             data.forEach(function (item, index) {
                 var photo = new Photo({
                     cid: count.next - index,
-                    geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+                    geo: [_.random(37546649, 37556140) / 1000000, _.random(55565922, 55703812) / 1000000],
                     dir: dirs[_.random(0, dirs.length - 1)],
                     user: session.user._id,
                     fresh: true

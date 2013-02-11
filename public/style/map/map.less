@@ -106,14 +106,15 @@
 		}
 	}
 	.clusterIcon {
-		width: 50px;
-		height: 50px;
+		opacity: 0;
 		//border-color: #fff;
 		.box-sizing(border-box);
+		.transition(opacity .25s linear);
 
 		.clusterImg {
-			width: 48px;
-			height: 48px;
+			position: absolute;
+			display: block;
+			width: 100%;
 			opacity: 1;
 		}
 
@@ -123,9 +124,20 @@
 			width: 100%;
 			color: #fff;
 			text-align: center;
-			line-height: 12px;
+			line-height: 13px;
 			font-size: 12px;
+			font-weight: bold;
 			text-shadow: 1px 1px 0 black, -1px 1px 0 black, 1px -1px 0 black, -1px -1px 0 black;
+			.simple_gradient(transparent, rgba(0, 0, 0, 0.7));
+		}
+
+		&.show {
+			opacity: 1;
+			&:hover {
+				.clusterImg {
+					opacity: 1;
+				}
+			}
 		}
 	}
 

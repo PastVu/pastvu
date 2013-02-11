@@ -23,6 +23,7 @@ var path = require('path'),
             version: 'standard',
             width: 1050,
             height: 700,
+            strip: true,
             filter: 'Sinc',
             postfix: '>'
         },
@@ -41,12 +42,12 @@ var path = require('path'),
                     //Гравитация - север с отступом сверху 10% (но не более чем до края)
                     newH = h * w2 / w;
                     result.gravity = 'north';
-                    result.extent += '+0+' + (Math.min(newH * 0.1, (newH - h2) / 2)  >> 0);
+                    result.extent += '+0+' + (Math.min(newH * 0.1, (newH - h2) / 2) >> 0);
                 } else if (aspect < 0.97) {
                     //Портретная не сильно вытянутая
                     //Гравитация - центр с отступом от центра наверх 10% (но не более чем до края)
                     newH = h * w2 / w;
-                    result.extent += '+0-' + (Math.min(newH * 0.1, (newH - h2) / 2)  >> 0);
+                    result.extent += '+0-' + (Math.min(newH * 0.1, (newH - h2) / 2) >> 0);
                 }
                 return result;
             },
@@ -62,8 +63,15 @@ var path = require('path'),
         },
         {
             version: 'micro',
-            width: 48,
-            height: 48,
+            width: 60,
+            height: 60,
+            crop: true,
+            gravity: 'center'
+        },
+        {
+            version: 'micros',
+            width: 40,
+            height: 40,
             filter: 'Sinc',
             gravity: 'center',
             postfix: '^'
@@ -250,11 +258,15 @@ function conveyerStep(file, cb, ctx) {
     imageSequence.forEach(function (item, index, array) {
         var o = {
             srcPath: path.normalize(uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file),
-            dstPath: path.normalize(uploadDir + '/' + item.version + '/' + file),
-            strip: true,
-            width: item.width,
-            height: item.height + (item.postfix || '') // Only Shrink Larger Images
+            dstPath: path.normalize(uploadDir + '/' + item.version + '/' + file)
         };
+        if (item.strip) {
+            o.strip = item.strip;
+        }
+        if (item.width && item.height) {
+            o.width = item.width;
+            o.height = item.height + (item.postfix || ''); // Only Shrink Larger Images
+        }
         if (item.filter) {
             o.filter = item.filter;
         }
@@ -262,19 +274,29 @@ function conveyerStep(file, cb, ctx) {
         sequence.push(function (info, callback) {
             var gravity,
                 extent;
+            if (item.crop) {
+                o.quality = 1;
 
-            if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
-                // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : {gravity: item.gravity};
-                extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
-                o.customArgs = [
-                    "-gravity", gravity.gravity,
-                    "-extent", extent
-                ];
+                if (item.gravity) {
+                    o.gravity = item.gravity;
+                }
+                imageMagick.crop(o, function (err) {
+                    callback(err, info);
+                });
+            } else {
+                if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
+                    // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
+                    gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : {gravity: item.gravity};
+                    extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
+                    o.customArgs = [
+                        "-gravity", gravity.gravity,
+                        "-extent", extent
+                    ];
+                }
+                imageMagick.resize(o, function (err) {
+                    callback(err, info);
+                });
             }
-            imageMagick.resize(o, function (err) {
-                callback(err, info);
-            });
         });
 
     });

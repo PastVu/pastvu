@@ -51,10 +51,12 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             // Тип для точки на карте, заполняется из full ниже
             mapdot: {dir: ''},
             // Тип для кластера на карте
-            mapclust: {c: 0}
+            mapclust: {c: 0, measure: ''}
         },
         picPrefix = '/_photo',
         picFormats = {
+            micros: picPrefix + '/micros/',
+            microm: picPrefix + '/micro/',
             micro: picPrefix + '/micro/',
             mini: picPrefix + '/mini/',
             thumb: picPrefix + '/thumb/',
@@ -94,6 +96,14 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
             origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
             User.factory(origin.user, 'base');
+        }
+        if (defType === 'mapclust') {
+            if (origin.c < 100) {
+                origin.measure = 's';
+            } else if (origin.c < 1000) {
+                origin.measure = 'm';
+            }
+            picType = 'micro' + origin.measure;
         }
         origin.sfile = picFormats[picType] + origin.file;
 

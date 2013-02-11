@@ -68,6 +68,7 @@ logger.info('Application Hash: ' + app.hash);
 io = require('socket.io').listen(server);
 
 new File("publicContent/avatars").createDirectory();
+new File("publicContent/photos/micros").createDirectory();
 new File("publicContent/photos/micro").createDirectory();
 new File("publicContent/photos/mini").createDirectory();
 new File("publicContent/photos/thumb").createDirectory();
