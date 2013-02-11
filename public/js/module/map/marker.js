@@ -133,13 +133,24 @@ define([
             bound = _.clone(this.calcBound);
 
         socket.once('getBoundResult', function (data) {
+            var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
+                boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+
             if (data && !data.error) {
+                // Данные устарели и должны быть отброшены, если уже был отправлен другой запрос на данные по зуму или текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
                 if (this.startPendingAt !== data.startAt || zoom !== this.currZoom || !bound.intersects(this.calcBound)) {
                     console.log('Полученные данные нового зума устарели');
                     return;
                 }
-                this.processIncomingDataZoom(data, bound); // Обрабатываем
-                //this.redraw(); // Запускаем перерисовку
+
+                needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1;
+                boundChanged = !bound.equals(this.calcBound);
+
+                if (needClientClustering) {
+                    this.processIncomingDataZoomClientClustering(data, boundChanged);
+                } else {
+                    this.processIncomingDataZoom(data, boundChanged);
+                }
             } else {
                 console.log('Ошибка загрузки новых камер: ' + data.message);
             }
@@ -149,33 +160,75 @@ define([
     };
 
     /**
-     * Обновление данных маркеров.
-     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
+     * Обрабатывает входящие данные по зуму
      */
-    MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
-        var zoom = this.currZoom;
-        socket.once('getBoundResult', function (data) {
-            if (data && !data.error) {
-                if (zoom !== this.currZoom) {
-                    console.log('Полученные данные перемещения устарели, так как запрашивались для другого зума');
-                    return;
+    MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged) {
+        var photos = {},
+            clusters = {},
+            divIcon,
+            curr,
+            existing,
+            i;
+
+        // Заполняем новый объект фото
+        if (Array.isArray(data.photos) && data.photos.length > 0) {
+            i = data.photos.length;
+            while (i) { // while loop, reversed
+                curr = data.photos[--i];
+                existing = this.mapObjects.photos[curr.cid];
+                if (existing !== undefined) {
+                    // Если такое фото уже есть, то просто записываем его в новый объект
+                    photos[curr.cid] = existing;
+                    delete this.mapObjects.photos[curr.cid];
+                } else {
+                    // Если оно новое - создаем его объект и маркер
+                    curr.geo.reverse();
+                    if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
+                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
+                        curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
+                        this.layerPhotos.addLayer(curr.marker);
+                    }
                 }
-                this.processIncomingDataMove(data); // Обрабатываем
-                this.redraw(); // Запускаем перерисовку
-            } else {
-                console.log('Ошибка загрузки новых камер: ' + data.message);
             }
-        }.bind(this));
-        socket.emit('getBound', {z: this.currZoom, sw: Utils.geo.latlngToArr(this.calcBound.getSouthWest(), true), ne: Utils.geo.latlngToArr(this.calcBound.getNorthEast(), true)});
+        }
+
+        // В текущем объекте остались только фото на удаление
+        for (i in this.mapObjects.photos) {
+            if (this.mapObjects.photos.hasOwnProperty(i)) {
+                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                delete this.mapObjects.photos[i];
+            }
+        }
+        this.mapObjects.photos = photos;
+
+        // Создаем маркеры для кластеров
+        if (Array.isArray(data.clusters) && data.clusters.length > 0) {
+            i = data.clusters.length;
+            while (i) {
+                curr = data.clusters[--i];
+                curr.geo.reverse();
+                if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                    clusters[i] = Photo.factory(curr, 'mapclust');
+                    divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+                    curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}});
+                    this.layerClusters.addLayer(curr.marker);
+                }
+            }
+        }
+        this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
+
+        //Чистим ссылки
+        delete data.photos;
+        delete data.clusters;
+        photos = clusters = curr = existing = data = null;
     };
 
-    /**
-     * Обрабатывает входящие данные
+   /**
+     * Обрабатывает входящие данные по зуму с локальной кластеризацией
      */
-    MarkerManager.prototype.processIncomingDataZoom = function (data, bound) {
-        var needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1,
-            boundChanged = !bound.equals(this.calcBound), //Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
-            localClusteringResult,
+    MarkerManager.prototype.processIncomingDataZoomClientClustering = function (data, boundChanged) {
+        var localClusteringResult,
             photos = {},
             clusters = {},
             clustersLocal = {},
@@ -213,29 +266,19 @@ define([
 
 
         // Если кластеры должны строиться на клиенте, то не берем их из результата сервера
-        if (needClientClustering) {
-            localClusteringResult = this.localClustering(this.mapObjects.photos);
-            clusters = localClusteringResult.clusters;
+        localClusteringResult = this.localClustering(this.mapObjects.photos);
+        clusters = localClusteringResult.clusters;
 
-            i = localClusteringResult.photosGoesToLocalCluster.length;
-            while (i) {
-                curr = localClusteringResult.photosGoesToLocalCluster[--i];
-                if (curr.marker) {
-                    this.layerPhotos.removeLayer(curr.marker);
-                }
-                delete photos[curr.cid];
-                delete this.mapObjects.photos[curr.cid];
+        i = localClusteringResult.photosGoesToLocalCluster.length;
+        while (i) {
+            curr = localClusteringResult.photosGoesToLocalCluster[--i];
+            if (curr.marker) {
+                this.layerPhotos.removeLayer(curr.marker);
             }
-        } else if (Array.isArray(data.clusters) && data.clusters.length > 0) {
-            i = data.clusters.length;
-            while (i) {
-                curr = data.clusters[--i];
-                curr.geo.reverse();
-                if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                    clusters[i] = Photo.factory(curr, 'mapclust');
-                }
-            }
+            delete photos[curr.cid];
+            delete this.mapObjects.photos[curr.cid];
         }
+
 
         // Создаем маркеры для новых фото
         for (i in photos) {
@@ -262,6 +305,28 @@ define([
         delete data.photos;
         delete data.clusters;
         photos = clusters = clustersLocal = curr = existing = data = null;
+    };
+
+
+    /**
+     * Обновление данных маркеров.
+     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
+     */
+    MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
+        var zoom = this.currZoom;
+        socket.once('getBoundResult', function (data) {
+            if (data && !data.error) {
+                if (zoom !== this.currZoom) {
+                    console.log('Полученные данные перемещения устарели, так как запрашивались для другого зума');
+                    return;
+                }
+                this.processIncomingDataMove(data); // Обрабатываем
+                this.redraw(); // Запускаем перерисовку
+            } else {
+                console.log('Ошибка загрузки новых камер: ' + data.message);
+            }
+        }.bind(this));
+        socket.emit('getBound', {z: this.currZoom, sw: Utils.geo.latlngToArr(this.calcBound.getSouthWest(), true), ne: Utils.geo.latlngToArr(this.calcBound.getNorthEast(), true)});
     };
 
     /**
