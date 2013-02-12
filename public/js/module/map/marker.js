@@ -323,14 +323,29 @@ define([
             a = {west: this.calcBoundPrev._southWest.lng, north: this.calcBoundPrev._northEast.lat, east: this.calcBoundPrev._northEast.lng, south: this.calcBoundPrev._southWest.lat},
             b = {west: bound._southWest.lng, north: bound._northEast.lat, east: bound._northEast.lng, south: bound._southWest.lat},
             c1,
-            c2;
+            c2,
+            i;
 
+        //Удаляем маркеры, не входящие в новый баунд
+        for (i in this.mapObjects.photos) {
+            if (this.mapObjects.photos.hasOwnProperty(i) && !bound.contains(this.mapObjects.photos[i].geo)) {
+                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                delete this.mapObjects.photos[i];
+            }
+        }
+        for (i in this.mapObjects.clusters) {
+            if (this.mapObjects.clusters.hasOwnProperty(i) && !bound.contains(this.mapObjects.clusters[i].geo)) {
+                this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
+                delete this.mapObjects.clusters[i];
+            }
+        }
+
+        //Считаем новые баунды для запроса
         if (b.east > a.east) {
             c2 = {west: a.east, east: b.east};
         } else if (b.east < a.east) {
             c2 = {west: b.west, east: a.west};
         }
-
         if (a.north !== b.north) {
             c1 = {west: b.west, east: b.east};
 
@@ -352,8 +367,6 @@ define([
                 }
             }
         }
-
-
         if (this.b1) {
             this.map.removeLayer(this.b1);
             this.b1 = null;
@@ -421,7 +434,7 @@ define([
         // Заполняем новый объект фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
-            while (i) { // while loop, reversed
+            while (i) {
                 curr = data.photos[--i];
                 if (!this.mapObjects.photos[curr.cid]) {
                     curr.geo.reverse();
