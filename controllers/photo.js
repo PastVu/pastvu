@@ -463,19 +463,20 @@ module.exports.loadController = function (app, db, io) {
              * Фотографии и кластеры по границам
              */
             function result(data) {
-                socket.emit('getBoundResult', data);
+                socket.emit('getBoundsResult', data);
             }
 
-            socket.on('getBound', function (data) {
-                if (!Utils.isType('object', data) || !data.z || !data.sw || !data.ne) {
+            socket.on('getBounds', function (data) {
+                if (!Utils.isType('object', data) || !Array.isArray(data.bounds) || !data.z) {
                     result({message: 'Bad params', error: true});
                     return;
                 }
+                console.log(data.z, data.bounds);
 
                 step(
                     function findObjects() {
                         if (data.z < 17) {
-                            PhotoCluster.getBound(data, this);
+                            PhotoCluster.getBounds(data, this);
                         } else {
                             Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid geo file dir title year').exec(this);
                         }

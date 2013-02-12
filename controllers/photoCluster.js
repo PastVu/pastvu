@@ -146,49 +146,99 @@ module.exports.clusterPhoto = function (cid, newGeo, cb) {
 };
 
 
+function cursors(err) {
+    var i = arguments.length;
+    while (i > 1) {
+        arguments[--i].toArray(this.parallel());
+    }
+}
+function clustersReal(data, cb) {
+    step(
+        function () {
+            var i = data.bounds.length;
+            while (i--) {
+                Cluster.collection.find({"geo": { "$within": {"$box": data.bounds[i]} }, z: data.z, c: {$gt: 1}}, {_id: 0, c: 1, gravity: 1, file: 1}, this.parallel());
+            }
+        },
+        cursors,
+        function (err, cluster) {
+            var result = cluster,
+                i = arguments.length;
+
+            while (i > 2) {
+                result.push.apply(result, arguments[--i]);
+            }
+            cb(err, result);
+        }
+    );
+}
+function clustersPhotos(data, cb) {
+    step(
+        function () {
+            var i = data.bounds.length;
+            while (i--) {
+                Cluster.collection.find({"geo": { "$within": {"$box": data.bounds[i]} }, z: data.z, c: 1}, {fields: {_id: 0, p: 1}}, this.parallel());
+            }
+        },
+        cursors,
+        function (err) {
+            if (err) {
+                cb(err);
+                return;
+            }
+            var pids = [], // Массив id фотографий
+                curr,
+                i = arguments.length,
+                j;
+
+            while (i > 1) {
+                curr = arguments[--i];
+                j = curr.length;
+                while (j) {
+                    pids.push(curr[--j].p[0]);
+                }
+            }
+            Photo.collection.find({"_id": { "$in": pids }}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}, this);
+        },
+        cursors,
+        function (err, photos) {
+            cb(err, photos);
+        }
+    );
+}
+
 /**
  * Берет кластеры по границам
  * @param data id фото
  * @param cb Коллбэк
  * @return {Object}
  */
-module.exports.getBound = function (data, cb) {
-    var box = [ data.sw, data.ne ];
+module.exports.getBounds = function (data, cb) {
+    var i;
+
     step(
         function () {
-            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: {$gt: 1}}).select('-_id c gravity file').exec(this.parallel());
-            Cluster.find({z: data.z, geo: { "$within": {"$box": box} }, c: 1}, {_id: 0, p: 1}).populate('p', {_id: 1, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}).exec(this.parallel());
+            clustersReal(data, this.parallel());
+            clustersPhotos(data, this.parallel());
         },
-        function (err, clusters, alones) {
+        function (err, clusters, photos) {
             if (err) {
                 if (cb) {
                     cb(err);
                 }
                 return;
             }
-            var photos = [],
-                curr,
+
+            var curr,
                 i;
 
             // Переименовываем gravity в привычный клиенту geo
             if (clusters) {
                 i = clusters.length;
                 while (i) {
-                    --i;
-                    clusters[i] = clusters[i].toObject({ transform: gravityToGeo });
-                }
-            }
-
-            // Создаем массив фотографий из массива одиночных кластеров
-            if (alones) {
-                i = alones.length;
-                while (i) {
-                    curr = alones[--i].p[0];
-                    if (curr) {
-                        curr = curr.toObject();
-                        delete curr._id;
-                        photos.push(curr);
-                    }
+                    curr = clusters[--i];
+                    curr.geo = curr.gravity;
+                    delete curr.gravity;
                 }
             }
 
