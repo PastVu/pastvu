@@ -2,7 +2,7 @@
 /*
  * Google layer using Google Maps API
  */
-define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=false&region=RU'], function (L) {
+define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.11&sensor=false&region=RU'], function (L) {
     (function (google, L) {
 
         L.Google = L.Class.extend({
@@ -104,6 +104,7 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=fa
                 if (!this._ready) return;
                 this._google_center = new google.maps.LatLng(0, 0);
                 var map = new google.maps.Map(this._container, {
+                    animatedZoom: false,
                     center: this._google_center,
                     zoom: 0,
                     tilt: 0,
