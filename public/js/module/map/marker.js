@@ -52,6 +52,7 @@ define([
      * @return {boolean} Флаг того, что границы изменились.
      */
     MarkerManager.prototype.reCalcBound = function (force) {
+        //TODO: Изменяться баунд должен по шагам сетки кластеров
         var result = false;
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
@@ -410,97 +411,53 @@ define([
     /**
      * Обрабатывает входящие данные
      */
-    MarkerManager.prototype.processIncomingDataMove = function (data) {
-        var localClusteringResult,
-            photos = {},
+    MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged) {
+        var photos = {},
             clusters = {},
+            divIcon,
             curr,
             i;
 
-        // Заполняем объект новых фото
+        // Заполняем новый объект фото
         if (Array.isArray(data.photos) && data.photos.length > 0) {
             i = data.photos.length;
             while (i) { // while loop, reversed
                 curr = data.photos[--i];
-                if (this.mapObjects.photos[curr.cid] === undefined) {
+                if (!this.mapObjects.photos[curr.cid]) {
                     curr.geo.reverse();
-                    if (this.calcBound.contains(curr.geo)) {
-                        photos[curr.cid] = curr;
+                    // Если оно новое - создаем его объект и маркер
+                    if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
+                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
+                        curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
+                        this.layerPhotos.addLayer(curr.marker);
                     }
-                }
-            }
-        }
-
-        // Проверяем, если старые фото выходят за пределы актуального bound
-        for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i)) {
-                if (!this.calcBound.contains(this.mapObjects.photos[i].geo)) {
-                    this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                    delete this.mapObjects.photos[i];
                 }
             }
         }
         _.assign(this.mapObjects.photos, photos);
 
 
-        // Если кластеры должны строиться на клиенте, то не берем их из результата сервера
-        if (needClientClustering) {
-            localClusteringResult = this.localClustering(this.mapObjects.photos);
-            clusters = localClusteringResult.clusters;
-
-            i = localClusteringResult.photosGoesToLocalCluster.length;
-            while (i) {
-                curr = localClusteringResult.photosGoesToLocalCluster[--i];
-                if (curr.marker) {
-                    this.layerPhotos.removeLayer(curr.marker);
-                }
-                delete photos[curr.cid];
-                delete this.mapObjects.photos[curr.cid];
-            }
-        } else {
-            // Проверяем, если старые кластеры выходят за пределы актуального bound
-            for (i in this.mapObjects.clusters) {
-                if (this.mapObjects.clusters.hasOwnProperty(i)) {
-                    if (!this.calcBound.contains(this.mapObjects.clusters[i].geo)) {
-                        this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
-                        delete this.mapObjects.clusters[i];
-                    }
-                }
-            }
-            if (Array.isArray(data.clusters) && data.clusters.length > 0) {
-                i = data.clusters.length;
-                while (i) {
-                    curr = data.clusters[--i];
-                    if (this.calcBound.contains(curr.geo)) {
-                        clusters[i] = curr;
-                    }
-                }
-            }
-        }
-
-        // Создаем маркеры для новых фото
-        for (i in photos) {
-            if (photos.hasOwnProperty(i)) {
-                curr = photos[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr, img: curr.icon}});
-                this.layerPhotos.addLayer(curr.marker);
-            }
-        }
-
         // Создаем маркеры для кластеров
-        for (i in clusters) {
-            if (clusters.hasOwnProperty(i)) {
-                curr = clusters[i];
-                curr.marker = L.marker(curr.geo, {riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, count: curr.count}});
-                this.layerClusters.addLayer(curr.marker);
+        if (Array.isArray(data.clusters) && data.clusters.length > 0) {
+            i = data.clusters.length;
+            while (i) {
+                curr = data.clusters[--i];
+                curr.geo.reverse();
+                if (!boundChanged || this.calcBound.contains(curr.geo)) {
+                    clusters[i] = Photo.factory(curr, 'mapclust');
+                    divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+                    curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}});
+                    this.layerClusters.addLayer(curr.marker);
+                }
             }
         }
-        _.assign(this.mapObjects.clusters, clusters);  // Сливаем группы в основной объект кластеров this.mapObjects.clusters
+        _.assign(this.mapObjects.clusters, clusters); // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
         delete data.photos;
         delete data.clusters;
-        photos = clusters = clustersLocal = curr = data = null;
+        photos = clusters = curr = data = null;
     };
 
 
