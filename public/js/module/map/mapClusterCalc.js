@@ -150,7 +150,7 @@ define([
             var _this = this;
             this.$container.fadeIn(400, function () {
 
-                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: [55.753395, 37.621994], zoom: 13, minZoom: 2, maxZoom: 18, zoomAnimation: false, trackResize: false});
+                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: [55.753395, 37.621994], zoom: 13, minZoom: 3, maxZoom: 18, zoomAnimation: false, trackResize: false});
 
                 //Самостоятельно обновлем размеры карты
                 P.window.square.subscribe(function (newVal) {
@@ -207,7 +207,7 @@ define([
                 wMap = this.$dom.find('.mapContainer').width(),
                 hMap = this.$dom.find('.mapContainer').height(),
 
-                zooms = _.range(2, 17), // 0 - 16
+                zooms = _.range(3, 16 + 1), // Уровни 3 - 16
                 result = [],
 
                 setZoom = function (z) {

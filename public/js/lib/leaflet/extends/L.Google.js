@@ -10,7 +10,7 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.6&sensor=fa
             incomingAnimation: false,
 
             options: {
-                minZoom: 0,
+                minZoom: 3,
                 maxZoom: 18,
                 tileSize: 256,
                 subdomains: 'abc',

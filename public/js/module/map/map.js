@@ -150,7 +150,7 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
 
-                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 0, maxZoom: 18, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 3, maxZoom: 18, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
                 this.marker_mgr = new MarkerManager(this.map, {});
 
                 Locations.subscribe(function (val) {

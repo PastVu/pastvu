@@ -19,10 +19,8 @@ define([
             this.pinned = ko.observable(this.canOpen() && false); //Закреплен в открытом состоянии
             this.sliding = ko.observable(false);
 
-            this.DOMh = 12;
-            this.offset = 0;
-            this.usefulH = 171;
-            this.step = ko.observable(0);
+            this.step = ko.observable(9);
+            this.minZoom = ko.observable(0);
             this.sliderOnZoom = ko.observable(this.map.getZoom());
 
             this.zoomChangeTimeout = null;
@@ -62,9 +60,9 @@ define([
         },
 
         recalcZooms: function () {
+            this.minZoom(this.map.getMinZoom());
             this.numZooms = this.map.getMaxZoom() - this.map.getMinZoom() + 1;
-            this.dashes(_.range(0, this.numZooms).reverse());
-            this.step(this.usefulH / this.numZooms);
+            this.dashes(_.range(this.map.getMinZoom(), this.map.getMaxZoom() + 1).reverse());
             this.sliderOnZoom(this.map.getZoom());
         },
         pan: function (dir) {

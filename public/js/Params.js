@@ -23,7 +23,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
                 USE_OSM_API: true,
                 USE_GOOGLE_API: true,
                 USE_YANDEX_API: true,
-                CLUSTERING_ON_CLIENT: [],//[17, 18],
+                CLUSTERING_ON_SERVER: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                CLUSTERING_ON_CLIENT: [], //[17, 18],
                 CLUSTERING_ON_CLIENT_PIX_DELTA: 5,
 
 

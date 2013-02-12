@@ -11,7 +11,7 @@ define(['leaflet', 'http://api-maps.yandex.ru/2.0/?load=package.map&mode=release
             incomingAnimation: false,
 
             options: {
-                minZoom: 0,
+                minZoom: 3,
                 maxZoom: 18,
                 attribution: '',
                 opacity: 1,
