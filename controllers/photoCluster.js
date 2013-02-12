@@ -214,8 +214,6 @@ function clustersPhotos(data, cb) {
  * @return {Object}
  */
 module.exports.getBounds = function (data, cb) {
-    var i;
-
     step(
         function () {
             clustersReal(data, this.parallel());

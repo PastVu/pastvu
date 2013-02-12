@@ -319,8 +319,8 @@ define([
         var zoom = this.currZoom,
             bound = _.clone(this.calcBound),
             bounds = [],
-            a = {west: this.calcBoundPrev.getNorth(), north: this.calcBoundPrev.getNorth(), east: this.calcBoundPrev.getNorth(), south: this.calcBoundPrev.getNorth()},
-            b = {west: bound.getNorth(), north: bound.getNorth(), east: bound.getNorth(), south: bound.getNorth()},
+            a = {west: this.calcBoundPrev._southWest.lng, north: this.calcBoundPrev._northEast.lat, east: this.calcBoundPrev._northEast.lng, south: this.calcBoundPrev._southWest.lat},
+            b = {west: bound._southWest.lng, north: bound._northEast.lat, east: bound._northEast.lng, south: bound._southWest.lat},
             c1,
             c2;
 
@@ -352,11 +352,32 @@ define([
             }
         }
 
+
+        if (this.b1) {
+            this.map.removeLayer(this.b1);
+            this.b1 = null;
+        }
+        if (this.b2) {
+            this.map.removeLayer(this.b2);
+            this.b2 = null;
+        }
         if (c1) {
-            bounds.push([[c1.south, c1.west], [c1.north, c1.east]]);
+            bounds.push([[c1.west, c1.south], [c1.east, c1.north]]);
+            this.b1 = L.polygon([
+                [c1.north, c1.west],
+                [c1.north, c1.east],
+                [c1.south, c1.east],
+                [c1.south, c1.west]
+            ], {color: '#f00', weight: 1}).addTo(this.map);
         }
         if (c2) {
-            bounds.push([[c2.south, c2.west], [c2.north, c2.east]]);
+            bounds.push([[c2.west, c2.south], [c2.east, c2.north]]);
+            this.b2 = L.polygon([
+                [c2.north, c2.west],
+                [c2.north, c2.east],
+                [c2.south, c2.east],
+                [c2.south, c2.west]
+            ], {color: '#f90', weight: 1}).addTo(this.map);
         }
 
         socket.once('getBoundsResult', function (data) {
