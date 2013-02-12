@@ -32,7 +32,6 @@ define([
         this.refreshByZoomTimeout = null;
         this.refreshDataByMoveBind = this.refreshDataByMove.bind(this, true);
         this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this, true);
-        this.refreshingRequest = null;
         this.aggregateDelta = P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA();
 
         this.animationOn = false;
@@ -56,7 +55,7 @@ define([
         var result = false;
         if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
             this.calcBoundPrev = this.calcBound;
-            this.calcBound = this.map.getBounds().pad(0.1);
+            this.calcBound = this.map.getBounds().pad(0.2);
             result = true;
         }
         return result;
@@ -70,27 +69,6 @@ define([
         this.layerClusters.clearLayers();
         delete this.mapObjects.clusters;
         this.mapObjects.clusters = {};
-        /*if (!this.animationOn) {
-         this.changeMarkersDisplayByType('none');
-         }*/
-    };
-
-    /**
-     * Вызывается по событию начала изменения масштаба карты с анимацией.
-     * @param {!Object} opt Опции, которые передает API карты.
-     */
-    MarkerManager.prototype.onZoomAnim = function (opt) {
-        var matchedMarkers,
-            m;
-        if (this.animationOn === true) {
-            matchedMarkers = this.getMarkersByType(this.objects, ['cluster', 'cam', 'car']);
-            for (m in matchedMarkers) {
-                if (matchedMarkers.hasOwnProperty(m)) {
-                    L.DomUtil.setPosition(matchedMarkers[m].dom, this.map._latLngToNewLayerPoint(matchedMarkers[m].point, opt.zoom, opt.center), false);
-                }
-            }
-            this.changeMarkersDisplayByType('none', ['group']);
-        }
     };
 
     /**
@@ -626,50 +604,6 @@ define([
         Utils.Event.add(marker.over, 'click', marker.MarkerClick.bind(marker));
         Utils.Event.add(marker.over, 'mouseover', marker.MarkerOver.bind(marker));
         Utils.Event.add(marker.over, 'mouseout', marker.MarkerOut.bind(marker));
-    };
-
-    /**
-     * Изменение свойства display маркеров указанных типов.
-     * @param {!string} display Значение видимости
-     * @param {?Array.<string>=} typeArray Массив типов
-     */
-    MarkerManager.prototype.changeMarkersDisplayByType = function (display, typeArray) {
-        var matchedMarkers = typeArray ? this.getMarkersByType(this.objects, typeArray) : this.objects,
-            m;
-        for (m in matchedMarkers) {
-            if (matchedMarkers.hasOwnProperty(m)) {
-                matchedMarkers[m].dom.style.display = display;
-            }
-        }
-        matchedMarkers = m = null;
-    };
-
-    /**
-     * Репозиционирование маркеров
-     * @param {?Array.<string>=} typeArray Массив типов
-     */
-    MarkerManager.prototype.reposByType = function (typeArray) {
-        var matchedMarkers = typeArray ? this.getMarkersByType(this.objects, typeArray) : this.objects,
-            m;
-        for (m in matchedMarkers) {
-            if (matchedMarkers.hasOwnProperty(m)) {
-                matchedMarkers[m].repos();
-            }
-        }
-        matchedMarkers = m = null;
-    };
-
-    /**
-     * Возвращает из заданного хеша маркеров хэш маркеров с указанными типами
-     * @param {!Object} objects Хэш маркеров
-     * @param {!Array.<string>} typeArray Массив типов
-     * @return {Object}
-     */
-    MarkerManager.prototype.getMarkersByType = function (objects, typeArray) {
-        typeArray.sort();
-        return _.filter(objects, function (marker) {
-            return _.indexOf(typeArray, marker.type, true) >= 0;
-        });
     };
 
     return MarkerManager;
