@@ -11,7 +11,7 @@ define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.11&sensor=f
 
             options: {
                 minZoom: 3,
-                maxZoom: 18,
+                maxZoom: 20,
                 tileSize: 256,
                 subdomains: 'abc',
                 errorTileUrl: '',

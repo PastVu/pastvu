@@ -14,7 +14,7 @@ module.exports.makeModel = function (db) {
     Settings.saveUpsert({key: 'USE_OSM_API'}, {val: true, desc: 'OSM Active'}, function (err) {
         if (err) console.log('Settings ' + err);
     });
-    Settings.saveUpsert({key: 'USE_YANDEX_API'}, {val: false, desc: 'Yandex Active'}, function (err) {
+    Settings.saveUpsert({key: 'USE_YANDEX_API'}, {val: true, desc: 'Yandex Active'}, function (err) {
         if (err) console.log('Settings ' + err);
     });
     Settings.saveUpsert({key: 'REGISTRATION_ALLOWED'}, {val: true, desc: 'Open self-registration of new users'}, function (err) {

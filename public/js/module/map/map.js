@@ -48,19 +48,22 @@ define([
                             id: 'osmosnimki',
                             desc: 'Osmosnimki',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false})
+                            obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false}),
+                            maxZoom: 18
                         },
                         {
                             id: 'mapnik',
                             desc: 'Mapnik',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false})
+                            obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false}),
+                            maxZoom: 18
                         },
                         {
                             id: 'mapquest',
                             desc: 'Mapquest',
                             selected: ko.observable(false),
-                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false})
+                            obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false}),
+                            maxZoom: 18
                         }
                     ])
                 });
@@ -76,25 +79,29 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'ROADMAP'
+                            params: 'ROADMAP',
+                            maxZoom: 20
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'SATELLITE'
+                            params: 'SATELLITE',
+                            maxZoom: 20
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'HYBRID'
+                            params: 'HYBRID',
+                            maxZoom: 20
                         },
                         {
                             id: 'land',
                             desc: 'Ландшафт',
                             selected: ko.observable(false),
-                            params: 'TERRAIN'
+                            params: 'TERRAIN',
+                            maxZoom: 15
                         }
                     ])
                 });
@@ -110,31 +117,36 @@ define([
                             id: 'scheme',
                             desc: 'Схема',
                             selected: ko.observable(false),
-                            params: 'map'
+                            params: 'map',
+                            maxZoom: 17
                         },
                         {
                             id: 'sat',
                             desc: 'Спутник',
                             selected: ko.observable(false),
-                            params: 'satellite'
+                            params: 'satellite',
+                            maxZoom: 19
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
-                            params: 'hybrid'
+                            params: 'hybrid',
+                            maxZoom: 19
                         },
                         {
                             id: 'pub',
                             desc: 'Народная',
                             selected: ko.observable(false),
-                            params: 'publicMap'
+                            params: 'publicMap',
+                            maxZoom: 18
                         },
                         {
                             id: 'pubhyb',
                             desc: 'Народный гибрид',
                             selected: ko.observable(false),
-                            params: 'publicMapHybrid'
+                            params: 'publicMapHybrid',
+                            maxZoom: 18
                         }
                     ])
                 });
@@ -150,7 +162,7 @@ define([
         show: function () {
             this.$container.fadeIn(400, function () {
 
-                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 3, maxZoom: 18, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+                this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
                 this.marker_mgr = new MarkerManager(this.map, {});
 
                 Locations.subscribe(function (val) {
@@ -272,7 +284,18 @@ define([
             var layers = this.layers(),
                 layerActive = this.layerActive(),
                 system,
-                type;
+                type,
+                setLayer = function (type) {
+                    this.map.addLayer(type.obj);
+                    this.marker_mgr.layerChange();
+                    this.map.options.maxZoom = type.maxZoom;
+                    if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
+                        this.navSliderVM.recalcZooms();
+                    }
+                    if (this.map.getZoom() > type.maxZoom) {
+                        this.map.setZoom(type.maxZoom);
+                    }
+                }.bind(this);
 
             if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) {
                 return;
@@ -306,12 +329,11 @@ define([
                     if (system.deps && !type.obj) {
                         require([system.deps], function (Construct) {
                             type.obj = new Construct(type.params);
-                            this.map.addLayer(type.obj);
+                            setLayer(type);
                             type = null;
                         }.bind(this));
                     } else {
-                        this.map.addLayer(type.obj);
-                        this.marker_mgr.layerChange();
+                        setLayer(type);
                     }
                 }
             }
