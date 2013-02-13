@@ -1,6 +1,6 @@
 .mapNavigator(data-bind="with: repository[M!M]")
-	.stateWrap(data-bind="css: {pinned: pinned(), canOpen: canOpen()}")
-		.panel
+	.stateWrap(data-bind="css: {pinned: pinned(), hover: hover(), canOpen: canOpen()}")
+		.panel(data-bind="style: {height: panelH() + 'px'}")
 			.mup.fringe2.butt(data-bind="event: {'click': function () { pan('up') }}")
 			.mright.fringe2.butt(data-bind="event: {'click': function () { pan('right') }}")
 			.mdown.fringe2.butt(data-bind="event: {'click': function () { pan('down') }}")

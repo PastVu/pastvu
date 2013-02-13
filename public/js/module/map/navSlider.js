@@ -17,11 +17,21 @@ define([
 
             this.canOpen = ko.observable(this.options.canOpen); //Возможно ли вообще раскрывать контрол навигации
             this.pinned = ko.observable(this.canOpen() && false); //Закреплен в открытом состоянии
+            this.hover = ko.observable(false);
             this.sliding = ko.observable(false);
 
             this.step = ko.observable(9);
             this.minZoom = ko.observable(0);
+            this.numZooms = ko.observable(false);
             this.sliderOnZoom = ko.observable(this.map.getZoom());
+            // Высота панели зумирования зависит от шага, количества зумов и состояния панели
+            this.panelH = ko.computed(function () {
+                var result = 136;
+                if (this.pinned() || this.hover()) {
+                    result += (this.numZooms() * this.step()) + 3;
+                }
+                return result;
+            }, this);
 
             this.zoomChangeTimeout = null;
 
@@ -46,9 +56,17 @@ define([
                 this.$sliderArea = this.$dom.find('.sliderArea');
                 this.$sliderArea
                     .on('mousewheel', this.onWheel.bind(this))
-                    .on('DOMMouseScroll', this.onWheel.bind(this)) // Для FF
+                    .on('DOMMouseScroll', this.onWheel.bind(this))// Для FF
                     .on('click', '.dash', this.dashClick.bind(this))
                     .on(ET.mdown, this.SnatchBind);
+                this.stateWrap = this.$dom.find('.stateWrap');
+                this.stateWrap
+                    .mouseenter(function (evt) {
+                        this.hover(true);
+                    }.bind(this))
+                    .mouseleave(function () {
+                        this.hover(false);
+                    }.bind(this));
 
                 this.recalcZooms();
             }.bind(this));
@@ -61,7 +79,7 @@ define([
 
         recalcZooms: function () {
             this.minZoom(this.map.getMinZoom());
-            this.numZooms = this.map.getMaxZoom() - this.map.getMinZoom() + 1;
+            this.numZooms(this.map.getMaxZoom() - this.map.getMinZoom() + 1);
             this.dashes(_.range(this.map.getMinZoom(), this.map.getMaxZoom() + 1).reverse());
             this.sliderOnZoom(this.map.getZoom());
         },

@@ -87,14 +87,14 @@ define([
                             desc: 'Спутник',
                             selected: ko.observable(false),
                             params: 'SATELLITE',
-                            maxZoom: 20
+                            maxZoom: 19
                         },
                         {
                             id: 'hyb',
                             desc: 'Гибрид',
                             selected: ko.observable(false),
                             params: 'HYBRID',
-                            maxZoom: 20
+                            maxZoom: 19
                         },
                         {
                             id: 'land',

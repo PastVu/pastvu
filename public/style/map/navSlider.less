@@ -214,7 +214,6 @@
 
 	.panel {
 		position: relative;
-		height: 136px;
 		width: 100%;
 		z-index: 2;
 		.transition(height 0.25s ease-out 1s);
@@ -248,11 +247,10 @@
 			display: block;
 		}
 
-		&:hover, &.pinned {
+		&.hover, &.pinned {
 			zoom: 1;
 
 			.panel {
-				height: 283px;
 				.transition(height 0.25s ease-out);
 			}
 
@@ -285,14 +283,14 @@
 				.transition(opacity 0.25s ease-out 0.3s);
 			}
 		}
-		&:hover {
+		&.hover {
 			.pinArea {
 				margin-top: 0;
 				opacity: 1;
 				.transition(~"margin-top 0.25s ease-out 0.3s, opacity 0.25s ease-out 0.3s");
 			}
 		}
-		&.pinned:hover .pinArea{
+		&.pinned.hover .pinArea{
 			.transition(~"margin-top 0.25s ease-out, opacity 0.25s ease-out");
 		}
 		&.pinned {
