@@ -112,7 +112,7 @@ define([
         onWheel: function ($e) {
             var e = $e.originalEvent,
                 dir = Number((e.type === 'DOMMouseScroll' ? -1 * e.detail : e.wheelDelta) || 0),
-                newZoom = Math.max(0, Math.min(this.sliderOnZoom() + (dir ? (dir > 0 ? 1 : -1) : 0), this.map.getMaxZoom()));
+                newZoom = Math.max(this.minZoom(), Math.min(this.sliderOnZoom() + (dir ? (dir > 0 ? 1 : -1) : 0), this.map.getMaxZoom()));
 
             if (newZoom !== this.sliderOnZoom()) {
                 this.cancelZoomChangeTimeout();
