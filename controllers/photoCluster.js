@@ -162,6 +162,10 @@ function clustersReal(data, cb) {
         },
         cursors,
         function (err, cluster) {
+            if (err) {
+                cb(err);
+                return;
+            }
             var result = cluster,
                 i = arguments.length;
 
@@ -177,7 +181,7 @@ function clustersPhotos(data, cb) {
         function () {
             var i = data.bounds.length;
             while (i--) {
-                Cluster.collection.find({"geo": { "$within": {"$box": data.bounds[i]} }, z: data.z, c: 1}, {fields: {_id: 0, p: 1}}, this.parallel());
+                Cluster.collection.find({"geo": { "$within": {"$box": data.bounds[i]} }, z: data.z, c: 1}, {_id: 0, p: 1}, this.parallel());
             }
         },
         cursors,

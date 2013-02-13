@@ -473,23 +473,46 @@ module.exports.loadController = function (app, db, io) {
                 }
                 console.log(data.z, data.bounds);
 
-                step(
-                    function findObjects() {
-                        if (data.z < 17) {
-                            PhotoCluster.getBounds(data, this);
-                        } else {
-                            Photo.find({geo: { "$within": {"$box": [ data.sw, data.ne ]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }).select('-_id cid geo file dir title year').exec(this);
-                        }
-                    },
-                    function checkData(err, photos, clusters) {
-                        if (err) {
-                            result({message: err && err.message, error: true});
-                            return;
-                        }
-                        result({photos: photos || [], clusters: clusters || [], startAt: data.startAt});
-                    }
-                );
+                if (data.z < 17) {
+                    PhotoCluster.getBounds(data, res);
+                } else {
+                    step(
+                        function () {
+                            var i = data.bounds.length;
+                            while (i--) {
+                                Photo.collection.find({geo: { "$within": {"$box": data.bounds[i]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}, this.parallel());
+                            }
+                        },
+                        function cursors(err) {
+                            var i = arguments.length;
+                            while (i > 1) {
+                                arguments[--i].toArray(this.parallel());
+                            }
+                        },
+                        function (err, photos) {
+                            if (err) {
+                                res(err);
+                                return;
+                            }
+                            var result = photos,
+                                i = arguments.length;
 
+                            while (i > 2) {
+                                result.push.apply(result, arguments[--i]);
+                            }
+                            console.log('qqq', arguments.length, result.length);
+                            res(err, result);
+                        }
+                    );
+                }
+
+                function res(err, photos, clusters) {
+                    if (err) {
+                        result({message: err && err.message, error: true});
+                        return;
+                    }
+                    result({photos: photos, clusters: clusters, startAt: data.startAt});
+                }
             });
         }());
 
