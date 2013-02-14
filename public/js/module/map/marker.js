@@ -28,6 +28,7 @@ define([
         this.pane = this.map._panes.markerPane;
         this.calcBound = null;
         this.calcBoundPrev = null;
+        this.firstNoClusterZoom = 17;
         this.currZoom = this.map.getZoom();
         this.refreshByZoomTimeout = null;
         this.refreshDataByMoveBind = this.refreshDataByMove.bind(this, true);
@@ -106,39 +107,83 @@ define([
      * Обновление данных маркеров по зуму.
      */
     MarkerManager.prototype.refreshDataByZoom = function () {
-        this.currZoom = this.map.getZoom();
         this.reCalcBound(true);
         this.startPendingAt = Date.now();
 
-        var zoom = this.currZoom,
-            bound = _.clone(this.calcBound);
+        var newZoom = this.map.getZoom(),
+            bound = _.clone(this.calcBound),
+            bounds,
+            pollServer = true,
+            curr,
+            i;
 
-        socket.once('getBoundsResult', function (data) {
-            var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
-                boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
-
-            if (data && !data.error) {
-                // Данные устарели и должны быть отброшены, если уже был отправлен другой запрос на данные по зуму или текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
-                if (this.startPendingAt !== data.startAt || zoom !== this.currZoom || !bound.intersects(this.calcBound)) {
-                    console.log('Полученные данные нового зума устарели');
-                    return;
-                }
-
-                needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1;
-                boundChanged = !bound.equals(this.calcBound);
-
-                if (needClientClustering) {
-                    this.processIncomingDataZoomClientClustering(data, boundChanged);
-                } else {
-                    this.processIncomingDataZoom(data, boundChanged);
-                }
-            } else {
-                console.log('Ошибка загрузки новых камер: ' + data.message);
+        i = 4;
+        while (i--) {
+            if (this['b' + i]) {
+                this.map.removeLayer(this['b' + i]);
+                this['b' + i] = null;
             }
-            zoom = bound = null;
-            delete this.startPendingAt;
-        }.bind(this));
-        socket.emit('getBounds', {z: zoom, bounds: [[Utils.geo.latlngToArr(bound.getSouthWest(), true), Utils.geo.latlngToArr(bound.getNorthEast(), true)]], startAt: this.startPendingAt});
+        }
+
+        if (this.currZoom >= this.firstNoClusterZoom && newZoom >= this.firstNoClusterZoom) {
+            // Если на клиенте уже есть все фотографии для данного зума
+            if (newZoom > this.currZoom) {
+                // Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
+                pollServer = false;
+                this.cropByBound();
+            } else {
+                // Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
+                bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+                //Визуализация полученных баундов
+
+                i = bounds.length;
+                while (i) {
+                    curr = _.clone(bounds[--i]);
+                    curr[0].reverse();
+                    curr[1].reverse();
+                    this['b' + i] = L.polygon([
+                        [curr[1][0], curr[0][1]],
+                        curr[1],
+                        [curr[0][0], curr[1][1]],
+                        curr[0]
+                    ], {color: '#00C629', weight: 1}).addTo(this.map);
+                }
+            }
+        } else {
+            // Запрашиваем объекты полностью для нового баунда
+            bounds = [[Utils.geo.latlngToArr(bound.getSouthWest(), true), Utils.geo.latlngToArr(bound.getNorthEast(), true)]];
+        }
+
+        if (pollServer) {
+            socket.once('getBoundsResult', function (data) {
+                var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
+                    boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
+
+                if (data && !data.error) {
+                    // Данные устарели и должны быть отброшены, если уже был отправлен другой запрос на данные по зуму или текущий зум не равен запрашиваемомоу или текущий баунд уже успел выйти за пределы запрашиваемого
+                    if (this.startPendingAt !== data.startAt || newZoom !== this.currZoom || !bound.intersects(this.calcBound)) {
+                        console.log('Полученные данные нового зума устарели');
+                        return;
+                    }
+
+                    needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1;
+                    boundChanged = !bound.equals(this.calcBound);
+
+                    if (needClientClustering) {
+                        this.processIncomingDataZoomClientClustering(data, boundChanged);
+                    } else {
+                        this.processIncomingDataZoom(data, boundChanged);
+                    }
+                } else {
+                    console.log('Ошибка загрузки новых камер: ' + data.message);
+                }
+                newZoom = bound = null;
+                delete this.startPendingAt;
+            }.bind(this));
+            socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt});
+        }
+
+        this.currZoom = newZoom;
     };
 
     /**
@@ -289,6 +334,82 @@ define([
         photos = clusters = clustersLocal = curr = existing = data = null;
     };
 
+    /**
+     * Вычитает один баунд из другого
+     * @param minuend Уменьшаемый
+     * @param subtrahend Вычитаемый
+     * @return {Array} Массив баундов разницы вычитания
+     */
+    MarkerManager.prototype.boundSubtraction = function (minuend, subtrahend) {
+        var a = {west: minuend._southWest.lng, north: minuend._northEast.lat, east: minuend._northEast.lng, south: minuend._southWest.lat},
+            b = {west: subtrahend._southWest.lng, north: subtrahend._northEast.lat, east: subtrahend._northEast.lng, south: subtrahend._southWest.lat},
+            c = [],
+            result = [],
+            curr,
+            i;
+
+
+        if (minuend.contains(subtrahend)) {
+            // Если вычитаемый баунд полностью включается в уменьшаемый, то будет от 2 до 4 результатов
+            if (a.north > b.north) {
+                c[0] = {north: a.north, south: b.north, east: a.east, west: a.west};
+            }
+            if (a.south < b.south) {
+                c[1] = {north: b.south, south: a.south, east: a.east, west: a.west};
+            }
+            if (a.east > b.east) {
+                c[2] = {west: b.east, east: a.east, north: b.north, south: b.south};
+            }
+            if (a.west < b.west) {
+                c[3] = {west: a.west, east: b.west, north: b.north, south: b.south};
+            }
+
+        } else {
+            // Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
+            // or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
+            // or https://github.com/tschaub/geoscript-js
+            // or https://github.com/bjornharrtell/jsts
+            if (a.east > b.east) {
+                c[1] = {west: b.east, east: a.east};
+            } else if (a.east < b.east) {
+                c[1] = {west: a.west, east: b.west};
+            }
+            if (b.north !== a.north) {
+                c[0] = {west: a.west, east: a.east};
+
+                if (a.north > b.north) {
+                    c[0].north = a.north;
+                    c[0].south = b.north;
+
+                    if (c[1]) {
+                        c[1].north = b.north;
+                        c[1].south = a.south;
+                    }
+                } else {
+                    c[0].north = b.south;
+                    c[0].south = a.south;
+
+                    if (c[1]) {
+                        c[1].north = a.north;
+                        c[1].south = b.south;
+                    }
+                }
+            }
+        }
+        c = _.flatten(c, true);
+
+
+        i = c.length;
+        while (i) {
+            curr = c[--i];
+            result[i] = [
+                [curr.west, curr.south],
+                [curr.east, curr.north]
+            ];
+        }
+
+        return result;
+    };
 
     /**
      * Обновление данных маркеров.
@@ -297,79 +418,35 @@ define([
     MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
         var zoom = this.currZoom,
             bound = _.clone(this.calcBound),
-            bounds = [],
-            a = {west: this.calcBoundPrev._southWest.lng, north: this.calcBoundPrev._northEast.lat, east: this.calcBoundPrev._northEast.lng, south: this.calcBoundPrev._southWest.lat},
-            b = {west: bound._southWest.lng, north: bound._northEast.lat, east: bound._northEast.lng, south: bound._southWest.lat},
-            c1,
-            c2,
+            bounds,
+            curr,
             i;
 
         //Удаляем маркеры, не входящие в новый баунд
-        for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i) && !bound.contains(this.mapObjects.photos[i].geo)) {
-                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                delete this.mapObjects.photos[i];
-            }
-        }
-        for (i in this.mapObjects.clusters) {
-            if (this.mapObjects.clusters.hasOwnProperty(i) && !bound.contains(this.mapObjects.clusters[i].geo)) {
-                this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
-                delete this.mapObjects.clusters[i];
-            }
-        }
+        this.cropByBound();
 
         //Считаем новые баунды для запроса
-        if (b.east > a.east) {
-            c2 = {west: a.east, east: b.east};
-        } else if (b.east < a.east) {
-            c2 = {west: b.west, east: a.west};
-        }
-        if (a.north !== b.north) {
-            c1 = {west: b.west, east: b.east};
+        bounds = this.boundSubtraction(bound, this.calcBoundPrev);
 
-            if (b.north > a.north) {
-                c1.north = b.north;
-                c1.south = a.north;
-
-                if (c2) {
-                    c2.north = a.north;
-                    c2.south = b.south;
-                }
-            } else {
-                c1.north = a.south;
-                c1.south = b.south;
-
-                if (c2) {
-                    c2.north = b.north;
-                    c2.south = a.south;
-                }
+        //Визуализация полученных баундов
+        i = 4;
+        while (i--) {
+            if (this['b' + i]) {
+                this.map.removeLayer(this['b' + i]);
+                this['b' + i] = null;
             }
         }
-        if (this.b1) {
-            this.map.removeLayer(this.b1);
-            this.b1 = null;
-        }
-        if (this.b2) {
-            this.map.removeLayer(this.b2);
-            this.b2 = null;
-        }
-        if (c1) {
-            bounds.push([[c1.west, c1.south], [c1.east, c1.north]]);
-            this.b1 = L.polygon([
-                [c1.north, c1.west],
-                [c1.north, c1.east],
-                [c1.south, c1.east],
-                [c1.south, c1.west]
-            ], {color: '#f00', weight: 1}).addTo(this.map);
-        }
-        if (c2) {
-            bounds.push([[c2.west, c2.south], [c2.east, c2.north]]);
-            this.b2 = L.polygon([
-                [c2.north, c2.west],
-                [c2.north, c2.east],
-                [c2.south, c2.east],
-                [c2.south, c2.west]
-            ], {color: '#f90', weight: 1}).addTo(this.map);
+        i = bounds.length;
+        while (i) {
+            curr = _.clone(bounds[--i]);
+            curr[0].reverse();
+            curr[1].reverse();
+            this['b' + i] = L.polygon([
+                [curr[1][0], curr[0][1]],
+                curr[1],
+                [curr[0][0], curr[1][1]],
+                curr[0]
+            ], {color: '#00C629', weight: 1}).addTo(this.map);
         }
 
         socket.once('getBoundsResult', function (data) {
@@ -505,97 +582,25 @@ define([
     };
 
     /**
-     * Перерисовывает маркеры. Влючает в себя обновление и репозиционирование маркеров
-     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать
+     * Удаляет объекты не входящие в баунд
+     * @param {?Object=} bound Учитывать хэш поиска.
      */
-    MarkerManager.prototype.redraw = function (reposExisting) {
-        this.updateObjects();
+    MarkerManager.prototype.cropByBound = function (bound) {
+        bound = bound || this.calcBound;
+        var i;
 
-        if (!this.animationOn) {
-            this.changeMarkersDisplayByType('block', ['cam', 'car', 'cluster']);
-        }
-    };
-
-    /**
-     * Обновляет хэш отображаемых маркеров.
-     * Удаляет ненужные и добавляет нужные (новые).
-     * @param {?boolean=} reposExisting Пересчитывать позиции существующих маркеров. Например, при изменении масштаба надо пересчитывать.
-     * @param {?boolean=} searchRespectHash Учитывать хэш поиска.
-     */
-    MarkerManager.prototype.updateObjects = function (reposExisting, searchRespectHash) {
-        var m, marker, markersAlreadyAdded = {}, respectHash = false, toDelete = true;
-
-        if (!searchRespectHash && SearchInVM.open() && SearchInVM.applyMap && SearchInVM.applyMap() && SearchInVM.resultHash) {
-            searchRespectHash = SearchInVM.resultHash;
-        }
-        respectHash = !!searchRespectHash;
-
-        console.log('New objects: ' + Utils.getObjectPropertyLength(this.objectsNew) + ', current objects: ' + Utils.getObjectPropertyLength(this.objects));
-
-        for (m in this.objects) {
-            if (this.objects.hasOwnProperty(m)) {
-
-                marker = this.objects[m];
-                toDelete = true;
-
-                switch (marker.type) {
-
-                case 'cam':
-                    if (respectHash) {
-                        if (searchRespectHash[m]) {
-                            toDelete = false;
-                        }
-                    } else {
-                        if (cams2.cameras[m] && !cams2.cameras[m].cluster) {
-                            toDelete = false;
-                        }
-                    }
-                    break;
-
-                case 'car':
-                    marker.dom.style.display = (Cars.visibleZooms.indexOf(this.currZoom) >= 0) ? 'block' : 'none';
-                    toDelete = false;
-                    break;
-                }
-
-
-                if (toDelete) {
-                    Utils.Event.removeAll(marker.over);
-                    marker.remove();
-                    delete this.objects[m];
-                }
-                else {
-                    if (reposExisting) {
-                        marker.repos();
-                    }
-                }
+        for (i in this.mapObjects.photos) {
+            if (this.mapObjects.photos.hasOwnProperty(i) && !bound.contains(this.mapObjects.photos[i].geo)) {
+                this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+                delete this.mapObjects.photos[i];
             }
         }
-
-
-        var fragment = document.createDocumentFragment();
-        for (m in this.objectsNew) {
-            if (this.objectsNew.hasOwnProperty(m)) {
-                marker = this.objectsNew[m];
-
-                if (marker.type === 'cam' && respectHash && !searchRespectHash[m]) {
-                    continue;
-                }
-                if (marker.type === 'car' && marker.dom) {
-                    marker.dom.style.display = (Cars.visibleZooms.indexOf(this.currZoom) >= 0) ? 'block' : 'none';
-                }
-
-                fragment.appendChild(marker.createDom());
-                marker.repos();
-                this.MarkerAddEvents(marker);
-                this.objects[m] = marker;
-                delete this.objectsNew[m];
+        for (i in this.mapObjects.clusters) {
+            if (this.mapObjects.clusters.hasOwnProperty(i) && !bound.contains(this.mapObjects.clusters[i].geo)) {
+                this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
+                delete this.mapObjects.clusters[i];
             }
         }
-        this.pane.appendChild(fragment);
-
-        console.log('Still new (not added) objects: ' + Utils.getObjectPropertyLength(this.objectsNew) + ', current objects: ' + Utils.getObjectPropertyLength(this.objects));
-        markersAlreadyAdded = m = fragment = null;
     };
 
     MarkerManager.prototype.MarkerAddEvents = function (marker) {
