@@ -1,0 +1,4 @@
+mongoimport -d oldmos -c photos2 --drop --type json --jsonArray --file photos.json
+
+\n ->> \\n
+}, { --> }\n{
