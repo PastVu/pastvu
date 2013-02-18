@@ -38,7 +38,6 @@ define([
         this.animationOn = false;
         //Events
         this.map.on('zoomstart', this.onZoomStart, this);
-        //this.map.on('zoomanim', this.onZoomAnim, this);
         this.map.on('moveend', this.onMapMoveEnd, this);
 
         this.reCalcBound();

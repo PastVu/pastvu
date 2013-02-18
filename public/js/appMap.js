@@ -14,6 +14,16 @@ require([
         routeDFD = $.Deferred();
 
     $('body').append(index_jade);
+
+    //Обновлем размеры контейнера карты
+    globalVM.mapH = ko.computed({
+        read: function () {
+            console.log(111);
+            return P.window.h() - 33 - 50;
+        },
+        owner: this
+    });
+
     ko.applyBindings(globalVM);
 
     globalVM.router = new RouteManager(routerDeclare(), routeDFD);

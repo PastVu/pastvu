@@ -171,9 +171,9 @@ define([
                 }.bind(this));
 
                 //Самостоятельно обновлем размеры карты
-                P.window.square.subscribe(function (newVal) {
+                P.window.square.subscribe(_.debounce(function (newVal) {
                     this.map._onResize();
-                }.bind(this));
+                }.bind(this), 300));
 
                 this.map.whenReady(function () {
                     this.selectLayer('osm', 'osmosnimki');
