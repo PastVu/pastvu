@@ -110,7 +110,7 @@ define([
         this.startPendingAt = Date.now();
 
         var newZoom = this.map.getZoom(),
-            bound = _.clone(this.calcBound),
+            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
             bounds,
             pollServer = true,
             curr,
@@ -416,7 +416,7 @@ define([
      */
     MarkerManager.prototype.refreshDataByMove = function (reposExisting) {
         var zoom = this.currZoom,
-            bound = _.clone(this.calcBound),
+            bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
             bounds,
             curr,
             i;
