@@ -271,6 +271,12 @@
        -o-transition-delay: @transition-delay;
           transition-delay: @transition-delay;
 }
+.transition-duration(@transition-duration) {
+  -webkit-transition-duration: @transition-duration;
+     -moz-transition-duration: @transition-duration;
+       -o-transition-duration: @transition-duration;
+          transition-duration: @transition-duration;
+}
 
 // Transformations
 .rotate(@degrees) {
@@ -440,6 +446,17 @@
     background-image: -o-linear-gradient(@deg, @startColor, @endColor); // Opera 11.10
     background-image: linear-gradient(@deg, @startColor, @endColor); // Standard, IE10
   }
+  .horizontal-three-colors(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
+    background-color: mix(@midColor, @endColor, 80%);
+    background-image: -webkit-gradient(left, linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
+    background-image: -webkit-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: -moz-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: -o-linear-gradient(left, @startColor, @midColor @colorStop, @endColor);
+    background-image: linear-gradient(to right, @startColor, @midColor @colorStop, @endColor);
+    background-repeat: no-repeat;
+    filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)",argb(@startColor),argb(@endColor))); // IE9 and down, gets no color-stop at all for proper fallback
+  }
+
   .vertical-three-colors(@startColor: #00b3ee, @midColor: #7a43b6, @colorStop: 50%, @endColor: #c3325f) {
     background-color: mix(@midColor, @endColor, 80%);
     background-image: -webkit-gradient(linear, 0 0, 0 100%, from(@startColor), color-stop(@colorStop, @midColor), to(@endColor));
@@ -503,7 +520,7 @@
   .reset-filter();
 
   // in these cases the gradient won't cover the background, so we override
-  &:hover, &:active, &.active, &.disabled, &[disabled] {
+  &:hover, &:focus, &:active, &.active, &.disabled, &[disabled] {
     color: @textColor;
     background-color: @endColor;
     *background-color: darken(@endColor, 5%);
@@ -561,13 +578,13 @@
   .core (@gridColumnWidth, @gridGutterWidth) {
 
     .spanX (@index) when (@index > 0) {
-      (~".span@{index}") { .span(@index); }
+      .span@{index} { .span(@index); }
       .spanX(@index - 1);
     }
     .spanX (0) {}
 
     .offsetX (@index) when (@index > 0) {
-      (~".offset@{index}") { .offset(@index); }
+      .offset@{index} { .offset(@index); }
       .offsetX(@index - 1);
     }
     .offsetX (0) {}
@@ -605,17 +622,17 @@
 
   .fluid (@fluidGridColumnWidth, @fluidGridGutterWidth) {
 
-	.spanX (@index) when (@index > 0) {
-	  (~".span@{index}") { #grid > .fluid > .span(@index); }
-	  #grid > .fluid > .spanX(@index - 1);
-	}
-	.spanX (0) {}
+    .spanX (@index) when (@index > 0) {
+      .span@{index} { .span(@index); }
+      .spanX(@index - 1);
+    }
+    .spanX (0) {}
 
-	.offsetX (@index) when (@index > 0) {
-	  (~'.offset@{index}') { #grid > .fluid > .offset(@index); }
-	  (~'.offset@{index}:first-child') { #grid > .fluid > .offsetFirstChild(@index); }
-	  #grid > .fluid > .offsetX(@index - 1);
-	}
+    .offsetX (@index) when (@index > 0) {
+      .offset@{index} { .offset(@index); }
+      .offset@{index}:first-child { .offsetFirstChild(@index); }
+      .offsetX(@index - 1);
+    }
     .offsetX (0) {}
 
     .offset (@columns) {
@@ -628,12 +645,12 @@
       *margin-left: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%) + @fluidGridGutterWidth - (.5 / @gridRowWidth * 100 * 1%);
     }
 	// Klimashkin: маргин равный ширине
-    .offsetAsWidth (@columns, @divider) {
+	.offsetAsWidth (@columns, @divider) {
 		margin-left: ((@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1))) / @divider;
-      	*margin-left: ((@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%)) / @divider;
-    }
+		*margin-left: ((@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%)) / @divider;
+	}
 
-	.span (@columns) {
+    .span (@columns) {
       width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1));
       *width: (@fluidGridColumnWidth * @columns) + (@fluidGridGutterWidth * (@columns - 1)) - (.5 / @gridRowWidth * 100 * 1%);
     }
@@ -657,8 +674,8 @@
       }
 
       // generate .spanX and .offsetX
-	  #grid > .fluid > .spanX (@gridColumns);
-	  #grid > .fluid > .offsetX (@gridColumns);
+      .spanX (@gridColumns);
+      .offsetX (@gridColumns);
     }
 
   }
@@ -666,7 +683,7 @@
   .input(@gridColumnWidth, @gridGutterWidth) {
 
     .spanX (@index) when (@index > 0) {
-      (~"input.span@{index}, textarea.span@{index}, .uneditable-input.span@{index}") { .span(@index); }
+      input.span@{index}, textarea.span@{index}, .uneditable-input.span@{index} { .span(@index); }
       .spanX(@index - 1);
     }
     .spanX (0) {}
@@ -690,5 +707,4 @@
     .spanX (@gridColumns);
 
   }
-
 }
