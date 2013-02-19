@@ -211,7 +211,7 @@ function jadeCompile(files, inFolder, outFolder, done, replaceJade) {
             process.exit(1);
         }
         console.dir('Compiling Jade ' + input);
-        var fn = jade.compile(data, _(_.clone(jadeCompileOptions, false)).extend({filename: input}));
+        var fn = jade.compile(data, _.assign(_.clone(jadeCompileOptions, false), {filename: input}));
         fd = fs.openSync(output, "w");
         fs.writeSync(fd, fn(jadeCompileOptions), 0, "utf8");
         fs.closeSync(fd);

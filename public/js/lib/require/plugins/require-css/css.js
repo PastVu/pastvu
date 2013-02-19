@@ -2,22 +2,57 @@
  * css! loader plugin
  * Allows for loading stylesheets with the 'css!' syntax.
  *
- * External stylesheets supported.
- * 
- * '!' suffix skips load checking
+ * in Chrome 19+, IE10+, Firefox 9+, Safari 6+ <link> tags are used with onload support
+ * in all other environments, <style> tags are used with injection to mimic onload support
+ *
+ * <link> tag can be enforced with the configuration useLinks, although support cannot be guaranteed.
+ *
+ * External stylesheets loaded with link tags, unless useLinks explicitly set to false assuming CORS support.
+ *
+ * Stylesheet parsers always use <style> injection even on external urls, which may cause origin issues.
  *
  */
-define(['./normalize'], function(normalize) {
+define(['./normalize', 'module'], function(normalize, module) {
   if (typeof window == 'undefined')
     return { load: function(n, r, load){ load() } };
   
   var head = document.getElementsByTagName('head')[0];
-  
+
+  var agentMatch = window.navigator.userAgent.match(/Chrome\/([^ \.]*)|MSIE ([^ ;]*)|Firefox\/([^ ;]*)|Version\/([\d\.]*) Safari\//);
+
+  var useLinks, browserEngine;
+
+  if (window.opera) {
+    browserEngine = 'opera';
+    useLinks = true;
+  }
+
+  if (agentMatch) {
+    if (agentMatch[4])
+      browserEngine = 'webkit'
+    if (agentMatch[3])
+      browserEngine = 'mozilla';
+    else if (agentMatch[2])
+      browserEngine = 'ie';
+    else if (agentMatch[1])
+      browserEngine = 'webkit';
+
+    useLinks = (browserEngine && (parseInt(agentMatch[4]) > 5 || parseInt(agentMatch[3]) > 8 || parseInt(agentMatch[2]) > 9 || parseInt(agentMatch[1]) > 18)) || undefined;
+  }
+
+  var config = module.config();
+  if (config && config.useLinks !== undefined)
+    useLinks = config.useLinks;
   
   /* XHR code - copied from RequireJS text plugin */
   var progIds = ['Msxml2.XMLHTTP', 'Microsoft.XMLHTTP', 'Msxml2.XMLHTTP.4.0'];
+  var fileCache = {};
   var get = function(url, callback, errback) {
-  
+    if (fileCache[url]) {
+      callback(fileCache[url]);
+      return;
+    }
+
     var xhr, i, progId;
     if (typeof XMLHttpRequest !== 'undefined')
       xhr = new XMLHttpRequest();
@@ -49,8 +84,10 @@ define(['./normalize'], function(normalize) {
           err.xhr = xhr;
           errback(err);
         }
-        else
+        else {
+          fileCache[url] = xhr.responseText;
           callback(xhr.responseText);
+        }
       }
     };
     
@@ -62,7 +99,7 @@ define(['./normalize'], function(normalize) {
   
   cssAPI.pluginBuilder = './css-builder';
   
-  //<style> tag creation
+  //uses the <style> load method
   var stylesheet = document.createElement('style');
   stylesheet.type = 'text/css';
   head.appendChild(stylesheet);
@@ -76,6 +113,63 @@ define(['./normalize'], function(normalize) {
       stylesheet.appendChild(document.createTextNode(css));
     }
 
+
+  var webkitLoadCheck = function(link, callback) {
+    setTimeout(function() {
+      for (var i = 0; i < document.styleSheets.length; i++) {
+        var sheet = document.styleSheets[i];
+        if (sheet.href == link.href)
+          return callback();
+      }
+      webkitLoadCheck(link, callback);
+    }, 10);
+  }
+
+  var mozillaLoadCheck = function(style, callback) {
+    setTimeout(function() {
+      try {
+        style.sheet.cssRules;
+        return callback();
+      } catch (e){}
+      mozillaLoadCheck(style, callback);
+    }, 10);
+  }
+
+  // uses the <link> load method
+  var createLink = function(url) {
+    var link = document.createElement('link');
+    link.type = 'text/css';
+    link.rel = 'stylesheet';
+    link.href = url;
+    return link;
+  }
+
+  cssAPI.linkLoad = function(url, callback) {
+    var timeout = setTimeout(callback, waitSeconds * 1000 - 100);
+    var _callback = function() {
+      clearTimeout(timeout);
+      callback();
+    }
+    if (browserEngine == 'webkit') {
+      var link = createLink(url);
+      webkitLoadCheck(link, _callback);
+      head.appendChild(link);
+    }
+    // onload support only in firefox 18+
+    else if (browserEngine == 'mozilla' && parseInt(agentMatch[3]) < 18) {
+      var style = document.createElement('style');
+      style.textContent = '@import "' + url + '"';
+      mozillaLoadCheck(style, _callback);
+      head.appendChild(style);
+    }
+    else {
+      var link = createLink(url);
+      link.onload = _callback;
+      head.appendChild(link);
+    }
+  }
+
+
   cssAPI.inspect = function() {
     if (stylesheet.styleSheet)
       return stylesheet.styleSheet.cssText;
@@ -83,72 +177,106 @@ define(['./normalize'], function(normalize) {
       return stylesheet.innerHTML;
   }
   
-  var instantCallbacks = {};
   cssAPI.normalize = function(name, normalize) {
-    var instantCallback;
-    if (name.substr(name.length - 1, 1) == '!')
-      instantCallback = true;
-    if (instantCallback)
-      name = name.substr(0, name.length - 1);
     if (name.substr(name.length - 4, 4) == '.css')
       name = name.substr(0, name.length - 4);
     
-    name = normalize(name);
-    
-    if (instantCallback)
-      instantCallbacks[name] = instantCallback;
-    
-    return name;
+    return normalize(name);
+  }
+
+  // NB add @media query support for media imports
+  var importRegEx = /@import\s*(url)?\s*(('([^']*)'|"([^"]*)")|\(('([^']*)'|"([^"]*)"|([^\)]*))\))\s*;?/g;
+
+  var pathname = window.location.pathname.split('/');
+  pathname.pop();
+  pathname = pathname.join('/') + '/';
+
+  var loadCSS = function(fileUrl, callback, errback) {
+
+    //make file url absolute
+    if (fileUrl.substr(0, 1) != '/')
+      fileUrl = '/' + normalize.convertURIBase(fileUrl, pathname, '/');
+
+    get(fileUrl, function(css) {
+
+      // normalize the css (except import statements)
+      css = normalize(css, fileUrl, pathname);
+
+      // detect all import statements in the css and normalize
+      var importUrls = [];
+      var importIndex = [];
+      var importLength = [];
+      var match;
+      while (match = importRegEx.exec(css)) {
+        var importUrl = match[4] || match[5] || match[7] || match[8] || match[9];
+
+        // add less extension if necessary
+        if (importUrl.indexOf('.') == -1)
+          importUrl += '.less';
+
+        importUrls.push(importUrl);
+        importIndex.push(importRegEx.lastIndex - match[0].length);
+        importLength.push(match[0].length);
+      }
+
+      // load the import stylesheets and substitute into the css
+      var completeCnt = 0;
+      for (var i = 0; i < importUrls.length; i++)
+        (function(i) {
+          loadCSS(importUrls[i], function(importCSS) {
+            css = css.substr(0, importIndex[i]) + importCSS + css.substr(importIndex[i] + importLength[i]);
+            var lenDiff = importCSS.length - importLength[i];
+            for (var j = i + 1; j < importUrls.length; j++)
+              importIndex[j] += lenDiff;
+            completeCnt++;
+            if (completeCnt == importUrls.length) {
+              callback(css);
+            }
+          }, errback);
+        })(i);
+
+      if (importUrls.length == 0)
+        callback(css);
+    }, errback);
   }
   
+  var waitSeconds;
   cssAPI.load = function(cssId, req, load, config, parse) {
-    var instantCallback = instantCallbacks[cssId];
-    if (instantCallback)
-      delete instantCallbacks[cssId];
-    
+    waitSeconds = waitSeconds || config.waitSeconds || 7;
+
     var fileUrl = cssId;
     
     if (fileUrl.substr(fileUrl.length - 4, 4) != '.css' && !parse)
       fileUrl += '.css';
     
     fileUrl = req.toUrl(fileUrl);
-    
-    //external url -> add as a <link> tag to load. onload support not reliable so not provided
-    if (fileUrl.substr(0, 7) == 'http://' || fileUrl.substr(0, 8) == 'https://') {
-      if (parse)
-        throw 'Cannot preprocess external css.';
-      var link = document.createElement('link');
-      link.type = 'text/css';
-      link.rel = 'stylesheet';
-      link.href = fileUrl;
-      head.appendChild(link);
-      
-      //only instant callback due to onload not being reliable
-      load(cssAPI);
+
+    // determine if it is the same domain or not
+    var sameDomain = true,
+    domainCheck = /^(\w+:)?\/\/([^\/]+)/.exec(fileUrl);
+    if (domainCheck) {
+      sameDomain = domainCheck[2] === window.location.host;
+      if (domainCheck[1])
+        sameDomain &= domainCheck[1] === window.location.protocol;
     }
-    //internal url -> download and inject into <style> tag
+    
+    //external url -> add as a <link> tag to load
+    if (!parse && useLinks !== false && (!sameDomain || useLinks)) {
+      cssAPI.linkLoad(fileUrl, function() {
+        load(cssAPI);
+      });
+    }
+    //internal url or parsing -> inject into <style> tag
     else {
-      get(fileUrl, function(css) {
+      loadCSS(fileUrl, function(css) {
+        // run parsing last - since less is a CSS subset this works fine
         if (parse)
           css = parse(css);
-          
-        var pathname = window.location.pathname.split('/');
-        pathname.pop();
-        pathname = pathname.join('/') + '/';
-
-        //make file url absolute
-        if (fileUrl.substr(0, 1) != '/')
-          fileUrl = '/' + normalize.convertURIBase(fileUrl, pathname, '/');
-        
-        css = normalize(css, fileUrl, pathname);
 
         cssAPI.inject(css);
-          
-        if (!instantCallback)
-          load(cssAPI);
-      });
-      if (instantCallback)
+
         load(cssAPI);
+      }, load.error);
     }
   }
   
