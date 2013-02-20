@@ -36,7 +36,7 @@ define([
         this.animationOn = false;
 
         this.panePopup = this.map.getPanes().popupPane;
-        this.popup = new L.Popup({maxWidth: 89, minWidth: 89, offset: new L.Point(0, -10), autoPan: false, zoomAnimation: false, closeButton: false});
+        this.popup = new L.Popup({maxWidth: 119, minWidth: 119, offset: new L.Point(0, -10), autoPan: false, zoomAnimation: false, closeButton: false});
         this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
         //Events
@@ -219,7 +219,7 @@ define([
                     // Если оно новое - создаем его объект и маркер
                     curr.geo.reverse();
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
                         divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
                         curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
                         curr.marker
@@ -288,7 +288,7 @@ define([
                 } else {
                     curr.geo.reverse();
                     if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
                     }
                 }
             }
@@ -507,7 +507,7 @@ define([
                     curr.geo.reverse();
                     // Если оно новое - создаем его объект и маркер
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
-                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'mini');
+                        photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
                         divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
                         curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
                         this.layerPhotos.addLayer(curr.marker);

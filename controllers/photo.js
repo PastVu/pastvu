@@ -15,7 +15,7 @@ var Settings,
     log4js = require('log4js'),
     logger,
     photoDir = process.cwd() + '/publicContent/photos',
-    imageFolders = [photoDir + '/micro/', photoDir + '/mini/', photoDir + '/thumb/', photoDir + '/standard/', photoDir + '/origin/'];
+    imageFolders = [photoDir + '/micros/', photoDir + '/micro/', photoDir + '/mini/', photoDir + '/midi/', photoDir + '/thumb/', photoDir + '/standard/', photoDir + '/origin/'];
 
 /**
  * Создает фотографии в базе данных

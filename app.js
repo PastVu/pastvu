@@ -71,6 +71,7 @@ new File("publicContent/avatars").createDirectory();
 new File("publicContent/photos/micros").createDirectory();
 new File("publicContent/photos/micro").createDirectory();
 new File("publicContent/photos/mini").createDirectory();
+new File("publicContent/photos/midi").createDirectory();
 new File("publicContent/photos/thumb").createDirectory();
 new File("publicContent/photos/standard").createDirectory();
 new File("publicContent/photos/origin").createDirectory();

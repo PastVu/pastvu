@@ -59,6 +59,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             microm: picPrefix + '/micro/',
             micro: picPrefix + '/micro/',
             mini: picPrefix + '/mini/',
+            midi: picPrefix + '/midi/',
             thumb: picPrefix + '/thumb/',
             standard: picPrefix + '/standard/',
             origin: picPrefix + '/origin/'
