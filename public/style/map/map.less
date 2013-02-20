@@ -53,12 +53,16 @@
 		.popupCap {
 			display: block;
 			max-height: 37px;
-			padding: 0 2px;
+			padding: 1px 2px;
 			color: @MainLigthColor;
 			font-size: 11px;
 			line-height: 12px;
 			text-align: center;
 			overflow: hidden;
+
+			&:empty {
+				display: none;
+			}
 		}
 	}
 

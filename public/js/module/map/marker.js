@@ -621,7 +621,7 @@ define([
     MarkerManager.prototype.overMarker = function (evt) {
         this.popup
             .setLatLng(evt.target.getLatLng())
-            .setContent(this.popupTempl({img: evt.target.options.data.obj.sfile || '', txt: 'WOWOWO'}));
+            .setContent(this.popupTempl({img: evt.target.options.data.obj.sfile || '', txt:  evt.target.options.data.obj.title || ''}));
         this.map.openPopup(this.popup);
     };
     /**
