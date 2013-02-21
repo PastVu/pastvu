@@ -18,7 +18,7 @@ define([
         this.objects = {};
         this.objectsNew = {};
 
-        this.sizePoint = new L.Point(8, 8);
+        this.sizePoint = new L.Point(10, 10);
         this.sizeClusters = new L.Point(42, 42);
         this.sizeClusterm = new L.Point(52, 52);
         this.sizeCluster = new L.Point(62, 62);
@@ -220,9 +220,10 @@ define([
                     curr.geo.reverse();
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
                         photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
-                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir/*, iconSize: this.sizePoint*/});
+                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint, html: '<a target="_blank" class="photoA" href="/p/' + curr.cid + '"></a>'});
                         curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
                         curr.marker
+                            .on('click', this.clickMarker, this)
                             .on('mouseover', this.overMarker, this)
                             .on('mouseout', this.outMarker, this);
                         this.layerPhotos.addLayer(curr.marker);
@@ -615,6 +616,20 @@ define([
         }
     };
 
+    /**
+     * @param evt
+     */
+    MarkerManager.prototype.clickMarker = function (evt) {
+        if (evt.target.options.data.type === 'photo') {
+
+        } else if (evt.target.options.data.type === 'photo') {
+
+        }
+        this.popup
+            .setLatLng(evt.target.getLatLng())
+            .setContent(this.popupTempl({img: evt.target.options.data.obj.sfile || '', txt:  evt.target.options.data.obj.title || ''}));
+        this.map.openPopup(this.popup);
+    };
     /**
      * @param evt
      */

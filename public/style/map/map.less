@@ -75,132 +75,141 @@
 	}
 
 	.photoIcon {
-		width: 8px !important;
-		height: 8px !important;
-		margin-left: -4px !important;
-		margin-top: -4px !important;
-		background-color: #003aff;
+		overflow: visible;
 		.border-radius(50%);
-		.box-shadow(0 0 1px 1px #fff);
 
-		&::after {
-			display: none;
-			position: absolute;
-			content: '';
-			background-image: url(/img/map/arr.png);
-			background-repeat: no-repeat;
-			width: 10px;
-			height: 10px;
-		/*width: 0;
-		height: 0;
-		border-style: solid;
-		border-width: 0 3px 8px 3px;
-		border-color: transparent transparent #000 transparent;
-		.rotate(45deg);*/
-		}
-		&.n {
+		.photoA {
+			display: block;
+			position: relative;
+			margin-top: 1px;
+			margin-left: 1px;
+			width: 8px;
+			height: 8px;
+			background-color: #003aff;
+			.border-radius(50%);
+			.box-shadow(0 0 1px 1px #fff);
+
 			&::after {
+				display: none;
+				position: absolute;
+				content: '';
+				background-image: url(/img/map/arr.png);
+				background-repeat: no-repeat;
+				width: 10px;
+				height: 10px;
+				pointer-events: none;
+				/*width: 0;
+				height: 0;
+				border-style: solid;
+				border-width: 0 3px 8px 3px;
+				border-color: transparent transparent #000 transparent;
+				.rotate(45deg);*/
+			}
+		}
+
+		&:hover .photoA {
+			margin-top: -1px;
+			margin-left: -1px;
+			width: 12px;
+			height: 12px;
+			.box-shadow(0 0 2px 2px #fff);
+		}
+
+		&.n {
+			.photoA::after {
 				display: block;
 				top: -10px;
 				right: -1px;
 				background-position: 0 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: -10px;
 				right: 1px;
 			}
 		}
 		&.ne {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: -7px;
 				right: -6px;
 				background-position: -10px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: -6px;
 				right: -9px;
 			}
 		}
 		&.e {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: -1px;
 				right: -10px;
 				background-position: -20px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: 1px;
 				right: -10px;
 			}
 		}
 		&.se {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: 5px;
 				right: -6px;
 				background-position: -30px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: 8px;
-				right: -6px;
+				right: -5px;
 			}
 		}
 		&.s {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: 8px;
 				right: -1px;
 				background-position: -40px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: 8px;
 				right: 1px;
 			}
 		}
 		&.sw {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: 5px;
 				right: 5px;
 				background-position: -50px 0;
 			}
-			&:hover::after {
-				top: 9px;
-				right: 9px;
+			&:hover .photoA::after {
+				top: 8px;
+				right: 8px;
 			}
 		}
 		&.w {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: -1px;
 				right: 8px;
 				background-position: -60px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: 1px;
 				right: 12px;
 			}
 		}
 		&.nw {
-			&::after {
+			.photoA::after {
 				display: block;
 				top: -7px;
 				right: 5px;
 				background-position: -70px 0;
 			}
-			&:hover::after {
+			&:hover .photoA::after {
 				top: -6px;
 				right: 8px;
 			}
-		}
-
-		&:hover {
-			width: 12px !important;
-			height: 12px !important;
-			margin-left: -6px !important;
-			margin-top: -6px !important;
-			.box-shadow(0 0 2px 2px #fff);
 		}
 	}
 	.clusterIcon {
