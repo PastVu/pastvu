@@ -2,6 +2,9 @@
 	.mapContainer(data-bind="css: {embedded: embedded()}")
 		.map
 		.mapNavigation.mContainer
+		label.checkbox.linkOpenMode
+			input(type="checkbox", data-bind="checked: openNewTab")
+			| Open links in new tab
 		.layersPanel.fringe2(data-bind="css: {open: layersOpen()}")
 			.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
 			.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
@@ -13,6 +16,3 @@
 					.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
 					// /ko
 				// /ko
-		.markerHint
-			img.photoThumb
-			.title

@@ -23,7 +23,7 @@ define([
         this.sizeClusterm = new L.Point(52, 52);
         this.sizeCluster = new L.Point(62, 62);
 
-        this.pane = this.map.getPanes().markerPane;
+        this.paneMarkers = this.map.getPanes().markerPane;
         this.calcBound = null;
         this.calcBoundPrev = null;
         this.firstNoClusterZoom = 17;
@@ -38,6 +38,18 @@ define([
         this.panePopup = this.map.getPanes().popupPane;
         this.popup = new L.Popup({maxWidth: 119, minWidth: 119, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
         this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
+
+        this.openNewTab = options.openNewTab;
+        globalVM.pb.subscribe('/map/openNewTab', function (bool) {
+            var ahrefs = _.toArray(this.paneMarkers.querySelectorAll('a.photoA')),
+                i = ahrefs.length,
+                target = bool ? '_blank' : '_self';
+
+            while (i) {
+                ahrefs[--i].setAttribute("target", target);
+            }
+            this.openNewTab = bool;
+        }.bind(this));
 
         //Events
         this.map
@@ -74,7 +86,6 @@ define([
     MarkerManager.prototype.onZoomStart = function (opt) {
         window.clearTimeout(this.refreshByZoomTimeout);
         this.layerClusters.clearLayers();
-        delete this.mapObjects.clusters;
         this.mapObjects.clusters = {};
     };
 
@@ -85,11 +96,11 @@ define([
     MarkerManager.prototype.layerChange = function () {
         if (this.map.options.zoomAnimation && this.map.options.markerZoomAnimation) {
             if (!this.animationOn) {
-                this.pane.classList.add('neo-animate');
+                this.paneMarkers.classList.add('neo-animate');
                 this.animationOn = true;
             }
         } else if (this.animationOn) {
-            this.pane.classList.remove('neo-animate');
+            this.paneMarkers.classList.remove('neo-animate');
             this.animationOn = false;
         }
     };
@@ -186,7 +197,7 @@ define([
                     console.log('Ошибка загрузки новых камер: ' + data.message);
                 }
                 newZoom = bound = null;
-                delete this.startPendingAt;
+                this.startPendingAt = undefined;
             }.bind(this));
             socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt});
         }
@@ -214,15 +225,15 @@ define([
                 if (existing !== undefined) {
                     // Если такое фото уже есть, то просто записываем его в новый объект
                     photos[curr.cid] = existing;
-                    delete this.mapObjects.photos[curr.cid];
+                    this.mapObjects.photos[curr.cid] = undefined;
                 } else {
                     // Если оно новое - создаем его объект и маркер
                     curr.geo.reverse();
                     if (!boundChanged || this.calcBound.contains(curr.geo)) {
                         photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
-                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint, html: '<a target="_blank" class="photoA" href="/p/' + curr.cid + '"></a>'});
-                        curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
-                        curr.marker
+                        divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint, html: '<a target="' + (this.openNewTab ? '_blank' : '_self') + '" class="photoA" href="/p/' + curr.cid + '"></a>'});
+                        curr.marker =
+                            L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}})
                             .on('click', this.clickMarker, this)
                             .on('mouseover', this.overMarker, this)
                             .on('mouseout', this.outMarker, this);
@@ -231,12 +242,11 @@ define([
                 }
             }
         }
-
         // В текущем объекте остались только фото на удаление
         for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i)) {
+            if (this.mapObjects.photos[i] !== undefined) {
                 this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                delete this.mapObjects.photos[i];
+                this.mapObjects.photos[i] = undefined;
             }
         }
         this.mapObjects.photos = photos;
@@ -250,8 +260,9 @@ define([
                 if (!boundChanged || this.calcBound.contains(curr.geo)) {
                     clusters[i] = Photo.factory(curr, 'mapclust');
                     divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
-                    curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}});
-                    //curr.marker.on('mouseover', this.overMarker);
+                    curr.marker =
+                        L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}})
+                        .on('click', this.clickMarker, this);
                     this.layerClusters.addLayer(curr.marker);
                 }
             }
@@ -259,8 +270,6 @@ define([
         this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
-        delete data.photos;
-        delete data.clusters;
         photos = clusters = curr = existing = data = null;
     };
 
@@ -297,9 +306,9 @@ define([
 
         // В текущем объекте остались только фото на удаление
         for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i)) {
+            if (this.mapObjects.photos[i] !== undefined) {
                 this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                delete this.mapObjects.photos[i];
+                this.mapObjects.photos[i] = undefined;
             }
         }
         this.mapObjects.photos = photos;
@@ -315,8 +324,8 @@ define([
             if (curr.marker) {
                 this.layerPhotos.removeLayer(curr.marker);
             }
-            delete photos[curr.cid];
-            delete this.mapObjects.photos[curr.cid];
+            photos[curr.cid] = undefined;
+            this.mapObjects.photos[curr.cid] = undefined;
         }
 
 
@@ -342,86 +351,7 @@ define([
         this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
-        delete data.photos;
-        delete data.clusters;
         photos = clusters = clustersLocal = curr = existing = data = null;
-    };
-
-    /**
-     * Вычитает один баунд из другого
-     * @param minuend Уменьшаемый
-     * @param subtrahend Вычитаемый
-     * @return {Array} Массив баундов разницы вычитания
-     */
-    MarkerManager.prototype.boundSubtraction = function (minuend, subtrahend) {
-        var a = {west: minuend._southWest.lng, north: minuend._northEast.lat, east: minuend._northEast.lng, south: minuend._southWest.lat},
-            b = {west: subtrahend._southWest.lng, north: subtrahend._northEast.lat, east: subtrahend._northEast.lng, south: subtrahend._southWest.lat},
-            c = [],
-            result = [],
-            curr,
-            i;
-
-
-        if (minuend.contains(subtrahend)) {
-            // Если вычитаемый баунд полностью включается в уменьшаемый, то будет от 2 до 4 результатов
-            if (a.north > b.north) {
-                c[0] = {north: a.north, south: b.north, east: a.east, west: a.west};
-            }
-            if (a.south < b.south) {
-                c[1] = {north: b.south, south: a.south, east: a.east, west: a.west};
-            }
-            if (a.east > b.east) {
-                c[2] = {west: b.east, east: a.east, north: b.north, south: b.south};
-            }
-            if (a.west < b.west) {
-                c[3] = {west: a.west, east: b.west, north: b.north, south: b.south};
-            }
-
-        } else {
-            // Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
-            // or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
-            // or https://github.com/tschaub/geoscript-js
-            // or https://github.com/bjornharrtell/jsts
-            if (a.east > b.east) {
-                c[1] = {west: b.east, east: a.east};
-            } else if (a.east < b.east) {
-                c[1] = {west: a.west, east: b.west};
-            }
-            if (b.north !== a.north) {
-                c[0] = {west: a.west, east: a.east};
-
-                if (a.north > b.north) {
-                    c[0].north = a.north;
-                    c[0].south = b.north;
-
-                    if (c[1]) {
-                        c[1].north = b.north;
-                        c[1].south = a.south;
-                    }
-                } else {
-                    c[0].north = b.south;
-                    c[0].south = a.south;
-
-                    if (c[1]) {
-                        c[1].north = a.north;
-                        c[1].south = b.south;
-                    }
-                }
-            }
-        }
-        c = _.flatten(c, true);
-
-
-        i = c.length;
-        while (i) {
-            curr = c[--i];
-            result[i] = [
-                [curr.west, curr.south],
-                [curr.east, curr.north]
-            ];
-        }
-
-        return result;
     };
 
     /**
@@ -536,8 +466,6 @@ define([
         _.assign(this.mapObjects.clusters, clusters); // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
         //Чистим ссылки
-        delete data.photos;
-        delete data.clusters;
         photos = clusters = curr = data = null;
     };
 
@@ -595,6 +523,83 @@ define([
     };
 
     /**
+     * Вычитает один баунд из другого
+     * @param minuend Уменьшаемый
+     * @param subtrahend Вычитаемый
+     * @return {Array} Массив баундов разницы вычитания
+     */
+    MarkerManager.prototype.boundSubtraction = function (minuend, subtrahend) {
+        var a = {west: minuend._southWest.lng, north: minuend._northEast.lat, east: minuend._northEast.lng, south: minuend._southWest.lat},
+            b = {west: subtrahend._southWest.lng, north: subtrahend._northEast.lat, east: subtrahend._northEast.lng, south: subtrahend._southWest.lat},
+            c = [],
+            result = [],
+            curr,
+            i;
+
+
+        if (minuend.contains(subtrahend)) {
+            // Если вычитаемый баунд полностью включается в уменьшаемый, то будет от 2 до 4 результатов
+            if (a.north > b.north) {
+                c[0] = {north: a.north, south: b.north, east: a.east, west: a.west};
+            }
+            if (a.south < b.south) {
+                c[1] = {north: b.south, south: a.south, east: a.east, west: a.west};
+            }
+            if (a.east > b.east) {
+                c[2] = {west: b.east, east: a.east, north: b.north, south: b.south};
+            }
+            if (a.west < b.west) {
+                c[3] = {west: a.west, east: b.west, north: b.north, south: b.south};
+            }
+
+        } else {
+            // Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
+            // or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
+            // or https://github.com/tschaub/geoscript-js
+            // or https://github.com/bjornharrtell/jsts
+            if (a.east > b.east) {
+                c[1] = {west: b.east, east: a.east};
+            } else if (a.east < b.east) {
+                c[1] = {west: a.west, east: b.west};
+            }
+            if (b.north !== a.north) {
+                c[0] = {west: a.west, east: a.east};
+
+                if (a.north > b.north) {
+                    c[0].north = a.north;
+                    c[0].south = b.north;
+
+                    if (c[1]) {
+                        c[1].north = b.north;
+                        c[1].south = a.south;
+                    }
+                } else {
+                    c[0].north = b.south;
+                    c[0].south = a.south;
+
+                    if (c[1]) {
+                        c[1].north = a.north;
+                        c[1].south = b.south;
+                    }
+                }
+            }
+        }
+        c = _.flatten(c, true);
+
+
+        i = c.length;
+        while (i) {
+            curr = c[--i];
+            result[i] = [
+                [curr.west, curr.south],
+                [curr.east, curr.north]
+            ];
+        }
+
+        return result;
+    };
+
+    /**
      * Удаляет объекты не входящие в баунд
      * @param {?Object=} bound Учитывать хэш поиска.
      */
@@ -603,15 +608,15 @@ define([
         var i;
 
         for (i in this.mapObjects.photos) {
-            if (this.mapObjects.photos.hasOwnProperty(i) && !bound.contains(this.mapObjects.photos[i].geo)) {
+            if (this.mapObjects.photos[i] !== undefined && !bound.contains(this.mapObjects.photos[i].geo)) {
                 this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-                delete this.mapObjects.photos[i];
+                this.mapObjects.photos[i] = undefined;
             }
         }
         for (i in this.mapObjects.clusters) {
-            if (this.mapObjects.clusters.hasOwnProperty(i) && !bound.contains(this.mapObjects.clusters[i].geo)) {
+            if (this.mapObjects.clusters[i] !== undefined && !bound.contains(this.mapObjects.clusters[i].geo)) {
                 this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
-                delete this.mapObjects.clusters[i];
+                this.mapObjects.clusters[i] = undefined;
             }
         }
     };
@@ -622,13 +627,9 @@ define([
     MarkerManager.prototype.clickMarker = function (evt) {
         if (evt.target.options.data.type === 'photo') {
 
-        } else if (evt.target.options.data.type === 'photo') {
-
+        } else if (evt.target.options.data.type === 'clust') {
+            this.map.setView(evt.target.getLatLng(), this.map.getZoom() + 1);
         }
-        this.popup
-            .setLatLng(evt.target.getLatLng())
-            .setContent(this.popupTempl({img: evt.target.options.data.obj.sfile || '', txt:  evt.target.options.data.obj.title || ''}));
-        this.map.openPopup(this.popup);
     };
     /**
      * @param evt
