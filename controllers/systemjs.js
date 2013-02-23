@@ -92,7 +92,7 @@ module.exports.loadController = function (app, db) {
         var startTime = Date.now(),
             clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
             photoCounter = 0,
-            photoCursor = db.photos.find({geo: {$size: 2}}, {geo: 1, file: 1});
+            photoCursor = db.photos.find({geo: {$exists: true}}, {geo: 1, file: 1});
 
         db.clusters.remove();
 
@@ -148,6 +148,85 @@ module.exports.loadController = function (app, db) {
         });
         return geo;
     });
+
+	/*Функции импорта конвертации старой базы олдмос*/
+
+	saveSystemJSFunc(function oldConvertPhotos(byNumInPackage) {
+		var startTime = Date.now(),
+			insertBy = byNumInPackage || 100, // Вставляем по N документов
+			insertArr = [],
+			newPhoto,
+			lat,
+			lng,
+			noGeoCounter = 0,
+			photoCounter = 0,
+			photosAllCount = db.photosold.count(),
+			photoCursor = db.photosold.find().sort({id: 1});
+
+		print('Start to convert ' + photosAllCount + ' docs by ' + insertBy + ' in one package');
+
+		db.photos.remove();
+
+		photoCursor.forEach(function (photo) {
+			var i;
+			lng = Number(photo.long || 'Empty should be NaN');
+			lat = Number(photo.lat || 'Empty should be NaN');
+			photoCounter++;
+
+			newPhoto = {
+				cid: photo.id,
+				user: ObjectId("511eb380796dc7080300000c"),
+				album: photo.album_id || undefined,
+				stack: photo.stack_id || undefined,
+				stack_order: photo.stack_order || undefined,
+
+				file: photo.file || '',
+				loaded: photo.date || 0,
+				w: photo.width,
+				h: photo.height,
+
+				dir: photo.direction || undefined,
+
+				title: photo.title || undefined,
+				year: photo.year_from || 1900,
+				year2: Math.min(photo.year_from || 1900, photo.year_to || 1900),
+				address: photo.address || undefined,
+				desc: photo.description || undefined,
+				source: photo.source || undefined,
+				author: photo.author || undefined,
+
+				stats_day: parseInt(photo.stats_day, 10) || 0,
+				stats_week: parseInt(photo.stats_week, 10) || 0,
+				stats_all: parseInt(photo.stats_all, 10) || 0
+			};
+			if (!isNaN(lng) && !isNaN(lat)) {
+				newPhoto.geo = [toPrecisionRound(lng), toPrecisionRound(lat)];
+			} else {
+				noGeoCounter++;
+
+			}
+			// Удаляем undefined значения
+			for (i in newPhoto) {
+				if (newPhoto.hasOwnProperty(i) && newPhoto[i] === undefined) {
+					delete newPhoto[i];
+				}
+			}
+
+			//printjson(newPhoto);
+			insertArr.push(newPhoto);
+			if (insertArr.length >= insertBy || photoCounter >= photosAllCount) {
+				db.photos.insert(insertArr);
+				print('Inserted ' + photoCounter + '/' + photosAllCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.photos.count() !== photoCounter) {
+					printjson(insertArr);
+					throw ('Total in target not equal inserted. Inserted: ' + photoCounter + ' Exists: ' + db.photos.count() +  '. Some error inserting data packet. Stop imports');
+				}
+				insertArr = [];
+			}
+		});
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, noGeo: noGeoCounter};
+	});
 
 
     /**

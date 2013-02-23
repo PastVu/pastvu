@@ -1,4 +1,13 @@
-mongoimport -d oldmos -c photos2 --drop --type json --jsonArray --file photos.json
+1. Вариант загрузки как массива объектов
+mongoimport -d oldmos -c photosimp --drop --type json --jsonArray --file photos.json
 
-\n ->> \\n
-}, { --> }\n{
+	\n ->> \\n
+	\t ->>  
+
+2. Вариант загрузки как строки объектов
+mongoimport -d oldmos -c photosimp --drop --type json --jsonArray --file photos.json
+
+	Удалить скобки массива
+	\n ->> \\n
+	\t ->>  
+	}, { --> }\n{
