@@ -3,17 +3,31 @@
  * Модель карты
  */
 define([
-	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'm/Photo'
+	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'm/Photo', 'LMarkerCluster'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
 	'use strict';
 
 	function MarkerManager(map, options) {
 		this.map = map;
 
-		this.mapObjects = { photos: {}, clusters: {}, clustersLocal: {} };
+		this.mapObjects = {photos: {}, clusters: {}};
 		this.layerPhotos = L.layerGroup().addTo(this.map); // Слой фотографий
 		this.layerClusters = L.layerGroup().addTo(this.map); // Слой кластеров
-		this.layerClustersLocal = L.layerGroup().addTo(this.map); // Слой кластеров
+		this.layerClustersLocal = new L.MarkerClusterGroup(// Слой локальных кластеров
+			{
+				showCoverageOnHover: false,
+				zoomToBoundsOnClick: true,
+				spiderfyOnMaxZoom: true,
+				maxClusterRadius: P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA(),
+				disableClusteringAtZoom: 18,
+				iconCreateFunction: function (cluster) {
+					return L.divIcon({className: 'clusterIcon fringe2', iconSize: this.sizeCluster, html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="/img/caps/image_upload.png"/><div class="clusterCount">' + cluster.getChildCount() + '</div>'});
+				}
+			}
+		);
+		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
+
+		this.map.addLayer(this.layerClustersLocal);
 
 		this.objects = {};
 		this.objectsNew = {};
@@ -26,12 +40,9 @@ define([
 		this.paneMarkers = this.map.getPanes().markerPane;
 		this.calcBound = null;
 		this.calcBoundPrev = null;
-		this.firstNoClusterZoom = 17;
 		this.currZoom = this.map.getZoom();
 		this.refreshByZoomTimeout = null;
-		this.refreshDataByMoveBind = this.refreshDataByMove.bind(this, true);
-		this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this, true);
-		this.aggregateDelta = P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA();
+		this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
 
 		this.animationOn = false;
 
@@ -60,12 +71,9 @@ define([
 		this.map
 			.on('zoomstart', this.onZoomStart, this)
 			.on('moveend', this.onMapMoveEnd, this);
-		/*.on('mousemove', function (evt) {
-		 console.log(evt.latlng.lat, evt.latlng.lng);
-		 }, this);*/
 
 		this.reCalcBound();
-		this.refreshDataByZoom();
+		this.refreshDataByZoom(true, true);
 	}
 
 	/**
@@ -90,8 +98,6 @@ define([
 	 */
 	MarkerManager.prototype.onZoomStart = function (opt) {
 		window.clearTimeout(this.refreshByZoomTimeout);
-		this.layerClusters.clearLayers();
-		this.mapObjects.clusters = {};
 	};
 
 	/**
@@ -120,7 +126,7 @@ define([
 			this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
 		} else {
 			if (this.reCalcBound()) {
-				this.refreshDataByMoveBind(false);
+				this.refreshDataByMove();
 			}
 		}
 	};
@@ -128,11 +134,12 @@ define([
 	/**
 	 * Обновление данных маркеров по зуму.
 	 */
-	MarkerManager.prototype.refreshDataByZoom = function () {
+	MarkerManager.prototype.refreshDataByZoom = function (init, init2) {
 		this.reCalcBound(true);
 		this.startPendingAt = Date.now();
 
 		var newZoom = this.map.getZoom(),
+			crossingClientWorkZoom = (this.currZoom < this.firstClientWorkZoom && newZoom >= this.firstClientWorkZoom) || (this.currZoom >= this.firstClientWorkZoom && newZoom < this.firstClientWorkZoom),
 			bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
 			bounds,
 			pollServer = true,
@@ -147,12 +154,12 @@ define([
 			}
 		}
 
-		if (this.currZoom >= this.firstNoClusterZoom && newZoom >= this.firstNoClusterZoom) {
+		if (!init && this.currZoom >= this.firstClientWorkZoom && newZoom >= this.firstClientWorkZoom) {
 			// Если на клиенте уже есть все фотографии для данного зума
 			if (newZoom > this.currZoom) {
 				// Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
 				pollServer = false;
-				this.cropByBound();
+				this.cropByBound(null, P.settings.CLUSTERING_ON_CLIENT());
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
 				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
@@ -190,14 +197,10 @@ define([
 						return;
 					}
 
-					needClientClustering = (this.currZoom !== this.map.getMaxZoom()) && P.settings.CLUSTERING_ON_CLIENT().indexOf(this.currZoom) > -1;
+					needClientClustering = P.settings.CLUSTERING_ON_CLIENT() && this.currZoom >= this.firstClientWorkZoom;
 					boundChanged = !bound.equals(this.calcBound);
 
-					if (needClientClustering) {
-						this.processIncomingDataZoomClientClustering(data, boundChanged);
-					} else {
-						this.processIncomingDataZoom(data, boundChanged);
-					}
+					this.processIncomingDataZoom(data, boundChanged, needClientClustering, crossingClientWorkZoom);
 				} else {
 					console.log('Ошибка загрузки новых камер: ' + data.message);
 				}
@@ -213,9 +216,10 @@ define([
 	/**
 	 * Обрабатывает входящие данные по зуму
 	 */
-	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged) {
+	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, crossingClientWorkZoom) {
 		var photos = {},
 			clusters = {},
+			markers = [],
 			divIcon,
 			curr,
 			existing,
@@ -236,126 +240,69 @@ define([
 					curr.geo.reverse();
 					if (!boundChanged || this.calcBound.contains(curr.geo)) {
 						photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
-						divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint, html: '<a target="' + (this.openNewTab ? '_blank' : '_self') + '" class="photoA" href="/p/' + curr.cid + '"></a>'});
+						divIcon = L.divIcon(
+							{
+								className: 'photoIcon ' + curr.dir,
+								iconSize: this.sizePoint,
+								html: '<a target="' + (this.openNewTab ? '_blank' : '_self') + '" class="photoA" href="/p/' + curr.cid + '"></a>'
+							}
+						);
 						curr.marker =
 							L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}})
 								.on('click', this.clickMarker, this)
 								.on('mouseover', this.overMarker, this);
-						this.layerPhotos.addLayer(curr.marker);
+						if (!localCluster) {
+							this.layerPhotos.addLayer(curr.marker);
+						} else {
+							markers.push(curr.marker);
+						}
 					}
 				}
 			}
 		}
-		// В текущем объекте остались только фото на удаление
-		for (i in this.mapObjects.photos) {
-			if (this.mapObjects.photos[i] !== undefined) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-				this.mapObjects.photos[i] = undefined;
-			}
-		}
-		this.mapObjects.photos = photos;
 
-		// Создаем маркеры для кластеров
-		if (Array.isArray(data.clusters) && data.clusters.length > 0) {
-			i = data.clusters.length;
-			while (i) {
-				curr = data.clusters[--i];
-				curr.geo.reverse();
-				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					clusters[i] = Photo.factory(curr, 'mapclust');
-					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
-					curr.marker =
-						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}})
-							.on('click', this.clickMarker, this);
-					this.layerClusters.addLayer(curr.marker);
+		// Если мы пересекли клиентский зум и при этом попали в зону клиентской обработки
+		// или не пересекали клиентский зум и не находимся в зоне клиентской обрабоки
+		// (т.е. булевы значения двух переменных равны),
+		// то удаляем старые серверные фото и серверные кластеры.
+		// В противном случае всегда необходима очистка клиентских кластеров.
+		if (localCluster === crossingClientWorkZoom) {
+			// В текущем объекте остались только фото на удаление
+			for (i in this.mapObjects.photos) {
+				if (this.mapObjects.photos[i] !== undefined) {
+					this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
 				}
 			}
+			this.layerClusters.clearLayers();
+		} else {
+			this.layerClustersLocal.clearLayers();
 		}
-		this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
 
-		//Чистим ссылки
-		photos = clusters = curr = existing = data = null;
-	};
-
-	/**
-	 * Обрабатывает входящие данные по зуму с локальной кластеризацией
-	 */
-	MarkerManager.prototype.processIncomingDataZoomClientClustering = function (data, boundChanged) {
-		var localClusteringResult,
-			photos = {},
-			clusters = {},
-			clustersLocal = {},
-			divIcon,
-			curr,
-			existing,
-			i;
-
-		// Заполняем новый объект фото
-		if (Array.isArray(data.photos) && data.photos.length > 0) {
-			i = data.photos.length;
-			while (i) { // while loop, reversed
-				curr = data.photos[--i];
-				existing = this.mapObjects.photos[curr.cid];
-				if (existing !== undefined) {
-					// Если такое фото уже есть, то просто записываем его в новый объект
-					photos[curr.cid] = existing;
-				} else {
+		if (localCluster) {
+			this.layerClustersLocal.addLayers(markers);
+		} else {
+			// Создаем маркеры для серверных кластеров
+			if (Array.isArray(data.clusters) && data.clusters.length > 0) {
+				i = data.clusters.length;
+				while (i) {
+					curr = data.clusters[--i];
 					curr.geo.reverse();
-					if (!boundChanged || (boundChanged && this.calcBound.contains(curr.geo))) {
-						photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
+					if (!boundChanged || this.calcBound.contains(curr.geo)) {
+						clusters[i] = Photo.factory(curr, 'mapclust');
+						divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+						curr.marker =
+							L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}})
+								.on('click', this.clickMarker, this);
+						this.layerClusters.addLayer(curr.marker);
 					}
 				}
 			}
 		}
-
-		// В текущем объекте остались только фото на удаление
-		for (i in this.mapObjects.photos) {
-			if (this.mapObjects.photos[i] !== undefined) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-				this.mapObjects.photos[i] = undefined;
-			}
-		}
 		this.mapObjects.photos = photos;
-
-
-		// Если кластеры должны строиться на клиенте, то не берем их из результата сервера
-		localClusteringResult = this.localClustering(this.mapObjects.photos);
-		clusters = localClusteringResult.clusters;
-
-		i = localClusteringResult.photosGoesToLocalCluster.length;
-		while (i) {
-			curr = localClusteringResult.photosGoesToLocalCluster[--i];
-			if (curr.marker) {
-				this.layerPhotos.removeLayer(curr.marker);
-			}
-			photos[curr.cid] = undefined;
-			this.mapObjects.photos[curr.cid] = undefined;
-		}
-
-
-		// Создаем маркеры для новых фото
-		for (i in photos) {
-			if (photos.hasOwnProperty(i)) {
-				curr = photos[i];
-				divIcon = L.divIcon({className: 'photoIcon ' + curr.dir, iconSize: this.sizePoint});
-				curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}});
-				this.layerPhotos.addLayer(curr.marker);
-			}
-		}
-
-		// Создаем маркеры для кластеров
-		for (i in clusters) {
-			if (clusters.hasOwnProperty(i)) {
-				curr = clusters[i];
-				divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
-				curr.marker = L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}});
-				this.layerClusters.addLayer(curr.marker);
-			}
-		}
-		this.mapObjects.clusters = clusters; // Сливаем группы в основной объект кластеров this.mapObjects.clusters
+		this.mapObjects.clusters = clusters;
 
 		//Чистим ссылки
-		photos = clusters = clustersLocal = curr = existing = data = null;
+		photos = clusters = markers = curr = existing = data = null;
 	};
 
 	/**
@@ -607,20 +554,32 @@ define([
 	 * Удаляет объекты не входящие в баунд
 	 * @param {?Object=} bound Учитывать хэш поиска.
 	 */
-	MarkerManager.prototype.cropByBound = function (bound) {
+	MarkerManager.prototype.cropByBound = function (bound, localCluster) {
 		bound = bound || this.calcBound;
-		var i;
+		var i,
+			markers;
 
-		for (i in this.mapObjects.photos) {
-			if (this.mapObjects.photos[i] !== undefined && !bound.contains(this.mapObjects.photos[i].geo)) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-				this.mapObjects.photos[i] = undefined;
+		if (localCluster) {
+			markers = [];
+			for (i in this.mapObjects.photos) {
+				if (this.mapObjects.photos[i] !== undefined && !bound.contains(this.mapObjects.photos[i].geo)) {
+					markers.push(this.mapObjects.photos[i].marker);
+					this.mapObjects.photos[i] = undefined;
+				}
 			}
-		}
-		for (i in this.mapObjects.clusters) {
-			if (this.mapObjects.clusters[i] !== undefined && !bound.contains(this.mapObjects.clusters[i].geo)) {
-				this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
-				this.mapObjects.clusters[i] = undefined;
+			this.layerClustersLocal.removeLayers(markers);
+		} else {
+			for (i in this.mapObjects.photos) {
+				if (this.mapObjects.photos[i] !== undefined && !bound.contains(this.mapObjects.photos[i].geo)) {
+					this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+					this.mapObjects.photos[i] = undefined;
+				}
+			}
+			for (i in this.mapObjects.clusters) {
+				if (this.mapObjects.clusters[i] !== undefined && !bound.contains(this.mapObjects.clusters[i].geo)) {
+					this.layerClusters.removeLayer(this.mapObjects.clusters[i].marker);
+					this.mapObjects.clusters[i] = undefined;
+				}
 			}
 		}
 	};
@@ -638,7 +597,7 @@ define([
 
 	MarkerManager.prototype.overMarker = function (evt) {
 		window.clearTimeout(this.popupMarkerTimout);
-		this.popupMarkerTimout = window.setTimeout(this.popupMarkerBind, 300);
+		this.popupMarkerTimout = window.setTimeout(this.popupMarkerBind, 200);
 		this.markerToPopup = evt.target.on('mouseout', this.outMarker, this);
 	};
 	MarkerManager.prototype.popupMarker = function () {

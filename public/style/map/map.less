@@ -2,6 +2,7 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 @import "../leaflet.less";
+@import "../leaflet.markercluster.less";
 
 .mapModuleWrapper {
 	position: relative;
@@ -136,7 +137,7 @@
 			}
 			&:hover .photoA::after {
 				top: -6px;
-				right: -9px;
+				right: -5px;
 			}
 		}
 		&.e {
@@ -171,7 +172,7 @@
 				background-position: -40px 0;
 			}
 			&:hover .photoA::after {
-				top: 8px;
+				top: 11px;
 				right: 1px;
 			}
 		}
@@ -221,7 +222,6 @@
 			position: absolute;
 			display: block;
 			width: 100%;
-			opacity: 1;
 		}
 
 		.clusterCount {
@@ -239,11 +239,6 @@
 
 		&.show {
 			opacity: 1;
-			&:hover {
-				.clusterImg {
-					opacity: 1;
-				}
-			}
 		}
 	}
 
