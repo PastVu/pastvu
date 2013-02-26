@@ -11,3 +11,8 @@ mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.
 	\n ->> \\n
 	\t ->>  (пробел)
 	}, { --> }\n{
+	
+	
+	
+CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
+forfiles /s /m *.* /p \_test\oldmos\photosAll /c "cmd /c move @file \_test\oldmos\result"
