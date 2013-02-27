@@ -234,7 +234,7 @@ function conveyerStep(file, cb, ctx) {
     var sequence = [];
 
     sequence.push(function (callback) {
-        imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', uploadDir + '/origin/' + file], function (err, data) {
+        imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(uploadDir + '/origin/' + file)], function (err, data) {
             var info = {};
             if (err) {
                 console.error(err);

@@ -50,8 +50,8 @@ var PhotoSheme = new mongoose.Schema(
     ),
     PhotoConveyerSheme = new mongoose.Schema(
         {
-            file: {type: String},
-            added: {type: Date, default: Date.now, required: true},
+            file: {type: String, index: true},
+            added: {type: Date, default: Date.now, required: true, index: true},
             converting: {type: Boolean}
         },
         {
