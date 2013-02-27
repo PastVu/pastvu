@@ -26,7 +26,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 
                 FIRST_CLIENT_WORK_ZOOM: 17,
                 CLUSTERING_ON_CLIENT: true,
-                CLUSTERING_ON_CLIENT_PIX_DELTA: 30,
+                CLUSTERING_ON_CLIENT_PIX_DELTA: 20,
 
 
                 locDef: {lat: 40, lng: -17, z: 3},
