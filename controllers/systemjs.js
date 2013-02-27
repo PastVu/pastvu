@@ -90,11 +90,15 @@ module.exports.loadController = function (app, db) {
 
 	saveSystemJSFunc(function clusterAll() {
 		var startTime = Date.now(),
+			controlBy = 1000,
 			clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
 			photoCounter = 0,
-			photoCursor = db.photos.find({geo: {$exists: true}}, {geo: 1, file: 1});
+			photoCursor = db.photos.find({geo: {$exists: true}}, {geo: 1, file: 1}),
+			photosAllCount = photoCursor.count();
 
 		db.clusters.remove();
+
+		print('Start to clusterize ' + photosAllCount + ' photos');
 
 		// forEach в данном случае - это честный while по курсору: function (func) {while (this.hasNext()) {func(this.next());}}
 		photoCursor.forEach(function (photo) {
@@ -113,16 +117,133 @@ module.exports.loadController = function (app, db) {
 				item.hHalf = toPrecisionRound(item.h / 2);
 
 				geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
-				cluster = db.clusters.findOne({z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1});
+				cluster = db.clusters.findOne({geo: geo, z: item.z}, {_id: 0, c: 1, gravity: 1});
 				c = (cluster && cluster.c) || 0;
 				gravity = (cluster && cluster.gravity) || [geo[0] + item.wHalf, geo[1] - item.hHalf];
 				gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhoto[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
 
-				db.clusters.update({z: item.z, geo: geo}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
+				db.clusters.update({geo: geo, z: item.z}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
 			});
+
+			if (photoCounter % controlBy === 0) {
+				print('Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + db.clusters.count() + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
+			}
 		});
 
 		return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
+	});
+
+	saveSystemJSFunc(function clusterAllnoGravity() {
+		var startTime = Date.now(),
+			controlBy = 1000,
+			clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
+			photoCounter = 0,
+			photoCursor = db.photos.find({geo: {$exists: true}}, {geo: 1, file: 1}),
+			photosAllCount = photoCursor.count();
+
+		db.clusters.remove();
+
+		print('Start to clusterize ' + photosAllCount + ' photos');
+
+		// forEach в данном случае - это честный while по курсору: function (func) {while (this.hasNext()) {func(this.next());}}
+		photoCursor.forEach(function (photo) {
+			var geoPhoto = photo.geo,
+				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+			photoCounter++;
+			clusters.forEach(function (item) {
+				db.clusters.update({geo: geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]), z: item.z}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {file: photo.file} }, {multi: false, upsert: true});
+			});
+
+			if (photoCounter % controlBy === 0) {
+				print('Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + db.clusters.count() + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
+			}
+		});
+
+		return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
+	});
+
+	saveSystemJSFunc(function clusterAll2(logByNPhotos) {
+		var startFullTime = Date.now(),
+			startTime,
+
+			clusterZoom,
+			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
+			clusterZoomsCounter = -1,
+
+			photo,
+			photos = db.photos.find({geo: {$exists: true}}, {_id: 1, geo: 1, file: 1}).toArray(),
+			photoCounter = 0,
+			photosAllCount = photos.length,
+			geoPhoto,
+			geoPhotoCorrection,
+
+			geo,
+			cluster,
+			clusters,
+			clustCoordId,
+			clustCoordIdS,
+			custersCounter,
+			clustersResultArr;
+
+		logByNPhotos = logByNPhotos || ((photos.length / 20) >> 0);
+		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos);
+
+		db.clusters.remove();
+
+		while (++clusterZoomsCounter < clusterZooms.length) {
+			startTime = Date.now();
+
+			clusterZoom = clusterZooms[clusterZoomsCounter];
+			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
+			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
+
+			clusters = {};
+			clustCoordIdS = [];
+
+			photoCounter = -1;
+			while (++photoCounter < photosAllCount) {
+				photo = photos[photoCounter];
+				geoPhoto = photo.geo;
+				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+
+				geo = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+				clustCoordId = geo[0] + '@' + geo[1];
+				if (clusters[clustCoordId] === undefined) {
+					clusters[clustCoordId] = {geo: geo, lngs: clusterZoom.wHalf, lats: clusterZoom.hHalf, c: 1, p: []};
+					clustCoordIdS.push(clustCoordId);
+				}
+				cluster = clusters[clustCoordId];
+				cluster.c += 1;
+				cluster.lngs += photo.geo[0];
+				cluster.lats += photo.geo[1];
+				cluster.p.push(photo._id);
+
+				if (photoCounter % logByNPhotos === 0) {
+					print(clusterZoom.z + ': Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + clustCoordIdS.length + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
+				}
+			}
+
+			print(clusterZoom.z + ': Final calc fo clusters before insert. ' + (Date.now() - startTime) / 1000 + 's');
+			clustersResultArr = [];
+			custersCounter = clustCoordIdS.length;
+			while (custersCounter) {
+				cluster = clusters[clustCoordIdS[--custersCounter]];
+				clustersResultArr.push({
+					geo: cluster.geo,
+					z: clusterZoom.z,
+					c: cluster.c - 1,
+					gravity: [toPrecisionRound(cluster.lngs / cluster.c), toPrecisionRound(cluster.lats / cluster.c)],
+					file: cluster.p[0],
+					p: cluster.p
+				});
+			}
+			print(clusterZoom.z + ': Inserting ' + clustersResultArr.length + ' clusters. ' + (Date.now() - startTime) / 1000 + 's');
+			db.clusters.insert(clustersResultArr);
+			print(clusterZoom.z + ': Inserted ok. ' + (Date.now() - startTime) / 1000 + 's');
+			print('~~~~~~~~~~~~~~~~~~~~~~~~~');
+		}
+
+		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
 	});
 
 	saveSystemJSFunc(function toPrecision(number, precision) {
