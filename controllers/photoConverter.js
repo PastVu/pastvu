@@ -119,14 +119,24 @@ module.exports.loadController = function (app, db, io) {
 
 		(function () {
 			function result(data) {
-				socket.emit('getBoundsResult', data);
+				socket.emit('getStatConveyer', data);
 			}
 
-			socket.on('checkConverter', function (data) {
+			socket.on('statConveyer', function (data) {
 				if (!hs.session.user) {
-					result({message: 'Not authorized', error: true});
+					result({message: 'Not authorized for statConveyer', error: true});
 					return;
 				}
+				STPhotoConveyer.collection.find({}, {_id: 0, __v: 0}, {sort: 'stamp'}, function (err, docs) {
+					docs.toArray(function (err, docs) {
+						var i = docs.length;
+						while (i--) {
+							docs[i].stamp = docs[i].stamp.getTime();
+						}
+						result({data: docs});
+					});
+
+				});
 			});
 		}());
 
@@ -251,6 +261,7 @@ function conveyerControl(andConverting) {
 						}
 						if (photoConv) {
 							photoConv.remove(this.parallel());
+							conveyerConverted -= 1;
 						}
 						this.parallel()();
 					} else {
@@ -265,7 +276,6 @@ function conveyerControl(andConverting) {
 								this.parallel()();
 							} else if (photoConv) {
 								photoConv.remove(this.parallel());
-								conveyerConverted += 1;
 							}
 						}, this);
 					}
@@ -273,6 +283,7 @@ function conveyerControl(andConverting) {
 				function finish() {
 					working -= 1;
 					conveyerLength -= 1;
+					conveyerConverted += 1;
 					conveyerControl();
 				}
 			);
