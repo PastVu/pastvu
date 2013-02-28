@@ -140,8 +140,9 @@ module.exports.loadController = function (app, db) {
 			photos = db.photos.find({}, {_id: 0, file: 1}).toArray(),
 			photosAllCount = photos.length;
 
+		print('Clearing existing conveyer');
 		db.photoconveyers.remove();
-		print('Start to clusterize ' + photosAllCount + ' photos');
+		print('Start to fill new conveyer for ' + photosAllCount + ' photos');
 
 		photoCounter = -1;
 		while (++photoCounter < photosAllCount) {
