@@ -16,6 +16,12 @@ requirejs.config({
 			deps: [
 				'backbone'
 			]//, exports: ' Backbone.Router.arrayValueSplit'
+		},
+		'highstock': {
+			deps: [
+				'jquery'
+			],
+			exports: 'Highcharts'
 		}
 	},
 	map: {
@@ -54,7 +60,8 @@ requirejs.config({
 
 		'leaflet': 'lib/leaflet/leaflet_0.5.0',
 		'LMarkerCluster': 'lib/leaflet/extends/L.Markercluster',
-		'libcanvas': 'lib/libcanvas',
+
+		'highstock': 'lib/highstock',
 
 		'jquery.ui.widget': 'lib/jquery/ui/widget',
 		'jquery.fileupload': 'lib/jquery/plugins/fileupload',
