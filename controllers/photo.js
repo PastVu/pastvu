@@ -153,7 +153,7 @@ function resetStatDay() {
     });
 }
 function planResetStatDay() {
-    setTimeout(resetStatDay, moment().add('d', 1).sod().diff(moment()) + 1000);
+    setTimeout(resetStatDay, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
 }
 /**
  * Еженедельно обнуляет статистику недельных просмотров
@@ -169,7 +169,7 @@ function resetStatWeek() {
     });
 }
 function planResetStatWeek() {
-    setTimeout(resetStatWeek, moment().add('w', 1).day(1).sod().diff(moment()) + 1000);
+    setTimeout(resetStatWeek, moment().add('w', 1).day(1).startOf('day').diff(moment()) + 1000);
 }
 
 module.exports.loadController = function (app, db, io) {
