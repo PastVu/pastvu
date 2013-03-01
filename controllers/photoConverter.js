@@ -11,7 +11,7 @@ var path = require('path'),
 	STPhotoConveyer,
 	_ = require('lodash'),
 	moment = require('moment'),
-	ms =  require('ms'), // Tiny milisecond conversion utility
+	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
@@ -148,6 +148,16 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		(function statFast() {
+			socket.on('giveStatFastConveyer', function (data) {
+				socket.emit('takeStatFastConveyer', {
+					clength: conveyerLength,
+					cmaxlength: conveyerMaxLength,
+					converted: conveyerConverted
+				});
+			});
+		}());
+
 	});
 
 };
@@ -159,7 +169,11 @@ function CollectConveyerStat() {
 		clength: conveyerMaxLength,
 		converted: conveyerConverted
 	});
-	st.save(function (err) { if (err) { console.log('STPhotoConveyer error', err); } });
+	st.save(function (err) {
+		if (err) {
+			console.log('STPhotoConveyer error', err);
+		}
+	});
 
 	conveyerMaxLength = conveyerLength;
 	conveyerConverted = 0;

@@ -2,7 +2,6 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
-
 .conveyerModuleWrapper {
 	position: relative;
 	width: 100%;
@@ -14,9 +13,20 @@
 		margin-bottom: 0;
 	}
 
+	.stateRate {
+		color: @MainBlueColor;
+		display: inline-block;
+		min-width: 35px;
+	}
+	.stateRate, .stateDesc {
+		line-height: 16px;
+		font-size: 14px;
+	}
+
 	#conveyerLengthGraph, #conveyerConvertGraph {
 		height: 300px;
 	}
+
 }
 
 

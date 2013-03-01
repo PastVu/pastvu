@@ -5,11 +5,20 @@
 			h6 Действия
 		.span9-10
 			h6 Текущее состояние конвейера
-	br
-	.row-fluid
-		h6 Максимальная длина конвейера
-		#conveyerLengthGraph
+			div
+				span.stateRate(data-bind="text:converted()")
+				span.stateDesc Конвертированно с песледней 10-минутки
+			div
+				span.stateRate(data-bind="text:clength()")
+				span.stateDesc Длина конвейера
+			div
+				span.stateRate(data-bind="text:cmaxlength()")
+				span.stateDesc Максимальная длина конвейера с песледней 10-минутки
 	br
 	.row-fluid
 		h6 Сконвертированно
 		#conveyerConvertGraph
+	br
+	.row-fluid
+		h6 Максимальная длина конвейера
+		#conveyerLengthGraph

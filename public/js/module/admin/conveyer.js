@@ -280,6 +280,12 @@ define([
 			this.conveyerLengthChart = null;
 			this.conveyerConvertChart = null;
 
+			this.clength = ko.observable(0);
+			this.cmaxlength = ko.observable(0);
+			this.converted = ko.observable(0);
+
+			this.timeoutUpdate = null;
+
 			this.chartsOptions = {
 				yAxis: {
 					min: 0
@@ -342,6 +348,7 @@ define([
 		show: function () {
 			var _this = this;
 			this.$container.fadeIn(400, function () {
+				this.statFast();
 				socket.once('getStatConveyer', function (data) {
 					if (!data || data.error) {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -407,263 +414,21 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			window.clearTimeout(this.timeoutUpdate);
 			this.hide();
 			destroy.call(this);
+		},
+
+		statFast: function () {
+			socket.once('takeStatFastConveyer', function (data) {
+				if (data) {
+					this.clength(data.clength);
+					this.cmaxlength(data.cmaxlength);
+					this.converted(data.converted);
+				}
+				this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
+			}.bind(this));
+			socket.emit('giveStatFastConveyer', {});
 		}
 	});
-
-	/*Highcharts.theme = {
-		colors: ["#DDDF0D", "#7798BF", "#55BF3B", "#DF5353", "#aaeeee", "#ff0066", "#eeaaee",
-			"#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
-		chart: {
-			backgroundColor: {
-				linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-				stops: [
-					[0, 'rgb(21, 56, 96)'],
-					[1, 'rgb(16, 40, 68)']
-				]
-			},
-			borderWidth: 0,
-			borderRadius: 0,
-			plotBackgroundColor: null,
-			plotShadow: false,
-			plotBorderWidth: 0
-		},
-		title: {
-			style: {
-				color: '#FFF',
-				font: '16px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-			}
-		},
-		subtitle: {
-			style: {
-				color: '#f2f2f2',
-				font: '12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-			}
-		},
-		xAxis: {
-			gridLineWidth: 0,
-			lineColor: '#999',
-			tickColor: '#999',
-			labels: {
-				style: {
-					color: '#999',
-					fontWeight: 'bold'
-				}
-			},
-			title: {
-				style: {
-					color: '#AAA',
-					font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-				}
-			}
-		},
-		yAxis: {
-			alternateGridColor: null,
-			minorTickInterval: null,
-			gridLineColor: 'rgba(255, 255, 255, .1)',
-			lineWidth: 0,
-			tickWidth: 0,
-			labels: {
-				style: {
-					color: '#999',
-					fontWeight: 'bold'
-				}
-			},
-			title: {
-				style: {
-					color: '#f2f2f2',
-					font: 'bold 12px Lucida Grande, Lucida Sans Unicode, Verdana, Arial, Helvetica, sans-serif'
-				}
-			}
-		},
-		legend: {
-			itemStyle: {
-				color: '#f2f2f2'
-			},
-			itemHoverStyle: {
-				color: '#FFF'
-			},
-			itemHiddenStyle: {
-				color: '#ccc'
-			}
-		},
-		labels: {
-			style: {
-				color: '#f2f2f2'
-			}
-		},
-		tooltip: {
-			backgroundColor: {
-				linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-				stops: [
-					[0, 'rgba(96, 96, 96, .8)'],
-					[1, 'rgba(16, 16, 16, .8)']
-				]
-			},
-			borderWidth: 0,
-			style: {
-				color: '#FFF'
-			}
-		},
-
-
-		plotOptions: {
-			line: {
-				dataLabels: {
-					color: '#f2f2f2'
-				},
-				marker: {
-					lineColor: '#ccc'
-				}
-			},
-			spline: {
-				marker: {
-					lineColor: '#ccc'
-				}
-			},
-			scatter: {
-				marker: {
-					lineColor: '#ccc'
-				}
-			},
-			candlestick: {
-				lineColor: 'white'
-			}
-		},
-
-		toolbar: {
-			itemStyle: {
-				color: '#f2f2f2'
-			}
-		},
-
-		navigation: {
-			buttonOptions: {
-				backgroundColor: {
-					linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-					stops: [
-						[0.4, '#606060'],
-						[0.6, '#333333']
-					]
-				},
-				borderColor: '#000000',
-				symbolStroke: '#C0C0C0',
-				hoverSymbolStroke: '#FFFFFF'
-			}
-		},
-
-		exporting: {
-			buttons: {
-				exportButton: {
-					symbolFill: '#55BE3B'
-				},
-				printButton: {
-					symbolFill: '#7797BE'
-				}
-			}
-		},
-
-		// scroll charts
-		rangeSelector: {
-			buttonTheme: {
-				fill: {
-					linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-					stops: [
-						[0.4, '#888'],
-						[0.6, '#555']
-					]
-				},
-				stroke: '#000000',
-				style: {
-					color: '#CCC',
-					fontWeight: 'normal'
-				},
-				states: {
-					hover: {
-						fill: {
-							linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-							stops: [
-								[0.4, '#BBB'],
-								[0.6, '#888']
-							]
-						},
-						stroke: '#000000',
-						style: {
-							color: 'white'
-						}
-					},
-					select: {
-						fill: {
-							linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-							stops: [
-								[0.1, '#000'],
-								[0.3, '#333']
-							]
-						},
-						stroke: '#000000',
-						style: {
-							color: 'yellow'
-						}
-					}
-				}
-			},
-			inputStyle: {
-				backgroundColor: '#333',
-				color: 'silver'
-			},
-			labelStyle: {
-				color: 'silver'
-			}
-		},
-
-		navigator: {
-			handles: {
-				backgroundColor: '#666',
-				borderColor: '#AAA'
-			},
-			outlineColor: '#CCC',
-			maskFill: 'rgba(16, 16, 16, 0.2)',
-			series: {
-				color: '#83a7d1',
-				lineColor: '#a9cbf2'
-			}
-		},
-
-		scrollbar: {
-			barBackgroundColor: {
-				linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-				stops: [
-					[0.4, '#888'],
-					[0.6, '#555']
-				]
-			},
-			barBorderColor: '#333',
-			buttonArrowColor: '#CCC',
-			buttonBackgroundColor: {
-				linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-				stops: [
-					[0.4, '#888'],
-					[0.6, '#555']
-				]
-			},
-			buttonBorderColor: '#333',
-			rifleColor: '#FFF',
-			trackBackgroundColor: {
-				linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-				stops: [
-					[0, '#000'],
-					[1, '#333']
-				]
-			},
-			trackBorderColor: '#666'
-		},
-
-		// special colors for some of the demo examples
-		legendBackgroundColor: 'rgba(48, 48, 48, 0.8)',
-		legendBackgroundColorSolid: 'rgb(70, 70, 70)',
-		dataLabelsColor: '#ccc',
-		textColor: '#f2f2f2',
-		maskColor: 'rgba(255,255,255,0.3)'
-	};*/
 });
