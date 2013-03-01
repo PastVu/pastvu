@@ -40,13 +40,16 @@ define([
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						data = data.data;
-						var i = 0;
+						var i = 0,
+							timeZoneOffset = -((new Date()).getTimezoneOffset()) * 60000,
+							stampLocal;
 						while (++i < data.length) {
+							stampLocal = data[i].stamp + timeZoneOffset;
 							this.conveyerLengthData.push(
-								[data[i].stamp, data[i].clength]
+								[stampLocal, data[i].clength]
 							);
 							this.conveyerConvertData.push(
-								[data[i].stamp, data[i].converted]
+								[stampLocal, data[i].converted]
 							);
 						}
 						this.conveyerLengthChart = new Highcharts.StockChart({
