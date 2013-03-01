@@ -58,6 +58,18 @@ var PhotoSheme = new mongoose.Schema(
 			strict: true
 		}
 	),
+// Ошибки конвертирования
+	PhotoConveyerErrorSheme = new mongoose.Schema(
+		{
+			file: {type: String, index: true},
+			added: {type: Date},
+			stamp: {type: Date, default: Date.now},
+			error: {type: String}
+		},
+		{
+			strict: true
+		}
+	),
 //Статистика заполненности конвейера
 	STPhotoConveyerSheme = new mongoose.Schema(
 		{
@@ -124,6 +136,7 @@ PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
 module.exports.makeModel = function (db) {
 	db.model('Photo', PhotoSheme);
 	db.model('PhotoConveyer', PhotoConveyerSheme);
+	db.model('PhotoConveyerError', PhotoConveyerErrorSheme);
 	db.model('STPhotoConveyer', STPhotoConveyerSheme);
 };
 

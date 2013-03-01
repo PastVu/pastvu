@@ -210,7 +210,7 @@ module.exports.loadController = function (app, db, io) {
                     data.forEach(function (item, index) {
                         toConvert.push(item.file);
                     });
-                    PhotoConverter.convertPhoto(toConvert);
+                    PhotoConverter.addPhotos(toConvert);
                 }
                 socket.emit('createPhotoCallback', createData);
             });
@@ -227,7 +227,7 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
-        socket.on('convertPhoto', function (data) {
+        socket.on('convertPhotos', function (data) {
             var result = function (data) {
                 socket.emit('convertPhotoResult', data);
             };
@@ -252,7 +252,7 @@ module.exports.loadController = function (app, db, io) {
                         result({message: 'No such photos in base', error: true});
                         return;
                     }
-                    PhotoConverter.convertPhoto(data, this);
+                    PhotoConverter.addPhotos(data, this);
                 },
 
                 function (addResult) {

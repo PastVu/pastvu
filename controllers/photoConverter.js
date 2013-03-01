@@ -7,6 +7,7 @@ var path = require('path'),
 	User,
 	Photo,
 	PhotoConveyer,
+	PhotoConveyerError,
 	STPhotoConveyer,
 	_ = require('lodash'),
 	moment = require('moment'),
@@ -97,12 +98,19 @@ module.exports.loadController = function (app, db, io) {
 	appEnv = app.get('appEnv');
 	Photo = db.model('Photo');
 	PhotoConveyer = db.model('PhotoConveyer');
+	PhotoConveyerError = db.model('PhotoConveyerError');
 	STPhotoConveyer = db.model('STPhotoConveyer');
 	User = db.model('User');
 
-	// Запускаем конвейер после рестарта сервера с флагом, что надо начинать с уже начатых
+	// Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
 	setTimeout(function () {
-		conveyerControl(true);
+		PhotoConveyer.update({converting: true}, { $set: { converting: false }}, {multi: true}, function (err) {
+			if (err) {
+				console.dir(err);
+				return;
+			}
+			conveyerControl();
+		});
 	}, 5000);
 
 	PhotoConveyer.count({}, function (err, count) {
@@ -163,7 +171,7 @@ function CollectConveyerStat() {
  * @param data Массив имен фотографий
  * @param cb Коллбэк успешности добавления
  */
-module.exports.convertPhoto = function (data, cb) {
+module.exports.addPhotos = function (data, cb) {
 	var toConvert = [],
 		toConvertObj = [];
 
@@ -221,23 +229,15 @@ module.exports.removePhotos = function (data, cb) {
 
 /**
  * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
- * @param andConverting  Флаг, указывающий, что выбрать надо даже файлы,
- *                       у которых уже проставлен флаг конвертирования
- *                       (например, если сервер был остановлен во время конвертирования
- *                       и после запуска их надо опять сконвертировать)
  */
-function conveyerControl(andConverting) {
-	var toWork = maxWorking - goingToWork - working,
-		query;
+function conveyerControl() {
+	var toWork = maxWorking - goingToWork - working;
 	if (toWork < 1) {
 		return;
 	}
-	query = [false];
-	if (andConverting) {
-		query.push(true);
-	}
 	goingToWork += toWork;
-	PhotoConveyer.find({converting: {$in: query}}).sort('added').limit(toWork).exec(function (err, files) {
+
+	PhotoConveyer.find({converting: false}).sort('added').limit(toWork).exec(function (err, files) {
 		goingToWork -= toWork - files.length;
 		if (err || files.length === 0) {
 			return;
@@ -253,30 +253,34 @@ function conveyerControl(andConverting) {
 				},
 				function toConveyer(err, photoConv, photo) {
 					if (err || !photoConv || !photo) {
+						(new PhotoConveyerError({
+							file: photoConv.file,
+							added: photoConv.added,
+							error: (err ? String(err) : (!photo ? 'No such photo' : 'Conveyer setting converting=true save error'))
+						})).save(this.parallel());
 						if (photo) {
-							//Присваиваем undefined, чтобы удалить свойства
 							photo.conv = undefined;
 							photo.convqueue = undefined;
 							photo.save(this.parallel());
 						}
 						if (photoConv) {
 							photoConv.remove(this.parallel());
-							conveyerConverted -= 1;
 						}
-						this.parallel()();
+						conveyerConverted -= 1;
 					} else {
 						conveyerStep(photoConv.file, function (err) {
-							if (photo) {
-								//Присваиваем undefined, чтобы удалить свойства
-								photo.conv = undefined;
-								photo.convqueue = undefined;
-								photo.save(this.parallel());
+							if (err) {
+								(new PhotoConveyerError({
+									file: photoConv.file,
+									added: photoConv.added,
+									error: String(err)
+								})).save(this.parallel());
 							}
-							if (err || !photoConv) {
-								this.parallel()();
-							} else if (photoConv) {
-								photoConv.remove(this.parallel());
-							}
+							//Присваиваем undefined, чтобы удалить свойства
+							photo.conv = undefined;
+							photo.convqueue = undefined;
+							photo.save(this.parallel());
+							photoConv.remove(this.parallel());
 						}, this);
 					}
 				},
