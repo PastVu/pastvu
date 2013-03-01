@@ -217,6 +217,7 @@ module.exports.loadController = function (app, db) {
 					cluster.lngs += photo.geo[0];
 					cluster.lats += photo.geo[1];
 				}
+				cluster.file = photo.file;
 				cluster.p.push(photo._id);
 
 				if (photoCounter % logByNPhotos === 0) {
@@ -242,7 +243,7 @@ module.exports.loadController = function (app, db) {
 					z: clusterZoom.z,
 					c: cluster.c - 1,
 					gravity: gravity,
-					file: cluster.p[0],
+					file: cluster.file,
 					p: cluster.p
 				});
 			}

@@ -23,7 +23,7 @@ var path = require('path'),
 
 	logger = log4js.getLogger("PhotoConverter.js"),
 	uploadDir = __dirname + '/../publicContent/photos',
-	maxWorking = 1, // Возможно параллельно конвертировать
+	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
 	imageSequence = [
