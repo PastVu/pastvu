@@ -280,7 +280,7 @@ define([
 				curr.geo.reverse();
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
 					clusters[i] = Photo.factory(curr, 'mapclust');
-					divIcon = L.divIcon({className: 'clusterIcon fringe2 show', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}})
 							.on('click', this.clickMarker, this);

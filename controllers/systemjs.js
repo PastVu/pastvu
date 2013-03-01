@@ -133,31 +133,6 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
 	});
 
-	saveSystemJSFunc(function convertAllPhotos() {
-		var startTime = Date.now(),
-			conveyer = [],
-			photoCounter = 0,
-			photos = db.photos.find({}, {_id: 0, file: 1}).toArray(),
-			photosAllCount = photos.length;
-
-		print('Clearing existing conveyer');
-		db.photoconveyers.remove();
-		print('Start to fill new conveyer for ' + photosAllCount + ' photos');
-
-		photoCounter = -1;
-		while (++photoCounter < photosAllCount) {
-			conveyer.push(
-				{
-					file: photos[photoCounter].file,
-					added: Date.now(),
-					converting: false
-				}
-			);
-		}
-		db.photoconveyers.insert(conveyer);
-		return {message: 'Added to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter};
-	});
-
 	saveSystemJSFunc(function clusterAll2(logByNPhotos, withGravity) {
 		var startFullTime = Date.now(),
 			startTime,
@@ -180,24 +155,20 @@ module.exports.loadController = function (app, db) {
 			clustCoordId,
 			clustCoordIdS,
 			custersCounter,
-			clustersResultArr,
-
-			tmp;
+			clustersResultArr;
 
 		logByNPhotos = logByNPhotos || ((photos.length / 20) >> 0);
-		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos);
-
-		db.clusters.remove();
+		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
 
 		while (++clusterZoomsCounter < clusterZooms.length) {
-			startTime = Date.now();
-
 			clusterZoom = clusterZooms[clusterZoomsCounter];
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
 			clusters = {};
 			clustCoordIdS = [];
+
+			startTime = Date.now();
 
 			photoCounter = -1;
 			while (++photoCounter < photosAllCount) {
@@ -232,8 +203,10 @@ module.exports.loadController = function (app, db) {
 				cluster = clusters[clustCoordIdS[--custersCounter]];
 				if (withGravity) {
 					gravity = [
-						Math.min(Math.max(cluster.geo[0] + (clusterZoom.wHalf / 2), toPrecisionRound(cluster.lngs / cluster.c)), cluster.geo[0] + clusterZoom.wHalf + (clusterZoom.wHalf / 2)),
-						Math.min(Math.max(cluster.geo[1] - (clusterZoom.hHalf / 2), toPrecisionRound(cluster.lats / cluster.c)), cluster.geo[1] - clusterZoom.hHalf - (clusterZoom.hHalf / 2))
+						//Math.min(Math.max(cluster.geo[0] + (clusterZoom.wHalf / 2), toPrecisionRound(cluster.lngs / cluster.c)), cluster.geo[0] + clusterZoom.wHalf + (clusterZoom.wHalf / 2)),
+						//Math.min(Math.max(cluster.geo[1] - (clusterZoom.hHalf / 2), toPrecisionRound(cluster.lats / cluster.c)), cluster.geo[1] - clusterZoom.hHalf - (clusterZoom.hHalf / 2))
+						toPrecisionRound(cluster.lngs / cluster.c),
+						toPrecisionRound(cluster.lats / cluster.c)
 					];
 				} else {
 					gravity = [cluster.lngs, cluster.lats];
@@ -247,6 +220,8 @@ module.exports.loadController = function (app, db) {
 					p: cluster.p
 				});
 			}
+
+			db.clusters.remove({z: clusterZoom});
 			print(clusterZoom.z + ': Inserting ' + clustersResultArr.length + ' clusters. ' + (Date.now() - startTime) / 1000 + 's');
 			db.clusters.insert(clustersResultArr);
 			print(clusterZoom.z + ': Inserted ok. ' + (Date.now() - startTime) / 1000 + 's');
@@ -254,6 +229,31 @@ module.exports.loadController = function (app, db) {
 		}
 
 		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
+	});
+
+	saveSystemJSFunc(function convertAllPhotos() {
+		var startTime = Date.now(),
+			conveyer = [],
+			photoCounter = 0,
+			photos = db.photos.find({}, {_id: 0, file: 1}).sort({loaded: -1}).toArray(),
+			photosAllCount = photos.length;
+
+		print('Clearing existing conveyer');
+		db.photoconveyers.remove();
+		print('Start to fill new conveyer for ' + photosAllCount + ' photos');
+
+		photoCounter = -1;
+		while (++photoCounter < photosAllCount) {
+			conveyer.push(
+				{
+					file: photos[photoCounter].file,
+					added: Date.now(),
+					converting: false
+				}
+			);
+		}
+		db.photoconveyers.insert(conveyer);
+		return {message: 'Added to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter};
 	});
 
 	saveSystemJSFunc(function toPrecision(number, precision) {
