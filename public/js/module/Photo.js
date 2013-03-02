@@ -99,9 +99,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
             User.factory(origin.user, 'base');
         }
         if (defType === 'mapclust') {
-            if (origin.c < 100) {
+            if (origin.c < 500) {
                 origin.measure = 's';
-            } else if (origin.c < 1000) {
+            } else if (origin.c < 3000) {
                 origin.measure = 'm';
             }
             picType = 'micro' + origin.measure;

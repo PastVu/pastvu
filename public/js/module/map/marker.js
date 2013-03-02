@@ -431,7 +431,7 @@ define([
 			if (cluster.c > 1) {
 				result.clusters.push(
 					{
-						id: keys[--i],
+						cid: keys[i],
 						c: cluster.c,
 						geo: [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)],
 						file: cluster.photos[0].file,
@@ -458,7 +458,7 @@ define([
 			while (i) {
 				curr = clusters[--i];
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					result[curr.id || i] = Photo.factory(curr, 'mapclust');
+					result[curr.cid || i] = Photo.factory(curr, 'mapclust');
 					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
@@ -581,7 +581,7 @@ define([
 			i = arr.length;
 			while (i) {
 				curr = this.mapObjects.photos[arr[--i]];
-				if (!bound.contains(curr.geo)) {
+				if (curr !== undefined && !bound.contains(curr.geo)) {
 					this.layerPhotos.removeLayer(curr.marker);
 					this.mapObjects.photos[curr.cid] = undefined;
 				}
@@ -593,7 +593,7 @@ define([
 			i = arr.length;
 			while (i) {
 				curr = this.mapObjects.clusters[arr[--i]];
-				if (!bound.contains(curr.geo)) {
+				if (curr !== undefined && !bound.contains(curr.geo)) {
 					this.layerClusters.removeLayer(curr.marker);
 					this.mapObjects.clusters[curr.cid] = undefined;
 				}
