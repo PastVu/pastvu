@@ -221,7 +221,7 @@ module.exports.loadController = function (app, db) {
 				});
 			}
 
-			db.clusters.remove({z: clusterZoom});
+			db.clusters.remove({z: clusterZoom.z});
 			print(clusterZoom.z + ': Inserting ' + clustersResultArr.length + ' clusters. ' + (Date.now() - startTime) / 1000 + 's');
 			db.clusters.insert(clustersResultArr);
 			print(clusterZoom.z + ': Inserted ok. ' + (Date.now() - startTime) / 1000 + 's');

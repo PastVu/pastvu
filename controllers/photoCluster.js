@@ -239,8 +239,8 @@ module.exports.getBounds = function (data, cb) {
                 i = clusters.length;
                 while (i) {
                     curr = clusters[--i];
-                    curr.geo = curr.gravity;
-                    delete curr.gravity;
+                    curr.geo = curr.gravity.reverse(); // Реверсируем geo
+                    curr.gravity = undefined;
                 }
             }
 

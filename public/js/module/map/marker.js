@@ -31,6 +31,7 @@ define([
 		this.calcBound = null;
 		this.calcBoundPrev = null;
 		this.currZoom = this.map.getZoom();
+		this.zoomChanged = false;
 		this.refreshByZoomTimeout = null;
 		this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
 
@@ -84,13 +85,6 @@ define([
 	};
 
 	/**
-	 * Вызывается по событию начала изменения масштаба карты
-	 */
-	MarkerManager.prototype.onZoomStart = function (opt) {
-		window.clearTimeout(this.refreshByZoomTimeout);
-	};
-
-	/**
 	 * Вызывается по событию изменения базового слоя карты
 	 * Определяет, активна ли анимация изменения масштаба для данного слоя или нет
 	 */
@@ -107,13 +101,22 @@ define([
 	};
 
 	/**
+	 * Вызывается по событию начала изменения масштаба карты
+	 */
+	MarkerManager.prototype.onZoomStart = function (opt) {
+		window.clearTimeout(this.refreshByZoomTimeout);
+		this.clearClusters();
+		this.zoomChanged = true;
+	};
+
+	/**
 	 * Вызывается по событию завершения движения карты - перемещения или изменения масштаба
 	 * При изменении масштаба отсрачиваем обновление данных, т.к. масштаб может меняться многократно за короткий промежуток времени
 	 */
 	MarkerManager.prototype.onMapMoveEnd = function () {
-		window.clearTimeout(this.refreshByZoomTimeout);
-		if (this.currZoom !== this.map.getZoom()) {
+		if (this.zoomChanged && this.currZoom !== this.map.getZoom()) {
 			this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
+			this.zoomChanged = false;
 		} else {
 			if (this.reCalcBound()) {
 				this.refreshDataByMove();
@@ -148,10 +151,12 @@ define([
 			// Если на клиенте уже есть все фотографии для данного зума
 			if (newZoom > this.currZoom) {
 				// Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
+				// и пересчитываем кластеры
 				pollServer = false;
-				this.layerClusters.clearLayers();
 				this.cropByBound(null, P.settings.CLUSTERING_ON_CLIENT(), false);
-				this.processIncomingDataZoom({photos: this.photosAll}, false, P.settings.CLUSTERING_ON_CLIENT(), false);
+				if (this.photosAll.length > 1) {
+					this.drawClusters(this.localClustering(this.photosAll).clusters, false);
+				}
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
 				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
@@ -160,8 +165,6 @@ define([
 				i = bounds.length;
 				while (i) {
 					curr = _.clone(bounds[--i]);
-					curr[0].reverse();
-					curr[1].reverse();
 					this['b' + i] = L.polygon([
 						[curr[1][0], curr[0][1]],
 						curr[1],
@@ -171,9 +174,13 @@ define([
 				}
 			}
 		} else {
+			// При пересечении границы "вверх" обнудяем массив всех фото на клиенте
+			if (crossingClientWorkZoom && newZoom < this.firstClientWorkZoom) {
+				this.photosAll = [];
+			}
 			// Запрашиваем объекты полностью для нового баунда
 			bounds = [
-				[Utils.geo.latlngToArr(bound.getSouthWest(), true), Utils.geo.latlngToArr(bound.getNorthEast(), true)]
+				[Utils.geo.latlngToArr(bound.getSouthWest()), Utils.geo.latlngToArr(bound.getNorthEast())]
 			];
 		}
 
@@ -192,8 +199,7 @@ define([
 					needClientClustering = P.settings.CLUSTERING_ON_CLIENT() && this.currZoom >= this.firstClientWorkZoom;
 					boundChanged = !bound.equals(this.calcBound);
 
-					this.layerClusters.clearLayers();
-					this.processIncomingDataZoom(data, boundChanged, needClientClustering, crossingClientWorkZoom, true);
+					this.processIncomingDataZoom(data, boundChanged, needClientClustering, crossingClientWorkZoom);
 				} else {
 					console.log('Ошибка загрузки новых камер: ' + data.message);
 				}
@@ -209,28 +215,18 @@ define([
 	/**
 	 * Обрабатывает входящие данные по зуму
 	 */
-	MarkerManager.prototype.redraw = function (data) {
-
-	};
-
-	/**
-	 * Обрабатывает входящие данные по зуму
-	 */
-	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, crossingClientWorkZoom, concatArr) {
+	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, crossingClientWorkZoom) {
 		var photos = {},
-			clusters = {},
-			markers = [],
 			divIcon,
 			curr,
 			existing,
 			i;
 
+		// На уровне локальных кластеризаций этот медот учавствует только в "поднятии" зума,
+		// когда сервер отдает только фотографии "в рамке, обрамляющей предыдущий баунд", следовательно,
+		// полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
 		if (localCluster) {
-			if (concatArr) {
-				this.photosAll = this.photosAll.concat(data.photos);
-			} else {
-				this.photosAll = data.photos;
-			}
+			this.photosAll = this.photosAll.concat(data.photos);
 			data = this.localClustering(this.photosAll);
 		}
 
@@ -245,7 +241,6 @@ define([
 				this.mapObjects.photos[curr.cid] = undefined;
 			} else {
 				// Если оно новое - создаем его объект и маркер
-				curr.geo.reverse();
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
 					photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
 					divIcon = L.divIcon(
@@ -264,36 +259,54 @@ define([
 			}
 		}
 
-		// В текущем объекте остались только фото на удаление
-		for (i in this.mapObjects.photos) {
-			if (this.mapObjects.photos[i] !== undefined) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+		// Так как на локальном уровне этот метод может только добавлять фото, то
+		// в таком случае присоединяем новые маркеры фотографий, а
+		// для масштабов серверной кластеризации производим удаление непришедших фотографий
+		if (localCluster) {
+			_.assign(this.mapObjects.photos, photos);
+		} else {
+			// В текущем объекте остались только фото на удаление
+			for (i in this.mapObjects.photos) {
+				if (this.mapObjects.photos[i] !== undefined) {
+					this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+				}
 			}
+			this.mapObjects.photos = photos;
 		}
 
+		// Создаем маркеры кластеров
+		this.drawClusters(data.clusters, boundChanged);
 
-		// Создаем маркеры для кластеров
-		if (Array.isArray(data.clusters) && data.clusters.length > 0) {
-			i = data.clusters.length;
+		//Чистим ссылки
+		photos = curr = existing = data = null;
+	};
+
+	MarkerManager.prototype.clearClusters = function () {
+		this.layerClusters.clearLayers();
+		this.mapObjects.clusters = {};
+	};
+	MarkerManager.prototype.drawClusters = function (clusters, boundChanged) {
+		var i,
+			curr,
+			divIcon,
+			result = {};
+
+		if (Array.isArray(clusters) && clusters.length > 0) {
+			i = clusters.length;
 			while (i) {
-				curr = data.clusters[--i];
-				curr.geo.reverse();
+				curr = clusters[--i];
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					clusters[i] = Photo.factory(curr, 'mapclust');
+					result[i] = Photo.factory(curr, 'mapclust');
 					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
 					curr.marker =
-						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: 'cl' + i, type: 'clust', obj: curr, c: curr.c}})
+						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
 							.on('click', this.clickMarker, this);
 					this.layerClusters.addLayer(curr.marker);
 				}
 			}
 		}
 
-		this.mapObjects.photos = photos;
-		this.mapObjects.clusters = clusters;
-
-		//Чистим ссылки
-		photos = clusters = markers = curr = existing = data = null;
+		this.mapObjects.clusters = result;
 	};
 
 	/**
@@ -324,8 +337,6 @@ define([
 		i = bounds.length;
 		while (i) {
 			curr = _.clone(bounds[--i]);
-			curr[0].reverse();
-			curr[1].reverse();
 			this['b' + i] = L.polygon([
 				[curr[1][0], curr[0][1]],
 				curr[1],
@@ -377,7 +388,6 @@ define([
 			while (i) {
 				curr = data.photos[--i];
 				if (!this.mapObjects.photos[curr.cid]) {
-					curr.geo.reverse();
 					// Если оно новое - создаем его объект и маркер
 					if (!boundChanged || this.calcBound.contains(curr.geo)) {
 						photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
@@ -396,7 +406,6 @@ define([
 			i = data.clusters.length;
 			while (i) {
 				curr = data.clusters[--i];
-				curr.geo.reverse();
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
 					clusters[i] = Photo.factory(curr, 'mapclust');
 					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
@@ -432,14 +441,14 @@ define([
 		i = data.length;
 		while (i) {
 			photo = data[--i];
-			currCoordId = photo.geo[1].toFixed(cutLat) + photo.geo[0].toFixed(cutLng);
+			currCoordId = photo.geo[0].toFixed(cutLat) + photo.geo[1].toFixed(cutLng);
 			if (clusters[currCoordId] === undefined) {
 				clusters[currCoordId] = {lats: 0, lngs: 0, c: 0, photos: []};
 			}
 			cluster = clusters[currCoordId];
 			cluster.c += 1;
-			cluster.lats += photo.geo[1];
-			cluster.lngs += photo.geo[0];
+			cluster.lats += photo.geo[0];
+			cluster.lngs += photo.geo[1];
 			cluster.photos.push(photo);
 		}
 
@@ -452,7 +461,7 @@ define([
 				result.clusters.push(
 					{
 						c: cluster.c,
-						geo: [Utils.math.toPrecision(cluster.lngs / cluster.c), Utils.math.toPrecision(cluster.lats / cluster.c)],
+						geo: [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)],
 						file: cluster.photos[0].file,
 						photos: cluster.photos
 					}
@@ -535,8 +544,8 @@ define([
 		while (i) {
 			curr = c[--i];
 			result[i] = [
-				[curr.west, curr.south],
-				[curr.east, curr.north]
+				[curr.south, curr.west],
+				[curr.north, curr.east]
 			];
 		}
 
