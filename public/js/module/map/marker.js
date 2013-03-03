@@ -258,7 +258,7 @@ define([
 		// Так как на локальном уровне этот метод может только добавлять фото, то
 		// в таком случае присоединяем новые маркеры фотографий, а
 		// для масштабов серверной кластеризации производим удаление непришедших фотографий
-		if (localCluster) {
+		if (localCluster && !crossingClientWorkZoom) {
 			_.assign(this.mapObjects.photos, photos);
 		} else {
 			// В текущем объекте остались только фото на удаление
@@ -310,9 +310,6 @@ define([
 			], {color: '#00C629', weight: 1}).addTo(this.map);
 		}
 
-		//Удаляем маркеры и кластеры, не входящие в новый баунд
-		this.cropByBound(null, this.clientClustering);
-
 		socket.once('getBoundsResult', function (data) {
 			var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
 				boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
@@ -326,6 +323,9 @@ define([
 
 				needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
 				boundChanged = !bound.equals(this.calcBound);
+
+				//Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
+				this.cropByBound(null, needClientClustering);
 
 				this.processIncomingDataMove(data, boundChanged, needClientClustering);
 			} else {
@@ -408,7 +408,7 @@ define([
 		i = data.length;
 		while (i) {
 			photo = data[--i];
-			currCoordId = photo.geo[0].toFixed(cutLat) + photo.geo[1].toFixed(cutLng);
+			currCoordId = photo.geo[0].toFixed(cutLat) + '@' + photo.geo[1].toFixed(cutLng);
 			if (clusters[currCoordId] === undefined) {
 				clusters[currCoordId] = {lats: 0, lngs: 0, c: 0, photos: []};
 			}
@@ -427,7 +427,6 @@ define([
 			if (cluster.c > 1) {
 				result.clusters.push(
 					{
-						cid: keys[i],
 						c: cluster.c,
 						geo: [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)],
 						file: cluster.photos[0].file,
@@ -454,7 +453,8 @@ define([
 			while (i) {
 				curr = clusters[--i];
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					result[curr.cid || i] = Photo.factory(curr, 'mapclust');
+					Photo.factory(curr, 'mapclust');
+					result[curr.cid] = curr;
 					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
@@ -569,7 +569,6 @@ define([
 				curr = this.photosAll[--i];
 				if (bound.contains(curr.geo)) {
 					arr.push(curr);
-					this.mapObjects.photos[curr.cid] = undefined;
 				}
 			}
 			this.photosAll = arr;
