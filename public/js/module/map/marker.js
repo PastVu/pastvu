@@ -535,9 +535,12 @@ define([
 						c[1].south = b.south;
 					}
 				}
+			} else {
+				c[1].north = a.north;
+				c[1].south = a.south;
 			}
 		}
-		c = _.flatten(c, true);
+		c = _.compact(c);
 
 
 		i = c.length;
