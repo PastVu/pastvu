@@ -24,6 +24,11 @@ define([
 		this.sizeClusterm = new L.Point(52, 52);
 		this.sizeCluster = new L.Point(62, 62);
 
+
+		this.sizeClusterLs = new L.Point(14, 14);
+		this.sizeClusterLm = new L.Point(18, 18);
+		this.sizeClusterL = new L.Point(20, 20);
+
 		this.paneMarkers = this.map.getPanes().markerPane;
 		this.calcBound = null;
 		this.calcBoundPrev = null;
@@ -151,7 +156,7 @@ define([
 				pollServer = false;
 				this.cropByBound(null, this.clientClustering);
 				if (this.photosAll.length > 1) {
-					this.drawClusters(this.createClusters(this.photosAll).clusters, false);
+					this.drawClustersLocal(this.createClusters(this.photosAll, true).clusters, false);
 				}
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
@@ -223,7 +228,7 @@ define([
 		// полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
 		if (localCluster) {
 			this.photosAll = this.photosAll.concat(data.photos);
-			data = this.createClusters(this.photosAll);
+			data = this.createClusters(this.photosAll, true);
 		}
 
 		// Заполняем новый объект фото
@@ -271,7 +276,11 @@ define([
 		}
 
 		// Создаем маркеры кластеров
-		this.drawClusters(data.clusters, boundChanged);
+		if (localCluster) {
+			this.drawClustersLocal(data.clusters, boundChanged);
+		} else {
+			this.drawClusters(data.clusters, boundChanged);
+		}
 
 		//Чистим ссылки
 		photos = curr = existing = data = null;
@@ -350,7 +359,7 @@ define([
 		// полученные фото мы должны присоединить к существующим и локально кластеризовать только их
 		if (localCluster) {
 			this.photosAll = this.photosAll.concat(data.photos);
-			data = this.createClusters(data.photos);
+			data = this.createClusters(data.photos, true);
 		}
 
 		// Заполняем новый объект фото
@@ -381,7 +390,11 @@ define([
 		_.assign(this.mapObjects.photos, photos);
 
 		// Создаем маркеры кластеров
-		this.drawClusters(data.clusters, boundChanged, true);
+		if (localCluster) {
+			this.drawClustersLocal(data.clusters, boundChanged, true);
+		} else {
+			this.drawClusters(data.clusters, boundChanged, true);
+		}
 
 		//Чистим ссылки
 		photos = curr = data = null;
@@ -391,48 +404,60 @@ define([
 	/**
 	 * Локальная кластеризация камер, пришедших клиенту. Проверяем на совпадение координат камер с учетом дельты. Связываем такие камеры
 	 */
-	MarkerManager.prototype.createClusters = function (data, keepPhotoList) {
+	MarkerManager.prototype.createClusters = function (data, withGravity) {
 		var start = Date.now(),
-			deltaLng = Math.abs(this.map.layerPointToLatLng(new L.Point(this.clientClusteringDelta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
-			deltaLat = Math.abs(this.map.layerPointToLatLng(new L.Point(1, this.clientClusteringDelta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
-			cutLng = deltaLng.toPrecision(1).length - 3,
-			cutLat = deltaLat.toPrecision(1).length - 3,
+			clusterW = Math.abs(this.map.layerPointToLatLng(new L.Point(this.clientClusteringDelta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
+			clusterH = Math.abs(this.map.layerPointToLatLng(new L.Point(1, this.clientClusteringDelta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
+			clusterWHalf = Utils.math.toPrecision(clusterW / 2),
+			clusterHHalf = Utils.math.toPrecision(clusterH / 2),
 			result = {photos: [], clusters: []},
 			i,
-			keys,
+
 			photo,
-			currCoordId = '',
+			geoPhoto,
+			geoPhotoCorrection,
+
+			geo,
 			cluster,
-			clusters = {};
+			clusters = {},
+			clustCoordId,
+			clustCoordIdS = [];
 
 		i = data.length;
 		while (i) {
 			photo = data[--i];
-			currCoordId = photo.geo[0].toFixed(cutLat) + '@' + photo.geo[1].toFixed(cutLng);
-			if (clusters[currCoordId] === undefined) {
-				clusters[currCoordId] = {lats: 0, lngs: 0, c: 0, photos: []};
+			geoPhoto = photo.geo;
+			geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
+
+			geo = Utils.geo.geoToPrecision([clusterH * ((geoPhoto[0] / clusterH >> 0) + geoPhotoCorrection[0]), clusterW * ((geoPhoto[1] / clusterW >> 0) + geoPhotoCorrection[1])]);
+			clustCoordId = geo[0] + '@' + geo[1];
+			cluster = clusters[clustCoordId];
+			if (cluster === undefined) {
+				clusters[clustCoordId] = {cid: clustCoordId, geo: geo, lats: geo[0] - clusterHHalf, lngs: geo[1] + clusterWHalf, c: 1, photos: []};
+				clustCoordIdS.push(clustCoordId);
+				cluster = clusters[clustCoordId];
 			}
-			cluster = clusters[currCoordId];
 			cluster.c += 1;
-			cluster.lats += photo.geo[0];
-			cluster.lngs += photo.geo[1];
+			if (withGravity) {
+				cluster.lats += photo.geo[0];
+				cluster.lngs += photo.geo[1];
+			}
 			cluster.photos.push(photo);
 		}
 
 		// Заполняем массивы кластеров и фото
-		keys = Object.keys(clusters);
-		i = keys.length;
+		i = clustCoordIdS.length;
 		while (i) {
-			cluster = clusters[keys[--i]];
-			if (cluster.c > 1) {
-				result.clusters.push(
-					{
-						c: cluster.c,
-						geo: [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)],
-						file: cluster.photos[0].file,
-						photos: cluster.photos
-					}
-				);
+			clustCoordId = clustCoordIdS[--i];
+			cluster = clusters[clustCoordId];
+			if (cluster.c > 2) {
+				if (withGravity) {
+					cluster.geo = [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)];
+				}
+				cluster.c -= 1;
+				cluster.lats = undefined;
+				cluster.lngs = undefined;
+				result.clusters.push(cluster);
 			} else {
 				result.photos.push(cluster.photos[0]);
 			}
@@ -456,6 +481,34 @@ define([
 					Photo.factory(curr, 'mapclust');
 					result[curr.cid] = curr;
 					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
+					curr.marker =
+						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
+							.on('click', this.clickMarker, this);
+					this.layerClusters.addLayer(curr.marker);
+				}
+			}
+		}
+		if (add) {
+			_.assign(this.mapObjects.clusters, result);
+		} else {
+			this.mapObjects.clusters = result;
+		}
+	};
+
+	MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, localCluster, add) {
+		var i,
+			curr,
+			divIcon,
+			result = {};
+
+		if (Array.isArray(clusters) && clusters.length > 0) {
+			i = clusters.length;
+			while (i) {
+				curr = clusters[--i];
+				if (!boundChanged || this.calcBound.contains(curr.geo)) {
+					Photo.factory(curr, 'mapclust', 'local');
+					result[curr.cid] = curr;
+					divIcon = L.divIcon({className: 'clusterIconLocal ' + curr.measure, iconSize: this['sizeClusterL' + curr.measure], html: curr.c});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
 							.on('click', this.clickMarker, this);

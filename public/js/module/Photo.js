@@ -102,11 +102,19 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 			User.factory(origin.user, 'base');
 		}
 		if (defType === 'mapclust') {
-			origin.cid = origin.geo[0] + '@' + origin.geo[1];
-			if (origin.c < 500) {
-				origin.measure = 's';
-			} else if (origin.c < 3000) {
-				origin.measure = 'm';
+			if (picType === 'local') {
+				if (origin.c < 10) {
+					origin.measure = 's';
+				} else if (origin.c < 50) {
+					origin.measure = 'm';
+				}
+			} else {
+				origin.cid = origin.geo[0] + '@' + origin.geo[1];
+				if (origin.c < 500) {
+					origin.measure = 's';
+				} else if (origin.c < 3000) {
+					origin.measure = 'm';
+				}
 			}
 			picType = 'micro' + origin.measure;
 		}
