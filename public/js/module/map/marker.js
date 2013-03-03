@@ -16,11 +16,8 @@ define([
 		this.layerClusters = L.layerGroup().addTo(this.map); // Слой кластеров
 
 		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
+		this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
 		this.clientClusteringDelta = P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA();
-
-
-		this.objects = {};
-		this.objectsNew = {};
 
 		this.sizePoint = new L.Point(10, 10);
 		this.sizeClusters = new L.Point(42, 42);
@@ -40,7 +37,6 @@ define([
 		this.panePopup = this.map.getPanes().popupPane;
 		this.popup = new L.Popup({maxWidth: 119, minWidth: 119, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
-		this.popupOpened = false;
 
 		this.markerToPopup = null;
 		this.popupMarkerBind = this.popupMarker.bind(this);
@@ -153,7 +149,7 @@ define([
 				// Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
 				// и пересчитываем кластеры
 				pollServer = false;
-				this.cropByBound(null, P.settings.CLUSTERING_ON_CLIENT(), false);
+				this.cropByBound(null, this.clientClustering);
 				if (this.photosAll.length > 1) {
 					this.drawClusters(this.createClusters(this.photosAll).clusters, false);
 				}
@@ -196,7 +192,7 @@ define([
 						return;
 					}
 
-					needClientClustering = P.settings.CLUSTERING_ON_CLIENT() && this.currZoom >= this.firstClientWorkZoom;
+					needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
 					boundChanged = !bound.equals(this.calcBound);
 
 					this.processIncomingDataZoom(data, boundChanged, needClientClustering, crossingClientWorkZoom);
@@ -315,7 +311,7 @@ define([
 		}
 
 		//Удаляем маркеры и кластеры, не входящие в новый баунд
-		this.cropByBound(null, false, true);
+		this.cropByBound(null, this.clientClustering);
 
 		socket.once('getBoundsResult', function (data) {
 			var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
@@ -328,7 +324,7 @@ define([
 					return;
 				}
 
-				needClientClustering = P.settings.CLUSTERING_ON_CLIENT() && this.currZoom >= this.firstClientWorkZoom;
+				needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
 				boundChanged = !bound.equals(this.calcBound);
 
 				this.processIncomingDataMove(data, boundChanged, needClientClustering);
@@ -559,12 +555,13 @@ define([
 	/**
 	 * Удаляет объекты не входящие в баунд
 	 */
-	MarkerManager.prototype.cropByBound = function (bound, localCluster, alsoCropClusters) {
+	MarkerManager.prototype.cropByBound = function (bound, localCluster) {
 		bound = bound || this.calcBound;
 		var i,
 			curr,
 			arr;
 
+		// На уровнях локальной кластеризации обрезаем массив всех фотографий
 		if (localCluster) {
 			arr = [];
 			i = this.photosAll.length;
@@ -576,27 +573,27 @@ define([
 				}
 			}
 			this.photosAll = arr;
-		} else {
-			arr = Object.keys(this.mapObjects.photos);
-			i = arr.length;
-			while (i) {
-				curr = this.mapObjects.photos[arr[--i]];
-				if (curr !== undefined && !bound.contains(curr.geo)) {
-					this.layerPhotos.removeLayer(curr.marker);
-					this.mapObjects.photos[curr.cid] = undefined;
-				}
+		}
+
+		// Удаляем невходящие маркеры фотографий
+		arr = Object.keys(this.mapObjects.photos);
+		i = arr.length;
+		while (i) {
+			curr = this.mapObjects.photos[arr[--i]];
+			if (curr !== undefined && !bound.contains(curr.geo)) {
+				this.layerPhotos.removeLayer(curr.marker);
+				this.mapObjects.photos[curr.cid] = undefined;
 			}
 		}
 
-		if (alsoCropClusters) {
-			arr = Object.keys(this.mapObjects.clusters);
-			i = arr.length;
-			while (i) {
-				curr = this.mapObjects.clusters[arr[--i]];
-				if (curr !== undefined && !bound.contains(curr.geo)) {
-					this.layerClusters.removeLayer(curr.marker);
-					this.mapObjects.clusters[curr.cid] = undefined;
-				}
+		// Удаляем невходящие маркеры кластеров
+		arr = Object.keys(this.mapObjects.clusters);
+		i = arr.length;
+		while (i) {
+			curr = this.mapObjects.clusters[arr[--i]];
+			if (curr !== undefined && !bound.contains(curr.geo)) {
+				this.layerClusters.removeLayer(curr.marker);
+				this.mapObjects.clusters[curr.cid] = undefined;
 			}
 		}
 
