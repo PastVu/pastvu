@@ -127,12 +127,16 @@ define([
 		this.startPendingAt = Date.now();
 
 		var newZoom = this.map.getZoom(),
-			crossingClientWorkZoom = (this.currZoom < this.firstClientWorkZoom && newZoom >= this.firstClientWorkZoom) || (this.currZoom >= this.firstClientWorkZoom && newZoom < this.firstClientWorkZoom),
+			willLocalWork = newZoom >= this.firstClientWorkZoom,
+			crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && willLocalWork) || (this.currZoom >= this.firstClientWorkZoom && !willLocalWork),
+			direction = newZoom > this.currZoom ? 'down' : 'up',
 			bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
 			bounds,
 			pollServer = true,
 			curr,
 			i;
+
+		this.currZoom = newZoom;
 
 		i = 4;
 		while (i--) {
@@ -142,14 +146,14 @@ define([
 			}
 		}
 
-		if (!init && this.currZoom >= this.firstClientWorkZoom && newZoom >= this.firstClientWorkZoom) {
+		if (!init && willLocalWork && !crossingLocalWorkZoom) {
 			// Если на клиенте уже есть все фотографии для данного зума
-			if (newZoom > this.currZoom) {
+			if (direction === 'down') {
 				// Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
 				// и пересчитываем кластеры
 				pollServer = false;
-				this.cropByBound(null, this.clientClustering);
-				this.processIncomingDataZoom({photos: this.photosAll}, false, true);
+				this.cropByBound(null, true);
+				this.processIncomingDataZoom(null, false, true, this.clientClustering);
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
 				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
@@ -168,7 +172,7 @@ define([
 			}
 		} else {
 			// При пересечении границы "вверх" обнудяем массив всех фото на клиенте
-			if (crossingClientWorkZoom && newZoom < this.firstClientWorkZoom) {
+			if (crossingLocalWorkZoom && !willLocalWork) {
 				this.photosAll = [];
 			}
 			// Запрашиваем объекты полностью для нового баунда
@@ -179,7 +183,8 @@ define([
 
 		if (pollServer) {
 			socket.once('getBoundsResult', function (data) {
-				var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
+				var localWork, // Находимся ли мы на уровне локальной работы
+					localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
 					boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
 				if (data && !data.error) {
@@ -189,10 +194,11 @@ define([
 						return;
 					}
 
-					needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
 					boundChanged = !bound.equals(this.calcBound);
+					localWork = this.currZoom >= this.firstClientWorkZoom;
+					localCluster = localWork && this.clientClustering;
 
-					this.processIncomingDataZoom(data, boundChanged, needClientClustering, true);
+					this.processIncomingDataZoom(data, boundChanged, localWork, localCluster);
 				} else {
 					console.log('Ошибка загрузки новых камер: ' + data.message);
 				}
@@ -201,28 +207,30 @@ define([
 			}.bind(this));
 			socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt});
 		}
-
-		this.currZoom = newZoom;
 	};
 
 	/**
 	 * Обрабатывает входящие данные по зуму
 	 */
-	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, localAdd) {
+	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
 		var photos = {},
 			divIcon,
 			curr,
 			existing,
 			i;
 
-		// На уровне локальных кластеризаций этот медот учавствует только в "поднятии" зума,
+		// На уровне локальной работы этот медот учавствует только в "поднятии" зума,
 		// когда сервер отдает только фотографии "в рамке, обрамляющей предыдущий баунд", следовательно,
 		// полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
-		if (localCluster) {
-			if (localAdd) {
+		if (localWork) {
+			if (data) {
 				this.photosAll = this.photosAll.concat(data.photos);
 			}
-			data = this.createClusters(this.photosAll, true);
+			if (localCluster) {
+				data = this.createClusters(this.photosAll, true);
+			} else {
+				data = {photos: this.photosAll};
+			}
 		}
 
 		// Заполняем новый объект фото
@@ -263,10 +271,10 @@ define([
 
 
 		// Создаем маркеры кластеров
-		if (localCluster) {
-			this.drawClustersLocal(data.clusters, boundChanged);
-		} else {
+		if (!localWork) {
 			this.drawClusters(data.clusters, boundChanged);
+		} else if (localCluster) {
+			this.drawClustersLocal(data.clusters, boundChanged);
 		}
 
 		//Чистим ссылки
@@ -307,7 +315,8 @@ define([
 		}
 
 		socket.once('getBoundsResult', function (data) {
-			var needClientClustering, // Смотрим нужно ли использовать клиентскую кластеризацию
+			var localWork, // Находимся ли мы на уровне локальной работы
+				localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
 				boundChanged; // Если к моменту получения входящих данных нового зума, баунд изменился, значит мы успели подвигать картой, поэтому надо проверить пришедшие точки на вхождение в актуальный баунд
 
 			if (data && !data.error) {
@@ -317,13 +326,14 @@ define([
 					return;
 				}
 
-				needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
+				localWork = this.currZoom >= this.firstClientWorkZoom;
+				localCluster = localWork && this.clientClustering;
 				boundChanged = !bound.equals(this.calcBound);
 
 				//Удаляем маркеры и кластеры, не входящие в новый баунд после получения новой порции данных
-				this.cropByBound(null, needClientClustering);
+				this.cropByBound(null, localWork);
 
-				this.processIncomingDataMove(data, boundChanged, needClientClustering);
+				this.processIncomingDataMove(data, boundChanged, localWork, localCluster);
 			} else {
 				console.log('Ошибка загрузки новых камер: ' + data.message);
 			}
@@ -335,7 +345,7 @@ define([
 	/**
 	 * Обрабатывает входящие данные
 	 */
-	MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localCluster) {
+	MarkerManager.prototype.processIncomingDataMove = function (data, boundChanged, localWork, localCluster) {
 		var photos = {},
 			divIcon,
 			curr,
@@ -344,8 +354,10 @@ define([
 		// На уровне локальных кластеризаций,
 		// сервер отдает только фотографии в новых баундах, следовательно,
 		// полученные фото мы должны присоединить к существующим и локально кластеризовать только их
-		if (localCluster) {
+		if (localWork) {
 			this.photosAll = this.photosAll.concat(data.photos);
+		}
+		if (localCluster) {
 			data = this.createClusters(data.photos, true);
 		}
 
@@ -376,10 +388,10 @@ define([
 		_.assign(this.mapObjects.photos, photos);
 
 		// Создаем маркеры кластеров
-		if (localCluster) {
-			this.drawClustersLocal(data.clusters, boundChanged, true);
-		} else {
+		if (!localWork) {
 			this.drawClusters(data.clusters, boundChanged, true);
+		} else if (localCluster) {
+			this.drawClustersLocal(data.clusters, boundChanged, true);
 		}
 
 		//Чистим ссылки
@@ -393,8 +405,8 @@ define([
 	MarkerManager.prototype.createClusters = function (data, withGravity) {
 		var start = Date.now(),
 			delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta['default'],
-			clusterW = Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
-			clusterH = Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
+			clusterW = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng)),
+			clusterH = Utils.math.toPrecision(Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat)),
 			clusterWHalf = Utils.math.toPrecision(clusterW / 2),
 			clusterHHalf = Utils.math.toPrecision(clusterH / 2),
 			result = {photos: [], clusters: []},
@@ -598,14 +610,14 @@ define([
 	/**
 	 * Удаляет объекты не входящие в баунд
 	 */
-	MarkerManager.prototype.cropByBound = function (bound, localCluster) {
+	MarkerManager.prototype.cropByBound = function (bound, localWork) {
 		bound = bound || this.calcBound;
 		var i,
 			curr,
 			arr;
 
 		// На уровнях локальной кластеризации обрезаем массив всех фотографий
-		if (localCluster) {
+		if (localWork) {
 			arr = [];
 			i = this.photosAll.length;
 			while (i) {
