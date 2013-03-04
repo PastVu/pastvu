@@ -400,8 +400,9 @@ define([
 	 */
 	MarkerManager.prototype.createClusters = function (data, withGravity) {
 		var start = Date.now(),
-			clusterW = Math.abs(this.map.layerPointToLatLng(new L.Point(this.clientClusteringDelta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
-			clusterH = Math.abs(this.map.layerPointToLatLng(new L.Point(1, this.clientClusteringDelta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
+			delta = this.clientClusteringDelta[this.currZoom] || this.clientClusteringDelta['default'],
+			clusterW = Math.abs(this.map.layerPointToLatLng(new L.Point(delta, 1)).lng - this.map.layerPointToLatLng(new L.Point(0, 1)).lng),
+			clusterH = Math.abs(this.map.layerPointToLatLng(new L.Point(1, delta)).lat - this.map.layerPointToLatLng(new L.Point(1, 0)).lat),
 			clusterWHalf = Utils.math.toPrecision(clusterW / 2),
 			clusterHHalf = Utils.math.toPrecision(clusterH / 2),
 			result = {photos: [], clusters: []},
