@@ -432,11 +432,12 @@ define([
 			clustCoordId = geo[0] + '@' + geo[1];
 			cluster = clusters[clustCoordId];
 			if (cluster === undefined) {
-				clusters[clustCoordId] = {cid: clustCoordId, geo: geo, lats: geo[0] - clusterHHalf, lngs: geo[1] + clusterWHalf, c: 1, photos: []};
+				clusters[clustCoordId] = {cid: clustCoordId, geo: geo, lats: geo[0] - clusterHHalf, lngs: geo[1] + clusterWHalf, year: 0, c: 1, photos: []};
 				clustCoordIdS.push(clustCoordId);
 				cluster = clusters[clustCoordId];
 			}
 			cluster.c += 1;
+			cluster.year += photo.year;
 			if (withGravity) {
 				cluster.lats += photo.geo[0];
 				cluster.lngs += photo.geo[1];
@@ -454,6 +455,7 @@ define([
 					cluster.geo = [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)];
 				}
 				cluster.c -= 1;
+				cluster.year = (cluster.year / cluster.c) >> 0;
 				cluster.lats = undefined;
 				cluster.lngs = undefined;
 				result.clusters.push(cluster);
@@ -507,7 +509,7 @@ define([
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
 					Photo.factory(curr, 'mapclust', 'local');
 					result[curr.cid] = curr;
-					divIcon = L.divIcon({className: 'clusterIconLocal ' + curr.measure, iconSize: this['sizeClusterL' + curr.measure], html: curr.c});
+					divIcon = L.divIcon({className: 'clusterIconLocal ' + 'y' + curr.year + ' ' + curr.measure, iconSize: this['sizeClusterL' + curr.measure], html: curr.c});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
 							.on('click', this.clickMarker, this);

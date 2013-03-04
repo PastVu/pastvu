@@ -5,7 +5,7 @@
 @import "../leaflet.markercluster.less";
 
 @spinVal: 250 / 110;
-@yearBase: #0000BF;
+@yearBase: hsv(240, 100%, 67%);
 .yearLooping(@index)when (@index < 2001) {
 	(~".y@{index}") { // your resulting css
 		@vall: (@index - 1890) * @spinVal;
@@ -15,7 +15,7 @@
 }
 .yearLooping(2001) {}
 
-@yearBaseOld: #000099;
+@yearBaseOld: hsv(240, 100%, 50%);
 .yearLoopingOld(@index)when (@index > 1799) {
 	(~".y@{index}") {
 		background-color: @yearBaseOld;
@@ -258,7 +258,7 @@
 	}
 
 	.clusterIconLocal {
-		background-color: #303030;
+		//background-color: #303030;
 		color: #fff;
 		line-height: 18px;
 		font-size: 11px;
