@@ -65,7 +65,7 @@ define([
 			.on('moveend', this.onMapMoveEnd, this);
 
 		this.reCalcBound();
-		this.refreshDataByZoom(true, true);
+		this.refreshDataByZoom(true);
 	}
 
 	/**
@@ -116,7 +116,12 @@ define([
 	 */
 	MarkerManager.prototype.onMapMoveEnd = function () {
 		if (this.zoomChanged && this.currZoom !== this.map.getZoom()) {
-			this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
+			if (this.currZoom >= this.firstClientWorkZoom && this.map.getZoom() >= this.firstClientWorkZoom) {
+				//this.refreshDataByZoom();
+				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 50);
+			} else {
+				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
+			}
 			this.zoomChanged = false;
 		} else {
 			if (this.reCalcBound()) {
