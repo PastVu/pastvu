@@ -79,142 +79,133 @@
 
 	.photoIcon {
 		overflow: visible;
+		background-color: #003aff;
+		.box-shadow(0 0 1px 1px #fff);
 		.border-radius(50%);
 
-		.photoA {
-			display: block;
-			position: relative;
-			margin-top: 1px;
-			margin-left: 1px;
-			width: 8px;
-			height: 8px;
-			background-color: #003aff;
-			.border-radius(50%);
-			.box-shadow(0 0 1px 1px #fff);
-
-			&::after {
-				display: none;
-				position: absolute;
-				content: '';
-				background-image: url(/img/map/arr.png);
-				background-repeat: no-repeat;
-				width: 10px;
-				height: 10px;
-				pointer-events: none;
-			/*width: 0;
-			height: 0;
-			border-style: solid;
-			border-width: 0 3px 8px 3px;
-			border-color: transparent transparent #000 transparent;
-			.rotate(45deg);*/
-			}
+		&::after {
+			display: none;
+			position: absolute;
+			content: '';
+			background-image: url(/img/map/arr.png);
+			background-repeat: no-repeat;
+			width: 10px;
+			height: 10px;
+			pointer-events: none;
+		/*width: 0;
+		height: 0;
+		border-style: solid;
+		border-width: 0 3px 8px 3px;
+		border-color: transparent transparent #000 transparent;
+		.rotate(45deg);*/
 		}
 
-		&:hover .photoA {
-			margin-top: -1px;
-			margin-left: -1px;
-			width: 12px;
-			height: 12px;
+		&:hover {
+			width: 12px !important;
+			height: 12px !important;
+			margin-left: -6px !important;
+			margin-top: -6px !important;
 			.box-shadow(0 0 2px 2px #fff);
 		}
 
 		&.n {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: -10px;
 				right: -1px;
 				background-position: 0 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: -10px;
 				right: 1px;
 			}
 		}
 		&.ne {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: -7px;
 				right: -6px;
 				background-position: -10px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: -6px;
 				right: -5px;
 			}
 		}
 		&.e {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: -1px;
 				right: -10px;
 				background-position: -20px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: 1px;
 				right: -10px;
 			}
 		}
 		&.se {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: 5px;
 				right: -6px;
 				background-position: -30px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: 8px;
 				right: -5px;
 			}
 		}
 		&.s {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: 8px;
 				right: -1px;
 				background-position: -40px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: 11px;
 				right: 1px;
 			}
 		}
 		&.sw {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: 5px;
 				right: 5px;
 				background-position: -50px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: 8px;
 				right: 8px;
 			}
 		}
 		&.w {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: -1px;
 				right: 8px;
 				background-position: -60px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: 1px;
 				right: 12px;
 			}
 		}
 		&.nw {
-			.photoA::after {
+			&::after {
 				display: block;
 				top: -7px;
 				right: 5px;
 				background-position: -70px 0;
 			}
-			&:hover .photoA::after {
+			&:hover::after {
 				top: -6px;
 				right: 8px;
 			}
 		}
 	}
+
 	.clusterIcon {
 		opacity: 0; //border-color: #fff;
 		.box-sizing(border-box);
@@ -245,23 +236,22 @@
 	}
 
 	.clusterIconLocal {
-		border: 1px solid #fff;
 		background-color: #303030;
-		line-height: 19px;
+		color: #fff;
+		line-height: 18px;
 		font-size: 11px;
 		font-weight: bold;
 		font-family: Arial;
-		color: #fff;
 		text-align: center;
 		.box-sizing(border-box);
+		.box-shadow(0 0 1px 1px #fff);
 		.border-radius(50%);
-		//.box-shadow(0 0 1px 1px #fff);
 
 		&.m {
-			line-height: 17px;
+			line-height: 16px;
 		}
 		&.s {
-			line-height: 13px;
+			line-height: 12px;
 		}
 	}
 

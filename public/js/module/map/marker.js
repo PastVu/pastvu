@@ -12,22 +12,22 @@ define([
 
 		this.photosAll = [];
 		this.mapObjects = {photos: {}, clusters: {}};
-		this.layerPhotos = L.layerGroup().addTo(this.map); // Слой фотографий
 		this.layerClusters = L.layerGroup().addTo(this.map); // Слой кластеров
+		this.layerPhotos = L.layerGroup().addTo(this.map); // Слой фотографий
 
 		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
 		this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
 		this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
 
-		this.sizePoint = new L.Point(10, 10);
+		this.sizePoint = new L.Point(8, 8);
 		this.sizeClusters = new L.Point(42, 42);
 		this.sizeClusterm = new L.Point(52, 52);
 		this.sizeCluster = new L.Point(62, 62);
 
 
-		this.sizeClusterLs = new L.Point(14, 14);
-		this.sizeClusterLm = new L.Point(18, 18);
-		this.sizeClusterL = new L.Point(20, 20);
+		this.sizeClusterLs = new L.Point(12, 12);
+		this.sizeClusterLm = new L.Point(16, 16);
+		this.sizeClusterL = new L.Point(18, 18);
 
 		this.paneMarkers = this.map.getPanes().markerPane;
 		this.calcBound = null;
@@ -48,16 +48,6 @@ define([
 		this.popupMarkerTimout = this.popupMarker.bind(this);
 
 		this.openNewTab = options.openNewTab;
-		globalVM.pb.subscribe('/map/openNewTab', function (bool) {
-			var ahrefs = _.toArray(this.paneMarkers.querySelectorAll('a.photoA')),
-				i = ahrefs.length,
-				target = bool ? '_blank' : '_self';
-
-			while (i) {
-				ahrefs[--i].setAttribute("target", target);
-			}
-			this.openNewTab = bool;
-		}.bind(this));
 
 		//Events
 		this.map
@@ -117,7 +107,6 @@ define([
 	MarkerManager.prototype.onMapMoveEnd = function () {
 		if (this.zoomChanged && this.currZoom !== this.map.getZoom()) {
 			if (this.currZoom >= this.firstClientWorkZoom && this.map.getZoom() >= this.firstClientWorkZoom) {
-				//this.refreshDataByZoom();
 				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 50);
 			} else {
 				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
@@ -252,8 +241,7 @@ define([
 					divIcon = L.divIcon(
 						{
 							className: 'photoIcon ' + curr.dir,
-							iconSize: this.sizePoint,
-							html: '<a target="' + (this.openNewTab ? '_blank' : '_self') + '" class="photoA" href="/p/' + curr.cid + '"></a>'
+							iconSize: this.sizePoint
 						}
 					);
 					curr.marker =
@@ -373,8 +361,7 @@ define([
 						divIcon = L.divIcon(
 							{
 								className: 'photoIcon ' + curr.dir,
-								iconSize: this.sizePoint,
-								html: '<a target="' + (this.openNewTab ? '_blank' : '_self') + '" class="photoA" href="/p/' + curr.cid + '"></a>'
+								iconSize: this.sizePoint
 							}
 						);
 						curr.marker =
@@ -660,7 +647,13 @@ define([
 	 */
 	MarkerManager.prototype.clickMarker = function (evt) {
 		if (evt.target.options.data.type === 'photo') {
-
+			if (!_.isEmpty(evt.target.options.data.obj.cid)) {
+				if (this.openNewTab) {
+					window.open('/p/' + evt.target.options.data.obj.cid, '_blank');
+				} else {
+					location.href = '/p/' + evt.target.options.data.obj.cid;
+				}
+			}
 		} else if (evt.target.options.data.type === 'clust') {
 			this.map.setView(evt.target.getLatLng(), this.map.getZoom() + 1);
 		}

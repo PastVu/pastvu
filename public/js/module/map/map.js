@@ -158,7 +158,9 @@ define([
 			// Subscriptions
 			this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
 			this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
-				globalVM.pb.publish('/map/openNewTab', [val]);
+				if (this.marker_mgr) {
+					this.marker_mgr.openNewTab = val;
+				}
 			}, this);
 
 			this.show();
