@@ -4,6 +4,26 @@
 @import "../leaflet.less";
 @import "../leaflet.markercluster.less";
 
+@spinVal: 250 / 110;
+@yearBase: #0000BF;
+.yearLooping(@index)when (@index < 2001) {
+	(~".y@{index}") { // your resulting css
+		@vall: (@index - 1890) * @spinVal;
+		background-color: spin(@yearBase, @vall); //width: (~"@{vall}px");
+	}
+	.yearLooping(@index + 1); // next iteration
+}
+.yearLooping(2001) {}
+
+@yearBaseOld: #000099;
+.yearLoopingOld(@index)when (@index > 1799) {
+	(~".y@{index}") {
+		background-color: @yearBaseOld;
+	}
+	.yearLoopingOld(@index - 1); // next iteration
+}
+.yearLoopingOld(1799) {}
+
 .mapModuleWrapper {
 	position: relative;
 	width: 100%;
@@ -77,9 +97,11 @@
 		left: 3px;
 	}
 
+	.yearLoopingOld (1889);
+	.yearLooping (1890);
+
 	.photoIcon {
 		overflow: visible;
-		background-color: #003aff;
 		.box-shadow(0 0 1px 1px #fff);
 		.border-radius(50%);
 

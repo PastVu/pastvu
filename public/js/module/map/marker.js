@@ -248,7 +248,7 @@ define([
 					photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
 					divIcon = L.divIcon(
 						{
-							className: 'photoIcon ' + curr.dir,
+							className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
 							iconSize: this.sizePoint
 						}
 					);
@@ -372,7 +372,7 @@ define([
 						photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
 						divIcon = L.divIcon(
 							{
-								className: 'photoIcon ' + curr.dir,
+								className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
 								iconSize: this.sizePoint
 							}
 						);
