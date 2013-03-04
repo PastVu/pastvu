@@ -155,9 +155,7 @@ define([
 				// и пересчитываем кластеры
 				pollServer = false;
 				this.cropByBound(null, this.clientClustering);
-				if (this.photosAll.length > 1) {
-					this.drawClustersLocal(this.createClusters(this.photosAll, true).clusters, false);
-				}
+				this.processIncomingDataZoom({photos: this.photosAll}, false, true);
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
 				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
@@ -200,7 +198,7 @@ define([
 					needClientClustering = this.clientClustering && this.currZoom >= this.firstClientWorkZoom;
 					boundChanged = !bound.equals(this.calcBound);
 
-					this.processIncomingDataZoom(data, boundChanged, needClientClustering, crossingClientWorkZoom);
+					this.processIncomingDataZoom(data, boundChanged, needClientClustering, true);
 				} else {
 					console.log('Ошибка загрузки новых камер: ' + data.message);
 				}
@@ -216,7 +214,7 @@ define([
 	/**
 	 * Обрабатывает входящие данные по зуму
 	 */
-	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, crossingClientWorkZoom) {
+	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localCluster, localAdd) {
 		var photos = {},
 			divIcon,
 			curr,
@@ -227,7 +225,9 @@ define([
 		// когда сервер отдает только фотографии "в рамке, обрамляющей предыдущий баунд", следовательно,
 		// полученные фото мы должны присоединить к существующим и локально кластеризовать их объединение (т.к. изменился зум)
 		if (localCluster) {
-			this.photosAll = this.photosAll.concat(data.photos);
+			if (localAdd) {
+				this.photosAll = this.photosAll.concat(data.photos);
+			}
 			data = this.createClusters(this.photosAll, true);
 		}
 
