@@ -17,7 +17,7 @@ define([
 
 		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
 		this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
-		this.clientClusteringDelta = P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA();
+		this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
 
 		this.sizePoint = new L.Point(10, 10);
 		this.sizeClusters = new L.Point(42, 42);
@@ -490,7 +490,7 @@ define([
 		}
 	};
 
-	MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, localCluster, add) {
+	MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
 		var i,
 			curr,
 			divIcon,
