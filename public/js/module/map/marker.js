@@ -260,20 +260,14 @@ define([
 			}
 		}
 
-		// Так как на локальном уровне этот метод может только добавлять фото, то
-		// в таком случае присоединяем новые маркеры фотографий, а
-		// для масштабов серверной кластеризации производим удаление непришедших фотографий
-		if (localCluster && !crossingClientWorkZoom) {
-			_.assign(this.mapObjects.photos, photos);
-		} else {
-			// В текущем объекте остались только фото на удаление
-			for (i in this.mapObjects.photos) {
-				if (this.mapObjects.photos[i] !== undefined) {
-					this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
-				}
+		// В текущем объекте остались только фото на удаление
+		for (i in this.mapObjects.photos) {
+			if (this.mapObjects.photos[i] !== undefined) {
+				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
 			}
-			this.mapObjects.photos = photos;
 		}
+		this.mapObjects.photos = photos;
+
 
 		// Создаем маркеры кластеров
 		if (localCluster) {
