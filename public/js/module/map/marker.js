@@ -36,6 +36,7 @@ define([
 		this.zoomChanged = false;
 		this.refreshByZoomTimeout = null;
 		this.refreshDataByZoomBind = this.refreshDataByZoom.bind(this);
+		this.visBound = false;
 
 		this.animationOn = false;
 
@@ -166,23 +167,20 @@ define([
 
 		if (pollServer) {
 
-			//Визуализация баундов, по которым будет отправлен запрос к серверу
-			i = 4;
-			while (i--) {
-				if (this['b' + i] !== undefined) {
-					this.map.removeLayer(this['b' + i]);
-					this['b' + i] = undefined;
+			if (this.visBound) {
+				//Визуализация баундов, по которым будет отправлен запрос к серверу
+				i = 4;
+				while (i--) {
+					if (this['b' + i] !== undefined) {
+						this.map.removeLayer(this['b' + i]);
+						this['b' + i] = undefined;
+					}
 				}
-			}
-			i = bounds.length;
-			while (i) {
-				curr = bounds[--i];
-				this['b' + i] = L.polygon([
-					[curr[1][0], curr[0][1]],
-					curr[1],
-					[curr[0][0], curr[1][1]],
-					curr[0]
-				], {color: '#25CE00', weight: 1}).addTo(this.map);
+				i = bounds.length;
+				while (i) {
+					curr = bounds[--i];
+					this['b' + i] = L.rectangle(curr, {color: "#25CE00", weight: 1}).addTo(this.map);
+				}
 			}
 
 			socket.once('getBoundsResult', function (data) {
@@ -298,23 +296,20 @@ define([
 		//Считаем новые баунды для запроса
 		bounds = this.boundSubtraction(bound, this.calcBoundPrev);
 
-		//Визуализация баундов, по которым будет отправлен запрос к серверу
-		i = 4;
-		while (i--) {
-			if (this['b' + i] !== undefined) {
-				this.map.removeLayer(this['b' + i]);
-				this['b' + i] = undefined;
+		if (this.visBound) {
+			//Визуализация баундов, по которым будет отправлен запрос к серверу
+			i = 4;
+			while (i--) {
+				if (this['b' + i] !== undefined) {
+					this.map.removeLayer(this['b' + i]);
+					this['b' + i] = undefined;
+				}
 			}
-		}
-		i = bounds.length;
-		while (i) {
-			curr = bounds[--i];
-			this['b' + i] = L.polygon([
-				[curr[1][0], curr[0][1]],
-				curr[1],
-				[curr[0][0], curr[1][1]],
-				curr[0]
-			], {color: '#25CE00', weight: 1}).addTo(this.map);
+			i = bounds.length;
+			while (i) {
+				curr = bounds[--i];
+				this['b' + i] = L.rectangle(curr, {color: "#25CE00", weight: 1}).addTo(this.map);
+			}
 		}
 
 		socket.once('getBoundsResult', function (data) {
