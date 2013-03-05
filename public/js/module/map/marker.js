@@ -69,6 +69,10 @@ define([
 		if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
 			this.calcBoundPrev = this.calcBound;
 			this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
+			this.calcBound._northEast.lat = Utils.math.toPrecision(this.calcBound._northEast.lat);
+			this.calcBound._northEast.lng = Utils.math.toPrecision(this.calcBound._northEast.lng);
+			this.calcBound._southWest.lat = Utils.math.toPrecision(this.calcBound._southWest.lat);
+			this.calcBound._southWest.lng = Utils.math.toPrecision(this.calcBound._southWest.lng);
 			result = true;
 		}
 		return result;
@@ -137,14 +141,6 @@ define([
 
 		this.currZoom = newZoom;
 
-		i = 4;
-		while (i--) {
-			if (this['b' + i]) {
-				this.map.removeLayer(this['b' + i]);
-				this['b' + i] = null;
-			}
-		}
-
 		if (!init && willLocalWork && !crossingLocalWorkZoom) {
 			// Если на клиенте уже есть все фотографии для данного зума
 			if (direction === 'down') {
@@ -156,21 +152,9 @@ define([
 			} else {
 				// Если новый зум меньше, то определяем четыре новых баунда, и запрашиваем объекты только для них
 				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
-
-				//Визуализация полученных баундов
-				i = bounds.length;
-				while (i) {
-					curr = _.clone(bounds[--i]);
-					this['b' + i] = L.polygon([
-						[curr[1][0], curr[0][1]],
-						curr[1],
-						[curr[0][0], curr[1][1]],
-						curr[0]
-					], {color: '#00C629', weight: 1}).addTo(this.map);
-				}
 			}
 		} else {
-			// При пересечении границы "вверх" обнудяем массив всех фото на клиенте
+			// При пересечении границы "вверх" обнуляем массив всех фото на клиенте
 			if (crossingLocalWorkZoom && !willLocalWork) {
 				this.photosAll = [];
 			}
@@ -181,6 +165,26 @@ define([
 		}
 
 		if (pollServer) {
+
+			//Визуализация баундов, по которым будет отправлен запрос к серверу
+			i = 4;
+			while (i--) {
+				if (this['b' + i] !== undefined) {
+					this.map.removeLayer(this['b' + i]);
+					this['b' + i] = undefined;
+				}
+			}
+			i = bounds.length;
+			while (i) {
+				curr = bounds[--i];
+				this['b' + i] = L.polygon([
+					[curr[1][0], curr[0][1]],
+					curr[1],
+					[curr[0][0], curr[1][1]],
+					curr[0]
+				], {color: '#25CE00', weight: 1}).addTo(this.map);
+			}
+
 			socket.once('getBoundsResult', function (data) {
 				var localWork, // Находимся ли мы на уровне локальной работы
 					localCluster, // Смотрим нужно ли использовать клиентскую кластеризацию
@@ -294,23 +298,23 @@ define([
 		//Считаем новые баунды для запроса
 		bounds = this.boundSubtraction(bound, this.calcBoundPrev);
 
-		//Визуализация полученных баундов
+		//Визуализация баундов, по которым будет отправлен запрос к серверу
 		i = 4;
 		while (i--) {
-			if (this['b' + i]) {
+			if (this['b' + i] !== undefined) {
 				this.map.removeLayer(this['b' + i]);
-				this['b' + i] = null;
+				this['b' + i] = undefined;
 			}
 		}
 		i = bounds.length;
 		while (i) {
-			curr = _.clone(bounds[--i]);
+			curr = bounds[--i];
 			this['b' + i] = L.polygon([
 				[curr[1][0], curr[0][1]],
 				curr[1],
 				[curr[0][0], curr[1][1]],
 				curr[0]
-			], {color: '#00C629', weight: 1}).addTo(this.map);
+			], {color: '#25CE00', weight: 1}).addTo(this.map);
 		}
 
 		socket.once('getBoundsResult', function (data) {
