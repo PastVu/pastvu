@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-var fs = require('fs'),
+var start = Date.now(),
+	fs = require('fs'),
     path = require('path'),
     sys = require('util'),
     step = require('step'),
@@ -180,7 +181,7 @@ step(
             console.dir(e);
             process.exit(1);
         }
-        console.log('Build complete. OK!');
+        console.log('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
     }
 );
 

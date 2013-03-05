@@ -24,7 +24,7 @@
 		"bcrypt": "~0.7.3",
 		"step": "",
 		"socket.io": "~0.9.13",
-		"requirejs": "~2.1.4",
+		"requirejs": "~2.1.5",
 		"csso": "~1.3.7",
 		"nodemailer": "~0.3.37",
 		"sprintf": "",
