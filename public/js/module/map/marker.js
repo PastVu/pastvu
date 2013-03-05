@@ -54,7 +54,6 @@ define([
 			.on('zoomstart', this.onZoomStart, this)
 			.on('moveend', this.onMapMoveEnd, this);
 
-		this.reCalcBound();
 		this.refreshDataByZoom(true);
 	}
 
@@ -65,11 +64,11 @@ define([
 	 * @return {boolean} Флаг того, что границы изменились.
 	 */
 	MarkerManager.prototype.reCalcBound = function (force) {
-		//TODO: Изменяться баунд должен по шагам сетки кластеров
-		var result = false;
+		var result = false,
+			localWork = this.map.getZoom() >= this.firstClientWorkZoom;
 		if (force || !this.calcBound || !this.calcBound.contains(this.map.getBounds())) {
 			this.calcBoundPrev = this.calcBound;
-			this.calcBound = this.map.getBounds().pad(0.2);
+			this.calcBound = this.map.getBounds().pad(localWork ? 0.1 : 0.25);
 			result = true;
 		}
 		return result;
@@ -82,11 +81,11 @@ define([
 	MarkerManager.prototype.layerChange = function () {
 		if (this.map.options.zoomAnimation && this.map.options.markerZoomAnimation) {
 			if (!this.animationOn) {
-				this.paneMarkers.classList.add('neo-animate');
+				//this.paneMarkers.classList.add('neo-animate');
 				this.animationOn = true;
 			}
 		} else if (this.animationOn) {
-			this.paneMarkers.classList.remove('neo-animate');
+			//this.paneMarkers.classList.remove('neo-animate');
 			this.animationOn = false;
 		}
 	};
