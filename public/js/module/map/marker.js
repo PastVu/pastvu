@@ -657,9 +657,30 @@ define([
 	};
 
 	/**
+	 * Zoom animation to mouse pointer position.
+	 * @param point
+	 * @param newZoom
+	 * @return {*}
+	 */
+	MarkerManager.prototype.zoomApproachToPoint = function (point, newZoom) {
+		var scale = this.map.getZoomScale(newZoom),
+			viewHalf = this.map.getSize().divideBy(2),
+			centerOffset = point.subtract(viewHalf).multiplyBy(1 - 1 / scale),
+			newCenterPoint = this.map._getTopLeftPoint().add(viewHalf).add(centerOffset);
+
+		return this.map.unproject(newCenterPoint);
+	};
+
+	/**
 	 * @param evt
 	 */
 	MarkerManager.prototype.clickMarker = function (evt) {
+		var eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
+			nextZoom,
+			content,
+			photos,
+			i;
+
 		if (evt.target.options.data.type === 'photo') {
 			if (!_.isEmpty(evt.target.options.data.obj.cid)) {
 				if (this.openNewTab) {
@@ -670,9 +691,9 @@ define([
 			}
 		} else if (evt.target.options.data.type === 'clust') {
 			if (this.map.getZoom() === this.map.getMaxZoom()) {
-				var content = '',
-					photos = evt.target.options.data.obj.photos,
-					i = photos.length;
+				content = '';
+				photos = evt.target.options.data.obj.photos;
+				i = photos.length;
 
 				photos.sort(function (a, b) {
 					var result = 0;
@@ -695,7 +716,8 @@ define([
 				this.map.addLayer(this.popupCluster);
 				//this.map.openPopup(this.popupCluster);
 			} else {
-				this.map.setView(evt.target.getLatLng(), this.map.getZoom() + 1);
+				nextZoom = this.map.getZoom() + 1;
+				this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
 			}
 		}
 	};
