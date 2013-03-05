@@ -40,9 +40,11 @@ define([
 
 		this.animationOn = false;
 
-		this.panePopup = this.map.getPanes().popupPane;
-		this.popup = new L.Popup({maxWidth: 119, minWidth: 119, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popup = new L.Popup({className: 'popupPhoto', maxWidth: 119, minWidth: 119, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
+
+		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 248, minWidth: 40, maxHeight: 185, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(5, 5), zoomAnimation: false, closeButton: false});
+		this.popupClusterTempl = _.template('<img class="popupImg fringe2" src="${ img }"/>');
 
 		this.markerToPopup = null;
 		this.popupMarkerBind = this.popupMarker.bind(this);
@@ -667,7 +669,34 @@ define([
 				}
 			}
 		} else if (evt.target.options.data.type === 'clust') {
-			this.map.setView(evt.target.getLatLng(), this.map.getZoom() + 1);
+			if (this.map.getZoom() === this.map.getMaxZoom()) {
+				var content = '',
+					photos = evt.target.options.data.obj.photos,
+					i = photos.length;
+
+				photos.sort(function (a, b) {
+					var result = 0;
+					if (a.year < b.year) {
+						result = -1;
+					} else if (a.year > b.year) {
+						result = 1;
+					}
+					return result;
+				});
+
+				while (i--) {
+					Photo.factory(photos[i], 'mapdot', 'midi');
+					content += this.popupClusterTempl({img: '/_photo/micros/' + photos[i].file || ''});
+				}
+				content += '';
+				this.popupCluster
+					.setLatLng(evt.target.getLatLng())
+					.setContent(content);
+				this.map.addLayer(this.popupCluster);
+				//this.map.openPopup(this.popupCluster);
+			} else {
+				this.map.setView(evt.target.getLatLng(), this.map.getZoom() + 1);
+			}
 		}
 	};
 
@@ -681,11 +710,13 @@ define([
 			this.popup
 				.setLatLng(this.markerToPopup.getLatLng())
 				.setContent(this.popupTempl({img: this.markerToPopup.options.data.obj.sfile || '', txt: this.markerToPopup.options.data.obj.title || ''}));
-			this.map.openPopup(this.popup);
+			this.map.addLayer(this.popup);
+			//this.map.openPopup(this.popup);
 		}
 	};
 	MarkerManager.prototype.outMarker = function (evt) {
-		this.map.closePopup();
+		//this.map.closePopup();
+		this.map.removeLayer(this.popup);
 		this.markerToPopup = null;
 		window.clearTimeout(this.popupMarkerTimout);
 		evt.target.off('mouseout', this.outMarker, this);

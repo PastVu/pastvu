@@ -48,9 +48,6 @@
 	.leaflet-popup {
 		.transition(none);
 
-		.leaflet-popup-content-wrapper, .leaflet-popup-tip {
-			background-color: @MainBlueColor;
-		}
 		.leaflet-popup-content-wrapper {
 			.border-radius(0);
 			.box-shadow(0 1px 12px rgba(0, 0, 0, 0.6));
@@ -59,33 +56,92 @@
 				margin: 0;
 			}
 		}
-		.leaflet-popup-tip-container {
-			height: 15px;
 
-			.leaflet-popup-tip {
-				.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
+		&.popupPhoto {
+			.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+				background-color: @MainBlueColor;
+			}
+
+			.leaflet-popup-tip-container {
+				height: 15px;
+
+				.leaflet-popup-tip {
+					.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
+				}
+			}
+
+			.popupImg {
+				display: block;
+				width: 120px;
+				height: 80px;
+			}
+			.popupCap {
+				display: block;
+				max-height: 37px;
+				padding: 1px 2px;
+				color: @MainLigthColor;
+				font-size: 11px;
+				line-height: 12px;
+				text-align: center;
+				overflow: hidden;
+
+				&:empty {
+					display: none;
+				}
 			}
 		}
 
-		.popupImg {
-			display: block;
-			width: 120px;
-			height: 80px;
-		}
-		.popupCap {
-			display: block;
-			max-height: 37px;
-			padding: 1px 2px;
-			color: @MainLigthColor;
-			font-size: 11px;
-			line-height: 12px;
-			text-align: center;
-			overflow: hidden;
+		&.popupCluster {
+			.leaflet-popup-content-wrapper{
+				&::-webkit-scrollbar-button:decrement {
+					height: 0;
+				}
+			}
+			.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+				background-color: darken(@MainBlueColor, 5%);
+			}
 
-			&:empty {
-				display: none;
+			.leaflet-popup-tip-container {
+				height: 15px;
+
+				.leaflet-popup-tip {
+					.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
+				}
+			}
+
+			.leaflet-popup-content {
+				text-align: center;
+			}
+			/*.leaflet-popup-content-wrapper {
+				margin-left: 20px;
+			}
+
+			.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+				background-color: #505050;
+			}
+
+			.leaflet-popup-tip-container {
+				position: absolute;
+				top: 8px;
+				width: 20px;
+				height: 40px;
+
+				.leaflet-popup-tip {
+					margin: 8px 0 0 12px;
+					.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
+				}
+			}*/
+
+			.popupImg {
+				display: inline-block;
+				width: 40px;
+				height: 40px;
+				margin: 2px 2px;
+				cursor: pointer;
+				.box-shadow(~'0 0 0 1px #000');
 			}
 		}
+
 	}
 
 /**
