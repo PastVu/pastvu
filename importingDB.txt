@@ -1,35 +1,49 @@
-1. Вариант загрузки как массива объектов
-mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
+ИМПОРТ в Mongo json коллекции (например из myphpadmin)
+	1. Вариант загрузки как массива объектов
+	mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
 
-	\n ->> \\n
-	\t ->> (пробел)
+		\n ->> \\n
+		\t ->> (пробел)
 
-2. Вариант загрузки как строки объектов
-mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
+	2. Вариант загрузки как строки объектов
+	mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
 
-	Удалить скобки массива
-	\n ->> \\n
-	\t ->>  (пробел)
-	}, { --> }\n{
-	
-	
-	
-CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
-forfiles /s /m *.* /p \_test\oldmos\photosAll /c "cmd /c move @file \_test\oldmos\result"
+		Удалить скобки массива
+		\n ->> \\n
+		\t ->>  (пробел)
+		}, { --> }\n{
+		
+		
+ПЕРЕНОС ДАМПА Mongo
+	1. Делаем полный дамп (bson)
+		mongodump -db oldmos -o C:\Mongo\bin\1
+	2. Восстановление из дампа
+		mongorestore --db oldmos C:\Mongo\bin\1\oldmos
+		
+	Можно экспортировать все коллекции и потом импортировать по одной
+	Batch срипт для экспорта всех коллекций (http://stackoverflow.com/questions/11255630/how-to-export-all-collection-in-mongodb)
+		mongo "{YOUR SERVER}/{YOUR DATABASE}" --eval "rs.slaveOk();db.getCollectionNames()" --quiet>__collections.txt
+		for /f %%a in ('type __collections.txt') do @set COLLECTIONS=%%a
+		for %%a in (%COLLECTIONS%) do mongoexport --host {YOUR SERVER} --db {YOUR DATABASE} --collection %%a --out data\%%a.json
+		del __collections.txt
+		
+ПЕРЕНОС ФАЙЛОВ	
+	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
+	forfiles /s /m *.* /p \_test\oldmos\photosAll /c "cmd /c move @file \_test\oldmos\result"
 
-Cкрипт для переименовани файлов путем удаления части до подчеркивания
-	С помощью Bash:
-	for f in *_*.jpg; do mv "$f" "${f/*_/}"; done
-	
-	Через регулярное выражение: ^(?:[^_]+_)?(.+)   достать $1
+	Cкрипт для переименовани файлов путем удаления части до подчеркивания
+		С помощью Bash:
+		for f in *_*.jpg; do mv "$f" "${f/*_/}"; done
+		
+		Через регулярное выражение: ^(?:[^_]+_)?(.+)   достать $1
 
-	С помощью CMD. http://stackoverflow.com/questions/15135920/remove-file-name-prefix-with-cmd
-	Создаем bat-file:
-	setlocal enabledelayedexpansion
-	for %%F in (*.jpg) do (
-	  set "FN=%%F"
-	  if "!FN:~4,1!"=="_" (
-		set "FN=!FN:~5!"
-		ren "%%F" "!FN!"
-	  )
-	)
+		С помощью CMD. http://stackoverflow.com/questions/15135920/remove-file-name-prefix-with-cmd
+		Создаем bat-file:
+		setlocal enabledelayedexpansion
+		for %%F in (*.jpg) do (
+		  set "FN=%%F"
+		  if "!FN:~4,1!"=="_" (
+			set "FN=!FN:~5!"
+			ren "%%F" "!FN!"
+		  )
+		)
