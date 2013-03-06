@@ -36,3 +36,7 @@
 	background: -ms-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
 	background: linear-gradient(to @to,  @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
 }
+
+.reflect(@length: 50%, @opacity: 0.2) {
+	-webkit-box-reflect: below 0 px -webkit-gradient(linear, left top, left bottom, from(transparent), color-stop(@length, transparent), to(rgba(255, 255, 255, @opacity)));
+}
