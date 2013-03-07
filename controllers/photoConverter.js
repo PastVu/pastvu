@@ -63,8 +63,8 @@ var path = require('path'),
 		},
 		{
 			version: 'midi',
-			width: 120,
-			height: 80,
+			width: 150,
+			height: 100,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
