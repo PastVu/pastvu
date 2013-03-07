@@ -43,9 +43,9 @@ define([
 		this.popup = new L.Popup({className: 'popupPhoto', maxWidth: 149, minWidth: 149, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
-		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 149, minWidth: 149, maxHeight: 220, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 263, minWidth: 248, maxHeight: 271, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterTempl = _.template('<img class="popupImgPreview fringe2" onmouseover="console.log(this.parentNode.querySelector(\'.popupImg\'))" src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }"/>');
+		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 149, minWidth: 149, maxHeight: 223, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 263, minWidth: 248, maxHeight: 277, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterTempl = _.template('<img class="popupImgPreview fringe2" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')" onmouseover="var div = this.parentNode.querySelector(\'.popupPoster\'), img = this.parentNode.querySelector(\'.popupImg\'), title = this.parentNode.querySelector(\'.popupCap\'); div.setAttribute(\'data-href\', this.getAttribute(\'data-href\')); img.setAttribute(\'src\', this.getAttribute(\'data-sfile\')); title.innerHTML = this.getAttribute(\'data-title\');" src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>');
 
 
 		this.markerToPopup = null;
@@ -720,9 +720,9 @@ define([
 
 		while (i--) {
 			Photo.factory(photos[i], 'mapdot', 'midi');
-			content += this.popupClusterTempl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || ''});
+			content += this.popupClusterTempl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
 		}
-		content = this.popupTempl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + content;
+		content = '<div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupTempl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>' + content;
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);

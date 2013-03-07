@@ -13,7 +13,9 @@
 	}
 	.yearLooping(@index + 1); // next iteration
 }
-.yearLooping(2001) {}
+
+.yearLooping(2001) {
+}
 
 @yearBaseOld: hsv(240, 100%, 50%);
 .yearLoopingOld(@index)when (@index > 1799) {
@@ -22,7 +24,9 @@
 	}
 	.yearLoopingOld(@index - 1); // next iteration
 }
-.yearLoopingOld(1799) {}
+
+.yearLoopingOld(1799) {
+}
 
 .mapModuleWrapper {
 	position: relative;
@@ -93,7 +97,7 @@
 		}
 
 		&.popupCluster {
-			.leaflet-popup-content-wrapper{
+			.leaflet-popup-content-wrapper {
 				&::-webkit-scrollbar-button:decrement {
 					height: 0;
 				}
@@ -115,18 +119,24 @@
 				padding-bottom: 1px;
 			}
 
+			.popupPoster {
+				cursor: pointer;
+			}
 			.popupImg {
 				display: inline-block;
 				width: 150px;
 				height: 100px;
 			}
-			&.five .popupImg{
+			&.five .popupImg {
 				width: 246px;
 				height: 164px;
 				margin-top: 1px;
 			}
+			.popupCap {
+				.text-overflow();
+			}
 			.h_separatorWhite {
-				margin: 1px 0 2px 0;
+				margin: 2px 0 3px 0;
 			}
 			.popupImgPreview {
 				display: inline-block;
@@ -313,8 +323,7 @@
 		}
 	}
 
-	.clusterIconLocal {
-		//background-color: #303030;
+	.clusterIconLocal { //background-color: #303030;
 		color: #fff;
 		line-height: 18px;
 		font-size: 11px;
