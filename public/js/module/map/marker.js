@@ -40,13 +40,19 @@ define([
 
 		this.animationOn = false;
 
-		this.popup = new L.Popup({className: 'popupPhoto', maxWidth: 149, minWidth: 149, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popup = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
-		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 149, minWidth: 149, maxHeight: 223, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 263, minWidth: 248, maxHeight: 277, offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterTempl = _.template('<img class="popupImgPreview fringe2" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')" onmouseover="var div = this.parentNode.querySelector(\'.popupPoster\'), img = this.parentNode.querySelector(\'.popupImg\'), title = this.parentNode.querySelector(\'.popupCap\'); div.setAttribute(\'data-href\', this.getAttribute(\'data-href\')); img.setAttribute(\'src\', this.getAttribute(\'data-sfile\')); title.innerHTML = this.getAttribute(\'data-title\');" src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>');
+		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 151, minWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 247, minWidth: 247,/* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', maxWidth: 249, minWidth: 249,/* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterTempl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
+			'onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')" ' +
+			'onmouseover="var root = this.parentNode.parentNode, div = root.querySelector(\'.popupPoster\'), img = root.querySelector(\'.popupImg\'), title = root.querySelector(\'.popupCap\'); div.setAttribute(\'data-href\', this.getAttribute(\'data-href\')); img.setAttribute(\'src\', this.getAttribute(\'data-sfile\')); title.innerHTML = this.getAttribute(\'data-title\');"' +
+			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>'
+		);
 
+		this.popupOpened = null;
 
 		this.markerToPopup = null;
 		this.popupMarkerBind = this.popupMarker.bind(this);
@@ -703,30 +709,39 @@ define([
 
 	MarkerManager.prototype.openPopupCluster = function (marker) {
 		var photos = marker.options.data.obj.photos,
-			i = photos.length,
-			small = i <= 3,
-			popup = small ? this.popupCluster : this.popupClusterFive,
-			content = '';
+			i = -1,
+			len = photos.length,
+			small = len <= 3,
+			popup = small ? this.popupCluster : (len <= 15 ? this.popupClusterFive : this.popupClusterFiveScroll),
+			content = '<div class="popupPreviews">';
 
 		photos.sort(function (a, b) {
 			var result = 0;
-			if (a.year < b.year) {
+			if (a.year > b.year) {
 				result = -1;
-			} else if (a.year > b.year) {
+			} else if (a.year < b.year) {
 				result = 1;
 			}
 			return result;
 		});
 
-		while (i--) {
+		while (++i < len) {
 			Photo.factory(photos[i], 'mapdot', 'midi');
+			if (i > 0 && i % 5 === 0) {
+				content += '<br/>';
+			}
 			content += this.popupClusterTempl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
 		}
-		content = '<div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupTempl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>' + content;
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupTempl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
+
+		if (this.popupOpened) {
+			this.map.removeLayer(this.popupOpened);
+		}
 		this.map.addLayer(popup);
+		this.popupOpened = popup;
 	};
 	MarkerManager.prototype.overMarker = function (evt) {
 		window.clearTimeout(this.popupMarkerTimout);
@@ -739,12 +754,10 @@ define([
 				.setLatLng(this.markerToPopup.getLatLng())
 				.setContent(this.popupTempl({img: this.markerToPopup.options.data.obj.sfile || '', txt: this.markerToPopup.options.data.obj.title || ''}));
 			this.map.addLayer(this.popup);
-			//this.map.openPopup(this.popup);
 		}
 	};
 	MarkerManager.prototype.outMarker = function (evt) {
-		//this.map.closePopup();
-		this.map.removeLayer(this.popup);
+		//this.map.removeLayer(this.popup);
 		this.markerToPopup = null;
 		window.clearTimeout(this.popupMarkerTimout);
 		evt.target.off('mouseout', this.outMarker, this);
