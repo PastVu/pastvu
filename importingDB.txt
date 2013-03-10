@@ -47,3 +47,10 @@
 			ren "%%F" "!FN!"
 		  )
 		)
+
+		
+Пакетный конверт всех jpg в папке в webP
+	setlocal enabledelayedexpansion
+	for %%F in (D:\_PROJS\oldmos\publicContent\photos\micros\*.jpg) do (
+	  C:\libwebp-0.2.1\cwebp -short %%F -o %%F.webp
+	)

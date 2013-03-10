@@ -40,13 +40,13 @@ define([
 
 		this.animationOn = false;
 
-		this.popup = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
-		this.popupTempl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
+		this.popupPhoto = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
 		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 151, minWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 247, minWidth: 247,/* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', maxWidth: 249, minWidth: 249,/* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterTempl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
+		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 247, minWidth: 247, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', maxWidth: 249, minWidth: 249, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
 			'onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')" ' +
 			'onmouseover="var root = this.parentNode.parentNode, div = root.querySelector(\'.popupPoster\'), img = root.querySelector(\'.popupImg\'), title = root.querySelector(\'.popupCap\'); div.setAttribute(\'data-href\', this.getAttribute(\'data-href\')); img.setAttribute(\'src\', this.getAttribute(\'data-sfile\')); title.innerHTML = this.getAttribute(\'data-title\');"' +
 			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>'
@@ -55,8 +55,8 @@ define([
 		this.popupOpened = null;
 
 		this.markerToPopup = null;
-		this.popupMarkerBind = this.popupMarker.bind(this);
-		this.popupMarkerTimout = this.popupMarker.bind(this);
+		this.popupPhotoOpenBind = this.popupPhotoOpen.bind(this);
+		this.popupTimeout = null;
 
 		this.openNewTab = options.openNewTab;
 
@@ -108,8 +108,9 @@ define([
 	/**
 	 * Вызывается по событию начала изменения масштаба карты
 	 */
-	MarkerManager.prototype.onZoomStart = function (opt) {
+	MarkerManager.prototype.onZoomStart = function () {
 		window.clearTimeout(this.refreshByZoomTimeout);
+		this.popupClose();
 		this.clearClusters();
 		this.zoomChanged = true;
 	};
@@ -266,7 +267,7 @@ define([
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}})
 							.on('click', this.clickMarker, this)
-							.on('mouseover', this.overMarker, this);
+							.on('mouseover', this.popupPhotoOver, this);
 					this.layerPhotos.addLayer(curr.marker);
 				}
 			}
@@ -387,7 +388,7 @@ define([
 						curr.marker =
 							L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}})
 								.on('click', this.clickMarker, this)
-								.on('mouseover', this.overMarker, this);
+								.on('mouseover', this.popupPhotoOver, this);
 						this.layerPhotos.addLayer(curr.marker);
 					}
 				}
@@ -683,23 +684,22 @@ define([
 	 * @param evt
 	 */
 	MarkerManager.prototype.clickMarker = function (evt) {
-		var eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
-			nextZoom,
-			content,
-			photos,
-			i;
+		var marker = evt.target,
+			object = marker.options.data.obj,
+			eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
+			nextZoom;
 
-		if (evt.target.options.data.type === 'photo') {
-			if (!_.isEmpty(evt.target.options.data.obj.cid)) {
+		if (marker.options.data.type === 'photo') {
+			if (!_.isEmpty(object.cid)) {
 				if (this.openNewTab) {
-					window.open('/p/' + evt.target.options.data.obj.cid, '_blank');
+					window.open('/p/' + object.cid, '_blank');
 				} else {
-					location.href = '/p/' + evt.target.options.data.obj.cid;
+					location.href = '/p/' + object.cid;
 				}
 			}
-		} else if (evt.target.options.data.type === 'clust') {
+		} else if (marker.options.data.type === 'clust') {
 			if (this.map.getZoom() === this.map.getMaxZoom()) {
-				this.openPopupCluster(evt.target);
+				this.popupClusterOpen(marker);
 			} else {
 				nextZoom = this.map.getZoom() + 1;
 				this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
@@ -707,7 +707,7 @@ define([
 		}
 	};
 
-	MarkerManager.prototype.openPopupCluster = function (marker) {
+	MarkerManager.prototype.popupClusterOpen = function (marker) {
 		var photos = marker.options.data.obj.photos,
 			i = -1,
 			len = photos.length,
@@ -730,37 +730,50 @@ define([
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTempl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
+			content += this.popupClusterTpl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupTempl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
 
-		if (this.popupOpened) {
-			this.map.removeLayer(this.popupOpened);
+		this.popupOpen(popup);
+	};
+
+	MarkerManager.prototype.popupPhotoOpen = function () {
+		if (this.markerToPopup) {
+			this.popupPhoto
+				.setLatLng(this.markerToPopup.getLatLng())
+				.setContent(this.popupPhotoTpl({img: this.markerToPopup.options.data.obj.sfile || '', txt: this.markerToPopup.options.data.obj.title || ''}));
+			this.popupOpen(this.popupPhoto);
 		}
+	};
+	MarkerManager.prototype.popupPhotoOver = function (evt) {
+		window.clearTimeout(this.popupTimeout);
+		this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
+		this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
+	};
+	MarkerManager.prototype.popupPhotoOut = function (evt) {
+		// Закрываем попап, только если это попап фото. Чтобы при наведения и убыстрого уведения без открытия не закрывался попап кластера
+		if (this.popupOpened === this.popupPhoto) {
+			this.popupClose();
+		}
+		this.markerToPopup = null;
+		window.clearTimeout(this.popupTimeout);
+		evt.target.off('mouseout', this.popupPhotoOut, this);
+	};
+
+	MarkerManager.prototype.popupOpen = function (popup) {
+		window.clearTimeout(this.popupTimeout);
+		this.popupClose();
 		this.map.addLayer(popup);
 		this.popupOpened = popup;
 	};
-	MarkerManager.prototype.overMarker = function (evt) {
-		window.clearTimeout(this.popupMarkerTimout);
-		this.popupMarkerTimout = window.setTimeout(this.popupMarkerBind, 200);
-		this.markerToPopup = evt.target.on('mouseout', this.outMarker, this);
-	};
-	MarkerManager.prototype.popupMarker = function () {
-		if (this.markerToPopup) {
-			this.popup
-				.setLatLng(this.markerToPopup.getLatLng())
-				.setContent(this.popupTempl({img: this.markerToPopup.options.data.obj.sfile || '', txt: this.markerToPopup.options.data.obj.title || ''}));
-			this.map.addLayer(this.popup);
+	MarkerManager.prototype.popupClose = function () {
+		if (this.popupOpened) {
+			this.map.removeLayer(this.popupOpened);
+			this.popupOpened = null;
 		}
-	};
-	MarkerManager.prototype.outMarker = function (evt) {
-		//this.map.removeLayer(this.popup);
-		this.markerToPopup = null;
-		window.clearTimeout(this.popupMarkerTimout);
-		evt.target.off('mouseout', this.outMarker, this);
 	};
 
 	return MarkerManager;
