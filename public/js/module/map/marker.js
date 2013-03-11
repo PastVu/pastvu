@@ -10,6 +10,9 @@ define([
 	function MarkerManager(map, options) {
 		this.map = map;
 
+		this.openNewTab = options.openNewTab;
+		this.embedded = options.embedded;
+
 		this.photosAll = [];
 		this.mapObjects = {photos: {}, clusters: {}};
 		this.layerClusters = L.layerGroup(); // Слой кластеров
@@ -40,26 +43,43 @@ define([
 
 		this.animationOn = false;
 
+		var _this = this;
+
 		this.popupPhoto = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
 		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 151, minWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
 		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 247, minWidth: 247, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
 		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', maxWidth: 249, minWidth: 249, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterClickFN = '_' + Utils.randomString(10);
+		this.popupClusterOverFN = '_' + Utils.randomString(10);
 		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
-			'onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')" ' +
-			'onmouseover="var root = this.parentNode.parentNode, div = root.querySelector(\'.popupPoster\'), img = root.querySelector(\'.popupImg\'), title = root.querySelector(\'.popupCap\'); div.setAttribute(\'data-href\', this.getAttribute(\'data-href\')); img.setAttribute(\'src\', this.getAttribute(\'data-sfile\')); title.innerHTML = this.getAttribute(\'data-title\');"' +
+			'onclick="' + this.popupClusterClickFN + '(this)" ' +
+			'onmouseover="' + this.popupClusterOverFN + '(this)" ' +
 			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>'
 		);
+		window[this.popupClusterClickFN] = function (element) {
+			var url = element.getAttribute('data-href');
+			if (Utils.isType('string', url) && url.length > 0){
+				_this.photoNavigate(url);
+			}
+		};
+		window[this.popupClusterOverFN] = function (element) {
+			var root = element.parentNode.parentNode,
+				div = root.querySelector('.popupPoster'),
+				img = root.querySelector('.popupImg'),
+				title = root.querySelector('.popupCap');
+
+			div.setAttribute('data-href', element.getAttribute('data-href'));
+			img.setAttribute('src', element.getAttribute('data-sfile'));
+			title.innerHTML = element.getAttribute('data-title');
+		};
 
 		this.popupOpened = null;
 
 		this.markerToPopup = null;
 		this.popupPhotoOpenBind = this.popupPhotoOpen.bind(this);
 		this.popupTimeout = null;
-
-		this.openNewTab = options.openNewTab;
-		this.embedded = options.embedded;
 
 		this.enabled = false;
 		if (options.enabled) {
@@ -730,16 +750,8 @@ define([
 			eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
 			nextZoom;
 
-		if (marker.options.data.type === 'photo') {
-			if (!_.isEmpty(object.cid)) {
-				if (this.embedded){
-					globalVM.router.navigateToUrl(url);
-				} else if (this.openNewTab) {
-					window.open(url, '_blank');
-				} else {
-					location.href = url;
-				}
-			}
+		if (marker.options.data.type === 'photo' && !_.isEmpty(object.cid)) {
+			this.photoNavigate(url);
 		} else if (marker.options.data.type === 'clust') {
 			if (this.map.getZoom() === this.map.getMaxZoom()) {
 				this.popupClusterOpen(marker);
@@ -747,6 +759,15 @@ define([
 				nextZoom = this.map.getZoom() + 1;
 				this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
 			}
+		}
+	};
+	MarkerManager.prototype.photoNavigate = function (url) {
+		if (this.embedded) {
+			globalVM.router.navigateToUrl(url);
+		} else if (this.openNewTab) {
+			window.open(url, '_blank');
+		} else {
+			location.href = url;
 		}
 	};
 
@@ -775,7 +796,7 @@ define([
 			}
 			content += this.popupClusterTpl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="window.open(this.getAttribute(\'data-href\'), \'_blank\')">' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid +      '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
