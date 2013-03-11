@@ -102,7 +102,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
                 return this.IAdmin();
             }, this);
 
-            this.edit = ko.observable(false);
+            this.edit = ko.observable(undefined);
 
             this.msg = ko.observable('');
             this.msgCss = ko.observable('');

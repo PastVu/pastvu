@@ -14,9 +14,9 @@ define([
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			canOpen: true,
-			editing: false,
-			deferredWhenReady: null // Deffered wich will be resolved when map ready
+			embedded: undefined, // Режим встроенной карты
+			editing: undefined, // Режим редактирования
+			deferredWhenReady: undefined // Deffered witch will be resolved when map ready
 		},
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -169,7 +169,10 @@ define([
 			this.$container.fadeIn(400, function () {
 
 				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
-				this.marker_mgr = new MarkerManager(this.map, {openNewTab: this.openNewTab()});
+
+				// Создаем менеджер маркеров.
+				// В случае встроенно карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
+				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded()});
 
 				Locations.subscribe(function (val) {
 					this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -190,7 +193,7 @@ define([
 
 				renderer(
 					[
-						{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, canOpen: !this.options.embedded}, ctx: this, callback: function (vm) {
+						{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
 							this.childModules[vm.id] = vm;
 							this.navSliderVM = vm;
 						}.bind(this)}
@@ -219,8 +222,10 @@ define([
 		// Обработчик переключения режима редактирования
 		editHandler: function (val) {
 			if (val) {
+				this.markerManager.disable();
 				this.editMarkerCreate();
 			} else {
+				this.markerManager.enable();
 				this.editMarkerDestroy();
 			}
 		},
@@ -236,7 +241,7 @@ define([
 		},
 		// Создает маркер для редктирования установленной точки
 		editMarkerCreate: function () {
-			if (!this.markerEdit) {
+			if (this.markerEdit === undefined) {
 				this.markerEdit = L.marker(this.pointGeo, {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
 				this.layerEdit = L.layerGroup([this.markerEdit]).addTo(this.map);
 				this.markerEdit.on('dragend', function (e) {
@@ -293,7 +298,7 @@ define([
 				type,
 				setLayer = function (type) {
 					this.map.addLayer(type.obj);
-					this.marker_mgr.layerChange();
+					this.markerManager.layerChange();
 					this.map.options.maxZoom = type.maxZoom;
 					if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
 						this.navSliderVM.recalcZooms();

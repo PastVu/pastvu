@@ -12,8 +12,8 @@ define([
 
 		this.photosAll = [];
 		this.mapObjects = {photos: {}, clusters: {}};
-		this.layerClusters = L.layerGroup().addTo(this.map); // Слой кластеров
-		this.layerPhotos = L.layerGroup().addTo(this.map); // Слой фотографий
+		this.layerClusters = L.layerGroup(); // Слой кластеров
+		this.layerPhotos = L.layerGroup(); // Слой фотографий
 
 		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
 		this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
@@ -60,13 +60,47 @@ define([
 
 		this.openNewTab = options.openNewTab;
 
-		//Events
-		this.map
-			.on('zoomstart', this.onZoomStart, this)
-			.on('moveend', this.onMapMoveEnd, this);
-
-		this.refreshDataByZoom(true);
+		this.enabled = false;
+		if (options.enabled) {
+			this.enable();
+		}
 	}
+
+	MarkerManager.prototype.enable = function () {
+		if (!this.enabled) {
+			// Добавляем слои на карту
+			this.map.addLayer(this.layerClusters).addLayer(this.layerPhotos);
+
+			//Events ON
+			this.map
+				.on('zoomstart', this.onZoomStart, this)
+				.on('moveend', this.onMapMoveEnd, this);
+
+			// Запрашиваем данные
+			this.refreshDataByZoom(true);
+			this.enabled = true;
+		}
+		return this;
+	};
+	MarkerManager.prototype.disable = function () {
+		if (this.enabled) {
+			// Закрываем попапы и очищаем слои
+			this.popupClose();
+			this.clearClusters();
+			this.clearPhotos();
+
+			//Удаляем слои с карты
+			this.map.removeLayer(this.layerClusters).removeLayer(this.layerPhotos);
+
+			//Events OFF
+			this.map
+				.off('zoomstart', this.onZoomStart, this)
+				.off('moveend', this.onMapMoveEnd, this);
+
+			this.enabled = false;
+		}
+		return this;
+	};
 
 	/**
 	 * Обновляет границы области отображения маркеров.
@@ -536,6 +570,10 @@ define([
 	MarkerManager.prototype.clearClusters = function () {
 		this.layerClusters.clearLayers();
 		this.mapObjects.clusters = {};
+	};
+	MarkerManager.prototype.clearPhotos = function () {
+		this.layerPhotos.clearLayers();
+		this.mapObjects.photos = {};
 	};
 
 	/**
