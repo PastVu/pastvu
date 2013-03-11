@@ -169,7 +169,7 @@ define([
 		show: function () {
 			this.$container.fadeIn(400, function () {
 
-				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 
 				// Создаем менеджер маркеров.
 				// В случае встроенно карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
