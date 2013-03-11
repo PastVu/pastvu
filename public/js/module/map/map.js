@@ -34,8 +34,9 @@ define([
 			this.layerActive = ko.observable({sys: null, type: null});
 			this.layerActiveDesc = ko.observable('');
 
-			this.marker_mgr = null;
-			this.pointGeo = null;
+			this.markerManager = null;
+			this.point = null; // Фотография для выделения
+			this.pointLayer = L.layerGroup();
 
 			this.auth = globalVM.repository['m/auth'];
 
@@ -158,8 +159,8 @@ define([
 			// Subscriptions
 			this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
 			this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
-				if (this.marker_mgr) {
-					this.marker_mgr.openNewTab = val;
+				if (this.markerManager) {
+					this.markerManager.openNewTab = val;
 				}
 			}, this);
 
@@ -189,6 +190,10 @@ define([
 					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
 						this.options.deferredWhenReady.resolve();
 					}
+
+					if (this.embedded()) {
+						this.map.addLayer(this.pointLayer);
+					}
 				}, this);
 
 				renderer(
@@ -214,75 +219,95 @@ define([
 		},
 		localDestroy: function (destroy) {
 			this.hide();
-			this.editMarkerDestroy();
+			this.pointEditDestroy();
 			this.map = null;
 			destroy.call(this);
 		},
 
 		// Обработчик переключения режима редактирования
-		editHandler: function (val) {
-			if (val) {
+		editHandler: function (edit) {
+			if (edit) {
 				this.markerManager.disable();
-				this.editMarkerCreate();
+				this.pointHighlightDestroy();
+				this.pointEditCreate();
 			} else {
 				this.markerManager.enable();
-				this.editMarkerDestroy();
+				this.pointEditDestroy();
+				this.pointHighlightCreate();
 			}
 		},
 		// Включает режим редактирования
-		editMarkerOn: function () {
+		editPointOn: function () {
 			this.editing(true);
 			return this;
 		},
 		// Выключает режим редактирования
-		editMarkerOff: function () {
+		editPointOff: function () {
 			this.editing(false);
 			return this;
 		},
-		// Создает маркер для редктирования установленной точки
-		editMarkerCreate: function () {
-			if (this.markerEdit === undefined) {
-				this.markerEdit = L.marker(this.pointGeo, {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'markerEdit'})});
-				this.layerEdit = L.layerGroup([this.markerEdit]).addTo(this.map);
-				this.markerEdit.on('dragend', function (e) {
-					var latlng = this.getLatLng();
-					Utils.geo.geoToPrecision(latlng);
+
+		pointHighlightCreate: function () {
+			if (this.point && this.pointMarkerHL === undefined) {
+				var divIcon = L.divIcon(
+					{
+						className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
+						iconSize: new L.Point(8, 8)
+					}
+				);
+				this.pointMarkerHL = L.marker(this.point.geo(), {zIndexOffset: 10000, draggable: false, title: this.point.title(), icon: divIcon, riseOnHover: true});
+				this.pointLayer.addLayer(this.pointMarkerHL);
+			}
+			return this;
+		},
+		pointHighlightDestroy: function () {
+			if (this.pointMarkerHL !== undefined) {
+				this.pointLayer.removeLayer(this.pointMarkerHL);
+				delete this.pointMarkerHL;
+			}
+		},
+
+		// Создает маркер для редактирования установленной точки
+		pointEditCreate: function () {
+			if (this.point && this.pointMarkerEdit === undefined) {
+				this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
+				this.pointLayer.addLayer(this.pointMarkerEdit);
+				this.pointMarkerEdit.on('dragend', function () {
 					this.update();
+					var latlng = this.getLatLng();
 					console.log(_.pick(latlng, 'lng', 'lat'));
 				});
 				this.map.on('click', function (e) {
-					this.markerEdit.setLatLng(Utils.geo.geoToPrecision(e.latlng));
+					this.pointMarkerEdit.setLatLng(Utils.geo.geoToPrecision(e.latlng));
 				}, this);
 			}
 			return this;
 		},
 		// Уничтожает маркер редактирования
-		editMarkerDestroy: function () {
-			if (this.markerEdit) {
-				this.markerEdit.off('dragend');
-				this.map.removeLayer(this.layerEdit);
-				delete this.markerEdit;
-				delete this.layerEdit;
+		pointEditDestroy: function () {
+			if (this.pointMarkerEdit !== undefined) {
 				this.map.off('click');
+				this.pointMarkerEdit.off('dragend');
+				this.pointLayer.removeLayer(this.pointMarkerEdit);
+				delete this.pointMarkerEdit;
 			}
 			return this;
 		},
-		editGetGeo: function () {
-			var latlng = Utils.geo.geoToPrecision(this.markerEdit.getLatLng());
+
+		setPoint: function (photo) {
+			var geo = photo.geo();
+			this.point = photo;
+			if (this.editing() && this.pointMarkerEdit) {
+				this.pointMarkerEdit.setLatLng(geo);
+			}
+			if (geo[0] || geo[1]) {
+				this.map.panTo(geo);
+			}
+			return this;
+		},
+		getPointGeo: function () {
+			var latlng = Utils.geo.geoToPrecision(this.pointMarkerEdit.getLatLng());
 			return [latlng.lat, latlng.lng];
-		},
-		// Устанавливает точку текущей фотографии
-		setPointGeo: function (geo) {
-			if (geo) {
-				this.pointGeo = geo;
-				if (this.editing() && this.markerEdit) {
-					this.markerEdit.setLatLng(geo);
-				}
-				if (geo[0] || geo[1]) {
-					this.map.panTo(geo);
-				}
-			}
-			return this;
 		},
 
 		setMapDefCenter: function (forceMoveEvent) {

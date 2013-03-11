@@ -13,9 +13,7 @@
 	}
 	.yearLooping(@index + 1); // next iteration
 }
-
-.yearLooping(2001) {
-}
+.yearLooping(2001) {}
 
 @yearBaseOld: hsv(240, 100%, 50%);
 .yearLoopingOld(@index) when (@index > 1799) {
@@ -24,8 +22,16 @@
 	}
 	.yearLoopingOld(@index - 1); // next iteration
 }
+.yearLoopingOld(1799) {}
 
-.yearLoopingOld(1799) {
+.photoIconHLAnimation() {
+	to  { -webkit-box-shadow: 0 0 2px 2px #fab71e; }
+}
+@-webkit-keyframes photoIconHighlight {
+	.photoIconHLAnimation();
+}
+@keyframes photoIconHighlight {
+	.photoIconHLAnimation();
 }
 
 .mapModuleWrapper {
@@ -49,6 +55,12 @@
 		.user-select(none);
 	}
 
+	.mapNavigation {
+		position: absolute;
+		top: 10px;
+		left: 3px;
+	}
+
 	.leaflet-popup {
 		.transition(none);
 
@@ -63,13 +75,6 @@
 		.leaflet-popup-content-wrapper, .leaflet-popup-tip {
 			background-color: darken(@MainBlueColor, 3%);
 		}
-		.leaflet-popup-tip-container {
-			height: 15px;
-
-			.leaflet-popup-tip {
-				.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
-			}
-		}
 		.leaflet-popup-content-wrapper {
 			padding-left: 0;
 			padding-right: 0;
@@ -77,6 +82,13 @@
 		.leaflet-popup-content {
 			text-align: center;
 			padding-bottom: 1px;
+		}
+		.leaflet-popup-tip-container {
+			height: 15px;
+
+			.leaflet-popup-tip {
+				.box-shadow(0px -2px 10px rgba(0, 0, 0, 0.6));
+			}
 		}
 
 		.popupImg {
@@ -100,7 +112,8 @@
 			}
 		}
 
-		&.popupPhoto {}
+		&.popupPhoto {
+		}
 
 		&.popupCluster {
 			.popupPoster {
@@ -163,15 +176,6 @@
 
 	}
 
-/**
-* NAVIGATION
-*/
-	.mapNavigation {
-		position: absolute;
-		top: 10px;
-		left: 3px;
-	}
-
 	.yearLoopingOld (1889);
 	.yearLooping (1890);
 
@@ -189,20 +193,26 @@
 			width: 10px;
 			height: 10px;
 			pointer-events: none;
-		/*width: 0;
-		height: 0;
-		border-style: solid;
-		border-width: 0 3px 8px 3px;
-		border-color: transparent transparent #000 transparent;
-		.rotate(45deg);*/
+			/*width: 0;
+			height: 0;
+			border-style: solid;
+			border-width: 0 3px 8px 3px;
+			border-color: transparent transparent #000 transparent;
+			.rotate(45deg);*/
 		}
 
-		&:hover {
+		&:hover, &.highlight {
 			width: 12px !important;
 			height: 12px !important;
 			margin-left: -6px !important;
 			margin-top: -6px !important;
 			.box-shadow(0 0 2px 2px #fff);
+		}
+		&.highlight {
+			background-image: url(/img/map/pointhl.png);
+			background-repeat: no-repeat;
+			background-position: 1px 1px;
+			-webkit-animation: photoIconHighlight .7s linear 1s infinite alternate;
 		}
 
 		&.n {
@@ -212,7 +222,7 @@
 				right: -1px;
 				background-position: 0 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: -10px;
 				right: 1px;
 			}
@@ -224,7 +234,7 @@
 				right: -6px;
 				background-position: -10px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: -6px;
 				right: -5px;
 			}
@@ -236,7 +246,7 @@
 				right: -10px;
 				background-position: -20px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: 1px;
 				right: -10px;
 			}
@@ -248,7 +258,7 @@
 				right: -6px;
 				background-position: -30px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: 8px;
 				right: -5px;
 			}
@@ -260,7 +270,7 @@
 				right: -1px;
 				background-position: -40px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: 11px;
 				right: 1px;
 			}
@@ -272,7 +282,7 @@
 				right: 5px;
 				background-position: -50px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: 8px;
 				right: 8px;
 			}
@@ -284,7 +294,7 @@
 				right: 8px;
 				background-position: -60px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: 1px;
 				right: 12px;
 			}
@@ -296,7 +306,7 @@
 				right: 5px;
 				background-position: -70px 0;
 			}
-			&:hover::after {
+			&:hover::after, &.highlight::after {
 				top: -6px;
 				right: 8px;
 			}
@@ -520,18 +530,6 @@
 		right: 14px;
 		bottom: 5px;
 		white-space: nowrap;
-	}
-
-	.markerHint {
-		.photoThumb {
-			display: block;
-			float: left;
-			width: 246px;
-			height: 164px;
-		}
-		.title {
-			display: inline-block;
-		}
 	}
 
 	.mapContainer.embedded {
