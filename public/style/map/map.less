@@ -24,14 +24,20 @@
 }
 .yearLoopingOld(1799) {}
 
-.photoIconHLAnimation() {
-	to  { -webkit-box-shadow: 0 0 2px 2px #fab71e; }
-}
 @-webkit-keyframes photoIconHighlight {
-	.photoIconHLAnimation();
+	to  { box-shadow: 0 0 2px 2px #fab71e; }
+}
+@-moz-keyframes photoIconHighlight {
+	to  { box-shadow: 0 0 2px 2px #fab71e; }
+}
+@-ms-keyframes photoIconHighlight {
+	to  { box-shadow: 0 0 2px 2px #fab71e; }
+}
+@-o-keyframes photoIconHighlight {
+	to  { box-shadow: 0 0 2px 2px #fab71e; }
 }
 @keyframes photoIconHighlight {
-	.photoIconHLAnimation();
+	to  { box-shadow: 0 0 2px 2px #fab71e; }
 }
 
 .mapModuleWrapper {
@@ -213,6 +219,10 @@
 			background-repeat: no-repeat;
 			background-position: 1px 1px;
 			-webkit-animation: photoIconHighlight .7s linear 1s infinite alternate;
+			-moz-animation: photoIconHighlight .7s linear 1s infinite alternate;
+			-ms-animation: photoIconHighlight .7s linear 1s infinite alternate;
+			-o-animation: photoIconHighlight .7s linear 1s infinite alternate;
+			animation: photoIconHighlight .7s linear 1s infinite alternate;
 		}
 
 		&.n {

@@ -172,15 +172,15 @@ define([
 				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 
 				// Создаем менеджер маркеров.
-				// В случае встроенно карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
-				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded()});
+				// В случае встроенной карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
+				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded(), embedded: this.embedded()});
 
 				Locations.subscribe(function (val) {
 					this.mapDefCenter = new L.LatLng(val.lat, val.lng);
 					this.setMapDefCenter(true);
 				}.bind(this));
 
-				//Самостоятельно обновлем размеры карты
+				//Самостоятельно обновляем размеры карты
 				P.window.square.subscribe(_.debounce(function (newVal) {
 					this.map._onResize();
 				}.bind(this), 300));

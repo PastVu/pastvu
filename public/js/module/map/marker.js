@@ -59,6 +59,7 @@ define([
 		this.popupTimeout = null;
 
 		this.openNewTab = options.openNewTab;
+		this.embedded = options.embedded;
 
 		this.enabled = false;
 		if (options.enabled) {
@@ -725,15 +726,18 @@ define([
 	MarkerManager.prototype.clickMarker = function (evt) {
 		var marker = evt.target,
 			object = marker.options.data.obj,
+			url = '/p/' + object.cid,
 			eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
 			nextZoom;
 
 		if (marker.options.data.type === 'photo') {
 			if (!_.isEmpty(object.cid)) {
-				if (this.openNewTab) {
-					window.open('/p/' + object.cid, '_blank');
+				if (this.embedded){
+					globalVM.router.navigateToUrl(url);
+				} else if (this.openNewTab) {
+					window.open(url, '_blank');
 				} else {
-					location.href = '/p/' + object.cid;
+					location.href = url;
 				}
 			}
 		} else if (marker.options.data.type === 'clust') {
