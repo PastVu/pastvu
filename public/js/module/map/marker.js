@@ -574,6 +574,7 @@ define([
 	MarkerManager.prototype.clearPhotos = function () {
 		this.layerPhotos.clearLayers();
 		this.mapObjects.photos = {};
+		this.photosAll = [];
 	};
 
 	/**
