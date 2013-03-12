@@ -301,7 +301,8 @@ define([
 				this.pointMarkerEdit.setLatLng(geo);
 			}
 			if (!this.editing() && this.pointMarkerHL) {
-				this.pointMarkerHL.setLatLng(geo);
+				this.pointHighlightDestroy();
+				this.pointHighlightCreate();
 			}
 			if (geo[0] || geo[1]) {
 				this.map.panTo(geo);
