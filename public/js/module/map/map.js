@@ -300,6 +300,9 @@ define([
 			if (this.editing() && this.pointMarkerEdit) {
 				this.pointMarkerEdit.setLatLng(geo);
 			}
+			if (!this.editing() && this.pointMarkerHL) {
+				this.pointMarkerHL.setLatLng(geo);
+			}
 			if (geo[0] || geo[1]) {
 				this.map.panTo(geo);
 			}

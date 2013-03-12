@@ -8,6 +8,8 @@ define([
 	'use strict';
 
 	function MarkerManager(map, options) {
+		var _this = this;
+
 		this.map = map;
 
 		this.openNewTab = options.openNewTab;
@@ -42,8 +44,6 @@ define([
 		this.visBound = false;
 
 		this.animationOn = false;
-
-		var _this = this;
 
 		this.popupPhoto = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
