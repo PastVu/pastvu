@@ -627,8 +627,7 @@ define([
 			if (a.west < b.west) {
 				c[3] = {west: a.west, east: b.west, north: b.north, south: b.south};
 			}
-
-		} else {
+		} else if (minuend.intersects(subtrahend)) {
 			// Если вычитаемый баунд пересекается с уменьшаемым, то будет от 1 до 2 результатов
 			// or https://github.com/netshade/spatial_query polygon = sq.polygon([[b.west, b.north], [b.east, b.north], [b.east, b.south], [b.west, b.south]]).subtract_2d([[a.west, a.north], [a.east, a.north], [a.east, a.south], [a.west, a.south]]).to_point_array();
 			// or https://github.com/tschaub/geoscript-js
@@ -662,9 +661,10 @@ define([
 				c[1].north = a.north;
 				c[1].south = a.south;
 			}
+		} else {
+			c[0] = a;
 		}
 		c = _.compact(c);
-
 
 		i = c.length;
 		while (i) {
