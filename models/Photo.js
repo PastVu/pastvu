@@ -2,8 +2,7 @@
 
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
-	Counter = require('mongoose').model('Counter'),
-	_ = require('lodash');
+	Counter = require('mongoose').model('Counter');
 
 var PhotoSheme = new mongoose.Schema(
 		{
@@ -14,7 +13,7 @@ var PhotoSheme = new mongoose.Schema(
 			stack_order: {type: Number},
 
 			file: {type: String, index: { unique: true }},
-			loaded: {type: Date, default: Date.now, required: true, index: true},
+			loaded: {type: Date, 'default': Date.now, required: true, index: true},
 			type: {type: String}, // like 'image/jpeg'
 			format: {type: String}, // like 'JPEG'
 			sign: {type: String},
@@ -51,7 +50,7 @@ var PhotoSheme = new mongoose.Schema(
 	PhotoConveyerSheme = new mongoose.Schema(
 		{
 			file: {type: String, index: true},
-			added: {type: Date, default: Date.now, required: true, index: true},
+			added: {type: Date, 'default': Date.now, required: true, index: true},
 			converting: {type: Boolean}
 		},
 		{
@@ -63,7 +62,7 @@ var PhotoSheme = new mongoose.Schema(
 		{
 			file: {type: String, index: true},
 			added: {type: Date},
-			stamp: {type: Date, default: Date.now},
+			stamp: {type: Date, 'default': Date.now},
 			error: {type: String}
 		},
 		{
@@ -73,7 +72,7 @@ var PhotoSheme = new mongoose.Schema(
 //Статистика заполненности конвейера
 	STPhotoConveyerSheme = new mongoose.Schema(
 		{
-			stamp: {type: Date, default: Date.now, required: true, index: true},
+			stamp: {type: Date, 'default': Date.now, required: true, index: true},
 			clength: {type: Number}, // Максимальная длина конвейра на дату
 			converted: {type: Number} // Обработанно фотографий на дату
 		},

@@ -282,32 +282,37 @@ module.exports.loadController = function (app, db) {
 
 	/*Функции импорта конвертации старой базы олдмос*/
 
-	saveSystemJSFunc(function oldConvertPhotos(dropExisting, byNumInPackage) {
-		if (dropExisting) {
+	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExistingPhotos) {
+		sourceCollectionName = sourceCollectionName || 'photosold';
+		byNumPerPackage = byNumPerPackage || 1000;
+
+		if (dropExistingPhotos) {
 			db.photos.remove();
 		}
 
 		var startTime = Date.now(),
-			insertBy = byNumInPackage || 100, // Вставляем по N документов
+			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newPhoto,
 			lat,
 			lng,
 			noGeoCounter = 0,
 			existsOnStart = db.photos.count(),
-			photoCounter = 0,
-			photosAllCount = db.photosold.count(),
-			photoCursor = db.photosold.find().sort({id: 1});
+			photoOKCounter = 0,
+			photoALLCounter = 0,
+			photosAllCount = db[sourceCollectionName].count(),
+			photoCursor = db[sourceCollectionName].find().sort({id: 1});
 
 		print('Start to convert ' + photosAllCount + ' docs by ' + insertBy + ' in one package');
 
 		photoCursor.forEach(function (photo) {
 			var i;
 
-			if (photo.file) {
+			photoALLCounter++;
+			if (photo.id && photo.file) {
 				lng = Number(photo.long || 'Empty should be NaN');
 				lat = Number(photo.lat || 'Empty should be NaN');
-				photoCounter++;
+				photoOKCounter++;
 
 				newPhoto = {
 					cid: photo.id,
@@ -317,7 +322,7 @@ module.exports.loadController = function (app, db) {
 					stack_order: photo.stack_order || undefined,
 
 					file: photo.file || '',
-					loaded: photo.date || 0,
+					loaded: new Date((photo.date || 0) * 1000),
 					w: photo.width,
 					h: photo.height,
 
@@ -339,8 +344,8 @@ module.exports.loadController = function (app, db) {
 					newPhoto.geo = [toPrecisionRound(lng), toPrecisionRound(lat)];
 				} else {
 					noGeoCounter++;
-
 				}
+
 				// Удаляем undefined значения
 				for (i in newPhoto) {
 					if (newPhoto.hasOwnProperty(i) && newPhoto[i] === undefined) {
@@ -350,19 +355,19 @@ module.exports.loadController = function (app, db) {
 
 				//printjson(newPhoto);
 				insertArr.push(newPhoto);
-				if (insertArr.length >= insertBy || photoCounter >= photosAllCount) {
-					db.photos.insert(insertArr);
-					print('Inserted ' + photoCounter + '/' + photosAllCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-					if (db.photos.count() !== photoCounter + existsOnStart) {
-						printjson(insertArr);
-						throw ('Total in target not equal inserted. Inserted: ' + photoCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
-					}
-					insertArr = [];
+			}
+			if (photoALLCounter % byNumPerPackage ===0 || photoALLCounter >= photosAllCount) {
+				db.photos.insert(insertArr);
+				print('Inserted ' + insertArr.length + '/' + photoOKCounter + '/' + photoALLCounter + '/' + photosAllCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.photos.count() !== photoOKCounter + existsOnStart) {
+					printjson(insertArr);
+					throw ('Total in target not equal inserted. Inserted: ' + photoOKCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
 				}
+				insertArr = [];
 			}
 		});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, noGeo: noGeoCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: photoOKCounter, noGeo: noGeoCounter};
 	});
 
 

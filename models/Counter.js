@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 
 var CounterSchema = new mongoose.Schema({
     _id: String,
-    next: {type: Number, default: 1}
+    next: {type: Number, 'default': 1}
 });
 
 CounterSchema.statics.increment = function (counter, callback) {
