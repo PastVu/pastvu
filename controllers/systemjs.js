@@ -300,6 +300,7 @@ module.exports.loadController = function (app, db) {
 			lng,
 			noGeoCounter = 0,
 			existsOnStart = db.photos.count(),
+			maxCid,
 			photoOKCounter = 0,
 			photoALLCounter = 0,
 			photosAllCount = db[sourceCollectionName].count(),
@@ -369,6 +370,11 @@ module.exports.loadController = function (app, db) {
 			}
 		});
 
+		maxCid = db.photos.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
+		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
+		print('Setting next photo counter to ' + maxCid + ' + 1');
+		db.counters.update({_id: 'photo'}, {$set: {next: maxCid + 1}}, {upsert: true});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: photoOKCounter, noGeo: noGeoCounter};
 	});
 
@@ -389,6 +395,7 @@ module.exports.loadController = function (app, db) {
 			insertArr = [],
 			newComment,
 			existsOnStart = db.comments.count(),
+			maxCid,
 			okCounter = 0,
 			fragCounter = 0,
 			allCounter = 0,
@@ -455,6 +462,11 @@ module.exports.loadController = function (app, db) {
 				insertArr = [];
 			}
 		});
+
+		maxCid = db.comments.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
+		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
+		print('Setting next comment counter to ' + maxCid + ' + 1');
+		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter};
 	});
