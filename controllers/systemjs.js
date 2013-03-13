@@ -280,13 +280,15 @@ module.exports.loadController = function (app, db) {
 		return geo;
 	});
 
-	/*Функции импорта конвертации старой базы олдмос*/
-
-	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExistingPhotos) {
+	/**
+	 * Функции импорта конвертации старой базы олдмос
+	 */
+	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'photosold';
 		byNumPerPackage = byNumPerPackage || 1000;
 
-		if (dropExistingPhotos) {
+		if (dropExisting) {
+			print('Clearing target collection...');
 			db.photos.remove();
 		}
 
@@ -356,7 +358,7 @@ module.exports.loadController = function (app, db) {
 				//printjson(newPhoto);
 				insertArr.push(newPhoto);
 			}
-			if (photoALLCounter % byNumPerPackage ===0 || photoALLCounter >= photosAllCount) {
+			if (photoALLCounter % byNumPerPackage === 0 || photoALLCounter >= photosAllCount) {
 				db.photos.insert(insertArr);
 				print('Inserted ' + insertArr.length + '/' + photoOKCounter + '/' + photoALLCounter + '/' + photosAllCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.photos.count() !== photoOKCounter + existsOnStart) {
@@ -368,6 +370,93 @@ module.exports.loadController = function (app, db) {
 		});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: photoOKCounter, noGeo: noGeoCounter};
+	});
+
+	/**
+	 * Функции импорта конвертации старой базы олдмос
+	 */
+	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, byNumPerPackage, dropExisting) {
+		sourceCollectionName = sourceCollectionName || 'commentsold';
+		byNumPerPackage = byNumPerPackage || 1000;
+
+		if (dropExisting) {
+			print('Clearing target collection...');
+			db.comments.remove();
+		}
+
+		var startTime = Date.now(),
+			insertBy = byNumPerPackage, // Вставляем по N документов
+			insertArr = [],
+			newComment,
+			existsOnStart = db.comments.count(),
+			okCounter = 0,
+			fragCounter = 0,
+			allCounter = 0,
+			allCount = db[sourceCollectionName].count(),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({photo_id: 1, id: 1}),
+			photos = {},
+			photoOid,
+			users = {},
+			userOid;
+
+		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
+
+		cursor.forEach(function (comment) {
+
+			allCounter++;
+			if (comment.id && comment.photo_id && comment.user_id && comment.date) {
+				photoOid = photos[comment.photo_id];
+				if (photoOid === undefined) {
+					photoOid = db.photos.findOne({cid: comment.photo_id}, {_id: 1});
+					if (photoOid && photoOid._id !== undefined) {
+						photoOid = photoOid._id;
+						photos[comment.photo_id] = photoOid;
+					}
+				}
+				userOid = users[comment.user_id];
+				if (userOid === undefined) {
+					userOid = db.users.findOne({cid: comment.user_id}, {_id: 1});
+					if (userOid && userOid._id !== undefined) {
+						userOid = userOid._id;
+						users[comment.user_id] = userOid;
+					}
+				}
+
+				if (photoOid && userOid) {
+					okCounter++;
+					newComment = {
+						cid: comment.cid,
+						photo: photoOid,
+						user: userOid,
+						stamp: new Date((comment.date || 0) * 1000),
+						txt: comment.text
+					};
+					if (comment.sub) {
+						newComment.parent = comment.fragment;
+					}
+					if (comment.fragment) {
+						newComment.frag = comment.fragment;
+						fragCounter++;
+					}
+					//printjson(newComment);
+					insertArr.push(newComment);
+				}
+			}
+
+			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
+				db.comments.insert(insertArr);
+				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.comments.count() !== okCounter + existsOnStart) {
+					printjson(insertArr[0]);
+					print('<...>');
+					printjson(insertArr[insertArr.length - 1]);
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.comments.count() + '. Some error inserting data packet. Stop imports');
+				}
+				insertArr = [];
+			}
+		});
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter};
 	});
 
 
