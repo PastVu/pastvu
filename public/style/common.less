@@ -1,7 +1,7 @@
+@import "_vars.less";
 @import "fonts/fontU.less";
 @import "bootstrap/bootstrap.less";
 @import "bootstrap/responsive.less";
-@import "_vars.less";
 
 body {
 	overflow-y: scroll; // Для правильного подсчета ширины страницы всегда показываем вертикалььный скролл
@@ -165,16 +165,125 @@ h4 {
 }
 
 .navbar-inner {
-	.border-radius(0);
 	padding-left: 5px;
 	padding-right: 5px;
+	#gradient > .vertical(@navbarBackground, @navbarBackgroundHighlight);
+	.border-radius(0);
+	.box-shadow(~'0 0 0 1px #000, 0 1px 6px 0px #222');
+}
+
+.navbar-strict {
+
+	.navbar-inner {
+		#gradient > .vertical(@navbarInverseBackgroundHighlight, @navbarInverseBackground);
+		border-color: @navbarInverseBorder;
+	}
+
+	.brand,
+	.nav > li > a {
+		color: @navbarInverseLinkColor;
+		text-shadow: 0 -1px 0 rgba(0,0,0,.25);
+		&:hover,
+		&:focus {
+			color: @navbarInverseLinkColorHover;
+		}
+	}
+
+	.brand {
+		color: @navbarInverseBrandColor;
+	}
+
+	.navbar-text {
+		color: @navbarInverseText;
+	}
+
+	.nav > li > a:focus,
+	.nav > li > a:hover {
+		background-color: @navbarInverseLinkBackgroundHover;
+		color: @navbarInverseLinkColorHover;
+	}
+
+	.nav .active > a,
+	.nav .active > a:hover,
+	.nav .active > a:focus {
+		color: @navbarInverseLinkColorActive;
+		background-color: @navbarInverseLinkBackgroundActive;
+	}
+
+// Inline text links
+	.navbar-link {
+		color: @navbarInverseLinkColor;
+		&:hover,
+		&:focus {
+			color: @navbarInverseLinkColorHover;
+		}
+	}
+
+// Dividers in navbar
+	.divider-vertical {
+		border-left-color: @navbarInverseBackground;
+		border-right-color: @navbarInverseBackgroundHighlight;
+	}
+
+// Dropdowns
+	.nav li.dropdown.open > .dropdown-toggle,
+	.nav li.dropdown.active > .dropdown-toggle,
+	.nav li.dropdown.open.active > .dropdown-toggle {
+		background-color: @navbarInverseLinkBackgroundActive;
+		color: @navbarInverseLinkColorActive;
+	}
+	.nav li.dropdown > a:hover .caret,
+	.nav li.dropdown > a:focus .caret {
+		border-top-color: @navbarInverseLinkColorActive;
+		border-bottom-color: @navbarInverseLinkColorActive;
+	}
+	.nav li.dropdown > .dropdown-toggle .caret {
+		border-top-color: @navbarInverseLinkColor;
+		border-bottom-color: @navbarInverseLinkColor;
+	}
+	.nav li.dropdown.open > .dropdown-toggle .caret,
+	.nav li.dropdown.active > .dropdown-toggle .caret,
+	.nav li.dropdown.open.active > .dropdown-toggle .caret {
+		border-top-color: @navbarInverseLinkColorActive;
+		border-bottom-color: @navbarInverseLinkColorActive;
+	}
+
+// Navbar search
+	.navbar-search {
+		.search-query {
+			color: @white;
+			background-color: @navbarInverseSearchBackground;
+			border-color: @navbarInverseSearchBorder;
+			.box-shadow(~"inset 0 1px 2px rgba(0,0,0,.1), 0 1px 0 rgba(255,255,255,.15)");
+			.transition(none);
+			.placeholder(@navbarInverseSearchPlaceholderColor);
+
+		// Focus states (we use .focused since IE7-8 and down doesn't support :focus)
+			&:focus,
+			&.focused {
+				padding: 5px 15px;
+				color: @grayDark;
+				text-shadow: 0 1px 0 @white;
+				background-color: @navbarInverseSearchBackgroundFocus;
+				border: 0;
+				.box-shadow(0 0 3px rgba(0,0,0,.15));
+				outline: 0;
+			}
+		}
+	}
+
+// Navbar collapse button
+	.btn-navbar {
+		.buttonBackground(darken(@navbarInverseBackgroundHighlight, 5%), darken(@navbarInverseBackground, 5%));
+	}
+
 }
 
 a.disabled,
 a.disabled:visited ,
 a.disabled:active,
 a.disabled:hover {
-	color: #ccc !important;
+	color: #888 !important;
 	cursor: default;
 }
 
