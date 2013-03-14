@@ -256,6 +256,26 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter};
 	});
 
+	saveSystemJSFunc(function calcUserStats() {
+		var startTime = Date.now(),
+			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),
+			user,
+			userCounter = users.length,
+			pcount,
+			//bcount,
+			ccount;
+
+		print('Start to calc for ' + userCounter + ' users');
+		while (userCounter--) {
+			user = users[userCounter];
+			pcount = db.photos.count({user: user._id});
+			ccount = db.comments.count({user: user._id});
+			db.users.update({_id: user._id}, {$set: {pcount: pcount, ccount: ccount}}, {upsert: false});
+		}
+
+		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	saveSystemJSFunc(function toPrecision(number, precision) {
 		var divider = Math.pow(10, precision || 6);
 		return ~~(number * divider) / divider;
@@ -280,10 +300,10 @@ module.exports.loadController = function (app, db) {
 		return geo;
 	});
 
+
 	/**
 	 * Функции импорта конвертации старой базы олдмос
 	 */
-
 	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_users';
 		byNumPerPackage = byNumPerPackage || 1000;
@@ -591,7 +611,6 @@ module.exports.loadController = function (app, db) {
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter};
 	});
-
 
 	/**
 	 * Save function to db.system.js
