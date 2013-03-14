@@ -320,7 +320,6 @@ module.exports.loadController = function (app, db) {
 					email: user.email,
 					pass: 'init',
 
-					avatar: user.ava || undefined,
 					firstName: user.first_name || undefined,
 					lastName: user.last_name || undefined,
 					birthdate: user.birthday || undefined,
@@ -345,6 +344,9 @@ module.exports.loadController = function (app, db) {
 					if (newUser.hasOwnProperty(i) && newUser[i] === undefined) {
 						delete newUser[i];
 					}
+				}
+				if (user.ava && user.ava !== '0.png') {
+					newUser.avatar = user.ava;
 				}
 
 				if (user.activated === 'yes') {
@@ -407,10 +409,10 @@ module.exports.loadController = function (app, db) {
 			i;
 
 		print('Filling users hash...');
-		usersArr =  db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
 		i = usersArr.length;
 		while (i--) {
-			users[usersArr[i].cid]  = usersArr[i]._id;
+			users[usersArr[i].cid] = usersArr[i]._id;
 		}
 		print('Filled users hash with ' + usersArr.length + ' values');
 		usersArr = null;
@@ -520,10 +522,10 @@ module.exports.loadController = function (app, db) {
 			i;
 
 		print('Filling users hash...');
-		usersArr =  db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
 		i = usersArr.length;
 		while (i--) {
-			users[usersArr[i].cid]  = usersArr[i]._id;
+			users[usersArr[i].cid] = usersArr[i]._id;
 		}
 		print('Filled users hash with ' + usersArr.length + ' values');
 		usersArr = null;
