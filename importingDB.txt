@@ -1,6 +1,6 @@
 ИМПОРТ в Mongo json коллекции (например из myphpadmin)
 	1. Вариант загрузки как массива объектов
-	mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
+	mongoimport -d oldmos -c old_photos --drop --type json --jsonArray --file photos.json
 
 		\n ->> \\n
 		\t ->> (пробел)

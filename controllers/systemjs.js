@@ -283,8 +283,103 @@ module.exports.loadController = function (app, db) {
 	/**
 	 * Функции импорта конвертации старой базы олдмос
 	 */
+
+	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, byNumPerPackage, dropExisting) {
+		sourceCollectionName = sourceCollectionName || 'old_users';
+		byNumPerPackage = byNumPerPackage || 1000;
+
+		if (dropExisting) {
+			print('Clearing target collection...');
+			db.users.remove({login: {$nin: ['init', 'neo']}});
+		}
+
+		var startTime = Date.now(),
+			startDate = new Date(),
+			regDate = new Date(),
+			insertBy = byNumPerPackage, // Вставляем по N документов
+			insertArr = [],
+			newUser,
+			existsOnStart = db.users.count(),
+			maxCid,
+			okCounter = 0,
+			noactiveCounter = 0,
+			allCounter = 0,
+			allCount = db[sourceCollectionName].count(),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1});
+
+		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
+
+		cursor.forEach(function (user) {
+
+			allCounter++;
+			if (user.id && user.username && user.email) {
+				okCounter++;
+				newUser = {
+					cid: user.id,
+					login: user.username,
+					email: user.email,
+					pass: 'init',
+
+					avatar: user.ava || undefined,
+					firstName: user.first_name || undefined,
+					lastName: user.last_name || undefined,
+					birthdate: user.birthday || undefined,
+					sex: user.sex || undefined,
+					country: user.country || undefined,
+					city: user.city || undefined,
+					work: user.work_field || undefined,
+					www: user.website || undefined,
+					icq: user.icq || undefined,
+					skype: user.skype || undefined,
+					aim: user.aim || undefined,
+					lj: user.lj || undefined,
+					flickr: user.flickr || undefined,
+					blogger: user.blogger || undefined,
+					aboutme: user.about || undefined,
+
+					regdate: regDate
+				};
+
+				// Удаляем undefined значения
+				for (var i in newUser) {
+					if (newUser.hasOwnProperty(i) && newUser[i] === undefined) {
+						delete newUser[i];
+					}
+				}
+
+				if (user.activated === 'yes') {
+					newUser.active = true;
+					newUser.activatedate = startDate;
+				} else {
+					noactiveCounter++;
+				}
+				//printjson(newUser);
+				insertArr.push(newUser);
+			}
+
+			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
+				db.users.insert(insertArr);
+				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.users.count() !== okCounter + existsOnStart) {
+					printjson(insertArr[0]);
+					print('<...>');
+					printjson(insertArr[insertArr.length - 1]);
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.users.count() + '. Some error inserting data packet. Stop imports');
+				}
+				insertArr = [];
+			}
+		});
+
+		maxCid = db.users.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
+		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
+		print('Setting next user counter to ' + maxCid + ' + 1');
+		db.counters.update({_id: 'user'}, {$set: {next: maxCid + 1}}, {upsert: true});
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.users.count(), usersInserted: okCounter, noACtive: noactiveCounter};
+	});
+
 	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'photosold';
+		sourceCollectionName = sourceCollectionName || 'old_photos';
 		byNumPerPackage = byNumPerPackage || 1000;
 
 		if (dropExisting) {
@@ -299,27 +394,44 @@ module.exports.loadController = function (app, db) {
 			lat,
 			lng,
 			noGeoCounter = 0,
+			noUserCounter = 0,
 			existsOnStart = db.photos.count(),
 			maxCid,
-			photoOKCounter = 0,
-			photoALLCounter = 0,
-			photosAllCount = db[sourceCollectionName].count(),
-			photoCursor = db[sourceCollectionName].find().sort({id: 1});
+			okCounter = 0,
+			allCounter = 0,
+			allCount = db[sourceCollectionName].count(),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}),//.sort({id: 1}),
+			usersArr,
+			users = {},
+			userOid,
+			i;
 
-		print('Start to convert ' + photosAllCount + ' docs by ' + insertBy + ' in one package');
+		print('Filling users hash...');
+		usersArr =  db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+		i = usersArr.length;
+		while (i--) {
+			users[usersArr[i].cid]  = usersArr[i]._id;
+		}
+		print('Filled users hash with ' + usersArr.length + ' values');
+		usersArr = null;
 
-		photoCursor.forEach(function (photo) {
+		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
+		cursor.forEach(function (photo) {
 			var i;
 
-			photoALLCounter++;
-			if (photo.id && photo.file) {
+			allCounter++;
+			userOid = users[photo.user_id];
+			if (userOid === undefined) {
+				noUserCounter++;
+			}
+			if (photo.id && (userOid !== undefined) && photo.file) {
 				lng = Number(photo.long || 'Empty should be NaN');
 				lat = Number(photo.lat || 'Empty should be NaN');
-				photoOKCounter++;
+				okCounter++;
 
 				newPhoto = {
 					cid: photo.id,
-					user: ObjectId("511eb380796dc7080300000c"),
+					user: userOid,
 					album: photo.album_id || undefined,
 					stack: photo.stack_id || undefined,
 					stack_order: photo.stack_order || undefined,
@@ -359,12 +471,12 @@ module.exports.loadController = function (app, db) {
 				//printjson(newPhoto);
 				insertArr.push(newPhoto);
 			}
-			if (photoALLCounter % byNumPerPackage === 0 || photoALLCounter >= photosAllCount) {
+			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
 				db.photos.insert(insertArr);
-				print('Inserted ' + insertArr.length + '/' + photoOKCounter + '/' + photoALLCounter + '/' + photosAllCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.photos.count() !== photoOKCounter + existsOnStart) {
+				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.photos.count() !== okCounter + existsOnStart) {
 					printjson(insertArr);
-					throw ('Total in target not equal inserted. Inserted: ' + photoOKCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
 				}
 				insertArr = [];
 			}
@@ -375,14 +487,11 @@ module.exports.loadController = function (app, db) {
 		print('Setting next photo counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'photo'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: photoOKCounter, noGeo: noGeoCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: okCounter, noUsers: noUserCounter, noGeo: noGeoCounter};
 	});
 
-	/**
-	 * Функции импорта конвертации старой базы олдмос
-	 */
 	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'commentsold';
+		sourceCollectionName = sourceCollectionName || 'old_comments';
 		byNumPerPackage = byNumPerPackage || 1000;
 
 		if (dropExisting) {
@@ -398,41 +507,50 @@ module.exports.loadController = function (app, db) {
 			maxCid,
 			okCounter = 0,
 			fragCounter = 0,
+			noUserCounter = 0,
+			noPhotoCounter = 0,
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({photo_id: 1, id: 1}),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}),//.sort({photo_id: 1, id: 1}),
+			usersArr,
+			users = {},
+			userOid,
 			photos = {},
 			photoOid,
-			users = {},
-			userOid;
+			i;
+
+		print('Filling users hash...');
+		usersArr =  db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+		i = usersArr.length;
+		while (i--) {
+			users[usersArr[i].cid]  = usersArr[i]._id;
+		}
+		print('Filled users hash with ' + usersArr.length + ' values');
+		usersArr = null;
 
 		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
-
 		cursor.forEach(function (comment) {
 
 			allCounter++;
-			if (comment.id && comment.photo_id && comment.user_id && comment.date) {
+			userOid = users[comment.user_id];
+			if (userOid === undefined) {
+				noUserCounter++;
+			}
+			if (comment.id && (userOid !== undefined) && comment.photo_id && comment.date) {
+
 				photoOid = photos[comment.photo_id];
 				if (photoOid === undefined) {
 					photoOid = db.photos.findOne({cid: comment.photo_id}, {_id: 1});
-					if (photoOid && photoOid._id !== undefined) {
+					if (photoOid && (photoOid._id !== undefined)) {
 						photoOid = photoOid._id;
 						photos[comment.photo_id] = photoOid;
 					}
 				}
-				userOid = users[comment.user_id];
-				if (userOid === undefined) {
-					userOid = db.users.findOne({cid: comment.user_id}, {_id: 1});
-					if (userOid && userOid._id !== undefined) {
-						userOid = userOid._id;
-						users[comment.user_id] = userOid;
-					}
-				}
 
-				if (photoOid && userOid) {
+				if (photoOid) {
 					okCounter++;
 					newComment = {
-						cid: comment.cid,
+						cid: comment.id,
 						photo: photoOid,
 						user: userOid,
 						stamp: new Date((comment.date || 0) * 1000),
@@ -447,9 +565,10 @@ module.exports.loadController = function (app, db) {
 					}
 					//printjson(newComment);
 					insertArr.push(newComment);
+				} else {
+					noPhotoCounter++;
 				}
 			}
-
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
 				db.comments.insert(insertArr);
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
@@ -468,7 +587,7 @@ module.exports.loadController = function (app, db) {
 		print('Setting next comment counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter};
 	});
 
 
