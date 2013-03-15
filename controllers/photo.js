@@ -208,7 +208,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 					var toConvert = [];
 					data.forEach(function (item, index) {
-						toConvert.push(item.file);
+						toConvert.push({file: item.file});
 					});
 					PhotoConverter.addPhotos(toConvert);
 				}
@@ -241,7 +241,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 			step(
 				function () {
-					Photo.find({user: hs.session.user._id, file: {$in: data}, del: {$exists: false}}).select('file').exec(this);
+					Photo.find({file: {$in: data}, del: {$exists: false}}).select('file').exec(this);
 				},
 				function (err, photos, alreadyInConveyer) {
 					if (err) {

@@ -138,7 +138,7 @@ module.exports.loadController = function (app, db, io) {
 
 	// Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
 	setTimeout(function () {
-		PhotoConveyer.update({converting: true}, { $set: { converting: false }}, {multi: true}, function (err) {
+		PhotoConveyer.update({converting: {$exists: true}}, { $unset: { converting: 1 }}, {multi: true}, function (err) {
 			if (err) {
 				logger.error(err);
 				return;
@@ -216,30 +216,29 @@ function CollectConveyerStat() {
 
 /**
  * Добавление в конвейер конвертации фотографий
- * @param data Массив имен фотографий
+ * @param data Массив объектов {file: '', variants: []}
  * @param cb Коллбэк успешности добавления
  */
 module.exports.addPhotos = function (data, cb) {
 	var toConvert = [],
-		toConvertObj = [];
+		toConvertObj,
+		toConvertObjs = [],
+		stamp = new Date(),
+		i;
 
 	step(
 		function () {
-			PhotoConveyer.find({file: {$in: data}}).select('file').exec(this);
-		},
-		function (err, alreadyInConveyer) {
-			if (err) {
-				if (cb) {
-					cb({message: err && err.message, error: true});
+			for (i = 0; i < data.length; i++) {
+				if (data.file) {
+					toConvertObj = {file: data.file, added: stamp};
+					if (Array.isArray(data.variants) && data.variants.length > 0) {
+						toConvertObj.variants = data.variants;
+					}
+					toConvertObjs.push(toConvertObj);
 				}
-				return;
 			}
-
-			toConvert = _.difference(data, _.pluck(alreadyInConveyer, 'file'));
-			toConvert.forEach(function (item, index) {
-				toConvertObj.push({file: item, added: Date.now(), converting: false});
-			});
-			PhotoConveyer.collection.insert(toConvertObj, this.parallel());
+			toConvert = _.pluck(toConvertObjs, 'file');
+			PhotoConveyer.collection.insert(toConvertObjs, this.parallel());
 			Photo.update({file: {$in: toConvert}, del: {$ne: true}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
 		},
 		function (err) {
@@ -285,7 +284,7 @@ function conveyerControl() {
 	}
 	goingToWork += toWork;
 
-	PhotoConveyer.find({converting: false}).sort('added').limit(toWork).exec(function (err, files) {
+	PhotoConveyer.find({converting: {$exists: false}}).sort('added').limit(toWork).exec(function (err, files) {
 		goingToWork -= toWork - files.length;
 		if (err || files.length === 0) {
 			return;
