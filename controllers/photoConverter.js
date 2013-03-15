@@ -229,10 +229,10 @@ module.exports.addPhotos = function (data, cb) {
 	step(
 		function () {
 			for (i = 0; i < data.length; i++) {
-				if (data.file) {
-					toConvertObj = {file: data.file, added: stamp};
-					if (Array.isArray(data.variants) && data.variants.length > 0) {
-						toConvertObj.variants = data.variants;
+				if (data[i].file) {
+					toConvertObj = {file: data[i].file, added: stamp};
+					if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
+						toConvertObj.variants = data[i].variants;
 					}
 					toConvertObjs.push(toConvertObj);
 				}
@@ -253,7 +253,7 @@ module.exports.addPhotos = function (data, cb) {
 			conveyerMaxLength += Math.max(conveyerLength, conveyerMaxLength);
 
 			if (cb) {
-				cb({message: toConvertObj.length + ' photos added to convert conveyer'});
+				cb({message: toConvert.length + ' photos added to convert conveyer'});
 			}
 			conveyerControl();
 		}

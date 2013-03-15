@@ -156,8 +156,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			];
 
-			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', id: 'standard'}, {vName: 'Thumb', id: 'thumb'}, {vName: 'Midi', id: 'midi'}, {vName: 'Mini', id: 'mini'}, {vName: 'Mini', id: 'mini'}, {vName: 'Micro', id: 'micro'}, {vName: 'Micros', id: 'micros'}]);
-			this.selectedOpt = ko.observableArray();
+			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'}, {vName: 'Thumb', vId: 'thumb'}, {vName: 'Midi', vId: 'midi'}, {vName: 'Mini', vId: 'mini'}, {vName: 'Micro', vId: 'micro'}, {vName: 'Micros', vId: 'micros'}]);
+			this.selectedOpt = ko.observableArray([]);
 			this.$dom.find('#convertSelect').multiselect({
 				buttonClass: 'btn-strict',
 				buttonWidth: 'auto', // Default
@@ -376,6 +376,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (!this.canBeConvert() || this.selectedOpt().length === 0) {
 				return false;
 			}
+			this.exe(true);
+			socket.once('convertPhotoResult', function (data) {
+				if (data && !data.error) {
+					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true});
+				} else {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+				}
+				this.exe(false);
+			}.bind(this));
+			socket.emit('convertPhotos', [{file: this.p.file(), variants: this.selectedOpt()}]);
 		},
 		remove: function (data, event) {
 			if (!this.canBeRemove()) {

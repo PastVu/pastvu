@@ -227,40 +227,27 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('convertPhotos', function (data) {
-			var result = function (data) {
+
+		(function () {
+
+			function result(data) {
 				socket.emit('convertPhotoResult', data);
-			};
-			if (!hs.session.user) {
-				result({message: 'You are not authorized for this action.', error: true});
-				return;
 			}
-			if (!Array.isArray(data) || data.length === 0) {
-				result({message: 'Bad params. Need to be array of file names', error: true});
-				return;
-			}
-			step(
-				function () {
-					Photo.find({file: {$in: data}, del: {$exists: false}}).select('file').exec(this);
-				},
-				function (err, photos, alreadyInConveyer) {
-					if (err) {
-						result({message: err && err.message, error: true});
-						return;
-					}
-					if (!photos || photos.length === 0) {
-						result({message: 'No such photos in base', error: true});
-						return;
-					}
-					PhotoConverter.addPhotos(data, this);
-				},
 
-				function (addResult) {
-					result(addResult);
+			socket.on('convertPhotos', function (data) {
+				if (!hs.session.user) {
+					result({message: 'You are not authorized for this action.', error: true});
+					return;
 				}
-
-			);
-		});
+				if (!Array.isArray(data) || data.length === 0) {
+					result({message: 'Bad params. Need to be array of file names', error: true});
+					return;
+				}
+				PhotoConverter.addPhotos(data, function (addResult) {
+					result(addResult);
+				});
+			});
+		}());
 
 		/**
 		 * Отдаем фотографии пользователя в компактном виде
