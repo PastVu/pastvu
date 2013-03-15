@@ -40,7 +40,7 @@
 // ----------------------
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: 84%; //100% Klimashkin
   left: 0;
   z-index: @zindexDropdown;
   display: none; // none by default, but block on "open" of the menu
@@ -54,7 +54,7 @@
   border: 1px solid @dropdownBorder;
   *border-right-width: 2px;
   *border-bottom-width: 2px;
-  .border-radius(6px);
+  .border-radius(@baseBorderRadius);
   .box-shadow(0 5px 10px rgba(0,0,0,.2));
   -webkit-background-clip: padding-box;
      -moz-background-clip: padding;
