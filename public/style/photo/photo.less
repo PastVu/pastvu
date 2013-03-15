@@ -6,6 +6,7 @@
 	position: relative;
 
 	.photoTop {
+		display: none;
 		position: relative;
 		min-height: 37px;
 		margin-top: -37px;
@@ -19,11 +20,29 @@
 				margin-bottom: 5px;
 			}
 		}
+		.convertAction{
+			.btn-strict.btnConvert {
+				min-width: 45px;
+				margin-left: 0;
+				.box-shadow(~'1px 0 0 0 #000, 1px 1px 0 0 #000, 1px -1px 0 0 #000, 1px 2px 6px 0px #222');
+			}
+			.btn-strict.multiselect {
+				min-width: 138px;
+				margin-right: 0;
+			}
+			&.disabled .btn-strict {
+				cursor: default;
+				.opacity(65);
+				.box-shadow(~'0 0 0 1px #000');
+			}
+		}
 		.photoMsg {
 			display: inline-block;
 			vertical-align: middle;
 		}
 	}
+
+
 
 	.photoData {
 		width: auto;

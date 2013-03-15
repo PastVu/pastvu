@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	/**
@@ -72,6 +72,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
+			var _this = this;
 			this.auth = globalVM.repository['m/auth'];
 			this.p = Photo.vm(Photo.def.full);
 			this.userRibbon = ko.observableArray();
@@ -99,6 +100,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}, this);
 
 			this.canBeRemove = ko.computed(function () {
+				return this.IAdmin();
+			}, this);
+
+			this.canBeConvert = ko.computed(function () {
 				return this.IAdmin();
 			}, this);
 
@@ -150,6 +155,29 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					}
 				}
 			];
+
+			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', id: 'standard'}, {vName: 'Thumb', id: 'thumb'}, {vName: 'Midi', id: 'midi'}, {vName: 'Mini', id: 'mini'}, {vName: 'Mini', id: 'mini'}, {vName: 'Micro', id: 'micro'}, {vName: 'Micros', id: 'micros'}]);
+			this.selectedOpt = ko.observableArray();
+			this.$dom.find('#convertSelect').multiselect({
+				buttonClass: 'btn-strict',
+				buttonWidth: 'auto', // Default
+				buttonText: function(options) {
+					if (options.length === 0) {
+						return 'Convert variants <b class="caret"></b>';
+					} else if (options.length === _this.convertOptions().length) {
+						return 'All variants selected <b class="caret"></b>';
+					} else if (options.length > 2) {
+						return options.length + ' variants selected <b class="caret"></b>';
+					} else {
+						var selected = '';
+						options.each(function() {
+							selected += $(this).text() + ', ';
+						});
+						return selected.substr(0, selected.length -2) + ' <b class="caret"></b>';
+					}
+				},
+				//buttonContainer: '<span class=""/>'
+			});
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -342,6 +370,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.exe(false);
 				}.bind(this));
 				socket.emit('disablePhoto', this.p.cid());
+			}
+		},
+		toConvert: function (data, event) {
+			if (!this.canBeConvert() || this.selectedOpt().length === 0) {
+				return false;
 			}
 		},
 		remove: function (data, event) {

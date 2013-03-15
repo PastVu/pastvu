@@ -1,9 +1,11 @@
 .photo(data-bind="with: repository[M!M]")
-	//ko if: canBeEdit()
-	.indentLogo.photoTop
+	.indentLogo.photoTop(data-bind="style: {display: canBeEdit() ? 'block' : 'none'}")
 		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+		.photoAction.convertAction(data-bind="style: {display: !edit() && canBeConvert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
+			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'id', optionsText: 'vName'")
+			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
+				span Send
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
-	// /ko
 
 	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
 		//ko template: edit() ? 'photoEdit' : 'photoView'
