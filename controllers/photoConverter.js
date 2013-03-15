@@ -26,17 +26,26 @@ var path = require('path'),
 	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
-	imageSequence = [
-		{
-			version: 'standard',
+
+	imageVersions = {/*
+		origin: {
+			parent: 0,
+			width: 1050,
+			height: 700,
+			strip: true,
+			filter: 'Sinc',
+			postfix: '>'
+		},*/
+		standard: {
+			parent: 'origin',
 			width: 1050,
 			height: 700,
 			strip: true,
 			filter: 'Sinc',
 			postfix: '>'
 		},
-		{
-			version: 'thumb',
+		thumb: {
+			parent: 'standard',
 			width: 246,
 			height: 164,
 			filter: 'Sinc',
@@ -61,38 +70,63 @@ var path = require('path'),
 			},
 			postfix: '^'
 		},
-		{
-			version: 'midi',
+		midi: {
+			parent: 'standard',
 			width: 150,
 			height: 100,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
 		},
-		{
-			version: 'mini',
+		mini: {
+			parent: 'midi',
 			width: 90,
 			height: 60,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
 		},
-		{
-			version: 'micro',
+		micro: {
+			parent: 'mini',
 			width: 60,
 			height: 60,
 			crop: true,
 			gravity: 'center'
 		},
-		{
-			version: 'micros',
+		micros: {
+			parent: 'micro',
 			width: 40,
 			height: 40,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
 		}
-	];
+	},
+	imageVersionsPriority = fillImgPrior('origin', 0),
+	imageVersionsKeys = Object.keys(imageVersionsPriority),
+	imageSequenceDefault = fillImgSequence(imageVersionsKeys);
+
+function fillImgPrior(parent, level) {
+	var result = {},
+		childResult;
+	_.forEach(imageVersions, function (item, key) {
+		if (item.parent === parent) {
+			result[key] = level;
+			childResult = fillImgPrior(key, level + 1);
+			_.assign(result, childResult);
+		}
+	});
+	return result;
+}
+function fillImgSequence(variants) {
+	if (!Array.isArray(variants) || variants.length === 0) {
+		return imageSequenceDefault;
+	}
+	variants.sort(function (a, b) {
+		return imageVersionsPriority[a] - imageVersionsPriority[b];
+	});
+	return variants;
+}
 
 module.exports.loadController = function (app, db, io) {
 	appEnv = app.get('appEnv');
@@ -106,7 +140,7 @@ module.exports.loadController = function (app, db, io) {
 	setTimeout(function () {
 		PhotoConveyer.update({converting: true}, { $set: { converting: false }}, {multi: true}, function (err) {
 			if (err) {
-				console.dir(err);
+				logger.error(err);
 				return;
 			}
 			conveyerControl();
@@ -171,7 +205,7 @@ function CollectConveyerStat() {
 	});
 	st.save(function (err) {
 		if (err) {
-			console.log('STPhotoConveyer error', err);
+			logger.error('STPhotoConveyer error. ' + err);
 		}
 	});
 
@@ -282,7 +316,7 @@ function conveyerControl() {
 						}
 						conveyerConverted -= 1;
 					} else {
-						conveyerStep(photoConv.file, function (err) {
+						conveyerStep(photoConv.file, photoConv.variants, function (err) {
 							if (err) {
 								(new PhotoConveyerError({
 									file: photoConv.file,
@@ -316,72 +350,52 @@ function conveyerControl() {
  * @param cb Коллбэк завершения шага
  * @param ctx Контекст вызова коллбэка
  */
-function conveyerStep(file, cb, ctx) {
-	var sequence = [];
+function conveyerStep(file, variants, cb, ctx) {
+	var asyncSequence = [],
+		imgSequence = fillImgSequence(variants);
 
-	sequence.push(function (callback) {
-		imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(uploadDir + '/origin/' + file)], function (err, data) {
-			var info = {};
-			if (err) {
-				console.error(err);
-			} else {
-				data = JSON.parse(data);
-
-				if (data.f) {
-					info.format = data.f;
-				}
-				if (data.w) {
-					info.w = parseInt(data.w, 10);
-				}
-				if (data.h) {
-					info.h = parseInt(data.h, 10);
-				}
-				if (data.signature) {
-					info.sign = data.signature;
-				}
-			}
-			callback(err, info);
-		});
+	asyncSequence.push(function (callback) {
+		callback(null, file);
 	});
-	sequence.push(function (info, callback) {
-		Photo.findOneAndUpdate({file: file, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
-			callback(err, info);
-		});
-	});
+	asyncSequence.push(identifyFile);
+	asyncSequence.push(saveIdentifiedInfo);
 
-	imageSequence.forEach(function (item, index, array) {
-		var o = {
-			srcPath: path.normalize(uploadDir + '/' + (index > 0 ? array[index - 1].version : 'origin') + '/' + file),
-			dstPath: path.normalize(uploadDir + '/' + item.version + '/' + file)
-		};
-		if (item.strip) {
-			o.strip = item.strip;
+	imgSequence.forEach(function (variantName) {
+		var variant = imageVersions[variantName],
+			o = {
+				srcPath: path.normalize(uploadDir + '/' + variant.parent + '/' + file),
+				dstPath: path.normalize(uploadDir + '/' + variantName + '/' + file)
+			};
+
+		if (variant.strip) {
+			o.strip = variant.strip;
 		}
-		if (item.width && item.height) {
-			o.width = item.width;
-			o.height = item.height + (item.postfix || ''); // Only Shrink Larger Images
+		if (variant.width && variant.height) {
+			o.width = variant.width;
+			o.height = variant.height + (variant.postfix || ''); // Only Shrink Larger Images
 		}
-		if (item.filter) {
-			o.filter = item.filter;
+		if (variant.filter) {
+			o.filter = variant.filter;
 		}
 
-		sequence.push(function (info, callback) {
+		console.dir(o);
+		asyncSequence.push(function (info, callback) {
 			var gravity,
 				extent;
-			if (item.crop) {
+			if (variant.crop) {
 				o.quality = 1;
 
-				if (item.gravity) {
-					o.gravity = item.gravity;
+				if (variant.gravity) {
+					o.gravity = variant.gravity;
 				}
 				imageMagick.crop(o, function (err) {
 					callback(err, info);
 				});
 			} else {
-				if (item.gravity) { // Превью генерируем путем вырезания аспекта из центра
+				if (variant.gravity) { // Превью генерируем путем вырезания аспекта из центра
 					// Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-					gravity = Utils.isType('function', item.gravity) ? item.gravity(info.w, info.h, item.width, item.height) : {gravity: item.gravity};
-					extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : item.width + "x" + item.height;
+					gravity = Utils.isType('function', variant.gravity) ? variant.gravity(info.w, info.h, variant.width, variant.height) : {gravity: variant.gravity};
+					extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : variant.width + "x" + variant.height;
 					o.customArgs = [
 						"-gravity", gravity.gravity,
 						"-extent", extent
@@ -394,7 +408,38 @@ function conveyerStep(file, cb, ctx) {
 		});
 
 	});
-	async.waterfall(sequence, function (err, result) {
+
+	async.waterfall(asyncSequence, function (err, result) {
 		cb.call(ctx, err);
+	});
+}
+
+function identifyFile(file, callback) {
+	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(uploadDir + '/origin/' + file)], function (err, data) {
+		var info = {};
+		if (err) {
+			logger.error(err);
+		} else {
+			data = JSON.parse(data);
+
+			if (data.f) {
+				info.format = data.f;
+			}
+			if (data.w) {
+				info.w = parseInt(data.w, 10);
+			}
+			if (data.h) {
+				info.h = parseInt(data.h, 10);
+			}
+			if (data.signature) {
+				info.sign = data.signature;
+			}
+		}
+		callback(err, file, info);
+	});
+}
+function saveIdentifiedInfo(file, info, callback) {
+	Photo.findOneAndUpdate({file: file, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
+		callback(err, info);
 	});
 }

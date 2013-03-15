@@ -50,6 +50,7 @@ var PhotoSheme = new mongoose.Schema(
 		{
 			file: {type: String, index: true},
 			added: {type: Date, 'default': Date.now, required: true, index: true},
+			variants: [String], // Версии, которые необходимо конвертировать
 			converting: {type: Boolean}
 		},
 		{
