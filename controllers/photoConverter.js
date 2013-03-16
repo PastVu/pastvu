@@ -230,7 +230,7 @@ module.exports.loadController = function (app, db, io) {
 // Собираем статистику конвейера на начало каждой 10-минутки
 function CollectConveyerStat() {
 	var st = new STPhotoConveyer({
-		stamp: +moment(Date.now()).startOf('minute'),
+		stamp: new Date(+moment(Date.now()).startOf('minute')),
 		clength: conveyerMaxLength,
 		converted: conveyerConverted
 	});
@@ -281,7 +281,7 @@ module.exports.addPhotos = function (data, cb) {
 			}
 
 			conveyerLength += toConvertObj.length;
-			conveyerMaxLength += Math.max(conveyerLength, conveyerMaxLength);
+			conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
 
 			if (cb) {
 				cb({message: toConvert.length + ' photos added to convert conveyer'});
@@ -312,8 +312,12 @@ module.exports.addPhotosAll = function (data, cb) {
 			cb({message: ret.message || '', error: true});
 			return;
 		}
-		cb(ret);
+
+		conveyerLength += ret.photosAdded;
+		conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
 		conveyerControl();
+
+		cb(ret);
 	});
 };
 
