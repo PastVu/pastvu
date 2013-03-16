@@ -215,6 +215,7 @@ module.exports.loadController = function (app, db, io) {
 		(function statFast() {
 			socket.on('giveStatFastConveyer', function (data) {
 				socket.emit('takeStatFastConveyer', {
+					conveyerEnabled: conveyerEnabled,
 					clength: conveyerLength,
 					cmaxlength: conveyerMaxLength,
 					converted: conveyerConverted

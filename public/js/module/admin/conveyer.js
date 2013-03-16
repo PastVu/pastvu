@@ -374,8 +374,8 @@ define([
 		},
 		show: function () {
 			var _this = this;
+			this.statFast();
 			this.$container.fadeIn(400, function () {
-				this.statFast();
 				socket.once('getStatConveyer', function (data) {
 					if (!data || data.error) {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -519,6 +519,7 @@ define([
 			window.clearTimeout(this.timeoutUpdate);
 			socket.once('takeStatFastConveyer', function (data) {
 				if (data) {
+					this.conveyerEnabled(data.conveyerEnabled);
 					this.clength(data.clength);
 					this.cmaxlength(data.cmaxlength);
 					this.converted(data.converted);
