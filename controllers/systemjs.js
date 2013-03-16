@@ -257,7 +257,7 @@ module.exports.loadController = function (app, db) {
 		}
 
 		db.photoconveyers.insert(conveyer);
-		return {message: 'Added to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter};
+		return {message: 'Added ' + photosAllCount + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function calcUserStats() {

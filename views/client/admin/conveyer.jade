@@ -9,6 +9,11 @@
 			button.btn-strict.btn-strict-small.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
 				i.icon-trash.icon-white
 				span Clear
+			br
+			.convertAction(data-bind="css: {disabled: exe()}")
+				select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
+				button.btn-strict.btn-strict-small.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
+					span start
 		.span9-10
 			h6 Текущее состояние конвейера
 			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")

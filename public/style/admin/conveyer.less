@@ -13,6 +13,32 @@
 		margin-bottom: 0;
 	}
 
+	.convertAction{
+		display: inline-block;
+		margin-top: 5px;
+
+		button {
+			min-width: 110px;
+			margin-top: 3px;
+			margin-bottom: 5px;
+		}
+
+		.btn-strict.btnConvert {
+			min-width: 45px;
+			margin-left: 0;
+			.box-shadow(~'1px 0 0 0 #000, 1px 1px 0 0 #000, 1px -1px 0 0 #000, 1px 1px 6px 0px #222');
+		}
+		.btn-strict.multiselect {
+			min-width: 125px;
+			margin-right: 0;
+		}
+		&.disabled .btn-strict {
+			cursor: default;
+			.opacity(65);
+			.box-shadow(~'0 0 0 1px #000');
+		}
+	}
+
 	.stateRate {
 		color: @MainBlueColor;
 		display: inline-block;

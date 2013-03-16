@@ -6,7 +6,7 @@ define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'm/User', 'm/storage',
 	'highstock/highstock.src',
-	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer'
+	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Highcharts, jade) {
 	'use strict';
 
@@ -272,6 +272,7 @@ define([
 			deferredWhenReady: null // Deffered wich will be resolved when map ready
 		},
 		create: function () {
+			var _this = this;
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/auth'];
 
@@ -342,6 +343,29 @@ define([
 					]
 				}
 			};
+
+			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'}, {vName: 'Thumb', vId: 'thumb'}, {vName: 'Midi', vId: 'midi'}, {vName: 'Mini', vId: 'mini'}, {vName: 'Micro', vId: 'micro'}, {vName: 'Micros', vId: 'micros'}]);
+			this.selectedOpt = ko.observableArray([]);
+			this.$dom.find('#convertSelect').multiselect({
+				buttonClass: 'btn-strict btn-strict-small',
+				buttonWidth: 'auto', // Default
+				buttonText: function(options) {
+					if (options.length === 0) {
+						return 'All convert variants <b class="caret"></b>';
+					} else if (options.length === _this.convertOptions().length) {
+						return 'All variants selected <b class="caret"></b>';
+					} else if (options.length > 2) {
+						return options.length + ' variants selected <b class="caret"></b>';
+					} else {
+						var selected = '';
+						options.each(function() {
+							selected += $(this).text() + ', ';
+						});
+						return selected.substr(0, selected.length -2) + ' <b class="caret"></b>';
+					}
+				},
+				//buttonContainer: '<span class=""/>'
+			});
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -473,6 +497,22 @@ define([
 					]
 				}
 			);
+		},
+
+		toConvert: function (data, event) {
+			if (this.selectedOpt().length === 0) {
+				return false;
+			}
+			this.exe(true);
+			socket.once('convertPhotosAllResult', function (data) {
+				if (data && !data.error) {
+					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 2000, force: true});
+				} else {
+					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+				}
+				this.exe(false);
+			}.bind(this));
+			socket.emit('convertPhotosAll', {variants: this.selectedOpt()});
 		},
 
 		statFast: function () {

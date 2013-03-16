@@ -169,6 +169,9 @@ module.exports.loadController = function (app, db, io) {
 			socket.on('conveyerStartStop', function (value) {
 				if (Utils.isType('boolean', value)) {
 					conveyerEnabled = value;
+					if (value) {
+						conveyerControl();
+					}
 				}
 				socket.emit('conveyerStartStopResult', {
 					conveyerEnabled: conveyerEnabled
@@ -309,6 +312,7 @@ module.exports.addPhotosAll = function (data, cb) {
 			return;
 		}
 		cb(ret);
+		conveyerControl();
 	});
 };
 
