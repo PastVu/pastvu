@@ -4,7 +4,7 @@
 		.photoAction.convertAction(data-bind="style: {display: !edit() && canBeConvert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
 			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
 			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
-				span Send
+				span start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 
 	.row-fluid.photoData(data-bind="css: {editMode: edit()}")

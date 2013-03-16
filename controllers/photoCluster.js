@@ -95,10 +95,9 @@ module.exports.loadController = function (app, db, io) {
                             return;
                         }
                         if (ret && ret.error) {
-                            result({message: result.message || '', error: true});
+                            result({message: ret.message || '', error: true});
                             return;
                         }
-                        console.dir(ret);
                         result(ret);
                     }
                 );

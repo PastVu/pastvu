@@ -3,6 +3,7 @@
 var path = require('path'),
 	async = require('async'),
 	imageMagick = require('imagemagick'),
+	dbNative,
 	Settings,
 	User,
 	Photo,
@@ -130,6 +131,9 @@ function fillImgSequence(variants) {
 
 module.exports.loadController = function (app, db, io) {
 	appEnv = app.get('appEnv');
+
+	dbNative = db.db;
+
 	Photo = db.model('Photo');
 	PhotoConveyer = db.model('PhotoConveyer');
 	PhotoConveyerError = db.model('PhotoConveyerError');
@@ -261,6 +265,31 @@ module.exports.addPhotos = function (data, cb) {
 };
 
 /**
+ * Добавление в конвейер конвертации всех фотографий
+ * @param data Массив объектов {file: '', variants: []}
+ * @param cb Коллбэк успешности добавления
+ */
+module.exports.addPhotosAll = function (data, cb) {
+	var variantsArrString = '';
+
+	if (Array.isArray(data.variants) && data.variants.length > 0 && data.variants.length < imageVersionsKeys.length) {
+		variantsArrString =  JSON.stringify(data.variants);
+	}
+
+	dbNative.eval('convertPhotosAll(' + variantsArrString + ')', function (err, ret) {
+		if (err) {
+			cb({message: err && err.message, error: true});
+			return;
+		}
+		if (ret && ret.error) {
+			cb({message: ret.message || '', error: true});
+			return;
+		}
+		cb(ret);
+	});
+};
+
+/**
  * Удаление фотографий из конвейера конвертаций
  * @param data Массив имен фотографий
  * @param cb Коллбэк успешности удаления
@@ -377,7 +406,7 @@ function conveyerStep(file, variants, cb, ctx) {
 			o.filter = variant.filter;
 		}
 
-		console.dir(o);
+		//console.dir(o);
 		asyncSequence.push(function (info, callback) {
 			var gravity,
 				extent;

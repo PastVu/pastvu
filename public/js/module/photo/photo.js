@@ -377,7 +377,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				return false;
 			}
 			this.exe(true);
-			socket.once('convertPhotoResult', function (data) {
+			socket.once('convertPhotosResult', function (data) {
 				if (data && !data.error) {
 					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true});
 				} else {

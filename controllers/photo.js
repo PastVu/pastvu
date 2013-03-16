@@ -229,9 +229,8 @@ module.exports.loadController = function (app, db, io) {
 
 
 		(function () {
-
 			function result(data) {
-				socket.emit('convertPhotoResult', data);
+				socket.emit('convertPhotosResult', data);
 			}
 
 			socket.on('convertPhotos', function (data) {
@@ -244,6 +243,26 @@ module.exports.loadController = function (app, db, io) {
 					return;
 				}
 				PhotoConverter.addPhotos(data, function (addResult) {
+					result(addResult);
+				});
+			});
+		}());
+
+		(function () {
+			function result(data) {
+				socket.emit('convertPhotosAllResult', data);
+			}
+
+			socket.on('convertPhotosAll', function (data) {
+				if (!hs.session.user) {
+					result({message: 'You are not authorized for this action.', error: true});
+					return;
+				}
+				if (!Utils.isType('object', data)) {
+					result({message: 'Bad params. Need to be object', error: true});
+					return;
+				}
+				PhotoConverter.addPhotosAll(data, function (addResult) {
 					result(addResult);
 				});
 			});

@@ -231,27 +231,31 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
 	});
 
-	saveSystemJSFunc(function convertAllPhotos() {
+	saveSystemJSFunc(function convertPhotosAll(variants) {
 		var startTime = Date.now(),
+			addDate = new Date(),
 			conveyer = [],
-			photoCounter = 0,
-			photos = db.photos.find({}, {_id: 0, file: 1}).sort({loaded: -1}).toArray(),
+			photos = db.photos.find({}, {_id: 0, file: 1}).sort({loaded: 1}).toArray(),
+			photoCounter = photos.length,
 			photosAllCount = photos.length;
 
-		print('Clearing existing conveyer');
-		db.photoconveyers.remove();
 		print('Start to fill new conveyer for ' + photosAllCount + ' photos');
 
-		photoCounter = -1;
-		while (++photoCounter < photosAllCount) {
+		while (photoCounter) {
 			conveyer.push(
 				{
-					file: photos[photoCounter].file,
-					added: Date.now(),
-					converting: false
+					file: photos[--photoCounter].file,
+					added: addDate
 				}
 			);
 		}
+		if (Array.isArray(variants) && variants.length > 0) {
+			photoCounter = conveyer.length;
+			while (photoCounter) {
+				conveyer[--photoCounter].variants = variants;
+			}
+		}
+
 		db.photoconveyers.insert(conveyer);
 		return {message: 'Added to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter};
 	});
@@ -262,7 +266,7 @@ module.exports.loadController = function (app, db) {
 			user,
 			userCounter = users.length,
 			pcount,
-			//bcount,
+		//bcount,
 			ccount;
 
 		print('Start to calc for ' + userCounter + ' users');
