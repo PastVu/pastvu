@@ -275,6 +275,9 @@ define([
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/auth'];
 
+			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
+			this.conveyerEnabled = ko.observable(true);
+
 			this.conveyerLengthData = [];
 			this.conveyerConvertData = [];
 			this.conveyerLengthChart = null;
@@ -397,14 +400,6 @@ define([
 					}
 				}.bind(this));
 				socket.emit('statConveyer', {});
-
-
-				$.getJSON('http://www.highcharts.com/samples/data/jsonp.php?filename=aapl-c.json&callback=?', function (data) {
-					// Create the chart
-
-				});
-
-
 			}.bind(this));
 
 			this.showing = true;
@@ -419,7 +414,69 @@ define([
 			destroy.call(this);
 		},
 
+		startstop: function () {
+			this.exe(true);
+			socket.once('conveyerStartStopResult', function (data) {
+				if (data && Utils.isType('boolean', data.conveyerEnabled)) {
+					this.conveyerEnabled(data.conveyerEnabled);
+				}
+				this.exe(false);
+			}.bind(this));
+			socket.emit('conveyerStartStop', !this.conveyerEnabled());
+		},
+		clearConveyer: function () {
+			var _this = this;
+			this.exe(true);
+
+			window.noty(
+				{
+					text: 'Conveyer will be cleared.<br>Confirm this operation?',
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					animation: {
+						open: {height: 'toggle'},
+						close: {},
+						easing: 'swing',
+						speed: 500
+					},
+					buttons: [
+						{addClass: 'btn-strict btn-strict-danger', text: 'Ok', onClick: function ($noty) {
+							// this = button element
+							// $noty = $noty element
+							if ($noty.$buttons && $noty.$buttons.find) {
+								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+							}
+
+							socket.once('conveyerClearResult', function (data) {
+								$noty.$buttons.find('.btn-strict-danger').remove();
+								var okButton = $noty.$buttons.find('button')
+									.attr('disabled', false)
+									.removeClass('disabled')
+									.off('click');
+
+								$noty.$message.children().html((data && data.message) || '');
+
+								okButton.text('Close').on('click', function () {
+									$noty.close();
+									this.exe(false);
+									this.statFast();
+								}.bind(this));
+							}.bind(_this));
+							socket.emit('conveyerClear', true);
+						}},
+						{addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {
+							$noty.close();
+							_this.exe(false);
+						}}
+					]
+				}
+			);
+		},
+
 		statFast: function () {
+			window.clearTimeout(this.timeoutUpdate);
 			socket.once('takeStatFastConveyer', function (data) {
 				if (data) {
 					this.clength(data.clength);

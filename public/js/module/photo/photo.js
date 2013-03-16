@@ -381,7 +381,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				if (data && !data.error) {
 					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true});
 				} else {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 				}
 				this.exe(false);
 			}.bind(this));

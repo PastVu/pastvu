@@ -3,8 +3,15 @@
 	.row-fluid
 		.span2-3
 			h6 Действия
+			button.btn-strict.btn-strict-small.btn-strict-warning(type="button", data-bind="css: {disabled: exe(), 'btn-strict-warning': conveyerEnabled(), 'btn-strict-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
+				i.icon-white(data-bind="css: {'icon-stop': conveyerEnabled(), 'icon-play': !conveyerEnabled()}")
+				span(data-bind="text: conveyerEnabled() ? 'Stop' : 'Start'")
+			button.btn-strict.btn-strict-small.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
+				i.icon-trash.icon-white
+				span Clear
 		.span9-10
 			h6 Текущее состояние конвейера
+			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
 			div
 				span.stateRate(data-bind="text:converted()")
 				span.stateDesc Конвертированно с песледней 10-минутки

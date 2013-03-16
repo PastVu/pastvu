@@ -18,6 +18,7 @@ var path = require('path'),
 	log4js = require('log4js'),
 	appEnv = {},
 
+	conveyerEnabled = true,
 	conveyerLength = 0,
 	conveyerMaxLength = 0,
 	conveyerConverted = 0,
@@ -28,15 +29,15 @@ var path = require('path'),
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
 
-	imageVersions = {/*
-		origin: {
-			parent: 0,
-			width: 1050,
-			height: 700,
-			strip: true,
-			filter: 'Sinc',
-			postfix: '>'
-		},*/
+	imageVersions = {
+		/*origin: {
+			 parent: 0,
+			 width: 1050,
+			 height: 700,
+			 strip: true,
+			 filter: 'Sinc',
+			 postfix: '>'
+		 },*/
 		standard: {
 			parent: 'origin',
 			width: 1050,
@@ -163,6 +164,28 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
+
+		(function () {
+			socket.on('conveyerStartStop', function (value) {
+				if (Utils.isType('boolean', value)) {
+					conveyerEnabled = value;
+				}
+				socket.emit('conveyerStartStopResult', {
+					conveyerEnabled: conveyerEnabled
+				});
+			});
+		}());
+		(function () {
+			socket.on('conveyerClear', function (value) {
+				if (value === true) {
+					conveyerEnabled = value;
+					conveyerClear(function (result) {
+						socket.emit('conveyerClearResult', result);
+					});
+				}
+			});
+		}());
+
 		(function () {
 			function result(data) {
 				socket.emit('getStatConveyer', data);
@@ -266,14 +289,14 @@ module.exports.addPhotos = function (data, cb) {
 
 /**
  * Добавление в конвейер конвертации всех фотографий
- * @param data Массив объектов {file: '', variants: []}
+ * @param data Объект с вариантами {variants: []}
  * @param cb Коллбэк успешности добавления
  */
 module.exports.addPhotosAll = function (data, cb) {
 	var variantsArrString = '';
 
 	if (Array.isArray(data.variants) && data.variants.length > 0 && data.variants.length < imageVersionsKeys.length) {
-		variantsArrString =  JSON.stringify(data.variants);
+		variantsArrString = JSON.stringify(data.variants);
 	}
 
 	dbNative.eval('convertPhotosAll(' + variantsArrString + ')', function (err, ret) {
@@ -304,11 +327,28 @@ module.exports.removePhotos = function (data, cb) {
 };
 
 /**
+ * Очищает конвейер, кроме тех фотографий, которые сейчас конвертируются
+ */
+function conveyerClear(cb) {
+	PhotoConveyer.remove({converting: {$exists: false}}, function (err) {
+		if (err) {
+			cb({message: err || 'Error occurred', error: true});
+		}
+		PhotoConveyer.count({}, function (err, count) {
+			conveyerLength = count;
+			if (cb) {
+				cb({message: 'Cleared ok!'});
+			}
+		});
+	});
+}
+
+/**
  * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
  */
 function conveyerControl() {
 	var toWork = maxWorking - goingToWork - working;
-	if (toWork < 1) {
+	if (!conveyerEnabled || toWork < 1) {
 		return;
 	}
 	goingToWork += toWork;
