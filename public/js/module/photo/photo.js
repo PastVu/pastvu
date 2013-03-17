@@ -175,9 +175,46 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						});
 						return selected.substr(0, selected.length -2) + ' <b class="caret"></b>';
 					}
-				},
-				//buttonContainer: '<span class=""/>'
+				}
 			});
+
+			this.commentsCount = ko.observable(0);
+			this.comments = ko.observableArray();
+			/*this.comments = [
+				{
+					cid: 92701,
+					user: {
+						login: 'shurup',
+						name: 'Александр Соловьёв',
+						avatar: 'shurup.png'
+					},
+					stamp: moment(new Date()).calendar(),
+					txt: 'А пробка у светофора, где Гастроном, тогда уже была. Я это помню, да и на снимке её видно.',
+					comments: [
+						{
+							cid: 148531,
+							parent: 92701,
+							user: {
+								login: 'shurup',
+								name: 'Александр Соловьёв',
+								avatar: 'shurup.png'
+							},
+							stamp: new Date(),
+							txt: 'Кроме собственно светофора, люди притормаживали в районе гастронома, да и поворот налево к Киевскому вокзалу существовал...'
+						}
+					]
+				},
+				{
+					cid: 92702,
+					user: {
+						login: 'shurup',
+						name: 'Александр Соловьёв',
+						avatar: 'shurup.png'
+					},
+					stamp: new Date(),
+					txt: 'ВАЗ-2104, выпуск которого был начат в 1984 году.'
+				}
+			];*/
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -287,6 +324,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 					this.show();
 					this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+					this.getComments();
 				}
 			}, this, this.p);
 		},
@@ -372,21 +410,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				socket.emit('disablePhoto', this.p.cid());
 			}
 		},
-		toConvert: function (data, event) {
-			if (!this.canBeConvert() || this.selectedOpt().length === 0) {
-				return false;
-			}
-			this.exe(true);
-			socket.once('convertPhotosResult', function (data) {
-				if (data && !data.error) {
-					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true});
-				} else {
-					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
-				}
-				this.exe(false);
-			}.bind(this));
-			socket.emit('convertPhotos', [{file: this.p.file(), variants: this.selectedOpt()}]);
-		},
+
 		remove: function (data, event) {
 			if (!this.canBeRemove()) {
 				return false;
@@ -461,7 +485,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			);
 		},
-
 		save: function (cb, ctx) {
 			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
 				key;
@@ -506,6 +529,23 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			}.bind(this));
 		},
+
+		toConvert: function (data, event) {
+			if (!this.canBeConvert() || this.selectedOpt().length === 0) {
+				return false;
+			}
+			this.exe(true);
+			socket.once('convertPhotosResult', function (data) {
+				if (data && !data.error) {
+					window.noty({text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true});
+				} else {
+					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+				}
+				this.exe(false);
+			}.bind(this));
+			socket.emit('convertPhotos', [{file: this.p.file(), variants: this.selectedOpt()}]);
+		},
+
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
@@ -558,6 +598,20 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbon(newRibbon);
 			n = nLeft = newRibbon = null;
 		},
+
+		getComments: function () {
+			var cid = this.p.cid();
+			socket.once('takeCommentsPhoto', function (data) {
+				if (!data || data.error) {
+					console.log('While loading comments: ', (data && data.message) || 'Error occurred');
+				} else {
+					this.commentsCount(data.count);
+					this.comments(data.comments);
+				}
+			}.bind(this));
+			socket.emit('giveCommentsPhoto', {cid: cid});
+		},
+
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
 			data = event = null;

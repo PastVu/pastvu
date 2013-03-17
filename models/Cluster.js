@@ -32,7 +32,8 @@ var ClusterSheme = new mongoose.Schema(
 			sgeo: {type: [Number]}, // [lng, lat] центра расчетного кластера
 			sz: {type: Number}, // Зум, с которого считали кластеры
 			sw: {type: Number}, // Ширина кластера в пикселях
-			sh: {type: Number} // Высота кластера в пикселях
+			sh: {type: Number}, // Высота кластера в пикселях
+			gravity: {type: Boolean}
 		},
 		{
 			strict: true

@@ -582,8 +582,8 @@ module.exports.loadController = function (app, db) {
 						stamp: new Date((comment.date || 0) * 1000),
 						txt: comment.text
 					};
-					if (comment.sub) {
-						newComment.parent = comment.fragment;
+					if (typeof comment.sub === 'number' && comment.sub > 0) {
+						newComment.parent = comment.sub;
 					}
 					if (comment.fragment) {
 						newComment.frag = comment.fragment;

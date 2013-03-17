@@ -22,10 +22,3 @@ var CommentSheme = new mongoose.Schema(
 module.exports.makeModel = function (db) {
 	db.model('Comment', CommentSheme);
 };
-
-/*
- Counter.findOne({_id: 'photo'}, function (err, doc) {
- if (!doc) {
- Counter.update({_id: 'photo'}, {$inc: { next: 1 }}, {upsert: true}, function (err) { if (err) { console.log('Counter photo' + err); } });
- }
- });*/
