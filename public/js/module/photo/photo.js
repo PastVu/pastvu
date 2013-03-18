@@ -178,8 +178,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			});
 
-			this.commentsCount = ko.observable(0);
 			this.comments = ko.observableArray();
+			this.commentsUsers = {};
+			this.commentsCount = ko.observable(0);
 			/*this.comments = [
 				{
 					cid: 92701,
@@ -605,6 +606,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				if (!data || data.error) {
 					console.log('While loading comments: ', (data && data.message) || 'Error occurred');
 				} else {
+					this.commentsUsers = data.users;
 					this.commentsCount(data.count);
 					this.comments(data.comments);
 				}

@@ -25,8 +25,32 @@
 				// /ko
 		//ko if: !edit()
 		.row-fluid.photoComments
-			| First, that should be synced up. Either change your schema (preferred) or your data. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation.First, that should be synced up. Either change your schema (preferred) or your data. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation.First, that should be synced up. Either change your schema (preferred) or your data. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation.First, that should be synced up. Either change your schema (preferred) or your data. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation. I say that changing your schema is preferred b/c right now mongoose only knows how to cast geo args that are arrays, not object notation.
+			h6(data-bind="text: 'Комментарии (' + commentsCount() + ')'")
+			ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")
 		// /ko
+
+	script(id="commentRoot", type="text/html")
+		li.media
+			a.pull-left(href="#")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parent.commentsUsers[$data.user].avatar}")
+			.media-body
+				.commentHead
+					.author(data-bind="text: $parent.commentsUsers[$data.user].name")
+					.stamp(data-bind="text: moment($data.stamp).calendar()")
+				.commentText(data-bind="html: $data.txt")
+				//ko template: {name: 'commentSub', foreach: $data.comments }
+				// /ko
+	script(id="commentSub", type="text/html")
+		.media
+			a.pull-left(href="#")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$parents.length - 2].commentsUsers[$data.user].avatar}")
+			.media-body
+				.commentHead
+					.author(data-bind="text: $parents[$parents.length - 2].commentsUsers[$data.user].name")
+					.stamp(data-bind="text:moment($data.stamp).calendar()")
+				p.commentText(data-bind="html: $data.txt")
+				//ko template: {name: 'commentSub', foreach: $data.comments }
+				// /ko
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
@@ -101,31 +125,6 @@
 					| )
 					// /ko
 			.h_separator
-			.row-fluid.photoCommentss
-				ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")
-
-	script(id="commentRoot", type="text/html")
-		li.media
-			a.pull-left(href="#")
-				img.media-object(style="width: 50px; height: 50px;", data-bind="attr: {src: '/_avatar/th_' + $data.user.avatar}")
-			.media-body
-				.commentHead
-					.author(data-bind="text: $data.user.name")
-					.stamp(data-bind="text: $data.stamp")
-				p.commentText(data-bind="text: $data.txt")
-				//ko template: {name: 'commentSub', foreach: $data.comments }
-				// /ko
-	script(id="commentSub", type="text/html")
-		.media
-			a.pull-left(href="#")
-				img.media-object(style="width: 50px; height: 50px;", data-bind="attr: {src: '/_avatar/th_' + $data.user.avatar}")
-			.media-body
-				.commentHead
-					.author(data-bind="text: $data.user.name")
-					.stamp(data-bind="text: $data.stamp")
-				p.commentText(data-bind="text: $data.txt")
-				//ko template: {name: 'commentSub', foreach: $data.comments }
-				// /ko
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
