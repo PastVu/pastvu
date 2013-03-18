@@ -181,41 +181,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.comments = ko.observableArray();
 			this.commentsUsers = {};
 			this.commentsCount = ko.observable(0);
-			/*this.comments = [
-				{
-					cid: 92701,
-					user: {
-						login: 'shurup',
-						name: 'Александр Соловьёв',
-						avatar: 'shurup.png'
-					},
-					stamp: moment(new Date()).calendar(),
-					txt: 'А пробка у светофора, где Гастроном, тогда уже была. Я это помню, да и на снимке её видно.',
-					comments: [
-						{
-							cid: 148531,
-							parent: 92701,
-							user: {
-								login: 'shurup',
-								name: 'Александр Соловьёв',
-								avatar: 'shurup.png'
-							},
-							stamp: new Date(),
-							txt: 'Кроме собственно светофора, люди притормаживали в районе гастронома, да и поворот налево к Киевскому вокзалу существовал...'
-						}
-					]
-				},
-				{
-					cid: 92702,
-					user: {
-						login: 'shurup',
-						name: 'Александр Соловьёв',
-						avatar: 'shurup.png'
-					},
-					stamp: new Date(),
-					txt: 'ВАЗ-2104, выпуск которого был начат в 1984 году.'
-				}
-			];*/
+			this.commentsWait = ko.observable(true);
+			this.commentsTimeout = null;
+			this.recieveCommentsBind = this.recieveComments.bind(this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -312,6 +280,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
+			window.clearTimeout(this.commentsTimeout);
 			storage.photo(cid, function (data) {
 				if (data) {
 					this.originData = data.origin;
@@ -601,6 +570,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 		getComments: function () {
+			window.clearTimeout(this.commentsTimeout);
+			this.commentsTimeout = window.setTimeout(this.recieveCommentsBind, 250);
+			this.commentsWait(true);
+		},
+		recieveComments: function () {
 			var cid = this.p.cid();
 			socket.once('takeCommentsPhoto', function (data) {
 				if (!data || data.error) {
@@ -610,6 +584,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.commentsCount(data.count);
 					this.comments(data.comments);
 				}
+				this.commentsWait(false);
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
 		},

@@ -118,10 +118,13 @@ function commentTreeRecursive(arr, usersHash) {
 		comment.user = usersHash[comment.user].login;
 		if (typeof comment.parent === 'number' && comment.parent > 0) {
 			commentParent = hash[comment.parent];
+			comment.level = commentParent.level + 1;
 			if (commentParent.comments === undefined) {
 				commentParent.comments = [];
 			}
 			commentParent.comments.push(comment);
+		} else {
+			comment.level = 0;
 		}
 	}
 	i = -1;

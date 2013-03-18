@@ -26,16 +26,16 @@
 		//ko if: !edit()
 		.row-fluid.photoComments
 			h6(data-bind="text: 'Комментарии (' + commentsCount() + ')'")
-			ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")
+			ul.media-list(data-bind="style: {visibility: commentsWait() ? 'hidden' : 'visible'}, template: { name: 'commentRoot', foreach: comments }")
 		// /ko
 
 	script(id="commentRoot", type="text/html")
 		li.media
 			a.pull-left(href="#")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parent.commentsUsers[$data.user].avatar}")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
-					.author(data-bind="text: $parent.commentsUsers[$data.user].name")
+					.author(data-bind="text: $parents[$data.level].commentsUsers[$data.user].name")
 					.stamp(data-bind="text: moment($data.stamp).calendar()")
 				.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
@@ -43,10 +43,10 @@
 	script(id="commentSub", type="text/html")
 		.media
 			a.pull-left(href="#")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$parents.length - 2].commentsUsers[$data.user].avatar}")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
-					.author(data-bind="text: $parents[$parents.length - 2].commentsUsers[$data.user].name")
+					.author(data-bind="text: $parents[$data.level].commentsUsers[$data.user].name")
 					.stamp(data-bind="text:moment($data.stamp).calendar()")
 				p.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
