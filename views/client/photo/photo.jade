@@ -23,11 +23,12 @@
 				a.photoTile(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
 					img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 				// /ko
-		//ko if: !edit()
 		.row-fluid.photoComments
-			h6(data-bind="text: 'Комментарии (' + commentsCount() + ')'")
+			//ko if: !edit()
+			.commentsHead Комментарии
+			.commentsStatus(data-bind="text: commentsWait() ? '' : '(' + commentsCount() + ')', style: {backgroundImage: commentsWait() ? 'url(/img/misc/load.gif)' : 'none'}")
 			ul.media-list(data-bind="style: {visibility: commentsWait() ? 'hidden' : 'visible'}, template: { name: 'commentRoot', foreach: comments }")
-		// /ko
+			// /ko
 
 	script(id="commentRoot", type="text/html")
 		li.media

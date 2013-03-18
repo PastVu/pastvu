@@ -156,12 +156,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			];
 
-			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'}, {vName: 'Thumb', vId: 'thumb'}, {vName: 'Midi', vId: 'midi'}, {vName: 'Mini', vId: 'mini'}, {vName: 'Micro', vId: 'micro'}, {vName: 'Micros', vId: 'micros'}]);
+			this.convertOptions = ko.observableArray([
+				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'},
+				{vName: 'Thumb', vId: 'thumb'},
+				{vName: 'Midi', vId: 'midi'},
+				{vName: 'Mini', vId: 'mini'},
+				{vName: 'Micro', vId: 'micro'},
+				{vName: 'Micros', vId: 'micros'}
+			]);
 			this.selectedOpt = ko.observableArray([]);
 			this.$dom.find('#convertSelect').multiselect({
 				buttonClass: 'btn-strict',
 				buttonWidth: 'auto', // Default
-				buttonText: function(options) {
+				buttonText: function (options) {
 					if (options.length === 0) {
 						return 'Convert variants <b class="caret"></b>';
 					} else if (options.length === _this.convertOptions().length) {
@@ -170,10 +177,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						return options.length + ' variants selected <b class="caret"></b>';
 					} else {
 						var selected = '';
-						options.each(function() {
+						options.each(function () {
 							selected += $(this).text() + ', ';
 						});
-						return selected.substr(0, selected.length -2) + ' <b class="caret"></b>';
+						return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
 					}
 				}
 			});
@@ -182,8 +189,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentsUsers = {};
 			this.commentsCount = ko.observable(0);
 			this.commentsWait = ko.observable(true);
-			this.commentsTimeout = null;
-			this.recieveCommentsBind = this.recieveComments.bind(this);
+			this.commentsInViewport = false;
+
+			this.commentsViewportTimeout = null;
+
+			this.$comments = this.$dom.find('.photoComments');
+			$(window).scroll(this.onViewScroll.bind(this));
+
+			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -280,7 +293,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
-			window.clearTimeout(this.commentsTimeout);
+			window.clearTimeout(this.commentsViewportTimeout);
+			this.commentsInViewport = false;
+			this.commentsWait(true);
+
 			storage.photo(cid, function (data) {
 				if (data) {
 					this.originData = data.origin;
@@ -294,7 +310,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 					this.show();
 					this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-					this.getComments();
+
+					this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 1250);
 				}
 			}, this, this.p);
 		},
@@ -513,7 +530,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 				this.exe(false);
 			}.bind(this));
-			socket.emit('convertPhotos', [{file: this.p.file(), variants: this.selectedOpt()}]);
+			socket.emit('convertPhotos', [
+				{file: this.p.file(), variants: this.selectedOpt()}
+			]);
 		},
 
 		getUserRibbon: function (left, right, cb, ctx) {
@@ -568,13 +587,24 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbon(newRibbon);
 			n = nLeft = newRibbon = null;
 		},
-
-		getComments: function () {
-			window.clearTimeout(this.commentsTimeout);
-			this.commentsTimeout = window.setTimeout(this.recieveCommentsBind, 250);
-			this.commentsWait(true);
+		onViewScroll: function (evt) {
+			if (!this.commentsInViewport) {
+				this.checkCommentsInViewport();
+			}
 		},
-		recieveComments: function () {
+		checkCommentsInViewport: function () {
+			window.clearTimeout(this.commentsViewportTimeout);
+
+			var cTop = this.$comments.offset().top,
+				wTop = $(window).scrollTop(),
+				wFold = $(window).height() + wTop;
+
+			if (cTop < wFold) {
+				this.commentsInViewport = true;
+				this.getComments();
+			}
+		},
+		getComments: function () {
 			var cid = this.p.cid();
 			socket.once('takeCommentsPhoto', function (data) {
 				if (!data || data.error) {
