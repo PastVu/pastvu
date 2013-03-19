@@ -542,6 +542,9 @@ module.exports.loadController = function (app, db) {
 			db.comments.remove();
 		}
 
+		print('Ensuring old index...');
+		db[sourceCollectionName].ensureIndex({date: 1});
+
 		var startTime = Date.now(),
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
@@ -550,17 +553,25 @@ module.exports.loadController = function (app, db) {
 			maxCid,
 			okCounter = 0,
 			fragCounter = 0,
+			flattenedCounter = 0,
 			noUserCounter = 0,
 			noPhotoCounter = 0,
+			noParentCounter = 0,
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}),//.sort({photo_id: 1, id: 1}),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
 			usersArr,
 			users = {},
 			userOid,
 			photos = {},
 			photoOid,
-			i;
+			i,
+
+			commentsRelationsHash = {},
+			relationFlattenLevel = 9,
+			relationParent,
+			relation,
+			relationParentBroken;
 
 		print('Filling users hash...');
 		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
@@ -579,7 +590,7 @@ module.exports.loadController = function (app, db) {
 			if (userOid === undefined) {
 				noUserCounter++;
 			}
-			if (comment.id && (userOid !== undefined) && comment.photo_id && comment.date) {
+			if (comment.id && (userOid !== undefined) && (typeof comment.photo_id === 'number' && comment.photo_id > 0) && comment.date) {
 
 				photoOid = photos[comment.photo_id];
 				if (photoOid === undefined) {
@@ -591,23 +602,50 @@ module.exports.loadController = function (app, db) {
 				}
 
 				if (photoOid) {
-					okCounter++;
-					newComment = {
-						cid: comment.id,
-						photo: photoOid,
-						user: userOid,
-						stamp: new Date((comment.date || 0) * 1000),
-						txt: comment.text
-					};
+
+					relation = {level: 0, parent: 0};
+					relationParent = undefined;
+					relationParentBroken = false;
 					if (typeof comment.sub === 'number' && comment.sub > 0) {
-						newComment.parent = comment.sub;
+						relationParent = commentsRelationsHash[comment.sub];
+						if (relationParent !== undefined) {
+							if (relationParent.level > relationFlattenLevel) {
+								print('ERROR WITH RELATIONS FLATTEN LEVEL');
+							} else if (relationParent.level === relationFlattenLevel) {
+								//print('FLATTENED ' + comment.photo_id + ': ' + newComment.cid);
+								relation = relationParent;
+								flattenedCounter++;
+							} else {
+								relation.parent = comment.sub;
+								relation.level = relationParent.level + 1;
+							}
+						} else {
+							relationParentBroken = true;
+							noParentCounter++;
+							//print('!NON PARENT! ' + comment.photo_id + ': ' + newComment.cid);
+						}
 					}
-					if (comment.fragment) {
-						newComment.frag = comment.fragment;
-						fragCounter++;
+
+					if (!relationParentBroken) {
+						okCounter++;
+						newComment = {
+							cid: comment.id,
+							photo: photoOid,
+							user: userOid,
+							stamp: new Date((comment.date || 0) * 1000),
+							txt: comment.text
+						};
+						if (comment.fragment) {
+							newComment.frag = comment.fragment;
+							fragCounter++;
+						}
+						if (relation.level > 0) {
+							newComment.parent = relation.parent;
+							newComment.level = relation.level;
+						}
+						commentsRelationsHash[newComment.cid] = relation;
+						insertArr.push(newComment);
 					}
-					//printjson(newComment);
-					insertArr.push(newComment);
 				} else {
 					noPhotoCounter++;
 				}
@@ -630,7 +668,7 @@ module.exports.loadController = function (app, db) {
 		print('Setting next comment counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, flattened: flattenedCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter, noParent: noParentCounter};
 	});
 
 	/**
