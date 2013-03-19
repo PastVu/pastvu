@@ -187,16 +187,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.comments = ko.observableArray();
 			this.commentsUsers = {};
-			this.commentsCount = ko.observable(0);
-			this.commentsWait = ko.observable(true);
+			this.commentsWait = ko.observable(false);
 			this.commentsInViewport = false;
 
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
 			this.$comments = this.$dom.find('.photoComments');
-			$(window).scroll(this.onViewScroll.bind(this));
 
+			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
 			this.recieveCommentsBind = this.recieveComments.bind(this);
 
@@ -295,9 +294,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
+			this.comments([]);
+			this.commentsUsers = {};
+			this.commentsWait(false);
+			this.commentsInViewport = false;
+			this.viewScrollOff();
 			window.clearTimeout(this.commentsRecieveTimeout);
 			window.clearTimeout(this.commentsViewportTimeout);
-			this.commentsInViewport = false;
 
 			storage.photo(cid, function (data) {
 				if (data) {
@@ -315,7 +318,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 					if (this.p.ccount() > 0) {
 						this.commentsWait(true);
-						this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 500);
+						this.viewScrollOn();
+						this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 20 ? 500 : 300);
 					}
 				}
 			}, this, this.p);
@@ -592,7 +596,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbon(newRibbon);
 			n = nLeft = newRibbon = null;
 		},
-		onViewScroll: function (evt) {
+
+		viewScrollOn: function () {
+			$(window).on('scroll', this.handleViewScrollBind);
+		},
+		viewScrollOff: function () {
+			$(window).off('scroll', this.handleViewScrollBind);
+		},
+		viewScrollHandle: function (){
 			if (!this.commentsInViewport) {
 				this.checkCommentsInViewport();
 			}
@@ -606,12 +617,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			if (cTop < wFold) {
 				this.commentsInViewport = true;
+				this.viewScrollOff();
 				this.getComments();
 			}
 		},
 		getComments: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, 750);
+			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, this.p.ccount() > 20 ? 750 : 500);
 		},
 		recieveComments: function () {
 			var cid = this.p.cid();
@@ -626,7 +638,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						console.info('Comments recieved for another photo ' + data.cid);
 					} else {
 						this.commentsUsers = data.users;
-						this.commentsCount(data.count);
 						this.comments(data.comments);
 					}
 				}

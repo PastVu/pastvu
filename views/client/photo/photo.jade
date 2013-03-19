@@ -28,7 +28,7 @@
 			.commentsHead Комментарии
 			.commentsCount(data-bind="text: '(' + p.ccount() + ')'")
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
-			ul.media-list(data-bind="style: {display: commentsWait() ? 'none' : ''}, template: { name: 'commentRoot', foreach: comments }")
+			ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")
 			// /ko
 
 	script(id="commentRoot", type="text/html")
