@@ -280,6 +280,23 @@ module.exports.loadController = function (app, db) {
 		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
+	saveSystemJSFunc(function calcPhotoStats() {
+		var startTime = Date.now(),
+			photos = db.photos.find({}, {_id: 1}).sort({cid: -1}).toArray(),
+			photo,
+			counter = photos.length,
+			ccount;
+
+		print('Start to calc for ' + counter + ' photos');
+		while (counter--) {
+			photo = photos[counter];
+			ccount = db.comments.count({photo: photo._id});
+			db.photos.update({_id: photo._id}, {$set: {ccount: ccount}}, {upsert: false});
+		}
+
+		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	saveSystemJSFunc(function toPrecision(number, precision) {
 		var divider = Math.pow(10, precision || 6);
 		return ~~(number * divider) / divider;

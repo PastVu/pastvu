@@ -26,7 +26,7 @@
 		.row-fluid.photoComments
 			//ko if: !edit()
 			.commentsHead Комментарии
-			.commentsCount(data-bind="text: '(' + commentsCount() + ')'")
+			.commentsCount(data-bind="text: '(' + p.ccount() + ')'")
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
 			ul.media-list(data-bind="style: {display: commentsWait() ? 'none' : ''}, template: { name: 'commentRoot', foreach: comments }")
 			// /ko

@@ -298,7 +298,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			window.clearTimeout(this.commentsRecieveTimeout);
 			window.clearTimeout(this.commentsViewportTimeout);
 			this.commentsInViewport = false;
-			this.commentsWait(true);
 
 			storage.photo(cid, function (data) {
 				if (data) {
@@ -314,7 +313,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.show();
 					this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
-					this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 500);
+					if (this.p.ccount() > 0) {
+						this.commentsWait(true);
+						this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 500);
+					}
 				}
 			}, this, this.p);
 		},
