@@ -34,7 +34,7 @@
 	script(id="commentRoot", type="text/html")
 		li.media
 			a.pull-left(href="#")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parent.commentsUsers[$data.user].avatar}")
+				img.media-object(data-bind="attr: {src: $parent.commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
 					.author(data-bind="text: $parent.commentsUsers[$data.user].name")
@@ -45,7 +45,7 @@
 	script(id="commentSub", type="text/html")
 		.media
 			a.pull-left(href="#")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].commentsUsers[$data.user].avatar}")
+				img.media-object(data-bind="attr: {src: $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
 					.author(data-bind="text: $parents[$data.level].commentsUsers[$data.user].name")

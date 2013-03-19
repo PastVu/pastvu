@@ -88,7 +88,7 @@ function getCommentsPhoto(session, data, cb) {
 				user = users[--i];
 				userFormatted = {
 					login: user.login,
-					avatar: user.avatar,
+					avatar: user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png',
 					name: user.firstName || user.lastName || user.login
 				};
 				userHashFormatted[user.login] = userFormatted;
