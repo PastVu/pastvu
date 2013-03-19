@@ -26,8 +26,9 @@
 		.row-fluid.photoComments
 			//ko if: !edit()
 			.commentsHead Комментарии
-			.commentsStatus(data-bind="text: commentsWait() ? '' : '(' + commentsCount() + ')', style: {backgroundImage: commentsWait() ? 'url(/img/misc/load.gif)' : 'none'}")
-			ul.media-list(data-bind="style: {visibility: commentsWait() ? 'hidden' : 'visible'}, template: { name: 'commentRoot', foreach: comments }")
+			.commentsCount(data-bind="text: '(' + commentsCount() + ')'")
+			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
+			ul.media-list(data-bind="style: {display: commentsWait() ? 'none' : ''}, template: { name: 'commentRoot', foreach: comments }")
 			// /ko
 
 	script(id="commentRoot", type="text/html")

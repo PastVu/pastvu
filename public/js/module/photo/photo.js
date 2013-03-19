@@ -191,12 +191,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentsWait = ko.observable(true);
 			this.commentsInViewport = false;
 
+			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
 			this.$comments = this.$dom.find('.photoComments');
 			$(window).scroll(this.onViewScroll.bind(this));
 
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
+			this.recieveCommentsBind = this.recieveComments.bind(this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -293,6 +295,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
+			window.clearTimeout(this.commentsRecieveTimeout);
 			window.clearTimeout(this.commentsViewportTimeout);
 			this.commentsInViewport = false;
 			this.commentsWait(true);
@@ -311,7 +314,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.show();
 					this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
-					this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 1250);
+					this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, 500);
 				}
 			}, this, this.p);
 		},
@@ -605,16 +608,26 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 		},
 		getComments: function () {
+			window.clearTimeout(this.commentsRecieveTimeout);
+			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, 750);
+		},
+		recieveComments: function () {
 			var cid = this.p.cid();
 			socket.once('takeCommentsPhoto', function (data) {
-				if (!data || data.error) {
-					console.log('While loading comments: ', (data && data.message) || 'Error occurred');
-				} else {
-					this.commentsUsers = data.users;
-					this.commentsCount(data.count);
-					this.comments(data.comments);
-				}
 				this.commentsWait(false);
+				if (!data) {
+					console.error('Noe comments data recieved');
+				} else {
+					if (data.error) {
+						console.error('While loading comments: ', data.message || 'Error occurred');
+					} else if (data.cid !== cid) {
+						console.info('Comments recieved for another photo ' + data.cid);
+					} else {
+						this.commentsUsers = data.users;
+						this.commentsCount(data.count);
+						this.comments(data.comments);
+					}
+				}
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
 		},

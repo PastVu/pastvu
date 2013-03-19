@@ -99,7 +99,7 @@ function getCommentsPhoto(session, data, cb) {
 			//console.dir(userHashFormatted);
 			//console.dir(tree);
 			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', comments: tree, users: userHashFormatted, count: commentsArr.length});
+			cb({message: 'ok', cid: data.cid, comments: tree, users: userHashFormatted, count: commentsArr.length});
 		}
 	);
 }
