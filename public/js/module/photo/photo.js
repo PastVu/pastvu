@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'jquery-plugins/scrollto'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	/**
@@ -190,10 +190,17 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentsWait = ko.observable(false);
 			this.commentsInViewport = false;
 
+			this.commentsRecieveScrollTimeout = null;
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
 			this.$comments = this.$dom.find('.photoComments');
+			this.$comments.on('click', 'a.stamp', function (evt) {
+				var cid = $(evt.target).closest('.media').attr('data-cid');
+				if (cid) {
+					//globalVM.router.navigateToUrl(location.pathname + '?comment=' + cid);
+				}
+			});
 
 			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
@@ -291,38 +298,52 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 		routeHandler: function () {
 			var cid = globalVM.router.params().photo,
+				toComment = globalVM.router.params().comment,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
-			this.comments([]);
-			this.commentsUsers = {};
-			this.commentsWait(false);
-			this.commentsInViewport = false;
-			this.viewScrollOff();
-			window.clearTimeout(this.commentsRecieveTimeout);
-			window.clearTimeout(this.commentsViewportTimeout);
+			console.log(offset);
 
-			storage.photo(cid, function (data) {
-				if (data) {
-					this.originData = data.origin;
-					this.p = Photo.vm(data.origin, this.p, true);
+			window.clearTimeout(this.commentsRecieveScrollTimeout);
 
-					// Вызываем обработчик изменения фото (this.p)
-					this.changePhotoHandler();
+			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid){
+				this.comments([]);
+				this.commentsUsers = {};
+				this.commentsWait(false);
+				this.commentsInViewport = false;
+				this.viewScrollOff();
+				window.clearTimeout(this.commentsRecieveTimeout);
+				window.clearTimeout(this.commentsViewportTimeout);
 
-					// Если фото новое и пользователь - владелец, открываем его на редактирование
-					this.edit(this.p.fresh() && this.IOwner());
+				storage.photo(cid, function (data) {
+					if (data) {
+						this.originData = data.origin;
+						this.p = Photo.vm(data.origin, this.p, true);
 
-					this.show();
-					this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+						// Вызываем обработчик изменения фото (this.p)
+						this.changePhotoHandler();
 
-					if (this.p.ccount() > 0) {
-						this.commentsWait(true);
-						this.viewScrollOn();
-						this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 20 ? 500 : 300);
+						// Если фото новое и пользователь - владелец, открываем его на редактирование
+						this.edit(this.p.fresh() && this.IOwner());
+
+						this.show();
+						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+
+						console.log('2', toComment);
+
+						if (this.p.ccount() > 0) {
+							this.commentsWait(true);
+							this.viewScrollOn();
+							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 20 ? 500 : 300);
+						}
 					}
-				}
-			}, this, this.p);
+				}, this, this.p);
+			} else if (toComment) {
+				this.commentsRecieveScrollTimeout = window.setTimeout(function () {
+					$(window).scrollTo('.media[data-cid="' + toComment + '"]', 300);
+				}, 50);
+			}
+
 		},
 		loginHandler: function (v) {
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя

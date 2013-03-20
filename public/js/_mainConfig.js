@@ -37,6 +37,7 @@ requirejs.config({
 
 		'jquery': 'lib/jquery/jquery-1.9.1',
 		'jquery-ui': 'lib/jquery/ui',
+		'jquery-plugins': 'lib/jquery/plugins',
 		'bs': 'lib/bootstrap',
 		'socket.io': 'lib/socket.io',
 		'moment': 'lib/moment/moment',
