@@ -6,9 +6,9 @@ require([
     'jquery',
     'Browser', 'Utils',
     'socket',
-    'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
+    'underscore', 'backbone', 'knockout', 'knockout.mapping',
     'Params', 'globalVM', 'renderer', 'RouteManager', 'text!tpl/appMap.jade', 'css!style/appMap', 'backbone.queryparams', 'bs/bootstrap-transition'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, P, globalVM, renderer, RouteManager, index_jade) {
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, P, globalVM, renderer, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
         routeDFD = $.Deferred();

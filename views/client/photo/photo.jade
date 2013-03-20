@@ -32,24 +32,24 @@
 			// /ko
 
 	script(id="commentRoot", type="text/html")
-		li.media
+		li.media(data-bind="attr: {id: 'comment-'+$data.cid}")
 			a.pull-left(href="#")
 				img.media-object(data-bind="attr: {src: $parent.commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
-					.author(data-bind="text: $parent.commentsUsers[$data.user].name")
-					.stamp(data-bind="text: moment($data.stamp).calendar()")
+					a.author(data-bind="text: $parent.commentsUsers[$data.user].name")
+					a.stamp(data-bind="text: moment($data.stamp).calendar()")
 				.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
 	script(id="commentSub", type="text/html")
-		.media
+		.media(data-bind="attr: {id: 'comment-'+$data.cid}")
 			a.pull-left(href="#")
 				img.media-object(data-bind="attr: {src: $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentHead
-					.author(data-bind="text: $parents[$data.level].commentsUsers[$data.user].name")
-					.stamp(data-bind="text:moment($data.stamp).calendar()")
+					a.author(data-bind="text: $parents[$data.level].commentsUsers[$data.user].name")
+					a.stamp(data-bind="text:moment($data.stamp).calendar()")
 				p.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
