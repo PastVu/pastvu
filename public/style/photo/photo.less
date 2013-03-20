@@ -243,6 +243,12 @@
 			width: 48px;
 			height: 48px;
 		}
+		.media {
+			&.hl > .media-body > .commentText{
+				background-color: fade(@MainBlueColor, 10%);
+				.transition(~'background-color .25s linear');
+			}
+		}
 
 		.commentHead {
 			line-height: 14px;

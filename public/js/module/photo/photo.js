@@ -203,6 +203,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			});
 
 			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
+			this.scrollToCommentBind = this.scrollToComment.bind(this);
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
 			this.recieveCommentsBind = this.recieveComments.bind(this);
 
@@ -298,11 +299,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 		routeHandler: function () {
 			var cid = globalVM.router.params().photo,
-				toComment = globalVM.router.params().comment,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
-			console.log(offset);
+			this.toComment = globalVM.router.params().comment;
 
 			window.clearTimeout(this.commentsRecieveScrollTimeout);
 
@@ -329,8 +329,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						this.show();
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
-						console.log('2', toComment);
-
 						if (this.p.ccount() > 0) {
 							this.commentsWait(true);
 							this.viewScrollOn();
@@ -338,10 +336,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						}
 					}
 				}, this, this.p);
-			} else if (toComment) {
-				this.commentsRecieveScrollTimeout = window.setTimeout(function () {
-					$(window).scrollTo('.media[data-cid="' + toComment + '"]', 300);
-				}, 50);
+			} else if (this.toComment) {
+				this.commentsRecieveScrollTimeout = window.setTimeout(this.scrollToCommentBind, 50);
 			}
 
 		},
@@ -568,7 +564,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
-					console.log('While loading user ribbon: ', data.message || 'Error occurred');
+					console.error('While loading user ribbon: ', data.message || 'Error occurred');
 				} else {
 					var left = [],
 						right = [];
@@ -636,7 +632,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				wTop = $(window).scrollTop(),
 				wFold = $(window).height() + wTop;
 
-			if (cTop < wFold) {
+			if (this.toComment || cTop < wFold) {
 				this.commentsInViewport = true;
 				this.viewScrollOff();
 				this.getComments();
@@ -660,10 +656,17 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					} else {
 						this.commentsUsers = data.users;
 						this.comments(data.comments);
+						this.commentsRecieveScrollTimeout = window.setTimeout(this.scrollToCommentBind, 100);
 					}
 				}
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
+		},
+		scrollToComment: function () {
+			$('.media.hl').removeClass('hl');
+			$(window).scrollTo('.media[data-cid="' + this.toComment + '"]', {duration: 400, onAfter: function (elem, params){
+				$(elem).addClass('hl');
+			}});
 		},
 
 		onImgLoad: function (data, event) {
