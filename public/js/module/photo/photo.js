@@ -332,7 +332,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						if (this.p.ccount() > 0) {
 							this.commentsWait(true);
 							this.viewScrollOn();
-							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 20 ? 500 : 300);
+							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 30 ? 500 : 300);
 						}
 					}
 				}, this, this.p);
@@ -640,7 +640,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		getComments: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, this.p.ccount() > 20 ? 750 : 500);
+			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, this.p.ccount() > 30 ? 750 : 400);
 		},
 		recieveComments: function () {
 			var cid = this.p.cid();
