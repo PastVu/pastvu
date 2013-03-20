@@ -1,15 +1,15 @@
 ИМПОРТ в Mongo json коллекции (например из myphpadmin)
 	1. Вариант загрузки как массива объектов
-	mongoimport -d oldmos -c old_photos --drop --type json --jsonArray --file photos.json
+	mongoimport -d oldmos -c old_photos --drop --type json --jsonArray --file import\photos.json
 
-		\n ->> \\n
+		\n ->> \\n или <br> если надо сохранить пробелы в html
 		\t ->> (пробел)
 
 	2. Вариант загрузки как строки объектов
 	mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
 
 		Удалить скобки массива
-		\n ->> \\n
+		\n ->> \\n или <br> если надо сохранить пробелы в html
 		\t ->>  (пробел)
 		}, { --> }\n{
 		
