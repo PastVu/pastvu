@@ -172,13 +172,43 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 		ahrefHandler: function (evt) {
 			var _this = globalVM.router,
 				href = this.getAttribute('href'),
+				hrefCurrent = location.href,
+				pathname = hrefCurrent.substring(hrefCurrent.indexOf(location.pathname), hrefCurrent.indexOf('?') > -1 ? hrefCurrent.indexOf('?') : hrefCurrent.length),
+				paramsVals,
+				paramsValsCurrent,
+				paramsStringNew,
 				target = this.getAttribute('target');
 
-			if (href.length === 0 || _this.blockHrefs) {
+			if (!href || href.length === 0 || _this.blockHrefs) {
 				evt.preventDefault();
-			} else if (target !== '_blank' && href.indexOf(_this.root) > -1) {
-				evt.preventDefault();
-				_this.navigateToUrl(href);
+			} else if (target !== '_blank') {
+				if (href.indexOf('?') === 0 && href.indexOf('=') > 0) {
+					paramsVals = Utils.getURLParameters(href);
+					paramsValsCurrent = Utils.getURLParameters(hrefCurrent);
+
+					if (_.size(paramsValsCurrent) > 0) {
+						paramsStringNew = hrefCurrent.substr(hrefCurrent.indexOf('?')) + '&';
+						_(paramsVals).forEach(function (item, key) {
+							if (paramsValsCurrent[key]) {
+								paramsStringNew = Utils.urlReplaceParameterValue(paramsStringNew, key, item);
+							}
+						});
+					} else {
+						paramsStringNew = '?';
+					}
+
+					_(paramsVals).forEach(function (item, key) {
+						if (!paramsValsCurrent[key]) {
+							paramsStringNew += key + '=' + item + '&';
+						}
+					});
+
+					evt.preventDefault();
+					_this.navigateToUrl(pathname + paramsStringNew.substring(0, paramsStringNew.length-1));
+				} else if (href.indexOf(_this.root) > -1) {
+					evt.preventDefault();
+					_this.navigateToUrl(href);
+				}
 			}
 
 			_this = href = target = null;
