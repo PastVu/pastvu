@@ -35,6 +35,7 @@ var PhotoSheme = new mongoose.Schema(
 			stats_week: {type: Number},
 			stats_all: {type: Number},
 			ccount: {type: Number}, //Кол-во комментариев
+			fcount: {type: Number}, //Кол-во фрагментов с комментариями
 
 			conv: {type: Boolean}, //Конвертируется
 			convqueue: {type: Boolean}, //В очереди на конвертацию

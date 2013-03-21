@@ -22,7 +22,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				year: 1900,
 				year2: 1900,
 
-				ccount: 0
+				ccount: 0,
+				fcount: 0
 			},
 			full: {
 				user: {},

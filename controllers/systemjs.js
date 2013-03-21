@@ -265,16 +265,30 @@ module.exports.loadController = function (app, db) {
 			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),
 			user,
 			userCounter = users.length,
+			$set,
+			$unset,
 			pcount,
-		//bcount,
+			//bcount,
 			ccount;
 
 		print('Start to calc for ' + userCounter + ' users');
 		while (userCounter--) {
 			user = users[userCounter];
+			$set = {};
+			$unset = {};
 			pcount = db.photos.count({user: user._id});
 			ccount = db.comments.count({user: user._id});
-			db.users.update({_id: user._id}, {$set: {pcount: pcount, ccount: ccount}}, {upsert: false});
+			if (pcount > 0) {
+				$set.pcount = pcount;
+			} else {
+				$unset.pcount = 1;
+			}
+			if (ccount > 0) {
+				$set.ccount = ccount;
+			} else {
+				$unset.ccount = 1;
+			}
+			db.users.update({_id: user._id}, {$set: $set, $unset: $unset}, {upsert: false});
 		}
 
 		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -285,16 +299,32 @@ module.exports.loadController = function (app, db) {
 			photos = db.photos.find({}, {_id: 1}).sort({cid: -1}).toArray(),
 			photo,
 			counter = photos.length,
-			ccount;
+			$set,
+			$unset,
+			ccount,
+			fcount;
 
 		print('Start to calc for ' + counter + ' photos');
 		while (counter--) {
 			photo = photos[counter];
+			$set = {};
+			$unset = {};
 			ccount = db.comments.count({photo: photo._id});
-			db.photos.update({_id: photo._id}, {$set: {ccount: ccount}}, {upsert: false});
+			fcount = db.comments.count({photo: photo._id, frag: {$exists: true}});
+			if (ccount > 0) {
+				$set.ccount = ccount;
+			} else {
+				$unset.ccount = 1;
+			}
+			if (fcount > 0) {
+				$set.fcount = fcount;
+			} else {
+				$unset.fcount = 1;
+			}
+			db.photos.update({_id: photo._id}, {$set: $set, $unset: $unset}, {upsert: false});
 		}
 
-		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+		return {message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function toPrecision(number, precision) {

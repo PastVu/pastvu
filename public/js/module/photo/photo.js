@@ -632,7 +632,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				wTop = $(window).scrollTop(),
 				wFold = $(window).height() + wTop;
 
-			if (this.toComment || cTop < wFold) {
+			if (this.toComment || this.p.fcount() > 0 || cTop < wFold) {
 				this.commentsInViewport = true;
 				this.viewScrollOff();
 				this.getComments();
