@@ -583,6 +583,7 @@ module.exports.loadController = function (app, db) {
 			maxCid,
 			okCounter = 0,
 			fragCounter = 0,
+			fragCounterError = 0,
 			flattenedCounter = 0,
 			noUserCounter = 0,
 			noPhotoCounter = 0,
@@ -595,6 +596,9 @@ module.exports.loadController = function (app, db) {
 			userOid,
 			photos = {},
 			photoOid,
+			photosFragment = {},
+			fragmentArr,
+			fragmentCid = 0,
 			i,
 
 			commentsRelationsHash = {},
@@ -632,7 +636,6 @@ module.exports.loadController = function (app, db) {
 				}
 
 				if (photoOid) {
-
 					relation = {level: 0, parent: 0};
 					relationParent = undefined;
 					relationParentBroken = false;
@@ -666,8 +669,24 @@ module.exports.loadController = function (app, db) {
 							txt: comment.text
 						};
 						if (comment.fragment) {
-							newComment.frag = comment.fragment;
-							fragCounter++;
+							fragmentArr = comment.fragment.split(';').map(parseFloat);
+							if (fragmentArr.length === 4) {
+								if (photosFragment[comment.photo_id] === undefined) {
+									photosFragment[comment.photo_id] = [];
+								}
+								photosFragment[comment.photo_id].push({
+									cid: ++fragmentCid,
+									ccid: newComment.cid,
+									l: fragmentArr[0],
+									t: fragmentArr[1],
+									w: toPrecisionRound(fragmentArr[2] - fragmentArr[0], 2),
+									h: toPrecisionRound(fragmentArr[3] - fragmentArr[1], 2)
+								});
+								newComment.frag = fragmentCid;
+								fragCounter++;
+							} else {
+								fragCounterError++;
+							}
 						}
 						if (relation.level > 0) {
 							newComment.parent = relation.parent;
@@ -693,12 +712,22 @@ module.exports.loadController = function (app, db) {
 			}
 		});
 
+
+		fragmentCid = 0;
+		for (i in photosFragment) {
+			if (photosFragment[i] !== undefined) {
+				fragmentCid++;
+				db.photos.update({cid: Number(i)}, {$set: {frags: photosFragment[i]}}, {upsert: false});
+			}
+		}
+		print('Inserted ' + fragCounter + ' fragments to ' + fragmentCid + ' photos');
+
 		maxCid = db.comments.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
 		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
 		print('Setting next comment counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, flattened: flattenedCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter, noParent: noParentCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, fragErrors: fragCounterError, flattened: flattenedCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter, noParent: noParentCounter};
 	});
 
 	/**

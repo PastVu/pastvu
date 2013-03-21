@@ -23,7 +23,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				year2: 1900,
 
 				ccount: 0,
-				fcount: 0
+				frags: []
 			},
 			full: {
 				user: {},
@@ -37,8 +37,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				type: 'image/jpeg',
 				format: 'JPEG',
 				size: 0,
-				w: 600,
+				w: 900,
 				h: 600,
+				ws: 900,
+				hs: 600,
 
 				desc: '',
 				address: '',
