@@ -90,7 +90,12 @@
 	script(id="photoView", type="text/html")
 		.span8-9
 			.row-fluid.photoImgRow
-				img.photoImg(data-bind="attr: {src: p.sfile()}")
+				.photoImgWrap
+					img.photoImg(data-bind="attr: {src: p.sfile()}")
+					//ko foreach: p.frags
+					.photoFrag(data-bind="style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', }")
+					// /ko
+
 			.row-fluid.photoInfoBlock
 				//ko if: p.title().length > 0
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")

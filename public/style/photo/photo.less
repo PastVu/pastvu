@@ -53,9 +53,32 @@
 		margin-bottom: 17px;
 		text-align: center;
 	}
-	.photoImg {
+	.photoImgWrap {
+		position: relative;
 		display: inline-block;
 		max-width: 100%;
+		text-align: center;
+	}
+	.photoImg {
+		max-width: 100%;
+	}
+	.photoFrag {
+		position: absolute;
+		display: block;
+		border: 1px solid transparent;
+		cursor: pointer;
+		.box-sizing(border);
+	}
+	.photoImgWrap:hover .photoFrag {
+		border-color: #fff;
+		background-color: rgba(255, 255, 255, 0.2);
+		.box-shadow(0 0 0 1px #000);
+
+		&:hover {
+			background-color: transparent;
+			z-index: 1000;
+			.box-shadow(~'0 0 0 1px #000, 0 1px 8px 3px #000');
+		}
 	}
 
 	.photoInfoBlock {

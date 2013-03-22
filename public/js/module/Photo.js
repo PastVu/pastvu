@@ -22,8 +22,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				year: 1900,
 				year2: 1900,
 
-				ccount: 0,
-				frags: []
+				ccount: 0
 			},
 			full: {
 				user: {},
@@ -46,6 +45,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				address: '',
 				source: '',
 				author: '',
+
+				frags: [],
 
 				stats_day: 0,
 				stats_week: 0,
