@@ -58,27 +58,36 @@
 		display: inline-block;
 		max-width: 100%;
 		text-align: center;
-	}
-	.photoImg {
-		max-width: 100%;
-	}
-	.photoFrag {
-		position: absolute;
-		display: block;
-		border: 1px solid transparent;
-		cursor: pointer;
-		.box-sizing(border);
-	}
-	.photoImgWrap:hover .photoFrag {
-		border-color: #fff;
-		background-color: rgba(255, 255, 255, 0.2);
-		.box-shadow(0 0 0 1px #000);
 
-		&:hover {
+		.photoFrag {
+			position: absolute;
+			visibility: hidden;
+			text-decoration: none;
+			cursor: pointer;
+			border: 1px solid #fff;
+			.box-sizing(border);
+		}
+		&:hover .photoFrag, .photoFrag.hl {
+			visibility: visible;
+			.box-shadow(0 0 0 1px #000);
+		}
+		&:hover .photoFrag {
+			border-color: #fff;
+			background-color: rgba(255, 255, 255, 0.1);
+		}
+		&:hover .photoFrag.hl, .photoFrag.hl {
+			border-color: #ffbe00;
+			background-color: transparent;
+			z-index: 1000;
+		}
+		&:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
 			background-color: transparent;
 			z-index: 1000;
 			.box-shadow(~'0 0 0 1px #000, 0 1px 8px 3px #000');
 		}
+	}
+	.photoImg {
+		max-width: 100%;
 	}
 
 	.photoInfoBlock {
@@ -287,6 +296,9 @@
 			font-size: 12px;
 			cursor: pointer;
 			color: #888;
+		}
+		.commentFrag {
+			font-size: 14px;
 		}
 		.commentText {
 			margin: 1px 0 0 0;

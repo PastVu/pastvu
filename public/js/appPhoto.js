@@ -46,7 +46,7 @@ require([
             ],
             handlers: {
                 photo: function (cid, getParams) {
-                    this.params({photo: cid || "", comment: getParams && getParams.comment});
+                    this.params({photo: cid || "", comment: getParams && getParams.comment, frag: getParams && getParams.frag});
 
                     renderer(
                         [

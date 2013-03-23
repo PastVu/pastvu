@@ -39,6 +39,9 @@
 				.commentHead
 					a.author(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}, text: $parent.commentsUsers[$data.user].name")
 					a.stamp(data-bind="attr: {href: '?comment=' + $data.cid}, text: moment($data.stamp).calendar()")
+				//ko if: $data.frag
+				a.commentFrag(data-bind="attr: {href: '?frag=' + $data.frag}") Комментируемый фрагмент
+				// /ko
 				.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
@@ -93,7 +96,7 @@
 				.photoImgWrap
 					img.photoImg(data-bind="attr: {src: p.sfile()}")
 					//ko foreach: p.frags
-					.photoFrag(data-bind="style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', }")
+					a.photoFrag(data-bind="attr: {id: 'frag-' + $data.cid(),href: '?comment=' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', }")
 					// /ko
 
 			.row-fluid.photoInfoBlock

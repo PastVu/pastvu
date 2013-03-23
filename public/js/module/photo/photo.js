@@ -190,7 +190,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentsWait = ko.observable(false);
 			this.commentsInViewport = false;
 
-			this.commentsRecieveScrollTimeout = null;
+			this.scrollTimeout = null;
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
@@ -303,8 +303,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				offset = globalVM.router.offset;
 
 			this.toComment = globalVM.router.params().comment;
+			this.toFrag = globalVM.router.params().frag;
 
-			window.clearTimeout(this.commentsRecieveScrollTimeout);
+			window.clearTimeout(this.scrollTimeout);
 
 			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid){
 				this.comments([]);
@@ -336,8 +337,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						}
 					}
 				}, this, this.p);
+			} else if (this.toFrag) {
+				this.scrollTimeout = window.setTimeout(this.scrollToFrag.bind(this), 50);
 			} else if (this.toComment) {
-				this.commentsRecieveScrollTimeout = window.setTimeout(this.scrollToCommentBind, 50);
+				this.scrollTimeout = window.setTimeout(this.scrollToCommentBind, 50);
 			}
 
 		},
@@ -632,7 +635,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				wTop = $(window).scrollTop(),
 				wFold = $(window).height() + wTop;
 
-			if (this.toComment || this.p.fcount() > 0 || cTop < wFold) {
+			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
 				this.commentsInViewport = true;
 				this.viewScrollOff();
 				this.getComments();
@@ -656,11 +659,17 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					} else {
 						this.commentsUsers = data.users;
 						this.comments(data.comments);
-						this.commentsRecieveScrollTimeout = window.setTimeout(this.scrollToCommentBind, 100);
+						this.scrollTimeout = window.setTimeout(this.scrollToCommentBind, 100);
 					}
 				}
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
+		},
+		scrollToFrag: function () {
+			$('.photoFrag').removeClass('hl');
+			$(window).scrollTo('.photoFrag[id="frag-' + this.toFrag + '"]', {duration: 400, onAfter: function (elem, params){
+				$(elem).addClass('hl');
+			}});
 		},
 		scrollToComment: function () {
 			$('.media.hl').removeClass('hl');
