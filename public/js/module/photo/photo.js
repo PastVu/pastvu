@@ -203,7 +203,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			});
 
 			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
-			this.scrollToCommentBind = this.scrollToComment.bind(this);
+			this.scrollToFragCommentBind = this.scrollToFragComment.bind(this);
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
 			this.recieveCommentsBind = this.recieveComments.bind(this);
 
@@ -299,15 +299,22 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 		routeHandler: function () {
 			var cid = globalVM.router.params().photo,
+				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
-			this.toComment = globalVM.router.params().comment;
-			this.toFrag = globalVM.router.params().frag;
-
+			this.toComment = this.toFrag = undefined;
 			window.clearTimeout(this.scrollTimeout);
 
-			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid){
+			if (hl) {
+				if (hl.indexOf('comment-') === 0) {
+					this.toComment = parseInt(hl.substr(8), 10) || undefined;
+				} else if (hl.indexOf('frag-') === 0) {
+					this.toFrag = parseInt(hl.substr(5), 10) || undefined;
+				}
+			}
+
+			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
 				this.comments([]);
 				this.commentsUsers = {};
 				this.commentsWait(false);
@@ -333,14 +340,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						if (this.p.ccount() > 0) {
 							this.commentsWait(true);
 							this.viewScrollOn();
-							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind,  this.p.ccount() > 30 ? 500 : 300);
+							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, this.p.ccount() > 30 ? 500 : 300);
 						}
 					}
 				}, this, this.p);
-			} else if (this.toFrag) {
-				this.scrollTimeout = window.setTimeout(this.scrollToFrag.bind(this), 50);
-			} else if (this.toComment) {
-				this.scrollTimeout = window.setTimeout(this.scrollToCommentBind, 50);
+			} else if (this.toFrag || this.toComment) {
+				this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 50);
 			}
 
 		},
@@ -623,7 +628,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		viewScrollOff: function () {
 			$(window).off('scroll', this.handleViewScrollBind);
 		},
-		viewScrollHandle: function (){
+		viewScrollHandle: function () {
 			if (!this.commentsInViewport) {
 				this.checkCommentsInViewport();
 			}
@@ -659,23 +664,26 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					} else {
 						this.commentsUsers = data.users;
 						this.comments(data.comments);
-						this.scrollTimeout = window.setTimeout(this.scrollToCommentBind, 100);
+						this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 100);
 					}
 				}
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
 		},
-		scrollToFrag: function () {
-			$('.photoFrag').removeClass('hl');
-			$(window).scrollTo('.photoFrag[id="frag-' + this.toFrag + '"]', {duration: 400, onAfter: function (elem, params){
-				$(elem).addClass('hl');
-			}});
-		},
-		scrollToComment: function () {
-			$('.media.hl').removeClass('hl');
-			$(window).scrollTo('.media[data-cid="' + this.toComment + '"]', {duration: 400, onAfter: function (elem, params){
-				$(elem).addClass('hl');
-			}});
+		scrollToFragComment: function () {
+			var element;
+			if (this.toFrag) {
+				element = $('.photoFrag[data-cid="' + this.toFrag + '"]');
+			} else if (this.toComment) {
+				element = $('.media[data-cid="' + this.toComment + '"]');
+			}
+			if (element && element.length === 1) {
+				$('.photoFrag.hl').removeClass('hl');
+				$('.media.hl').removeClass('hl');
+				$(window).scrollTo(element, {duration: 400, onAfter: function (elem, params) {
+					$(elem).addClass('hl');
+				}});
+			}
 		},
 
 		onImgLoad: function (data, event) {

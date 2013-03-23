@@ -38,9 +38,9 @@
 			.media-body
 				.commentHead
 					a.author(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}, text: $parent.commentsUsers[$data.user].name")
-					a.stamp(data-bind="attr: {href: '?comment=' + $data.cid}, text: moment($data.stamp).calendar()")
+					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
 				//ko if: $data.frag
-				a.commentFrag(data-bind="attr: {href: '?frag=' + $data.frag}") Комментируемый фрагмент
+				a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
 				// /ko
 				.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
@@ -52,8 +52,11 @@
 			.media-body
 				.commentHead
 					a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
-					a.stamp(data-bind="attr: {href: '?comment=' + $data.cid}, text:moment($data.stamp).calendar()")
-				p.commentText(data-bind="html: $data.txt")
+					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
+				//ko if: $data.frag
+				a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
+				// /ko
+				.commentText(data-bind="html: $data.txt")
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
 
@@ -96,7 +99,7 @@
 				.photoImgWrap
 					img.photoImg(data-bind="attr: {src: p.sfile()}")
 					//ko foreach: p.frags
-					a.photoFrag(data-bind="attr: {id: 'frag-' + $data.cid(),href: '?comment=' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', }")
+					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: (10000 / ($data.w() * $data.h())) >> 0}")
 					// /ko
 
 			.row-fluid.photoInfoBlock
