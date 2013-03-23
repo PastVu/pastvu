@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'jquery-plugins/scrollto'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	/**
@@ -195,12 +195,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentsViewportTimeout = null;
 
 			this.$comments = this.$dom.find('.photoComments');
-			this.$comments.on('click', 'a.stamp', function (evt) {
-				var cid = $(evt.target).closest('.media').attr('data-cid');
-				if (cid) {
-					//globalVM.router.navigateToUrl(location.pathname + '?comment=' + cid);
-				}
-			});
 
 			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
 			this.scrollToFragCommentBind = this.scrollToFragComment.bind(this);
@@ -252,7 +246,24 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (this.showing) {
 				return;
 			}
-			this.$container.fadeIn();
+			this.$container.fadeIn(400, function () {
+				this.$dom.find('.photoImgWrap')
+					.on('mouseenter', 'a.photoFrag', function (evt) {
+						var frag = $(evt.target),
+							ccid = frag.attr('data-ccid'),
+							$comment = $(".media[data-cid=" + ccid + "]");
+
+						if ($comment.length === 1) {
+							frag
+								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: 'bottom', trigger: 'manual'})
+								.popover('show');
+						}
+					})
+					.on('mouseleave', '.photoFrag', function (evt) {
+						var frag = $(evt.target);
+						frag.popover('destroy');
+					});
+			}.bind(this));
 			this.sizesCalc(P.window.square());
 			this.showing = true;
 		},
