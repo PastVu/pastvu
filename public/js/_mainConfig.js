@@ -58,7 +58,8 @@ requirejs.config({
 		'knockout': 'lib/knockout/knockout-2.2.1',
 		'knockout.extends': 'lib/knockout/extends',
 		'knockout.mapping': 'lib/knockout/knockout.mapping',
-		'knockout.postbox': 'lib/knockout/knockout-postbox.min',
+		'knockout.postbox': 'lib/knockout/knockout-postbox',
+		'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
 		'leaflet': 'lib/leaflet/leaflet_0.5.0',
 		'LMarkerCluster': 'lib/leaflet/extends/L.Markercluster',
