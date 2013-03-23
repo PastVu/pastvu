@@ -255,7 +255,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 						if ($comment.length === 1) {
 							frag
-								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: 'bottom', trigger: 'manual'})
+								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: 'bottom', delay:0, animation: false, trigger: 'manual'})
 								.popover('show');
 						}
 					})
