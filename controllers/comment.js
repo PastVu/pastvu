@@ -89,15 +89,13 @@ function getCommentsPhoto(session, data, cb) {
 				userFormatted = {
 					login: user.login,
 					avatar: user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png',
-					name: user.firstName || user.lastName || user.login
+					name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login
 				};
 				userHashFormatted[user.login] = userFormatted;
 				usersHash[user._id] = userFormatted;
 			}
 			tree = commentTreeRecursive(commentsArr, usersHash);
 
-			//console.dir(userHashFormatted);
-			//console.dir(tree);
 			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
 			cb({message: 'ok', cid: data.cid, comments: tree, users: userHashFormatted, count: commentsArr.length});
 		}

@@ -250,12 +250,22 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.$dom.find('.photoImgWrap')
 					.on('mouseenter', 'a.photoFrag', function (evt) {
 						var frag = $(evt.target),
+							fragOffset = frag.offset(),
+							fragWidth = frag.width(),
 							ccid = frag.attr('data-ccid'),
-							$comment = $(".media[data-cid=" + ccid + "]");
+							$comment = $(".media[data-cid=" + ccid + "]"),
+							placement;
 
 						if ($comment.length === 1) {
+							if (fragOffset.left + fragWidth / 2 < 150) {
+								placement = 'right';
+							} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
+								placement = 'left';
+							} else {
+								placement = 'bottom';
+							}
 							frag
-								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: 'bottom', delay:0, animation: false, trigger: 'manual'})
+								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
 								.popover('show');
 						}
 					})
