@@ -269,6 +269,10 @@
 			background-repeat: no-repeat;
 			background-position: 0 50%;
 		}
+		.btnCommentAdd {
+			display: block;
+			margin-top: 10px;
+		}
 
 		.media,
 		.media .media {
@@ -310,6 +314,46 @@
 			margin: 1px 0 0 0;
 			min-height: 30px;
 			max-width: 1024px;
+		}
+
+		.commentAdd {
+			position: relative;
+
+			.commentInput {
+				width: 860px;
+				max-width: 95%;
+			}
+			.commentInputLabel {
+				position: absolute;
+				left: 65px;
+				top: 6px;
+				color: #777;
+				cursor: text;
+			}
+			.btnCommentSend {
+				display: none;
+				visibility: hidden;
+				margin-bottom: 2px;
+			}
+
+			&.hasFocus, &.hasContent {
+				.commentInput {
+					min-height: 77px;
+				}
+				.commentInputLabel {
+					display: none;
+				}
+				.btnCommentSend {
+					display: block;
+				}
+			}
+			&.hasFocus {
+			}
+			&.hasContent {
+				.btnCommentSend {
+					visibility: visible;
+				}
+			}
 		}
 	}
 }

@@ -28,9 +28,28 @@
 			.commentsHead Комментарии
 			.commentsCount(data-bind="text: '(' + p.ccount() + ')'")
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
-			ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")
+			//ko if: $root.P.settings.LoggedIn()
+			//ko template: 'commentAdd'
+			// /ko
+			// /ko
+			//ko if: $root.P.settings.LoggedIn()
+			button.btn-strict.btn-strict-success.btn-strict-small.btnCommentAdd(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+				i.icon-plus.icon-white
+				span Добавить комментарий
+			// /ko
+			ul.media-list(data-bind="template: { name: 'commentRoot', foreach: comments }")\
 			// /ko
 
+	script(id="commentAdd", type="text/html")
+		.media.commentAdd(data-bind="attr: {}")
+			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + auth.iAm.login()}")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
+			.media-body
+				textarea.commentInput(wrap="soft", data-bind="event: {focus: commentAddClick}")
+				label.commentInputLabel(data-bind="click: commentAddClick") Нажмите, чтобы начать писать комментарий
+				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+					i.icon-comment.icon-white
+					span Отправить комментарий
 	script(id="commentRoot", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}")

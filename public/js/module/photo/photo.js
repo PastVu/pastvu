@@ -707,6 +707,35 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 		},
 
+		commentAddClick: function (data, event) {
+			var root = $(event.target).closest('.commentAdd'),
+				input = root.find('.commentInput');
+			root.addClass('hasFocus');
+			input
+				.on('keyup', this.commentAddPrint.bind(this))
+				.on('blur', this.commentAddBlur.bind(this))
+				.focus();
+			data = event = null;
+		},
+		commentAddPrint: function (evt) {
+			var input = $(evt.target),
+				content = $.trim(input.val()),
+				root = input.closest('.commentAdd');
+
+			root[content ? 'addClass' : 'removeClass']('hasContent');
+		},
+		commentAddBlur: function (evt) {
+			var input = $(evt.target),
+				content = $.trim(input.val()),
+				root = input.closest('.commentAdd');
+
+			input.off('keyup').off('blur');
+			if (!content) {
+				root.removeClass('hasContent');
+			}
+			root.removeClass('hasFocus');
+		},
+
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
 			data = event = null;
