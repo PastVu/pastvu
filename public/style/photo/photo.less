@@ -250,21 +250,27 @@
 
 		.commentsHead {
 			display: inline-block;
-			margin-right: 8px;
 			font-weight: bold;
 			font-size: 18px;
 		}
 		.commentsCount {
 			display: inline-block;
-			width: 40px;
 			background-position: 0 50%;
 			background-repeat: no-repeat;
+		}
+		.commentsAdd {
+			display: inline-block;
+			cursor: pointer;
+			&:hover {
+				color: @MainBlueColor;
+			}
 		}
 		.commentsLoad {
 			position: relative;
 			display: inline-block;
 			width: 70px;
 			height: 20px;
+			margin-left: 20px;
 			background-image: url(/img/misc/load.gif);
 			background-repeat: no-repeat;
 			background-position: 0 50%;
@@ -282,11 +288,11 @@
 			margin-right: 8px;
 		}
 		.media-object {
-			width: 48px;
-			height: 48px;
+			width: 50px;
+			height: 50px;
 		}
 		.media {
-			&.hl > .media-body > .commentText{
+			&.hl > .media-body .commentText{
 				background-color: fade(@MainBlueColor, 10%);
 				.transition(~'background-color .25s linear');
 			}
@@ -315,12 +321,15 @@
 		}
 		.commentText {
 			max-width: 1024px;
-			margin-top: 2px;
+			margin-top: 3px;
 		}
 		.commentReply {
 			display: none;
+			width: 70px;
+			margin-top: 2px;
+			padding-top: 3px;
 			font-size: 14px;
-			line-height: 15px;
+			line-height: 11px;
 			color: #888;
 			cursor: pointer;
 
@@ -333,6 +342,7 @@
 			position: relative;
 
 			.commentInput {
+				display: block;
 				width: 860px;
 				max-width: 95%;
 			}
@@ -343,7 +353,7 @@
 				color: #777;
 				cursor: text;
 			}
-			.btnCommentSend {
+			.btnCommentSend, .btnCommentCancel {
 				display: none;
 				visibility: hidden;
 				margin-bottom: 2px;
@@ -356,14 +366,14 @@
 				.commentInputLabel {
 					display: none;
 				}
-				.btnCommentSend {
-					display: block;
+				.btnCommentSend, .btnCommentCancel {
+					display: inline-block;
 				}
 			}
 			&.hasFocus {
 			}
 			&.hasContent {
-				.btnCommentSend {
+				.btnCommentSend, .btnCommentCancel {
 					visibility: visible;
 				}
 			}
@@ -373,9 +383,13 @@
 	.photoData.loggedIn {
 		.photoComments {
 			.commentReply {
-				display: inline-block;
+				display: block;
 			}
 		}
+	}
+
+	.heightExpander {
+		height: 20px;
 	}
 }
 

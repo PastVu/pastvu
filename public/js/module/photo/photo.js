@@ -708,16 +708,41 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 		commentAddClick: function (data, event) {
-			var root = $(event.target).closest('.commentAdd'),
-				input = root.find('.commentInput');
-			root.addClass('hasFocus');
-			input
-				.on('keyup', this.commentAddPrint.bind(this))
-				.on('blur', this.commentAddBlur.bind(this))
-				.focus();
-			data = event = null;
+			this.commentActivate($(event.target).closest('.commentAdd'));
 		},
-		commentAddPrint: function (evt) {
+		commentAddRoot: function () {
+			var root = $('ul.media-list > .media.commentAdd').last(),
+				_this = this;
+
+			$(window).scrollTo(root, {duration: 400, onAfter: function () {
+				window.setTimeout(function () {
+					_this.commentActivate(root);
+				}, 200);
+			}});
+		},
+		commentActivate: function (root) {
+			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
+				var input = root.find('.commentInput');
+
+				root.addClass('hasFocus');
+				input
+					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 400))
+					.on('blur', this.commentAddBlur.bind(this))
+					.focus();
+				this.commentCheckInViewport(root);
+			}
+		},
+		commentCheckInViewport: function (root) {
+			var btnSend = root.find('.btnCommentSend'),
+				cBottom = btnSend.offset().top + btnSend.height() + 10,
+				wTop = $(window).scrollTop(),
+				wFold = $(window).height() + wTop;
+
+			if (wFold < cBottom) {
+				$(window).scrollTo( '+=' + (cBottom - wFold) +'px', {axis:'y', duration: 200});
+			}
+		},
+		commentAddKeyup: function (evt) {
 			var input = $(evt.target),
 				content = $.trim(input.val()),
 				root = input.closest('.commentAdd');
@@ -733,6 +758,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (!content) {
 				root.removeClass('hasContent');
 			}
+			root.removeClass('hasFocus');
+		},
+		commentCancel: function (data, event) {
+			var root = $(event.target).closest('.commentAdd'),
+				input = root.find('.commentInput');
+			input.val('');
+			root.removeClass('hasContent');
 			root.removeClass('hasFocus');
 		},
 
