@@ -37,26 +37,53 @@
 				//ko template: { name: 'commentRoot', foreach: comments }
 				// /ko
 				//ko if: $root.P.settings.LoggedIn()
-				//ko template: 'commentAdd'
+				//ko template: 'commentReply'
 				// /ko
 				// /ko
 			// /ko
 	.row-fluid.heightExpander
 
 
-	script(id="commentAdd", type="text/html")
+	script(id="commentReply", type="text/html")
 		.media.commentAdd(data-bind="attr: {}")
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
 			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: commentAddClick")
-				label.commentInputLabel(data-bind="click: commentAddClick") Нажмите, чтобы начать писать комментарий
-				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+				textarea.commentInput(wrap="soft", data-bind="click: commentAddClickBind")
+				label.commentInputLabel(data-bind="click: commentAddClickBind") Нажмите, чтобы начать писать комментарий
+				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: commentExe()}, click: commentSendBind, attr: {disabled: commentExe()}")
 					i.icon-comment.icon-white
 					span Отправить комментарий
-				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: exe()}, click: commentCancel, attr: {disabled: exe()}")
+				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: commentExe()}, click: commentCancelBind, attr: {disabled: commentExe()}")
 					i.icon-remove.icon-white
 					span Отмена
+	script(id="commentReplyToRoot", type="text/html")
+		.media.commentAdd
+			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.auth.iAm.login()}")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parent.auth.iAm.avatar()}, event: {error: $parent.onAvatarError}")
+			.media-body
+				textarea.commentInput(wrap="soft", data-bind="click: $parent.commentAddClickBind")
+				label.commentInputLabel(data-bind="click: $parent.commentAddClickBind") Нажмите, чтобы начать писать комментарий
+				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parent.commentExe()}, click: $parent.commentSendBind, attr: {disabled: $parent.commentExe()}")
+					i.icon-comment.icon-white
+					span Отправить комментарий
+				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parent.commentExe()}, click: $parent.commentCancelBind, attr: {disabled: $parent.commentExe()}")
+					i.icon-remove.icon-white
+					span Отмена
+	script(id="commentReplyToSub", type="text/html")
+		.media.commentAdd
+			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].auth.iAm.login()}")
+				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
+			.media-body
+				textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].commentAddClickBind")
+				label.commentInputLabel(data-bind="click: $parents[$data.level].commentAddClickBind") Нажмите, чтобы начать писать комментарий
+				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].commentExe()}")
+					i.icon-comment.icon-white
+					span Отправить комментарий
+				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].commentExe()}")
+					i.icon-remove.icon-white
+					span Отмена
+
 	script(id="commentRoot", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}")
@@ -70,8 +97,12 @@
 					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
 					// /ko
 					.commentText(data-bind="html: $data.txt")
-					.commentReply() Ответить
+					.commentReply(data-bind="click: $parent.commentReplyBind") Ответить
 				//ko template: {name: 'commentSub', foreach: $data.comments }
+				// /ko
+				//ko if: $data.cid === $parent.commentReplyTo()
+				//ko template: 'commentReplyToRoot'
+				// /ko
 				// /ko
 	script(id="commentSub", type="text/html")
 		.media(data-bind="attr: {'data-cid': $data.cid}")
@@ -86,8 +117,12 @@
 					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
 					// /ko
 					.commentText(data-bind="html: $data.txt")
-					.commentReply() Ответить
+					.commentReply(data-bind="click: $parents[$data.level].commentReplyBind") Ответить
 				//ko template: {name: 'commentSub', foreach: $data.comments }
+				// /ko
+				//ko if: $data.cid === $parents[$data.level].commentReplyTo()
+				//ko template: 'commentReplyToSub'
+				// /ko
 				// /ko
 
 	//-ACTIONS VIEW MODE

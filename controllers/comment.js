@@ -14,7 +14,7 @@ var Settings,
 	logger;
 
 /**
- * Создает фотографии в базе данных
+ * Выбирает комментарии для фотографии
  * @param session Сессия польщователя
  * @param data Объект
  * @param cb Коллбэк
@@ -31,14 +31,14 @@ function getCommentsPhoto(session, data, cb) {
 
 	step(
 		function findPhoto() {
-			Photo.findOne({cid: data.cid}, {_id:1}, this);
+			Photo.findOne({cid: data.cid}, {_id: 1}, this);
 		},
 		function createCursor(err, pid) {
 			if (err || !pid) {
 				cb({message: 'No such photo', error: true});
 				return;
 			}
-			Comment.collection.find({photo: pid._id}, {_id:0, photo: 0}, this);
+			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, this);
 		},
 		function cursorCommentsExtract(err, cursor) {
 			if (err || !cursor) {
@@ -94,7 +94,7 @@ function getCommentsPhoto(session, data, cb) {
 				userHashFormatted[user.login] = userFormatted;
 				usersHash[user._id] = userFormatted;
 			}
-			tree = commentTreeRecursive(commentsArr, usersHash);
+			tree = commentTreeBuild(commentsArr, usersHash);
 
 			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
 			cb({message: 'ok', cid: data.cid, comments: tree, users: userHashFormatted, count: commentsArr.length});
@@ -102,7 +102,7 @@ function getCommentsPhoto(session, data, cb) {
 	);
 }
 
-function commentTreeRecursive(arr, usersHash) {
+function commentTreeBuild(arr, usersHash) {
 	var i = -1,
 		len = arr.length,
 		hash = {},
@@ -133,6 +133,58 @@ function commentTreeRecursive(arr, usersHash) {
 	return results;
 }
 
+/**
+ * Создает комментарий для фотографии
+ * @param session Сессия польщователя
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function createComment(session, data, cb) {
+	if (!Utils.isType('object', data) || !data.user || !data.photo || !data.txt) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+	var content = data.txt;
+	step(
+		function () {
+			Photo.findOne({cid: Number(data.photo)}, {_id: 1}, this.parallel());
+			Counter.increment('comment', this.parallel());
+			if (data.parent) {
+				Comment.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
+			}
+		},
+		function (err, photo, count, parent) {
+			if (err || !photo || !count) {
+				cb({message: err.message || 'Increment comment counter error', error: true});
+				return;
+			}
+			if (data.parent && (!parent || data.level !== (parent.level || 0) + 1)) {
+				cb({message: 'Something wrong with parent comment', error: true});
+				return;
+			}
+			console.log(count);
+			var comment = new Comment({
+				cid: count.next,
+				photo: photo,
+				user: session.user,
+				txt: content
+			});
+			if (data.parent) {
+				comment.parent = data.parent;
+				comment.level = data.level;
+			}
+			comment.save(this);
+		},
+		function (err, comment) {
+			if (err) {
+				cb({message: err.message || 'Comment save error', error: true});
+				return;
+			}
+			cb({message: 'ok', comment: comment});
+		}
+	);
+}
+
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
 
@@ -149,6 +201,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveCommentsPhoto', function (data) {
 			getCommentsPhoto(hs.session, data, function (result) {
 				socket.emit('takeCommentsPhoto', result);
+			});
+		});
+
+		socket.on('createComment', function (data) {
+			createComment(hs.session, data, function (result) {
+				socket.emit('createCommentResult', result);
 			});
 		});
 

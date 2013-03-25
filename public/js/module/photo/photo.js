@@ -201,6 +201,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
 			this.recieveCommentsBind = this.recieveComments.bind(this);
 
+
+			this.commentExe = ko.observable(false);
+			this.commentReplyTo = ko.observable(0);
+			this.commentReplyBind = this.commentReply.bind(this);
+			this.commentAddClickBind = this.commentAddClick.bind(this);
+			this.commentSendBind = this.commentSend.bind(this);
+			this.commentCancelBind = this.commentCancel.bind(this);
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -720,6 +727,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}, 200);
 			}});
 		},
+		commentReply: function (data, event) {
+			this.commentReplyTo(data.cid);
+		},
 		commentActivate: function (root) {
 			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
@@ -782,6 +792,37 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			input.height('auto');
 			root.removeClass('hasContent');
 			root.removeClass('hasFocus');
+			this.commentReplyTo(0);
+		},
+		commentSend: function (data, event) {
+			var root = $(event.target).closest('.commentAdd'),
+				input = root.find('.commentInput'),
+				content = $.trim(input.val()),
+				dataSend = {
+					photo: this.p.cid(),
+					user: this.auth.iAm.login(),
+					txt: content
+				};
+			if (Utils.isType('number', data.cid)) {
+				dataSend.parent = data.cid;
+				dataSend.level = (data.level || 0) + 1;
+			}
+
+
+			this.commentExe(true);
+			socket.once('createCommentResult', function (data) {
+				if (!data) {
+					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					if (data.error || !data.comment) {
+						window.noty({text: data.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					} else {
+						this.comments(data.comment);
+					}
+				}
+				this.commentExe(false);
+			}.bind(this));
+			socket.emit('createComment', dataSend);
 		},
 
 		onImgLoad: function (data, event) {

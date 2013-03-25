@@ -12,6 +12,7 @@ var CommentSheme = new mongoose.Schema(
 		stamp: {type: Date, 'default': Date.now, required: true, index: true},
 		txt: {type: String},
 		parent: {type: Number},
+		level: {type: Number},
 		frag: {type: String}
 	},
 	{
