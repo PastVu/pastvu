@@ -726,20 +726,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 				root.addClass('hasFocus');
 				input
-					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 400))
+					.off('keyup').off('blur')
+					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 300))
 					.on('blur', this.commentAddBlur.bind(this))
 					.focus();
 				this.commentCheckInViewport(root);
-			}
-		},
-		commentCheckInViewport: function (root) {
-			var btnSend = root.find('.btnCommentSend'),
-				cBottom = btnSend.offset().top + btnSend.height() + 10,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
-
-			if (wFold < cBottom) {
-				$(window).scrollTo( '+=' + (cBottom - wFold) +'px', {axis:'y', duration: 200});
 			}
 		},
 		commentAddKeyup: function (evt) {
@@ -748,6 +739,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				root = input.closest('.commentAdd');
 
 			root[content ? 'addClass' : 'removeClass']('hasContent');
+			this.commentCheckInputHeight(root, input);
 		},
 		commentAddBlur: function (evt) {
 			var input = $(evt.target),
@@ -757,13 +749,37 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			input.off('keyup').off('blur');
 			if (!content) {
 				root.removeClass('hasContent');
+				input.height('auto');
 			}
 			root.removeClass('hasFocus');
+		},
+		commentCheckInViewport: function (root) {
+			var btnSend = root.find('.btnCommentSend'),
+				cBottom = btnSend.offset().top + btnSend.height() + 10,
+				wTop = $(window).scrollTop(),
+				wFold = $(window).height() + wTop;
+
+			if (wFold < cBottom) {
+				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: 200});
+			}
+		},
+		commentCheckInputHeight: function (root, input) {
+			var content = $.trim(input.val()),
+				height = input.height(),
+				heightScroll = (input[0].scrollHeight - 8) || height;
+
+			if (!content) {
+				input.height('auto');
+			} else if (heightScroll > height) {
+				input.height(heightScroll);
+				this.commentCheckInViewport(root);
+			}
 		},
 		commentCancel: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),
 				input = root.find('.commentInput');
 			input.val('');
+			input.height('auto');
 			root.removeClass('hasContent');
 			root.removeClass('hasFocus');
 		},

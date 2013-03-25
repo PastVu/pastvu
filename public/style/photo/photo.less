@@ -292,7 +292,7 @@
 			height: 50px;
 		}
 		.media {
-			&.hl > .media-body .commentText{
+			&.hl > .media-body > .commentBody > .commentText{
 				background-color: fade(@MainBlueColor, 10%);
 				.transition(~'background-color .25s linear');
 			}
@@ -345,6 +345,10 @@
 				display: block;
 				width: 860px;
 				max-width: 95%;
+
+				&::-webkit-scrollbar-button:decrement {
+					height: 0;
+				}
 			}
 			.commentInputLabel {
 				position: absolute;
