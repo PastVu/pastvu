@@ -7,7 +7,7 @@
 				span start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 
-	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
+	.row-fluid.photoData(data-bind="css: {editMode: edit(), loggedIn: $root.P.settings.LoggedIn()}")
 		//ko template: edit() ? 'photoEdit' : 'photoView'
 		// /ko
 		.span3-4.rightPanel
@@ -33,7 +33,7 @@
 			// /ko
 			// /ko
 			//ko if: $root.P.settings.LoggedIn()
-			button.btn-strict.btn-strict-success.btn-strict-small.btnCommentAdd(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+			button.btn-strict.btn-strict-small.btnCommentAdd(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
 				i.icon-plus.icon-white
 				span Добавить комментарий
 			// /ko
@@ -55,13 +55,15 @@
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}")
 				img.media-object(data-bind="attr: {src: $parent.commentsUsers[$data.user].avatar}")
 			.media-body
-				.commentHead
-					a.author(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}, text: $parent.commentsUsers[$data.user].name")
-					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
-				//ko if: $data.frag
-				a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
-				// /ko
-				.commentText(data-bind="html: $data.txt")
+				.commentBody
+					.commentHead
+						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}, text: $parent.commentsUsers[$data.user].name")
+						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
+					//ko if: $data.frag
+					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
+					// /ko
+					.commentText(data-bind="html: $data.txt")
+					.commentReply() Ответить
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
 	script(id="commentSub", type="text/html")
@@ -69,13 +71,15 @@
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}")
 				img.media-object(data-bind="attr: {src: $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
-				.commentHead
-					a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
-					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
-				//ko if: $data.frag
-				a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
-				// /ko
-				.commentText(data-bind="html: $data.txt")
+				.commentBody
+					.commentHead
+						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
+						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
+					//ko if: $data.frag
+					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
+					// /ko
+					.commentText(data-bind="html: $data.txt")
+					.commentReply() Ответить
 				//ko template: {name: 'commentSub', foreach: $data.comments }
 				// /ko
 

@@ -276,7 +276,7 @@
 
 		.media,
 		.media .media {
-			margin-top: 20px;
+			margin-top: 18px;
 		}
 		.media > .pull-left {
 			margin-right: 8px;
@@ -292,8 +292,11 @@
 			}
 		}
 
+		.commentBody {
+			min-height: 50px;
+		}
 		.commentHead {
-			line-height: 14px;
+			line-height: 10px;
 		}
 		.author {
 			display: inline-block;
@@ -311,9 +314,19 @@
 			font-size: 14px;
 		}
 		.commentText {
-			margin: 1px 0 0 0;
-			min-height: 30px;
 			max-width: 1024px;
+			margin-top: 2px;
+		}
+		.commentReply {
+			display: none;
+			font-size: 14px;
+			line-height: 15px;
+			color: #888;
+			cursor: pointer;
+
+			&:hover {
+				color: @MainBlueColor;
+			}
 		}
 
 		.commentAdd {
@@ -353,6 +366,14 @@
 				.btnCommentSend {
 					visibility: visible;
 				}
+			}
+		}
+	}
+
+	.photoData.loggedIn {
+		.photoComments {
+			.commentReply {
+				display: inline-block;
 			}
 		}
 	}
