@@ -99,6 +99,9 @@ function getCommentsPhoto(session, data, cb) {
 			while (i) {
 				comment = commentsArr[--i];
 				comment.user = usersHash[comment.user].login;
+				if (comment.level === undefined) {
+					comment.level = 0;
+				}
 			}
 
 			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
@@ -114,10 +117,15 @@ function getCommentsPhoto(session, data, cb) {
  * @param cb Коллбэк
  */
 function createComment(session, data, cb) {
-	if (!Utils.isType('object', data) || !data.user || !data.photo || !data.txt) {
+	if (!session.user || !session.user.login) {
+		cb({message: 'You are not authorized for this action.', error: true});
+		return;
+	}
+	if (!Utils.isType('object', data) || !data.photo || !data.txt) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
+
 	var content = data.txt,
 		comment;
 	step(
@@ -166,6 +174,9 @@ function createComment(session, data, cb) {
 			}
 			comment.user = session.user.login;
 			comment.photo = data.photo;
+			if (comment.level === undefined) {
+				comment.level = 0;
+			}
 			cb({message: 'ok', comment: comment});
 		}
 	);

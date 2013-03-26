@@ -33,8 +33,8 @@
 			.commentsAdd(data-bind="click: commentAddRoot") Добавить
 			// /ko
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
-			ul.media-list(data-bind="")
-				//ko template: { name: 'commentRoot', foreach: comments }
+			ul.media-list
+				//ko template: { name: 'commentTpl', foreach: comments }
 				// /ko
 				//ko if: $root.P.settings.LoggedIn()
 				//ko template: 'commentReply'
@@ -57,21 +57,9 @@
 				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: commentExe()}, click: commentCancelBind, attr: {disabled: commentExe()}")
 					i.icon-remove.icon-white
 					span Отмена
-	script(id="commentReplyToRoot", type="text/html")
-		.media.commentAdd
-			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.auth.iAm.login()}")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parent.auth.iAm.avatar()}, event: {error: $parent.onAvatarError}")
-			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: $parent.commentAddClickBind")
-				label.commentInputLabel(data-bind="click: $parent.commentAddClickBind") Нажмите, чтобы начать писать комментарий
-				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parent.commentExe()}, click: $parent.commentSendBind, attr: {disabled: $parent.commentExe()}")
-					i.icon-comment.icon-white
-					span Отправить комментарий
-				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parent.commentExe()}, click: $parent.commentCancelBind, attr: {disabled: $parent.commentExe()}")
-					i.icon-remove.icon-white
-					span Отмена
-	script(id="commentReplyToSub", type="text/html")
-		.media.commentAdd
+
+	script(id="commentReplyToTpl", type="text/html")
+		li.media.commentAdd
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
 			.media-body
@@ -84,28 +72,8 @@
 					i.icon-remove.icon-white
 					span Отмена
 
-	script(id="commentRoot", type="text/html")
+	script(id="commentTpl", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")
-			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}")
-				img.media-object(data-bind="attr: {src: $parent.commentsUsers[$data.user].avatar}")
-			.media-body
-				.commentBody
-					.commentHead
-						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parent.commentsUsers[$data.user].login}, text: $parent.commentsUsers[$data.user].name")
-						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
-					//ko if: $data.frag
-					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
-					// /ko
-					.commentText(data-bind="html: $data.txt")
-					.commentReply(data-bind="click: $parent.commentReplyBind") Ответить
-				//ko template: {name: 'commentSub', foreach: $data.comments }
-				// /ko
-				//ko if: $data.cid === $parent.commentReplyTo()
-				//ko template: 'commentReplyToRoot'
-				// /ko
-				// /ko
-	script(id="commentSub", type="text/html")
-		.media(data-bind="attr: {'data-cid': $data.cid}")
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}")
 				img.media-object(data-bind="attr: {src: $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
@@ -118,10 +86,10 @@
 					// /ko
 					.commentText(data-bind="html: $data.txt")
 					.commentReply(data-bind="click: $parents[$data.level].commentReplyBind") Ответить
-				//ko template: {name: 'commentSub', foreach: $data.comments }
+				//ko template: {name: 'commentTpl', foreach: $data.comments }
 				// /ko
 				//ko if: $data.cid === $parents[$data.level].commentReplyTo()
-				//ko template: 'commentReplyToSub'
+				//ko template: 'commentReplyToTpl'
 				// /ko
 				// /ko
 

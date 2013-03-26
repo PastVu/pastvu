@@ -219,7 +219,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
 			this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
-			this.subscriptions.login = P.settings.LoggedIn.subscribe(this.loginHandler, this);
+			this.subscriptions.login = this.auth.iAm.login.subscribe(this.loginHandler, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
 				var v = parseInt(val, 10);
@@ -346,6 +346,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
 				this.comments([]);
 				this.commentsUsers = {};
+				this.addMeToCommentsUsers();
 				this.commentsWait(false);
 				this.commentsInViewport = false;
 				this.viewScrollOff();
@@ -379,6 +380,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 		},
 		loginHandler: function (v) {
+			this.addMeToCommentsUsers();
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 		},
@@ -650,6 +652,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbon(newRibbon);
 			n = nLeft = newRibbon = null;
 		},
+		addMeToCommentsUsers: function () {
+			if (P.settings.LoggedIn() && this.commentsUsers[this.auth.iAm.login()] === undefined) {
+				this.commentsUsers[this.auth.iAm.login()] = {
+					login: this.auth.iAm.login(),
+					avatar: this.auth.iAm.avatarth(),
+					name: this.auth.iAm.fullName()
+				}
+			}
+		},
 
 		viewScrollOn: function () {
 			$(window).on('scroll', this.handleViewScrollBind);
@@ -691,7 +702,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					} else if (data.cid !== cid) {
 						console.info('Comments recieved for another photo ' + data.cid);
 					} else {
-						this.commentsUsers = data.users;
+						this.commentsUsers = _.assign(data.users, this.commentsUsers);
 						this.comments(this.commentsTreeBuild(data.comments));
 						this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 100);
 					}
@@ -708,15 +719,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			while (++i < len) {
 				comment = arr[i];
-				hash[comment.cid] = comment;
-				if (comment.level !== this.commentNestingMax) {
+				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
-				if (typeof comment.parent === 'number' && comment.parent > 0) {
+				if (comment.level > 0) {
 					hash[comment.parent].comments.push(comment);
 				} else {
 					results.push(comment);
 				}
+				hash[comment.cid] = comment;
 			}
 
 			return results;
@@ -823,7 +834,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				content = $.trim(input.val()),
 				dataSend = {
 					photo: this.p.cid(),
-					user: this.auth.iAm.login(),
 					txt: content
 				};
 			if (Utils.isType('number', data.cid)) {
@@ -839,11 +849,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					if (result.error || !result.comment) {
 						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
-						if (result.comment.level !== this.commentNestingMax) {
+						if (result.comment.level < this.commentNestingMax) {
 							result.comment.comments = ko.observableArray();
 						}
+						this.p.ccount(this.p.ccount() + 1);
 						data.comments.push(result.comment);
-						this.commentReplyTo(0);
+						this.commentCancel(data, event);
 					}
 				}
 				this.commentExe(false);
