@@ -26,10 +26,10 @@
 		.row-fluid.photoComments
 			//ko if: !edit()
 			.commentsHead Комментарии
-			.dotDelimeter &nbsp;·&nbsp;
+			.dotDelimeter ·
 			.commentsCount(data-bind="text: p.ccount()")
 			//ko if: $root.P.settings.LoggedIn()
-			.dotDelimeter &nbsp;·&nbsp;
+			.dotDelimeter ·
 			.commentsAdd(data-bind="click: commentAddRoot") Добавить
 			// /ko
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
@@ -80,10 +80,14 @@
 				.commentBody
 					.commentHead
 						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
+						//ko if: $data.frag
+						.dotDelimeter ·
+						a.frag(data-bind="attr: {href: '?hl=frag-' + $data.frag}")
+							i.icon-picture
+							| Комментируемый фрагмент
+						// /ko
+						.dotDelimeter ·
 						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
-					//ko if: $data.frag
-					a.commentFrag(data-bind="attr: {href: '?hl=frag-' + $data.frag}") Комментируемый фрагмент
-					// /ko
 					.commentText(data-bind="html: $data.txt")
 					.commentReply(data-bind="click: $parents[$data.level].commentReplyBind") Ответить
 				//ko template: {name: 'commentTpl', foreach: $data.comments }
