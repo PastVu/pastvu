@@ -198,12 +198,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
 			this.scrollToFragCommentBind = this.scrollToFragComment.bind(this);
-			this.checkCommentsInViewportBind = this.checkCommentsInViewport.bind(this);
-			this.recieveCommentsBind = this.recieveComments.bind(this);
+			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
+			this.recieveCommentsBind = this.commentsRecieve.bind(this);
 
 
 			this.commentExe = ko.observable(false);
 			this.commentReplyTo = ko.observable(0);
+			this.commentNestingMax = 9;
 			this.commentReplyBind = this.commentReply.bind(this);
 			this.commentAddClickBind = this.commentAddClick.bind(this);
 			this.commentSendBind = this.commentSend.bind(this);
@@ -658,10 +659,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		viewScrollHandle: function () {
 			if (!this.commentsInViewport) {
-				this.checkCommentsInViewport();
+				this.commentsCheckInViewport();
 			}
 		},
-		checkCommentsInViewport: function () {
+		commentsCheckInViewport: function () {
 			window.clearTimeout(this.commentsViewportTimeout);
 
 			var cTop = this.$comments.offset().top,
@@ -671,14 +672,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
 				this.commentsInViewport = true;
 				this.viewScrollOff();
-				this.getComments();
+				this.commentsGet();
 			}
 		},
-		getComments: function () {
+		commentsGet: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
 			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, this.p.ccount() > 30 ? 750 : 400);
 		},
-		recieveComments: function () {
+		commentsRecieve: function () {
 			var cid = this.p.cid();
 			socket.once('takeCommentsPhoto', function (data) {
 				this.commentsWait(false);
@@ -691,12 +692,34 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						console.info('Comments recieved for another photo ' + data.cid);
 					} else {
 						this.commentsUsers = data.users;
-						this.comments(data.comments);
+						this.comments(this.commentsTreeBuild(data.comments));
 						this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 100);
 					}
 				}
 			}.bind(this));
 			socket.emit('giveCommentsPhoto', {cid: cid});
+		},
+		commentsTreeBuild: function (arr) {
+			var i = -1,
+				len = arr.length,
+				hash = {},
+				comment,
+				results = [];
+
+			while (++i < len) {
+				comment = arr[i];
+				hash[comment.cid] = comment;
+				if (comment.level !== this.commentNestingMax) {
+					comment.comments = ko.observableArray();
+				}
+				if (typeof comment.parent === 'number' && comment.parent > 0) {
+					hash[comment.parent].comments.push(comment);
+				} else {
+					results.push(comment);
+				}
+			}
+
+			return results;
 		},
 		scrollToFragComment: function () {
 			var element;
@@ -727,7 +750,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}, 200);
 			}});
 		},
-		commentReply: function (data, event) {
+		commentReply: function (data) {
 			this.commentReplyTo(data.cid);
 		},
 		commentActivate: function (root) {
@@ -808,16 +831,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				dataSend.level = (data.level || 0) + 1;
 			}
 
-
 			this.commentExe(true);
-			socket.once('createCommentResult', function (data) {
-				if (!data) {
+			socket.once('createCommentResult', function (result) {
+				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
-					if (data.error || !data.comment) {
-						window.noty({text: data.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					if (result.error || !result.comment) {
+						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
-						this.comments(data.comment);
+						if (result.comment.level !== this.commentNestingMax) {
+							result.comment.comments = ko.observableArray();
+						}
+						data.comments.push(result.comment);
+						this.commentReplyTo(0);
 					}
 				}
 				this.commentExe(false);

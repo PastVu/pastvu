@@ -78,12 +78,13 @@ function getCommentsPhoto(session, data, cb) {
 				cb({message: 'Cursor users extract error', error: true});
 				return;
 			}
-			var i = users.length,
-				tree,
+			var i,
+				comment,
 				user,
 				userHashFormatted = {},
 				userFormatted;
 
+			i = users.length;
 			while (i) {
 				user = users[--i];
 				userFormatted = {
@@ -91,46 +92,19 @@ function getCommentsPhoto(session, data, cb) {
 					avatar: user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png',
 					name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login
 				};
-				userHashFormatted[user.login] = userFormatted;
-				usersHash[user._id] = userFormatted;
+				userHashFormatted[user.login] = usersHash[user._id] = userFormatted;
 			}
-			tree = commentTreeBuild(commentsArr, usersHash);
+
+			i = commentsArr.length;
+			while (i) {
+				comment = commentsArr[--i];
+				comment.user = usersHash[comment.user].login;
+			}
 
 			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: data.cid, comments: tree, users: userHashFormatted, count: commentsArr.length});
+			cb({message: 'ok', cid: data.cid, comments: commentsArr, users: userHashFormatted});
 		}
 	);
-}
-
-function commentTreeBuild(arr, usersHash) {
-	var i = -1,
-		len = arr.length,
-		hash = {},
-		comment,
-		commentParent,
-		results = [];
-
-	while (++i < len) {
-		comment = arr[i];
-		hash[comment.cid] = comment;
-		comment.user = usersHash[comment.user].login;
-		if (typeof comment.parent === 'number' && comment.parent > 0) {
-			commentParent = hash[comment.parent];
-			if (commentParent.comments === undefined) {
-				commentParent.comments = [];
-			}
-			commentParent.comments.push(comment);
-		}
-	}
-	i = -1;
-	while (++i < len) {
-		comment = hash[arr[i].cid];
-		if (comment.parent === undefined) {
-			results.push(comment);
-		}
-	}
-
-	return results;
 }
 
 /**
@@ -144,7 +118,8 @@ function createComment(session, data, cb) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
-	var content = data.txt;
+	var content = data.txt,
+		comment;
 	step(
 		function () {
 			Photo.findOne({cid: Number(data.photo)}, {_id: 1}, this.parallel());
@@ -162,24 +137,35 @@ function createComment(session, data, cb) {
 				cb({message: 'Something wrong with parent comment', error: true});
 				return;
 			}
-			console.log(count);
-			var comment = new Comment({
+			comment = {
 				cid: count.next,
 				photo: photo,
 				user: session.user,
 				txt: content
-			});
+			};
 			if (data.parent) {
 				comment.parent = data.parent;
 				comment.level = data.level;
 			}
-			comment.save(this);
+			var commentObj = new Comment(comment);
+			commentObj.save(this);
 		},
-		function (err, comment) {
+		function (err) {
 			if (err) {
 				cb({message: err.message || 'Comment save error', error: true});
 				return;
 			}
+			session.user.ccount += 1;
+			session.user.save(this.parallel());
+			Photo.update({cid: data.photo}, {$inc: {ccount: 1}}, this.parallel());
+		},
+		function (err) {
+			if (err) {
+				cb({message: err.message, error: true});
+				return;
+			}
+			comment.user = session.user.login;
+			comment.photo = data.photo;
 			cb({message: 'ok', comment: comment});
 		}
 	);
