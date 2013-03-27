@@ -121,7 +121,7 @@ function createComment(session, data, cb) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
-	if (!Utils.isType('object', data) || !data.photo || !data.txt) {
+	if (!Utils.isType('object', data) || !data.photo || !data.txt || data.level > 9) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
@@ -141,7 +141,7 @@ function createComment(session, data, cb) {
 				cb({message: err.message || 'Increment comment counter error', error: true});
 				return;
 			}
-			if (data.parent && (!parent || data.level !== (parent.level || 0) + 1)) {
+			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
 				cb({message: 'Something wrong with parent comment', error: true});
 				return;
 			}

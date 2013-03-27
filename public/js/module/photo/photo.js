@@ -380,8 +380,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 		},
-//		1. Прокрутка до нового комментари
-//		2. Не более 10 уровня
 //		3. Выделение фрагмента
 //		4. "Негативная" подсветка
 		loginHandler: function (v) {
@@ -760,10 +758,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentActivate($('ul.media-list > .media.commentAdd').last(), 600);
 		},
 		commentReplyTo: function (data, event) {
-			this.commentReplyingTo(data.cid);
+			var cid,
+				$media,
+				$root;
 
-			var root = $(event.target).closest('.media-body').find('.commentAdd').last();
-			this.commentActivate(root, 400);
+			if (data.level < this.commentNestingMax) {
+				$media = $(event.target).closest('li.media');
+				cid = data.cid;
+			} else if (data.level === this.commentNestingMax) {
+				$media = $($(event.target).parents('li.media')[1]);
+				cid = Number($media.attr('data-cid')) || 0;
+			}
+			this.commentReplyingTo(cid);
+			$root = $media.find('.commentAdd').last();
+
+			this.commentActivate($root, 400);
 		},
 		commentActivate: function (root, scrollDuration) {
 			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
