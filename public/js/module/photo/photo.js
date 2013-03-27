@@ -203,9 +203,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 
 			this.commentExe = ko.observable(false);
-			this.commentReplyTo = ko.observable(0);
+			this.commentReplyingTo = ko.observable(0);
 			this.commentNestingMax = 9;
 			this.commentReplyBind = this.commentReply.bind(this);
+			this.commentReplyToBind = this.commentReplyTo.bind(this);
 			this.commentAddClickBind = this.commentAddClick.bind(this);
 			this.commentSendBind = this.commentSend.bind(this);
 			this.commentCancelBind = this.commentCancel.bind(this);
@@ -379,6 +380,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 		},
+//		1. Прокрутка до нового комментари
+//		2. Не более 10 уровня
+//		3. Выделение фрагмента
+//		4. "Негативная" подсветка
 		loginHandler: function (v) {
 			this.addMeToCommentsUsers();
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя
@@ -751,20 +756,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		commentAddClick: function (data, event) {
 			this.commentActivate($(event.target).closest('.commentAdd'));
 		},
-		commentAddRoot: function () {
-			var root = $('ul.media-list > .media.commentAdd').last(),
-				_this = this;
+		commentReply: function () {
+			this.commentActivate($('ul.media-list > .media.commentAdd').last(), 600);
+		},
+		commentReplyTo: function (data, event) {
+			this.commentReplyingTo(data.cid);
 
-			$(window).scrollTo(root, {duration: 400, onAfter: function () {
-				window.setTimeout(function () {
-					_this.commentActivate(root);
-				}, 200);
-			}});
+			var root = $(event.target).closest('.media-body').find('.commentAdd').last();
+			this.commentActivate(root, 400);
 		},
-		commentReply: function (data) {
-			this.commentReplyTo(data.cid);
-		},
-		commentActivate: function (root) {
+		commentActivate: function (root, scrollDuration) {
 			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
 
@@ -772,9 +773,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				input
 					.off('keyup').off('blur')
 					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 300))
-					.on('blur', this.commentAddBlur.bind(this))
-					.focus();
-				this.commentCheckInViewport(root);
+					.on('blur', this.commentAddBlur.bind(this));
+				this.commentCheckInViewport(root, scrollDuration, function () {
+					input.focus();
+				});
 			}
 		},
 		commentAddKeyup: function (evt) {
@@ -797,14 +799,18 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 			root.removeClass('hasFocus');
 		},
-		commentCheckInViewport: function (root) {
+		commentCheckInViewport: function (root, scrollDuration, cb) {
 			var btnSend = root.find('.btnCommentSend'),
 				cBottom = btnSend.offset().top + btnSend.height() + 10,
 				wTop = $(window).scrollTop(),
 				wFold = $(window).height() + wTop;
 
 			if (wFold < cBottom) {
-				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: 200});
+				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+					if (Utils.isType('function', cb)) {
+						cb.call(this);
+					}
+				}.bind(this)});
 			}
 		},
 		commentCheckInputHeight: function (root, input) {
@@ -826,7 +832,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			input.height('auto');
 			root.removeClass('hasContent');
 			root.removeClass('hasFocus');
-			this.commentReplyTo(0);
+			this.commentReplyingTo(0);
 		},
 		commentSend: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),

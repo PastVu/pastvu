@@ -30,7 +30,7 @@
 			.commentsCount(data-bind="text: p.ccount()")
 			//ko if: $root.P.settings.LoggedIn()
 			.dotDelimeter ·
-			.commentsAdd(data-bind="click: commentAddRoot") Добавить
+			.commentsAdd(data-bind="click: commentReply") Добавить
 			// /ko
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
 			ul.media-list
@@ -89,10 +89,10 @@
 						.dotDelimeter ·
 						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
 					.commentText(data-bind="html: $data.txt")
-					.commentReply(data-bind="click: $parents[$data.level].commentReplyBind") Ответить
+					.commentReply(data-bind="click: $parents[$data.level].commentReplyToBind") Ответить
 				//ko template: {name: 'commentTpl', foreach: $data.comments }
 				// /ko
-				//ko if: $data.cid === $parents[$data.level].commentReplyTo()
+				//ko if: $data.cid === $parents[$data.level].commentReplyingTo()
 				//ko template: 'commentReplyToTpl'
 				// /ko
 				// /ko
