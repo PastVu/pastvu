@@ -31,12 +31,12 @@ var path = require('path'),
 
 	imageVersions = {
 		/*origin: {
-			 parent: 0,
-			 width: 1050,
-			 height: 700,
-			 strip: true,
-			 filter: 'Sinc',
-			 postfix: '>'
+		 parent: 0,
+		 width: 1050,
+		 height: 700,
+		 strip: true,
+		 filter: 'Sinc',
+		 postfix: '>'
 		 },*/
 		standard: {
 			parent: 'origin',
@@ -363,10 +363,11 @@ function conveyerControl() {
 	goingToWork += toWork;
 
 	PhotoConveyer.find({converting: {$exists: false}}).sort('added').limit(toWork).exec(function (err, files) {
-		goingToWork -= toWork - files.length;
 		if (err || files.length === 0) {
 			return;
 		}
+		goingToWork -= toWork - files.length;
+
 		files.forEach(function (item, index) {
 			goingToWork -= 1;
 			working += 1;
@@ -485,6 +486,24 @@ function conveyerStep(file, variants, cb, ctx) {
 		});
 
 	});
+	asyncSequence.push(function (info, callback) {
+		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(uploadDir + '/standard/' + file)], function (err, data) {
+			var info = {};
+			if (err) {
+				logger.error(err);
+				callback(err, file, info);
+			} else {
+				data = JSON.parse(data);
+
+				info.ws = parseInt(data.w, 10) || undefined;
+				info.hs = parseInt(data.h, 10) || undefined;
+
+				Photo.findOneAndUpdate({file: file}, { $set: info}, { new: false, upsert: false }, function (err) {
+					callback(err, info);
+				});
+			}
+		});
+	});
 
 	async.waterfall(asyncSequence, function (err, result) {
 		cb.call(ctx, err);
@@ -499,18 +518,10 @@ function identifyFile(file, callback) {
 		} else {
 			data = JSON.parse(data);
 
-			if (data.f) {
-				info.format = data.f;
-			}
-			if (data.w) {
-				info.w = parseInt(data.w, 10);
-			}
-			if (data.h) {
-				info.h = parseInt(data.h, 10);
-			}
-			if (data.signature) {
-				info.sign = data.signature;
-			}
+			info.w = parseInt(data.w, 10) || undefined;
+			info.h = parseInt(data.h, 10) || undefined;
+			info.format = data.f || undefined;
+			info.sign = data.signature || undefined;
 		}
 		callback(err, file, info);
 	});
