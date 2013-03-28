@@ -17,8 +17,10 @@ var PhotoSheme = new mongoose.Schema(
 			format: {type: String}, // like 'JPEG'
 			sign: {type: String},
 			size: {type: Number},
-			w: {type: Number},
-			h: {type: Number},
+			w: {type: Number}, //Оригинальная ширина
+			h: {type: Number}, //Оригинальная высота
+			ws: {type: Number}, //Стандартная ширина
+			hs: {type: Number}, //Стандартная высота
 
 			geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
 			dir: {type: String},

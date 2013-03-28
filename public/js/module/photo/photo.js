@@ -75,6 +75,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			var _this = this;
 			this.auth = globalVM.repository['m/auth'];
 			this.p = Photo.vm(Photo.def.full);
+
+			this.photoSrc = ko.observable('');
+			this.photoLoadContainer = null;
+
 			this.userRibbon = ko.observableArray();
 			this.userRibbonLeft = [];
 			this.userRibbonRight = [];
@@ -134,6 +138,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				);
 			}, this);
 
+			this.ws = ko.observable(0);
+			this.hs = ko.observable(0);
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
@@ -328,9 +334,24 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.thumbM(thumbMargin + 'px');
 			this.userThumbN(thumbNV1);
 
+			this.sizesCalcPhoto();
+
 			this.applyUserRibbon();
 
 			windowW = rightPanelW = thumbW = thumbH = null;
+		},
+		sizesCalcPhoto: function () {
+			var maxWidth = this.$dom.find('.photoPanel').width(),
+				ws = this.p.ws(),
+				hs = this.p.hs();
+
+			if (ws > maxWidth) {
+				hs = maxWidth / 1.5 >> 0;
+				ws = hs * 1.5 >> 0;
+			}
+
+			this.ws(ws);
+			this.hs(hs);
 		},
 
 		routeHandler: function () {
@@ -364,6 +385,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					if (data) {
 						this.originData = data.origin;
 						this.p = Photo.vm(data.origin, this.p, true);
+
+						if (this.photoLoadContainer) {
+							this.photoLoadContainer.off('load').off('error');
+						}
+						this.photoLoadContainer = $(new Image())
+							.on('load', this.onPhotoLoad.bind(this))
+							.on('error', this.onPhotoError.bind(this))
+							.attr('src', this.p.sfile());
+
 
 						// Вызываем обработчик изменения фото (this.p)
 						this.changePhotoHandler();
@@ -913,6 +943,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			socket.emit('createComment', dataSend);
 		},
 
+
+		onPhotoLoad: function (data, event) {
+			this.photoSrc(this.p.sfile());
+			this.sizesCalcPhoto();
+			this.photoLoadContainer = null;
+		},
+		onPhotoError: function (data, event) {
+			$(event.target).attr('src', '/img/caps/avatar.png');
+			this.photoLoadContainer = null;
+		},
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
 			data = event = null;

@@ -141,10 +141,10 @@
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
-		.span8-9
+		.span8-9.photoPanel
 			.row-fluid.photoImgRow
 				.photoImgWrap
-					img.photoImg(data-bind="attr: {src: p.sfile()}")
+					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 					//ko foreach: p.frags
 					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), 'data-ccid': $data.ccid(), href: '?hl=comment-' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: (10000 / ($data.w() * $data.h())) >> 0}")
 					// /ko
@@ -187,10 +187,10 @@
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
-		.span8-9
+		.span8-9.photoPanel
 			.row-fluid.photoImgRow
 				.photoImgWrap
-					img.photoImg(data-bind="attr: {src: p.sfile()}")
+					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 			.row-fluid.photoInfoBlock
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 				.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
