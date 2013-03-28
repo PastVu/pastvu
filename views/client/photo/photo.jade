@@ -49,28 +49,39 @@
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
 			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: commentAddClickBind")
-				label.commentInputLabel(data-bind="click: commentAddClickBind") Нажмите, чтобы начать писать комментарий
+				textarea.commentInput(wrap="soft", data-bind="click: commentReplyClickBind")
+				label.commentInputLabel(data-bind="click: commentReplyClickBind") Нажмите, чтобы начать писать комментарий
 				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: commentExe()}, click: commentSendBind, attr: {disabled: commentExe()}")
 					i.icon-comment.icon-white
-					span Отправить комментарий
+					span Отправить
 				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: commentExe()}, click: commentCancelBind, attr: {disabled: commentExe()}")
 					i.icon-remove.icon-white
 					span Отмена
+				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: commentExe()}, click: commentFragBind, attr: {disabled: commentExe()}")
+					i.icon-picture.icon-white
+					span Фрагмент
 
 	script(id="commentReplyToTpl", type="text/html")
 		li.media.commentAdd
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
 			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].commentAddClickBind")
-				label.commentInputLabel(data-bind="click: $parents[$data.level].commentAddClickBind") Нажмите, чтобы начать писать комментарий
+				textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].commentReplyClickBind")
+				label.commentInputLabel(data-bind="click: $parents[$data.level].commentReplyClickBind") Нажмите, чтобы начать писать комментарий
 				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].commentExe()}")
 					i.icon-comment.icon-white
-					span Отправить комментарий
+					span Отправить
 				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].commentExe()}")
 					i.icon-remove.icon-white
 					span Отмена
+				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentFragBind, attr: {disabled: $parents[$data.level].commentExe()}")
+					i.icon-picture.icon-white
+					span Фрагмент
+				// ko if: $parents[$data.level].commentFraging()
+				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentFragDelBind, attr: {disabled: $parents[$data.level].commentExe()}")
+					i.icon-remove.icon-white
+					span Очистить фрагмент
+				// /ko
 
 	script(id="commentTpl", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")

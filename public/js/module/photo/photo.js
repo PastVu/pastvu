@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'm/Photo', 'm/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	/**
@@ -207,9 +207,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentNestingMax = 9;
 			this.commentReplyBind = this.commentReply.bind(this);
 			this.commentReplyToBind = this.commentReplyTo.bind(this);
-			this.commentAddClickBind = this.commentAddClick.bind(this);
+			this.commentReplyClickBind = this.commentReplyClick.bind(this);
 			this.commentSendBind = this.commentSend.bind(this);
 			this.commentCancelBind = this.commentCancel.bind(this);
+
+			this.commentFraging = ko.observable(false);
+			this.commentFragArea = null;
+			this.commentFragBind = this.commentFrag.bind(this);
+			this.commentFragDelBind = this.commentFragDel.bind(this);
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -751,7 +757,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 		},
 
-		commentAddClick: function (data, event) {
+		commentReplyClick: function (data, event) {
 			this.commentActivate($(event.target).closest('.commentAdd'));
 		},
 		commentReply: function () {
@@ -774,6 +780,28 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.commentActivate($root, 400);
 		},
+		commentFrag: function (data, event) {
+			var $root = $(event.target).closest('.commentAdd'),
+				$wrap = $('.photoImgWrap');
+
+			this.commentFraging(true);
+			$root.addClass('hasContent');
+
+			$(window).scrollTo($wrap, {duration: 400, onAfter: function (elem, params) {
+				if (!this.commentFragArea) {
+					this.commentFragArea = $wrap.find('.photoImg').imgAreaSelect({
+						x1: 10, y1: 10, x2: 100, y2: 100, handles: true, parent: $wrap, persistent: true, instance: true
+					});
+				}
+			}.bind(this)});
+		},
+		commentFragDel: function () {
+			if (this.commentFragArea instanceof $.imgAreaSelect) {
+				this.commentFragArea.remove();
+				this.commentFragArea = null;
+			}
+			this.commentFraging(false);
+		},
 		commentActivate: function (root, scrollDuration) {
 			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
@@ -782,7 +810,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				input
 					.off('keyup').off('blur')
 					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 300))
-					.on('blur', this.commentAddBlur.bind(this));
+					.on('blur', _.debounce(this.commentAddBlur.bind(this), 200));
 				this.commentCheckInViewport(root, scrollDuration, function () {
 					input.focus();
 				});
@@ -802,7 +830,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				root = input.closest('.commentAdd');
 
 			input.off('keyup').off('blur');
-			if (!content) {
+			if (!content && !this.commentFraging()) {
 				root.removeClass('hasContent');
 				input.height('auto');
 			}
@@ -820,6 +848,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						cb.call(this);
 					}
 				}.bind(this)});
+			} else {
+				if (Utils.isType('function', cb)) {
+					cb.call(this);
+				}
 			}
 		},
 		commentCheckInputHeight: function (root, input) {
@@ -837,20 +869,24 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		commentCancel: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),
 				input = root.find('.commentInput');
-			input.val('');
-			input.height('auto');
-			root.removeClass('hasContent');
-			root.removeClass('hasFocus');
+
+			input.off('keyup').off('blur').val('').height('auto');
+			root.removeClass('hasContent').removeClass('hasFocus');
 			this.commentReplyingTo(0);
 		},
 		commentSend: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),
 				input = root.find('.commentInput'),
 				content = $.trim(input.val()),
-				dataSend = {
-					photo: this.p.cid(),
-					txt: content
-				};
+				dataSend;
+
+			if (_.isEmpty(content)) {
+				return;
+			}
+			dataSend = {
+				photo: this.p.cid(),
+				txt: content
+			}
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
 				dataSend.level = (data.level || 0) + 1;
