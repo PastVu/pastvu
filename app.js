@@ -108,7 +108,7 @@ app.configure(function () {
     app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
 
     app.use('/_avatar', express.static(__dirname + '/publicContent/avatars', {maxAge: ms('1d')}));
-    app.use('/_photo', express.static(__dirname + '/publicContent/photos', {maxAge: ms('7d')}));
+    app.use('/_p', express.static(__dirname + '/publicContent/photos', {maxAge: ms('7d')}));
 
     app.use(express.bodyParser());
     app.use(express.cookieParser());

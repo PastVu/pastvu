@@ -351,7 +351,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				hs = this.p.hs();
 
 			if (hscale) {
-				maxHeight = P.window.h() - $('.photoImgRow').offset().top - 47 >> 0;
+				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0;
 				if (hs > maxHeight) {
 					hs = maxHeight;
 					ws = hs * 1.5 >> 0;

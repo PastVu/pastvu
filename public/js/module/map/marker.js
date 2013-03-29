@@ -794,9 +794,9 @@ define([
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTpl({img: '/_photo/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_photo/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
+			content += this.popupClusterTpl({img: '/_p/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_p/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid +      '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_photo/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid +      '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_p/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);

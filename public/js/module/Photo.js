@@ -57,7 +57,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 			// Тип для кластера на карте
 			mapclust: {c: 0, measure: ''}
 		},
-		picPrefix = '/_photo',
+		picPrefix = '/_p',
 		picFormats = {
 			micros: picPrefix + '/micros/',
 			microm: picPrefix + '/micro/',
