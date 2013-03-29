@@ -77,6 +77,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.p = Photo.vm(Photo.def.full);
 
 			this.photoSrc = ko.observable('');
+			this.photoLoading = ko.observable(true);
 			this.photoLoadContainer = null;
 
 			this.userRibbon = ko.observableArray();
@@ -138,8 +139,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				);
 			}, this);
 
-			this.ws = ko.observable(0);
-			this.hs = ko.observable(0);
+			this.ws = ko.observable(Photo.def.full.ws);
+			this.hs = ko.observable(Photo.def.full.hs);
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
@@ -359,6 +360,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
+
+			this.photoLoading(true);
 
 			this.toComment = this.toFrag = undefined;
 			window.clearTimeout(this.scrollTimeout);
@@ -916,7 +919,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			dataSend = {
 				photo: this.p.cid(),
 				txt: content
-			}
+			};
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
 				dataSend.level = (data.level || 0) + 1;
@@ -948,10 +951,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.photoSrc(this.p.sfile());
 			this.sizesCalcPhoto();
 			this.photoLoadContainer = null;
+			this.photoLoading(false);
 		},
 		onPhotoError: function (data, event) {
-			$(event.target).attr('src', '/img/caps/avatar.png');
+			this.photoSrc('');
 			this.photoLoadContainer = null;
+			this.photoLoading(false);
 		},
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
