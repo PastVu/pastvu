@@ -348,19 +348,20 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				maxHeight,
 				hscale = this.hscale(),
 				ws = this.p.ws(),
-				hs = this.p.hs();
+				hs = this.p.hs(),
+				aspect = ws / hs;
 
 			if (hscale) {
 				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0;
 				if (hs > maxHeight) {
 					hs = maxHeight;
-					ws = hs * 1.5 >> 0;
+					ws = hs * aspect >> 0;
 				}
 			}
 
 			if (ws > maxWidth) {
-				hs = maxWidth / 1.5 >> 0;
-				ws = hs * 1.5 >> 0;
+				hs = maxWidth / aspect >> 0;
+				ws = hs * aspect >> 0;
 			}
 
 			this.ws(ws);
