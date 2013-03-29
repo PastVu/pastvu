@@ -141,6 +141,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.ws = ko.observable(Photo.def.full.ws);
 			this.hs = ko.observable(Photo.def.full.hs);
+			this.hscale = ko.observable(true);
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
@@ -235,6 +236,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
 			this.subscriptions.login = this.auth.iAm.login.subscribe(this.loginHandler, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+			this.subscriptions.hscale = this.hscale.subscribe(this.sizesCalcPhoto, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
 				var v = parseInt(val, 10);
 				if (!v || isNaN(v)) {
@@ -343,8 +345,18 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		sizesCalcPhoto: function () {
 			var maxWidth = this.$dom.find('.photoPanel').width(),
+				maxHeight,
+				hscale = this.hscale(),
 				ws = this.p.ws(),
 				hs = this.p.hs();
+
+			if (hscale) {
+				maxHeight = P.window.h() - $('.photoImgRow').offset().top - 47 >> 0;
+				if (hs > maxHeight) {
+					hs = maxHeight;
+					ws = hs * 1.5 >> 0;
+				}
+			}
 
 			if (ws > maxWidth) {
 				hs = maxWidth / 1.5 >> 0;
@@ -353,6 +365,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.ws(ws);
 			this.hs(hs);
+		},
+		stateChange: function (data, event) {
+			var state = $(event.currentTarget).attr('data-state');
+			if (state && this[state]) {
+				this[state](!this[state]());
+			}
 		},
 
 		routeHandler: function () {

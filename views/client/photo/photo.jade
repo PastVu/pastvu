@@ -149,6 +149,9 @@
 					//ko foreach: p.frags
 					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), 'data-ccid': $data.ccid(), href: '?hl=comment-' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: (10000 / ($data.w() * $data.h())) >> 0}")
 					// /ko
+				.photoTools(data-bind="style: {width: ws() + 'px'}")
+					.photoHeight.state(data-state="hscale", data-bind="css: {on: hscale()}, click: stateChange")
+						i.icon-resize-vertical.icon-white
 			.row-fluid.photoInfoBlock
 				//ko if: p.title().length > 0
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")

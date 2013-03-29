@@ -50,7 +50,6 @@
 	}
 
 	.photoImgRow {
-		margin-bottom: 17px;
 		text-align: center;
 	}
 	.photoImgWrap {
@@ -115,6 +114,19 @@
 		max-width: 100%;
 	}
 
+	.photoTools {
+		position: relative;
+		display: inline-block;
+		margin-top: 2px;
+		text-align: right;
+
+		.photoHeight {
+			display: inline-block;
+			width: 14px;
+			height: 15px;
+		}
+	}
+
 	/*
 	* imgAreaSelect animated border style
 	*/
@@ -158,10 +170,6 @@
 			margin-top: 0;
 			margin-bottom: 0;
 			text-align: justify;
-
-			&:first-child {
-				margin-top: 9px;
-			}
 
 			&.photoTitle {
 				font-weight: bold;
