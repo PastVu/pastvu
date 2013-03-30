@@ -154,7 +154,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
         },
         cancelFile: function (file) {
             if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
-                socket.emit('removePhotos', [file.ext.file]);
+                socket.emit('removePhoto', file.ext.file);
                 delete this.fileUploaded[file.ext.file];
             } else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
                 file.ext.jqXHR.abort();

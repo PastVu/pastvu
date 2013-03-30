@@ -83,7 +83,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbon = ko.observableArray();
 			this.userRibbonLeft = [];
 			this.userRibbonRight = [];
-			this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
+			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.IOwner = ko.computed(function () {
 				return this.auth.iAm.login() === this.p.user.login();
@@ -587,7 +587,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 									}.bind(this));
 								}
 							}.bind(that));
-							socket.emit('removePhotos', that.p.file());
+							socket.emit('removePhoto', Number(that.p.cid()));
 
 						}},
 						{addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {

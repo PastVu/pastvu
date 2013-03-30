@@ -38,8 +38,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				size: 0,
 				w: 1050,
 				h: 700,
-				ws: 750,
-				hs: 500,
+				ws: 1050,
+				hs: 700,
 
 				desc: '',
 				address: '',

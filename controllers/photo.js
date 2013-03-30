@@ -77,40 +77,51 @@ function createPhotos(session, data, cb) {
 }
 
 /**
- * Проставляет фотографиям в базе флаг удаления и удаляет из из конвейера конвертаций
+ * Проставляет фотографии в базе флаг удаления и удаляет ее из конвейера конвертаций
  * @param session Сессия пользователя
- * @param data Массив имен фотографий
+ * @param cid
  * @param cb Коллбэк
  */
-function removePhotos(session, data, cb) {
+function removePhoto(session, data, cb) {
 	if (!session.user || !session.user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
 
-	if (!data || (!Array.isArray(data) && !Utils.isType('string', data))) {
+	if (!data && (!Utils.isType('number', data) || !Utils.isType('string', data))) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 
-	if (!Array.isArray(data) && Utils.isType('string', data)) {
-		data = [data];
+	var query = {del: {$exists: false}};
+
+	if (Utils.isType('number', data)) {
+		query.cid = data;
+	} else if (Utils.isType('string', data)){
+		query.file = data;
 	}
 
 	step(
-		function setDelFlag() {
-			Photo.update({user: session.user._id, file: {$in: data}, del: {$exists: false}}, { $set: { del: true }}, { multi: true }, this);
+		function () {
+			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false }).select({user: 1, file: 1}).populate('user', 'login pcount').exec(this);
 		},
-		function (err, photoQuantity) {
-			if (err || photoQuantity === 0) {
-				cb({message: 'No such photo for this user', error: true});
+		function (err, photo) {
+			if (err || !photo) {
+				cb({message: (err && err.message) || 'No such photo for this user', error: true});
 				return;
 			}
-			session.user.pcount = session.user.pcount - 1;
-			session.user.save();
-			PhotoConverter.removePhotos(data, this);
+			photo.user.pcount -= 1;
+			if (session.user.login === photo.user.login) {
+				session.user.pcount -= 1;
+			}
+			photo.user.save(this.parallel());
+			PhotoConverter.removePhotos([photo.file], this.parallel());
 		},
 		function (err) {
+			if (err) {
+				cb({message: err.message, error: true});
+				return;
+			}
 			cb({message: 'Photo removed'});
 		}
 	);
@@ -216,8 +227,8 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('removePhotos', function (data) {
-			removePhotos(hs.session, data, function (resultData) {
+		socket.on('removePhoto', function (data) {
+			removePhoto(hs.session, data, function (resultData) {
 				socket.emit('removePhotoCallback', resultData);
 			});
 		});

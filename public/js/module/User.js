@@ -22,7 +22,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 
 			//profile
 			birthdate: '',
-			sex: 'male',
+			sex: 'm',
 			country: '',
 			city: '',
 			work: '',

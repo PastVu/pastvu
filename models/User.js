@@ -9,8 +9,8 @@ var mongoose = require('mongoose'),
 	LOCK_TIME = 2 * 60 * 1000;
 
 var sexes = [
-	'male',
-	'female'
+	'm',
+	'f'
 ];
 
 var UserScheme = new mongoose.Schema({

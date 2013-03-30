@@ -15,12 +15,12 @@
 		.control-group
 			label.control-label(for="inSex2") Sex
 			.controls
-				input(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='male' ? 'Male' : 'Female'")
+				input(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='m' ? 'Male' : 'Female'")
 				label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
-					input(type="radio", id='inSex', name="sex", value="male", data-bind="checked: u.sex, attr: {disabled: !edit_mode()}")
+					input(type="radio", id='inSex', name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !edit_mode()}")
 					span &nbsp;Male
 				label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
-					input(type="radio", id='inSex', name="sex", value="female", data-bind="checked: u.sex, attr: {disabled: !edit_mode()}")
+					input(type="radio", id='inSex', name="sex", value="f", data-bind="checked: u.sex, attr: {disabled: !edit_mode()}")
 					span &nbsp;Female
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
 			label.control-label(for="inResidence") Residence

@@ -280,7 +280,7 @@ module.exports.addPhotos = function (data, cb) {
 				return;
 			}
 
-			conveyerLength += toConvertObj.length;
+			conveyerLength += toConvert.length;
 			conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
 
 			if (cb) {
@@ -327,7 +327,7 @@ module.exports.addPhotosAll = function (data, cb) {
  * @param cb Коллбэк успешности удаления
  */
 module.exports.removePhotos = function (data, cb) {
-	PhotoConveyer.findOneAndRemove({file: {$in: data}}, function (err, doc) {
+	PhotoConveyer.remove({file: {$in: data}}, function (err, doc) {
 		if (cb) {
 			cb(err);
 		}
@@ -363,10 +363,10 @@ function conveyerControl() {
 	goingToWork += toWork;
 
 	PhotoConveyer.find({converting: {$exists: false}}).sort('added').limit(toWork).exec(function (err, files) {
+		goingToWork -= toWork - files.length;
 		if (err || files.length === 0) {
 			return;
 		}
-		goingToWork -= toWork - files.length;
 
 		files.forEach(function (item, index) {
 			goingToWork -= 1;
