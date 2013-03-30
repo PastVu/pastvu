@@ -41,7 +41,7 @@ module.exports.makeModel = function (db) {
             console.log('Role ' + err);
             return;
         }
-        User.saveUpsert({login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow', aboutme: 'Must be deactivated after the creation of human administrator'}, function (err, doc) {
+        User.saveUpsert({cid: 0, login: 'init', email: 'oldmos2@gmail.com'}, {pass: 'init', active: true, roles: [role._id], city: 'Moscow', aboutme: 'Must be deactivated after the creation of human administrator'}, function (err, doc) {
             if (err) console.log('User ' + err);
         });
     });

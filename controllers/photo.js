@@ -103,7 +103,8 @@ function removePhoto(session, data, cb) {
 
 	step(
 		function () {
-			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false }).select({user: 1, file: 1}).populate('user', 'login pcount').exec(this);
+			//TODO FIXME: Зачем нужен loginAttempts?
+			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false }).select({user: 1, file: 1}).populate('user', 'login loginAttempts pcount').exec(this);
 		},
 		function (err, photo) {
 			if (err || !photo) {
