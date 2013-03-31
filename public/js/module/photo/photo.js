@@ -272,16 +272,25 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				return;
 			}
 			this.$container.fadeIn(400, function () {
-				this.$dom.find('.photoImgWrap')
+				var $wrap = this.$dom.find('.photoImgWrap');
+				$wrap
 					.on('mouseenter', 'a.photoFrag', function (evt) {
 						var frag = $(evt.target),
 							fragOffset = frag.offset(),
+							fragPosition = frag.position(),
 							fragWidth = frag.width(),
-							ccid = frag.attr('data-ccid'),
-							$comment = $(".media[data-cid=" + ccid + "]"),
+							$comment = $(".media[data-cid=" + frag.attr('data-ccid') + "]"),
 							placement;
 
 						if ($comment.length === 1) {
+							$wrap.addClass('fragHover');
+							$wrap.find('.photoImg').imgAreaSelect({
+								classPrefix: 'photoFragAreaShow imgareaselect',
+								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
+								zIndex: 1,
+								handles: false, parent: $wrap, disable: true
+							});
+
 							if (fragOffset.left + fragWidth / 2 < 150) {
 								placement = 'right';
 							} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
@@ -293,10 +302,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
 								.popover('show');
 						}
-					})
+					}.bind(this))
 					.on('mouseleave', '.photoFrag', function (evt) {
 						var frag = $(evt.target);
 						frag.popover('destroy');
+						//$wrap.find('.photoImg').imgAreaSelect({remove: true});
+						$wrap.removeClass('fragHover');
 					});
 			}.bind(this));
 			this.sizesCalc(P.window.square());
@@ -446,8 +457,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 		},
-//		3. Выделение фрагмента
-//		4. "Негативная" подсветка
 		loginHandler: function (v) {
 			this.addMeToCommentsUsers();
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя
@@ -864,6 +873,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 
 				this.commentFragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
+					classPrefix: 'photoFragAreaSelect imgareaselect',
 					imageWidth: ws, imageHeight: hs,
 					minWidth: 30, minHeight: 30,
 					handles: true, parent: $parent, persistent: true, instance: true

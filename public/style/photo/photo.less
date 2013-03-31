@@ -71,19 +71,17 @@
 		.photoFrag {
 			position: absolute;
 			display: none;
-			visibility: hidden;
 			text-decoration: none;
 			cursor: pointer;
-			border: 1px solid #fff;
+			border: 1px solid transparent;
 			.box-sizing(border-box);
 		}
-		&.fragHover {
+		&.fragSensitive {
 			.photoFrag {
 				display: block;
 			}
 
 			&:hover .photoFrag, .photoFrag.hl {
-				visibility: visible;
 				.box-shadow(0 0 0 1px #000);
 			}
 			&:hover .photoFrag {
@@ -94,10 +92,22 @@
 				border-color: #ffbe00;
 				background-color: transparent;
 			}
+			//Такая отмена стилей требуется IE9
+			&.fragHover {
+				&:hover .photoFrag, .photoFrag.hl {
+					.box-shadow(none);
+				}
+				&:hover .photoFrag {
+					border-color: transparent;
+					background-color: transparent;
+				}
+				&:hover .photoFrag.hl, .photoFrag.hl {
+					border-color: transparent;
+					background-color: transparent;
+				}
+			}
 			&:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
-				background-color: transparent;
-				z-index: 10000 !important;
-				.box-shadow(~'0 1px 8px 1px #000');
+				border-color: #fff !important;
 			}
 		}
 
@@ -137,36 +147,38 @@
 	/*
 	* imgAreaSelect animated border style
 	*/
-	.imgareaselect-border1 {
-		background: url(/img/misc/border-anim-v.gif) repeat-y left top;
-	}
+	.photoFragAreaSelect {
+		&.imgareaselect-border1 {
+			background: url(/img/misc/border-anim-v.gif) repeat-y left top;
+		}
 
-	.imgareaselect-border2 {
-		background: url(/img/misc/border-anim-h.gif) repeat-x left top;
-	}
+		&.imgareaselect-border2 {
+			background: url(/img/misc/border-anim-h.gif) repeat-x left top;
+		}
 
-	.imgareaselect-border3 {
-		background: url(/img/misc/border-anim-v.gif) repeat-y right top;
-	}
+		&.imgareaselect-border3 {
+			background: url(/img/misc/border-anim-v.gif) repeat-y right top;
+		}
 
-	.imgareaselect-border4 {
-		background: url(/img/misc/border-anim-h.gif) repeat-x left bottom;
+		&.imgareaselect-border4 {
+			background: url(/img/misc/border-anim-h.gif) repeat-x left bottom;
+		}
 	}
 
 	.imgareaselect-border1, .imgareaselect-border2,
 	.imgareaselect-border3, .imgareaselect-border4 {
-		opacity: 0.6;
+		opacity: 0.66;
 	}
 
 	.imgareaselect-handle {
 		background-color: #fff;
 		border: solid 1px #000;
-		opacity: 0.6;
+		opacity: 0.66;
 	}
 
 	.imgareaselect-outer {
 		background-color: #000;
-		opacity: 0.6;
+		opacity: 0.66;
 	}
 
 	.imgareaselect-selection {
