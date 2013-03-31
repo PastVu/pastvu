@@ -288,7 +288,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 								classPrefix: 'photoFragAreaShow imgareaselect',
 								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
 								zIndex: 1,
-								handles: false, parent: $wrap, disable: true
+								parent: $wrap, disable: true
 							});
 
 							if (fragOffset.left + fragWidth / 2 < 150) {
@@ -306,7 +306,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					.on('mouseleave', '.photoFrag', function (evt) {
 						var frag = $(evt.target);
 						frag.popover('destroy');
-						//$wrap.find('.photoImg').imgAreaSelect({remove: true});
+						$wrap.find('.photoImg').imgAreaSelect({remove: true});
 						$wrap.removeClass('fragHover');
 					});
 			}.bind(this));
