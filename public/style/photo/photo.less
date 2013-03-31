@@ -70,28 +70,35 @@
 
 		.photoFrag {
 			position: absolute;
+			display: none;
 			visibility: hidden;
 			text-decoration: none;
 			cursor: pointer;
 			border: 1px solid #fff;
-			.box-sizing(border);
+			.box-sizing(border-box);
 		}
-		&:hover .photoFrag, .photoFrag.hl {
-			visibility: visible;
-			.box-shadow(0 0 0 1px #000);
-		}
-		&:hover .photoFrag {
-			border-color: #fff;
-			background-color: rgba(255, 255, 255, 0.1);
-		}
-		&:hover .photoFrag.hl, .photoFrag.hl {
-			border-color: #ffbe00;
-			background-color: transparent;
-		}
-		&:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
-			background-color: transparent;
-			z-index: 10000 !important;
-			.box-shadow(~'0 1px 8px 1px #000');
+		&.fragHover {
+			.photoFrag {
+				display: block;
+			}
+
+			&:hover .photoFrag, .photoFrag.hl {
+				visibility: visible;
+				.box-shadow(0 0 0 1px #000);
+			}
+			&:hover .photoFrag {
+				border-color: #fff;
+				background-color: rgba(255, 255, 255, 0.1);
+			}
+			&:hover .photoFrag.hl, .photoFrag.hl {
+				border-color: #ffbe00;
+				background-color: transparent;
+			}
+			&:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
+				background-color: transparent;
+				z-index: 10000 !important;
+				.box-shadow(~'0 1px 8px 1px #000');
+			}
 		}
 
 		.popover {

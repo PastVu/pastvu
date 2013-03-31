@@ -45,7 +45,7 @@
 
 
 	script(id="commentReply", type="text/html")
-		.media.commentAdd(data-bind="attr: {}")
+		li.media.commentAdd(data-bind="attr: {}")
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
 			.media-body
@@ -60,6 +60,11 @@
 				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: commentExe()}, click: commentFragBind, attr: {disabled: commentExe()}")
 					i.icon-picture.icon-white
 					span Фрагмент
+				// ko if: commentFraging()
+				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: commentExe()}, click: commentFragDeleteBind, attr: {disabled: commentExe()}")
+					i.icon-remove.icon-white
+					span Очистить фрагмент
+				// /ko
 
 	script(id="commentReplyToTpl", type="text/html")
 		li.media.commentAdd
@@ -143,7 +148,7 @@
 	script(id="photoView", type="text/html")
 		.span8-9.photoPanel
 			.row-fluid.photoImgRow
-				.photoImgWrap(data-bind="css: {loading: photoLoading()}")
+				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragHover: !commentFraging()}")
 					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 					.photoLoading
 					//ko foreach: p.frags
@@ -194,7 +199,7 @@
 	script(id="photoEdit", type="text/html")
 		.span8-9.photoPanel
 			.row-fluid.photoImgRow
-				.photoImgWrap(data-bind="css: {loading: photoLoading()}")
+				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragHover: !commentFraging()}")
 					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 					.photoLoading
 				br
