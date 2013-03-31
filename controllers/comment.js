@@ -127,18 +127,44 @@ function createComment(session, data, cb) {
 	}
 
 	var content = data.txt,
+		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
+		fragObj,
+		countComment,
+		countFragment,
 		comment;
 	step(
-		function () {
-			Photo.findOne({cid: Number(data.photo)}, {_id: 1}, this.parallel());
+		function counters() {
 			Counter.increment('comment', this.parallel());
+			if (fragAdded) {
+				Counter.increment('fragment', this.parallel());
+			}
+		},
+		function (err, countC, countF) {
+			if (err || !countC) {
+				cb({message: err.message || 'Increment comment counter error', error: true});
+				return;
+			}
+			countComment = countC.next;
+			countFragment = countF.next;
+			if (fragAdded) {
+				fragObj = {
+					cid: countFragment,
+					ccid: countComment,
+					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
+					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
+					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
+					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+				};
+			}
+
+			Photo.findOne({cid: Number(data.photo)}, {_id: 1}, this.parallel());
 			if (data.parent) {
 				Comment.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
 			}
 		},
-		function (err, photo, count, parent) {
-			if (err || !photo || !count) {
-				cb({message: err.message || 'Increment comment counter error', error: true});
+		function (err, photo, parent) {
+			if (err || !photo) {
+				cb({message: err.message || 'No such photo', error: true});
 				return;
 			}
 			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
@@ -146,7 +172,7 @@ function createComment(session, data, cb) {
 				return;
 			}
 			comment = {
-				cid: count.next,
+				cid: countComment,
 				photo: photo,
 				user: session.user,
 				txt: content
@@ -154,6 +180,9 @@ function createComment(session, data, cb) {
 			if (data.parent) {
 				comment.parent = data.parent;
 				comment.level = data.level;
+			}
+			if (fragAdded) {
+				comment.frag = countFragment;
 			}
 			var commentObj = new Comment(comment);
 			commentObj.save(this);
@@ -163,9 +192,15 @@ function createComment(session, data, cb) {
 				cb({message: err.message || 'Comment save error', error: true});
 				return;
 			}
+			var photoUpdate = {$inc: {ccount: 1}};
+
+			if (fragAdded) {
+				photoUpdate.$push = {frags: fragObj};
+			}
+			Photo.update({cid: data.photo}, photoUpdate, {multi: false, upsert: false}, this.parallel());
+
 			session.user.ccount += 1;
 			session.user.save(this.parallel());
-			Photo.update({cid: data.photo}, {$inc: {ccount: 1}}, this.parallel());
 		},
 		function (err) {
 			if (err) {
@@ -177,7 +212,7 @@ function createComment(session, data, cb) {
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
-			cb({message: 'ok', comment: comment});
+			cb({message: 'ok', comment: comment, frag: fragObj});
 		}
 	);
 }

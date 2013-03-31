@@ -858,7 +858,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					ws2, hs2;
 
 				if (!selections) {
-					ws2 = ws / 2 >> 0; hs2 = hs / 2;
+					ws2 = ws / 2 >> 0;
+					hs2 = hs / 2;
 					selections = {x1: ws2 - 50, y1: hs2 - 50, x2: ws2 + 50, y2: hs2 + 50};
 				}
 
@@ -954,6 +955,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			var root = $(event.target).closest('.commentAdd'),
 				input = root.find('.commentInput'),
 				content = $.trim(input.val()),
+				fragSelection,
 				dataSend;
 
 			if (_.isEmpty(content)) {
@@ -967,6 +969,15 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				dataSend.parent = data.cid;
 				dataSend.level = (data.level || 0) + 1;
 			}
+			if (this.commentFragArea instanceof $.imgAreaSelect) {
+				fragSelection = this.commentFragArea.getSelection(false);
+				dataSend.fragObj = {
+					l: 100 * fragSelection.x1 / this.p.ws(),
+					t: 100 * fragSelection.y1 / this.p.hs(),
+					w: 100 * fragSelection.width / this.p.ws(),
+					h: 100 * fragSelection.height / this.p.hs()
+				};
+			}
 
 			this.commentExe(true);
 			socket.once('createCommentResult', function (result) {
@@ -979,8 +990,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						if (result.comment.level < this.commentNestingMax) {
 							result.comment.comments = ko.observableArray();
 						}
-						this.p.ccount(this.p.ccount() + 1);
 						data.comments.push(result.comment);
+						this.p.ccount(this.p.ccount() + 1);
+						if (Utils.isType('object', result.frag)) {
+							this.p.frags.push(ko_mapping.fromJS(result.frag));
+						}
+
+						this.commentFragDelete();
 						this.commentCancel(data, event);
 					}
 				}
