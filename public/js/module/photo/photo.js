@@ -222,7 +222,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentFraging = ko.observable(false);
 			this.commentFragArea = null;
 			this.commentFragBind = this.commentFrag.bind(this);
-			this.commentFragDelBind = this.commentFragDel.bind(this);
+			this.commentFragCreateBind = this.commentFragCreate.bind(this);
+			this.commentFragDeleteBind = this.commentFragDelete.bind(this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -349,7 +350,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				hscale = this.hscale(),
 				ws = this.p.ws(),
 				hs = this.p.hs(),
-				aspect = ws / hs;
+				aspect = ws / hs,
+				fragSelection;
 
 			if (hscale) {
 				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0;
@@ -366,6 +368,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.ws(ws);
 			this.hs(hs);
+
+			if (this.commentFragArea instanceof $.imgAreaSelect) {
+				fragSelection = this.commentFragArea.getSelection();
+				this.commentFragDelete();
+				this.commentFragCreate(fragSelection);
+			}
 		},
 		stateChange: function (data, event) {
 			var state = $(event.currentTarget).attr('data-state');
@@ -380,8 +388,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
 
-			this.photoLoading(true);
-
 			this.toComment = this.toFrag = undefined;
 			window.clearTimeout(this.scrollTimeout);
 
@@ -394,6 +400,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
+				this.photoLoading(true);
+
 				this.comments([]);
 				this.commentsUsers = {};
 				this.addMeToCommentsUsers();
@@ -839,17 +847,33 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentFraging(true);
 			$root.addClass('hasContent');
 
-			$(window).scrollTo($wrap, {duration: 400, onAfter: function (elem, params) {
-				if (!this.commentFragArea) {
-					this.commentFragArea = $wrap.find('.photoImg').imgAreaSelect({
-						x1: 10, y1: 10, x2: 100, y2: 100, handles: true, parent: $wrap, persistent: true, instance: true
-					});
-				}
+			$(window).scrollTo($wrap, {duration: 400, onAfter: function () {
+				this.commentFragCreate();
 			}.bind(this)});
 		},
-		commentFragDel: function () {
+		commentFragCreate: function (selections) {
+			if (!this.commentFragArea) {
+				var $parent = this.$dom.find('.photoImgWrap'),
+					ws = this.p.ws(), hs = this.p.hs(),
+					ws2, hs2;
+
+				if (!selections) {
+					ws2 = ws / 2 >> 0; hs2 = hs / 2;
+					selections = {x1: ws2 - 50, y1: hs2 - 50, x2: ws2 + 50, y2: hs2 + 50};
+				}
+
+				this.commentFragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
+					imageWidth: ws, imageHeight: hs,
+					minWidth: 30, minHeight: 30,
+					handles: true, parent: $parent, persistent: true, instance: true
+				}, selections));
+			}
+			this.commentFraging(true);
+		},
+		commentFragDelete: function () {
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
 				this.commentFragArea.remove();
+				this.$dom.find('.photoImg').removeData('imgAreaSelect');
 				this.commentFragArea = null;
 			}
 			this.commentFraging(false);
