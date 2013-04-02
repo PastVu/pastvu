@@ -279,7 +279,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 							fragOffset = frag.offset(),
 							fragPosition = frag.position(),
 							fragWidth = frag.width(),
-							$comment = $(".media[data-cid=" + frag.attr('data-ccid') + "]"),
+							$comment = $(".media[data-cid=" + frag.attr('data-cid') + "]"),
 							placement;
 
 						if ($comment.length === 1) {

@@ -98,7 +98,7 @@
 						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
 						//ko if: $data.frag
 						.dotDelimeter ·
-						a.frag(data-bind="attr: {href: '?hl=frag-' + $data.frag}")
+						a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
 							i.icon-picture
 							| Комментируемый фрагмент
 						// /ko
@@ -152,7 +152,7 @@
 					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 					.photoLoading
 					//ko foreach: p.frags
-					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), 'data-ccid': $data.ccid(), href: '?hl=comment-' + $data.ccid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
+					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
 					// /ko
 				br
 				.photoTools(data-bind="style: {width: ws() + 'px'}")

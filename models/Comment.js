@@ -13,7 +13,7 @@ var CommentSheme = new mongoose.Schema(
 		txt: {type: String},
 		parent: {type: Number},
 		level: {type: Number},
-		frag: {type: String}
+		frag: {type: Boolean}
 	},
 	{
 		strict: true

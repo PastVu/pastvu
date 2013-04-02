@@ -598,7 +598,6 @@ module.exports.loadController = function (app, db) {
 			photoOid,
 			photosFragment = {},
 			fragmentArr,
-			fragmentCid = 0,
 			i,
 
 			commentsRelationsHash = {},
@@ -675,14 +674,14 @@ module.exports.loadController = function (app, db) {
 									photosFragment[comment.photo_id] = [];
 								}
 								photosFragment[comment.photo_id].push({
-									cid: ++fragmentCid,
-									ccid: newComment.cid,
+									_id: ObjectId(),
+									cid: newComment.cid,
 									l: fragmentArr[0],
 									t: fragmentArr[1],
 									w: toPrecisionRound(fragmentArr[2] - fragmentArr[0], 2),
 									h: toPrecisionRound(fragmentArr[3] - fragmentArr[1], 2)
 								});
-								newComment.frag = fragmentCid;
+								newComment.frag = true;
 								fragCounter++;
 							} else {
 								fragCounterError++;
@@ -713,14 +712,12 @@ module.exports.loadController = function (app, db) {
 		});
 
 
-		fragmentCid = 0;
 		for (i in photosFragment) {
 			if (photosFragment[i] !== undefined) {
-				fragmentCid++;
 				db.photos.update({cid: Number(i)}, {$set: {frags: photosFragment[i]}}, {upsert: false});
 			}
 		}
-		print('Inserted ' + fragCounter + ' fragments to ' + fragmentCid + ' photos');
+		print('Inserted ' + fragCounter + ' fragments to ' + Object.keys(photosFragment).length + ' photos');
 
 		maxCid = db.comments.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
 		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;

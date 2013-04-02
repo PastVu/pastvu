@@ -13,6 +13,14 @@ var Settings,
 	log4js = require('log4js'),
 	logger;
 
+
+function cursorCommentsExtract(err, cursor) {
+	if (err) {
+		this(err);
+		return;
+	}
+	cursor.sort({stamp: 1}).toArray(this);
+}
 /**
  * Выбирает комментарии для фотографии
  * @param session Сессия польщователя
@@ -40,13 +48,7 @@ function getCommentsPhoto(session, data, cb) {
 			}
 			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, this);
 		},
-		function cursorCommentsExtract(err, cursor) {
-			if (err || !cursor) {
-				cb({message: 'Create cursor error', error: true});
-				return;
-			}
-			cursor.sort({stamp: 1}).toArray(this);
-		},
+		cursorCommentsExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: err || 'Cursor extract error', error: true});
@@ -112,7 +114,7 @@ function getCommentsPhoto(session, data, cb) {
 
 /**
  * Создает комментарий для фотографии
- * @param session Сессия польщователя
+ * @param session Сессия пользователя
  * @param data Объект
  * @param cb Коллбэк
  */
@@ -127,29 +129,25 @@ function createComment(session, data, cb) {
 	}
 
 	var content = data.txt,
+		comment,
+		photoObj,
 		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
 		fragObj,
-		countComment,
-		countFragment,
-		comment;
+		countComment;
+
 	step(
 		function counters() {
-			Counter.increment('comment', this.parallel());
-			if (fragAdded) {
-				Counter.increment('fragment', this.parallel());
-			}
+			Counter.increment('comment', this);
 		},
-		function (err, countC, countF) {
+		function (err, countC) {
 			if (err || !countC) {
-				cb({message: err.message || 'Increment comment counter error', error: true});
+				cb({message: (err && err.message) || 'Increment comment counter error', error: true});
 				return;
 			}
 			countComment = countC.next;
-			countFragment = countF.next;
 			if (fragAdded) {
 				fragObj = {
-					cid: countFragment,
-					ccid: countComment,
+					cid: countComment,
 					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
 					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
 					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
@@ -157,7 +155,7 @@ function createComment(session, data, cb) {
 				};
 			}
 
-			Photo.findOne({cid: Number(data.photo)}, {_id: 1}, this.parallel());
+			Photo.findOne({cid: Number(data.photo)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 			if (data.parent) {
 				Comment.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
 			}
@@ -171,6 +169,8 @@ function createComment(session, data, cb) {
 				cb({message: 'Something wrong with parent comment', error: true});
 				return;
 			}
+			photoObj = photo;
+
 			comment = {
 				cid: countComment,
 				photo: photo,
@@ -182,22 +182,21 @@ function createComment(session, data, cb) {
 				comment.level = data.level;
 			}
 			if (fragAdded) {
-				comment.frag = countFragment;
+				comment.frag = true;
 			}
-			var commentObj = new Comment(comment);
-			commentObj.save(this);
+			new Comment(comment).save(this);
 		},
 		function (err) {
 			if (err) {
 				cb({message: err.message || 'Comment save error', error: true});
 				return;
 			}
-			var photoUpdate = {$inc: {ccount: 1}};
 
+			photoObj.ccount = (photoObj.ccount || 0) +  1;
 			if (fragAdded) {
-				photoUpdate.$push = {frags: fragObj};
+				photoObj.frags.push(fragObj);
 			}
-			Photo.update({cid: data.photo}, photoUpdate, {multi: false, upsert: false}, this.parallel());
+			photoObj.save(this.parallel());
 
 			session.user.ccount += 1;
 			session.user.save(this.parallel());
@@ -213,6 +212,82 @@ function createComment(session, data, cb) {
 				comment.level = 0;
 			}
 			cb({message: 'ok', comment: comment, frag: fragObj});
+		}
+	);
+}
+
+/**
+ * Удаляет комментарий
+ * @param session Сессия пользователя
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function removeComment(session, data, cb) {
+	if (!session.user || !session.user.login) {
+		cb({message: 'You are not authorized for this action.', error: true});
+		return;
+	}
+	if (!Utils.isType('object', data) || !data.cid) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+	var usersHash = {};
+
+	step(
+		function findPhoto() {
+			Comment.findOne({cid: data.cid}, {photo: 1}, this);
+		},
+		function createCursor(err, comment) {
+			if (err || !comment) {
+				cb({message: (err && err.message) || 'No such comment', error: true});
+				return;
+			}
+			Comment.collection.find({photo: comment.photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, this);
+		},
+		cursorCommentsExtract,
+		function (err, comments) {
+			if (err || !comments) {
+				cb({message: (err && err.message) || 'Cursor extract error', error: true});
+				return;
+			}
+			var i = -1,
+				len = comments.length,
+				hashComments = {},
+				hashUsers = {},
+				arrComments = [],
+				arrFragments = [],
+				comment;
+
+			while (++i < len) {
+				comment = comments[i];
+				if (comment.cid === data.cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
+					hashComments[comment.cid] = comment;
+					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+					arrComments.push(comment.cid);
+					if (Utils.isType('number', comment.frag)) {
+						arrFragments.push(comment.frag);
+					}
+				}
+			}
+			Comment.collection.remove({cid: {$in: arrComments}}, this);
+		},
+		function (err) {
+			if (err) {
+				cb({message: 'Comments delete error', error: true});
+				return;
+			}
+		},
+		function (err, comment) {
+			if (err || !comment) {
+				cb({message: (err && err.message) || 'Comment remove error', error: true});
+				return;
+			}
+			var photoUpdate = {$dec: {ccount: 1}};
+
+			if (comment.frag) {
+				//photoUpdate.$push = {frags: fragObj};
+				Photo.update({cid: data.photo}, photoUpdate, {multi: false, upsert: false}, this.parallel());
+			}
 		}
 	);
 }
@@ -239,6 +314,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('createComment', function (data) {
 			createComment(hs.session, data, function (result) {
 				socket.emit('createCommentResult', result);
+			});
+		});
+
+		socket.on('removeComment', function (data) {
+			removeComment(hs.session, data, function (result) {
+				socket.emit('removeCommentResult', result);
 			});
 		});
 

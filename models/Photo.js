@@ -3,7 +3,14 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema;
 
-var PhotoSheme = new mongoose.Schema(
+var FragmentSchema = new Schema({
+		cid: {type: Number}, //Comment cid
+		l: {type: Number}, //Left
+		t: {type: Number}, //Top
+		w: {type: Number}, //Width
+		h: {type: Number}  //Height
+	}),
+	PhotoSchema = new Schema(
 		{
 			cid: {type: Number, index: { unique: true }},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
@@ -37,7 +44,7 @@ var PhotoSheme = new mongoose.Schema(
 			stats_week: {type: Number},
 			stats_all: {type: Number},
 			ccount: {type: Number}, //Кол-во комментариев
-			frags: [], //Фрагменты с комментариями
+			frags: [FragmentSchema], //Фрагменты с комментариями
 
 			conv: {type: Boolean}, //Конвертируется
 			convqueue: {type: Boolean}, //В очереди на конвертацию
@@ -49,7 +56,7 @@ var PhotoSheme = new mongoose.Schema(
 			strict: true
 		}
 	),
-	PhotoConveyerSheme = new mongoose.Schema(
+	PhotoConveyerSchema = new Schema(
 		{
 			file: {type: String, index: true},
 			added: {type: Date, 'default': Date.now, required: true, index: true},
@@ -61,7 +68,7 @@ var PhotoSheme = new mongoose.Schema(
 		}
 	),
 // Ошибки конвертирования
-	PhotoConveyerErrorSheme = new mongoose.Schema(
+	PhotoConveyerErrorSchema = new Schema(
 		{
 			file: {type: String, index: true},
 			added: {type: Date},
@@ -73,7 +80,7 @@ var PhotoSheme = new mongoose.Schema(
 		}
 	),
 //Статистика заполненности конвейера
-	STPhotoConveyerSheme = new mongoose.Schema(
+	STPhotoConveyerSchema = new Schema(
 		{
 			stamp: {type: Date, 'default': Date.now, required: true, index: true},
 			clength: {type: Number}, // Максимальная длина конвейра на дату
@@ -91,7 +98,7 @@ var PhotoSheme = new mongoose.Schema(
  * @param {string}
  * @param {function} cb
  */
-PhotoSheme.pre('save', function (next) {
+PhotoSchema.pre('save', function (next) {
 
 	// check year2
 	if (this.isModified('year') || this.isModified('year2')) {
@@ -103,22 +110,22 @@ PhotoSheme.pre('save', function (next) {
 	return next();
 });
 
-PhotoSheme.statics.resetStatDay = function (cb) {
+PhotoSchema.statics.resetStatDay = function (cb) {
 	this.update({}, { $set: { stats_day: 0} }, {multi: true}, cb);
 };
 
-PhotoSheme.statics.resetStatWeek = function (cb) {
+PhotoSchema.statics.resetStatWeek = function (cb) {
 	this.update({}, { $set: { stats_week: 0} }, {multi: true}, cb);
 };
 
-PhotoSheme.statics.getPhoto = function (query, cb) {
+PhotoSchema.statics.getPhoto = function (query, cb) {
 	if (!query || !query.cid) {
 		cb(null, 'cid is not specified');
 	}
-	this.findOneAndUpdate(query, { $inc: { stats_day: 1, stats_week: 1, stats_all: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v').exec(cb);
+	this.findOneAndUpdate(query, { $inc: { stats_day: 1, stats_week: 1, stats_all: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v -frags._id').exec(cb);
 };
 
-PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {
+PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
 	if (!query || !query.cid) {
 		cb(null, 'cid is not specified');
 	}
@@ -126,7 +133,7 @@ PhotoSheme.statics.getPhotoCompact = function (query, options, cb) {
 	this.findOne(query, null, options).select('-_id cid file loaded title year ccount fresh disabled conv convqueue del').exec(cb);
 };
 
-PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
+PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
 	if (!query) {
 		cb(null, 'query is not specified');
 	}
@@ -136,8 +143,8 @@ PhotoSheme.statics.getPhotosCompact = function (query, options, cb) {
 
 
 module.exports.makeModel = function (db) {
-	db.model('Photo', PhotoSheme);
-	db.model('PhotoConveyer', PhotoConveyerSheme);
-	db.model('PhotoConveyerError', PhotoConveyerErrorSheme);
-	db.model('STPhotoConveyer', STPhotoConveyerSheme);
+	db.model('Photo', PhotoSchema);
+	db.model('PhotoConveyer', PhotoConveyerSchema);
+	db.model('PhotoConveyerError', PhotoConveyerErrorSchema);
+	db.model('STPhotoConveyer', STPhotoConveyerSchema);
 };
