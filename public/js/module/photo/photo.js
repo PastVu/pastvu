@@ -1017,7 +1017,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		commentRemove: function (data, event) {
 			var _this = this,
+				root = $(event.target).closest('.media'),
 				cid = Number(data.cid);
+
+			root.addClass('hlRemove');
 
 			window.noty(
 				{
@@ -1058,13 +1061,17 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 											this.p.frags(ko_mapping.fromJS({arr: result.frags}).arr());
 										}
 										this.commentsRecieve();
+									} else {
+										root.removeClass('hlRemove');
 									}
+
 								}.bind(this));
 
 							}.bind(_this));
 							socket.emit('removeComment', cid);
 						}},
 						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+							root.removeClass('hlRemove');
 							$noty.close();
 						}}
 					]
