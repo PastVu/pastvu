@@ -105,7 +105,10 @@
 						.dotDelimeter ·
 						a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text:moment($data.stamp).calendar()")
 					.commentText(data-bind="html: $data.txt")
-					.commentReply(data-bind="click: $parents[$data.level].commentReplyToBind") Ответить
+					.commentActions
+						span.commentAction.reply(data-bind="click: $parents[$data.level].commentReplyToBind") Ответить
+						.dotDelimeter ·
+						span.commentAction.remove(data-bind="click: $parents[$data.level].commentRemoveBind") Удалить
 				//ko template: {name: 'commentTpl', foreach: $data.comments }
 				// /ko
 				//ko if: $data.cid === $parents[$data.level].commentReplyingTo()

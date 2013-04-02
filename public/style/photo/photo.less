@@ -414,21 +414,25 @@
 		.commentText {
 			max-width: 1024px;
 		}
-		.commentReply {
+
+		.commentActions{
 			display: none;
-			width: 70px;
 			margin-top: 2px;
-			padding-top: 2px;
-			padding-bottom: 2px;
 			font-size: 14px;
 			line-height: 14px;
 			color: #888;
-			cursor: pointer;
 
-			&:hover {
-				color: @MainBlueColor;
+			.commentAction {
+				padding-top: 2px;
+				padding-bottom: 2px;
+				cursor: pointer;
+
+				&:hover {
+					color: @MainBlueColor;
+				}
 			}
 		}
+
 
 		.commentAdd {
 			position: relative;
@@ -479,7 +483,7 @@
 
 	.photoData.loggedIn {
 		.photoComments {
-			.commentReply {
+			.commentActions {
 				display: block;
 			}
 		}

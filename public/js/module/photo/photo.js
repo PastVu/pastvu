@@ -216,6 +216,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentReplyBind = this.commentReply.bind(this);
 			this.commentReplyToBind = this.commentReplyTo.bind(this);
 			this.commentReplyClickBind = this.commentReplyClick.bind(this);
+			this.commentRemoveBind = this.commentRemove.bind(this);
 			this.commentSendBind = this.commentSend.bind(this);
 			this.commentCancelBind = this.commentCancel.bind(this);
 
@@ -1013,6 +1014,62 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.commentExe(false);
 			}.bind(this));
 			socket.emit('createComment', dataSend);
+		},
+		commentRemove: function (data, event) {
+			var _this = this,
+				cid = Number(data.cid);
+
+			window.noty(
+				{
+					text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами без возможности восстановления<br>Подтверждаете операцию удаления?',
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					animation: {
+						open: {height: 'toggle'},
+						close: {},
+						easing: 'swing',
+						speed: 500
+					},
+					buttons: [
+						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+							// this = button element
+							// $noty = $noty element
+							if ($noty.$buttons && $noty.$buttons.find) {
+								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+							}
+
+							socket.once('removeCommentResult', function (result) {
+								$noty.$buttons.find('.btn-strict-danger').remove();
+								var okButton = $noty.$buttons.find('button')
+									.attr('disabled', false)
+									.removeClass('disabled')
+									.off('click');
+
+								$noty.$message.children().html((result && result.message) || '');
+								okButton.text('Close').on('click', function () {
+									$noty.close();
+									if (!result.error) {
+										if (Utils.isType('number', result.countComments)) {
+											this.p.ccount(this.p.ccount() - result.countComments);
+										}
+										if (Utils.isType('array', result.frags)) {
+											this.p.frags(ko_mapping.fromJS({arr: result.frags}).arr());
+										}
+										this.commentsRecieve();
+									}
+								}.bind(this));
+
+							}.bind(_this));
+							socket.emit('removeComment', cid);
+						}},
+						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+							$noty.close();
+						}}
+					]
+				}
+			);
 		},
 
 

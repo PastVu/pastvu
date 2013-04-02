@@ -192,7 +192,7 @@ function createComment(session, data, cb) {
 				return;
 			}
 
-			photoObj.ccount = (photoObj.ccount || 0) +  1;
+			photoObj.ccount = (photoObj.ccount || 0) + 1;
 			if (fragAdded) {
 				photoObj.frags.push(fragObj);
 			}
@@ -219,30 +219,38 @@ function createComment(session, data, cb) {
 /**
  * Удаляет комментарий
  * @param session Сессия пользователя
- * @param data Объект
+ * @param cid
  * @param cb Коллбэк
  */
-function removeComment(session, data, cb) {
+function removeComment(session, cid, cb) {
 	if (!session.user || !session.user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
-	if (!Utils.isType('object', data) || !data.cid) {
+	if (!Utils.isType('number', cid)) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
-	var usersHash = {};
+	var photoObj,
+		hashComments = {},
+		hashUsers = {},
+		arrComments = [],
+		countCommentsRemoved;
 
 	step(
-		function findPhoto() {
-			Comment.findOne({cid: data.cid}, {photo: 1}, this);
+		function () {
+			Comment.findOne({cid: cid}, {photo: 1}, this);
 		},
-		function createCursor(err, comment) {
-			if (err || !comment) {
-				cb({message: (err && err.message) || 'No such comment', error: true});
+		function findPhoto(err, comment) {
+			Photo.findOne({_id: comment.photo}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+		},
+		function createCursor(err, photo) {
+			if (err || !photo) {
+				cb({message: (err && err.message) || 'No such photo', error: true});
 				return;
 			}
-			Comment.collection.find({photo: comment.photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, this);
+			photoObj = photo;
+			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, this.parallel());
 		},
 		cursorCommentsExtract,
 		function (err, comments) {
@@ -252,42 +260,47 @@ function removeComment(session, data, cb) {
 			}
 			var i = -1,
 				len = comments.length,
-				hashComments = {},
-				hashUsers = {},
-				arrComments = [],
-				arrFragments = [],
 				comment;
 
 			while (++i < len) {
 				comment = comments[i];
-				if (comment.cid === data.cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
+				if (comment.cid === cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
 					hashComments[comment.cid] = comment;
 					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
 					arrComments.push(comment.cid);
-					if (Utils.isType('number', comment.frag)) {
-						arrFragments.push(comment.frag);
-					}
 				}
 			}
-			Comment.collection.remove({cid: {$in: arrComments}}, this);
+			Comment.remove({cid: {$in: arrComments}}, this);
+		},
+		function (err, countRemoved) {
+			if (err) {
+				cb({message: err.message || 'Comment remove error', error: true});
+				return;
+			}
+			var frags = photoObj.frags.toObject(),
+				i = frags.length,
+				u;
+			while (i--) {
+				if (hashComments[frags[i].cid] !== undefined) {
+					photoObj.frags.id(frags[i]._id).remove();
+				}
+			}
+			photoObj.ccount -= countRemoved;
+			photoObj.save(this.parallel());
+
+			for (u in hashUsers) {
+				if (hashUsers[u] !== undefined) {
+					User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
+				}
+			}
+			countCommentsRemoved = countRemoved;
 		},
 		function (err) {
 			if (err) {
-				cb({message: 'Comments delete error', error: true});
+				cb({message: err.message || 'Photo or user update error', error: true});
 				return;
 			}
-		},
-		function (err, comment) {
-			if (err || !comment) {
-				cb({message: (err && err.message) || 'Comment remove error', error: true});
-				return;
-			}
-			var photoUpdate = {$dec: {ccount: 1}};
-
-			if (comment.frag) {
-				//photoUpdate.$push = {frags: fragObj};
-				Photo.update({cid: data.photo}, photoUpdate, {multi: false, upsert: false}, this.parallel());
-			}
+			cb({message: 'Removed ' + countCommentsRemoved + ' comments from ' + Object.keys(hashUsers).length + ' users', frags: photoObj.frags.toObject(), countComments: countCommentsRemoved});
 		}
 	);
 }
