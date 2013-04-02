@@ -28,7 +28,7 @@ function cursorCommentsExtract(err, cursor) {
  * @param cb Коллбэк
  */
 function getCommentsPhoto(session, data, cb) {
-	var start = Date.now(),
+	var //start = Date.now(),
 		commentsArr,
 		usersHash = {},
 		usersArr = [];
@@ -106,7 +106,7 @@ function getCommentsPhoto(session, data, cb) {
 				}
 			}
 
-			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
 			cb({message: 'ok', cid: data.cid, comments: commentsArr, users: userHashFormatted});
 		}
 	);
