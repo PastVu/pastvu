@@ -13,11 +13,10 @@ var ClusterPoster = {
 	},
 	ClusterSchema = new Schema(
 		{
-			geo: {type: [Number]}, // Координаты левого верхнего угла
-			z: {type: Number}, // Зум кластера
+			g: {type: [Number]}, // Координаты левого верхнего угла кластера (Индексируется)
+			z: {type: Number}, // Зум кластера (Индексируется)
 
-			gravity: {type: [Number]}, // Координаты центра тяжести кластера
-
+			geo: {type: [Number]}, // Координаты центра тяжести кластера
 			c: {type: Number}, // Количество фотографий в кластере
 			p: ClusterPoster // Обложка кластера
 		},
@@ -43,7 +42,7 @@ var ClusterPoster = {
 		}
 	);
 
-ClusterSchema.index({ geo: '2d', z: 1 }); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+ClusterSchema.index({ g: '2d', z: 1 }); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 
 
 module.exports.makeModel = function (db) {

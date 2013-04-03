@@ -156,7 +156,7 @@ module.exports.getBounds = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({"geo": { "$within": {"$box": data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, gravity: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {
@@ -187,8 +187,7 @@ module.exports.getBounds = function (data, cb) {
 				while (j) {
 					cluster = bound[--j];
 					if (cluster.c > 1) {
-						cluster.geo = cluster.gravity.reverse(); // Реверсируем geo
-						cluster.gravity = undefined;
+						cluster.geo.reverse(); // Реверсируем geo
 						clusters.push(cluster);
 					} else if (cluster.c === 1) {
 						photos.push(cluster.p);
@@ -199,8 +198,3 @@ module.exports.getBounds = function (data, cb) {
 		}
 	);
 };
-function gravityToGeo(doc, ret, options) {
-	ret.geo = ret.gravity;
-	delete ret.gravity;
-	return ret;
-}
