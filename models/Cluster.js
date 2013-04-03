@@ -17,13 +17,8 @@ var ClusterPoster = {
 			z: {type: Number}, // Зум кластера
 
 			gravity: {type: [Number]}, // Координаты центра тяжести кластера
-			//rel: {type: [Number]}, // Координаты левого верхнего угла (множитель отнсительно 0,0) для справки
 
 			c: {type: Number}, // Количество фотографий в кластере
-/*			file: {type: String}, // Обложка кластера
-			p: [
-				{ type: Schema.Types.ObjectId, ref: 'Photo' } // Массив id фотографий в кластере
-			],*/
 			p: ClusterPoster // Обложка кластера
 		},
 		{
