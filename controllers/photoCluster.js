@@ -87,7 +87,7 @@ module.exports.loadController = function (app, db, io) {
                             result({message: err && err.message, error: true});
                             return;
                         }
-                        dbNative.eval('clusterAll2(null, true)', this);
+                        dbNative.eval('clusterAll2(true)', this);
                     },
                     function recalcResult(err, ret) {
                         if (err) {

@@ -133,20 +133,23 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
 	});
 
-	saveSystemJSFunc(function clusterAll2(logByNPhotos, withGravity) {
+	saveSystemJSFunc(function clusterAll2(withGravity, logByNPhotos) {
 		var startFullTime = Date.now(),
 			startTime,
+
+			useGravity,
 
 			clusterZoom,
 			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
 			clusterZoomsCounter = -1,
 
 			photo,
+			photoPoster,
 			photos = db.photos.find({geo: {$exists: true}}, {_id: 1, geo: 1, file: 1}).toArray(),
 			photoCounter = 0,
 			photosAllCount = photos.length,
 			geoPhoto,
-			geoPhotoCorrection,
+			geoPhotoCorrection = [0,0],
 
 			geo,
 			gravity,
@@ -165,6 +168,8 @@ module.exports.loadController = function (app, db) {
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
+			useGravity = withGravity && clusterZoom.z > 11;
+
 			clusters = {};
 			clustCoordIdS = [];
 
@@ -174,7 +179,8 @@ module.exports.loadController = function (app, db) {
 			while (++photoCounter < photosAllCount) {
 				photo = photos[photoCounter];
 				geoPhoto = photo.geo;
-				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+				geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
+				geoPhotoCorrection[1] = geoPhoto[1] > 0 ? 1 : 0;
 
 				geo = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
 				clustCoordId = geo[0] + '@' + geo[1];
@@ -184,12 +190,12 @@ module.exports.loadController = function (app, db) {
 				}
 				cluster = clusters[clustCoordId];
 				cluster.c += 1;
-				if (withGravity) {
+				if (useGravity) {
 					cluster.lngs += photo.geo[0];
 					cluster.lats += photo.geo[1];
 				}
-				cluster.file = photo.file;
-				cluster.p.push(photo._id);
+				//cluster.file = photo.file;
+				//cluster.p.push(photo._id);
 
 				if (photoCounter % logByNPhotos === 0) {
 					print(clusterZoom.z + ': Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + clustCoordIdS.length + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
@@ -201,7 +207,7 @@ module.exports.loadController = function (app, db) {
 			custersCounter = clustCoordIdS.length;
 			while (custersCounter) {
 				cluster = clusters[clustCoordIdS[--custersCounter]];
-				if (withGravity) {
+				if (useGravity) {
 					gravity = [
 						//Math.min(Math.max(cluster.geo[0] + (clusterZoom.wHalf / 2), toPrecisionRound(cluster.lngs / cluster.c)), cluster.geo[0] + clusterZoom.wHalf + (clusterZoom.wHalf / 2)),
 						//Math.min(Math.max(cluster.geo[1] - (clusterZoom.hHalf / 2), toPrecisionRound(cluster.lats / cluster.c)), cluster.geo[1] - clusterZoom.hHalf - (clusterZoom.hHalf / 2))
@@ -211,13 +217,13 @@ module.exports.loadController = function (app, db) {
 				} else {
 					gravity = [cluster.lngs, cluster.lats];
 				}
+				photoPoster = db.photos.findOne({geo: {$near : gravity}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
 				clustersResultArr.push({
 					geo: cluster.geo,
 					z: clusterZoom.z,
 					c: cluster.c - 1,
 					gravity: gravity,
-					file: cluster.file,
-					p: cluster.p
+					p: photoPoster
 				});
 			}
 
