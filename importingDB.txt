@@ -16,9 +16,9 @@
 		
 ПЕРЕНОС ДАМПА Mongo
 	1. Делаем полный дамп (bson)
-		mongodump -db oldmos -o C:\Mongo\bin\1
+		mongodump -db oldmos -o C:\Mongo\bin\dump
 	2. Восстановление из дампа
-		mongorestore --db oldmos C:\Mongo\bin\1\oldmos
+		mongorestore --db oldmos C:\Mongo\bin\dump\oldmos
 		
 	Можно экспортировать все коллекции и потом импортировать по одной
 	Batch срипт для экспорта всех коллекций (http://stackoverflow.com/questions/11255630/how-to-export-all-collection-in-mongodb)

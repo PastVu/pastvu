@@ -1080,13 +1080,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 
-		onPhotoLoad: function (data, event) {
+		onPhotoLoad: function (event) {
+			var img = event.target;
+			// Если реальные размеры фото не соответствуют тем что в базе, используем реальные
+			if (Utils.isType('number', img.width) && this.p.ws() !== img.width){
+				this.p.ws(img.width);
+			}
+			if (Utils.isType('number', img.height) && this.p.hs() !== img.height){
+				this.p.hs(img.height);
+			}
 			this.photoSrc(this.p.sfile());
 			this.sizesCalcPhoto();
 			this.photoLoadContainer = null;
 			this.photoLoading(false);
 		},
-		onPhotoError: function (data, event) {
+		onPhotoError: function (event) {
 			this.photoSrc('');
 			this.photoLoadContainer = null;
 			this.photoLoading(false);
