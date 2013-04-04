@@ -522,7 +522,6 @@ module.exports.loadController = function (app, db) {
 
 					title: photo.title || '',
 					year: photo.year_from || 2000,
-					year2: Math.max(photo.year_from || 2000, photo.year_to || 2000),
 					address: photo.address || undefined,
 					desc: photo.description || undefined,
 					source: photo.source || undefined,
@@ -536,6 +535,11 @@ module.exports.loadController = function (app, db) {
 					newPhoto.geo = [toPrecisionRound(lng), toPrecisionRound(lat)];
 				} else {
 					noGeoCounter++;
+				}
+				if (photo.year_to !== undefined && photo.year_to >= newPhoto.year) {
+					newPhoto.year2 = photo.year_to;
+				} else {
+					newPhoto.year2 = newPhoto.year;
 				}
 
 				// Удаляем undefined значения
@@ -552,7 +556,7 @@ module.exports.loadController = function (app, db) {
 				db.photos.insert(insertArr);
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.photos.count() !== okCounter + existsOnStart) {
-					printjson(insertArr);
+					//printjson(insertArr);
 					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
 				}
 				insertArr = [];

@@ -252,7 +252,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.p.year2(v);
 				}
 			}, this);
-			this.subscriptions.year2 = this.p.year2.subscribe(function (val) {
+			this.subscriptions.year2 = this.p.year2.subscribe(_.debounce(function (val) {
 				var v = parseInt(val, 10);
 				if (!v || isNaN(v)) {
 					v = Photo.def.full.year;
@@ -265,7 +265,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					this.p.year2(this.p.year());
 					return;
 				}
-			}, this);
+			}, 400), this);
 
 		},
 		show: function () {
