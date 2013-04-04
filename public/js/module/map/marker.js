@@ -872,9 +872,14 @@ define([
 		}
 	};
 	MarkerManager.prototype.popupPhotoOver = function (evt) {
+		var type = evt.target.options.data.type;
+
 		window.clearTimeout(this.popupTimeout);
-		this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
-		this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
+		if (type === 'photo' || (type === 'clust' && evt.originalEvent.target.classList.contains('clusterImg'))) {
+			this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
+			this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
+		}
+
 	};
 
 	MarkerManager.prototype.popupPhotoOut = function (evt) {

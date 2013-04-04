@@ -350,17 +350,44 @@
 			text-shadow: 1px 1px 0 black, -1px 1px 0 black, 1px -1px 0 black, -1px -1px 0 black;
 			.simple_gradient(transparent, rgba(0, 0, 0, 0.7));
 			.box-sizing(border-box);
+
+			&::after {
+				position: absolute;
+				display: none;
+				content: "";
+				bottom: 2px;
+				left: 4px;
+				height: 10px;
+				width: 7px;
+				background-image: url(/img/misc/arrd10.png);
+				background-position: 0 0;
+				background-repeat: no-repeat;
+			}
 		}
 
 		&.m .clusterCount {
 			height: 13px;
 			line-height: 13px;
 			font-size: 12px;
+			&::after {
+				bottom: 3px;
+				left: 2px;
+				height: 11px;
+				width: 8px;
+				background-image: url(/img/misc/arrd11.png);
+			}
 		}
 		&.b .clusterCount {
 			height: 14px;
 			line-height: 14px;
 			font-size: 13px;
+			&::after {
+				bottom: 4px;
+				left: 3px;
+				height: 12px;
+				width: 8px;
+				background-image: url(/img/misc/arrd12.png);
+			}
 		}
 
 		&.show {
@@ -372,8 +399,12 @@
 				.clusterCount {
 					height: 16px;
 					padding: 3px 0;
-					.simple_gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.9));
+					.simple_gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8));
 					.transition(all .05s linear);
+
+					&:hover::after {
+						display: block;
+					}
 				}
 				&.m .clusterCount {
 					height: 19px;
