@@ -537,6 +537,7 @@ define([
 	MarkerManager.prototype.drawClusters = function (clusters, boundChanged, add) {
 		var i,
 			size,
+			picFormat,
 			cluster,
 			divIcon,
 			result = {};
@@ -548,14 +549,22 @@ define([
 				if (!boundChanged || this.calcBound.contains(cluster.geo)) {
 					cluster.cid = cluster.geo[0] + '@' + cluster.geo[1];
 					if (cluster.c > 499) {
-						size = cluster.c > 2999 ? this.sizeClusterb : this.sizeClusterm;
+						if (cluster.c > 2999) {
+							size = this.sizeClusterb;
+							picFormat = Photo.picFormats.micro;
+						} else {
+							size = this.sizeClusterm;
+							picFormat = Photo.picFormats.microm;
+						}
 					} else {
 						size = this.sizeCluster;
+						picFormat = Photo.picFormats.micros;
 					}
+					cluster.p.sfile =  picFormat + cluster.p.file;
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe2',
 						iconSize: size,
-						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.sfile + '"/><div class="clusterCount">' + cluster.c + '</div>'
+						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterCount">' + cluster.c + '</div>'
 					});
 					cluster.marker =
 						L.marker(cluster.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: cluster}})
