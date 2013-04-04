@@ -30,10 +30,10 @@ var FragmentSchema = new Schema({
 			hs: {type: Number}, //Стандартная высота
 
 			geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
-			dir: {type: String},
+			dir: {type: String, 'default': ''},
 
-			title: {type: String},
-			year: {type: Number},
+			title: {type: String, 'default': ''},
+			year: {type: Number, 'default': 2000},
 			year2: {type: Number},
 			address: {type: String},
 			desc: {type: String},

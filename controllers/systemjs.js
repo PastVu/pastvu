@@ -518,11 +518,11 @@ module.exports.loadController = function (app, db) {
 					w: photo.width,
 					h: photo.height,
 
-					dir: photo.direction || undefined,
+					dir: photo.direction || '',
 
-					title: photo.title || undefined,
-					year: photo.year_from || 1900,
-					year2: Math.min(photo.year_from || 1900, photo.year_to || 1900),
+					title: photo.title || '',
+					year: photo.year_from || 2000,
+					year2: Math.max(photo.year_from || 2000, photo.year_to || 2000),
 					address: photo.address || undefined,
 					desc: photo.description || undefined,
 					source: photo.source || undefined,

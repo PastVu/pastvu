@@ -19,8 +19,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 			compact: {
 				loaded: Date.now(),
 
-				year: 1900,
-				year2: 1900,
+				year: 2000,
+				year2: 2000,
 
 				ccount: 0
 			},
@@ -51,11 +51,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 				stats_day: 0,
 				stats_week: 0,
 				stats_all: 0
-			},
-			// Тип для точки на карте, заполняется из full ниже
-			mapdot: {dir: ''},
-			// Тип для кластера на карте
-			mapclust: {c: 0, measure: ''}
+			}
 		},
 		picPrefix = '/_p',
 		picFormats = {
@@ -72,10 +68,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 	_.assign(defaults.compact, defaults.base);
 	_.assign(defaults.full, defaults.compact);
 
-	// Заполняем полями тип точки и кластера на карте
-	_.assign(defaults.mapdot, _.pick(defaults.full, 'cid', 'geo', 'file', 'title', 'year'));
-	_.assign(defaults.mapclust, _.pick(defaults.full, 'geo', 'file'));
-
 
 	/**
 	 * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
@@ -90,10 +82,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 		defType = defType || 'full';
 		picType = picType || 'standard';
 
-		if (defType !== 'mapclust') {
-			origin.cid = String(origin.cid);
-		}
-
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
 
 		if (defType === 'compact' || defType === 'full') {
@@ -104,23 +92,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 			origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
 			origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
 			User.factory(origin.user, 'base');
-		}
-		if (defType === 'mapclust') {
-			if (picType === 'local') {
-				if (origin.c < 10) {
-					origin.measure = 's';
-				} else if (origin.c < 50) {
-					origin.measure = 'm';
-				}
-			} else {
-				origin.cid = origin.geo[0] + '@' + origin.geo[1];
-				if (origin.c < 500) {
-					origin.measure = 's';
-				} else if (origin.c < 3000) {
-					origin.measure = 'm';
-				}
-			}
-			picType = 'micro' + origin.measure;
 		}
 		origin.sfile = picFormats[picType] + origin.file;
 
@@ -154,5 +125,5 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User
 		return vmExist;
 	}
 
-	return {factory: factory, vm: vm, def: defaults};
+	return {factory: factory, vm: vm, def: defaults, picFormats: picFormats};
 });

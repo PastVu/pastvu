@@ -508,6 +508,10 @@ module.exports.loadController = function (app, db, io) {
 							}
 						},
 						function cursors(err) {
+							if (err) {
+								result({message: err && err.message, error: true});
+								return;
+							}
 							var i = arguments.length;
 							while (i > 1) {
 								arguments[--i].toArray(this.parallel());

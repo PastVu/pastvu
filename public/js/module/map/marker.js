@@ -25,14 +25,14 @@ define([
 		this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
 
 		this.sizePoint = new L.Point(8, 8);
-		this.sizeClusters = new L.Point(42, 42);
+		this.sizeCluster = new L.Point(42, 42);
 		this.sizeClusterm = new L.Point(52, 52);
-		this.sizeCluster = new L.Point(62, 62);
+		this.sizeClusterb = new L.Point(62, 62);
 
 
-		this.sizeClusterLs = new L.Point(12, 12);
+		this.sizeClusterL = new L.Point(12, 12);
 		this.sizeClusterLm = new L.Point(16, 16);
-		this.sizeClusterL = new L.Point(18, 18);
+		this.sizeClusterLb = new L.Point(18, 18);
 
 		this.paneMarkers = this.map.getPanes().markerPane;
 		this.calcBound = null;
@@ -60,7 +60,7 @@ define([
 		);
 		window[this.popupClusterClickFN] = function (element) {
 			var url = element.getAttribute('data-href');
-			if (Utils.isType('string', url) && url.length > 0){
+			if (Utils.isType('string', url) && url.length > 0) {
 				_this.photoNavigate(url);
 			}
 		};
@@ -312,7 +312,7 @@ define([
 			} else {
 				// Если оно новое - создаем его объект и маркер
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
+					curr.sfile = Photo.picFormats.midi + curr.file;
 					divIcon = L.divIcon(
 						{
 							className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -324,6 +324,7 @@ define([
 							.on('click', this.clickMarker, this)
 							.on('mouseover', this.popupPhotoOver, this);
 					this.layerPhotos.addLayer(curr.marker);
+					photos[curr.cid] = curr;
 				}
 			}
 		}
@@ -433,7 +434,7 @@ define([
 				if (!this.mapObjects.photos[curr.cid]) {
 					// Если оно новое - создаем его объект и маркер
 					if (!boundChanged || this.calcBound.contains(curr.geo)) {
-						photos[curr.cid] = Photo.factory(curr, 'mapdot', 'midi');
+						curr.sfile = Photo.picFormats.midi + curr.file;
 						divIcon = L.divIcon(
 							{
 								className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -445,6 +446,7 @@ define([
 								.on('click', this.clickMarker, this)
 								.on('mouseover', this.popupPhotoOver, this);
 						this.layerPhotos.addLayer(curr.marker);
+						photos[curr.cid] = curr;
 					}
 				}
 			}
@@ -534,22 +536,32 @@ define([
 
 	MarkerManager.prototype.drawClusters = function (clusters, boundChanged, add) {
 		var i,
-			curr,
+			size,
+			cluster,
 			divIcon,
 			result = {};
 
 		if (Array.isArray(clusters) && clusters.length > 0) {
 			i = clusters.length;
 			while (i) {
-				curr = clusters[--i];
-				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					Photo.factory(curr, 'mapclust');
-					result[curr.cid] = curr;
-					divIcon = L.divIcon({className: 'clusterIcon fringe2', iconSize: this['sizeCluster' + curr.measure], html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + curr.sfile + '"/><div class="clusterCount">' + curr.c + '</div>'});
-					curr.marker =
-						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
+				cluster = clusters[--i];
+				if (!boundChanged || this.calcBound.contains(cluster.geo)) {
+					cluster.cid = cluster.geo[0] + '@' + cluster.geo[1];
+					if (cluster.c > 499) {
+						size = cluster.c > 2999 ? this.sizeClusterb : this.sizeClusterm;
+					} else {
+						size = this.sizeCluster;
+					}
+					divIcon = L.divIcon({
+						className: 'clusterIcon fringe2',
+						iconSize: size,
+						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.sfile + '"/><div class="clusterCount">' + cluster.c + '</div>'
+					});
+					cluster.marker =
+						L.marker(cluster.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: cluster}})
 							.on('click', this.clickMarker, this);
-					this.layerClusters.addLayer(curr.marker);
+					this.layerClusters.addLayer(cluster.marker);
+					result[cluster.cid] = cluster;
 				}
 			}
 		}
@@ -562,22 +574,35 @@ define([
 
 	MarkerManager.prototype.drawClustersLocal = function (clusters, boundChanged, add) {
 		var i,
-			curr,
+			size,
+			measure,
+			cluster,
 			divIcon,
 			result = {};
 
 		if (Array.isArray(clusters) && clusters.length > 0) {
 			i = clusters.length;
 			while (i) {
-				curr = clusters[--i];
-				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					Photo.factory(curr, 'mapclust', 'local');
-					result[curr.cid] = curr;
-					divIcon = L.divIcon({className: 'clusterIconLocal ' + 'y' + curr.year + ' ' + curr.measure, iconSize: this['sizeClusterL' + curr.measure], html: curr.c});
-					curr.marker =
-						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: curr}})
+				cluster = clusters[--i];
+				if (!boundChanged || this.calcBound.contains(cluster.geo)) {
+					if (cluster.c > 9) {
+						if (cluster.c > 49) {
+							size = this.sizeClusterLb;
+							measure = 'b';
+						} else {
+							size = this.sizeClusterLm;
+							measure = 'm';
+						}
+					} else {
+						size = this.sizeClusterL;
+						measure = '';
+					}
+					divIcon = L.divIcon({className: 'clusterIconLocal ' + 'y' + cluster.year + ' ' + measure, iconSize: size, html: cluster.c});
+					cluster.marker =
+						L.marker(cluster.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: cluster}})
 							.on('click', this.clickMarker, this);
-					this.layerClusters.addLayer(curr.marker);
+					this.layerClusters.addLayer(cluster.marker);
+					result[cluster.cid] = cluster;
 				}
 			}
 		}
@@ -746,12 +771,11 @@ define([
 	MarkerManager.prototype.clickMarker = function (evt) {
 		var marker = evt.target,
 			object = marker.options.data.obj,
-			url = '/p/' + object.cid,
 			eventPoint = this.map.mouseEventToContainerPoint(evt.originalEvent),
 			nextZoom;
 
-		if (marker.options.data.type === 'photo' && !_.isEmpty(object.cid)) {
-			this.photoNavigate(url);
+		if (marker.options.data.type === 'photo' && object.cid) {
+			this.photoNavigate('/p/' + object.cid);
 		} else if (marker.options.data.type === 'clust') {
 			if (this.map.getZoom() === this.map.getMaxZoom()) {
 				this.popupClusterOpen(marker);
@@ -773,6 +797,7 @@ define([
 
 	MarkerManager.prototype.popupClusterOpen = function (marker) {
 		var photos = marker.options.data.obj.photos,
+			photo,
 			i = -1,
 			len = photos.length,
 			small = len <= 3,
@@ -790,13 +815,14 @@ define([
 		});
 
 		while (++i < len) {
-			Photo.factory(photos[i], 'mapdot', 'midi');
+			photo = photos[i];
+			photo.sfile = Photo.picFormats.midi + photo.file;
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTpl({img: '/_p/micros/' + photos[i].file || '', cid: photos[i].cid || '', sfile: small ? photos[i].sfile : '/_p/thumb/' + photos[i].file, title: photos[i].title || '', href: '/p/' + photos[i].cid});
+			content += this.popupClusterTpl({img: Photo.picFormats.micros + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.thumb + photo.file, title: photo.title, href: '/p/' + photo.cid});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid +      '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : '/_p/thumb/' + photos[photos.length - 1].file, txt: photos[photos.length - 1].title || ''}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
