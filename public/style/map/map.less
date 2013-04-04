@@ -324,9 +324,9 @@
 	}
 
 	.clusterIcon {
-		opacity: 0; //border-color: #fff;
+		display: none;
 		.box-sizing(border-box);
-		.transition(opacity .25s linear);
+		.transition(border-color .05s linear);
 
 		.clusterImg {
 			position: absolute;
@@ -338,17 +338,50 @@
 			position: absolute;
 			bottom: 0;
 			width: 100%;
+			height: 12px;
+			padding: 0;
 			color: #fff;
 			text-align: center;
-			line-height: 13px;
-			font-size: 12px;
+			line-height: 12px;
+			font-size: 11px;
 			font-weight: bold;
 			text-shadow: 1px 1px 0 black, -1px 1px 0 black, 1px -1px 0 black, -1px -1px 0 black;
 			.simple_gradient(transparent, rgba(0, 0, 0, 0.7));
+			.box-sizing(border-box);
+		}
+
+		&.m .clusterCount {
+			height: 13px;
+			line-height: 13px;
+			font-size: 12px;
+		}
+		&.b .clusterCount {
+			height: 14px;
+			line-height: 14px;
+			font-size: 13px;
 		}
 
 		&.show {
-			opacity: 1;
+			display: block;
+
+			&:hover {
+				border-color: @MainLigthColor;
+
+				.clusterCount {
+					height: 16px;
+					padding: 3px 0;
+					.simple_gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.9));
+					.transition(all .05s linear);
+				}
+				&.m .clusterCount {
+					height: 19px;
+					padding: 3px 0;
+				}
+				&.b .clusterCount {
+					height: 22px;
+					padding: 4px 0;
+				}
+			}
 		}
 	}
 

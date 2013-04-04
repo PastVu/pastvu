@@ -537,6 +537,7 @@ define([
 	MarkerManager.prototype.drawClusters = function (clusters, boundChanged, add) {
 		var i,
 			size,
+			measure,
 			picFormat,
 			cluster,
 			divIcon,
@@ -551,24 +552,28 @@ define([
 					if (cluster.c > 499) {
 						if (cluster.c > 2999) {
 							size = this.sizeClusterb;
+							measure = 'b';
 							picFormat = Photo.picFormats.micro;
 						} else {
 							size = this.sizeClusterm;
+							measure = 'm';
 							picFormat = Photo.picFormats.microm;
 						}
 					} else {
 						size = this.sizeCluster;
+						measure = '';
 						picFormat = Photo.picFormats.micros;
 					}
 					cluster.p.sfile =  picFormat + cluster.p.file;
 					divIcon = L.divIcon({
-						className: 'clusterIcon fringe2',
+						className: 'clusterIcon fringe2 ' + measure,
 						iconSize: size,
 						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterCount">' + cluster.c + '</div>'
 					});
 					cluster.marker =
 						L.marker(cluster.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: cluster}})
-							.on('click', this.clickMarker, this);
+							.on('click', this.clickMarker, this)
+							.on('mouseover', this.popupClusterOver, this);
 					this.layerClusters.addLayer(cluster.marker);
 					result[cluster.cid] = cluster;
 				}
@@ -787,7 +792,7 @@ define([
 			this.photoNavigate('/p/' + object.cid);
 		} else if (marker.options.data.type === 'clust') {
 			if (this.map.getZoom() === this.map.getMaxZoom()) {
-				this.popupClusterOpen(marker);
+				this.popupClusterLocalOpen(marker);
 			} else {
 				nextZoom = this.map.getZoom() + 1;
 				this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
@@ -804,7 +809,11 @@ define([
 		}
 	};
 
-	MarkerManager.prototype.popupClusterOpen = function (marker) {
+	MarkerManager.prototype.popupClusterOver = function (evt) {
+
+	};
+
+	MarkerManager.prototype.popupClusterLocalOpen = function (marker) {
 		var photos = marker.options.data.obj.photos,
 			photo,
 			i = -1,
