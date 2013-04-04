@@ -45,12 +45,17 @@ define([
 
 		this.animationOn = false;
 
-		this.popupPhoto = new L.Popup({className: 'popupPhoto', maxWidth: 151, minWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popupPhoto = new L.Popup({className: 'popupPhoto', minWidth: 151, maxWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
 
-		this.popupCluster = new L.Popup({className: 'popupCluster', maxWidth: 151, minWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFive = new L.Popup({className: 'popupCluster five', maxWidth: 247, minWidth: 247, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
-		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', maxWidth: 249, minWidth: 249, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterPhoto = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -21), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popupClusterPhotom = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -26), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popupClusterPhotob = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -31), autoPan: false, zoomAnimation: false, closeButton: false});
+		this.popupClusterPhotoTpl = _.template('<div class="popupCap">${ txt }</div>');
+
+		this.popupCluster = new L.Popup({className: 'popupCluster', minWidth: 151, maxWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFive = new L.Popup({className: 'popupCluster five', minWidth: 247, maxWidth: 247, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
+		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', minWidth: 249, maxWidth: 249, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
 		this.popupClusterClickFN = '_' + Utils.randomString(10);
 		this.popupClusterOverFN = '_' + Utils.randomString(10);
 		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
@@ -564,16 +569,17 @@ define([
 						measure = '';
 						picFormat = Photo.picFormats.micros;
 					}
-					cluster.p.sfile =  picFormat + cluster.p.file;
+					cluster.p.sfile = picFormat + cluster.p.file;
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe2 ' + measure,
 						iconSize: size,
 						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterCount">' + cluster.c + '</div>'
 					});
+					cluster.measure = measure;
 					cluster.marker =
 						L.marker(cluster.geo, {icon: divIcon, riseOnHover: true, data: {type: 'clust', obj: cluster}})
 							.on('click', this.clickMarker, this)
-							.on('mouseover', this.popupClusterOver, this);
+							.on('mouseover', this.popupPhotoOver, this);
 					this.layerClusters.addLayer(cluster.marker);
 					result[cluster.cid] = cluster;
 				}
@@ -791,11 +797,15 @@ define([
 		if (marker.options.data.type === 'photo' && object.cid) {
 			this.photoNavigate('/p/' + object.cid);
 		} else if (marker.options.data.type === 'clust') {
-			if (this.map.getZoom() === this.map.getMaxZoom()) {
-				this.popupClusterLocalOpen(marker);
+			if (evt.originalEvent.target.classList.contains('clusterImg')) {
+				this.photoNavigate('/p/' + object.p.cid);
 			} else {
-				nextZoom = this.map.getZoom() + 1;
-				this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
+				if (this.map.getZoom() === this.map.getMaxZoom()) {
+					this.popupClusterLocalOpen(marker);
+				} else {
+					nextZoom = this.map.getZoom() + 1;
+					this.map.setView(this.zoomApproachToPoint(eventPoint, nextZoom), nextZoom);
+				}
 			}
 		}
 	};
@@ -807,10 +817,6 @@ define([
 		} else {
 			location.href = url;
 		}
-	};
-
-	MarkerManager.prototype.popupClusterOver = function (evt) {
-
 	};
 
 	MarkerManager.prototype.popupClusterLocalOpen = function (marker) {
@@ -848,12 +854,21 @@ define([
 		this.popupOpen(popup);
 	};
 
+
 	MarkerManager.prototype.popupPhotoOpen = function () {
+		var popup,
+			type = this.markerToPopup.options.data.type,
+			obj = this.markerToPopup.options.data.obj;
 		if (this.markerToPopup) {
-			this.popupPhoto
-				.setLatLng(this.markerToPopup.getLatLng())
-				.setContent(this.popupPhotoTpl({img: this.markerToPopup.options.data.obj.sfile || '', txt: this.markerToPopup.options.data.obj.title || ''}));
-			this.popupOpen(this.popupPhoto);
+			if (type === 'photo') {
+				popup = this.popupPhoto
+					.setContent(this.popupPhotoTpl({img: this.markerToPopup.options.data.obj.sfile, txt: this.markerToPopup.options.data.obj.title}));
+			} else if (type === 'clust') {
+				popup = this['popupClusterPhoto' + obj.measure]
+					.setContent(this.popupClusterPhotoTpl({txt: obj.p.title}));
+			}
+			popup.setLatLng(this.markerToPopup.getLatLng());
+			this.popupOpen(popup);
 		}
 	};
 	MarkerManager.prototype.popupPhotoOver = function (evt) {
@@ -861,9 +876,10 @@ define([
 		this.popupTimeout = window.setTimeout(this.popupPhotoOpenBind, 200);
 		this.markerToPopup = evt.target.on('mouseout', this.popupPhotoOut, this);
 	};
+
 	MarkerManager.prototype.popupPhotoOut = function (evt) {
 		// Закрываем попап, только если это попап фото. Чтобы при наведения и убыстрого уведения без открытия не закрывался попап кластера
-		if (this.popupOpened === this.popupPhoto) {
+		if (this.popupOpened !== this.popupCluster && this.popupOpened !== this.popupClusterFive && this.popupOpened !== this.popupClusterFiveScroll) {
 			this.popupClose();
 		}
 		this.markerToPopup = null;
