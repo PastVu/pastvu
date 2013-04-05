@@ -97,7 +97,7 @@ function removePhoto(session, data, cb) {
 
 	if (Utils.isType('number', data)) {
 		query.cid = data;
-	} else if (Utils.isType('string', data)){
+	} else if (Utils.isType('string', data)) {
 		query.file = data;
 	}
 
@@ -551,6 +551,22 @@ module.exports.loadController = function (app, db, io) {
 
 
 		(function () {
+
+			function geoCheck(geo) {
+				if (!Array.isArray(geo) || geo.length !== 2 || geo[0] < -180 || geo[0] > 180 || geo[1] < -90 || geo[1] > 90) {
+					return false;
+				}
+				return true;
+			}
+
+			function diff(a, b) {
+				for (var i in a) {
+					if (a[i] !== undefined && _.isEqual(a[i], b[i])) {
+						delete a[i];
+					}
+				}
+			}
+
 			/**
 			 * Сохраняем информацию о фотографии
 			 */
@@ -567,54 +583,51 @@ module.exports.loadController = function (app, db, io) {
 					result({message: 'Bad params', error: true});
 					return;
 				}
-				var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
-					geo = toSave.geo,
-					photo;
-
-				if (geo && (!Utils.isType('array', geo) || geo.length !== 2 || geo[0] < -180 || geo[0] > 180 || geo[1] < -90 || geo[1] > 90)) {
-					delete toSave.geo;
-					geo = undefined;
+				if (data.geo && !geoCheck(data.geo)) {
+					delete data.geo;
 				}
 
-				if (Object.keys(toSave).length === 0) {
-					result({message: 'Nothing to save', error: true});
-					return;
-				}
+				var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
 
 				step(
 					function findPhoto() {
-						Photo.findOne({cid: data.cid, del: {$exists: false}}).populate('user', 'login').exec(this);
+						Photo.findOne({cid: data.cid}).populate('user', 'login').exec(this);
 					},
-					function checkData(err, p) {
+					function checkData(err, photo) {
 						if (err) {
 							result({message: err && err.message, error: true});
 							return;
 						}
-						if (p.user.login !== hs.session.user.login) {
-							result({message: 'Not authorized', error: true});
+
+						diff(toSave, photo.toObject());
+						if (_.isEmpty(toSave)) {
+							result({message: 'Nothing to save', error: true});
 							return;
 						}
-						photo = p;
 
-						if (geo && !_.isEqual(geo, photo.geo)) {
-							PhotoCluster.clusterPhoto(photo.cid, geo, this);
+						_.assign(photo, toSave);
+						photo.save(this);
+					},
+					function savePhoto(err) {
+						if (err) {
+							result({message: err.message || 'Save error', error: true});
+							return;
+						}
+						var toPoster = _.pick(toSave, 'dir', 'title', 'year'),
+							toPosterFilled = !_.isEmpty(toPoster);
+
+						if (toSave.geo || toPosterFilled) {
+							PhotoCluster.clusterPhoto(data.cid, toSave.geo, toPosterFilled ? toPoster : undefined, this);
 						} else {
-							this();
+							this(null);
 						}
 					},
-					function savePhoto(obj) {
+					function (obj) {
 						if (obj && obj.error) {
 							result({message: obj.message || '', error: true});
 							return;
 						}
-						_.assign(photo, toSave);
-						photo.save(function (err) {
-							if (err) {
-								result({message: err.message || '', error: true});
-								return;
-							}
-							result({message: 'Photo saved successfully'});
-						});
+						result({message: 'Photo saved successfully'});
 					}
 				);
 
