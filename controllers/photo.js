@@ -560,11 +560,14 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			function diff(a, b) {
-				for (var i in a) {
-					if (a[i] !== undefined && _.isEqual(a[i], b[i])) {
-						delete a[i];
+				var res = {},
+					i;
+				for (i in a) {
+					if (a[i] !== undefined && !_.isEqual(a[i], b[i])) {
+						res[i] = a[i];
 					}
 				}
+				return res;
 			}
 
 			/**
@@ -587,7 +590,8 @@ module.exports.loadController = function (app, db, io) {
 					delete data.geo;
 				}
 
-				var toSave = _.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author');
+				var newValues,
+					oldValues;
 
 				step(
 					function findPhoto() {
@@ -598,14 +602,28 @@ module.exports.loadController = function (app, db, io) {
 							result({message: err && err.message, error: true});
 							return;
 						}
+						var photoObj = photo.toObject(),
+							i;
 
-						diff(toSave, photo.toObject());
-						if (_.isEmpty(toSave)) {
+						//Новые значения действительно изменяемых свойств
+						newValues = diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoObj);
+						if (_.isEmpty(newValues)) {
 							result({message: 'Nothing to save', error: true});
 							return;
 						}
+						if (newValues.geo !== undefined) {
+							Utils.geo.geoToPrecisionRound(newValues.geo);
+						}
+						_.assign(photo, newValues);
 
-						_.assign(photo, toSave);
+						//Старые значения изменяемых свойств
+						oldValues = {};
+						for (i in newValues) {
+							if (newValues[i] !== undefined) {
+								oldValues[i] = photoObj[i];
+							}
+						}
+
 						photo.save(this);
 					},
 					function savePhoto(err) {
@@ -613,11 +631,10 @@ module.exports.loadController = function (app, db, io) {
 							result({message: err.message || 'Save error', error: true});
 							return;
 						}
-						var toPoster = _.pick(toSave, 'dir', 'title', 'year'),
-							toPosterFilled = !_.isEmpty(toPoster);
+						var toPosterFilled = !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')) || undefined;
 
-						if (toSave.geo || toPosterFilled) {
-							PhotoCluster.clusterPhoto(data.cid, toSave.geo, toPosterFilled ? toPoster : undefined, this);
+						if (oldValues.geo !== undefined || toPosterFilled !== undefined) {
+							PhotoCluster.clusterPhoto(data.cid, oldValues.geo, toPosterFilled, this);
 						} else {
 							this(null);
 						}

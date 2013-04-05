@@ -116,19 +116,17 @@ module.exports.loadController = function (app, db, io) {
  * @param cb Коллбэк добавления
  * @return {Boolean}
  */
-module.exports.clusterPhoto = function (cid, newGeo, cb) {
-	if (!cid || !newGeo || newGeo.length !== 2) {
+module.exports.clusterPhoto = function (cid, oldGeo, oldPoster, cb, ctx) {
+	if (!cid || (!oldGeo && !oldPoster)) {
 		if (Utils.isType('function', cb)) {
 			cb('Bad params');
 		}
 		return false;
 	}
 
-	newGeo = Utils.geo.geoToPrecisionRound(newGeo);
-
-	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(newGeo) + ')', function (err, result) {
+	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(oldGeo) + ',' + JSON.stringify(oldPoster) + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
-			cb(arguments);
+			cb.apply(ctx, arguments);
 		}
 	});
 	return true;
