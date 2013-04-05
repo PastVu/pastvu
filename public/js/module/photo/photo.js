@@ -395,7 +395,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 		routeHandler: function () {
-			var cid = globalVM.router.params().photo,
+			var cid = Number(globalVM.router.params().photo),
 				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;
@@ -605,7 +605,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 									}.bind(this));
 								}
 							}.bind(that));
-							socket.emit('removePhoto', Number(that.p.cid()));
+							socket.emit('removePhoto', that.p.cid());
 
 						}},
 						{addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {

@@ -36,7 +36,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
             } else {
                 storage.waitings['p' + cid] = [{cb: callback, ctx: context}];
                 socket.once('takePhoto', function (data) {
-                    if (!data.error && String(data.cid) === cid) {
+                    if (!data.error && data.cid === cid) {
                         Photo.factory(data, 'full', 'standard');
                         storage.photos[cid] = {origin: data, vm: Photo.vm(data, undefined, true)};
                     }
