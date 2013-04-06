@@ -8,129 +8,92 @@ var step = require('step'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	saveSystemJSFunc(function clusterPhoto(cid, geoPhotoNew) {
-		if (!cid || !geoPhotoNew || geoPhotoNew.length !== 2) {
+	saveSystemJSFunc(function clusterCalc(g, zParam, inc, geoPhoto) {
+		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, p: 1}),
+			c = (cluster && cluster.c) || 0,
+			geo = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
+			geoClusterNew = geo,
+			photoPoster;
+
+		if (cluster && c <= 1 && inc === -1) {
+			// Если после удаления фото из кластера, кластер останется пустым - удаляем его
+			db.clusters.remove({g: g, z: zParam.z});
+			return;
+		}
+
+		if (zParam.z > 11) {
+			if (inc === -1) {
+				geoClusterNew = geoToPrecisionRound([(geo[0] * (c + 1) - geoPhoto[0]) / c, (geo[1] * (c + 1) - geoPhoto[1]) / c]);
+			} else if (inc === 1) {
+				geoClusterNew = geoToPrecisionRound([(geo[0] * (c + 1) + geoPhoto[0]) / (c + 2), (geo[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
+			}
+		}
+
+		photoPoster = db.photos.findOne({geo: {$near: geoClusterNew}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
+
+		db.clusters.update({g: g, z: zParam.z}, { $inc: {c: inc}, $set: {geo: geoClusterNew, p: photoPoster} }, {multi: false, upsert: true});
+	});
+
+	saveSystemJSFunc(function clusterPhoto(cid, geoPhotoOld) {
+		if (!cid || (geoPhotoOld && geoPhotoOld.length !== 2)) {
 			return {message: 'Bad params to set photo cluster', error: true};
 		}
 
-		var clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
-			photos = db.photos.find({'cid': cid}, {geo: 1, file: 1}).toArray();
+		var photo = db.photos.findOne({cid: cid}, {_id: 0, geo: 1}),
+			clusterZooms,
 
-		photos.forEach(function (photo, index, arr) {
-			var geoPhoto = photo.geo, // Текущие координаты фото
-			// Коррекция для кластера.
-			// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
-			// Так как отображение кластера идет от верхнего угла, то для положительного lat надо прибавить единицу
-				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0], // Корекция для кластера текущих координат
-				geoPhotoNewCorrection = [geoPhotoNew[0] < 0 ? -1 : 0, geoPhotoNew[1] > 0 ? 1 : 0], // Корекция для кластера новых координат
-				cluster,
-				c,
-				geo,
-				geoNew,
-				gravity,
-				gravityNew;
+			geoPhoto,
+			geoPhotoCorrection,
+			geoPhotoOldCorrection,
 
-			clusters.forEach(function (item) {
+			g,
+			gOld;
 
-				geo = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
-				geoNew = geoToPrecisionRound([item.w * ((geoPhotoNew[0] / item.w >> 0) + geoPhotoNewCorrection[0]), item.h * ((geoPhotoNew[1] / item.h >> 0) + geoPhotoNewCorrection[1])]);
-				cluster = db.clusters.findOne({p: photo._id, z: item.z, geo: geo}, {_id: 0, c: 1, gravity: 1, file: 1, p: {$slice: -2}});
+		if (!photo) {
+			return {message: 'No such photo', error: true};
+		}
 
-				if (!cluster || (cluster && (geo[0] !== geoNew[0] || geo[1] !== geoNew[1]))) {
-					item.wHalf = toPrecisionRound(item.w / 2);
-					item.hHalf = toPrecisionRound(item.h / 2);
+		clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray();
+		geoPhoto = photo.geo; // Текущие координаты фото
+		printjson(geoPhoto);
 
-					// Если фотография в старых координатах уже лежит в кластере, удаляем фото из него
-					if (cluster) {
-						c = cluster.c || 0;
-						gravity = cluster.gravity || [geo[0] + item.wHalf, geo[1] - item.hHalf];
-						gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) - geoPhoto[0]) / c, (gravity[1] * (c + 1) - geoPhoto[1]) / c]);
+		// Коррекция для кластера.
+		// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
+		// Так как отображение кластера идет от верхнего угла, то для положительного lat надо прибавить единицу
+		if (geoPhoto) {
+			geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0]; // Корекция для кластера текущих координат
+		}
+		if (geoPhotoOld) {
+			geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0]; // Корекция для кластера старых координат
+		}
 
-						if (c > 1) {
-							// Если после удаления фото из кластера, в этом кластере еще остаются другие фото, берем у одного из них file
-							var photoFile,
-								$set = {gravity: gravityNew},
-								$unset = {};
+		clusterZooms.forEach(function (clusterZoom) {
+			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
+			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
-							if (cluster.p && cluster.p.length > 0) {
-								photoFile = db.photos.find({_id: {$in: cluster.p}}, {_id: 0, file: 1}) || undefined;
-								if (photoFile[0] && photoFile[0].file && photoFile[0].file !== cluster.file) {
-									photoFile = photoFile[0].file;
-								} else if (photoFile[1] && photoFile[1].file && photoFile[1].file !== cluster.file) {
-									photoFile = photoFile[1].file;
-								}
-							}
+			if (geoPhotoOld) {
+				gOld = geoToPrecisionRound([clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]), clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1])]);
+			}
+			if (geoPhoto) {
+				g = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+			}
 
-							if (photoFile) {
-								$set.file = photoFile;
-							} else {
-								$unset.file = true;
-							}
-
-							db.clusters.update({z: item.z, geo: geo}, { $inc: {c: -1}, $pull: { p: photo._id }, $set: $set, $unset: $unset }, {multi: false, upsert: false});
-
-						} else {
-							// Если после удаления фото из кластера, кластер становится пустым - удаляем его
-							db.clusters.remove({z: item.z, geo: geo});
-						}
-					}
-
-					// Вставляем фото в новый кластер
-					cluster = db.clusters.findOne({z: item.z, geo: geoNew}, {_id: 0, c: 1, gravity: 1});
-					c = (cluster && cluster.c) || 0;
-					gravity = (cluster && cluster.gravity) || [geoNew[0] + item.wHalf, geoNew[1] - item.hHalf];
-					gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhotoNew[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhotoNew[1]) / (c + 2)]);
-
-					db.clusters.update({z: item.z, geo: geoNew}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
+			if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
+				print(clusterZoom.z + ' all');
+				clusterCalc(g, clusterZoom, 0);
+			} else {
+				if (gOld) {
+					print(clusterZoom.z + ' gOld');
+					clusterCalc(gOld, clusterZoom, -1, geoPhotoOld);
 				}
-			});
-			return {message: 'Ok', error: false};
-		});
-	});
-
-	saveSystemJSFunc(function clusterAll() {
-		var startTime = Date.now(),
-			controlBy = 1000,
-			clusters = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
-			photoCounter = 0,
-			photoCursor = db.photos.find({geo: {$exists: true}}, {geo: 1, file: 1}),
-			photosAllCount = photoCursor.count();
-
-		db.clusters.remove();
-
-		print('Start to clusterize ' + photosAllCount + ' photos');
-
-		// forEach в данном случае - это честный while по курсору: function (func) {while (this.hasNext()) {func(this.next());}}
-		photoCursor.forEach(function (photo) {
-			var geoPhoto = photo.geo,
-				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
-				cluster,
-				g,
-				c,
-				gravity,
-				gravityNew;
-
-			photoCounter++;
-
-			clusters.forEach(function (item) {
-				item.wHalf = toPrecisionRound(item.w / 2);
-				item.hHalf = toPrecisionRound(item.h / 2);
-
-				g = geoToPrecisionRound([item.w * ((geoPhoto[0] / item.w >> 0) + geoPhotoCorrection[0]), item.h * ((geoPhoto[1] / item.h >> 0) + geoPhotoCorrection[1])]);
-				cluster = db.clusters.findOne({g: g, z: item.z}, {_id: 0, c: 1, gravity: 1});
-				c = (cluster && cluster.c) || 0;
-				gravity = (cluster && cluster.gravity) || [g[0] + item.wHalf, g[1] - item.hHalf];
-				gravityNew = geoToPrecisionRound([(gravity[0] * (c + 1) + geoPhoto[0]) / (c + 2), (gravity[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
-
-				db.clusters.update({g: g, z: item.z}, { $inc: {c: 1}, $push: { p: photo._id }, $set: {gravity: gravityNew, file: photo.file} }, {multi: false, upsert: true});
-			});
-
-			if (photoCounter % controlBy === 0) {
-				print('Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + db.clusters.count() + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
+				if (g) {
+					print(clusterZoom.z + ' g');
+					clusterCalc(g, clusterZoom, 1, geoPhoto);
+				}
 			}
 		});
 
-		return {message: 'Ok in ' + (Date.now() - startTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
+		return {message: 'Ok', error: false};
 	});
 
 	saveSystemJSFunc(function clusterAll2(withGravity, logByNPhotos) {
@@ -149,7 +112,7 @@ module.exports.loadController = function (app, db) {
 			photoCounter = 0,
 			photosAllCount = photos.length,
 			geoPhoto,
-			geoPhotoCorrection = [0,0],
+			geoPhotoCorrection = [0, 0],
 
 			g,
 			geoCluster,
@@ -215,7 +178,7 @@ module.exports.loadController = function (app, db) {
 				} else {
 					geoCluster = [cluster.lngs, cluster.lats];
 				}
-				photoPoster = db.photos.findOne({geo: {$near : geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
+				photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
 				clustersResultArr.push({
 					g: cluster.g,
 					z: clusterZoom.z,
@@ -272,7 +235,7 @@ module.exports.loadController = function (app, db) {
 			$set,
 			$unset,
 			pcount,
-			//bcount,
+		//bcount,
 			ccount;
 
 		print('Start to calc for ' + userCounter + ' users');

@@ -591,7 +591,9 @@ module.exports.loadController = function (app, db, io) {
 				}
 
 				var newValues,
-					oldValues;
+					oldValues,
+					newGeo,
+					oldGeo;
 
 				step(
 					function findPhoto() {
@@ -624,6 +626,9 @@ module.exports.loadController = function (app, db, io) {
 							}
 						}
 
+						oldGeo = photoObj.geo;
+						newGeo = photo.geo;
+
 						photo.save(this);
 					},
 					function savePhoto(err) {
@@ -631,10 +636,9 @@ module.exports.loadController = function (app, db, io) {
 							result({message: err.message || 'Save error', error: true});
 							return;
 						}
-						var toPosterFilled = !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')) || undefined;
-
-						if (oldValues.geo !== undefined || toPosterFilled !== undefined) {
-							PhotoCluster.clusterPhoto(data.cid, oldValues.geo, toPosterFilled, this);
+						console.log(!_.isEqual(oldGeo, newGeo), !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')));
+						if (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year'))) {
+							PhotoCluster.clusterPhoto(data.cid, oldGeo, this);
 						} else {
 							this(null);
 						}

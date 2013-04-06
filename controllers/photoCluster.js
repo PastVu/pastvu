@@ -112,24 +112,24 @@ module.exports.loadController = function (app, db, io) {
 /**
  * Создает кластер для новых координат фото
  * @param cid id фото
- * @param newGeo новые гео-координаты
+ * @param oldGeo новые гео-координаты
  * @param cb Коллбэк добавления
+ * @param ctx Контекст
  * @return {Boolean}
  */
-module.exports.clusterPhoto = function (cid, oldGeo, oldPoster, cb, ctx) {
-	if (!cid || (!oldGeo && !oldPoster)) {
+module.exports.clusterPhoto = function (cid, oldGeo, cb, ctx) {
+	if (!cid) {
 		if (Utils.isType('function', cb)) {
 			cb('Bad params');
 		}
 		return false;
 	}
 
-	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(oldGeo) + ',' + JSON.stringify(oldPoster) + ')', function (err, result) {
+	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(oldGeo) + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
 			cb.apply(ctx, arguments);
 		}
 	});
-	return true;
 	/*step(
 	 function () {
 	 Clusters.forEach(function (item, index, array) {
