@@ -87,7 +87,7 @@ module.exports.loadController = function (app, db, io) {
 							result({message: err && err.message, error: true});
 							return;
 						}
-						dbNative.eval('clusterAll2(true)', this);
+						dbNative.eval('clusterPhotosAll(true)', this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {
@@ -125,21 +125,11 @@ module.exports.clusterPhoto = function (cid, oldGeo, cb, ctx) {
 		return false;
 	}
 
-	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(oldGeo) + ')', function (err, result) {
+	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
 			cb.apply(ctx, arguments);
 		}
 	});
-	/*step(
-	 function () {
-	 Clusters.forEach(function (item, index, array) {
-	 Cluster.update({z: item.z, geo: Utils.geo.geoToPrecisionRound([item.w * (geo[0] / item.w >> 0), item.h * (geo[1] / item.h >> 0)])}, { $inc: { c: 1 }, $push: {p: photo._id} }, { new: true, upsert: true }, this.parallel());
-	 }, this);
-	 },
-	 function (err) {
-	 console.log('err ', err);
-	 }
-	 );*/
 };
 
 

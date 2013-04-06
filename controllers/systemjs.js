@@ -8,12 +8,19 @@ var step = require('step'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	saveSystemJSFunc(function clusterCalc(g, zParam, inc, geoPhoto) {
+	saveSystemJSFunc(function clusterRecalcByPhoto(g, zParam, geoPhoto) {
 		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, p: 1}),
 			c = (cluster && cluster.c) || 0,
-			geo = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
-			geoClusterNew = geo,
-			photoPoster;
+			geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
+			photoPoster,
+			inc = 0;
+
+		if (geoPhoto.o) {
+			inc -= 1;
+		}
+		if (geoPhoto.n) {
+			inc += 1;
+		}
 
 		if (cluster && c <= 1 && inc === -1) {
 			// Если после удаления фото из кластера, кластер останется пустым - удаляем его
@@ -22,16 +29,22 @@ module.exports.loadController = function (app, db) {
 		}
 
 		if (zParam.z > 11) {
-			if (inc === -1) {
-				geoClusterNew = geoToPrecisionRound([(geo[0] * (c + 1) - geoPhoto[0]) / c, (geo[1] * (c + 1) - geoPhoto[1]) / c]);
-			} else if (inc === 1) {
-				geoClusterNew = geoToPrecisionRound([(geo[0] * (c + 1) + geoPhoto[0]) / (c + 2), (geo[1] * (c + 1) + geoPhoto[1]) / (c + 2)]);
+			// Если находимся на масштабе, где должен считаться центр тяжести,
+			// то при наличии старой координаты вычитаем её, а при наличии новой - прибавляем.
+			// Если переданы обе, значит координата фотографии изменилась в пределах одной ячейки,
+			// и тогда вычитаем старую и прибавляем новую.
+			// Если координаты не переданы, заничит просто обновим постер кластера
+			if (geoPhoto.o) {
+				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) - geoPhoto.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhoto.o[1]) / c]);
+			}
+			if (geoPhoto.n) {
+				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhoto.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhoto.n[1]) / (c + 2)]);
 			}
 		}
 
-		photoPoster = db.photos.findOne({geo: {$near: geoClusterNew}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
+		photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
 
-		db.clusters.update({g: g, z: zParam.z}, { $inc: {c: inc}, $set: {geo: geoClusterNew, p: photoPoster} }, {multi: false, upsert: true});
+		db.clusters.update({g: g, z: zParam.z}, { $inc: {c: inc}, $set: {geo: geoCluster, p: photoPoster} }, {multi: false, upsert: true});
 	});
 
 	saveSystemJSFunc(function clusterPhoto(cid, geoPhotoOld) {
@@ -46,16 +59,14 @@ module.exports.loadController = function (app, db) {
 			geoPhotoCorrection,
 			geoPhotoOldCorrection,
 
-			g,
-			gOld;
+			g, // Координаты левого верхнего угла ячейки кластера для новой координаты
+			gOld; // Координаты левого верхнего угла ячейки кластера для старой координаты (если она задана)
 
 		if (!photo) {
 			return {message: 'No such photo', error: true};
 		}
 
-		clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray();
-		geoPhoto = photo.geo; // Текущие координаты фото
-		printjson(geoPhoto);
+		geoPhoto = photo.geo; // Новые координаты фото, которые уже сохранены в базе
 
 		// Коррекция для кластера.
 		// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
@@ -67,10 +78,13 @@ module.exports.loadController = function (app, db) {
 			geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0]; // Корекция для кластера старых координат
 		}
 
+		// Итерируемся по каждому масштабу, для которого заданы параметры серверной кластеризации
+		clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray();
 		clusterZooms.forEach(function (clusterZoom) {
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
+			// Определяем ячейки для старой и новой координаты, если они есть
 			if (geoPhotoOld) {
 				gOld = geoToPrecisionRound([clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]), clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1])]);
 			}
@@ -79,16 +93,22 @@ module.exports.loadController = function (app, db) {
 			}
 
 			if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
-				print(clusterZoom.z + ' all');
-				clusterCalc(g, clusterZoom, 0);
+				// Если старые и новые координаты заданы и для них ячейка кластера на этом масштабе одна,
+				// то если координата не изменилась, пересчитываем только постер,
+				// если изменилась - пересчитаем центр тяжести (отнимем старую, прибавим новую)
+				if (geoPhotoOld[0] === geoPhoto[0] && geoPhotoOld[1] === geoPhoto[1]) {
+					clusterRecalcByPhoto(g, clusterZoom, {});
+				} else {
+					clusterRecalcByPhoto(g, clusterZoom, {o: geoPhotoOld, n: geoPhoto});
+				}
 			} else {
+				// Если ячейка для координат изменилась, или какой-либо координаты нет вовсе,
+				// то пересчитываем старую и новую ячейку, если есть соответствующая координата
 				if (gOld) {
-					print(clusterZoom.z + ' gOld');
-					clusterCalc(gOld, clusterZoom, -1, geoPhotoOld);
+					clusterRecalcByPhoto(gOld, clusterZoom, {o: geoPhotoOld});
 				}
 				if (g) {
-					print(clusterZoom.z + ' g');
-					clusterCalc(g, clusterZoom, 1, geoPhoto);
+					clusterRecalcByPhoto(g, clusterZoom, {n: geoPhoto});
 				}
 			}
 		});
@@ -96,7 +116,7 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Ok', error: false};
 	});
 
-	saveSystemJSFunc(function clusterAll2(withGravity, logByNPhotos) {
+	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
 		var startFullTime = Date.now(),
 			startTime,
 

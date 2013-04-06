@@ -636,8 +636,7 @@ module.exports.loadController = function (app, db, io) {
 							result({message: err.message || 'Save error', error: true});
 							return;
 						}
-						console.log(!_.isEqual(oldGeo, newGeo), !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')));
-						if (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year'))) {
+						if ((!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) && (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')))) {
 							PhotoCluster.clusterPhoto(data.cid, oldGeo, this);
 						} else {
 							this(null);
