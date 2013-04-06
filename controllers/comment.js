@@ -14,13 +14,14 @@ var Settings,
 	logger;
 
 
-function cursorCommentsExtract(err, cursor) {
-	if (err) {
-		this(err);
+function cursorExtract(err, cursor) {
+	if (err || !cursor) {
+		this(err || {message: 'Create cursor error', error: true});
 		return;
 	}
-	cursor.sort({stamp: 1}).toArray(this);
+	cursor.toArray(this);
 }
+
 /**
  * Выбирает комментарии для фотографии
  * @param session Сессия польщователя
@@ -30,8 +31,8 @@ function cursorCommentsExtract(err, cursor) {
 function getCommentsPhoto(session, data, cb) {
 	var //start = Date.now(),
 		commentsArr,
-		usersHash = {},
-		usersArr = [];
+		usersHash = {};
+
 	if (!data || !Utils.isType('object', data)) {
 		cb({message: 'Bad params', error: true});
 		return;
@@ -46,16 +47,17 @@ function getCommentsPhoto(session, data, cb) {
 				cb({message: 'No such photo', error: true});
 				return;
 			}
-			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, this);
+			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, {sort: [['stamp', 'asc']]}, this);
 		},
-		cursorCommentsExtract,
+		cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: err || 'Cursor extract error', error: true});
 				return;
 			}
 			var i = comments.length,
-				userId;
+				userId,
+				usersArr = [];
 
 			while (i) {
 				userId = comments[--i].user;
@@ -68,13 +70,7 @@ function getCommentsPhoto(session, data, cb) {
 			commentsArr = comments;
 			User.collection.find({"_id": { "$in": usersArr }}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1}, this);
 		},
-		function cursorUserExtract(err, cursor) {
-			if (err || !cursor) {
-				cb({message: 'Create user cursor error', error: true});
-				return;
-			}
-			cursor.toArray(this);
-		},
+		cursorExtract,
 		function (err, users) {
 			if (err || !users) {
 				cb({message: 'Cursor users extract error', error: true});
@@ -83,8 +79,8 @@ function getCommentsPhoto(session, data, cb) {
 			var i,
 				comment,
 				user,
-				userHashFormatted = {},
-				userFormatted;
+				userFormatted,
+				userFormattedHash = {};
 
 			i = users.length;
 			while (i) {
@@ -94,7 +90,7 @@ function getCommentsPhoto(session, data, cb) {
 					avatar: user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png',
 					name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login
 				};
-				userHashFormatted[user.login] = usersHash[user._id] = userFormatted;
+				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}
 
 			i = commentsArr.length;
@@ -107,7 +103,91 @@ function getCommentsPhoto(session, data, cb) {
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: data.cid, comments: commentsArr, users: userHashFormatted});
+			cb({message: 'ok', cid: data.cid, comments: commentsArr, users: userFormattedHash});
+		}
+	);
+}
+
+/**
+ * Выбирает комментарии
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function getCommentsUser(data, cb) {
+	var start = Date.now(),
+		commentsArr,
+		photosHash = {};
+
+	if (!data || !Utils.isType('object', data)) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	step(
+		function findUser() {
+			User.findOne({login: data.login}, {_id: 1}, this);
+		},
+		function createCursor(err, uid) {
+			if (err || !uid) {
+				cb({message: 'No such user', error: true});
+				return;
+			}
+			Comment.collection.find({user: uid._id}, {_id: 0, photo: 1, stamp:1, txt: 1}, {sort: [['stamp', 'desc']]}, this);
+		},
+		cursorExtract,
+		function (err, comments) {
+			if (err || !comments) {
+				cb({message: err || 'Cursor extract error', error: true});
+				return;
+			}
+			var i = comments.length,
+				photoId,
+				photosArr = [];
+
+			while (i) {
+				photoId = comments[--i].photo;
+				if (photosHash[photoId] === undefined) {
+					photosHash[photoId] = true;
+					photosArr.push(photoId);
+				}
+			}
+
+			commentsArr = comments;
+			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1}, this);
+		},
+		cursorExtract,
+		function (err, photos) {
+			if (err || !photos) {
+				cb({message: 'Cursor photos extract error', error: true});
+				return;
+			}
+			var i,
+				comment,
+				photo,
+				photoFormatted,
+				photoFormattedHash = {};
+
+			i = photos.length;
+			while (i) {
+				photo = photos[--i];
+				photoFormatted = {
+					cid: photo.cid,
+					file: photo.file,
+					title: photo.title,
+					year: photo.year,
+					year2: photo.year2
+				};
+				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+			}
+
+			i = commentsArr.length;
+			while (i) {
+				comment = commentsArr[--i];
+				comment.photo = photosHash[comment.photo].cid;
+			}
+
+			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+			cb({message: 'ok', cid: data.cid, comments: commentsArr, photos: photoFormattedHash});
 		}
 	);
 }
@@ -250,9 +330,9 @@ function removeComment(session, cid, cb) {
 				return;
 			}
 			photoObj = photo;
-			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, this.parallel());
+			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, {sort: [['stamp', 'asc']]}, this.parallel());
 		},
-		cursorCommentsExtract,
+		cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: (err && err.message) || 'Cursor extract error', error: true});
@@ -318,12 +398,6 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		socket.on('giveCommentsPhoto', function (data) {
-			getCommentsPhoto(hs.session, data, function (result) {
-				socket.emit('takeCommentsPhoto', result);
-			});
-		});
-
 		socket.on('createComment', function (data) {
 			createComment(hs.session, data, function (result) {
 				socket.emit('createCommentResult', result);
@@ -333,6 +407,17 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('removeComment', function (data) {
 			removeComment(hs.session, data, function (result) {
 				socket.emit('removeCommentResult', result);
+			});
+		});
+
+		socket.on('giveCommentsPhoto', function (data) {
+			getCommentsPhoto(hs.session, data, function (result) {
+				socket.emit('takeCommentsPhoto', result);
+			});
+		});
+		socket.on('giveCommentsUser', function (data) {
+			getCommentsUser(data, function (result) {
+				socket.emit('takeCommentsUser', result);
 			});
 		});
 
