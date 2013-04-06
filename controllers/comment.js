@@ -108,6 +108,8 @@ function getCommentsPhoto(session, data, cb) {
 	);
 }
 
+
+var commentsUserPerPage = 30;
 /**
  * Выбирает комментарии
  * @param data Объект
@@ -118,10 +120,11 @@ function getCommentsUser(data, cb) {
 		commentsArr,
 		photosHash = {};
 
-	if (!data || !Utils.isType('object', data)) {
+	if (!data || !Utils.isType('object', data) || !data.login) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
+	data.page = (Math.abs(Number(data.page)) || 1) - 1;
 
 	step(
 		function findUser() {
@@ -132,7 +135,8 @@ function getCommentsUser(data, cb) {
 				cb({message: 'No such user', error: true});
 				return;
 			}
-			Comment.collection.find({user: uid._id}, {_id: 0, photo: 1, stamp:1, txt: 1}, {sort: [['stamp', 'desc']]}, this);
+			var skip = data.page * commentsUserPerPage;
+			Comment.collection.find({user: uid._id}, {_id: 0, photo: 1, stamp:1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [['stamp', 'desc']]}, this);
 		},
 		cursorExtract,
 		function (err, comments) {

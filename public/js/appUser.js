@@ -41,9 +41,10 @@ require([
 			routes: [
 				{route: "", handler: "profile"},
 				{route: ":user", handler: "profile"},
+				{route: ":user/photo", handler: "gallery"},
+				{route: ":user/comments/:page", handler: "comments"},
 				{route: ":user/settings", handler: "settings"},
 				{route: "photoUpload", handler: "photoUpload"},
-				{route: ":user/photo", handler: "gallery"},
 				{route: "clusterCalc", handler: "clusterCalc"},
 				{route: "conveyer", handler: "conveyer"}
 			],
@@ -63,6 +64,42 @@ require([
 							parent: globalVM,
 							level: 0,
 							callback: function (top, brief, menu, profile, news) {
+							}
+						}
+					);
+				},
+				gallery: function (user, params) {
+					this.params({user: user || ""});
+
+					renderer(
+						[
+							{module: 'm/top', container: '#top_container'},
+							{module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
+							{module: 'm/user/menu', container: '#user_menu'},
+							{module: 'm/user/gallery', container: '#user_content', options: {canAdd: true}}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, brief, menu, gallery, news) {
+							}
+						}
+					);
+				},
+				comments: function (user, params) {
+					this.params({user: user || ""});
+
+					renderer(
+						[
+							{module: 'm/top', container: '#top_container'},
+							{module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
+							{module: 'm/user/menu', container: '#user_menu'},
+							{module: 'm/user/comments', container: '#user_content', options: {}}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, brief, menu, comments) {
 							}
 						}
 					);
@@ -142,26 +179,6 @@ require([
 							parent: globalVM,
 							level: 0,
 							callback: function (top, brief, menu, photoUpload, news) {
-							}
-						}
-					);
-				},
-
-				gallery: function (user, params) {
-					console.log('User gallery');
-					this.params({user: user || ""});
-
-					renderer(
-						[
-							{module: 'm/top', container: '#top_container'},
-							{module: 'm/user/brief', container: '#user_brief', options: {affix: true}},
-							{module: 'm/user/menu', container: '#user_menu'},
-							{module: 'm/user/gallery', container: '#user_content', options: {canAdd: true}}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (top, brief, menu, gallery, news) {
 							}
 						}
 					);

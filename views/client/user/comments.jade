@@ -1,0 +1,4 @@
+.comments(data-bind="with: repository[M!M]")
+	.row-fluid.comments(data-bind="foreach: comments")
+		.comment(data-bind="text: $data.txt")
+		br

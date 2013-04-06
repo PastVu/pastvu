@@ -22,7 +22,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
                         this.links.push({name: 'Upload', href: "/u/photoUpload"});
                     }
                     this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
-                    this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments", disable: true});
+                    this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments", disable: false});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
                         this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings"});
                         this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm', disable: true});
