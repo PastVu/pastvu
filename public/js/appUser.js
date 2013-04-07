@@ -51,7 +51,7 @@ require([
 				{route: "conveyer", handler: "conveyer"}
 			],
 			handlers: {
-				profile: function (user, params) {
+				profile: function (user, getParams) {
 					console.log('User Profile');
 					this.params({user: user || ""});
 
@@ -70,7 +70,7 @@ require([
 						}
 					);
 				},
-				gallery: function (user, params) {
+				gallery: function (user, getParams) {
 					this.params({user: user || ""});
 
 					renderer(
@@ -88,8 +88,8 @@ require([
 						}
 					);
 				},
-				comments: function (user, params) {
-					this.params({user: user || ""});
+				comments: function (user, page, getParams) {
+					this.params({user: user || "", page: page || 1});
 
 					renderer(
 						[
@@ -106,7 +106,7 @@ require([
 						}
 					);
 				},
-				settings: function (user, params) {
+				settings: function (user, getParams) {
 					console.log('User Settings');
 					this.params({user: user || ""});
 

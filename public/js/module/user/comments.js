@@ -16,25 +16,70 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.commentsPhotos = {};
 			this.loadingComments = ko.observable(false);
 
+			this.page = ko.observable(1);
+			this.pageSize = ko.observable(15);
+			this.pageSlide = ko.observable(2);
+
+
 			var user = globalVM.router.params().user || this.auth.iAm.login();
 			storage.user(user, function (data) {
 				if (data) {
 					this.u = data.vm;
+
+					this.pageLast = ko.computed(function () {
+						return ((this.u.ccount() - 1) / this.pageSize() >> 0) + 1;
+					}, this);
+					this.pageHasNext = ko.computed(function () {
+						return this.page() < this.pageLast();
+					}, this);
+					this.pageHasPrev = ko.computed(function () {
+						return this.page() > 1;
+					}, this);
+					this.pages = ko.computed(function () {
+						var pageCount = this.pageLast(),
+							pageFrom = Math.max(1, this.page() - this.pageSlide()),
+							pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
+							result = [],
+							i;
+
+						pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
+						pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
+
+						for (i = pageFrom; i <= pageTo; i++) {
+							result.push(i);
+						}
+						return result;
+					}, this);
+
 					ko.applyBindings(globalVM, this.$dom[0]);
+
+					// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
+					// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+					this.routeHandlerThrottled = _.throttle(this.routeHandler, 700);
+					this.routeHandlerThrottled();
+
+					// Subscriptions
+					this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
+
 					this.show();
 				}
 			}, this);
 		},
 		show: function () {
 			this.$container.fadeIn();
-			if (this.u.ccount() > 0) {
-				this.getPage(1);
-			}
 			this.showing = true;
 		},
 		hide: function () {
 			this.$container.css('display', '');
 			this.showing = false;
+		},
+
+		routeHandler: function () {
+			var page = Number(globalVM.router.params().page) || 1;
+			this.page(page);
+			if (this.u.ccount() > 0) {
+				this.getPage(page);
+			}
 		},
 
 		getPage: function (page, cb, ctx) {
