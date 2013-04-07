@@ -109,7 +109,7 @@ function getCommentsPhoto(session, data, cb) {
 }
 
 
-var commentsUserPerPage = 30;
+var commentsUserPerPage = 15;
 /**
  * Выбирает комментарии
  * @param data Объект
@@ -136,7 +136,7 @@ function getCommentsUser(data, cb) {
 				return;
 			}
 			var skip = data.page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id}, {_id: 0, photo: 1, stamp:1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [['stamp', 'desc']]}, this);
+			Comment.collection.find({user: uid._id}, {_id: 0, cid: 1, photo: 1, stamp:1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [['stamp', 'desc']]}, this);
 		},
 		cursorExtract,
 		function (err, comments) {

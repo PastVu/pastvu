@@ -13,6 +13,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.auth = globalVM.repository['m/auth'];
 			this.u = null;
 			this.comments = ko.observableArray();
+			this.commentsPhotos = {};
 			this.loadingComments = ko.observable(false);
 
 			var user = globalVM.router.params().user || this.auth.iAm.login();
@@ -39,10 +40,26 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		getPage: function (page, cb, ctx) {
 			this.loadingComments(true);
 			socket.once('takeCommentsUser', function (data) {
-				if (!data || data.error) {
+				var photo,
+					comment,
+					i;
+				if (!data || data.error || !Array.isArray(data.comments)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
+					for (i in data.photos) {
+						if (data.photos[i] !== undefined) {
+							photo = data.photos[i];
+							photo.sfile = Photo.picFormats.micro + photo.file;
+							photo.link = '/p/' + photo.cid;
+						}
+					}
+					this.commentsPhotos = data.photos;
 
+					i = data.comments.length;
+					while (i) {
+						comment = data.comments[--i];
+						comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
+					}
 					this.comments(data.comments);
 				}
 				if (Utils.isType('function', cb)) {

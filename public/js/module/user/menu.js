@@ -17,11 +17,11 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
                     this.user = data.vm;
 
                     this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
-                    this.links.push({name: 'Photo', href: "/u/" + this.user.login() + "/photo"});
+                    this.links.push({name: 'Photos', href: "/u/" + this.user.login() + "/photo"});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
                         this.links.push({name: 'Upload', href: "/u/photoUpload"});
                     }
-                    this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
+                    //this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
                     this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments", disable: false});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
                         this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings"});
