@@ -51,6 +51,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							photo = data.photos[i];
 							photo.sfile = Photo.picFormats.micro + photo.file;
 							photo.link = '/p/' + photo.cid;
+							photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
+							photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>' ;
 						}
 					}
 					this.commentsPhotos = data.photos;
