@@ -16,16 +16,16 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
                 if (data) {
                     this.user = data.vm;
 
-                    this.links.push({name: 'Profile', href: "/u/" + this.user.login()});
-                    this.links.push({name: 'Photos', href: "/u/" + this.user.login() + "/photo"});
+                    this.links.push({name: 'Profile', href: "/u/" + this.user.login(), handler: 'profile'});
+                    this.links.push({name: 'Photos', href: "/u/" + this.user.login() + "/photo", handler: 'gallery'});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
-                        this.links.push({name: 'Upload', href: "/u/photoUpload"});
+                        this.links.push({name: 'Upload', href: "/u/photoUpload", handler: 'photoUpload'});
                     }
                     //this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
-                    this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments", disable: false});
+                    this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments/", handler: 'comments'});
                     if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
-                        this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings"});
-                        this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm', disable: true});
+                        this.links.push({name: 'Settings', href: "/u/" +  this.user.login() + "/settings", handler: 'settings'});
+                        this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm', disable: true, handler: 'pm'});
                     }
 
 
@@ -52,7 +52,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
                 links = this.links();
 
             links.forEach(function (item, index, array) {
-                if (item.href === route) {
+                if (item.handler === globalVM.router.params()._handler) {
                     item.active = true;
                 } else {
                     item.active = false;

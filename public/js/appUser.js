@@ -53,7 +53,7 @@ require([
 			handlers: {
 				profile: function (user, getParams) {
 					console.log('User Profile');
-					this.params({user: user || ""});
+					this.params({_handler: 'profile', user: user || ""});
 
 					renderer(
 						[
@@ -71,7 +71,7 @@ require([
 					);
 				},
 				gallery: function (user, getParams) {
-					this.params({user: user || ""});
+					this.params({_handler: 'gallery', user: user || ""});
 
 					renderer(
 						[
@@ -89,7 +89,7 @@ require([
 					);
 				},
 				comments: function (user, page, getParams) {
-					this.params({user: user || "", page: page || 1});
+					this.params({_handler: 'comments', user: user || "", page: page || 1});
 
 					renderer(
 						[
@@ -108,7 +108,7 @@ require([
 				},
 				settings: function (user, getParams) {
 					console.log('User Settings');
-					this.params({user: user || ""});
+					this.params({_handler: 'settings', user: user || ""});
 
 					renderer(
 						[
@@ -128,7 +128,7 @@ require([
 
 				photoUpload: function (params) {
 					console.log('User Photo Upload');
-					this.params({user: auth.iAm.login() || ""});
+					this.params({_handler: 'photoUpload', user: auth.iAm.login() || ""});
 
 					renderer(
 						[
@@ -148,7 +148,7 @@ require([
 
 				clusterCalc: function (params) {
 					console.log('clusterCalc');
-					this.params({});
+					this.params({_handler: 'clusterCalc'});
 
 					renderer(
 						[
@@ -168,7 +168,7 @@ require([
 
 				conveyer: function (params) {
 					console.log('conveyer');
-					this.params({});
+					this.params({_handler: 'conveyer'});
 
 					renderer(
 						[
