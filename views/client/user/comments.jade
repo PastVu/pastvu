@@ -1,5 +1,5 @@
 .comments(data-bind="with: repository[M!M]")
-	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: pageFirstItem() + ' - ' + pageLastItem() + ' из ' + u.ccount()")
+	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: briefText")
 	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")
 	.row-fluid.comments(data-bind="foreach: comments")

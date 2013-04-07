@@ -124,7 +124,6 @@ function getCommentsUser(data, cb) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
-	data.page = (Math.abs(Number(data.page)) || 1) - 1;
 
 	step(
 		function findUser() {
@@ -135,7 +134,8 @@ function getCommentsUser(data, cb) {
 				cb({message: 'No such user', error: true});
 				return;
 			}
-			var skip = data.page * commentsUserPerPage;
+			var page = (Math.abs(Number(data.page)) || 1) - 1,
+				skip = page * commentsUserPerPage;
 			Comment.collection.find({user: uid._id}, {_id: 0, cid: 1, photo: 1, stamp:1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [['stamp', 'desc']]}, this);
 		},
 		cursorExtract,
@@ -191,7 +191,7 @@ function getCommentsUser(data, cb) {
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: data.cid, comments: commentsArr, photos: photoFormattedHash});
+			cb({message: 'ok', page: data.page, comments: commentsArr, photos: photoFormattedHash});
 		}
 	);
 }

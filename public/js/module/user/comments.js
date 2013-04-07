@@ -58,6 +58,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						return result;
 					}, this);
 
+					this.briefText = ko.computed(function () {
+						return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
+					}, this);
+
 					ko.applyBindings(globalVM, this.$dom[0]);
 
 					// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
@@ -84,7 +88,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		routeHandler: function () {
 			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
 			if (page > this.pageLast()) {
-				window.setTimeout(function () {globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast())}.bind(this), 200);
+				window.setTimeout(function () {
+					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast())
+				}.bind(this), 200);
 			} else {
 				this.page(page);
 				if (this.u.ccount() > 0) {
@@ -99,32 +105,36 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				var photo,
 					comment,
 					i;
-				if (!data || data.error || !Array.isArray(data.comments)) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					for (i in data.photos) {
-						if (data.photos[i] !== undefined) {
-							photo = data.photos[i];
-							photo.sfile = Photo.picFormats.micro + photo.file;
-							photo.link = '/p/' + photo.cid;
-							photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
-							photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>' ;
+				if (data.page === page) {
+					if (!data || data.error || !Array.isArray(data.comments)) {
+						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					} else if (data.page === page) {
+						for (i in data.photos) {
+							if (data.photos[i] !== undefined) {
+								photo = data.photos[i];
+								photo.sfile = Photo.picFormats.micro + photo.file;
+								photo.link = '/p/' + photo.cid;
+								photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
+								photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';
+							}
+						}
+						this.commentsPhotos = data.photos;
+
+						i = data.comments.length;
+						while (i) {
+							comment = data.comments[--i];
+							comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
+						}
+						this.comments(data.comments);
+						if (this.pageLast() > 1) {
+							this.paginationShow(true);
 						}
 					}
-					this.commentsPhotos = data.photos;
-
-					i = data.comments.length;
-					while (i) {
-						comment = data.comments[--i];
-						comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
-					}
-					this.comments(data.comments);
-					this.paginationShow(true);
+					this.loadingComments(false);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-				this.loadingComments(false);
 			}.bind(this));
 			socket.emit('giveCommentsUser', {login: this.u.login(), page: page});
 		},
