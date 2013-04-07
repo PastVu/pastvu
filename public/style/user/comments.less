@@ -5,6 +5,21 @@
 .comments {
 	position: relative;
 
+	.commentsBrief {
+		position: absolute;
+		top: 5px;
+		left: 3px;
+		font-size: 14px;
+		padding-right: 75px;
+		&.commentsLoading {
+			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
+		}
+	}
+
+	.pagination {
+		margin: 0 0 5px 0;
+	}
+
 	.comment {
 		position: relative;
 		display: block;

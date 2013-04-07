@@ -14,6 +14,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.u = null;
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};
+			this.paginationShow = ko.observable(false);
 			this.loadingComments = ko.observable(false);
 
 			this.page = ko.observable(1);
@@ -34,6 +35,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}, this);
 					this.pageHasPrev = ko.computed(function () {
 						return this.page() > 1;
+					}, this);
+					this.pageFirstItem = ko.computed(function () {
+						return this.pageSize() * (this.page() - 1) + 1;
+					}, this);
+					this.pageLastItem = ko.computed(function () {
+						return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.u.ccount());
 					}, this);
 					this.pages = ko.computed(function () {
 						var pageCount = this.pageLast(),
@@ -75,10 +82,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		routeHandler: function () {
-			var page = Number(globalVM.router.params().page) || 1;
-			this.page(page);
-			if (this.u.ccount() > 0) {
-				this.getPage(page);
+			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
+			if (page > this.pageLast()) {
+				window.setTimeout(function () {globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast())}.bind(this), 200);
+			} else {
+				this.page(page);
+				if (this.u.ccount() > 0) {
+					this.getPage(page);
+				}
 			}
 		},
 
@@ -108,6 +119,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
 					}
 					this.comments(data.comments);
+					this.paginationShow(true);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);

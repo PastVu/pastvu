@@ -1,7 +1,7 @@
 .comments(data-bind="with: repository[M!M]")
-	.row-fluid.pagTop
-		.pagination
-			ul(data-bind="template:{ name: 'pagerTpl'}")
+	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: pageFirstItem() + ' - ' + pageLastItem() + ' из ' + u.ccount()")
+	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")
 	.row-fluid.comments(data-bind="foreach: comments")
 		.row-fluid.comment
 			a.photoPreviewA(data-bind="attr: {href: $parent.commentsPhotos[$data.photo].link}")
@@ -11,13 +11,15 @@
 				.dotDelimeter ·
 				a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-
+	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")
 	script(id="pagerTpl", type="text/html")
-		li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/'}") &laquo;&laquo;
-		li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() - 1)}") &laquo;
-		//ko foreach: pages
-		li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/comments/' + $data}, text: $data")
-		// /ko
-		li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() + 1)}") &raquo;
-		li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + pageLast()}") &raquo;
+		ul
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/'}") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() - 1)}") &laquo;
+			//ko foreach: pages
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/comments/' + $data}, text: $data")
+			// /ko
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() + 1)}") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + pageLast()}") &raquo;
 
