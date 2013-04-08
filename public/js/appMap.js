@@ -7,7 +7,7 @@ require([
     'Browser', 'Utils',
     'socket',
     'underscore', 'backbone', 'knockout', 'knockout.mapping',
-    'Params', 'globalVM', 'renderer', 'RouteManager', 'text!tpl/appMap.jade', 'css!style/appMap', 'backbone.queryparams', 'bs/bootstrap-transition'
+    'Params', 'globalVM', 'renderer', 'RouteManager', 'text!tpl/appMap.jade', 'css!style/appMap', 'backbone.queryparams', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, P, globalVM, renderer, RouteManager, index_jade) {
     "use strict";
     var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
@@ -76,19 +76,20 @@ require([
                 {route: "", handler: "index"}
             ],
             handlers: {
-                index: function (user, params) {
+                index: function (user, getParams) {
                     console.log('Index');
-                    this.params({user: user || ""});
+                    this.params({_handler: 'index'});
 
                     renderer(
                         [
                             {module: 'm/top', container: '#topContainer'},
-                            {module: 'm/map/map', container: '#mapContainer'}
+                            {module: 'm/map/map', container: '#mapContainer'},
+	                        {module: 'm/main/commentsRibbon', container: '#commentsRibbon', options: {}}
                         ],
                         {
                             parent: globalVM,
                             level: 0,
-                            callback: function (top, map, news) {
+                            callback: function (top, map, comments) {
                             }
                         }
                     );
@@ -97,7 +98,7 @@ require([
         };
     }
 
-    window.appRouter = globalVM.router;
-    window.glob = globalVM;
+    //window.appRouter = globalVM.router;
+    //window.glob = globalVM;
     console.timeStamp('=== app load (' + appHash + ') ===');
 });

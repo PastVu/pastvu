@@ -1,0 +1,50 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.commentsRibbon {
+	position: relative;
+
+	.comment {
+		position: relative;
+		display: block;
+		margin: 0 0 8px 0;
+		text-decoration: none;
+
+		&:hover {
+			background-color: fade(@MainBlueColor, 10%);
+		}
+
+		.photoPreviewA {
+			display: block;
+			float: left;
+			padding: 2px 8px 2px 2px;
+		}
+		.photoPreview {
+			display: block;
+			width: 60px;
+			height: 60px;
+		}
+
+		.commentHead {
+			line-height: 14px;
+			height: 14px;
+			margin-bottom: 3px;
+		}
+		.photoName {
+			display: inline-block;
+			font-size: 14px;
+			cursor: pointer;
+		}
+		.commentText {
+			display: block;
+			min-height: 46px;
+			color: @textColor;
+			text-decoration: none;
+		}
+	}
+}
+
+@media (max-width: 767px) {
+
+}

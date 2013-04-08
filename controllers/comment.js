@@ -24,7 +24,6 @@ function cursorExtract(err, cursor) {
 
 /**
  * Выбирает комментарии для фотографии
- * @param session Сессия польщователя
  * @param data Объект
  * @param cb Коллбэк
  */
@@ -180,6 +179,83 @@ function getCommentsUser(data, cb) {
 					title: photo.title,
 					year: photo.year,
 					year2: photo.year2
+				};
+				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+			}
+
+			i = commentsArr.length;
+			while (i) {
+				comment = commentsArr[--i];
+				comment.photo = photosHash[comment.photo].cid;
+			}
+
+			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+			cb({message: 'ok', page: data.page, comments: commentsArr, photos: photoFormattedHash});
+		}
+	);
+}
+
+/**
+ * Выбирает комментарии для фотографии
+ * @param session Сессия польщователя
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function getCommentsRibbon(data, cb) {
+	var start = Date.now(),
+		commentsArr,
+		photosHash = {};
+
+	if (!data || !Utils.isType('object', data)) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	step(
+		function createCursor() {
+			var limit = data.limit || 15;
+			Comment.collection.find({}, {_id: 0, cid: 1, photo: 1, txt: 1}, { limit: limit, sort: [['stamp', 'desc']]}, this);
+		},
+		cursorExtract,
+		function (err, comments) {
+			if (err || !comments) {
+				cb({message: err || 'Cursor extract error', error: true});
+				return;
+			}
+			var i = comments.length,
+				photoId,
+				photosArr = [];
+
+			while (i) {
+				photoId = comments[--i].photo;
+				if (photosHash[photoId] === undefined) {
+					photosHash[photoId] = true;
+					photosArr.push(photoId);
+				}
+			}
+
+			commentsArr = comments;
+			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1}, this);
+		},
+		cursorExtract,
+		function (err, photos) {
+			if (err || !photos) {
+				cb({message: 'Cursor photos extract error', error: true});
+				return;
+			}
+			var i,
+				comment,
+				photo,
+				photoFormatted,
+				photoFormattedHash = {};
+
+			i = photos.length;
+			while (i) {
+				photo = photos[--i];
+				photoFormatted = {
+					cid: photo.cid,
+					file: photo.file,
+					title: photo.title
 				};
 				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
 			}
@@ -415,13 +491,18 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCommentsPhoto', function (data) {
-			getCommentsPhoto(hs.session, data, function (result) {
+			getCommentsPhoto(data, function (result) {
 				socket.emit('takeCommentsPhoto', result);
 			});
 		});
 		socket.on('giveCommentsUser', function (data) {
 			getCommentsUser(data, function (result) {
 				socket.emit('takeCommentsUser', result);
+			});
+		});
+		socket.on('giveCommentsRibbon', function (data) {
+			getCommentsRibbon(data, function (result) {
+				socket.emit('takeCommentsRibbon', result);
 			});
 		});
 
