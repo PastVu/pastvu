@@ -205,13 +205,18 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 
 					evt.preventDefault();
 					_this.navigateToUrl(pathname + paramsStringNew.substring(0, paramsStringNew.length-1));
-				} else if (href.indexOf(_this.root) > -1) {
+				} else if (_this.testUrl(href)) {
 					evt.preventDefault();
 					_this.navigateToUrl(href);
 				}
 			}
 
 			_this = href = target = null;
+		},
+		testUrl: function (url) {
+			return _.some(this.routes, function (item) {
+				return this._routeToRegExp(this.root + item.route).test(url);
+			}, this);
 		},
 		// Блокирует переход по ссылкам
 		ahrefBlock: function (flag) {
