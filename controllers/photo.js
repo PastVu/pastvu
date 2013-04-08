@@ -504,7 +504,7 @@ module.exports.loadController = function (app, db, io) {
 						function () {
 							var i = data.bounds.length;
 							while (i--) {
-								Photo.collection.find({geo: { "$within": {"$box": data.bounds[i]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1}, this.parallel());
+								Photo.collection.find({geo: { "$within": {"$box": data.bounds[i]} }, del: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false} }, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
 							}
 						},
 						function cursors(err) {

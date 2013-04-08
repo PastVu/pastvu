@@ -104,8 +104,8 @@
 			padding-right: 0;
 		}
 		.leaflet-popup-content {
+			color: @MainLigthColor;
 			text-align: center;
-			padding-bottom: 1px;
 		}
 		.leaflet-popup-tip-container {
 			height: 15px;
@@ -125,11 +125,19 @@
 		.popupCap {
 			display: block;
 			max-height: 37px;
-			padding: 1px 2px;
-			color: @MainLigthColor;
+			padding: 1px 2px 0 2px;
 			font-size: 11px;
 			line-height: 12px;
 			overflow: hidden;
+
+			&:empty {
+				display: none;
+			}
+		}
+		.popupYear {
+			font-size: 11px;
+			line-height: 12px;
+			color: #BDBDBD;
 
 			&:empty {
 				display: none;

@@ -9,7 +9,8 @@ var ClusterPoster = {
 		file: {type: String},
 		dir: {type: String},
 		title: {type: String},
-		year: {type: Number}
+		year: {type: Number},
+		year2: {type: Number}
 	},
 	ClusterSchema = new Schema(
 		{

@@ -46,7 +46,7 @@ define([
 		this.animationOn = false;
 
 		this.popupPhoto = new L.Popup({className: 'popupPhoto', minWidth: 151, maxWidth: 151, offset: new L.Point(0, -14), autoPan: false, zoomAnimation: false, closeButton: false});
-		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div>');
+		this.popupPhotoTpl = _.template('<img class="popupImg" src="${ img }"/><div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
 
 		this.popupClusterPhoto = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -21), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupClusterPhotom = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -26), autoPan: false, zoomAnimation: false, closeButton: false});
@@ -846,7 +846,7 @@ define([
 			}
 			content += this.popupClusterTpl({img: Photo.picFormats.micros + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.thumb + photo.file, title: photo.title, href: '/p/' + photo.cid});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, year: '', txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
@@ -862,7 +862,7 @@ define([
 		if (this.markerToPopup) {
 			if (type === 'photo') {
 				popup = this.popupPhoto
-					.setContent(this.popupPhotoTpl({img: this.markerToPopup.options.data.obj.sfile, txt: this.markerToPopup.options.data.obj.title}));
+					.setContent(this.popupPhotoTpl({img: obj.sfile, txt: obj.title, year: obj.year + (obj.year2 && obj.year2 > obj.year ? ' - ' + obj.year2 : '')}));
 			} else if (type === 'clust') {
 				popup = this['popupClusterPhoto' + obj.measure]
 					.setContent(this.popupClusterPhotoTpl({txt: obj.p.title}));
@@ -900,8 +900,8 @@ define([
 	};
 	MarkerManager.prototype.popupClose = function () {
 		if (this.popupOpened) {
-			this.map.removeLayer(this.popupOpened);
-			this.popupOpened = null;
+			//this.map.removeLayer(this.popupOpened);
+			//this.popupOpened = null;
 		}
 	};
 

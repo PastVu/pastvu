@@ -42,7 +42,7 @@ module.exports.loadController = function (app, db) {
 			}
 		}
 
-		photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
+		photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 
 		db.clusters.update({g: g, z: zParam.z}, { $inc: {c: inc}, $set: {geo: geoCluster, p: photoPoster} }, {multi: false, upsert: true});
 	});
@@ -198,7 +198,7 @@ module.exports.loadController = function (app, db) {
 				} else {
 					geoCluster = [cluster.lngs, cluster.lats];
 				}
-				photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1});
+				photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 				clustersResultArr.push({
 					g: cluster.g,
 					z: clusterZoom.z,
