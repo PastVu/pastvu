@@ -51,7 +51,7 @@ define([
 		this.popupClusterPhoto = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -21), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupClusterPhotom = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -26), autoPan: false, zoomAnimation: false, closeButton: false});
 		this.popupClusterPhotob = new L.Popup({className: 'popupClusterPhoto', minWidth: 70, maxWidth: 151, offset: new L.Point(0, -31), autoPan: false, zoomAnimation: false, closeButton: false});
-		this.popupClusterPhotoTpl = _.template('<div class="popupCap">${ txt }</div>');
+		this.popupClusterPhotoTpl = _.template('<div class="popupCap">${ txt }</div><div class="popupYear">${ year }</div>');
 
 		this.popupCluster = new L.Popup({className: 'popupCluster', minWidth: 151, maxWidth: 151, /*maxHeight: 223,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
 		this.popupClusterFive = new L.Popup({className: 'popupCluster five', minWidth: 247, maxWidth: 247, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
@@ -61,7 +61,7 @@ define([
 		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
 			'onclick="' + this.popupClusterClickFN + '(this)" ' +
 			'onmouseover="' + this.popupClusterOverFN + '(this)" ' +
-			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }"/>'
+			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }" data-year="${ year }"/>'
 		);
 		window[this.popupClusterClickFN] = function (element) {
 			var url = element.getAttribute('data-href');
@@ -73,11 +73,13 @@ define([
 			var root = element.parentNode.parentNode,
 				div = root.querySelector('.popupPoster'),
 				img = root.querySelector('.popupImg'),
-				title = root.querySelector('.popupCap');
+				title = root.querySelector('.popupCap'),
+				year = root.querySelector('.popupYear');
 
 			div.setAttribute('data-href', element.getAttribute('data-href'));
 			img.setAttribute('src', element.getAttribute('data-sfile'));
 			title.innerHTML = element.getAttribute('data-title');
+			year.innerHTML = element.getAttribute('data-year');
 		};
 
 		this.popupOpened = null;
@@ -844,9 +846,9 @@ define([
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTpl({img: Photo.picFormats.micros + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.thumb + photo.file, title: photo.title, href: '/p/' + photo.cid});
+			content += this.popupClusterTpl({img: Photo.picFormats.micros + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.thumb + photo.file, title: photo.title, href: '/p/' + photo.cid, year: this.makeTextYear(photo)});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, year: '', txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, year: this.makeTextYear(photos[photos.length - 1]), txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
@@ -855,6 +857,9 @@ define([
 	};
 
 
+	MarkerManager.prototype.makeTextYear = function (photo) {
+		return photo.year + (photo.year2 && photo.year2 > photo.year ? ' - ' + photo.year2 : '');
+	};
 	MarkerManager.prototype.popupPhotoOpen = function () {
 		var popup,
 			type = this.markerToPopup.options.data.type,
@@ -862,10 +867,10 @@ define([
 		if (this.markerToPopup) {
 			if (type === 'photo') {
 				popup = this.popupPhoto
-					.setContent(this.popupPhotoTpl({img: obj.sfile, txt: obj.title, year: obj.year + (obj.year2 && obj.year2 > obj.year ? ' - ' + obj.year2 : '')}));
+					.setContent(this.popupPhotoTpl({img: obj.sfile, txt: obj.title, year: this.makeTextYear(obj)}));
 			} else if (type === 'clust') {
 				popup = this['popupClusterPhoto' + obj.measure]
-					.setContent(this.popupClusterPhotoTpl({txt: obj.p.title}));
+					.setContent(this.popupClusterPhotoTpl({txt: obj.p.title, year: this.makeTextYear(obj.p)}));
 			}
 			popup.setLatLng(this.markerToPopup.getLatLng());
 			this.popupOpen(popup);
@@ -900,8 +905,8 @@ define([
 	};
 	MarkerManager.prototype.popupClose = function () {
 		if (this.popupOpened) {
-			//this.map.removeLayer(this.popupOpened);
-			//this.popupOpened = null;
+			this.map.removeLayer(this.popupOpened);
+			this.popupOpened = null;
 		}
 	};
 
