@@ -27,7 +27,7 @@ function cursorExtract(err, cursor) {
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsPhoto(session, data, cb) {
+function getCommentsPhoto(data, cb) {
 	var //start = Date.now(),
 		commentsArr,
 		usersHash = {};

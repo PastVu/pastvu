@@ -37,7 +37,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
 			}.bind(this));
-			socket.emit('giveCommentsRibbon', {limit: 20});
+			socket.emit('giveCommentsRibbon', {limit: 16});
 		},
 		show: function () {
 			this.$container.fadeIn();

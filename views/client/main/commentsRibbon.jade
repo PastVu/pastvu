@@ -1,4 +1,6 @@
 .commentsRibbon(data-bind="with: repository[M!M]")
+	.row-fluid.ribbonHead.lineBehind
+		span Новые комментарии
 	.row-fluid.comments(data-bind="foreach: comments")
 		.row-fluid.comment
 			a.photoPreviewA(data-bind="attr: {href: $parent.commentsPhotos[$data.photo].link}")
