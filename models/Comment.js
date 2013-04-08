@@ -19,6 +19,8 @@ var CommentSheme = new mongoose.Schema(
 		strict: true
 	}
 );
+CommentSheme.index({ user: 1, stamp: -1 }); // Составной индекс для запроса комментариев пользователя
+//CommentSheme.index({ photo: 1, stamp: 1 }); // Составной индекс для запроса комментариев фотографии. (Пока не нужен)
 
 module.exports.makeModel = function (db) {
 	db.model('Comment', CommentSheme);
