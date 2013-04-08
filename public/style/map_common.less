@@ -1,9 +1,5 @@
 @import "common.less";
 
-body {
-	background-color: #303030;
-}
-
 #main_loader {
 	display: none;
     position: absolute;
@@ -13,7 +9,7 @@ body {
     left:0;
     right:0;
     margin: 0;
-	color: @MainLigthColor;
+	color: @textColor;
 	text-align: center;
 	
 	&.show {
@@ -33,7 +29,8 @@ body {
 		max-width: 758px;
 		font-size: @baseFontSize + 2;
 		position: relative;
-		text-shadow: 1px 1px 2px black;
+		text-rendering: optimizelegibility;
+		//text-shadow: 1px 1px 2px black;
 	}
 	
 	#user_nm {
