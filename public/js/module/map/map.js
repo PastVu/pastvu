@@ -50,22 +50,28 @@ define([
 							id: 'osmosnimki',
 							desc: 'Osmosnimki',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false}),
-							maxZoom: 18
+							obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
+							maxZoom: 19,
+							limitZoom: 18,
+							maxAfter: 'google.scheme'
 						},
 						{
 							id: 'mapnik',
 							desc: 'Mapnik',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false}),
-							maxZoom: 18
+							obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
+							maxZoom: 19,
+							limitZoom: 18,
+							maxAfter: 'google.scheme'
 						},
 						{
 							id: 'mapquest',
 							desc: 'Mapquest',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false}),
-							maxZoom: 18
+							obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20}),
+							maxZoom: 20,
+							limitZoom: 19,
+							maxAfter: 'google.scheme'
 						}
 					])
 				});
@@ -103,7 +109,9 @@ define([
 							desc: 'Ландшафт',
 							selected: ko.observable(false),
 							params: 'TERRAIN',
-							maxZoom: 15
+							maxZoom: 16,
+							limitZoom: 15,
+							maxAfter: 'google.scheme'
 						}
 					])
 				});
@@ -120,7 +128,9 @@ define([
 							desc: 'Схема',
 							selected: ko.observable(false),
 							params: 'map',
-							maxZoom: 17
+							maxZoom: 18,
+							limitZoom: 17,
+							maxAfter: 'yandex.pub'
 						},
 						{
 							id: 'sat',
@@ -141,14 +151,18 @@ define([
 							desc: 'Народная',
 							selected: ko.observable(false),
 							params: 'publicMap',
-							maxZoom: 18
+							maxZoom: 20,
+							limitZoom: 19,
+							maxAfter: 'google.scheme'
 						},
 						{
 							id: 'pubhyb',
 							desc: 'Народный гибрид',
 							selected: ko.observable(false),
 							params: 'publicMapHybrid',
-							maxZoom: 18
+							maxZoom: 20,
+							limitZoom: 19,
+							maxAfter: 'google.scheme'
 						}
 					])
 				});
@@ -194,6 +208,22 @@ define([
 					if (this.embedded()) {
 						this.map.addLayer(this.pointLayer);
 					}
+
+					this.map.on('zoomend', function () {
+						var maxAfter = this.layerActive().type.maxAfter,
+							layers;
+						if (this.layerActive().type.limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > this.layerActive().type.limitZoom) {
+							layers = maxAfter.split('.');
+							if (this.layerActive().sys.id === 'osm') {
+								this.layerActive().type.obj.on('load', function (evt) {
+									this.selectLayer(layers[0], layers[1]);
+								}, this);
+							} else {
+								window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 500);
+							}
+
+						}
+					}, this);
 				}, this);
 
 				renderer(
@@ -332,7 +362,9 @@ define([
 					if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
 						this.navSliderVM.recalcZooms();
 					}
-					if (this.map.getZoom() > type.maxZoom) {
+					if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
+						this.map.setZoom(type.limitZoom);
+					} else if (this.map.getZoom() > type.maxZoom) {
 						this.map.setZoom(type.maxZoom);
 					}
 				}.bind(this);
@@ -354,6 +386,9 @@ define([
 					if (layerActive.sys && layerActive.type) {
 						layerActive.sys.selected(false);
 						layerActive.type.selected(false);
+						if (layerActive.sys.id === 'osm') {
+							layerActive.type.obj.off('load');
+						}
 						this.map.removeLayer(layerActive.type.obj);
 					}
 
