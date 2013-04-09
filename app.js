@@ -229,6 +229,13 @@ app.get('*', function (req, res) {
 });
 
 /**
+ * Set zero for unlimited listeners
+ * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
+ */
+server.setMaxListeners(0);
+io.setMaxListeners(0);
+
+/**
  * Handling uncaught exceptions
  */
 process.on('uncaughtException', function (err) {
