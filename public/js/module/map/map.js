@@ -228,7 +228,7 @@ define([
 
 				renderer(
 					[
-						{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
+						{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
 							this.childModules[vm.id] = vm;
 							this.navSliderVM = vm;
 						}.bind(this)}
@@ -360,7 +360,7 @@ define([
 					this.markerManager.layerChange();
 					this.map.options.maxZoom = type.maxZoom;
 					if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
-						this.navSliderVM.recalcZooms();
+						this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
 					}
 					if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
 						this.map.setZoom(type.limitZoom);
