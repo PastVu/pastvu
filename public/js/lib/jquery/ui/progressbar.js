@@ -1,6 +1,6 @@
 define(['jquery','./core','./widget'], function (jQuery) {
 /*!
- * jQuery UI Progressbar 1.10.0
+ * jQuery UI Progressbar 1.10.2
  * http://jqueryui.com
  *
  * Copyright 2013 jQuery Foundation and other contributors
@@ -16,7 +16,7 @@ define(['jquery','./core','./widget'], function (jQuery) {
 (function( $, undefined ) {
 
 $.widget( "ui.progressbar", {
-	version: "1.10.0",
+	version: "1.10.2",
 	options: {
 		max: 100,
 		value: 0,

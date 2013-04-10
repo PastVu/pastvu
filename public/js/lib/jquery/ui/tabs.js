@@ -1,6 +1,6 @@
 define(['jquery','./core','./widget'], function (jQuery) {
 /*!
- * jQuery UI Tabs 1.10.0
+ * jQuery UI Tabs 1.10.2
  * http://jqueryui.com
  *
  * Copyright 2013 jQuery Foundation and other contributors
@@ -29,7 +29,7 @@ function isLocal( anchor ) {
 }
 
 $.widget( "ui.tabs", {
-	version: "1.10.0",
+	version: "1.10.2",
 	delay: 300,
 	options: {
 		active: null,

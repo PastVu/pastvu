@@ -1,6 +1,6 @@
 define(['jquery','./effect'], function (jQuery) {
 /*!
- * jQuery UI Effects Fade 1.10.0
+ * jQuery UI Effects Fade 1.10.2
  * http://jqueryui.com
  *
  * Copyright 2013 jQuery Foundation and other contributors

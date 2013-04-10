@@ -1,6 +1,6 @@
 define(['jquery','./core','./mouse','./widget'], function (jQuery) {
 /*!
- * jQuery UI Selectable 1.10.0
+ * jQuery UI Selectable 1.10.2
  * http://jqueryui.com
  *
  * Copyright 2013 jQuery Foundation and other contributors
@@ -17,7 +17,7 @@ define(['jquery','./core','./mouse','./widget'], function (jQuery) {
 (function( $, undefined ) {
 
 $.widget("ui.selectable", $.ui.mouse, {
-	version: "1.10.0",
+	version: "1.10.2",
 	options: {
 		appendTo: "body",
 		autoRefresh: true,

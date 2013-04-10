@@ -1,6 +1,6 @@
 define(['jquery','./core','./widget','./position'], function (jQuery) {
 /*!
- * jQuery UI Menu 1.10.0
+ * jQuery UI Menu 1.10.2
  * http://jqueryui.com
  *
  * Copyright 2013 jQuery Foundation and other contributors
@@ -17,7 +17,7 @@ define(['jquery','./core','./widget','./position'], function (jQuery) {
 (function( $, undefined ) {
 
 $.widget( "ui.menu", {
-	version: "1.10.0",
+	version: "1.10.2",
 	defaultElement: "<ul>",
 	delay: 300,
 	options: {
@@ -324,7 +324,7 @@ $.widget( "ui.menu", {
 		menus.children( ":not(.ui-menu-item)" ).each(function() {
 			var item = $( this );
 			// hyphen, em dash, en dash
-			if ( !/[^\-—–\s]/.test( item.text() ) ) {
+			if ( !/[^\-\u2014\u2013\s]/.test( item.text() ) ) {
 				item.addClass( "ui-widget-content ui-menu-divider" );
 			}
 		});
