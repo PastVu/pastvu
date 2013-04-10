@@ -6,10 +6,11 @@ define([
 	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'm/User', 'm/storage', 'Locations',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
-	'text!tpl/map/map.jade', 'css!style/map/map'
+	'text!tpl/map/map.jade', 'css!style/map/map',
+	'jquery-ui/draggable', 'jquery-ui/slider', 'jquery-ui/effect-highlight',
+	'css!style/jquery/ui/core', 'css!style/jquery/ui/slider', 'css!style/jquery/ui/theme'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
 	'use strict';
-	var $window = $(window);
 
 	return Cliche.extend({
 		jade: jade,
@@ -188,6 +189,16 @@ define([
 				// Создаем менеджер маркеров.
 				// В случае встроенной карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
 				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded(), embedded: this.embedded()});
+
+				this.$dom.find(".mapYearSlider").slider({
+					range: true,
+					min: 1826,
+					max: 2000,
+					values: [ 1890, 1950 ],
+					slide: function( event, ui ) {
+						//$( "#amount" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+					}
+				});
 
 				Locations.subscribe(function (val) {
 					this.mapDefCenter = new L.LatLng(val.lat, val.lng);

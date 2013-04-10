@@ -1,6 +1,8 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
 	.mapContainer(data-bind="css: {embedded: embedded()}")
 		.map
+		.mapYearSelector
+			.mapYearSlider
 		.mapNavigation.mContainer
 		label.checkbox.linkOpenMode
 			input(type="checkbox", data-bind="checked: openNewTab")

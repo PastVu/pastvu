@@ -54,8 +54,7 @@ $.widget( "ui.slider", $.ui.mouse, {
 			.addClass( "ui-slider" +
 				" ui-slider-" + this.orientation +
 				" ui-widget" +
-				" ui-widget-content" +
-				" ui-corner-all");
+				" ui-widget-content");
 
 		this._refresh();
 		this._setOption( "disabled", this.options.disabled );
@@ -73,8 +72,8 @@ $.widget( "ui.slider", $.ui.mouse, {
 	_createHandles: function() {
 		var i, handleCount,
 			options = this.options,
-			existingHandles = this.element.find( ".ui-slider-handle" ).addClass( "ui-state-default ui-corner-all" ),
-			handle = "<a class='ui-slider-handle ui-state-default ui-corner-all' href='#'></a>",
+			existingHandles = this.element.find( ".ui-slider-handle" ).addClass( "ui-state-default" ),
+			handle = "<a class='ui-slider-handle ui-state-default' href='#'></a>",
 			handles = [];
 
 		handleCount = ( options.values && options.values.length ) || 1;
@@ -119,7 +118,7 @@ $.widget( "ui.slider", $.ui.mouse, {
 				classes = "ui-slider-range" +
 				// note: this isn't the most fittingly semantic framework class for this element,
 				// but worked best visually with a variety of themes
-				" ui-widget-header ui-corner-all";
+				" ui-widget-header";
 			} else {
 				this.range.removeClass( "ui-slider-range-min ui-slider-range-max" )
 					// Handle range switching from true to min/max
@@ -153,8 +152,7 @@ $.widget( "ui.slider", $.ui.mouse, {
 				" ui-slider-horizontal" +
 				" ui-slider-vertical" +
 				" ui-widget" +
-				" ui-widget-content" +
-				" ui-corner-all" );
+				" ui-widget-content");
 
 		this._mouseDestroy();
 	},
