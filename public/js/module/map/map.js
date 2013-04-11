@@ -41,6 +41,8 @@ define([
 
 			this.yearLow = 1826;
 			this.yearHigh = 2000;
+			this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
+			this.yearRefreshMarkersTimeout = null;
 
 			this.auth = globalVM.repository['m/auth'];
 
@@ -198,11 +200,15 @@ define([
 					ui.helper[0].innerHTML = newYear;
 					this.slideOuterL.style.width = (ui.offset.left - this.slideOffset - 10) + 'px';
 				}.bind(this),
+				start: function (event, ui) {
+					window.clearTimeout(this.yearRefreshMarkersTimeout);
+				}.bind(this),
 				stop: function (event, ui) {
 					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
 					if (newYear !== this.yearLow) {
 						this.yearLow = newYear;
 						this.yearSliderPositions();
+						this.yearRefreshMarkersTimeout = window.setTimeout(this.yearRefreshMarkersBind, 400);
 					}
 				}.bind(this)
 			});
@@ -214,11 +220,15 @@ define([
 					ui.helper[0].innerHTML = newYear;
 					this.slideOuterR.style.left = (ui.offset.left + this.slideOffset - 10) + 'px';
 				}.bind(this),
+				start: function (event, ui) {
+					window.clearTimeout(this.yearRefreshMarkersTimeout);
+				}.bind(this),
 				stop: function (event, ui) {
 					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
 					if (newYear !== this.yearHigh) {
 						this.yearHigh = newYear;
 						this.yearSliderPositions();
+						this.yearRefreshMarkersTimeout = window.setTimeout(this.yearRefreshMarkersBind, 400);
 					}
 				}.bind(this)
 			});
@@ -241,11 +251,16 @@ define([
 				.css({left: low})
 				.text(this.yearLow)
 				.draggable("option", "containment", [this.slideOffset, 0, high + 0.1, 0]);
+			this.slideOuterL.style.width = (low - this.slideOffset - 10) + 'px';
 
 			this.$slideHandleR
 				.css({left: high})
 				.text(this.yearHigh)
 				.draggable("option", "containment", [low - 0.1, 0, this.slideW - this.slideOffset, 0]);
+			this.slideOuterR.style.left = (high + this.slideOffset - 10) + 'px';
+		},
+		yearRefreshMarkers: function () {
+			 console.log('yearRefreshMarkers');
 		},
 
 		show: function () {
