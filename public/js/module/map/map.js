@@ -39,6 +39,9 @@ define([
 			this.point = null; // Фотография для выделения
 			this.pointLayer = L.layerGroup();
 
+			this.yearLow = 1826;
+			this.yearHigh = 2000;
+
 			this.auth = globalVM.repository['m/auth'];
 
 			if (P.settings.USE_OSM_API()) {
@@ -181,6 +184,70 @@ define([
 
 			this.show();
 		},
+		yearSliderCreate: function () {
+			this.slideOuterL = this.$dom.find(".mapYearOuter.L")[0];
+			this.slideOuterR = this.$dom.find(".mapYearOuter.R")[0];
+			this.$slideHandleL = this.$dom.find(".mapYearHandle.L");
+			this.$slideHandleR = this.$dom.find(".mapYearHandle.R");
+
+			this.$dom.find(".mapYearHandle.L").draggable({
+				axis: "x",
+				cursor: "move",
+				drag: function (event, ui) {
+					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
+					ui.helper[0].innerHTML = newYear;
+					this.slideOuterL.style.width = (ui.offset.left - this.slideOffset - 10) + 'px';
+				}.bind(this),
+				stop: function (event, ui) {
+					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
+					if (newYear !== this.yearLow) {
+						this.yearLow = newYear;
+						this.yearSliderPositions();
+					}
+				}.bind(this)
+			});
+			this.$dom.find(".mapYearHandle.R").draggable({
+				axis: "x",
+				cursor: "move",
+				drag: function (event, ui) {
+					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
+					ui.helper[0].innerHTML = newYear;
+					this.slideOuterR.style.left = (ui.offset.left + this.slideOffset - 10) + 'px';
+				}.bind(this),
+				stop: function (event, ui) {
+					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
+					if (newYear !== this.yearHigh) {
+						this.yearHigh = newYear;
+						this.yearSliderPositions();
+					}
+				}.bind(this)
+			});
+
+			this.yearSliderSize();
+		},
+		yearSliderSize: function () {
+			this.slideOffset = 36;
+			this.slideW = this.$dom.find('.mapYearSelector').width();
+			this.slideStep = (this.slideW - (this.slideOffset * 2)) / 174;
+			this.$dom.find(".mapYearHandle").css({ visibility: 'visible'}).draggable("option", "grid", [this.slideStep, 0]);
+
+			this.yearSliderPositions();
+		},
+		yearSliderPositions: function () {
+			var low = this.slideOffset + this.slideStep * (this.yearLow - 1826),
+				high = this.slideOffset + this.slideStep * (this.yearHigh - 1826);
+
+			this.$slideHandleL
+				.css({left: low})
+				.text(this.yearLow)
+				.draggable("option", "containment", [this.slideOffset, 0, high + 0.1, 0]);
+
+			this.$slideHandleR
+				.css({left: high})
+				.text(this.yearHigh)
+				.draggable("option", "containment", [low - 0.1, 0, this.slideW - this.slideOffset, 0]);
+		},
+
 		show: function () {
 			this.$container.fadeIn(400, function () {
 
@@ -190,15 +257,7 @@ define([
 				// В случае встроенной карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
 				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded(), embedded: this.embedded()});
 
-				this.$dom.find(".mapYearSlider").slider({
-					range: true,
-					min: 1826,
-					max: 2000,
-					values: [ 1890, 1950 ],
-					slide: function( event, ui ) {
-						//$( "#amount" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
-					}
-				});
+				this.yearSliderCreate();
 
 				Locations.subscribe(function (val) {
 					this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -208,6 +267,7 @@ define([
 				//Самостоятельно обновляем размеры карты
 				P.window.square.subscribe(_.debounce(function (newVal) {
 					this.map._onResize();
+					this.yearSliderSize();
 				}.bind(this), 300));
 
 				this.map.whenReady(function () {

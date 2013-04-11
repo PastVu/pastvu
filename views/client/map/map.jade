@@ -2,7 +2,11 @@
 	.mapContainer(data-bind="css: {embedded: embedded()}")
 		.map
 		.mapYearSelector
-			.mapYearSlider
+			.mapYearInner
+			.mapYearOuter.L
+			.mapYearOuter.R
+			.mapYearHandle.L.draggable
+			.mapYearHandle.R.draggable
 		.mapNavigation.mContainer
 		label.checkbox.linkOpenMode
 			input(type="checkbox", data-bind="checked: openNewTab")
