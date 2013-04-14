@@ -7,8 +7,8 @@ define([
 	'm/User', 'm/storage', 'Locations',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
 	'text!tpl/map/map.jade', 'css!style/map/map',
-	'jquery-ui/draggable', 'jquery-ui/slider', 'jquery-ui/effect-highlight',
-	'css!style/jquery/ui/core', 'css!style/jquery/ui/slider', 'css!style/jquery/ui/theme'
+	'jquery-ui/draggable', 'jquery-ui/effect-highlight',
+	'css!style/jquery/ui/core', 'css!style/jquery/ui/theme'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
 	'use strict';
 
@@ -192,7 +192,7 @@ define([
 			this.$slideHandleL = this.$dom.find(".mapYearHandle.L");
 			this.$slideHandleR = this.$dom.find(".mapYearHandle.R");
 
-			this.$dom.find(".mapYearHandle.L").draggable({
+			this.$slideHandleL.draggable({
 				axis: "x",
 				cursor: "move",
 				drag: function (event, ui) {
@@ -212,7 +212,7 @@ define([
 					}
 				}.bind(this)
 			});
-			this.$dom.find(".mapYearHandle.R").draggable({
+			this.$slideHandleR.draggable({
 				axis: "x",
 				cursor: "move",
 				drag: function (event, ui) {
@@ -239,8 +239,9 @@ define([
 			this.slideOffset = 36;
 			this.slideW = this.$dom.find('.mapYearSelector').width();
 			this.slideStep = (this.slideW - (this.slideOffset * 2)) / 174;
-			this.$dom.find(".mapYearHandle").css({ visibility: 'visible'}).draggable("option", "grid", [this.slideStep, 0]);
-
+			this.$dom.find(".mapYearHandle").css({ visibility: 'visible'});
+			this.$slideHandleL.draggable("option", "grid", [this.slideStep, 0]);
+			this.$slideHandleR.draggable("option", "grid", [this.slideStep, 0]);
 			this.yearSliderPositions();
 		},
 		yearSliderPositions: function () {
@@ -273,7 +274,9 @@ define([
 				// В случае встроенной карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
 				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded(), embedded: this.embedded()});
 
-				this.yearSliderCreate();
+				if (!this.embedded()) {
+					this.yearSliderCreate();
+				}
 
 				Locations.subscribe(function (val) {
 					this.mapDefCenter = new L.LatLng(val.lat, val.lng);
