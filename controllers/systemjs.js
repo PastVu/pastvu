@@ -118,46 +118,51 @@ module.exports.loadController = function (app, db) {
 
 	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
 		var startFullTime = Date.now(),
-			startTime,
-
-			useGravity,
-
-			clusterZoom,
 			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
 			clusterZoomsCounter = -1,
 
 			photo,
-			photoPoster,
-			photos = db.photos.find({geo: {$exists: true}}, {_id: 1, geo: 1, file: 1}).toArray(),
+			photos = db.photos.find({geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1}).toArray(),
 			photoCounter = 0,
 			photosAllCount = photos.length,
 			geoPhoto,
-			geoPhotoCorrection = [0, 0],
-
-			g,
-			geoCluster,
-			cluster,
-			clusters,
-			clustCoordId,
-			clustCoordIdS,
-			custersCounter,
-			clustersResultArr;
+			geoPhotoCorrection = [0, 0];
 
 		logByNPhotos = logByNPhotos || ((photos.length / 20) >> 0);
 		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
 
 		while (++clusterZoomsCounter < clusterZooms.length) {
-			clusterZoom = clusterZooms[clusterZoomsCounter];
+			clusterizeZoom(clusterZooms[clusterZoomsCounter]);
+		}
+
+		function clusterizeZoom(clusterZoom) {
+			var startTime = Date.now(),
+				useGravity,
+				divider = Math.pow(10, 6),
+
+				g,
+				cluster,
+				clusters,
+				clustersCount,
+				clustersArr,
+				clustersArrInner,
+				clustersArrLastIndex,
+				clustCoordId,
+				clustersCounter,
+				clustersCounterInner;
+
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
 			useGravity = withGravity && clusterZoom.z > 11;
 
 			clusters = {};
-			clustCoordIdS = [];
 
-			startTime = Date.now();
-
+			clustersCount = 0;
+			clustersArr = [
+				[]
+			];
+			clustersArrLastIndex = 0;
 			photoCounter = -1;
 			while (++photoCounter < photosAllCount) {
 				photo = photos[photoCounter];
@@ -165,55 +170,57 @@ module.exports.loadController = function (app, db) {
 				geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
 				geoPhotoCorrection[1] = geoPhoto[1] > 0 ? 1 : 0;
 
-				g = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+				g = [ Math.round(divider * (clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]))) / divider, Math.round(divider * (clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1]))) / divider ];
 				clustCoordId = g[0] + '@' + g[1];
-				if (clusters[clustCoordId] === undefined) {
-					clusters[clustCoordId] = {g: g, lngs: g[0] + clusterZoom.wHalf, lats: g[1] - clusterZoom.hHalf, c: 1, p: []};
-					clustCoordIdS.push(clustCoordId);
-				}
 				cluster = clusters[clustCoordId];
+				if (cluster === undefined) {
+					clustersCount++;
+					clusters[clustCoordId] = cluster = {g: g, z: clusterZoom.z, geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf], c: 0, y: {}, y2: {}, p: null};
+					if (clustersArr[clustersArrLastIndex].push(cluster) > 499) {
+						clustersArr.push([]);
+						clustersArrLastIndex++;
+					}
+				}
 				cluster.c += 1;
+				//cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
+				//cluster.y2[photo.year] = 1 + (cluster.y2[photo.year] | 0);
 				if (useGravity) {
-					cluster.lngs += geoPhoto[0];
-					cluster.lats += geoPhoto[1];
+					cluster.geo[0] += geoPhoto[0];
+					cluster.geo[1] += geoPhoto[1];
 				}
 
 				if (photoCounter % logByNPhotos === 0) {
-					print(clusterZoom.z + ': Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + clustCoordIdS.length + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
+					print(clusterZoom.z + ': Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + clustersCount + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
 				}
 			}
 
-			print(clusterZoom.z + ': Final calc fo clusters before insert. ' + (Date.now() - startTime) / 1000 + 's');
-			clustersResultArr = [];
-			custersCounter = clustCoordIdS.length;
-			while (custersCounter) {
-				cluster = clusters[clustCoordIdS[--custersCounter]];
-				if (useGravity) {
-					geoCluster = [
-						//Math.min(Math.max(cluster.g[0] + (clusterZoom.wHalf / 2), toPrecisionRound(cluster.lngs / cluster.c)), cluster.g[0] + clusterZoom.wHalf + (clusterZoom.wHalf / 2)),
-						//Math.min(Math.max(cluster.g[1] - (clusterZoom.hHalf / 2), toPrecisionRound(cluster.lats / cluster.c)), cluster.g[1] - clusterZoom.hHalf - (clusterZoom.hHalf / 2))
-						toPrecisionRound(cluster.lngs / cluster.c),
-						toPrecisionRound(cluster.lats / cluster.c)
-					];
-				} else {
-					geoCluster = [cluster.lngs, cluster.lats];
-				}
-				photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
-				clustersResultArr.push({
-					g: cluster.g,
-					z: clusterZoom.z,
-					geo: geoCluster,
-					c: cluster.c - 1,
-					p: photoPoster
-				});
-			}
-
+			print(clusterZoom.z + ': ' + clustersCount + ' clusters ready for inserting ' + (Date.now() - startTime) / 1000 + 's');
 			db.clusters.remove({z: clusterZoom.z});
-			print(clusterZoom.z + ': Inserting ' + clustersResultArr.length + ' clusters. ' + (Date.now() - startTime) / 1000 + 's');
-			db.clusters.insert(clustersResultArr);
-			print(clusterZoom.z + ': Inserted ok. ' + (Date.now() - startTime) / 1000 + 's');
+
+			clustersCounter = clustersArr.length;
+			while (clustersCounter) {
+				clustersArrInner = clustersArr[--clustersCounter];
+				clustersCounterInner = clustersArrInner.length;
+				if (clustersCounterInner > 0) {
+					while (clustersCounterInner) {
+						cluster = clustersArrInner[--clustersCounterInner];
+						if (useGravity) {
+							cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
+							cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
+						}
+						cluster.p = db.photos.findOne({geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
+					}
+
+					db.clusters.insert(clustersArrInner);
+					print(clusterZoom.z + ': Inserted ' + clustersArrInner.length + '/' + clustersCount + ' clusters ok. ' + (Date.now() - startTime) / 1000 + 's');
+				}
+			}
+
+			clusters = null;
+			clustersArr = null;
 			print('~~~~~~~~~~~~~~~~~~~~~~~~~');
 		}
+
 
 		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
 	});
