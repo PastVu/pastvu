@@ -91,6 +91,8 @@ var FragmentSchema = new Schema({
 		}
 	);
 
+PhotoSchema.index({ g: '2d', year: 1, year2: 1 }); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+
 
 /**
  * Перед каждым сохранением делаем проверки
@@ -102,7 +104,12 @@ PhotoSchema.pre('save', function (next) {
 
 	// check year2
 	if (this.isModified('year') || this.isModified('year2')) {
-		if (!this.year2 || this.year2 < this.year) {
+		if (this.year < 1826) {
+			this.year = 1826;
+		} else if (this.year > 2000) {
+			this.year = 2000;
+		}
+		if (!Number(this.year2) || this.year2 < this.year || this.year2 > 2000) {
 			this.year2 = this.year;
 		}
 	}

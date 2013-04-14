@@ -240,30 +240,36 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.hscale = this.hscale.subscribe(this.sizesCalcPhoto, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
-				var v = parseInt(val, 10);
+				var v = Number(val);
+
 				if (!v || isNaN(v)) {
+					//Если значение не парсится, ставим дефолтное
 					v = Photo.def.full.year;
+				} else {
+					//Убеждаемся, что оно в допустимом интервале
+					v = Math.min(Math.max(v, 1826), 2000);
 				}
+
 				if (String(val) !== String(v)) {
+					//Если мы поправили значение, то перезаписываем его
 					this.p.year(v);
-					return;
-				}
-				if (v > parseInt(this.p.year2(), 10)) {
+				} else if (v > parseInt(this.p.year2(), 10)) {
 					this.p.year2(v);
 				}
 			}, this);
 			this.subscriptions.year2 = this.p.year2.subscribe(_.debounce(function (val) {
-				var v = parseInt(val, 10);
+				var v = Number(val);
+
 				if (!v || isNaN(v)) {
+					//Если значение не парсится, ставим дефолтное
 					v = Photo.def.full.year;
+				} else {
+					//Убеждаемся, что оно в допустимом интервале и не мене year
+					v = Math.min(Math.max(v, this.p.year()), 2000);
 				}
+
 				if (String(val) !== String(v)) {
 					this.p.year2(v);
-					return;
-				}
-				if (v < this.p.year()) {
-					this.p.year2(this.p.year());
-					return;
 				}
 			}, 400), this);
 
@@ -1083,10 +1089,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		onPhotoLoad: function (event) {
 			var img = event.target;
 			// Если реальные размеры фото не соответствуют тем что в базе, используем реальные
-			if (Utils.isType('number', img.width) && this.p.ws() !== img.width){
+			if (Utils.isType('number', img.width) && this.p.ws() !== img.width) {
 				this.p.ws(img.width);
 			}
-			if (Utils.isType('number', img.height) && this.p.hs() !== img.height){
+			if (Utils.isType('number', img.height) && this.p.hs() !== img.height) {
 				this.p.hs(img.height);
 			}
 			this.photoSrc(this.p.sfile());

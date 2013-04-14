@@ -522,7 +522,7 @@ module.exports.loadController = function (app, db) {
 					dir: photo.direction || '',
 
 					title: photo.title || '',
-					year: photo.year_from || 2000,
+					year: Math.min(Math.max(Number(photo.year_from) || 2000, 1826), 2000),
 					address: photo.address || undefined,
 					desc: photo.description || undefined,
 					source: photo.source || undefined,
