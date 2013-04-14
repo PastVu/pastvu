@@ -175,7 +175,8 @@ define([
 			this.year = year || undefined;
 			this.year2 = year2 || undefined;
 			this.clearState();
-			this.refreshDataByZoom();
+			this.clearPhotos();
+			this.refreshDataByZoom(true);
 		}
 	};
 
