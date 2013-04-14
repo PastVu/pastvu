@@ -120,15 +120,9 @@ module.exports.loadController = function (app, db) {
 		var startFullTime = Date.now(),
 			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
 			clusterZoomsCounter = -1,
+			photosAllCount = db.photos.count({geo: {$exists: true}});
 
-			photo,
-			photos = db.photos.find({geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1}).toArray(),
-			photoCounter = 0,
-			photosAllCount = photos.length,
-			geoPhoto,
-			geoPhotoCorrection = [0, 0];
-
-		logByNPhotos = logByNPhotos || ((photos.length / 20) >> 0);
+		logByNPhotos = logByNPhotos || ((photosAllCount / 20) >> 0);
 		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
 
 		while (++clusterZoomsCounter < clusterZooms.length) {
@@ -137,16 +131,22 @@ module.exports.loadController = function (app, db) {
 
 		function clusterizeZoom(clusterZoom) {
 			var startTime = Date.now(),
+
+				photos = db.photos.find({geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1 }),
+				photoCounter = 0,
+				geoPhoto,
+				geoPhotoCorrection = [0, 0],
+
 				useGravity,
 				divider = Math.pow(10, 6),
 
 				g,
 				cluster,
-				clusters,
-				clustersCount,
-				clustersArr,
+				clusters = {},
+				clustersCount = 0,
+				clustersArr = [],
 				clustersArrInner,
-				clustersArrLastIndex,
+				clustersArrLastIndex = 0,
 				clustCoordId,
 				clustersCounter,
 				clustersCounterInner;
@@ -155,17 +155,10 @@ module.exports.loadController = function (app, db) {
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
 
 			useGravity = withGravity && clusterZoom.z > 11;
+			clustersArr.push([]);
 
-			clusters = {};
-
-			clustersCount = 0;
-			clustersArr = [
-				[]
-			];
-			clustersArrLastIndex = 0;
-			photoCounter = -1;
-			while (++photoCounter < photosAllCount) {
-				photo = photos[photoCounter];
+			photos.forEach(function (photo) {
+				photoCounter++;
 				geoPhoto = photo.geo;
 				geoPhotoCorrection[0] = geoPhoto[0] < 0 ? -1 : 0;
 				geoPhotoCorrection[1] = geoPhoto[1] > 0 ? 1 : 0;
@@ -182,8 +175,8 @@ module.exports.loadController = function (app, db) {
 					}
 				}
 				cluster.c += 1;
-				//cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
-				//cluster.y2[photo.year] = 1 + (cluster.y2[photo.year] | 0);
+				cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
+				cluster.y2[photo.year] = 1 + (cluster.y2[photo.year] | 0);
 				if (useGravity) {
 					cluster.geo[0] += geoPhoto[0];
 					cluster.geo[1] += geoPhoto[1];
@@ -192,7 +185,7 @@ module.exports.loadController = function (app, db) {
 				if (photoCounter % logByNPhotos === 0) {
 					print(clusterZoom.z + ': Clusterized allready ' + photoCounter + '/' + photosAllCount + ' photos in ' + clustersCount + ' clusters in ' + (Date.now() - startTime) / 1000 + 's');
 				}
-			}
+			});
 
 			print(clusterZoom.z + ': ' + clustersCount + ' clusters ready for inserting ' + (Date.now() - startTime) / 1000 + 's');
 			db.clusters.remove({z: clusterZoom.z});
@@ -216,13 +209,12 @@ module.exports.loadController = function (app, db) {
 				}
 			}
 
-			clusters = null;
-			clustersArr = null;
+			clusters = clustersArr = clustersArrInner = null;
 			print('~~~~~~~~~~~~~~~~~~~~~~~~~');
 		}
 
 
-		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photoCounter, clusters: db.clusters.count()};
+		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photosAllCount, clusters: db.clusters.count()};
 	});
 
 	saveSystemJSFunc(function convertPhotosAll(variants) {
@@ -343,6 +335,25 @@ module.exports.loadController = function (app, db) {
 			array[index] = toPrecisionRound(item, precision || 6);
 		});
 		return geo;
+	});
+
+	saveSystemJSFunc(function geoToPrecisionRound(geo, precision) {
+		geo.forEach(function (item, index, array) {
+			array[index] = toPrecisionRound(item, precision || 6);
+		});
+		return geo;
+	});
+
+	saveSystemJSFunc(function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+		var R = 6371, // Mean radius of the earth in km
+			toRad = Math.PI / 180, // deg2rad below
+			dLat = (lat2 - lat1) * toRad,
+			dLon = (lon2 - lon1) * toRad,
+			a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+				Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) * Math.sin(dLon / 2),
+			c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)),
+			d = R * c; // Distance in km
+		return d;
 	});
 
 
