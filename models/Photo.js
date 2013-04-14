@@ -91,7 +91,7 @@ var FragmentSchema = new Schema({
 		}
 	);
 
-PhotoSchema.index({ g: '2d', year: 1, year2: 1 }); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+PhotoSchema.index({ g: '2d', year: 1}); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 
 
 /**

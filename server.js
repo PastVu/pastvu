@@ -19,10 +19,8 @@
     var path = require('path'),
         fs = require('fs'),
         _existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
-        async = require('async'),
         formidable = require('formidable'),
         nodeStatic = require('node-static'),
-        imageMagick = require('imagemagick'),
         Utils = require('./commons/Utils.js'),
         options = {
             tmpDir: __dirname + '/publicContent/incoming',

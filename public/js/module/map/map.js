@@ -260,7 +260,8 @@ define([
 			this.slideOuterR.style.left = (high + this.slideOffset - 10) + 'px';
 		},
 		yearRefreshMarkers: function () {
-			 console.log('yearRefreshMarkers');
+			console.log('yearRefreshMarkers');
+			this.markerManager.setYearLimits(this.yearLow, this.yearHigh);
 		},
 
 		show: function () {

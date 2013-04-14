@@ -490,15 +490,26 @@ module.exports.loadController = function (app, db, io) {
 					return;
 				}
 
+				var year = false,
+					i = data.bounds.length;
+
 				// Реверсируем geo границы баунда
-				var i = data.bounds.length;
 				while (i--) {
 					data.bounds[i][0].reverse();
 					data.bounds[i][1].reverse();
 				}
 
+				// Определяем, нужна ли выборка по границам лет
+				if (!isNaN(Number(data.year)) && !isNaN(Number(data.year2)) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+					year = true;
+				}
+
 				if (data.z < 17) {
-					PhotoCluster.getBounds(data, res);
+					if (year) {
+						PhotoCluster.getBoundsByYear(data, res);
+					} else {
+						PhotoCluster.getBounds(data, res);
+					}
 				} else {
 					step(
 						function () {

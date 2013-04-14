@@ -168,12 +168,31 @@ define([
 	};
 
 	/**
+	 * Задает новые временные рамки и вызывает обновление данных
+	 */
+	MarkerManager.prototype.setYearLimits = function (year, year2) {
+		if (year !== this.year || year2 !== this.year2) {
+			this.year = year || undefined;
+			this.year2 = year2 || undefined;
+			this.clearState();
+			this.refreshDataByZoom();
+		}
+	};
+
+	/**
 	 * Вызывается по событию начала изменения масштаба карты
 	 */
-	MarkerManager.prototype.onZoomStart = function () {
+	MarkerManager.prototype.clearState = function () {
 		window.clearTimeout(this.refreshByZoomTimeout);
 		this.popupClose();
 		this.clearClusters();
+	};
+
+	/**
+	 * Вызывается по событию начала изменения масштаба карты
+	 */
+	MarkerManager.prototype.onZoomStart = function () {
+		this.clearState();
 		this.zoomChanged = true;
 	};
 
@@ -279,7 +298,7 @@ define([
 				newZoom = bound = null;
 				this.startPendingAt = undefined;
 			}.bind(this));
-			socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt});
+			socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt, year: this.year, year2: this.year2});
 		}
 	};
 
@@ -411,7 +430,7 @@ define([
 			}
 			zoom = bound = null;
 		}.bind(this));
-		socket.emit('getBounds', {z: zoom, bounds: bounds});
+		socket.emit('getBounds', {z: zoom, bounds: bounds, year: this.year, year2: this.year2});
 	};
 
 	/**
