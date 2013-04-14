@@ -500,7 +500,7 @@ module.exports.loadController = function (app, db, io) {
 				}
 
 				// Определяем, нужна ли выборка по границам лет
-				if (!isNaN(Number(data.year)) && !isNaN(Number(data.year2)) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+				if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
 					year = true;
 				}
 

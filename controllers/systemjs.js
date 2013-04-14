@@ -168,7 +168,7 @@ module.exports.loadController = function (app, db) {
 				cluster = clusters[clustCoordId];
 				if (cluster === undefined) {
 					clustersCount++;
-					clusters[clustCoordId] = cluster = {g: g, z: clusterZoom.z, geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf], c: 0, y: {}, y2: {}, p: null};
+					clusters[clustCoordId] = cluster = {g: g, z: clusterZoom.z, geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf], c: 0, y: {}, p: null};
 					if (clustersArr[clustersArrLastIndex].push(cluster) > 499) {
 						clustersArr.push([]);
 						clustersArrLastIndex++;
@@ -176,7 +176,6 @@ module.exports.loadController = function (app, db) {
 				}
 				cluster.c += 1;
 				cluster.y[photo.year] = 1 + (cluster.y[photo.year] | 0);
-				cluster.y2[photo.year] = 1 + (cluster.y2[photo.year] | 0);
 				if (useGravity) {
 					cluster.geo[0] += geoPhoto[0];
 					cluster.geo[1] += geoPhoto[1];

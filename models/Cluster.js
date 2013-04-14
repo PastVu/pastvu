@@ -20,7 +20,6 @@ var ClusterPoster = {
 			geo: {type: [Number]}, // Координаты центра тяжести кластера
 			c: {type: Number}, // Количество фотографий в кластере
 			y: {type: Schema.Types.Mixed}, // Хэш лет
-			y2: {type: Schema.Types.Mixed}, // Хэш лет
 			p: ClusterPoster // Обложка кластера
 		},
 		{

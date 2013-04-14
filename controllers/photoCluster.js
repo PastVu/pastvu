@@ -58,7 +58,6 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('clusterAll', function (data) {
-				console.dir(data);
 				if (!hs.session.user) {
 					result({message: 'Not authorized', error: true});
 					return;
@@ -200,7 +199,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, y2: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {
@@ -222,9 +221,15 @@ module.exports.getBoundsByYear = function (data, cb) {
 			var bound,
 				cluster,
 				year,
-				yearKey,
+				yearCriteria,
 				i = arguments.length,
 				j;
+
+			if (data.year === data.year2) {
+				yearCriteria = data.year;
+			} else {
+				yearCriteria = {$gte: data.year, $lte: data.year2};
+			}
 
 			while (i > 1) {
 				bound = arguments[--i];
@@ -232,16 +237,14 @@ module.exports.getBoundsByYear = function (data, cb) {
 				while (j) {
 					cluster = bound[--j];
 					cluster.c = 0;
-					for (yearKey in cluster.y) {
-						year = Number(yearKey) | 0;
-						if (year >= data.year && year <= data.year2) {
-							cluster.c += cluster.y[yearKey];
-						}
+					year = data.year;
+					while (year <= data.year2) {
+						cluster.c += cluster.y[year++] | 0;
 					}
 					if (cluster.c > 0) {
 						clustersAll.push(cluster);
 						if (cluster.p.year < data.year || cluster.p.year > data.year2) {
-							pSeries(cluster, data.year, data.year2, this.parallel());
+							getClusterPoster(cluster, yearCriteria, this.parallel());
 						}
 					}
 				}
@@ -262,23 +265,19 @@ module.exports.getBoundsByYear = function (data, cb) {
 			while (i > 1) {
 				cluster = clustersAll[--i];
 				if (cluster.c > 1) {
-					cluster.c = cluster.c;
 					cluster.geo.reverse(); // Реверсируем geo
 					clusters.push(cluster);
 				} else if (cluster.c === 1) {
 					photos.push(cluster.p);
 				}
 			}
-			console.log(Date.now() - start);
+			//console.log(Date.now() - start);
 			cb(null, photos, clusters);
 		}
 	);
 };
-
-
-function pSeries(cluster, year, year2, cb) {
-
-	Photo.collection.findOne({geo: {$near: cluster.geo}, year: {$gte: year, $lte: year2}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
+function getClusterPoster(cluster, yearCriteria, cb) {
+	Photo.collection.findOne({geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
 		if (err) {
 			cb(err);
 		}
