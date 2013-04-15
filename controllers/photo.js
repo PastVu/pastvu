@@ -622,7 +622,8 @@ module.exports.loadController = function (app, db, io) {
 				var newValues,
 					oldValues,
 					newGeo,
-					oldGeo;
+					oldGeo,
+					oldYear;
 
 				step(
 					function findPhoto() {
@@ -655,6 +656,7 @@ module.exports.loadController = function (app, db, io) {
 							}
 						}
 
+						oldYear = photoObj.year;
 						oldGeo = photoObj.geo;
 						newGeo = photo.geo;
 
@@ -668,8 +670,8 @@ module.exports.loadController = function (app, db, io) {
 
 						// Если есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
 						// то запускаем пересчет кластеров этой фотографии
-						if ((!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) && (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year')))) {
-							PhotoCluster.clusterPhoto(data.cid, oldGeo, this);
+						if ((!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) && (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+							PhotoCluster.clusterPhoto(data.cid, oldGeo, oldYear, this);
 						} else {
 							this(null);
 						}

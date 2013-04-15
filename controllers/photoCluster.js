@@ -116,7 +116,7 @@ module.exports.loadController = function (app, db, io) {
  * @param ctx Контекст
  * @return {Boolean}
  */
-module.exports.clusterPhoto = function (cid, oldGeo, cb, ctx) {
+module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb, ctx) {
 	if (!cid) {
 		if (Utils.isType('function', cb)) {
 			cb('Bad params');
@@ -124,7 +124,7 @@ module.exports.clusterPhoto = function (cid, oldGeo, cb, ctx) {
 		return false;
 	}
 
-	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ')', function (err, result) {
+	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ',' + oldYear + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
 			cb.apply(ctx, arguments);
 		}

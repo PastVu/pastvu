@@ -8,17 +8,17 @@ var step = require('step'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	saveSystemJSFunc(function clusterRecalcByPhoto(g, zParam, geoPhoto) {
-		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, p: 1}),
+	saveSystemJSFunc(function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos) {
+		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}),
 			c = (cluster && cluster.c) || 0,
 			geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
-			photoPoster,
-			inc = 0;
+			inc = 0,
+			$update = {$set:{}};
 
-		if (geoPhoto.o) {
+		if (geoPhotos.o) {
 			inc -= 1;
 		}
-		if (geoPhoto.n) {
+		if (geoPhotos.n) {
 			inc += 1;
 		}
 
@@ -27,6 +27,22 @@ module.exports.loadController = function (app, db) {
 			db.clusters.remove({g: g, z: zParam.z});
 			return;
 		}
+		if (inc !== 0) {
+			$update.$inc = {c: inc};
+		}
+
+		if (yearPhotos.o !== yearPhotos.n) {
+			if (yearPhotos.o && cluster.y[yearPhotos.o] !== undefined) {
+				cluster.y[yearPhotos.o] -= 1;
+				if (cluster.y[yearPhotos.o] < 1) {
+					delete cluster.y[yearPhotos.o];
+				}
+			}
+			if (yearPhotos.n) {
+				cluster.y[String(yearPhotos.n)] = 1 + (cluster.y[String(yearPhotos.n)] | 0);
+			}
+			$update.$set.y = cluster.y;
+		}
 
 		if (zParam.z > 11) {
 			// Если находимся на масштабе, где должен считаться центр тяжести,
@@ -34,25 +50,26 @@ module.exports.loadController = function (app, db) {
 			// Если переданы обе, значит координата фотографии изменилась в пределах одной ячейки,
 			// и тогда вычитаем старую и прибавляем новую.
 			// Если координаты не переданы, заничит просто обновим постер кластера
-			if (geoPhoto.o) {
-				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) - geoPhoto.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhoto.o[1]) / c]);
+			if (geoPhotos.o) {
+				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c]);
 			}
-			if (geoPhoto.n) {
-				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhoto.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhoto.n[1]) / (c + 2)]);
+			if (geoPhotos.n) {
+				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhotos.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhotos.n[1]) / (c + 2)]);
 			}
 		}
 
-		photoPoster = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
+		$update.$set.geo = geoCluster;
+		$update.$set.p = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 
-		db.clusters.update({g: g, z: zParam.z}, { $inc: {c: inc}, $set: {geo: geoCluster, p: photoPoster} }, {multi: false, upsert: true});
+		db.clusters.update({g: g, z: zParam.z}, $update, {multi: false, upsert: true});
 	});
 
-	saveSystemJSFunc(function clusterPhoto(cid, geoPhotoOld) {
+	saveSystemJSFunc(function clusterPhoto(cid, geoPhotoOld, yearPhotoOld) {
 		if (!cid || (geoPhotoOld && geoPhotoOld.length !== 2)) {
 			return {message: 'Bad params to set photo cluster', error: true};
 		}
 
-		var photo = db.photos.findOne({cid: cid}, {_id: 0, geo: 1}),
+		var photo = db.photos.findOne({cid: cid}, {_id: 0, geo: 1, year: 1}),
 			clusterZooms,
 
 			geoPhoto,
@@ -97,18 +114,18 @@ module.exports.loadController = function (app, db) {
 				// то если координата не изменилась, пересчитываем только постер,
 				// если изменилась - пересчитаем центр тяжести (отнимем старую, прибавим новую)
 				if (geoPhotoOld[0] === geoPhoto[0] && geoPhotoOld[1] === geoPhoto[1]) {
-					clusterRecalcByPhoto(g, clusterZoom, {});
+					clusterRecalcByPhoto(g, clusterZoom, {}, {o: yearPhotoOld, n: photo.year});
 				} else {
-					clusterRecalcByPhoto(g, clusterZoom, {o: geoPhotoOld, n: geoPhoto});
+					clusterRecalcByPhoto(g, clusterZoom, {o: geoPhotoOld, n: geoPhoto}, {o: yearPhotoOld, n: photo.year});
 				}
 			} else {
 				// Если ячейка для координат изменилась, или какой-либо координаты нет вовсе,
 				// то пересчитываем старую и новую ячейку, если есть соответствующая координата
 				if (gOld) {
-					clusterRecalcByPhoto(gOld, clusterZoom, {o: geoPhotoOld});
+					clusterRecalcByPhoto(gOld, clusterZoom, {o: geoPhotoOld}, {o: yearPhotoOld});
 				}
 				if (g) {
-					clusterRecalcByPhoto(g, clusterZoom, {n: geoPhoto});
+					clusterRecalcByPhoto(g, clusterZoom, {n: geoPhoto}, {n: photo.year});
 				}
 			}
 		});
