@@ -77,11 +77,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 		},
 		show: function () {
-			this.$container.fadeIn();
+			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 

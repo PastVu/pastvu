@@ -76,11 +76,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 				text = type = css = null;
 			}.bind(this));
 
-			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
-			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		}
 	});

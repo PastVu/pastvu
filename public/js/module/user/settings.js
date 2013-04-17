@@ -44,11 +44,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
             this.$dom.find("#accordion2 .collapse").collapse({
                 toggle: false
             });
-            this.$container.fadeIn();
+	        globalVM.func.showContainer(this.$container);
             this.showing = true;
         },
         hide: function () {
-            this.$container.css('display', '');
+	        globalVM.func.hideContainer(this.$container);
             this.showing = false;
         },
 

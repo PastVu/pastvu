@@ -344,12 +344,19 @@ define([
 				}
 			};
 
-			this.convertOptions = ko.observableArray([/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'}, {vName: 'Thumb', vId: 'thumb'}, {vName: 'Midi', vId: 'midi'}, {vName: 'Mini', vId: 'mini'}, {vName: 'Micro', vId: 'micro'}, {vName: 'Micros', vId: 'micros'}]);
+			this.convertOptions = ko.observableArray([
+				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'},
+				{vName: 'Thumb', vId: 'thumb'},
+				{vName: 'Midi', vId: 'midi'},
+				{vName: 'Mini', vId: 'mini'},
+				{vName: 'Micro', vId: 'micro'},
+				{vName: 'Micros', vId: 'micros'}
+			]);
 			this.selectedOpt = ko.observableArray([]);
 			this.$dom.find('#convertSelect').multiselect({
 				buttonClass: 'btn-strict btn-strict-small',
 				buttonWidth: 'auto', // Default
-				buttonText: function(options) {
+				buttonText: function (options) {
 					if (options.length === 0) {
 						return 'All convert variants <b class="caret"></b>';
 					} else if (options.length === _this.convertOptions().length) {
@@ -358,10 +365,10 @@ define([
 						return options.length + ' variants selected <b class="caret"></b>';
 					} else {
 						var selected = '';
-						options.each(function() {
+						options.each(function () {
 							selected += $(this).text() + ', ';
 						});
-						return selected.substr(0, selected.length -2) + ' <b class="caret"></b>';
+						return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
 					}
 				},
 				//buttonContainer: '<span class=""/>'
@@ -373,9 +380,8 @@ define([
 			this.show();
 		},
 		show: function () {
-			var _this = this;
 			this.statFast();
-			this.$container.fadeIn(400, function () {
+			globalVM.func.showContainer(this.$container, function () {
 				socket.once('getStatConveyer', function (data) {
 					if (!data || data.error) {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -424,12 +430,12 @@ define([
 					}
 				}.bind(this));
 				socket.emit('statConveyer', {});
-			}.bind(this));
+			}, this);
 
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
