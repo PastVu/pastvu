@@ -44,38 +44,39 @@ define([
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
-			this.map.on('zoomend', function () {
-				this.sliderOnZoom(this.map.getZoom());
-			}, this);
-
 			this.map.whenReady(function () {
 				this.show();
 			}, this);
 
 		},
 		show: function () {
-			this.$container.fadeIn(400, function () {
-				this.$sliderArea = this.$dom.find('.sliderArea');
+			this.$sliderArea = this.$dom.find('.sliderArea');
+			this.$stateWrap = this.$dom.find('.stateWrap');
+			if (this.canOpen()) {
+				this.map.on('zoomend', function () {
+					this.sliderOnZoom(this.map.getZoom());
+				}, this);
+
 				this.$sliderArea
 					.on('mousewheel', this.onWheel.bind(this))
 					.on('DOMMouseScroll', this.onWheel.bind(this))// Для FF
 					.on('click', '.dash', this.dashClick.bind(this))
 					.on(ET.mdown, this.SnatchBind);
-				this.stateWrap = this.$dom.find('.stateWrap');
-				this.stateWrap
-					.mouseenter(function (evt) {
+				this.$stateWrap
+					.mouseenter(function () {
 						this.hover(true);
 					}.bind(this))
 					.mouseleave(function () {
 						this.hover(false);
 					}.bind(this));
+			}
 
-				this.recalcZooms();
-			}.bind(this));
+			this.recalcZooms();
+			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 
