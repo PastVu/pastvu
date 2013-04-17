@@ -267,20 +267,6 @@ define([
 		},
 
 		show: function () {
-			this.$container.fadeIn(400, function () {
-				this.map.whenReady(function () {
-					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
-						this.options.deferredWhenReady.resolve();
-					}
-
-					if (this.embedded()) {
-						this.map.addLayer(this.pointLayer);
-					} else {
-						this.markerManager.enable();
-					}
-				}, this);
-			}.bind(this));
-
 			//Если это карта на главной, то считаем размер контейнера и создаем слайдер лет
 			if (!this.embedded()) {
 				this.containerSize();
@@ -288,9 +274,7 @@ define([
 			}
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
-			this.map.on('zoomend', this.zoomEndCheckLayer, this);
-
-			this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: false, embedded: this.embedded()});
+            this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded()});
 			this.selectLayer('osm', 'osmosnimki');
 
 			Locations.subscribe(function (val) {
@@ -311,10 +295,26 @@ define([
 				}
 			);
 
+			this.map
+				.whenReady(function () {
+					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
+						this.options.deferredWhenReady.resolve();
+					}
+
+					if (this.embedded()) {
+						this.map.addLayer(this.pointLayer);
+					} else {
+						this.markerManager.enable();
+					}
+
+					globalVM.func.showContainer(this.$container);
+				}, this)
+				.on('zoomend', this.zoomEndCheckLayer, this);
+
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {

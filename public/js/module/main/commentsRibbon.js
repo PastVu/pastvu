@@ -40,11 +40,11 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 			socket.emit('giveCommentsRibbon', {limit: 16});
 		},
 		show: function () {
-			this.$container.fadeIn();
+			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 		onAvatarLoad: function (data, event) {

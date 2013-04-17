@@ -70,7 +70,12 @@ body {
 }
 
 .mContainer {
-	display: none;
+	&.mNoDisplay {
+		display: none;
+	}
+	&.mHidden {
+		visibility: hidden;
+	}
 }
 
 /* The ghost, nudged to maintain perfect centering */
