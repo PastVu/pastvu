@@ -178,6 +178,7 @@ define([
 
 			// Subscriptions
 			this.subscriptions.edit = this.editing.subscribe(this.editHandler, this);
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.openNewTab = this.openNewTab.subscribe(function (val) {
 				if (this.markerManager) {
 					this.markerManager.openNewTab = val;
@@ -267,69 +268,48 @@ define([
 
 		show: function () {
 			this.$container.fadeIn(400, function () {
-
-				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
-
-				// Создаем менеджер маркеров.
-				// В случае встроенной карты делаем его не активным (enabled: false), и ждем от контроллера фотографии получения статуса редактирования
-				this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: !this.embedded(), embedded: this.embedded()});
-
-				if (!this.embedded()) {
-					this.yearSliderCreate();
-				}
-
-				Locations.subscribe(function (val) {
-					this.mapDefCenter = new L.LatLng(val.lat, val.lng);
-					this.setMapDefCenter(true);
-				}.bind(this));
-
-				//Самостоятельно обновляем размеры карты
-				P.window.square.subscribe(_.debounce(function (newVal) {
-					this.map._onResize();
-					this.yearSliderSize();
-				}.bind(this), 300));
-
 				this.map.whenReady(function () {
-					this.selectLayer('osm', 'osmosnimki');
 					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
 						this.options.deferredWhenReady.resolve();
 					}
 
 					if (this.embedded()) {
 						this.map.addLayer(this.pointLayer);
+					} else {
+						this.markerManager.enable();
 					}
-
-					this.map.on('zoomend', function () {
-						var maxAfter = this.layerActive().type.maxAfter,
-							layers;
-						if (this.layerActive().type.limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > this.layerActive().type.limitZoom) {
-							layers = maxAfter.split('.');
-							if (this.layerActive().sys.id === 'osm') {
-								this.layerActive().type.obj.on('load', function (evt) {
-									this.selectLayer(layers[0], layers[1]);
-								}, this);
-							} else {
-								window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 500);
-							}
-
-						}
-					}, this);
 				}, this);
-
-				renderer(
-					[
-						{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
-							this.childModules[vm.id] = vm;
-							this.navSliderVM = vm;
-						}.bind(this)}
-					],
-					{
-						parent: this,
-						level: this.level + 1
-					}
-				);
-
 			}.bind(this));
+
+			//Если это карта на главной, то считаем размер контейнера и создаем слайдер лет
+			if (!this.embedded()) {
+				this.containerSize();
+				this.yearSliderCreate();
+			}
+
+			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+			this.map.on('zoomend', this.zoomEndCheckLayer, this);
+
+			this.markerManager = new MarkerManager(this.map, {openNewTab: this.openNewTab(), enabled: false, embedded: this.embedded()});
+			this.selectLayer('osm', 'osmosnimki');
+
+			Locations.subscribe(function (val) {
+				this.mapDefCenter = new L.LatLng(val.lat, val.lng);
+				this.setMapDefCenter(true);
+			}.bind(this));
+
+			renderer(
+				[
+					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
+						this.childModules[vm.id] = vm;
+						this.navSliderVM = vm;
+					}.bind(this)}
+				],
+				{
+					parent: this,
+					level: this.level + 1
+				}
+			);
 
 			this.showing = true;
 		},
@@ -342,6 +322,16 @@ define([
 			this.pointEditDestroy();
 			this.map = null;
 			destroy.call(this);
+		},
+		sizesCalc: function () {
+			if (!this.embedded()) {
+				this.containerSize();
+				this.yearSliderSize();
+			}
+			this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+		},
+		containerSize: function () {
+			this.$container.css({height: P.window.h() - (this.$container.offset().top || 33) - 30 >> 0});
 		},
 
 		// Обработчик переключения режима редактирования
@@ -436,6 +426,21 @@ define([
 
 		setMapDefCenter: function (forceMoveEvent) {
 			this.map.setView(this.mapDefCenter, Locations.current.z, false);
+		},
+		zoomEndCheckLayer: function () {
+			var maxAfter = this.layerActive().type.maxAfter,
+				layers;
+			if (this.layerActive().type.limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > this.layerActive().type.limitZoom) {
+				layers = maxAfter.split('.');
+				if (this.layerActive().sys.id === 'osm') {
+					this.layerActive().type.obj.on('load', function (evt) {
+						this.selectLayer(layers[0], layers[1]);
+					}, this);
+				} else {
+					window.setTimeout(_.bind(this.selectLayer, this, layers[0], layers[1]), 500);
+				}
+
+			}
 		},
 		toggleLayers: function (vm, event) {
 			this.layersOpen(!this.layersOpen());

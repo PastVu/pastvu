@@ -91,7 +91,7 @@ define([
 
                 //Коллбэк, вызываемый только при создании модуля, один раз
                 if (Utils.isType('function', item.callbackWhenNew)) {
-                    item.callback.call(item.ctx, vm);
+                    item.callbackWhenNew.call(item.ctx, vm);
                 }
                 //Вызываем коллбэк для модуля
                 if (Utils.isType('function', item.callback)) {
