@@ -148,18 +148,22 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userThumbN = ko.observable(3);
 
 			this.mapVM = null;
-			var mapDeffered = new $.Deferred();
-			this.mapReadyPromise = mapDeffered.promise();
+			var mapModuleDeffered = new $.Deferred(),
+				mapReadyDeffered = new $.Deferred();
+			this.mapModulePromise = mapModuleDeffered.promise();
 			this.childs = [
 				{
 					module: 'm/map/map',
 					container: '.photoMap',
-					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapDeffered},
+					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
 					ctx: this,
 					callback: function (vm) {
 						this.childModules[vm.id] = vm;
 						this.mapVM = vm;
-						this.exe(false);
+						$.when(mapReadyDeffered.promise()).done(function () {
+							mapModuleDeffered.resolve();
+						}.bind(this));
+
 					}
 				}
 			];
@@ -278,50 +282,51 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			if (this.showing) {
 				return;
 			}
-			this.$container.fadeIn(400, function () {
-				var $wrap = this.$dom.find('.photoImgWrap');
-				$wrap
-					.on('mouseenter', 'a.photoFrag', function (evt) {
-						var frag = $(evt.target),
-							fragOffset = frag.offset(),
-							fragPosition = frag.position(),
-							fragWidth = frag.width(),
-							$comment = $(".media[data-cid=" + frag.attr('data-cid') + "]"),
-							placement;
 
-						if ($comment.length === 1) {
-							$wrap.addClass('fragHover');
-							$wrap.find('.photoImg').imgAreaSelect({
-								classPrefix: 'photoFragAreaShow imgareaselect',
-								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
-								zIndex: 1,
-								parent: $wrap, disable: true
-							});
+			var $wrap = this.$dom.find('.photoImgWrap');
+			$wrap
+				.on('mouseenter', 'a.photoFrag', function (evt) {
+					var frag = $(evt.target),
+						fragOffset = frag.offset(),
+						fragPosition = frag.position(),
+						fragWidth = frag.width(),
+						$comment = $(".media[data-cid=" + frag.attr('data-cid') + "]"),
+						placement;
 
-							if (fragOffset.left + fragWidth / 2 < 150) {
-								placement = 'right';
-							} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
-								placement = 'left';
-							} else {
-								placement = 'bottom';
-							}
-							frag
-								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
-								.popover('show');
+					if ($comment.length === 1) {
+						$wrap.addClass('fragHover');
+						$wrap.find('.photoImg').imgAreaSelect({
+							classPrefix: 'photoFragAreaShow imgareaselect',
+							x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
+							zIndex: 1,
+							parent: $wrap, disable: true
+						});
+
+						if (fragOffset.left + fragWidth / 2 < 150) {
+							placement = 'right';
+						} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
+							placement = 'left';
+						} else {
+							placement = 'bottom';
 						}
-					}.bind(this))
-					.on('mouseleave', '.photoFrag', function (evt) {
-						var frag = $(evt.target);
-						frag.popover('destroy');
-						$wrap.find('.photoImg').imgAreaSelect({remove: true});
-						$wrap.removeClass('fragHover');
-					});
-			}.bind(this));
+						frag
+							.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
+							.popover('show');
+					}
+				}.bind(this))
+				.on('mouseleave', '.photoFrag', function (evt) {
+					var frag = $(evt.target);
+					frag.popover('destroy');
+					$wrap.find('.photoImg').imgAreaSelect({remove: true});
+					$wrap.removeClass('fragHover');
+				});
+
+			globalVM.func.showContainer(this.$container);
 			this.sizesCalc();
 			this.showing = true;
 		},
 		hide: function () {
-			this.$container.css('display', '');
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 			globalVM.pb.publish('/top/message', ['', 'muted']);
 		},
@@ -471,9 +476,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		editHandler: function (v) {
 			if (v) {
-				$.when(this.mapReadyPromise).done(this.mapEditOn.bind(this));
+				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
 			} else {
-				$.when(this.mapReadyPromise).done(this.mapEditOff.bind(this));
+				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
 			}
 		},
 		mapEditOn: function () {
@@ -484,7 +489,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		// Обработчик изменения фото
 		changePhotoHandler: function () {
-			$.when(this.mapReadyPromise).done(this.setMapPoint.bind(this));
+			$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
 		},
 		// Установить точку на карту
 		setMapPoint: function () {
