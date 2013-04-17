@@ -154,7 +154,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				{
 					module: 'm/map/map',
 					container: '.photoMap',
-					options: {editing: this.edit(), embedded: true, deferredWhenReady: mapDeffered},
+					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapDeffered},
 					ctx: this,
 					callback: function (vm) {
 						this.childModules[vm.id] = vm;
@@ -230,11 +230,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 			// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
-			this.routeHandlerThrottled = _.throttle(this.routeHandler, 700);
-			this.routeHandlerThrottled();
+			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+			this.routeHandlerDebounced();
 
 			// Subscriptions
-			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
+			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 			this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
 			this.subscriptions.login = this.auth.iAm.login.subscribe(this.loginHandler, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
@@ -317,7 +317,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						$wrap.removeClass('fragHover');
 					});
 			}.bind(this));
-			this.sizesCalc(P.window.square());
+			this.sizesCalc();
 			this.showing = true;
 		},
 		hide: function () {
@@ -326,7 +326,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			globalVM.pb.publish('/top/message', ['', 'muted']);
 		},
 
-		sizesCalc: function (v) {
+		sizesCalc: function () {
 			var windowW = P.window.w(),
 				rightPanelW = this.$dom.find('.rightPanel').width(),
 				thumbW,

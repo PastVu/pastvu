@@ -66,11 +66,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 					// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 					// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
-					this.routeHandlerThrottled = _.throttle(this.routeHandler, 700);
-					this.routeHandlerThrottled();
+					this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+					this.routeHandlerDebounced();
 
 					// Subscriptions
-					this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerThrottled, this);
+					this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 
 					this.show();
 				}
@@ -86,6 +86,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		routeHandler: function () {
+			console.log(99);
 			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
 			if (page > this.pageLast()) {
 				window.setTimeout(function () {

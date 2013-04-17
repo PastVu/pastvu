@@ -56,7 +56,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 		Params.window.w($window.width());
 		Params.window.h($window.height());
 		Params.window.square(Params.window.w() * Params.window.h());
-	}, 50, false));
+	}, 50));
 
 	return Params;
 });

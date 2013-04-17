@@ -236,7 +236,7 @@ define([
                         $clusterRect.effect('highlight', {color: '#ffffff'}, 500); // Эффект вспышки
                         _this.setZoomTimeout = _.delay(setZoom, 550, z + 1);
                     }
-                }, 900, false);
+                }, 900);
 
             this.saveParams = {
                 sgeo: Utils.geo.geoToPrecision([centerGeo.lng, centerGeo.lat]),
