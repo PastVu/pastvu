@@ -2,29 +2,29 @@
 
 #main_loader {
 	display: none;
-    position: absolute;
-    height: auto;
-    bottom:0;
-    top:0;
-    left:0;
-    right:0;
-    margin: 0;
+	position: absolute;
+	height: auto;
+	bottom: 0;
+	top: 0;
+	left: 0;
+	right: 0;
+	margin: 0;
 	color: @textColor;
 	text-align: center;
-	
+
 	&.show {
 		display: block;
 	}
-	
+
 	#cnt {
 		position: relative;
-		display:inline-block;
-		vertical-align:middle;
+		display: inline-block;
+		vertical-align: middle;
 		width: auto;
 		padding: 0;
-		zoom:1;
+		zoom: 1;
 	}
-	
+
 	#welcome_msg {
 		max-width: 758px;
 		font-size: @baseFontSize + 2;
@@ -32,16 +32,16 @@
 		text-rendering: optimizelegibility;
 		//text-shadow: 1px 1px 2px black;
 	}
-	
+
 	#user_nm {
 		max-width: 758px;
 		position: relative;
-		
-		> span{
-			color:#8DA1B7;
+
+		> span {
+			color: #8DA1B7;
 		}
 	}
-	
+
 	#loading_pics {
 		position: relative;
 		width: 758px;
@@ -49,20 +49,20 @@
 		margin: 5px 0 2px;
 		background-position: 0 0;
 		background-repeat: no-repeat;
-		
+
 		&.finish {
 			> div {
 				opacity: 0;
 			}
 		}
-		
+
 		> div {
 			position: absolute;
 			width: 150px;
 			background: #000;
 			opacity: 0.5;
 			.transition(opacity 0s linear);
-			
+
 			&#l1 {
 				top: 153px;
 				left: 0;
@@ -124,7 +124,7 @@
 			}
 		}
 	}
-	
+
 	#bar {
 		background-color: #3D3D3E;
 		border: 1px solid #595959;
@@ -135,7 +135,7 @@
 		overflow: hidden;
 		position: relative;
 		width: 756px;
-	
+
 		#bar_fill {
 			position: absolute;
 			top: 1px;
@@ -150,38 +150,63 @@
 			-o-animation: loader_bar 2.25s linear 5;
 			animation: loader_bar 2.25s linear 5;
 		}
-		
+
 	}
-	
+
 	#info_msg {
 		font-size: 15px;
 	}
-	
+
 	.helper {
-		display:inline-block;
-		height:100%;
-		width:0px;
-		vertical-align:middle;
-		zoom:1;
+		display: inline-block;
+		height: 100%;
+		width: 0px;
+		vertical-align: middle;
+		zoom: 1;
 	}
 }
+
 @-moz-keyframes loader_bar {
-	from {left: -50px;}
-	to {left: 806px;}
+	from {
+		left: -50px;
+	}
+	to {
+		left: 806px;
+	}
 }
+
 @-webkit-keyframes loader_bar {
-	from {left: -50px;}
-	to {left: 806px;}
+	from {
+		left: -50px;
+	}
+	to {
+		left: 806px;
+	}
 }
+
 @-o-keyframes loader_bar {
-	from {left: -50px;}
-	to {left: 806px;}
+	from {
+		left: -50px;
+	}
+	to {
+		left: 806px;
+	}
 }
+
 @-ms-keyframes loader_bar {
-	from {left: -50px;}
-	to {left: 806px;}
+	from {
+		left: -50px;
+	}
+	to {
+		left: 806px;
+	}
 }
+
 @keyframes loader_bar {
-	from {left: -50px;}
-	to {left: 806px;}
+	from {
+		left: -50px;
+	}
+	to {
+		left: 806px;
+	}
 }
