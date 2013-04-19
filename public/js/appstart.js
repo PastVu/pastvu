@@ -1,10 +1,8 @@
 (function () {
 	'use strict';
 
-	if (!document.head) {
-		document.head = document.getElementsByTagName('head')[0];
-	}
-	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
+	var head = document.head || document.getElementsByTagName('head')[0],
+		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
 		loadImg;
 
 	bindReady(function () {
@@ -40,7 +38,7 @@
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
 		s.setAttribute('src', '/js/appMain.js?__=' + appHash);
-		document.head.appendChild(s);
+		head.appendChild(s);
 	}
 
 	function getCookie(name) {

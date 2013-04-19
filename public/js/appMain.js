@@ -8,7 +8,7 @@ require([
 	'socket',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
-	'text!tpl/appMap.jade', 'css!style/common', 'css!style/appMain',
+	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
 	'backbone.queryparams', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, globalVM, P, renderer, RouteManager, index_jade) {
 	"use strict";
@@ -40,7 +40,7 @@ require([
 			if (isNaN(loadTime)) {
 				loadTime = 100;
 			} else {
-				loadTime = Math.max(100, 2600 - (Date.now() - loadTime));
+				loadTime = Math.max(100, 2200 - (Date.now() - loadTime));
 			}
 			console.log(loadTime);
 			if (!$.urlParam('stopOnLoad')) {
@@ -74,14 +74,13 @@ require([
 					renderer(
 						[
 							{module: 'm/top', container: '#topContainer'},
-							{module: 'm/map/map', container: '#mapContainer'},
-							{module: 'm/main/commentsRibbon', container: '#commentsRibbon', options: {}},
-							//{module: 'm/main/bottomPanel', container: '#bottomPanel', options: {}}
+							{module: 'm/main/bodyPage', container: '#bodyContainer'}
+							//{module: 'm/foot', container: '#footContainer'}
 						],
 						{
 							parent: globalVM,
 							level: 0,
-							callback: function (top, map, comments) {
+							callback: function (top, bodyPage, foot) {
 							}
 						}
 					);
