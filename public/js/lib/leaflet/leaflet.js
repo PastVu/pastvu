@@ -2710,6 +2710,7 @@ L.TileLayer = L.Class.extend({
 
 		// for https://github.com/CloudMade/Leaflet/issues/137
 		if (!L.Browser.android) {
+			tile.onload = null;
 			tile.src = L.Util.emptyImageUrl;
 		}
 
@@ -3294,7 +3295,7 @@ L.Icon.Default = L.Icon.extend({
 		}
 
 		if (L.Browser.retina && name === 'icon') {
-			name += '@2x';
+			name += '-2x';
 		}
 
 		var path = L.Icon.Default.imagePath;
