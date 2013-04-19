@@ -1,0 +1,54 @@
+@MainBlueColor: #285991;
+@bodyBackground: #f9f9f9;
+@import "prereset.less";
+
+body {
+	margin: 0;
+	background-color: @bodyBackground;
+}
+
+#apploader {
+	display: none;
+	position: absolute;
+	height: auto;
+	bottom: 0;
+	top: 0;
+	left: 0;
+	right: 0;
+	margin: 0;
+	text-align: center;
+
+	&.show {
+		display: block;
+	}
+
+	#apploaderCenter {
+		position: relative;
+		display: inline-block;
+		vertical-align: middle;
+		width: auto;
+		padding: 0;
+		zoom: 1;
+	}
+
+	#apploaderLogo {
+		position: relative;
+		width: 67px;
+		height: 67px;
+		background: @MainBlueColor url(/img/misc/logo.png) no-repeat 11px 11px;
+	}
+	#apploaderLoading {
+		position: relative;
+		width: 67px;
+		height: 10px;
+		background: url(/img/misc/load.gif) no-repeat 50% 0;
+	}
+
+	#apploaderHelper {
+		display: inline-block;
+		height: 100%;
+		width: 0px;
+		vertical-align: middle;
+		zoom: 1;
+	}
+}
