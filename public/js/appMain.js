@@ -6,16 +6,18 @@ require([
 	'jquery',
 	'Browser', 'Utils',
 	'socket',
-	'underscore', 'backbone', 'knockout', 'knockout.mapping',
+	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
-	'backbone.queryparams', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, globalVM, P, renderer, RouteManager, index_jade) {
+	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
 	"use strict";
 	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
 		routeDFD = $.Deferred();
 
-	$('body').append(index_jade);
+	moment.lang('ru');
+
+	$('body').append(jade);
 	ko.applyBindings(globalVM);
 
 	globalVM.router = new RouteManager(routerDeclare(), routeDFD);
@@ -65,7 +67,8 @@ require([
 		return {
 			root: '/',
 			routes: [
-				{route: "", handler: "index"}
+				{route: "", handler: "index"},
+				{route: "p/:cid", handler: "photo"}
 			],
 			handlers: {
 				index: function (getParams) {
@@ -81,6 +84,22 @@ require([
 							parent: globalVM,
 							level: 0,
 							callback: function (top, bodyPage, foot) {
+							}
+						}
+					);
+				},
+				photo: function (cid, getParams) {
+					this.params({_handler: 'photo', photo: cid || "", hl: getParams && getParams.hl});
+
+					renderer(
+						[
+							{module: 'm/top', container: '#topContainer'},
+							{module: 'm/photo/photo', container: '#bodyContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, photo) {
 							}
 						}
 					);

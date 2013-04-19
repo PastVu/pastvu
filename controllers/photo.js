@@ -196,10 +196,10 @@ module.exports.loadController = function (app, db, io) {
 	PhotoConverter.loadController(app, db, io);
 
 	app.get('/p/:cid?/*', function (req, res) {
-		var cid = req.params.cid,
-			userObject;
+		var cid = req.params.cid;
+
 		res.statusCode = 200;
-		res.render('appPhoto.jade', {pageTitle: 'Photo'});
+		res.render('appMain.jade', {pageTitle: 'Photo'});
 	});
 
 	planResetStatDay(); //Планируем очистку статистики за ltym

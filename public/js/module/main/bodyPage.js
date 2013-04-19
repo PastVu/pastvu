@@ -34,9 +34,11 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 			this.show();
 		},
 		show: function () {
+			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		}
 	});
