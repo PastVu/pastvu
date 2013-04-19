@@ -1,0 +1,8 @@
+.bottomPanel(data-bind="with: repository[M!M]")
+	.row-fluid
+		span Новости:
+	.row-fluid
+		ul.nav(data-bind="foreach: cats")
+			li(data-bind="css: {active: $data.id === $parent.catActive()}, click: $parent.catClickBind")
+				span(data-bind="text: $data.name")
+		.catContent

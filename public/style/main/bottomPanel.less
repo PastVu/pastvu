@@ -1,0 +1,56 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.bottomPanel {
+	position: relative;
+
+	.ribbonHead {
+		margin: 8px 0 8px 0;
+		text-align: center;
+	}
+
+	.comment {
+		position: relative;
+		display: block;
+		margin: 0 0 7px 0;
+		max-height: 105px;
+		overflow: hidden;
+		line-height: 15px;
+		font-size: 14px;
+		text-decoration: none;
+
+		&:hover {
+			background-color: fade(@MainBlueColor, 10%);
+		}
+
+		.photoPreviewA {
+			display: block;
+			float: left;
+			padding: 2px 8px 2px 2px;
+		}
+		.photoPreview {
+			display: block;
+			width: 55px;
+			height: 55px;
+		}
+
+		.commentHead {
+			display: inline;
+			margin-bottom: 2px;
+		}
+		.photoName {
+			cursor: pointer;
+		}
+		.commentText {
+			display: block;
+			min-height: 44px;
+			color: @textColor;
+			text-decoration: none;
+		}
+	}
+}
+
+@media (max-width: 767px) {
+
+}

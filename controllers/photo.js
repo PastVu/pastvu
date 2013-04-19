@@ -293,21 +293,73 @@ module.exports.loadController = function (app, db, io) {
 					takeUserPhotos({message: err && err.message, error: true});
 					return;
 				}
-				var filters = {user: user._id, del: {$exists: false}};
+				var criteria = {user: user._id, del: {$exists: false}};
 				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
-					filters.fresh = {$exists: false};
-					filters.disabled = {$exists: false};
+					criteria.fresh = {$exists: false};
+					criteria.disabled = {$exists: false};
 				}
-				Photo.getPhotosCompact(filters, {skip: data.start, limit: data.limit}, function (err, photo) {
+				Photo.getPhotosCompact(criteria, {skip: data.start, limit: data.limit}, function (err, photo) {
 					if (err) {
 						takeUserPhotos({message: err && err.message, error: true});
 						return;
 					}
 					takeUserPhotos(photo);
 				});
-				filters = null;
+				criteria = null;
 			});
 		});
+
+		(function () {
+			/**
+			 * Новые фотографии
+			 */
+			function result(data) {
+				socket.emit('takePhotosNew', data);
+			}
+
+			socket.on('givePhotosNew', function (data) {
+				if (!Utils.isType('object', data)) {
+					result({message: 'Bad params', error: true});
+					return;
+				}
+
+				step(
+					function () {
+						Photo.getPhotosCompact(filters, {skip: data.start, limit: data.limit}, function (err, photo) {
+							if (err) {
+								takeUserPhotos({message: err && err.message, error: true});
+								return;
+							}
+							takeUserPhotos(photo);
+						});
+					},
+					function cursors(err) {
+						if (err) {
+							result({message: err && err.message, error: true});
+							return;
+						}
+						var i = arguments.length;
+						while (i > 1) {
+							arguments[--i].toArray(this.parallel());
+						}
+					},
+					function (err, photos) {
+						if (err) {
+							res(err);
+							return;
+						}
+						var result = photos,
+							i = arguments.length;
+
+						while (i > 2) {
+							result.push.apply(result, arguments[--i]);
+						}
+						res(err, result);
+					}
+				);
+
+			});
+		}());
 
 		/**
 		 * Отдаем фотографии с ограниченным доступом
