@@ -38,6 +38,7 @@ public/tpl/**/*.html
 ######################
 public/style/*.css
 public/style/**/*.css
+public/style/**/**/*.css
 
 # Except #
 ######################
