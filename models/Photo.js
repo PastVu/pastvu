@@ -127,14 +127,14 @@ PhotoSchema.statics.resetStatWeek = function (cb) {
 
 PhotoSchema.statics.getPhoto = function (query, cb) {
 	if (!query || !query.cid) {
-		cb(null, 'cid is not specified');
+		cb({message: 'cid is not specified'});
 	}
 	this.findOneAndUpdate(query, { $inc: { stats_day: 1, stats_week: 1, stats_all: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v -frags._id').exec(cb);
 };
 
 PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
 	if (!query || !query.cid) {
-		cb(null, 'cid is not specified');
+		cb({message: 'cid is not specified'});
 	}
 	options = options || {};
 	this.findOne(query, null, options).select('-_id cid file loaded title year ccount fresh disabled conv convqueue del').exec(cb);
@@ -142,7 +142,7 @@ PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
 
 PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
 	if (!query) {
-		cb(null, 'query is not specified');
+		cb({message: 'query is not specified'});
 	}
 	options = options || {};
 	this.find(query, null, options).sort('-loaded').select('-_id cid file loaded title year ccount fresh disabled conv convqueue del').exec(cb);

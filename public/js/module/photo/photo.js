@@ -328,7 +328,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
-			globalVM.pb.publish('/top/message', ['', 'muted']);
+			//globalVM.pb.publish('/top/message', ['', 'muted']);
 		},
 
 		sizesCalc: function () {
@@ -405,6 +405,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 		},
 
+		awaitDestroy: function () {
+			this.subscriptions.route.dispose();
+			delete this.subscriptions.route;
+		},
 		routeHandler: function () {
 			var cid = Number(globalVM.router.params().photo),
 				hl = globalVM.router.params().hl,
