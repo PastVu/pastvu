@@ -12,30 +12,14 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.get('/u/:login?/*', function (req, res) {
-        var login = req.params.login,
-            userObject;
-        if (!login) {
-            //throw new errS.e404();
-        }
+    app.get(['/u', '/u/:login?/*'], function (req, res) {
+        var login = req.params.login;
+        /*if (!login) {
+            throw new errS.e404();
+        }*/
+
         res.statusCode = 200;
-        res.render('appUser.jade', {pageTitle: login || 'Profile'});
-
-        /*Step(
-            function () {
-                User.getUserPublic(login, this);
-            },
-            function (err, user) {
-                userObject = user.toObject();
-                if (err || !user) {
-                    throw new errS.e404();
-                } else {
-                    res.render('appUser.jade', {pageTitle: user.login});
-                    //res.render('profile.jade', {pageTitle: user.login});
-                }
-            }
-        );*/
-
+        res.render('appMain.jade', {pageTitle: login || 'Profile'});
     });
 
     io.sockets.on('connection', function (socket) {

@@ -1,4 +1,5 @@
-/*global requirejs:true, require:true, define:true*/
+/*global require:true*/
+
 require([
 	'domReady!',
 	'jquery',

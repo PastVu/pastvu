@@ -58,7 +58,7 @@ require([
 				$('#main_loader').remove();
 				delete window.wasLoading;
 			}
-
+			Backbone.Router.namedParameters = true;
 			Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
 		}
 	}
@@ -68,10 +68,25 @@ require([
 			root: '/',
 			routes: [
 				{route: "", handler: "index"},
-				{route: "p/:cid", handler: "photo"}
+				{route: "p/:cid", handler: "photo"},
+				{route: "u", handler: "userPage"},
+				{route: "u/", handler: "userPage"},
+				{route: "u/:user", handler: "userPage"},
+				{route: "u/:user/", handler: "userPage"},
+				{route: "u/:user/:section", handler: "userPage"},
+				{route: "u/:user/:section/", handler: "userPage"},
+				{route: "u/:user/:section/:level1", handler: "userPage"},
+				{route: "u/:user/:section/:level1/", handler: "userPage"}/*,
+				{route: "u/:user", handler: "profile"},
+				{route: "u/:user/photo", handler: "gallery"},
+				{route: "u/:user/comments/:page", handler: "comments"},
+				{route: "u/:user/settings", handler: "settings"},
+				{route: "u/photoUpload", handler: "photoUpload"},
+				{route: "u/clusterCalc", handler: "clusterCalc"},
+				{route: "u/conveyer", handler: "conveyer"}*/
 			],
 			handlers: {
-				index: function (getParams) {
+				index: function (params) {
 					this.params({_handler: 'index'});
 
 					renderer(
@@ -88,8 +103,8 @@ require([
 						}
 					);
 				},
-				photo: function (cid, getParams) {
-					this.params({_handler: 'photo', photo: cid || "", hl: getParams && getParams.hl});
+				photo: function (params) {
+					this.params(_.assign(params, {_handler: 'photo'}));
 
 					renderer(
 						[
@@ -100,6 +115,22 @@ require([
 							parent: globalVM,
 							level: 0,
 							callback: function (top, photo) {
+							}
+						}
+					);
+				},
+				userPage: function (params) {
+					this.params(_.assign(params, {_handler: 'profile'}));
+
+					renderer(
+						[
+							{module: 'm/top', container: '#topContainer'},
+							{module: 'm/user/userPage', container: '#bodyContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, bodyPage, foot) {
 							}
 						}
 					);

@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель фотографий пользователя
  */
@@ -86,11 +86,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		routeHandler: function () {
-			console.log(99);
 			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
 			if (page > this.pageLast()) {
 				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast())
+					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast());
 				}.bind(this), 200);
 			} else {
 				this.page(page);

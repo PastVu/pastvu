@@ -410,7 +410,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			delete this.subscriptions.route;
 		},
 		routeHandler: function () {
-			var cid = Number(globalVM.router.params().photo),
+			var cid = Number(globalVM.router.params().cid),
 				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
 				offset = globalVM.router.offset;

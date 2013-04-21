@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель статистики пользователя
  */

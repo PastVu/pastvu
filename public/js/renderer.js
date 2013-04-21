@@ -34,7 +34,7 @@ define([
 		 * Уничтожаем не глобальные модули, которых нет в новом списке
 		 */
 		_.forOwn(repository, function (existingVM, existingVMKey) {
-			if (!existingVM.global && existingVM.level === options.level) {
+			if (!existingVM.global && existingVM.parentModule === options.parent && existingVM.level === options.level) {
 				var savesExisting = false,
 					sameContainer = false,
 					i = modules.length - 1,
