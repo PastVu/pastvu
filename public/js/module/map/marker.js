@@ -129,6 +129,12 @@ define([
 		}
 		return this;
 	};
+	MarkerManager.prototype.destroy = function () {
+		this.disable();
+		delete window[this.popupClusterClickFN];
+		delete window[this.popupClusterOverFN];
+		delete this.map;
+	};
 
 	/**
 	 * Обновляет границы области отображения маркеров.
@@ -359,7 +365,7 @@ define([
 		// В текущем объекте остались только фото на удаление
 		for (i in this.mapObjects.photos) {
 			if (this.mapObjects.photos[i] !== undefined) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker);
+				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker.clearAllEventListeners());
 			}
 		}
 		this.mapObjects.photos = photos;
@@ -773,7 +779,7 @@ define([
 		while (i) {
 			curr = this.mapObjects.photos[arr[--i]];
 			if (curr !== undefined && !bound.contains(curr.geo)) {
-				this.layerPhotos.removeLayer(curr.marker);
+				this.layerPhotos.removeLayer(curr.marker.clearAllEventListeners());
 				this.mapObjects.photos[curr.cid] = undefined;
 			}
 		}
@@ -784,7 +790,7 @@ define([
 		while (i) {
 			curr = this.mapObjects.clusters[arr[--i]];
 			if (curr !== undefined && !bound.contains(curr.geo)) {
-				this.layerClusters.removeLayer(curr.marker);
+				this.layerClusters.removeLayer(curr.marker.clearAllEventListeners());
 				this.mapObjects.clusters[curr.cid] = undefined;
 			}
 		}

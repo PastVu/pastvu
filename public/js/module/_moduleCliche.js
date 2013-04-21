@@ -62,20 +62,26 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			_.forOwn(this.childModules, function (item, key, object) {
 				item.destroy();
 			});
-			if (this.subscriptions) {
-				_.forOwn(this.subscriptions, function (item, key, object) {
-					if (!Utils.isType('function', item.dispose)) {
-						item.dispose();
-					}
-				}, this);
-				delete this.subscriptions;
-			}
+
+			this.subDispose();
+
 			ko.removeNode(this.$dom[0]);
 			this.$container.empty();
 
 			delete this.$container;
+			delete this.$dom;
 			delete this.parentModule.childModules[this.id];
 			delete globalVM.repository[this.id];
+		},
+		subDispose: function () {
+			for (var s in this.subscriptions) {
+				if (this.subscriptions.hasOwnProperty(s)) {
+					if (Utils.isType('function', this.subscriptions[s].dispose)) {
+						this.subscriptions[s].dispose();
+					}
+					delete this.subscriptions[s];
+				}
+			}
 		},
 		awaitDestroy: function () {
 		}

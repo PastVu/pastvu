@@ -240,11 +240,12 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
-			this.markerManager.disable();
+			this.markerManager.destroy();
 			this.pointHighlightDestroy();
 			this.pointEditDestroy();
 			this.map.remove();
-			this.map = null;
+			delete this.map;
+			delete this.markerManager;
 			destroy.call(this);
 		},
 		sizesCalc: function () {
