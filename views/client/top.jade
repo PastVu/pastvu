@@ -2,9 +2,11 @@
 	.fringe2#panel
 		#appName.indentLogo Retro photo of mankind's habitat
 		#panelTools.hide-text
-			a#toUpload.labledIco.strokeAfter.iconBefore(href="/u/photoUpload", target="_blank", data-bind="style:{display: loggedIn() ? '' : 'none'}")
+			//ko if: loggedIn()
+			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
+			// /ko
 			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank", data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}")
 				.ico
 				.text(data-bind="text: $root.i18n.admin()")

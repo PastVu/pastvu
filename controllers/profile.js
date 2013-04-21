@@ -12,7 +12,7 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.get(['/u', '/u/:login?/*'], function (req, res) {
+    app.get(['/u', '/u/:login?/*', '/photoUpload'], function (req, res) {
         var login = req.params.login;
         /*if (!login) {
             throw new errS.e404();

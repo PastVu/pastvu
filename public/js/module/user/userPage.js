@@ -8,6 +8,8 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
+			this.auth = globalVM.repository['m/auth'];
+			this.contentVM = null;
 
 			var user = globalVM.router.params().user || this.auth.iAm.login();
 			storage.user(user, function (data) {
@@ -50,28 +52,46 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				moduleOptions = {module: 'm/user/profile', container: '#user_content'};
+				module,
+				moduleOptions = {container: '#user_content'};
 
-			if (params.section === 'photos' || params.section === 'photo') {
-				moduleOptions = {module: 'm/user/gallery', container: '#user_content', options: {canAdd: true}};
-			} else if (params.section === 'comments') {
-				moduleOptions = {module: 'm/user/comments', container: '#user_content'};
-			} else if (params.section === 'settings') {
-				moduleOptions = {module: 'm/user/settings', container: '#user_content'};
-			}
-			renderer(
-				[
-					_.assign(moduleOptions, {
-						callback: function (vm) {
-							this.uploadVM = vm;
-						}.bind(this)
-					})
-				],
-				{
-					parent: this,
-					level: this.level + 2 //Чтобы не удалились модули brief и menu на уровне this.level + 1
+			if (!_.isEmpty(params.section)) {
+				if (params.section === 'photos' || params.section === 'photo') {
+					module = 'm/user/gallery';
+					moduleOptions.options = {canAdd: true};
+				} else if (params.section === 'comments') {
+					module = 'm/user/comments';
+				} else if (params.section === 'settings') {
+					module = 'm/user/settings';
 				}
-			);
+			} else if (params.photoUpload) {
+				module = 'm/user/gallery';
+				if (this.contentVM && this.contentVM.module === module) {
+					this.contentVM.showUpload();
+				} else {
+					moduleOptions.options = {canAdd: true, goUpload: true};
+				}
+			} else {
+				module = 'm/user/profile';
+			}
+
+			if (!this.contentVM || this.contentVM.module !== module) {
+				moduleOptions.module = module;
+				renderer(
+					[
+						_.assign(moduleOptions, {
+							callback: function (vm) {
+								this.contentVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						})
+					],
+					{
+						parent: this,
+						level: this.level + 2 //Чтобы не удалились модули brief и menu на уровне this.level + 1
+					}
+				);
+			}
 		}
 	});
 });

@@ -69,6 +69,7 @@ require([
 			routes: [
 				{route: "", handler: "index"},
 				{route: "p/:cid", handler: "photo"},
+				{route: "photoUpload", handler: "photoUpload"},
 				{route: "u", handler: "userPage"},
 				{route: "u/", handler: "userPage"},
 				{route: "u/:user", handler: "userPage"},
@@ -120,7 +121,31 @@ require([
 					);
 				},
 				userPage: function (params) {
+					if (!params.user && !P.settings.LoggedIn()) {
+						location.href = '/';
+						return;
+					}
 					this.params(_.assign(params, {_handler: 'profile'}));
+
+					renderer(
+						[
+							{module: 'm/top', container: '#topContainer'},
+							{module: 'm/user/userPage', container: '#bodyContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, bodyPage, foot) {
+							}
+						}
+					);
+				},
+				photoUpload: function (params) {
+					if (!params.user && !P.settings.LoggedIn()) {
+						location.href = '/';
+						return;
+					}
+					this.params({photoUpload: true, _handler: 'profile'});
 
 					renderer(
 						[

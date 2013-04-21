@@ -1,4 +1,3 @@
-define(['jquery'], function (jQuery) {
 /*!
  * jQuery UI Widget 1.10.2
  * http://jqueryui.com
@@ -8,8 +7,16 @@ define(['jquery'], function (jQuery) {
  * http://jquery.org/license
  *
  * http://api.jqueryui.com/jQuery.widget/
- */
-(function( $, undefined ) {
+*/
+(function (factory) {
+	if (typeof define === "function" && define.amd) {
+		// Register as an anonymous AMD module:
+		define(["jquery"], factory);
+	} else {
+		// Browser globals:
+		factory(jQuery);
+	}
+}(function( $, undefined ) {
 
 var uuid = 0,
 	slice = Array.prototype.slice,
@@ -519,6 +526,4 @@ $.each( { show: "fadeIn", hide: "fadeOut" }, function( method, defaultEffect ) {
 	};
 });
 
-})( jQuery );
-
-});
+}));

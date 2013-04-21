@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель статистики пользователя
  */
@@ -18,9 +18,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 
 					this.links.push({name: 'Profile', href: "/u/" + this.user.login(), handler: 'profile'});
 					this.links.push({name: 'Photos', href: "/u/" + this.user.login() + "/photo", handler: 'gallery'});
-					if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
-						this.links.push({name: 'Upload', href: "/u/photoUpload", handler: 'photoUpload'});
-					}
 					//this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
 					this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments/", handler: 'comments'});
 					if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {

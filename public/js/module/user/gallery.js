@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель фотографий пользователя
  */
@@ -9,7 +9,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			canAdd: false
+			canAdd: false,
+			goUpload: false
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/auth'];
@@ -50,6 +51,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
 				$window.on('scroll', this.scrollHandler);
 				this.scrollActive = true;
+			}
+			if (this.options.goUpload) {
+				window.setTimeout(this.showUpload.bind(this), 200);
 			}
 			this.showing = true;
 		},
@@ -213,7 +217,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				);
 			}.bind(this));
-			if (event.stopPropagation) {
+			if (event && Utils.isType('function', event.stopPropagation)) {
 				event.stopPropagation();
 			}
 			return false;

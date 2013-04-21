@@ -67,7 +67,7 @@ requirejs.config({
 		'highstock': 'lib/highstock',
 
 		'jquery.ui.widget': 'lib/jquery/ui/widget',
-		'jquery.fileupload': 'lib/jquery/plugins/fileupload',
+		'jfileupload': 'lib/jquery/plugins/fileupload',
 		'load-image': 'lib/jquery/plugins/fileupload/load-image',
 		'tmpl': 'lib/jquery/plugins/fileupload/tmpl',
 		'canvas-to-blob': 'lib/jquery/plugins/fileupload/canvas-to-blob',
