@@ -28,9 +28,10 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					}
 				},
 				{
-					module: 'm/user/menu', container: '#user_menu',
+					module: 'm/user/menu', container: '#user_menu', options: {section: globalVM.router.params().section},
 					ctx: this,
 					callback: function (vm) {
+						this.menuVM = vm;
 						this.childModules[vm.id] = vm;
 					}
 				}
@@ -56,23 +57,29 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				moduleOptions = {container: '#user_content'};
 
 			if (!_.isEmpty(params.section)) {
-				if (params.section === 'photos' || params.section === 'photo') {
+				if (params.section === 'profile') {
+					module = 'm/user/profile';
+				} else if (params.section === 'photos' || params.section === 'photo') {
 					module = 'm/user/gallery';
 					moduleOptions.options = {canAdd: true};
+					if (params.photoUpload) {
+						if (this.contentVM && this.contentVM.module === module) {
+							this.contentVM.showUpload();
+						} else {
+							moduleOptions.options.goUpload = true;
+						}
+					}
 				} else if (params.section === 'comments') {
 					module = 'm/user/comments';
 				} else if (params.section === 'settings') {
 					module = 'm/user/settings';
 				}
-			} else if (params.photoUpload) {
-				module = 'm/user/gallery';
-				if (this.contentVM && this.contentVM.module === module) {
-					this.contentVM.showUpload();
-				} else {
-					moduleOptions.options = {canAdd: true, goUpload: true};
-				}
 			} else {
 				module = 'm/user/profile';
+			}
+
+			if (this.menuVM) {
+				this.menuVM.setSection(params.section);
 			}
 
 			if (!this.contentVM || this.contentVM.module !== module) {

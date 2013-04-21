@@ -7,30 +7,34 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 
 	return Cliche.extend({
 		jade: jade,
+		options: {
+			section: 'profile'
+		},
 		create: function () {
 			this.auth = globalVM.repository['m/auth'];
-			this.links = ko.observableArray();
-			var user = globalVM.router.params().user || this.auth.iAm.login();
+			this.activeSection = ko.observable(this.options.section);
 
+			var user = globalVM.router.params().user || this.auth.iAm.login();
 			storage.user(user, function (data) {
 				if (data) {
 					this.user = data.vm;
 
-					this.links.push({name: 'Profile', href: "/u/" + this.user.login(), handler: 'profile'});
-					this.links.push({name: 'Photos', href: "/u/" + this.user.login() + "/photo", handler: 'gallery'});
-					//this.links.push({name: 'Blogs', href: "/u/" + this.user.login() + "/blogs", disable: true});
-					this.links.push({name: 'Comments', href: "/u/" + this.user.login() + "/comments/", handler: 'comments'});
-					if (P.settings.LoggedIn() && (this.auth.iAm.login() === this.user.login())) {
-						this.links.push({name: 'Settings', href: "/u/" + this.user.login() + "/settings", handler: 'settings'});
-						this.links.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm', disable: true, handler: 'pm'});
-					}
+					this.links = ko.computed(function () {
+						var loggedIn = P.settings.LoggedIn(),
+							result = [
+							{name: 'Profile', href: "/u/" + this.user.login(), section: 'profile'},
+							{name: 'Photos', href: "/u/" + this.user.login() + "/photo", section: 'photo'},
+							{name: 'Comments', href: "/u/" + this.user.login() + "/comments/", section: 'comments'}
+						];
 
-
-					globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-					this.routeHandler();
+						if (loggedIn && (this.auth.iAm.login() === this.user.login())) {
+							result.push({name: 'Settings', href: "/u/" + this.user.login() + "/settings", section: 'settings'});
+							result.push({name: 'Messages', href: "/u/" + this.user.login() + '/pm', disable: true, section: 'pm'});
+						}
+						return result;
+					}, this);
 
 					ko.applyBindings(globalVM, this.$dom[0]);
-
 					this.show();
 				}
 			}, this);
@@ -42,20 +46,8 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 		hide: function () {
 			this.showing = false;
 		},
-		routeHandler: function () {
-			var route = globalVM.router.root + globalVM.router.body(),
-				links = this.links();
-
-			links.forEach(function (item, index, array) {
-				if (item.handler === globalVM.router.params()._handler) {
-					item.active = true;
-				} else {
-					item.active = false;
-				}
-			}, this);
-
-			this.links([]);
-			this.links(links);
+		setSection: function (section) {
+			this.activeSection(section);
 		}
 	});
 });

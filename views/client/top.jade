@@ -6,20 +6,20 @@
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
-			// /ko
 			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank", data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}")
 				.ico
 				.text(data-bind="text: $root.i18n.admin()")
-			a#toProfile.labledIco.iconBefore(target="_blank", data-bind="style:{display: loggedIn()?'':'none'}, attr:{href: '/u/'+auth.iAm.login()}")
+			a#toProfile.labledIco.iconBefore(target="_blank", data-bind="attr:{href: '/u/'+auth.iAm.login()}")
 				.ico.fringe2(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
-			#toRegister.labledIco.iconBefore(data-bind="style:{display: loggedIn() || !registrationAllowed() ? 'none':''}, event:{click: function(data, evt){auth.show('reg')}}")
+			// /ko
+			#toRegister.labledIco.iconBefore(data-bind="style:{display: !loggedIn() && registrationAllowed() ? '' : 'none'}, event:{click: function(data, evt){auth.show('reg')}}")
 				.ico
 				.text(data-bind="text: $root.i18n.register()")
-			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="style:{display: loggedIn()? 'none' : ''}, event:{click: function(data, evt){auth.show('login')}}")
+			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="style:{display: !loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.show('login')}}")
 				.text(data-bind="text: $root.i18n.login()")
 				.ico
-			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: loggedIn()?'':'none'}, event:{click: function(data, evt){auth.doLogout()}}")
+			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.doLogout()}}")
 				.text(data-bind="text: $root.i18n.logout()")
 				.ico
 	a.fringe2.indentLogo#logo(href='/', target='_self')

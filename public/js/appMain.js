@@ -125,6 +125,9 @@ require([
 						location.href = '/';
 						return;
 					}
+					if (!params.section) {
+						params.section = 'profile';
+					}
 					this.params(_.assign(params, {_handler: 'profile'}));
 
 					renderer(
@@ -145,7 +148,7 @@ require([
 						location.href = '/';
 						return;
 					}
-					this.params({photoUpload: true, _handler: 'profile'});
+					this.params({section: 'photo', photoUpload: true, _handler: 'profile'});
 
 					renderer(
 						[
