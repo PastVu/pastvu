@@ -1,11 +1,22 @@
 (function(_, Backbone) {
 
-var queryStringParam = /^\?(.*)/;
-var namedParam    = /:([\w\d]+)/g;
-var splatParam    = /\*([\w\d]+)/g;
-var escapeRegExp  = /[-[\]{}()+?.,\\^$|#\s]/g;
-var queryStrip = /(\?.*)$/;
-var fragmentStrip = /^([^\?]*)/;
+// Require Underscore and Backbone if there's a `require` function.
+// This makes `backbone.queryparam` work on the server or when using
+// `browserify`.
+if (typeof require !== 'undefined') {
+  _ = _ || require('underscore');
+  Backbone = Backbone || require('backbone');
+}
+
+var queryStringParam = /^\?(.*)/,
+    optionalParam = /\((.*?)\)/g,
+    namedParam    = /(\(\?)?:\w+/g,
+    splatParam    = /\*\w+/g,
+    escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g,
+    queryStrip = /(\?.*)$/,
+    fragmentStrip = /^([^\?]*)/,
+    hasQueryString = /(\?)[\w-]+=/i,
+    namesPattern = /[\:\*]([^\:\?\/]+)/g;
 Backbone.Router.arrayValueSplit = '|';
 
 var _getFragment = Backbone.History.prototype.getFragment;
@@ -15,6 +26,8 @@ _.extend(Backbone.History.prototype, {
     fragment = _getFragment.apply(this, arguments);
     if (excludeQueryString) {
       fragment = fragment.replace(queryStrip, '');
+    } else if (! hasQueryString.test(fragment)) {
+      fragment += this.location.search;
     }
     return fragment;
   },
@@ -59,29 +72,34 @@ _.extend(Backbone.Router.prototype, {
     return fragment;
   },
 
-  _routeToRegExp : function(route) {
-    var splatMatch = (splatParam.exec(route) || {index: -1});
-    var namedMatch = (namedParam.exec(route) || {index: -1});
+  _routeToRegExp: function(route) {
+    var splatMatch = (splatParam.exec(route) || {index: -1}),
+        namedMatch = (namedParam.exec(route) || {index: -1}),
+        paramNames = route.match(namesPattern) || [];
 
-    route = route.replace(escapeRegExp, "\\$&")
-                 .replace(namedParam, "([^\/?]*)")
-                 .replace(splatParam, "([^\?]*)");
+    route = route.replace(escapeRegExp, '\\$&')
+                 .replace(optionalParam, '(?:$1)?')
+                 .replace(namedParam, function(match, optional){
+                   return optional ? match : '([^\\/\\?]+)';
+                 })
+                 .replace(splatParam, '([^\?]*?)');
     route += '([\?]{1}.*)?';
-
     var rtn = new RegExp('^' + route + '$');
 
-    // use the rtn value to hold some parameter data
-    if (splatMatch.index >= 0) {
-      // there is a splat
-      if (namedMatch >= 0) {
-        // negative value will indicate there is a splat match before any named matches
-        rtn.splatMatch = splatMatch.index - namedMatch.index;
-      } else {
-        rtn.splatMatch = -1;
-      }
+  // use the rtn value to hold some parameter data
+  if (splatMatch.index >= 0) {
+    // there is a splat
+    if (namedMatch >= 0) {
+      // negative value will indicate there is a splat match before any named matches
+      rtn.splatMatch = splatMatch.index - namedMatch.index;
+    } else {
+      rtn.splatMatch = -1;
     }
+  }
+  rtn.paramNames = _.map(paramNames, function(name) { return name.substring(1); });
+  rtn.namedParameters = this.namedParameters;
 
-    return rtn;
+  return rtn;
   },
 
   /**
@@ -89,7 +107,8 @@ _.extend(Backbone.Router.prototype, {
    * extracted parameters.
    */
   _extractParameters : function(route, fragment) {
-    var params = route.exec(fragment).slice(1);
+    var params = route.exec(fragment).slice(1),
+        namedParams = {};
 
     // do we have an additional query string?
     var match = params.length && params[params.length-1] && params[params.length-1].match(queryStringParam);
@@ -103,6 +122,7 @@ _.extend(Backbone.Router.prototype, {
         });
       }
       params[params.length-1] = data;
+      _.extend(namedParams, data);
     }
 
     // decode params
@@ -118,11 +138,14 @@ _.extend(Backbone.Router.prototype, {
 
     for (var i=0; i<length; i++) {
       if (_.isString(params[i])) {
-        params[i] = decodeURIComponent(params[i]);
+        params[i] = Backbone.Router.decodeParams ? decodeURIComponent(params[i]) : params[i];
+        if (route.paramNames.length >= i-1) {
+          namedParams[route.paramNames[i]] = params[i];
+        }
       }
     }
 
-    return params;
+    return (Backbone.Router.namedParameters || route.namedParameters) ? [namedParams] : params;
   },
 
   /**
@@ -166,10 +189,10 @@ _.extend(Backbone.Router.prototype, {
     if (!currentValue) {
       return decodeURIComponent(value);
     } else if (_.isArray(currentValue)) {
-      currentValue.push(value);
+      currentValue.push(decodeURIComponent(value));
       return currentValue;
     } else {
-      return [currentValue, value];
+      return [currentValue, decodeURIComponent(value)];
     }
   },
 
@@ -209,7 +232,7 @@ _.extend(Backbone.Router.prototype, {
       } else if (_.isArray(_val)) {
         // arrays use Backbone.Router.arrayValueSplit separator
         var str = '';
-        for (var i in _val) {
+        for (var i = 0; i < _val.length; i++) {
           var param = this._toQueryParam(_val[i]);
           if (_.isBoolean(param) || param) {
             str += splitChar + encodeSplit(param);
@@ -246,9 +269,6 @@ _.extend(Backbone.Router.prototype, {
     if (_.isNull(param) || _.isUndefined(param)) {
       return null;
     }
-    if (_.isDate(param)) {
-      return param.getDate().getTime();
-    }
     return param;
   }
 });
@@ -256,11 +276,12 @@ _.extend(Backbone.Router.prototype, {
 function iterateQueryString(queryString, callback) {
   var keyValues = queryString.split('&');
   _.each(keyValues, function(keyValue) {
-    var arr = keyValue.split('=');
-    if (arr.length > 1 && arr[1]) {
+    var i = keyValue.indexOf('=');
+    var arr = [keyValue.slice(0,i), keyValue.slice(i+1)];
+    if (arr.length > 1) {
       callback(arr[0], arr[1]);
     }
   });
 }
 
-})(_, Backbone);
+})(typeof _ === 'undefined' ? null : _, typeof Backbone === 'undefined' ? null : Backbone);
