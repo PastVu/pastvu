@@ -84,6 +84,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			}
 		},
 		awaitDestroy: function () {
+			this.subDispose();
 		}
 	});
 });

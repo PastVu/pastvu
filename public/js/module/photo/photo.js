@@ -405,10 +405,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 		},
 
-		awaitDestroy: function () {
-			this.subscriptions.route.dispose();
-			delete this.subscriptions.route;
-		},
 		routeHandler: function () {
 			var cid = Number(globalVM.router.params().cid),
 				hl = globalVM.router.params().hl,
