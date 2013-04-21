@@ -1,4 +1,4 @@
-define(['jquery','./core','./widget'], function (jQuery) {
+define(['jquery','./core','jquery.ui.widget'], function (jQuery) {
 /*!
  * jQuery UI Progressbar 1.10.2
  * http://jqueryui.com

@@ -1,4 +1,4 @@
-define(['jquery','./core','./widget','./button','./draggable','./mouse','./position','./resizable'], function (jQuery) {
+define(['jquery','./core','jquery.ui.widget','./button','./draggable','./mouse','./position','./resizable'], function (jQuery) {
 /*!
  * jQuery UI Dialog 1.10.2
  * http://jqueryui.com

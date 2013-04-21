@@ -1,4 +1,4 @@
-define(['jquery','./core','./mouse','./widget'], function (jQuery) {
+define(['jquery','./core','./mouse','jquery.ui.widget'], function (jQuery) {
 /*!
  * jQuery UI Draggable 1.10.2
  * http://jqueryui.com

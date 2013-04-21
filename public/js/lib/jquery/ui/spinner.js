@@ -1,4 +1,4 @@
-define(['jquery','./core','./widget','./button'], function (jQuery) {
+define(['jquery','./core','jquery.ui.widget','./button'], function (jQuery) {
 /*!
  * jQuery UI Spinner 1.10.2
  * http://jqueryui.com

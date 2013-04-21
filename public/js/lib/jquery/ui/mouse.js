@@ -1,4 +1,4 @@
-define(['jquery','./widget'], function (jQuery) {
+define(['jquery','jquery.ui.widget'], function (jQuery) {
 /*!
  * jQuery UI Mouse 1.10.2
  * http://jqueryui.com
