@@ -37,16 +37,16 @@
 				//ko template: { name: 'commentTpl', foreach: comments }
 				// /ko
 				//ko if: $root.P.settings.LoggedIn()
-				//ko template: 'commentReply'
+				//ko template: 'commentReplyTpl'
 				// /ko
 				// /ko
 			// /ko
 	.row-fluid.heightExpander
 
 
-	script(id="commentReply", type="text/html")
+	script(id="commentReplyTpl", type="text/html")
 		li.media.commentAdd(data-bind="attr: {}")
-			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + auth.iAm.login()}")
+			a.pull-left(data-bind="attr: {href: '/u/' + auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
 			.media-body
 				textarea.commentInput(wrap="soft", data-bind="click: commentReplyClickBind")
@@ -90,12 +90,12 @@
 
 	script(id="commentTpl", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")
-			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}")
+			a.pull-left(data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}")
 				img.media-object(data-bind="attr: {src: $parents[$data.level].commentsUsers[$data.user].avatar}")
 			.media-body
 				.commentBody
 					.commentHead
-						a.author(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
+						a.author(data-bind="attr: {href: '/u/' + $parents[$data.level].commentsUsers[$data.user].login}, text: $parents[$data.level].commentsUsers[$data.user].name")
 						//ko if: $data.frag
 						.dotDelimeter ·
 						a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")

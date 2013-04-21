@@ -65,13 +65,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					ko.applyBindings(globalVM, this.$dom[0]);
 
 					// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
-					// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
 					this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
-					this.routeHandlerDebounced();
 
 					// Subscriptions
 					this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 
+					// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+					this.routeHandler();
 					this.show();
 				}
 			}, this);
