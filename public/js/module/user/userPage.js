@@ -38,10 +38,10 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			];
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-			this.routeHandler();
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+			this.routeHandler();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
