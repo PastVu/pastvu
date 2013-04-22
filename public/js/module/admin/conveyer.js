@@ -274,7 +274,7 @@ define([
 		create: function () {
 			var _this = this;
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 			this.conveyerEnabled = ko.observable(true);

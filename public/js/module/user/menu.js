@@ -11,7 +11,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			section: 'profile'
 		},
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.activeSection = ko.observable(this.options.section);
 
 			var user = globalVM.router.params().user || this.auth.iAm.login();

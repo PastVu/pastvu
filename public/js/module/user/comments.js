@@ -10,7 +10,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		options: {
 		},
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.u = null;
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};

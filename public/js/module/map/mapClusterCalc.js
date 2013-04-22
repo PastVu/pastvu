@@ -17,7 +17,7 @@ define([
 		},
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 
 			// Map objects
 			this.map = null;

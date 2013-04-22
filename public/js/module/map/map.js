@@ -44,7 +44,7 @@ define([
 			this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
 			this.yearRefreshMarkersTimeout = null;
 
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 
 			if (P.settings.USE_OSM_API()) {
 				this.layers.push({

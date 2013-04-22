@@ -37,7 +37,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.u = null;
 
 			this.$fileupload = this.$dom.find('#fileupload');

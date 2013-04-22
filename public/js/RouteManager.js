@@ -36,7 +36,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			//Регистрируем глобальные модули
 			renderer(
 				[
-					{module: 'm/auth', container: '#auth', global: true}
+					{module: 'm/common/auth', container: '#auth', global: true}
 				],
 				{
 					parent: globalVM,

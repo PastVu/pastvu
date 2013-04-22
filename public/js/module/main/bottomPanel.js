@@ -8,7 +8,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.loadingCat = ko.observable('true');
 			this.cats = ko.observableArray();
 			this.catActive = ko.observable('photos');

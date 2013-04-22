@@ -13,7 +13,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			goUpload: false
 		},
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.u = null;
 			this.photos = ko.observableArray();
 			this.uploadVM = null;

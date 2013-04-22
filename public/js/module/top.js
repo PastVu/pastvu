@@ -8,7 +8,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 
 			this.loggedIn = ko.computed({
 				read: function () {

@@ -8,7 +8,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.u = null;
 
 			var user = globalVM.router.params().user || this.auth.iAm.login();

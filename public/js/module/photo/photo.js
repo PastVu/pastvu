@@ -76,7 +76,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				mapModuleDeffered = new $.Deferred(),
 				mapReadyDeffered = new $.Deferred();
 
-			this.auth = globalVM.repository['m/auth'];
+			this.auth = globalVM.repository['m/common/auth'];
 			this.p = Photo.vm(Photo.def.full);
 
 			this.photoSrc = ko.observable('');
