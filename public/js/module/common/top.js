@@ -2,7 +2,7 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top' ], function (_, P, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top', 'm/common/auth' ], function (_, P, ko, Cliche, globalVM, jade) {
 	'use strict';
 
 	return Cliche.extend({

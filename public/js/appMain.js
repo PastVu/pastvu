@@ -55,7 +55,7 @@ require([
 
 		function startApp() {
 			if (window.wasLoading) {
-				$('#main_loader').remove();
+				$('#apploader').remove();
 				delete window.wasLoading;
 			}
 			Backbone.Router.namedParameters = true;
