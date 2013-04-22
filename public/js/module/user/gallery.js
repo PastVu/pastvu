@@ -27,12 +27,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}.bind(this);
 			this.width = ko.observable('0px');
 			this.height = ko.observable('0px');
-			P.window.square.subscribe(this.sizesCalc, this);
 
-			P.settings.LoggedIn.subscribe(this.loginHandler, this);
+			this.subscriptions.login = this.auth.loggedIn.subscribe(this.loginHandler, this);
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 
 			var user = globalVM.router.params().user || this.auth.iAm.login();
-
 			storage.user(user, function (data) {
 				if (data) {
 					this.u = data.vm;

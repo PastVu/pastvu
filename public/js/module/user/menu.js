@@ -20,7 +20,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 					this.user = data.vm;
 
 					this.links = ko.computed(function () {
-						var loggedIn = P.settings.LoggedIn(),
+						var loggedIn = this.auth.loggedIn(),
 							result = [
 							{name: 'Profile', href: "/u/" + this.user.login(), section: 'profile'},
 							{name: 'Photos', href: "/u/" + this.user.login() + "/photo", section: 'photo'},

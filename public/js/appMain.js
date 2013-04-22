@@ -119,7 +119,8 @@ require([
 					);
 				},
 				userPage: function (params) {
-					if (!params.user && !P.settings.LoggedIn()) {
+					var auth = globalVM.repository['m/common/auth'];
+					if (!params.user && !auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
@@ -140,8 +141,9 @@ require([
 						}
 					);
 				},
-				photoUpload: function (params) {
-					if (!params.user && !P.settings.LoggedIn()) {
+				photoUpload: function () {
+					var auth = globalVM.repository['m/common/auth'];
+					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}

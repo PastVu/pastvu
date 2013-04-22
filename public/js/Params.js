@@ -34,8 +34,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 					locDefRange: ['gpsip', '_def_'],
 					locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
 
-					REGISTRATION_ALLOWED: false,
-					LoggedIn: false
+					REGISTRATION_ALLOWED: false
 				},
 				photoDirsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
 				photoDirsTxt: {

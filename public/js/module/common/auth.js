@@ -6,6 +6,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		jade: jade,
 		create: function () {
 			this.iAm = User.vm();
+			this.loggedIn = ko.observable(false);
 
 			this.mode = ko.observable('login');
 			this.working = ko.observable(false);
@@ -45,18 +46,19 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		loadMe: function () {
 			var dfd = $.Deferred();
 			socket.once('youAre', function (user) {
-				this.iAm = User.vm(user, this.iAm);
-				P.settings.LoggedIn(!!user);
-				console.log(this.iAm.fullName());
+				if (user) {
+					this.loggedIn(true);
+					this.iAm = User.vm(user, this.iAm);
+					console.log(this.iAm.fullName());
 
-				//При изменении данных профиля на сервере, обновляем его на клиенте
-				socket.on('youAre', function (user) {
-					if (this.iAm.login() === user.login) {
-						this.iAm = User.vm(user, this.iAm);
-						console.log(this.iAm.fullName());
-					}
-				}.bind(this));
-
+					//При изменении данных профиля на сервере, обновляем его на клиенте
+					socket.on('youAre', function (user) {
+						if (this.iAm.login() === user.login) {
+							this.iAm = User.vm(user, this.iAm);
+							console.log(this.iAm.fullName());
+						}
+					}.bind(this));
+				}
 				// Резолвим асинхронно, чтобы пересчитались computed зависимости других модулей от auth
 				window.setTimeout(dfd.resolve.bind(dfd), 50);
 			}.bind(this));

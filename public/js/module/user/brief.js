@@ -18,7 +18,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 
 					this.can_pm = ko.computed({
 						read: function () {
-							return P.settings.LoggedIn() && (this.auth.iAm.login() !== this.user.login());
+							return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());
 						},
 						owner: this
 					});

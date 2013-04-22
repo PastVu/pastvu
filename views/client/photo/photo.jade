@@ -7,7 +7,7 @@
 				span start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 
-	.row-fluid.photoData(data-bind="css: {editMode: edit(), loggedIn: $root.P.settings.LoggedIn()}")
+	.row-fluid.photoData(data-bind="css: {editMode: edit(), loggedIn: auth.loggedIn()}")
 		//ko template: edit() ? 'photoEdit' : 'photoView'
 		// /ko
 		.span3-4.rightPanel
@@ -28,7 +28,7 @@
 			.commentsHead Комментарии
 			.dotDelimeter ·
 			.commentsCount(data-bind="text: p.ccount()")
-			//ko if: $root.P.settings.LoggedIn()
+			//ko if: auth.loggedIn()
 			.dotDelimeter ·
 			.commentsAdd(data-bind="click: commentReply") Добавить
 			// /ko
@@ -36,7 +36,7 @@
 			ul.media-list
 				//ko template: { name: 'commentTpl', foreach: comments }
 				// /ko
-				//ko if: $root.P.settings.LoggedIn()
+				//ko if: auth.loggedIn()
 				//ko template: 'commentReplyTpl'
 				// /ko
 				// /ko

@@ -76,7 +76,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				});
 
 			var user = this.auth.iAm.login();
-			if (P.settings.LoggedIn()) {
+			if (this.auth.loggedIn()) {
 				storage.user(user, function (data) {
 					if (data) {
 						this.u = data.vm;

@@ -92,7 +92,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				return this.auth.iAm.login() === this.p.user.login();
 			}, this);
 			this.IAdmin = ko.computed(function () {
-				return P.settings.LoggedIn() && this.auth.iAm.role_level() >= 0;
+				return this.auth.loggedIn() && this.auth.iAm.role_level() >= 0;
 			}, this);
 
 			this.canBeEdit = ko.computed(function () {
@@ -238,7 +238,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 			this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
-			this.subscriptions.login = this.auth.iAm.login.subscribe(this.loginHandler, this);
+			this.subscriptions.login = this.auth.loggedIn.subscribe(this.loginHandler, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.hscale = this.hscale.subscribe(this.sizesCalcPhoto, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
@@ -469,7 +469,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 		},
-		loginHandler: function (v) {
+		loginHandler: function () {
 			this.addMeToCommentsUsers();
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
@@ -743,7 +743,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			n = nLeft = newRibbon = null;
 		},
 		addMeToCommentsUsers: function () {
-			if (P.settings.LoggedIn() && this.commentsUsers[this.auth.iAm.login()] === undefined) {
+			if (this.auth.loggedIn() && this.commentsUsers[this.auth.iAm.login()] === undefined) {
 				this.commentsUsers[this.auth.iAm.login()] = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
@@ -902,7 +902,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentFraging(false);
 		},
 		commentActivate: function (root, scrollDuration) {
-			if (P.settings.LoggedIn() && (root instanceof jQuery) && root.length === 1) {
+			if (this.auth.loggedIn() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
 
 				root.addClass('hasFocus');

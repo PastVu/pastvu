@@ -10,12 +10,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 
-			this.loggedIn = ko.computed({
-				read: function () {
-					return P.settings.LoggedIn();
-				},
-				owner: this
-			});
 			this.registrationAllowed = ko.computed({
 				read: function () {
 					return P.settings.REGISTRATION_ALLOWED();
@@ -24,7 +18,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 			});
 			this.profile = ko.computed({
 				read: function () {
-					if (P.settings.LoggedIn()) {
+					if (this.auth.loggedIn()) {
 						return this.auth.iAm.fullName();
 					} else {
 						return '';
@@ -34,7 +28,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 			}).extend({ throttle: 50 });
 			this.profileAvatar = ko.computed({
 				read: function () {
-					if (P.settings.LoggedIn()) {
+					if (this.auth.loggedIn()) {
 						return this.auth.iAm.avatar();
 					} else {
 						return '';

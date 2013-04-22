@@ -28,7 +28,6 @@ module.exports.loadController = function (app, db, io) {
 
         socket.on('giveGlobeParams', function (data) {
             var params = {
-                LoggedIn: !!hs.session.user,
                 ip: hs.address
             };
             step(
