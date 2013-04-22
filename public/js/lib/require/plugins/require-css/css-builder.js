@@ -4,7 +4,7 @@ define(['require', './normalize'], function(req, normalize) {
     requirejs.tools.useLib(function(req) {
       req(['node/print'], function(_nodePrint) {
         nodePrint = _nodePrint;
-      });
+      }, function(){});
     });
   
   var cssAPI = {};
@@ -89,46 +89,69 @@ define(['require', './normalize'], function(req, normalize) {
       .replace(/[\r]/g, "\\r");
   }
 
-  var baseUrl;
-  
-  var loadCSS = function(cssId, parse) {
-    if (!baseUrl) {
-      var baseParts = req.toUrl('base_url').split('/');
-      baseParts.pop();
-      baseUrl = baseParts.join('/') + '/';
-    }
+  // NB add @media query support for media imports
+  var importRegEx = /@import\s*(url)?\s*(('([^']*)'|"([^"]*)")|\(('([^']*)'|"([^"]*)"|([^\)]*))\))\s*;?/g;
 
-    var fileUrl = cssId;
-    
-    if (fileUrl.substr(fileUrl.length - 4, 4) != '.css' && !parse)
-      fileUrl += '.css';
-    
-    fileUrl = req.toUrl(fileUrl);
-    
-    //external URLS don't get added (just like JS requires)
-    if (fileUrl.substr(0, 7) == 'http://' || fileUrl.substr(0, 8) == 'https://')
-      return;
-    
-    //add to the buffer
+  var loadCSSFile = function(fileUrl) {
     var css = loadFile(fileUrl);
 
-    //make file url absolute
-    //if (fileUrl.substr(0, 1) != '/')
-    //  fileUrl = '/' + fileUrl;
-
-    //normalize all css to the base url - as the common path reference
-    //for injection we then only need one normalization from the base url
+    // normalize the css (except import statements)
     css = normalize(css, fileUrl, baseUrl);
 
-    // parse if necessary
-    if (parse)
-      css = parse(css);
-    
+    // detect all import statements in the css and normalize
+    var importUrls = [];
+    var importIndex = [];
+    var importLength = [];
+    var match;
+    while (match = importRegEx.exec(css)) {
+      var importUrl = match[4] || match[5] || match[7] || match[8] || match[9];
+
+      // normalize import url
+      if (importUrl.substr(importUrl.length - 5, 5) != '.less' && importUrl.substr(importUrl.length - 4, 4) != '.css')
+        importUrl += '.css';
+
+      // contains a protocol
+      if (importUrl.match(/:\/\//))
+        continue;
+
+      // relative to css base
+      if (importUrl.substr(0, 1) == '/')
+        importUrl = cssBase + importUrl;
+      else
+        importUrl = baseUrl + importUrl;
+
+      importUrls.push(importUrl);
+      importIndex.push(importRegEx.lastIndex - match[0].length);
+      importLength.push(match[0].length);
+    }
+
+    // load the import stylesheets and substitute into the css
+    for (var i = 0; i < importUrls.length; i++)
+      (function(i) {
+        var importCSS = loadCSSFile(importUrls[i]);
+        css = css.substr(0, importIndex[i]) + importCSS + css.substr(importIndex[i] + importLength[i]);
+        var lenDiff = importCSS.length - importLength[i];
+        for (var j = i + 1; j < importUrls.length; j++)
+          importIndex[j] += lenDiff;
+      })(i);
+
     return css;
   }
   
+
+  var baseUrl;  
+  var cssBase;
   var curModule;
-  cssAPI.load = function(name, req, load, config) {
+  cssAPI.load = function(name, req, load, config, parse) {
+    if (!baseUrl)
+      baseUrl = config.baseUrl;
+    
+    if (!cssBase) {
+      cssBase = config.cssBase || config.appDir || baseUrl;
+      if (cssBase.substr(cssBase.length - 1, 1) != '/')
+        cssBase += '/';
+    }
+
     if (config.modules) {
       //run through the module list - the first one without a layer set is the current layer we are in
       //allows to track the current layer number for layer-specific config
@@ -141,7 +164,22 @@ define(['require', './normalize'], function(req, normalize) {
     
     //store config
     cssAPI.config = cssAPI.config || config;
-    //just return - 'write' calls are made after exclusions so we run loading there
+
+    name += !parse ? '.css' : '.less';
+
+    var fileUrl = req.toUrl(name);
+
+    //external URLS don't get added (just like JS requires)
+    if (fileUrl.substr(0, 7) == 'http://' || fileUrl.substr(0, 8) == 'https://')
+      return;
+
+    //add to the buffer
+    _cssBuffer[name] = loadCSSFile(fileUrl);
+
+    // parse if necessary
+    if (parse)
+      _cssBuffer[name] = parse(_cssBuffer[name]);
+
     load();
   }
   
@@ -153,18 +191,28 @@ define(['require', './normalize'], function(req, normalize) {
   
   //list of cssIds included in this layer
   var _layerBuffer = [];
-  
-  cssAPI.write = function(pluginName, moduleName, write, extension, parse) {
+  var _cssBuffer = [];
+  cssAPI.write = function(pluginName, moduleName, write, parse) {
     //external URLS don't get added (just like JS requires)
     if (moduleName.substr(0, 7) == 'http://' || moduleName.substr(0, 8) == 'https://')
       return;
     
-    _layerBuffer.push(loadCSS(moduleName + (extension ? '.' + extension : ''), parse));
-    
-    write.asModule(pluginName + '!' + moduleName, 'define(function(){})');
+    var resourceName = moduleName + (!parse ? '.css' : '.less');
+    _layerBuffer.push(_cssBuffer[resourceName]);
+
+    var separateCSS = false;
+    if (cssAPI.config.separateCSS)
+      separateCSS = true;
+    if (typeof curModule == 'number' && cssAPI.config.modules[curModule].separateCSS !== undefined)
+      separateCSS = cssAPI.config.modules[curModule].separateCSS;
+    if (separateCSS)
+      write.asModule(pluginName + '!' + moduleName, 'define(function(){})');
+    else
+      write("requirejs.s.contexts._.nextTick = function(f){f()}; require(['css'], function(css) { css.addBuffer('" + resourceName + "'); }); requirejs.s.contexts._.nextTick = requirejs.nextTick;");
   }
   
   cssAPI.onLayerEnd = function(write, data, parser) {
+    firstWrite = true;
     //separateCSS parameter set either globally or as a layer setting
     var separateCSS = false;
     if (cssAPI.config.separateCSS)
@@ -194,39 +242,8 @@ define(['require', './normalize'], function(req, normalize) {
       //prepare the css
       css = escape(compress(css));
       
-      //derive the absolute path for the normalize helper
-      // NB temp fix for https://github.com/jrburke/r.js/issues/364
-      var normalizePath = req.toUrl('./normalize.js');
-      var normalizeName = normalize.convertURIBase('normalize', normalizePath, baseUrl);
-      
-      //the code below overrides async require functionality to ensure instant layer css injection
-      //it then runs normalization and injection
-      //normalization is based on determining the absolute pathname of the html page
-      //then determining the absolute baseurl url
-      //normalization is then performed from the absolute baseurl to the absolute pathname
-      write(''
-        + '(function(g) { \n'
-        + '  g._cssWritten = g._cssWritten || []; \n'
-        + '  if (g._cssWritten.indexOf(\'' + data.name + (parser ? '-' : '') + '\') != -1) return; \n'
-        + '  g._cssWritten.push(\'' + data.name + (parser ? '-' : '') + '\');'
-        + '  for (var c in requirejs.s.contexts) { requirejs.s.contexts[c].nextTick = function(f){f()} } \n'
-        + '  require([\'css\', \'' + normalizeName + '\', \'require\'], function(css, normalize, req) { \n'
-        + '    var pathname = window.location.pathname.split(\'/\'); \n'
-        + '    pathname.pop(); \n'
-        + '    pathname = pathname.join(\'/\') + \'/\'; \n'
-        + '    var baseParts = req.toUrl(\'base_url\').split(\'/\'); \n'
-        + '    baseParts.pop(); \n'
-        + '    var baseUrl = baseParts.join(\'/\') + \'/\'; \n'
-        + '    baseUrl = normalize.convertURIBase(baseUrl, pathname, \'/\'); \n'
-        + '    if (baseUrl.substr(0, 1) != \'/\') \n'
-        + '      baseUrl = \'/\' + baseUrl; \n'
-        + '    if (baseUrl.substr(baseUrl.length - 1, 1) != \'/\') \n'
-        + '      baseUrl = baseUrl + \'/\'; \n'
-        + '    css.inject(normalize(\'' + css + '\', baseUrl, pathname)); \n'
-        + '  }); \n'
-        + '  for (var c in requirejs.s.contexts) { requirejs.s.contexts[c].nextTick = requirejs.nextTick; } \n'
-        + '})(this);'
-      );
+      //the code below overrides async require functionality to ensure instant buffer injection
+      write("requirejs.s.contexts._.nextTick = function(f){f()}; require(['css'], function(css) { css.setBuffer('" + css + (parser ? "', true" : "'") + "); }); requirejs.s.contexts._.nextTick = requirejs.nextTick; ");
     }
     
     //clear layer buffer for next layer
