@@ -42,13 +42,12 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.showing = false;
 		},
 
-		LoadMe: function () {
+		loadMe: function () {
 			var dfd = $.Deferred();
 			socket.once('youAre', function (user) {
-				P.settings.LoggedIn(!!user);
 				this.iAm = User.vm(user, this.iAm);
+				P.settings.LoggedIn(!!user);
 				console.log(this.iAm.fullName());
-				dfd.resolve();
 
 				//При изменении данных профиля на сервере, обновляем его на клиенте
 				socket.on('youAre', function (user) {
@@ -56,8 +55,10 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 						this.iAm = User.vm(user, this.iAm);
 						console.log(this.iAm.fullName());
 					}
-
 				}.bind(this));
+
+				// Резолвим асинхронно, чтобы пересчитались computed зависимости других модулей от auth
+				window.setTimeout(dfd.resolve.bind(dfd), 50);
 			}.bind(this));
 			socket.emit('whoAmI');
 			return dfd.promise();
@@ -213,7 +214,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error) {
-						this.LoadMe();
+						this.loadMe();
 					}
 
 					if (Utils.isType('function', callback)) {

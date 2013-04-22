@@ -36,15 +36,17 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			//Регистрируем глобальные модули
 			renderer(
 				[
-					{module: 'm/common/auth', container: '#auth', global: true}
+					{module: 'm/common/auth', container: '#auth', global: true},
+					{module: 'm/common/top', container: '#topContainer', global: true}
 				],
 				{
 					parent: globalVM,
 					level: 0,
 					context: this,
-					callback: function (auth) {
+					callback: function (auth, top) {
 						if (dfd) {
-							$.when(auth.LoadMe()).done(function () {
+							$.when(auth.loadMe()).done(function () {
+								top.show();
 								dfd.resolve();
 							});
 						}

@@ -92,7 +92,6 @@ require([
 
 					renderer(
 						[
-							{module: 'm/top', container: '#topContainer'},
 							{module: 'm/main/mainPage', container: '#bodyContainer'}
 							//{module: 'm/foot', container: '#footContainer'}
 						],
@@ -109,7 +108,6 @@ require([
 
 					renderer(
 						[
-							{module: 'm/top', container: '#topContainer'},
 							{module: 'm/photo/photo', container: '#bodyContainer'}
 						],
 						{
@@ -132,7 +130,6 @@ require([
 
 					renderer(
 						[
-							{module: 'm/top', container: '#topContainer'},
 							{module: 'm/user/userPage', container: '#bodyContainer'}
 						],
 						{

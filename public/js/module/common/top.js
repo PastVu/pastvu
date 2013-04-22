@@ -2,7 +2,7 @@
 /**
  * Модель управляет верхней панелью
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/top.jade', 'css!style/top' ], function (_, P, ko, Cliche, globalVM, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text!tpl/common/top.jade', 'css!style/common/top' ], function (_, P, ko, Cliche, globalVM, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -47,7 +47,6 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 			this.msgCss = ko.observable('');
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
 		},
 		show: function () {
 			globalVM.pb.subscribe('/top/message', function (text, type) {
@@ -76,9 +75,11 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 				text = type = css = null;
 			}.bind(this));
 
+			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		}
 	});
