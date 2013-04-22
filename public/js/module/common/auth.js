@@ -14,7 +14,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.msg = ko.observable('');
 			this.caps = ko.observable(false);
 
-			this.mode.subscribe(function () {
+			this.subscriptions.mode = this.mode.subscribe(function () {
 				this.formFocus();
 			}, this);
 

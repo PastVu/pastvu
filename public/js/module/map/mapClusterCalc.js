@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель карты
  */
@@ -152,7 +152,7 @@ define([
 				this.map = new L.neoMap(this.$dom.find('.map')[0], {center: [55.753395, 37.621994], zoom: 13, minZoom: 3, maxZoom: 18, zoomAnimation: false, trackResize: false});
 
 				//Самостоятельно обновлем размеры карты
-				P.window.square.subscribe(function (newVal) {
+				this.subscriptions.sizes = P.window.square.subscribe(function (newVal) {
 					this.map._onResize();
 				}.bind(this));
 

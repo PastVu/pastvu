@@ -59,7 +59,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			if (this.showing) {
 				this.hide();
 			}
-			_.forOwn(this.childModules, function (item, key, object) {
+			_.forOwn(this.childModules, function (item) {
 				item.destroy();
 			});
 
@@ -85,6 +85,9 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 		},
 		awaitDestroy: function () {
 			this.subDispose();
+			_.forOwn(this.childModules, function (item) {
+				item.awaitDestroy();
+			});
 		}
 	});
 });
