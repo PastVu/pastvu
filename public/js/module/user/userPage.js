@@ -1,6 +1,6 @@
 /*global define:true*/
 /**
- * Модель содержимого основной страницы
+ * Модель содержимого страницы пользователя
  */
 define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/storage', 'm/Photo', 'text!tpl/user/userPage.jade', 'css!style/user/userPage'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, Photo, jade) {
 	'use strict';

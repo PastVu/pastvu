@@ -2,7 +2,7 @@
 /**
  * Модель содержимого основной страницы
  */
-define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'text!tpl/main/bodyPage.jade', 'css!style/main/bodyPage'], function (_, Utils,P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
+define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'text!tpl/main/mainPage.jade', 'css!style/main/mainPage'], function (_, Utils,P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
 	'use strict';
 
 	return Cliche.extend({

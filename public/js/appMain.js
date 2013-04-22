@@ -93,7 +93,7 @@ require([
 					renderer(
 						[
 							{module: 'm/top', container: '#topContainer'},
-							{module: 'm/main/bodyPage', container: '#bodyContainer'}
+							{module: 'm/main/mainPage', container: '#bodyContainer'}
 							//{module: 'm/foot', container: '#footContainer'}
 						],
 						{

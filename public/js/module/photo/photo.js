@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель профиля пользователя
  */
@@ -72,7 +72,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			var _this = this;
+			var _this = this,
+				mapModuleDeffered = new $.Deferred(),
+				mapReadyDeffered = new $.Deferred();
+
 			this.auth = globalVM.repository['m/auth'];
 			this.p = Photo.vm(Photo.def.full);
 
@@ -148,8 +151,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userThumbN = ko.observable(3);
 
 			this.mapVM = null;
-			var mapModuleDeffered = new $.Deferred(),
-				mapReadyDeffered = new $.Deferred();
 			this.mapModulePromise = mapModuleDeffered.promise();
 			this.childs = [
 				{
@@ -158,8 +159,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
 					ctx: this,
 					callback: function (vm) {
-						this.childModules[vm.id] = vm;
-						this.mapVM = vm;
+						this.mapVM = this.childModules[vm.id] = vm;
 						$.when(mapReadyDeffered.promise()).done(function () {
 							mapModuleDeffered.resolve();
 						}.bind(this));
