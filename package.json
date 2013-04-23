@@ -37,7 +37,9 @@
 		"imagemagick": ">=0.1.3"
 	},
 	"devDependencies": {
-		"nodemon": "~0.7.6"
+		"nodemon": "~0.7.6",
+		"grunt": "~0.4.1",
+		"grunt-contrib-concat": "~0.2.0"
 	},
 	"engines": {
 		"node": "~0.10.4"

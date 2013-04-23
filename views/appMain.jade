@@ -3,13 +3,11 @@ html
 	include includes/head_meta
 		if appLand == 'prod'
 			include ../public-build/style/appstart.css
-			include ../public-build/js/lib/require/require.js
-			include ../public-build/js/_mainConfig.js
 			include ../public-build/js/appstart.js
 		else
 			include ../public/style/appstart.css
+			include ../public/js/appstart.js
 			include ../public/js/lib/require/require.js
 			include ../public/js/_mainConfig.js
-			include ../public/js/appstart.js
 
 	body
