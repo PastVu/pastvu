@@ -81,7 +81,7 @@ var start = Date.now(),
 					'm/common/auth', 'm/common/top',
 					'm/main/commentsRibbon', 'm/main/mainPage',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
-					'm/photo',
+					'm/photo/photo',
 					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/menu', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
 				]
 			}/*,

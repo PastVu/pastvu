@@ -1,5 +1,8 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe2#panel
+		.appV
+			| v
+			= appVersion
 		#appName.indentLogo Retro photo of mankind's habitat
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
