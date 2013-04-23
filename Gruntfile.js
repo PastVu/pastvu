@@ -3,6 +3,13 @@ module.exports = function(grunt) {
 	// Project configuration.
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
+		exec: {
+			buildjs: {
+				command: 'node build.js',
+				stdout: true,
+				stderr: true
+			}
+		},
 		concat: {
 			options: {
 				separator: ';',
@@ -11,7 +18,7 @@ module.exports = function(grunt) {
 					' * Hello, inquiring mind!\n' +
 					' * This is application of <%= pkg.description %>.\n' +
 					' * Version: <%= pkg.version %>, <%= grunt.template.today("dd.mm.yyyy") %>\n' +
-					' * Author: Paul Klimashkin\n' +
+					' * Author: <%= pkg.author %>\n' +
 					' */\n'
 			},
 			dist: {
@@ -22,7 +29,9 @@ module.exports = function(grunt) {
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-concat');
+	grunt.loadNpmTasks('grunt-contrib-requirejs');
+	grunt.loadNpmTasks('grunt-exec');
 
 	// Default task(s).
-	grunt.registerTask('default', ['concat']);
+	grunt.registerTask('default', ['exec', 'concat']);
 };

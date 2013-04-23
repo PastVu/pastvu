@@ -126,7 +126,7 @@ step(
 			//Создаём временные директории и поддиректории для скомпилированных Jade-шаблонов
 			tplFolderTemp.createDirectory();
 			tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
-			Object.keys(files).forEach(function (element, index, array) {
+			Object.keys(files).forEach(function (element) {
 				if (Utils.isType('object', files[element])) {
 					new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
 				}
@@ -160,14 +160,14 @@ step(
 
 	//Собираем require
 	function requireBuild() {
-		console.log('~~~ Start r.js build ~~~');
+		console.dir('~~~ Start r.js build ~~~');
 		var _this = this;
 		requirejs.optimize(requireBuildConfig, function (buildResponse) {
 			//buildResponse is just a text output of the modules
 			//included. Load the built file for the contents.
 			//Use requireBuildConfig.out to get the optimized file contents.
 			//var contents = fs.readFileSync(requireBuildConfig.out, 'utf8');
-			console.log('Require build finished');
+			console.dir('Require build finished');
 			_this();
 		});
 	},
@@ -177,7 +177,7 @@ step(
 		var styleFolder = new File(requireBuildConfig.dir + '/style'),
 			_this = this;
 
-		console.log('Removing Less from build');
+		console.dir('Removing Less from build');
 		styleFolder.list(function (e, files) {
 			if (e) {
 				console.dir(e);
@@ -221,7 +221,7 @@ step(
 			console.dir(e);
 			process.exit(1);
 		}
-		console.log('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
+		console.dir('Build complete. Ok in ' + (Date.now() - start) / 1000 + 's');
 	}
 );
 
