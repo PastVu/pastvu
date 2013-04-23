@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global requirejs:true, require:true*/
 requirejs.config({
 	baseUrl: '/js',
 	waitSeconds: 15,
@@ -62,7 +62,6 @@ requirejs.config({
 		'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
 		'leaflet': 'lib/leaflet/leaflet',
-		'LMarkerCluster': 'lib/leaflet/extends/L.Markercluster',
 
 		'highstock': 'lib/highstock',
 

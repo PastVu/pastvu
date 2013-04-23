@@ -7,7 +7,6 @@ var express = require('express'),
 
 	fs = require('fs'),
 	os = require('os'),
-	connect = require('express/node_modules/connect'),
 	cookie = require('express/node_modules/cookie'),
 	Utils = require('./commons/Utils.js'),
 	File = require("file-utils").File,
@@ -91,6 +90,7 @@ app.configure(function () {
 
 	app.locals({
 		pretty: false,
+		appLand: land,
 		appHash: app.hash,
 		appVersion: app.version
 	});

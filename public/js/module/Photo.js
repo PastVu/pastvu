@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User'], function ($, _, ko, ko_mapping, Utils, User) {
 	'use strict';
 

@@ -1,9 +1,15 @@
 doctype 5
 html
 	include includes/head_meta
-		link(rel="stylesheet", type="text/css", href="/style/appstart.css?__=" + appHash)
-		script(type="text/javascript", src="/js/lib/require/require.js?__=" + appHash)
-		script(type="text/javascript", src="/js/_mainConfig.js?__=" + appHash)
-		script(type="text/javascript", src="/js/appstart.js?__=" + appHash)
+		if appLand == 'prod'
+			include ../public-build/style/appstart.css
+			include ../public-build/js/lib/require/require.js
+			include ../public-build/js/_mainConfig.js
+			include ../public-build/js/appstart.js
+		else
+			include ../public/style/appstart.css
+			include ../public/js/lib/require/require.js
+			include ../public/js/_mainConfig.js
+			include ../public/js/appstart.js
 
 	body

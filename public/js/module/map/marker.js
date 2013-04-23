@@ -3,7 +3,7 @@
  * Модель карты
  */
 define([
-	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'm/Photo', 'LMarkerCluster'
+	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'm/Photo'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
 	'use strict';
 

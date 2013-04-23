@@ -15,6 +15,7 @@ var start = Date.now(),
 	jadeCompileOptions = {
 		pretty: false,
 		pageTitle: 'OldMos51',
+		appLand: 'prod',
 		appHash: Utils.randomString(10),
 		appVersion: version
 	},
@@ -75,6 +76,16 @@ var start = Date.now(),
 				name: "_mainConfig" //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
 			},
 			{
+				name: "appMain",
+				include: [
+					'm/common/auth', 'm/common/top',
+					'm/main/commentsRibbon', 'm/main/mainPage',
+					'm/map/map', 'm/map/marker', 'm/map/navSlider',
+					'm/photo',
+					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/menu', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
+				]
+			}/*,
+			{
 				name: "appMap",
 				include: ['m/auth', 'm/top', 'm/map/map']
 			},
@@ -92,7 +103,7 @@ var start = Date.now(),
 			{
 				name: "appPhoto",
 				include: ['m/auth', 'm/top', 'm/photo/photo']
-			}
+			}*/
 		]
 	},
 	jadeFiles = [],
