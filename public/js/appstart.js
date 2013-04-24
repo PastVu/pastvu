@@ -7,6 +7,7 @@
 
 	bindReady(function () {
 		if (!getCookie('oldmos.load.' + appHash)) {
+			document.title = 'Фотографии прошлого';
 			window.wasLoading = true;
 
 			var loadLayout = '<div id="apploader">' +

@@ -34,6 +34,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 			this.show();
 		},
 		show: function () {
+			Utils.title.setTitle({title: 'Главная'});
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},

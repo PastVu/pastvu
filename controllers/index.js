@@ -14,7 +14,7 @@ module.exports.loadController = function (app, db, io) {
 
     app.get('/', function (req, res) {
         res.statusCode = 200;
-        res.render('appMain.jade', {pageTitle: 'OldMos51'});
+        res.render('appMain.jade', {});
     });
 
     io.sockets.on('connection', function (socket) {

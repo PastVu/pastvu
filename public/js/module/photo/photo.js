@@ -439,6 +439,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						this.originData = data.origin;
 						this.p = Photo.vm(data.origin, this.p, true);
 
+						Utils.title.setTitle({title: this.p.title()});
+
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
 						}

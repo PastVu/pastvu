@@ -19,7 +19,7 @@ module.exports.loadController = function (app, db, io) {
         }*/
 
         res.statusCode = 200;
-        res.render('appMain.jade', {pageTitle: login || 'Profile'});
+        res.render('appMain.jade', {});
     });
 
     io.sockets.on('connection', function (socket) {

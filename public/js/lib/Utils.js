@@ -537,6 +537,51 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 			};
 		}()),
 
+		title: (function () {
+			'use strict';
+
+			var titlePostfix = '',
+				titlePre = '',
+				titleVal = '',
+				titlePost = '';
+
+			function updateTitle() {
+				document.title = titlePre + titleVal + titlePost + (titlePostfix ? ' - ' + titlePostfix : '');
+				return document.title;
+			}
+
+			return {
+				setPostfix: function (val) {
+					titlePostfix = val || '';
+				},
+				setTitle: function (options) {
+					titlePre = options.pre || '';
+					titleVal = options.title || '';
+					titlePost = options.post || '';
+					if (options.postfix) {
+						titlePostfix = String(options.postfix);
+					}
+					return updateTitle();
+				},
+				addPre: function (val) {
+					titlePre = val || '';
+					return updateTitle();
+				},
+				removePre: function () {
+					titlePre = '';
+					return updateTitle();
+				},
+				addPost: function (val) {
+					titlePost = val || '';
+					return updateTitle();
+				},
+				removePost: function () {
+					titlePost = '';
+					return updateTitle();
+				}
+			};
+		}()),
+
 		math: (function () {
 			'use strict';
 

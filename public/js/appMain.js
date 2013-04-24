@@ -15,6 +15,7 @@ require([
 	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
 		routeDFD = $.Deferred();
 
+	Utils.title.setPostfix('Фотографии прошлого');
 	moment.lang('ru');
 
 	$('body').append(jade);

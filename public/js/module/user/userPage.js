@@ -59,6 +59,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			if (!_.isEmpty(params.section)) {
 				if (params.section === 'profile') {
 					module = 'm/user/profile';
+					Utils.title.setTitle({title: this.user.fullName()});
 				} else if (params.section === 'photos' || params.section === 'photo') {
 					module = 'm/user/gallery';
 					moduleOptions.options = {canAdd: true};
@@ -69,13 +70,17 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 							moduleOptions.options.goUpload = true;
 						}
 					}
+					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
 				} else if (params.section === 'comments') {
 					module = 'm/user/comments';
+					Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.fullName()});
 				} else if (params.section === 'settings') {
 					module = 'm/user/settings';
+					Utils.title.setTitle({pre: 'Настройки - ', title: this.user.fullName()});
 				}
 			} else {
 				module = 'm/user/profile';
+				Utils.title.setTitle({title: this.user.fullName()});
 			}
 
 			if (this.menuVM) {

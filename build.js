@@ -14,7 +14,6 @@ var start = Date.now(),
 
 	jadeCompileOptions = {
 		pretty: false,
-		pageTitle: 'OldMos51',
 		appLand: 'prod',
 		appHash: Utils.randomString(10),
 		appVersion: version

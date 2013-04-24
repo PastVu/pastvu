@@ -199,7 +199,7 @@ module.exports.loadController = function (app, db, io) {
 		var cid = req.params.cid;
 
 		res.statusCode = 200;
-		res.render('appMain.jade', {pageTitle: 'Photo'});
+		res.render('appMain.jade', {});
 	});
 
 	planResetStatDay(); //Планируем очистку статистики за ltym
