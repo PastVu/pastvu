@@ -45,7 +45,7 @@ function login(socket, data, cb) {
 				Session.findOne({key: session.key}).populate('user').exec(function (err, session) {
 					socket.handshake.session = session;
 					_session.emitCookie(socket);
-					cb(session, {message: "Success login"});
+					cb(session, {message: "Success login", youAre: session.user});
 				});
 			});
 			return;

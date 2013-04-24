@@ -20,9 +20,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
-		show: function (mode) {
+		show: function (mode, callback, ctx) {
 			if (mode) {
 				this.mode(mode);
+			}
+
+			if (callback) {
+				this.callback = callback;
+				this.ctx = ctx || window;
 			}
 
 			globalVM.func.showContainer(this.$container, function () {
@@ -41,31 +46,6 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.formReset();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
-		},
-
-		loadMe: function () {
-			var dfd = $.Deferred();
-			socket.once('youAre', function (user) {
-				if (user) {
-					this.loggedIn(true);
-					this.iAm = User.vm(user, this.iAm);
-					storage.users[user.login] = {origin: user, vm: this.iAm};
-
-					console.log(this.iAm.fullName());
-
-					//При изменении данных профиля на сервере, обновляем его на клиенте
-					socket.on('youAre', function (user) {
-						if (this.iAm.login() === user.login) {
-							this.iAm = User.vm(user, this.iAm);
-							console.log(this.iAm.fullName());
-						}
-					}.bind(this));
-				}
-				// Резолвим асинхронно, чтобы пересчитались computed зависимости других модулей от auth
-				window.setTimeout(dfd.resolve.bind(dfd), 50);
-			}.bind(this));
-			socket.emit('whoAmI');
-			return dfd.promise();
 		},
 
 		pressHandler: function (vm, event) {
@@ -90,6 +70,9 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.caps(false);
 		},
 		formClose: function () {
+			if (Utils.isType('function', this.callback)) {
+				this.callback.call(this.ctx, {loggedIn: false});
+			}
 			this.hide();
 		},
 		formWorking: function (param) {
@@ -139,7 +122,10 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 								}.bind(this), 420);
 							} else {
-								this.formClose();
+								if (Utils.isType('function', this.callback)) {
+									this.callback.call(this.ctx, {loggedIn: true});
+								}
+								this.hide();
 							}
 						}.bind(this)
 					);
@@ -214,11 +200,41 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 
 			return false;
 		},
+
+		processMe: function (user) {
+			this.loggedIn(true);
+			this.iAm = User.vm(user, this.iAm);
+			storage.users[user.login] = {origin: user, vm: this.iAm};
+
+			console.log(this.iAm.fullName());
+
+			//При изменении данных профиля на сервере, обновляем его на клиенте
+			socket
+				.removeAllListeners('youAre')
+				.on('youAre', function (user) {
+					if (this.iAm.login() === user.login) {
+						this.iAm = User.vm(user, this.iAm);
+						console.log(this.iAm.fullName());
+					}
+				}.bind(this));
+		},
+		loadMe: function () {
+			var dfd = $.Deferred();
+			socket.once('youAre', function (user) {
+				if (user) {
+					this.processMe(user);
+				}
+				// Резолвим асинхронно, чтобы пересчитались computed зависимости других модулей от auth
+				window.setTimeout(dfd.resolve.bind(dfd), 50);
+			}.bind(this));
+			socket.emit('whoAmI');
+			return dfd.promise();
+		},
 		doLogin: function (data, callback) {
 			try {
 				socket.once('loginResult', function (json) {
-					if (!json.error) {
-						this.loadMe();
+					if (!json.error && json.youAre) {
+						this.processMe(json.youAre);
 					}
 
 					if (Utils.isType('function', callback)) {
