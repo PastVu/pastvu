@@ -2,7 +2,7 @@
 /**
  * Модель содержимого страницы пользователя
  */
-define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/storage', 'm/Photo', 'text!tpl/user/userPage.jade', 'css!style/user/userPage'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, Photo, jade) {
+define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/storage', 'm/User', 'text!tpl/user/userPage.jade', 'css!style/user/userPage'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -12,18 +12,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			this.briefVM = null;
 			this.contentVM = null;
 
-			this.childs = [
-				{
-					module: 'm/user/menu', container: '#user_menu', options: {section: globalVM.router.params().section},
-					ctx: this,
-					callback: function (vm) {
-						this.menuVM = vm;
-						this.childModules[vm.id] = vm;
-					}
-				}
-			];
-
-			ko.applyBindings(globalVM, this.$dom[0]);
+			this.user = null;
+			this.section = null;
+			this.menuItems = null;
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
@@ -31,6 +22,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		show: function () {
 			if (!this.showing) {
+				this.makeVM();
 				globalVM.func.showContainer(this.$container);
 				this.showing = true;
 			}
@@ -38,6 +30,25 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+		makeVM: function () {
+			this.section = ko.observable('');
+			this.menuItems = ko.computed(function () {
+				var login = this.user.login(),
+					result = [
+						{name: 'Profile', href: "/u/" + login, section: 'profile'},
+						{name: 'Photos', href: "/u/" + login + "/photo", section: 'photo'},
+						{name: 'Comments', href: "/u/" + login + "/comments", section: 'comments'}
+					];
+
+				if (this.auth.loggedIn() && (this.auth.iAm.login() === login)) {
+					result.push({name: 'Settings', href: "/u/" + login + "/settings", section: 'settings'});
+					result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
+				}
+				return result;
+			}, this);
+
+			ko.applyBindings(globalVM, this.$dom[0]);
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
@@ -56,11 +67,10 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 
 			if (this.user && this.user.login() === user) {
 				this.updateSectionDepends(params.section, params.photoUpload);
-				this.show();
 			} else {
 				storage.user(user, function (data) {
 					if (data) {
-						this.user = data.vm;
+						this.user = User.vm(data.origin, this.user);
 						this.show();
 						this.updateUserDepends();
 						this.updateSectionDepends(params.section, params.photoUpload);
@@ -117,9 +127,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.fullName()});
 			}
 
-			if (this.menuVM) {
-				this.menuVM.setSection(section);
-			}
+			this.section(section);
 
 			if (!this.contentVM || this.contentVM.module !== module) {
 				moduleOptions.module = module;

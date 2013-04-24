@@ -14,6 +14,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			this.userInited = false;
 			this.auth = globalVM.repository['m/common/auth'];
 
+			this.user = null;
 			if (this.options.user) {
 				this.setUser(this.options.user);
 			}
