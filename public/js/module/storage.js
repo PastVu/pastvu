@@ -19,7 +19,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                         storage.users[login] = {origin: data, vm: User.vm(data, undefined, true)};
                     }
                     if (storage.waitings['u' + login]) {
-                        storage.waitings['u' + login].forEach(function (item, index, collection) {
+                        storage.waitings['u' + login].forEach(function (item) {
                             item.cb.call(item.ctx, !data.error && data.login === login && storage.users[login]);
                         });
                         delete storage.waitings['u' + login];
@@ -41,7 +41,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                         storage.photos[cid] = {origin: data, vm: Photo.vm(data, undefined, true)};
                     }
                     if (storage.waitings['p' + cid]) {
-                        storage.waitings['p' + cid].forEach(function (item, index, collection) {
+                        storage.waitings['p' + cid].forEach(function (item) {
                             item.cb.call(item.ctx, !data.error && storage.photos[cid]);
                         });
                         delete storage.waitings['p' + cid];

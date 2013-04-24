@@ -9,16 +9,10 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+			this.briefVM = null;
 			this.contentVM = null;
 
 			this.childs = [
-				{
-					module: 'm/user/brief', container: '#user_brief', options: {affix: true},
-					ctx: this,
-					callback: function (vm) {
-						this.childModules[vm.id] = vm;
-					}
-				},
 				{
 					module: 'm/user/menu', container: '#user_menu', options: {section: globalVM.router.params().section},
 					ctx: this,
@@ -50,26 +44,54 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				user = params.user || this.auth.iAm.login();
 
 			if (params.photoUpload && !this.auth.loggedIn()) {
-				this.auth.show('login');
+				this.auth.show('login', function (result) {
+					if (result.loggedIn) {
+						this.routeHandler();
+					} else {
+						globalVM.router.navigateToUrl('/');
+					}
+				}, this);
 				return;
 			}
 
 			if (this.user && this.user.login() === user) {
-				this.selectSection(params.section, params.photoUpload);
+				this.updateSectionDepends(params.section, params.photoUpload);
 				this.show();
 			} else {
 				storage.user(user, function (data) {
 					if (data) {
 						this.user = data.vm;
-						this.selectSection(params.section, params.photoUpload);
 						this.show();
+						this.updateUserDepends();
+						this.updateSectionDepends(params.section, params.photoUpload);
 					}
 				}, this);
 			}
 
 		},
 
-		selectSection: function (section, upload) {
+		updateUserDepends: function () {
+			if (this.briefVM) {
+				this.briefVM.setUser(this.user.login());
+			} else {
+				renderer(
+					[
+						{
+							module: 'm/user/brief', container: '#user_brief', options: {affix: true, user: this.user.login()},
+							callback: function (vm) {
+								this.briefVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		updateSectionDepends: function (section, upload) {
 			var module,
 				moduleOptions = {container: '#user_content'};
 

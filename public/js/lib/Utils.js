@@ -525,7 +525,7 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 				document.cookie = updatedCookie;
 			}
 
-			function deleteCookie(name, value, props) {
+			function deleteCookie(name) {
 				setCookie(name, null, { expires: -1 });
 
 			}
