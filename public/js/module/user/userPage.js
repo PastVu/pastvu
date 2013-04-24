@@ -11,14 +11,6 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			this.auth = globalVM.repository['m/common/auth'];
 			this.contentVM = null;
 
-			var user = globalVM.router.params().user || this.auth.iAm.login();
-			storage.user(user, function (data) {
-				if (data) {
-					this.user = data.vm;
-					this.show();
-				}
-			}, this);
-
 			this.childs = [
 				{
 					module: 'm/user/brief', container: '#user_brief', options: {affix: true},
@@ -44,8 +36,10 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			this.routeHandler();
 		},
 		show: function () {
-			globalVM.func.showContainer(this.$container);
-			this.showing = true;
+			if (!this.showing) {
+				globalVM.func.showContainer(this.$container);
+				this.showing = true;
+			}
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
@@ -53,38 +47,56 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				module,
+				user = params.user || this.auth.iAm.login();
+
+			if (params.photoUpload && !this.auth.loggedIn()) {
+				this.auth.show('login');
+				return;
+			}
+
+			if (this.user && this.user.login() === user) {
+				this.selectSection(params.section, params.photoUpload);
+				this.show();
+			} else {
+				storage.user(user, function (data) {
+					if (data) {
+						this.user = data.vm;
+						this.selectSection(params.section, params.photoUpload);
+						this.show();
+					}
+				}, this);
+			}
+
+		},
+
+		selectSection: function (section, upload) {
+			var module,
 				moduleOptions = {container: '#user_content'};
 
-			if (!_.isEmpty(params.section)) {
-				if (params.section === 'profile') {
-					module = 'm/user/profile';
-					Utils.title.setTitle({title: this.user.fullName()});
-				} else if (params.section === 'photos' || params.section === 'photo') {
-					module = 'm/user/gallery';
-					moduleOptions.options = {canAdd: true};
-					if (params.photoUpload) {
-						if (this.contentVM && this.contentVM.module === module) {
-							this.contentVM.showUpload();
-						} else {
-							moduleOptions.options.goUpload = true;
-						}
-					}
-					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
-				} else if (params.section === 'comments') {
-					module = 'm/user/comments';
-					Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.fullName()});
-				} else if (params.section === 'settings') {
-					module = 'm/user/settings';
-					Utils.title.setTitle({pre: 'Настройки - ', title: this.user.fullName()});
-				}
-			} else {
+			if (section === 'profile') {
 				module = 'm/user/profile';
 				Utils.title.setTitle({title: this.user.fullName()});
+			} else if (section === 'photos' || section === 'photo') {
+				module = 'm/user/gallery';
+				moduleOptions.options = {canAdd: true};
+				if (upload) {
+					if (this.contentVM && this.contentVM.module === module) {
+						this.contentVM.showUpload();
+					} else {
+						moduleOptions.options.goUpload = true;
+					}
+				}
+				Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
+			} else if (section === 'comments') {
+				module = 'm/user/comments';
+				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.fullName()});
+			} else if (section === 'settings') {
+				module = 'm/user/settings';
+				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.fullName()});
 			}
 
 			if (this.menuVM) {
-				this.menuVM.setSection(params.section);
+				this.menuVM.setSection(section);
 			}
 
 			if (!this.contentVM || this.contentVM.module !== module) {

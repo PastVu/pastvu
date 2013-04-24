@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, User, keyTarget, jade) {
+define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/storage', 'm/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -49,6 +49,8 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 				if (user) {
 					this.loggedIn(true);
 					this.iAm = User.vm(user, this.iAm);
+					storage.users[user.login] = {origin: user, vm: this.iAm};
+
 					console.log(this.iAm.fullName());
 
 					//При изменении данных профиля на сервере, обновляем его на клиенте

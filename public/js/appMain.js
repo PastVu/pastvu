@@ -143,11 +143,6 @@ require([
 					);
 				},
 				photoUpload: function () {
-					var auth = globalVM.repository['m/common/auth'];
-					if (!auth.loggedIn()) {
-						location.href = '/';
-						return;
-					}
 					this.params({section: 'photo', photoUpload: true, _handler: 'profile'});
 
 					renderer(
