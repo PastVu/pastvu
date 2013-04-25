@@ -75,7 +75,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 		},
 		subDispose: function () {
 			for (var s in this.subscriptions) {
-				if (this.subscriptions.hasOwnProperty(s)) {
+				if (this.subscriptions[s] !== undefined) {
 					if (Utils.isType('function', this.subscriptions[s].dispose)) {
 						this.subscriptions[s].dispose();
 					}

@@ -18,8 +18,11 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			if (this.options.userVM) {
 				this.user = this.options.userVM;
 				this.makeVM();
-			} else if (this.options.userLogin) {
-				this.updateUser(this.options.userLogin);
+			} else {
+				this.options.userLogin = this.options.userLogin || globalVM.router.params().user || (this.auth.loggedIn() && this.auth.iAm.login());
+				if (this.options.userLogin) {
+					this.updateUser(this.options.userLogin);
+				}
 			}
 			this.subscriptions.userChange = undefined;
 		},
@@ -40,7 +43,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 						delete this.subscriptions.userChange;
 					}
 					if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
-						this.subscriptions.userChange = data.vm._v_.subscribe(function () { this.updateUserVM(login); }, this);
+						this.subscriptions.userChange = data.vm._v_.subscribe(function () {
+							this.updateUserVM(login);
+						}, this);
 					}
 					this.updateUserVM(login);
 

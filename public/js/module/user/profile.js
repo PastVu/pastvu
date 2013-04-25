@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель профиля пользователя
  */
@@ -7,42 +7,37 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 	return Cliche.extend({
 		jade: jade,
+		options: {
+			userVM: null
+		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.u = null;
 
-			var user = globalVM.router.params().user || this.auth.iAm.login();
+			this.u = this.options.userVM;
+			this.originUser = storage.userImmediate(this.u.login()).origin;
 
-			storage.user(user, function (data) {
-				if (data) {
+			this.edit = ko.observable(false);
 
-					this.u = data.vm;
-					this.originUser = ko_mapping.toJS(this.u);
-
-					this.edit = ko.observable(false);
-
-					this.canBeEdit = ko.computed(function () {
-						return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
-					}, this);
-
-					this.edit_mode = ko.computed(function () {
-						return this.canBeEdit() && this.edit();
-					}, this);
-
-					ko.applyBindings(globalVM, this.$dom[0]);
-
-					window.setTimeout(function () {
-						this.$dom
-							.find('.birthPick')
-							.datepicker()
-							.on('changeDate', function (ev) {
-								this.u.birthdate(this.$dom.find('#inBirthdate').val());
-							}.bind(this));
-					}.bind(this), 1000);
-
-					this.show();
-				}
+			this.canBeEdit = ko.computed(function () {
+				return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
 			}, this);
+
+			this.edit_mode = ko.computed(function () {
+				return this.canBeEdit() && this.edit();
+			}, this);
+
+			ko.applyBindings(globalVM, this.$dom[0]);
+
+			window.setTimeout(function () {
+				this.$dom
+					.find('.birthPick')
+					.datepicker()
+					.on('changeDate', function (evt) {
+						this.u.birthdate(this.$dom.find('#inBirthdate').val());
+					}.bind(this));
+			}.bind(this), 1000);
+
+			this.show();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);

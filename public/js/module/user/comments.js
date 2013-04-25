@@ -8,10 +8,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		options: {
+			userVM: null
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.u = null;
+			this.u = this.options.userVM;
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};
 			this.paginationShow = ko.observable(false);
@@ -21,60 +22,52 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.pageSize = ko.observable(15);
 			this.pageSlide = ko.observable(2);
 
-
-			var user = globalVM.router.params().user || this.auth.iAm.login();
-			storage.user(user, function (data) {
-				if (data) {
-					this.u = data.vm;
-
-					this.pageLast = ko.computed(function () {
-						return ((this.u.ccount() - 1) / this.pageSize() >> 0) + 1;
-					}, this);
-					this.pageHasNext = ko.computed(function () {
-						return this.page() < this.pageLast();
-					}, this);
-					this.pageHasPrev = ko.computed(function () {
-						return this.page() > 1;
-					}, this);
-					this.pageFirstItem = ko.computed(function () {
-						return this.pageSize() * (this.page() - 1) + 1;
-					}, this);
-					this.pageLastItem = ko.computed(function () {
-						return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.u.ccount());
-					}, this);
-					this.pages = ko.computed(function () {
-						var pageCount = this.pageLast(),
-							pageFrom = Math.max(1, this.page() - this.pageSlide()),
-							pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
-							result = [],
-							i;
-
-						pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
-						pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
-
-						for (i = pageFrom; i <= pageTo; i++) {
-							result.push(i);
-						}
-						return result;
-					}, this);
-
-					this.briefText = ko.computed(function () {
-						return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
-					}, this);
-
-					ko.applyBindings(globalVM, this.$dom[0]);
-
-					// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
-					this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
-
-					// Subscriptions
-					this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
-
-					// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
-					this.routeHandler();
-					this.show();
-				}
+			this.pageLast = ko.computed(function () {
+				return ((this.u.ccount() - 1) / this.pageSize() >> 0) + 1;
 			}, this);
+			this.pageHasNext = ko.computed(function () {
+				return this.page() < this.pageLast();
+			}, this);
+			this.pageHasPrev = ko.computed(function () {
+				return this.page() > 1;
+			}, this);
+			this.pageFirstItem = ko.computed(function () {
+				return this.pageSize() * (this.page() - 1) + 1;
+			}, this);
+			this.pageLastItem = ko.computed(function () {
+				return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.u.ccount());
+			}, this);
+			this.pages = ko.computed(function () {
+				var pageCount = this.pageLast(),
+					pageFrom = Math.max(1, this.page() - this.pageSlide()),
+					pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
+					result = [],
+					i;
+
+				pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
+				pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
+
+				for (i = pageFrom; i <= pageTo; i++) {
+					result.push(i);
+				}
+				return result;
+			}, this);
+
+			this.briefText = ko.computed(function () {
+				return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
+			}, this);
+
+			ko.applyBindings(globalVM, this.$dom[0]);
+
+			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
+			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+
+			// Subscriptions
+			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
+
+			// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+			this.routeHandler();
+			this.show();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);

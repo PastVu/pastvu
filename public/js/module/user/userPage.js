@@ -111,14 +111,14 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		updateSectionDepends: function (section, upload) {
 			var module,
-				moduleOptions = {container: '#user_content'};
+				moduleOptions = {container: '#user_content', options: {userVM: this.user}};
 
 			if (section === 'profile') {
 				module = 'm/user/profile';
 				Utils.title.setTitle({title: this.user.fullName()});
 			} else if (section === 'photos' || section === 'photo') {
 				module = 'm/user/gallery';
-				moduleOptions.options = {canAdd: true};
+				moduleOptions.options.canAdd = true;
 				if (upload) {
 					if (this.contentVM && this.contentVM.module === module) {
 						this.contentVM.showUpload();
