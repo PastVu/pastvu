@@ -213,7 +213,9 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 				.removeAllListeners('youAre')
 				.on('youAre', function (user) {
 					if (this.iAm.login() === user.login) {
+						storage.users[user.login].origin = user;
 						this.iAm = User.vm(user, this.iAm);
+						this.iAm._v_(this.iAm._v_() + 1);
 						console.log(this.iAm.fullName());
 					}
 				}.bind(this));

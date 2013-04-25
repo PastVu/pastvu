@@ -8,16 +8,20 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			user: ''
+			userVM: null,
+			userLogin: ''
 		},
 		create: function () {
 			this.userInited = false;
 			this.auth = globalVM.repository['m/common/auth'];
 
-			this.user = null;
-			if (this.options.user) {
-				this.setUser(this.options.user);
+			if (this.options.userVM) {
+				this.user = this.options.userVM;
+				this.makeVM();
+			} else if (this.options.userLogin) {
+				this.updateUser(this.options.userLogin);
 			}
+			this.subscriptions.userChange = undefined;
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -28,16 +32,26 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			this.showing = false;
 		},
 
-		setUser: function (login) {
+		updateUser: function (login) {
 			storage.user(login, function (data) {
 				if (data) {
-					this.user = User.vm(data.origin, this.user);
+					if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
+						this.subscriptions.userChange.dispose();
+						delete this.subscriptions.userChange;
+					}
+					if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
+						this.subscriptions.userChange = data.vm._v_.subscribe(function () { this.updateUserVM(login); }, this);
+					}
+					this.updateUserVM(login);
 
 					if (!this.userInited) {
 						this.makeVM();
 					}
 				}
 			}, this);
+		},
+		updateUserVM: function (login) {
+			this.user = User.vm(storage.userImmediate(login).origin, this.user);
 		},
 		makeVM: function () {
 			this.can_pm = ko.computed({

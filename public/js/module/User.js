@@ -39,7 +39,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 			pcount: 0,
 			bcount: 0,
 			ccount: 0,
-			dateFormat: 'dd.mm.yyyy'
+			dateFormat: 'dd.mm.yyyy',
+
+			_v_: 0
 		}
 	};
 

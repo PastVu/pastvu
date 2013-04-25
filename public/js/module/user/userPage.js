@@ -17,6 +17,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			this.menuItems = null;
 
 			// Subscriptions
+			this.subscriptions.userChange = undefined;
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
 			this.routeHandler();
 		},
@@ -64,30 +65,37 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				}, this);
 				return;
 			}
-
+			//TODO: При логине пользовател storage должен замениться на iAm
 			if (this.user && this.user.login() === user) {
 				this.updateSectionDepends(params.section, params.photoUpload);
 			} else {
 				storage.user(user, function (data) {
 					if (data) {
-						this.user = User.vm(data.origin, this.user);
+						if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
+							this.subscriptions.userChange.dispose();
+							delete this.subscriptions.userChange;
+						}
+						if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
+							this.subscriptions.userChange = data.vm._v_.subscribe(function () { this.updateUserVM(user); }, this);
+						}
+						this.updateUserVM(user);
 						this.show();
 						this.updateUserDepends();
 						this.updateSectionDepends(params.section, params.photoUpload);
 					}
 				}, this);
 			}
-
 		},
 
+		updateUserVM: function (login) {
+			this.user = User.vm(storage.userImmediate(login).origin, this.user);
+		},
 		updateUserDepends: function () {
-			if (this.briefVM) {
-				this.briefVM.setUser(this.user.login());
-			} else {
+			if (!this.briefVM) {
 				renderer(
 					[
 						{
-							module: 'm/user/brief', container: '#user_brief', options: {affix: true, user: this.user.login()},
+							module: 'm/user/brief', container: '#user_brief', options: {affix: true, userVM: this.user},
 							callback: function (vm) {
 								this.briefVM = vm;
 								this.childModules[vm.id] = vm;

@@ -3,7 +3,7 @@
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
 			label.control-label(for="inName") Name
 			.controls
-				input(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !edit_mode()}, value: u.firstName, valueUpdate: 'afterkeydown'")
+				input.input-medium(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !edit_mode()}, value: u.firstName, valueUpdate: 'afterkeydown'")
 				input(type="text", id="inLastName", data-bind="attr: {disabled: !edit_mode()}, value: u.lastName, valueUpdate: 'afterkeydown'")
 		.control-group
 			label.control-label(for="inBirthdate") Birthday
@@ -62,7 +62,7 @@
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
 			label.control-label(for="inaboutme") About Me
 			.controls
-				textarea(rows="4", id='inaboutme', data-bind="attr: {disabled: !edit_mode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
+				textarea(rows="3", id='inaboutme', data-bind="attr: {disabled: !edit_mode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 			.controls
 				button.btn-strict(type="button", data-bind="css: {'btn-strict-success': edit_mode()}, event: {click: function(data, event) { if (!data.edit_mode()){data.edit(true)} else{data.saveUser()}}}")
