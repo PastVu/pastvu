@@ -9,12 +9,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		options: {
+			userVM: null,
 			canAdd: false,
 			goUpload: false
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.u = null;
+			this.u = this.options.userVM;
 			this.photos = ko.observableArray();
 			this.uploadVM = null;
 			this.limit = 42; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
@@ -28,29 +29,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.width = ko.observable('0px');
 			this.height = ko.observable('0px');
 
-			this.subscriptions.login = this.auth.loggedIn.subscribe(this.loginHandler, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+			this.subscriptions.login = this.u.login.subscribe(this.getForUser, this);
+			if (!this.auth.loggedIn()) {
+				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+			}
 
-			var user = globalVM.router.params().user || this.auth.iAm.login();
-			storage.user(user, function (data) {
-				if (data) {
-					this.u = data.vm;
-					this.canAdd = ko.computed(function () {
-						return this.options.canAdd && this.u.login() === this.auth.iAm.login();
-					}, this);
-					ko.applyBindings(globalVM, this.$dom[0]);
-					this.show();
-				}
+			this.canAdd = ko.computed(function () {
+				return this.options.canAdd && this.u.login() === this.auth.iAm.login();
 			}, this);
+
+			ko.applyBindings(globalVM, this.$dom[0]);
+			this.show();
+			this.getForUser();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
 			this.sizesCalc(P.window.square());
-			if (this.u.pcount() > 0) {
-				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
-				$window.on('scroll', this.scrollHandler);
-				this.scrollActive = true;
-			}
 			if (this.options.goUpload) {
 				window.setTimeout(this.showUpload.bind(this), 200);
 			}
@@ -65,7 +60,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.showing = false;
 		},
 
-		loginHandler: function (v) {
+		loggedInHandler: function () {
 			// После логина/логаута перезапрашиваем ленту фотографий пользователя
 			if (this.u.pcount() > 0) {
 				this.getPhotosPrivate(function (data) {
@@ -75,23 +70,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}, this);
 			}
 		},
-
-		getPhotos: function (start, limit, cb, ctx) {
-			socket.once('takeUserPhotos', function (data) {
-				if (!data || data.error) {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					data.forEach(function (item, index, array) {
-						Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
-					});
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-				this.loadingPhoto(false);
-			}.bind(this));
-			socket.emit('giveUserPhotos', {login: this.u.login(), start: start, limit: limit});
-			this.loadingPhoto(true);
+		getForUser: function () {
+			this.photos([]);
+			$window.off('scroll', this.scrollHandler);
+			this.scrollActive = false;
+			if (this.u.pcount() > 0) {
+				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
+				$window.on('scroll', this.scrollHandler);
+				this.scrollActive = true;
+			}
 		},
 		getPage: function (start, limit) {
 			this.getPhotos(start, limit, function (data) {
@@ -109,6 +96,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (!this.loadingPhoto()) {
 				this.getPage(this.photos().length, this.limit);
 			}
+		},
+		getPhotos: function (start, limit, cb, ctx) {
+			socket.once('takeUserPhotos', function (data) {
+				if (!data || data.error) {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					data.forEach(function (item, index, array) {
+						Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
+					});
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+				this.loadingPhoto(false);
+			}.bind(this));
+			socket.emit('giveUserPhotos', {login: this.u.login(), start: start, limit: limit});
+			this.loadingPhoto(true);
 		},
 		getPhotosPrivate: function (cb, ctx) {
 			if (this.photos().length === 0) {
