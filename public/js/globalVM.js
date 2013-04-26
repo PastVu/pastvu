@@ -1,9 +1,10 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * globalVM
  */
-define(['jquery', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Utils, _, P, i18n, ko, ps) {
+define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, i18n, ko, ps) {
 	"use strict";
+
 	var globalVM = {
 		P: P,
 		pb: ps,
@@ -20,47 +21,34 @@ define(['jquery', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubS
 					hidden = container.classList.contains('mHidden'),
 					fade = container.classList.contains('mFadeIn');
 
-				if (hidden) {
-					$container.css({visibility: 'visible'});
-				}
-				if (noDisplay) {
-					if (fade) {
-						$container.fadeIn(400, function () {
+				if (noDisplay || hidden) {
+					if (fade && Browser.support.cssAnimation) {
+						// Меняем по таймауту, чтобы класс успел удалится с этого контейнера, если для него меняется модуль
+						window.setTimeout(function () {
+							container.classList.add('mShow');
 							if (Utils.isType('function', cb)) {
-								cb.call(ctx || window);
+								window.setTimeout(cb.bind(ctx || window), 310);
 							}
-						});
+						}, 50);
 					} else {
-						$container.show();
+						container.classList.add ('mShow');
+						if (Utils.isType('function', cb)) {
+							cb.call(ctx || window);
+						}
 					}
-				}
-
-				if (!fade && Utils.isType('function', cb)) {
+				} else if (Utils.isType('function', cb)) {
 					cb.call(ctx || window);
 				}
 			},
 			hideContainer: function ($container, cb, ctx) {
 				var container = $container[0],
 					noDisplay = container.classList.contains('mNoDisplay'),
-					hidden = container.classList.contains('mHidden'),
-					fade = container.classList.contains('mFadeOut');
+					hidden = container.classList.contains('mHidden');
 
-				if (hidden) {
-					$container.css({visibility: 'hidden'});
+				if (noDisplay || hidden) {
+					container.classList.remove('mShow');
 				}
-				if (noDisplay) {
-					if (fade) {
-						$container.fadeOut(400, function () {
-							if (Utils.isType('function', cb)) {
-								cb.call(ctx || window);
-							}
-						});
-					} else {
-						$container.hide();
-					}
-				}
-
-				if (!fade && Utils.isType('function', cb)) {
+				if (Utils.isType('function', cb)) {
 					cb.call(ctx || window);
 				}
 			}

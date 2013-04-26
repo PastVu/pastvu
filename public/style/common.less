@@ -8,12 +8,52 @@
 	background: url(/img/misc/top_scroll.png) 50% 12px no-repeat, url(/img/misc/top.png) 0 0 repeat-x;
 }
 
+
+@-webkit-keyframes cssFadeIn {
+	0% { opacity: 0; }
+	100% { opacity: 1; }
+}
+@-moz-keyframes cssFadeIn {
+	0% { opacity: 0; }
+	100% { opacity: 1; }
+}
+@-o-keyframes cssFadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+@-ms-keyframes cssFadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+@keyframes cssFadeIn {
+	0% { opacity: 0; }
+	100% { opacity: 1; }
+}
 .mContainer {
+	&.mFadeIn {
+		opacity: 0;
+		&.mShow {
+			opacity: 1;
+			-webkit-animation: cssFadeIn .3s ease 1 alternate;
+			-moz-animation: cssFadeIn .3s ease 1 alternate;
+			-ms-animation: cssFadeIn .3s ease 1 alternate;
+			-o-animation: cssFadeIn .3s ease 1 alternate;
+			animation: cssFadeIn .3s ease 1 alternate;
+		}
+	}
 	&.mNoDisplay {
 		display: none;
+
+		&.mShow {
+			display: block;
+		}
 	}
 	&.mHidden {
 		visibility: hidden;
+
+		&.mShow {
+			visibility: visible;
+		}
 	}
 }
 
