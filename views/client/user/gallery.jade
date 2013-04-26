@@ -1,8 +1,9 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe2.addPhoto(data-bind="event: {click: showUpload}, style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
+		.photoThumb.fringe2.addPhoto(data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
 			.plusPhoto
 			.desc Add photos..
+			a.ahref(href='/photoUpload')
 		//ko foreach: photos
 		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !$data.fresh && $data.disabled, 'photoFresh': $data.fresh}")
 			.photoBox
@@ -33,10 +34,11 @@
 	.photoUploadCurtain
 		.photoUploadModal.fringe2(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
 			.modalTools.fringe2
-				span.modalCaption
-				i.icon-off.icon-white(data-bind="event: {click: closeUpload}")
+				span.modalCaption Upload photo
+				a.off(data-bind="attr: {href: '/u/' + u.login() + '/photo'}")
+					i.icon-off.icon-white
 			.modalContainer(data-bind="style: {maxHeight: $root.P.window.h() - 120 + 'px'}")
 			.modalFoot
-				button.btn-strict.btn-strict-small(type="button", data-bind="event: {click: closeUpload}")
+				a.btn-strict.btn-strict-small(data-bind="attr: {href: '/u/' + u.login() + '/photo'}")
 					i.icon-ok.icon-white
-					span(data-bind="text: 'Close'")
+					span(data-bind="text: 'Ok'")

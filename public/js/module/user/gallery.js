@@ -17,7 +17,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.photos = ko.observableArray();
-			this.uploadVM = null;
 			this.limit = 42; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
 			this.loadingPhoto = ko.observable(false);
 			this.scrollActive = false;
@@ -47,7 +46,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.func.showContainer(this.$container);
 			this.sizesCalc(P.window.square());
 			if (this.options.goUpload) {
-				window.setTimeout(this.showUpload.bind(this), 200);
+				window.setTimeout(this.showUpload.bind(this), 400);
 			}
 			this.showing = true;
 		},
@@ -205,29 +204,40 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			windowW = domW = thumbW = thumbH = null;
 		},
-		showUpload: function (data, event) {
-			this.$dom.find('span.modalCaption').text('Upload photo');
-			$('.photoUploadCurtain').fadeIn(400, function () {
-				renderer(
-					[
-						{module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
-							this.uploadVM = vm;
-						}.bind(this)}
-					],
-					{
-						parent: this,
-						level: this.level + 1
-					}
-				);
-			}.bind(this));
-			if (event && Utils.isType('function', event.stopPropagation)) {
-				event.stopPropagation();
+
+		showUpload: function () {
+			if (!this.uploadVM) {
+			this.$dom.find('.photoUploadCurtain')
+				.css({display: 'block'})
+				.delay(50)
+				.queue(function (next) {
+					this.classList.add('showUpload');
+					next();
+				})
+				.delay(400)
+				.queue(function (next) {
+					renderer(
+						[
+							{module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
+								this.uploadVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)}
+						],
+						{
+							parent: this,
+							level: this.level + 1
+						}
+					);
+					next();
+				}.bind(this));
 			}
-			return false;
 		},
-		closeUpload: function (data, event) {
-			$('.photoUploadCurtain').fadeOut(400, function () {
+		closeUpload: function () {
+			if (this.uploadVM) {
+				this.$dom.find('.photoUploadCurtain').css({display: ''}).removeClass('showUpload');
 				this.uploadVM.destroy();
+				delete this.uploadVM;
+
 				var oldFirst = this.photos()[0] ? this.photos()[0].file : 0;
 				this.getPhotos(0, 11, function (data) {
 					if (!data || data.error) {
@@ -249,7 +259,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 
 				}, this);
-			}.bind(this));
+			}
 		}
 	});
 });

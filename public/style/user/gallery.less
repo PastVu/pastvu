@@ -251,15 +251,22 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
+		text-align: center;
+		opacity: 0;
 		background-color: rgba(0, 0, 0, 0.3);
 		z-index: @zindexModal; // Ценрируем формы
-		text-align: center;
+
 		&::before {
 			content: '';
 			display: inline-block;
 			height: 100%;
 			vertical-align: middle;
 			margin-right: -0.25em; /* Adjusts for spacing */
+		}
+
+		&.showUpload {
+			opacity: 1;
+			.transition(opacity .4s linear);
 		}
 
 		.photoUploadModal {
@@ -303,7 +310,7 @@
 					right: 0px;
 				}
 
-				.icon-off {
+				.off {
 					position: absolute;
 					top: 5px;
 					right: 5px;
@@ -317,7 +324,6 @@
 				padding: 0 20px;
 				opacity: 0;
 				overflow: auto;
-				.transition(opacity .4s linear);
 
 				&::-webkit-scrollbar {
 					background-color: darken(@MainLigthColor, 5%);
@@ -332,6 +338,7 @@
 
 				&.show {
 					opacity: 1;
+					.transition(opacity .4s linear);
 				}
 			}
 

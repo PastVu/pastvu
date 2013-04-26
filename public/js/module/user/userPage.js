@@ -125,8 +125,13 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					} else {
 						moduleOptions.options.goUpload = true;
 					}
+					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.fullName()});
+				} else {
+					if (this.contentVM && this.contentVM.module === module) {
+						this.contentVM.closeUpload();
+					}
+					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
 				}
-				Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
 			} else if (section === 'comments') {
 				module = 'm/user/comments';
 				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.fullName()});
