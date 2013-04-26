@@ -59,13 +59,13 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			this.user = User.vm(storage.userImmediate(login).origin, this.user, true);
 		},
 		makeVM: function () {
-			this.can_pm = ko.computed({
+			this.can_pm = this.co.can_pm = ko.computed({
 				read: function () {
 					return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());
 				},
 				owner: this
 			});
-			this.can_avatar = ko.computed({
+			this.can_avatar = this.co.can_avatar = ko.computed({
 				read: function () {
 					return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login());
 				},

@@ -27,7 +27,7 @@ define([
 			this.numZooms = ko.observable(false);
 			this.sliderOnZoom = ko.observable(this.map.getZoom());
 			// Высота панели зумирования зависит от шага, количества зумов и состояния панели
-			this.panelH = ko.computed(function () {
+			this.panelH = this.co.panelH = ko.computed(function () {
 				var result = 136;
 				if (this.pinned() || this.hover()) {
 					result += (this.numZooms() * this.step()) + 3;

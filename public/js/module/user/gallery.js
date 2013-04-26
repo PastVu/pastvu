@@ -34,7 +34,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			this.canAdd = ko.computed(function () {
+			this.canAdd = this.co.canAdd = ko.computed(function () {
 				return this.options.canAdd && this.u.login() === this.auth.iAm.login();
 			}, this);
 

@@ -22,22 +22,22 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.pageSize = ko.observable(15);
 			this.pageSlide = ko.observable(2);
 
-			this.pageLast = ko.computed(function () {
+			this.pageLast = this.co.pageLast = ko.computed(function () {
 				return ((this.u.ccount() - 1) / this.pageSize() >> 0) + 1;
 			}, this);
-			this.pageHasNext = ko.computed(function () {
+			this.pageHasNext = this.co.pageHasNext = ko.computed(function () {
 				return this.page() < this.pageLast();
 			}, this);
-			this.pageHasPrev = ko.computed(function () {
+			this.pageHasPrev = this.co.pageHasPrev = ko.computed(function () {
 				return this.page() > 1;
 			}, this);
-			this.pageFirstItem = ko.computed(function () {
+			this.pageFirstItem = this.co.pageFirstItem = ko.computed(function () {
 				return this.pageSize() * (this.page() - 1) + 1;
 			}, this);
-			this.pageLastItem = ko.computed(function () {
+			this.pageLastItem = this.co.pageLastItem = ko.computed(function () {
 				return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.u.ccount());
 			}, this);
-			this.pages = ko.computed(function () {
+			this.pages = this.co.pages = ko.computed(function () {
 				var pageCount = this.pageLast(),
 					pageFrom = Math.max(1, this.page() - this.pageSlide()),
 					pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
@@ -53,7 +53,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				return result;
 			}, this);
 
-			this.briefText = ko.computed(function () {
+			this.briefText = this.co.briefText = ko.computed(function () {
 				return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
 			}, this);
 

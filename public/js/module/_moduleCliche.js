@@ -25,7 +25,8 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			this.childModules = {};
 			this.showing = false;
 
-			this.subscriptions = {}; //Подписки ko
+			this.subscriptions = {}; // Подписки ko
+			this.co = {}; // Сomputed модуля
 
 			repository[this.id] = this;
 
@@ -68,18 +69,30 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			ko.removeNode(this.$dom[0]);
 			this.$container.empty();
 
+			delete this.subscriptions;
+			delete this.co;
 			delete this.$container;
 			delete this.$dom;
 			delete this.parentModule.childModules[this.id];
+			delete this.parentModule;
 			delete globalVM.repository[this.id];
 		},
 		subDispose: function () {
-			for (var s in this.subscriptions) {
-				if (this.subscriptions[s] !== undefined) {
-					if (Utils.isType('function', this.subscriptions[s].dispose)) {
-						this.subscriptions[s].dispose();
+			var i;
+			for (i in this.subscriptions) {
+				if (this.subscriptions[i] !== undefined) {
+					if (Utils.isType('function', this.subscriptions[i].dispose)) {
+						this.subscriptions[i].dispose();
 					}
-					delete this.subscriptions[s];
+					delete this.subscriptions[i];
+				}
+			}
+			for (i in this.co) {
+				if (this.co[i] !== undefined) {
+					if (Utils.isType('function', this.co[i].dispose)) {
+						this.co[i].dispose();
+					}
+					delete this.co[i];
 				}
 			}
 		},

@@ -88,30 +88,30 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.userRibbonRight = [];
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-			this.IOwner = ko.computed(function () {
+			this.IOwner = this.co.IOwner = ko.computed(function () {
 				return this.auth.iAm.login() === this.p.user.login();
 			}, this);
-			this.IAdmin = ko.computed(function () {
+			this.IAdmin = this.co.IAdmin = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role_level() >= 0;
 			}, this);
 
-			this.canBeEdit = ko.computed(function () {
+			this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
 				return this.IOwner() || this.IAdmin();
 			}, this);
 
-			this.canBeApprove = ko.computed(function () {
+			this.canBeApprove = this.co.canBeApprove = ko.computed(function () {
 				return this.p.fresh() && this.IAdmin();
 			}, this);
 
-			this.canBeDisable = ko.computed(function () {
+			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
 				return !this.p.fresh() && this.IAdmin();
 			}, this);
 
-			this.canBeRemove = ko.computed(function () {
+			this.canBeRemove = this.co.canBeRemove = ko.computed(function () {
 				return this.IAdmin();
 			}, this);
 
-			this.canBeConvert = ko.computed(function () {
+			this.canBeConvert = this.co.canBeConvert = ko.computed(function () {
 				return this.IAdmin();
 			}, this);
 
@@ -120,7 +120,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.msg = ko.observable('');
 			this.msgCss = ko.observable('');
 
-			this.msgByStatus = ko.computed(function () {
+			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				if (this.edit()) {
 					this.setMessage('Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn');
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
@@ -135,7 +135,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				}
 			}, this);
 
-			this.userInfo = ko.computed(function () {
+			this.userInfo = this.co.userInfo = ko.computed(function () {
 				return _.template(
 					'Added by <a target="_self" href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times',
 					{ login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.loaded()).format('D MMMM YYYY'), sd: this.p.stats_day(), sw: this.p.stats_week(), sa: this.p.stats_all()}

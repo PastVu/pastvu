@@ -18,23 +18,25 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.edit = ko.observable(false);
 
-			this.canBeEdit = ko.computed(function () {
+			this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
 				return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role_level() >= 50;
 			}, this);
 
-			this.edit_mode = ko.computed(function () {
+			this.editMode = this.co.editMode = ko.computed(function () {
 				return this.canBeEdit() && this.edit();
 			}, this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			window.setTimeout(function () {
-				this.$dom
-					.find('.birthPick')
-					.datepicker()
-					.on('changeDate', function (evt) {
-						this.u.birthdate(this.$dom.find('#inBirthdate').val());
-					}.bind(this));
+				if (this.$dom instanceof jQuery) {
+					this.$dom
+						.find('.birthPick')
+						.datepicker()
+						.on('changeDate', function (evt) {
+							this.u.birthdate(this.$dom.find('#inBirthdate').val());
+						}.bind(this));
+				}
 			}.bind(this), 1000);
 
 			this.show();

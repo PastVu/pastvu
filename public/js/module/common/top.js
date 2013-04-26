@@ -10,13 +10,13 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 
-			this.registrationAllowed = ko.computed({
+			this.registrationAllowed = this.co.registrationAllowed = ko.computed({
 				read: function () {
 					return P.settings.REGISTRATION_ALLOWED();
 				},
 				owner: this
 			});
-			this.profile = ko.computed({
+			this.profile = this.co.profile = ko.computed({
 				read: function () {
 					if (this.auth.loggedIn()) {
 						return this.auth.iAm.fullName();
@@ -26,7 +26,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 				},
 				owner: this
 			}).extend({ throttle: 50 });
-			this.profileAvatar = ko.computed({
+			this.profileAvatar = this.co.profileAvatar = ko.computed({
 				read: function () {
 					if (this.auth.loggedIn()) {
 						return this.auth.iAm.avatar();

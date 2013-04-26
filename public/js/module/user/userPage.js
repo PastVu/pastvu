@@ -39,7 +39,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		makeBinding: function () {
 			if (!this.userInited) {
 				this.section = ko.observable('');
-				this.menuItems = ko.computed(function () {
+				this.menuItems = this.co.menuItems = ko.computed(function () {
 					var login = this.user.login(),
 						result = [
 							{name: 'Profile', href: "/u/" + login, section: 'profile'},

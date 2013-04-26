@@ -32,7 +32,7 @@ define([
 			this.wNew = ko.observable(40);
 			this.hCurr = ko.observable(40);
 			this.hNew = ko.observable(40);
-			this.changed = ko.computed(function () {
+			this.changed = this.co.changed = ko.computed(function () {
 				return this.wCurr() !== this.wNew() || this.hCurr() !== this.hNew();
 			}, this);
 
