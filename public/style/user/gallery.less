@@ -251,11 +251,11 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		text-align: center;
 		opacity: 0;
 		background-color: rgba(0, 0, 0, 0.3);
-		z-index: @zindexModal; // Ценрируем формы
+		z-index: @zindexModalBackdrop; // Ценрируем формы
 
+		text-align: center;
 		&::before {
 			content: '';
 			display: inline-block;
@@ -280,7 +280,7 @@
 			border-color: @MainBlueColor;
 			background-color: darken(@MainLigthColor, 5%);
 			.box-shadow(0 0 10px 1px #222);
-			z-index: @zindexPopover;
+			z-index: @zindexModal;
 
 			.modalTools {
 				position: relative;
@@ -365,23 +365,6 @@
 			font-size: 14px;
 
 			&.addPhoto {
-
-				.plusPhoto {
-					margin-top: -18px;
-					margin-left: -21px;
-					width: 41px;
-					height: 12px;
-
-					&::after {
-						content: '';
-						position: absolute;
-						top: -15px;
-						left: 15px;
-						width: 12px;
-						height: 41px;
-					}
-				}
-
 				.desc {
 					font-size: 16px;
 				}
@@ -402,6 +385,21 @@
 			font-size: 12px;
 
 			&.addPhoto {
+				.plusPhoto {
+					margin-top: -18px;
+					margin-left: -21px;
+					width: 41px;
+					height: 12px;
+
+					&::after {
+						content: '';
+						position: absolute;
+						top: -15px;
+						left: 15px;
+						width: 12px;
+						height: 41px;
+					}
+				}
 				.desc {
 					font-size: 16px;
 				}
