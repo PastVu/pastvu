@@ -56,7 +56,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 			}, this);
 		},
 		updateUserVM: function (login) {
-			this.user = User.vm(storage.userImmediate(login).origin, this.user);
+			this.user = User.vm(storage.userImmediate(login).origin, this.user, true);
 		},
 		makeVM: function () {
 			this.can_pm = ko.computed({
@@ -82,8 +82,8 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'm/st
 					addClasses: 'span2-3'
 				});
 			}
-			this.show();
 			this.userInited = true;
+			this.show();
 		},
 		onAvatarLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});

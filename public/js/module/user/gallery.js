@@ -60,7 +60,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		loggedInHandler: function () {
-			// После логина/логаута перезапрашиваем ленту фотографий пользователя
+			// После логина перезапрашиваем ленту фотографий пользователя
 			if (this.u.pcount() > 0) {
 				this.getPhotosPrivate(function (data) {
 					if (data && !data.error && data.length > 0 && this.photos().length < this.limit * 1.5) {
@@ -68,6 +68,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}, this);
 			}
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
 		},
 		getForUser: function () {
 			this.photos([]);

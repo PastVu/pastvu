@@ -202,9 +202,9 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		},
 
 		processMe: function (user) {
-			this.loggedIn(true);
 			this.iAm = User.vm(user, this.iAm);
 			storage.users[user.login] = {origin: user, vm: this.iAm};
+			this.loggedIn(true);
 
 			console.log(this.iAm.fullName());
 

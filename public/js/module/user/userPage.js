@@ -18,43 +18,52 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 
 			// Subscriptions
 			this.subscriptions.userChange = undefined;
+			if (!this.auth.loggedIn()) {
+				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+			}
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
 			this.routeHandler();
 		},
 		show: function () {
 			if (!this.showing) {
-				this.makeVM();
 				globalVM.func.showContainer(this.$container);
 				this.showing = true;
 			}
 		},
 		hide: function () {
-			globalVM.func.hideContainer(this.$container);
-			this.showing = false;
+			if (this.showing) {
+				globalVM.func.hideContainer(this.$container);
+				this.showing = false;
+			}
 		},
-		makeVM: function () {
-			this.section = ko.observable('');
-			this.menuItems = ko.computed(function () {
-				var login = this.user.login(),
-					result = [
-						{name: 'Profile', href: "/u/" + login, section: 'profile'},
-						{name: 'Photos', href: "/u/" + login + "/photo", section: 'photo'},
-						{name: 'Comments', href: "/u/" + login + "/comments", section: 'comments'}
-					];
+		makeBinding: function () {
+			if (!this.userInited) {
+				this.section = ko.observable('');
+				this.menuItems = ko.computed(function () {
+					var login = this.user.login(),
+						result = [
+							{name: 'Profile', href: "/u/" + login, section: 'profile'},
+							{name: 'Photos', href: "/u/" + login + "/photo", section: 'photo'},
+							{name: 'Comments', href: "/u/" + login + "/comments", section: 'comments'}
+						];
 
-				if (this.auth.loggedIn() && (this.auth.iAm.login() === login)) {
-					result.push({name: 'Settings', href: "/u/" + login + "/settings", section: 'settings'});
-					result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
-				}
-				return result;
-			}, this);
+					if (this.auth.loggedIn() && (this.auth.iAm.login() === login)) {
+						result.push({name: 'Settings', href: "/u/" + login + "/settings", section: 'settings'});
+						result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
+					}
+					return result;
+				}, this);
 
-			ko.applyBindings(globalVM, this.$dom[0]);
+				ko.applyBindings(globalVM, this.$dom[0]);
+				this.userInited = true;
+			}
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				user = params.user || this.auth.iAm.login();
+				login = params.user || this.auth.iAm.login();
 
+			// Если перешли на url загрузки, проверяем залогиненность.
+			// Если не залогинен выводим форму авторизации и по успешному коллбеку запускаем page заново
 			if (params.photoUpload && !this.auth.loggedIn()) {
 				this.auth.show('login', function (result) {
 					if (result.loggedIn) {
@@ -65,30 +74,55 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				}, this);
 				return;
 			}
-			//TODO: При логине пользовател storage должен замениться на iAm
-			if (this.user && this.user.login() === user) {
+
+			if (this.user && this.user.login() === login) {
+				// Если юзер уже есть и не поменялся, значит надо просто обновить секцию
 				this.updateSectionDepends(params.section, params.photoUpload);
 			} else {
-				storage.user(user, function (data) {
-					if (data) {
-						if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
-							this.subscriptions.userChange.dispose();
-							delete this.subscriptions.userChange;
-						}
-						if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
-							this.subscriptions.userChange = data.vm._v_.subscribe(function () { this.updateUserVM(user); }, this);
-						}
-						this.updateUserVM(user);
-						this.show();
-						this.updateUserDepends();
-						this.updateSectionDepends(params.section, params.photoUpload);
-					}
+				// Если пользователя нет или он сменлился, то обрабатываем его и по завершении обновляем секцию
+				this.processStorageUser(login, function () {
+					this.updateSectionDepends(params.section, params.photoUpload);
 				}, this);
 			}
 		},
+		processStorageUser: function (login, cb, ctx) {
+			storage.user(login, function (data) {
+				if (data) {
+					// Если от предыдущего осталась подписка на изменение - удаляем ее
+					if (this.subscriptions.userChange && this.subscriptions.userChange.dispose) {
+						this.subscriptions.userChange.dispose();
+						delete this.subscriptions.userChange;
+					}
+					// Если пользователь равен залогиненому, то подписываемся на изменение его оригинальной модели
+					if (this.auth.loggedIn() && data.vm.login() === this.auth.iAm.login()) {
+						this.subscriptions.userChange = data.vm._v_.subscribe(function () {
+							this.updateUserVM(login);
+						}, this);
+					}
+					this.updateUserVM(login);
 
+					// При первой инициализации юзера мы должны забайндить модель до запроса зависимых модулей
+					this.makeBinding();
+					this.show();
+
+					this.updateUserDepends();
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx || window);
+					}
+				}
+			}, this);
+		},
+		loggedInHandler: function () {
+			// После логина приверяем если мы находимся на своем юзере, тогда апдейтим и подписываемся
+			if (this.auth.iAm.login() === this.user.login()) {
+				this.processStorageUser(this.user.login());
+			}
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
+		},
 		updateUserVM: function (login) {
-			this.user = User.vm(storage.userImmediate(login).origin, this.user);
+			this.user = User.vm(storage.userImmediate(login).origin, this.user, true);
 		},
 		updateUserDepends: function () {
 			if (!this.briefVM) {

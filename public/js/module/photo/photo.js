@@ -238,7 +238,9 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 			this.subscriptions.edit = this.edit.subscribe(this.editHandler, this);
-			this.subscriptions.login = this.auth.loggedIn.subscribe(this.loginHandler, this);
+			if (!this.auth.loggedIn()) {
+				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+			}
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.hscale = this.hscale.subscribe(this.sizesCalcPhoto, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
@@ -471,10 +473,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 		},
-		loginHandler: function () {
-			this.addMeToCommentsUsers();
-			// После логина/логаута перезапрашиваем ленту фотографий пользователя
+		loggedInHandler: function () {
+			// После логина перезапрашиваем ленту фотографий пользователя и добавляем себя в комментаторы
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+			this.addMeToCommentsUsers();
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
 		},
 		editHandler: function (v) {
 			if (v) {
