@@ -5,52 +5,39 @@
 .bottomPanel {
 	position: relative;
 
-	.ribbonHead {
-		margin: 8px 0 8px 0;
-		text-align: center;
+	.catMenu {
+		margin: -1px 1px 10px 1px;
 	}
 
-	.comment {
-		position: relative;
-		display: block;
-		margin: 0 0 7px 0;
-		max-height: 105px;
-		overflow: hidden;
-		line-height: 15px;
-		font-size: 14px;
-		text-decoration: none;
+	.catContent {
 
-		&:hover {
-			background-color: fade(@MainBlueColor, 10%);
-		}
+		.photosNew {
+			.photoThumb {
+				display: inline-block;
+				margin: 0 7px 17px 7px;
+				font-size: 16px;
+				opacity: 1;
 
-		.photoPreviewA {
-			display: block;
-			float: left;
-			padding: 2px 8px 2px 2px;
-		}
-		.photoPreview {
-			display: block;
-			width: 55px;
-			height: 55px;
-		}
+				.photoBox {
+					position: relative;
+				}
 
-		.commentHead {
-			display: inline;
-			margin-bottom: 2px;
-		}
-		.photoName {
-			cursor: pointer;
-		}
-		.commentText {
-			display: block;
-			min-height: 44px;
-			color: @textColor;
-			text-decoration: none;
+				img {
+					position: relative;
+					display: block;
+				}
+
+				.ahref {
+					position: absolute;
+					display: block;
+					top: 0;
+					height: 100%;
+					width: 100%;
+					cursor: pointer;
+					background-color: rgba(0, 0, 0, 0.1);
+					.transition(all .1s linear);
+				}
+			}
 		}
 	}
-}
-
-@media (max-width: 767px) {
-
 }

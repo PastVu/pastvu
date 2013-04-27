@@ -325,36 +325,13 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						Photo.getPhotosCompact(filters, {skip: data.start, limit: data.limit}, function (err, photo) {
+						Photo.getPhotosCompact({fresh: {$exists: false}, del: {$exists: false}}, {skip: 0, limit: data.limit || 20}, function (err, photos) {
 							if (err) {
-								takeUserPhotos({message: err && err.message, error: true});
+								result({message: err && err.message, error: true});
 								return;
 							}
-							takeUserPhotos(photo);
+							result({photos: photos});
 						});
-					},
-					function cursors(err) {
-						if (err) {
-							result({message: err && err.message, error: true});
-							return;
-						}
-						var i = arguments.length;
-						while (i > 1) {
-							arguments[--i].toArray(this.parallel());
-						}
-					},
-					function (err, photos) {
-						if (err) {
-							res(err);
-							return;
-						}
-						var result = photos,
-							i = arguments.length;
-
-						while (i > 2) {
-							result.push.apply(result, arguments[--i]);
-						}
-						res(err, result);
 					}
 				);
 

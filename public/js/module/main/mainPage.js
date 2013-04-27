@@ -27,6 +27,15 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 					callback: function (vm) {
 						this.childModules[vm.id] = vm;
 					}
+				},
+				{
+					module: 'm/main/bottomPanel',
+					container: '#bottomPanel',
+					options: {},
+					ctx: this,
+					callback: function (vm) {
+						this.childModules[vm.id] = vm;
+					}
 				}
 			];
 

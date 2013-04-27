@@ -1,35 +1,34 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Модель статистики пользователя
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'm/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
 	'use strict';
+	var cats = [
+			{id: 'photos', name: 'Новые фото'},
+			{id: 'raits', name: 'Рейтинги'},
+			{id: 'stats', name: 'Статистика'}
+		];
 
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.loadingCat = ko.observable('true');
-			this.cats = ko.observableArray();
-			this.catActive = ko.observable('photos');
+			this.loadingCat = ko.observable(true);
+			this.cats = ko.observableArray(cats);
+			this.catActive = ko.observable('');
+
+			this.photos = ko.observableArray();
 
 			this.catClickBind = this.catClick.bind(this);
 
-			var user = globalVM.router.params().user || this.auth.iAm.login();
-			storage.user(user, function (data) {
-				if (data) {
-					this.user = data.vm;
+			if (!this.auth.loggedIn()) {
+				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+			}
 
-					this.cats.push({id: 'photos', name: 'Новые фото'});
-					this.cats.push({id: 'raits', name: 'Рейтинги'});
-					this.cats.push({id: 'stats', name: 'Статистика'});
-
-					ko.applyBindings(globalVM, this.$dom[0]);
-
-					this.show();
-				}
-			}, this);
-
+			this.catActivate('photos');
+			ko.applyBindings(globalVM, this.$dom[0]);
+			this.show();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -39,8 +38,21 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
-		catClick: function (data, event) {
-			this.catActive(data.id);
+
+		loggedInHandler: function () {
+			// После логина приверяем если мы можем добавить категории
+			this.cats.unshift({id: 'photosToApprove', name: 'Ожидают подтверждения'});
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
+		},
+		catClick: function (data) {
+			this.catActivate(data.id);
+		},
+		catActivate: function (id) {
+			this.catActive(id);
+			if (id === 'photos') {
+				this.getPhotos();
+			}
 		},
 		getPhotos: function (cb, ctx) {
 			this.loadingCat(true);
@@ -51,7 +63,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-
 						i = data.photos.length;
 						while (i) {
 							photo = data.photos[--i];
@@ -68,7 +79,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('givePhotosNew', {});
+			socket.emit('givePhotosNew', {limit: 20});
 		}
 	});
 });

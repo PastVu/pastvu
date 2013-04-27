@@ -2,7 +2,21 @@
 	.row-fluid
 		span Новости:
 	.row-fluid
-		ul.nav(data-bind="foreach: cats")
-			li(data-bind="css: {active: $data.id === $parent.catActive()}, click: $parent.catClickBind")
-				span(data-bind="text: $data.name")
-		.catContent
+		.navbar.catMenu
+			.navbar-inner
+				ul.nav(data-bind="foreach: cats")
+					li(data-bind="css: {active: $data.id === $parent.catActive()}, click: $parent.catClickBind")
+						a(data-bind="text: $data.name")
+		.catContent(data-bind="template: {name: catActive() + 'Tpl'}")
+
+	script(id="photosTpl", type="text/html")
+		.row-fluid.photosNew(data-bind="foreach: photos")
+			.photoThumb
+				.photoBox
+					img(data-bind="attr: {src: $data.sfile}")
+					.info.error
+						i.icon-ban-circle.icon-white
+						br
+						| preview loading error
+					a.ahref(data-bind="attr: {href: $data.link}")
+				.photoTool(data-bind="text: $data.title")
