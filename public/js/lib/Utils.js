@@ -250,22 +250,24 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 			return !!document.createElement('div').dataset ? html5data : attrData;
 		}()),
 
-		randomString: function (length) {
+		randomString: (function () {
 			'use strict';
-			var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz').split(''),
-				str = '',
-				i;
+			var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
 
-			if (!length) {
-				length = Math.random() * chars.length >> 0;
-			}
+			return function (len) {
+				var str = '';
 
-			for (i = 0; i < length; i += 1) {
-				str += chars[Math.random() * chars.length >> 0];
-			}
-			chars = i = null;
-			return str;
-		},
+				if (!len) {
+					len = Math.random() * 62 + 1 >> 0;
+				}
+
+				while (len--) {
+					str += chars[Math.random() * 62 >> 0];
+				}
+
+				return str;
+			};
+		}()),
 
 		cutStringByWord: function (text, n) {
 			"use strict";
