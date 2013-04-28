@@ -99,7 +99,7 @@ require([
 						{
 							parent: globalVM,
 							level: 0,
-							callback: function (top, bodyPage, foot) {
+							callback: function (bodyPage, foot) {
 							}
 						}
 					);
@@ -114,7 +114,7 @@ require([
 						{
 							parent: globalVM,
 							level: 0,
-							callback: function (top, photo) {
+							callback: function (bodyPage) {
 							}
 						}
 					);
@@ -137,7 +137,7 @@ require([
 						{
 							parent: globalVM,
 							level: 0,
-							callback: function (top, bodyPage, foot) {
+							callback: function (bodyPage, foot) {
 							}
 						}
 					);
@@ -147,7 +147,6 @@ require([
 
 					renderer(
 						[
-							{module: 'm/top', container: '#topContainer'},
 							{module: 'm/user/userPage', container: '#bodyContainer'}
 						],
 						{

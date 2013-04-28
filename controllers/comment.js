@@ -197,7 +197,6 @@ function getCommentsUser(data, cb) {
 
 /**
  * Выбирает комментарии для фотографии
- * @param session Сессия польщователя
  * @param data Объект
  * @param cb Коллбэк
  */

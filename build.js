@@ -78,10 +78,10 @@ var start = Date.now(),
 				name: "appMain",
 				include: [
 					'm/common/auth', 'm/common/top',
-					'm/main/commentsRibbon', 'm/main/mainPage',
+					'm/main/commentsRibbon', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
 					'm/photo/photo',
-					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/menu', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
+					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
 				]
 			}/*,
 			{
@@ -90,7 +90,7 @@ var start = Date.now(),
 			},
 			{
 				name: "appUser",
-				include: ['m/auth', 'm/top', 'm/user/brief', 'm/user/menu']
+				include: ['m/auth', 'm/top', 'm/user/brief']
 			},
 			{
 				name: "m/user/gallery",
