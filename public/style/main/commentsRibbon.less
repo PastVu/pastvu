@@ -14,7 +14,6 @@
 		position: relative;
 		display: block;
 		margin: 0 0 7px 0;
-		max-height: 105px;
 		overflow: hidden;
 		line-height: 15px;
 		font-size: 14px;
@@ -27,24 +26,23 @@
 		.photoPreviewA {
 			display: block;
 			float: left;
-			padding: 2px 8px 2px 2px;
+			padding: 2px 5px 2px 2px;
 		}
 		.photoPreview {
 			display: block;
-			width: 55px;
-			height: 55px;
+			width: 60px;
+			height: 60px;
 		}
 
-		.commentHead {
-			display: inline;
-			margin-bottom: 2px;
-		}
 		.photoName {
+			display: block;
+			padding-bottom: 2px;
 			cursor: pointer;
+			.text-overflow();
 		}
 		.commentText {
 			display: block;
-			min-height: 44px;
+			height: 47px;
 			color: @textColor;
 			text-decoration: none;
 		}
