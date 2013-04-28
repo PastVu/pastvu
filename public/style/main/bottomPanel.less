@@ -8,22 +8,32 @@
 	position: relative;
 
 	.catMenu {
-		margin: 0 0 10px 0;
+		margin: 0 0 12px 0;
 
 		.navbar-inner {
+			height: 28px;
 			padding: 0;
+			text-align: center;
 			border-width: 0 0 1px 0;
+			background: darken(@navbarBackground, 1%);
 			.box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
+
+			.nav {
+				display: inline-block;
+				float: none;
+			}
 		}
 	}
 
 	.catContent {
 
 		.photosNew {
+			text-align: center;
+
 			.photoThumb {
 				position: relative;
 				display: inline-block;
-				margin: 0 7px 12px 7px;
+				margin: 0 7px 10px 7px;
 				padding-bottom: @PhotoToolHeight;
 				font-size: 14px;
 				opacity: 0;
@@ -64,6 +74,7 @@
 					bottom: 0;
 					height: @PhotoToolHeight;
 					line-height: @PhotoToolHeight;
+					text-align: left;
 					padding: 0 0 0 5px;
 					.text-overflow();
 

@@ -79,7 +79,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('givePhotosNew', {limit: 20});
+			socket.emit('givePhotosNew', {limit: 24});
 		},
 		onThumbLoad: function (data, event) {
 			var photoThumb = event.target.parentNode.parentNode;
