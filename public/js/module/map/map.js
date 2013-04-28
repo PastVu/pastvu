@@ -256,7 +256,7 @@ define([
 			this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
 		},
 		containerSize: function () {
-			this.$container.css({height: P.window.h() - (this.$container.offset().top || 33) - 30 >> 0});
+			this.$container.css({height: P.window.h() - (this.$container.offset().top || 33) - 29 >> 0});
 		},
 
 		// Обработчик переключения режима редактирования
