@@ -10,7 +10,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 		create: function () {
 
 			this.childs = [
-				{
+				/*{
 					module: 'm/map/map',
 					container: '#mapContainer',
 					options: {},
@@ -18,7 +18,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 					callback: function (vm) {
 						this.childModules[vm.id] = vm;
 					}
-				},
+				},*/
 				{
 					module: 'm/main/commentsRibbon',
 					container: '#commentsRibbon',

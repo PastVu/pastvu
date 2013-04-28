@@ -1,5 +1,5 @@
 #auth_curtain(data-bind="with: repository[M!M]")
-	form.fringe2(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
+	form.fringe(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
 		.head Authorization
 		dl.dl-horizontal
 			dt User name:
@@ -23,7 +23,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
+	form.fringe(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
 		.head Registration
 		dl.dl-horizontal
 			dt User name:
@@ -52,7 +52,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(name='recallForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -66,7 +66,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallPassChange', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallPassChange', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt User name:
@@ -88,7 +88,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe2(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working()}, event: {submit: submit}")
+	form.fringe(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt Current password:

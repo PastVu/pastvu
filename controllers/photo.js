@@ -325,7 +325,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						Photo.getPhotosCompact({fresh: {$exists: false}, del: {$exists: false}}, {skip: 0, limit: data.limit || 20}, function (err, photos) {
+						Photo.getPhotosCompact({convqueue: {$exists: false}, fresh: {$exists: false}, del: {$exists: false}}, {skip: 0, limit: data.limit || 20}, function (err, photos) {
 							if (err) {
 								result({message: err && err.message, error: true});
 								return;

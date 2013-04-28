@@ -58,7 +58,7 @@ define([
 		this.popupClusterFiveScroll = new L.Popup({className: 'popupCluster five scroll', minWidth: 249, maxWidth: 249, /* maxHeight: 277,*/ offset: new L.Point(0, -8), autoPan: true, autoPanPadding: new L.Point(10, 10), zoomAnimation: false, closeButton: false});
 		this.popupClusterClickFN = '_' + Utils.randomString(10);
 		this.popupClusterOverFN = '_' + Utils.randomString(10);
-		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe2" ' +
+		this.popupClusterTpl = _.template('<img alt="" class="popupImgPreview fringe" ' +
 			'onclick="' + this.popupClusterClickFN + '(this)" ' +
 			'onmouseover="' + this.popupClusterOverFN + '(this)" ' +
 			'src="${ img }" data-cid="${ cid }" data-sfile="${ sfile }" data-title="${ title }" data-href="${ href }" data-year="${ year }"/>'
@@ -599,7 +599,7 @@ define([
 					}
 					cluster.p.sfile = picFormat + cluster.p.file;
 					divIcon = L.divIcon({
-						className: 'clusterIcon fringe2 ' + measure,
+						className: 'clusterIcon fringe ' + measure,
 						iconSize: size,
 						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
 					});

@@ -5,7 +5,7 @@
 		.map
 		.clusterContainer
 			.clusterRect(data-bind="style: {borderColor: changed() ? '#FF0808' : '#2daf2e', borderStyle: changed() ? 'dashed' : 'solid'}")
-		.layersPanel.fringe2(data-bind="css: {open: layersOpen()}")
+		.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
 			.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
 			.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
 				.h_separator

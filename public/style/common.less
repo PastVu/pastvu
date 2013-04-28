@@ -154,17 +154,18 @@ a.disabled:hover {
 	cursor: default !important;
 }
 
-.fringe2 {
+.fringe {
 	position: relative;
 	width: auto;
 	margin: 1px;
 	color: @MainLigthColor;
+	text-decoration: none;
 	border: 1px solid #C3C7DD;
 	background-color: @MainBlueColor;
 	.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
 
-	&:hover {
-		text-decoration: none;
+	&.plain {
+		.box-shadow(~'0 0 0 1px #000');
 	}
 }
 

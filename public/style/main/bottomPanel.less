@@ -2,6 +2,8 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
+@PhotoToolHeight: 21px;
+
 .bottomPanel {
 	position: relative;
 
@@ -13,10 +15,13 @@
 
 		.photosNew {
 			.photoThumb {
+				position: relative;
 				display: inline-block;
-				margin: 0 7px 17px 7px;
-				font-size: 16px;
-				opacity: 1;
+				margin: 0 7px 12px 7px;
+				padding-bottom: @PhotoToolHeight;
+				font-size: 14px;
+				opacity: 0;
+				.transition(opacity .4s ease);
 
 				.photoBox {
 					position: relative;
@@ -25,6 +30,8 @@
 				img {
 					position: relative;
 					display: block;
+					width: 150px;
+					height: 100px;
 				}
 
 				.ahref {
@@ -36,6 +43,50 @@
 					cursor: pointer;
 					background-color: rgba(0, 0, 0, 0.1);
 					.transition(all .1s linear);
+				}
+
+				.info {
+					display: none;
+					position: absolute;
+					line-height: 14px;
+				}
+
+				.photoTool {
+					position: absolute;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					height: @PhotoToolHeight;
+					line-height: @PhotoToolHeight;
+					padding: 0 0 0 5px;
+					.text-overflow();
+
+					&::after {
+						position: absolute;
+						content: "";
+						left: 0;
+						right: 0;
+						top: 0;
+						height: 1px;
+						filter: none;
+						background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzI4NTk5MSIgc3RvcC1vcGFjaXR5PSIwLjMiLz4KICAgIDxzdG9wIG9mZnNldD0iMTIlIiBzdG9wLWNvbG9yPSIjNzhhMmNjIiBzdG9wLW9wYWNpdHk9IjAuOCIvPgogICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNmZmZmZmYiIHN0b3Atb3BhY2l0eT0iMSIvPgogICAgPHN0b3Agb2Zmc2V0PSI4OCUiIHN0b3AtY29sb3I9IiM3OGEyY2MiIHN0b3Atb3BhY2l0eT0iMC44Ii8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMyODU5OTEiIHN0b3Atb3BhY2l0eT0iMC4zIi8+CiAgPC9saW5lYXJHcmFkaWVudD4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSJ1cmwoI2dyYWQtdWNnZy1nZW5lcmF0ZWQpIiAvPgo8L3N2Zz4=);
+						background: -moz-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* FF3.6+ */
+						background: -webkit-gradient(linear, left top, right top, color-stop(0%, rgba(40, 89, 145, 0.3)), color-stop(12%, rgba(120, 162, 204, 0.8)), color-stop(50%, rgb(255, 255, 255)), color-stop(88%, rgba(120, 162, 204, 0.8)), color-stop(100%, rgba(40, 89, 145, 0.3))); /* Chrome,Safari4+ */
+						background: -webkit-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* Chrome10+,Safari5.1+ */
+						background: -o-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* Opera 11.10+ */
+						background: -ms-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* IE10+ */
+						background: linear-gradient(to right, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* W3C */
+					}
+				}
+
+				&.photoError {
+					.info.error {
+						display: block;
+						top: 40%;
+						width: 100%;
+						text-align: center;
+						line-height: 16px;
+					}
 				}
 			}
 		}

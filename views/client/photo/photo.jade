@@ -12,7 +12,7 @@
 		// /ko
 		.span3-4.rightPanel
 			.row-fluid.photoUser
-				a.avatar.fringe2(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
+				a.avatar.fringe(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
 			.row-fluid.photoMap.mContainer.mHidden

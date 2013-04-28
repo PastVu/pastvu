@@ -11,7 +11,7 @@
 		label.checkbox.linkOpenMode
 			input(type="checkbox", data-bind="checked: openNewTab")
 			| Open links in new tab
-		.layersPanel.fringe2(data-bind="css: {open: layersOpen()}")
+		.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
 			.currentLayer(data-bind="text: layerActiveDesc(), click: toggleLayers")
 			.layerSystems(data-bind="style: {width: (104 * (layersOpen() ? layers().length : 1)) + 'px'}")
 				.h_separator

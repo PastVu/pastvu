@@ -1,11 +1,11 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe2.addPhoto(data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
+		.photoThumb.fringe.addPhoto(data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
 			.plusPhoto
 			.desc Add photos..
 			a.ahref(href='/photoUpload')
 		//ko foreach: photos
-		.photoThumb.fringe2(data-bind="css: {'photoNoActive': !$data.fresh && $data.disabled, 'photoFresh': $data.fresh}")
+		.photoThumb.fringe(data-bind="css: {'photoNoActive': !$data.fresh && $data.disabled, 'photoFresh': $data.fresh}")
 			.photoBox
 				img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
 				.info.error
@@ -22,9 +22,9 @@
 					| preview is creating now
 					br
 					| please, refresh later
-				.info.fringe2.fresh
+				.info.fringe.fresh
 					i.icon-asterisk.icon-white
-				.info.fringe2.noActive
+				.info.fringe.noActive
 					i.icon-exclamation-sign.icon-white
 				a.ahref(target='_blank', data-bind="attr: {href: '/p/' + cid}")
 			.photoTool(data-bind="text: title")
@@ -32,8 +32,8 @@
 		.photoThumb.loadingPhoto.centering_content(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}") Loading next
 
 	.photoUploadCurtain
-		.photoUploadModal.fringe2(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
-			.modalTools.fringe2
+		.photoUploadModal.fringe(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
+			.modalTools.fringe
 				span.modalCaption Upload photo
 				a.off(data-bind="attr: {href: '/u/' + u.login() + '/photo'}")
 					i.icon-off.icon-white

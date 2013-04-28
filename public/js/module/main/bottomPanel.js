@@ -80,6 +80,18 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}.bind(this));
 			socket.emit('givePhotosNew', {limit: 20});
+		},
+		onThumbLoad: function (data, event) {
+			var photoThumb = event.target.parentNode.parentNode;
+			photoThumb.style.opacity = 1;
+			data = event = photoThumb = null;
+		},
+		onThumbError: function (data, event) {
+			var photoThumb = event.target.parentNode.parentNode;
+			event.target.style.visibility = 'hidden';
+			photoThumb.classList.add('photoError');
+			photoThumb.style.opacity = 1;
+			data = event = photoThumb = null;
 		}
 	});
 });

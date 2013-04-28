@@ -11,9 +11,9 @@
 
 	script(id="photosTpl", type="text/html")
 		.row-fluid.photosNew(data-bind="foreach: photos")
-			.photoThumb
+			.photoThumb.fringe.plain
 				.photoBox
-					img(data-bind="attr: {src: $data.sfile}")
+					img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}")
 					.info.error
 						i.icon-ban-circle.icon-white
 						br
