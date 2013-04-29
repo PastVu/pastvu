@@ -11,6 +11,9 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.mode = ko.observable('login');
 			this.working = ko.observable(false);
 
+			this.login = ko.observable('');
+			this.key = ko.observable('');
+
 			this.msg = ko.observable('');
 			this.caps = ko.observable(false);
 
@@ -47,6 +50,11 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+		showRecallPassChange: function (login, key, callback, ctx) {
+			this.login(login);
+			this.key(key);
+			this.show('recallPassChange', callback, ctx);
+		},
 
 		pressHandler: function (vm, event) {
 			this.caps(Utils.capsLockDetect(event));
@@ -65,6 +73,8 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.$dom.find(':focus').blur();
 			this.$dom.find("input").val(null);
 			this.$dom.find(".mess").height(0).removeClass('text-error text-warning text-info text-success muted');
+			this.login('');
+			this.key('');
 			this.msg('');
 			this.formWorking(false);
 			this.caps(false);
@@ -106,6 +116,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 
 			text = type = css = null;
 		},
+
 		submit: function () {
 			var form = this.$dom.find('form:visible');
 			form.find(':focus').blur();
@@ -150,9 +161,29 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 							}
 						}.bind(this)
 					);
-				} else if (this.mode() === 'recall') {
+				} else if (this.mode() === 'recallRequest') {
 					this.doPassRecall(
 						$.extend(form.serializeObject(), {}),
+						function (data) {
+							if (data.error) {
+								this.setMessage(data.message, 'error');
+								window.setTimeout(function () {
+									this.formFocus();
+									this.formWorking(false);
+								}.bind(this), 420);
+							} else {
+								form.find('button').css('display', 'none');
+								form.find('.formfinish').css('display', '');
+								this.setMessage(data.message, 'success');
+								window.setTimeout(function () {
+									this.formWorking(false);
+								}.bind(this), 420);
+							}
+						}.bind(this)
+					);
+				} else if (this.mode() === 'recallPassChange') {
+					this.doPassRecallChange(
+						$.extend(form.serializeObject(), {key: this.key()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -288,6 +319,20 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					}
 				});
 				socket.emit('recallRequest', data);
+			} catch (e) {
+				if (Utils.isType('function', callback)) {
+					callback(e.message);
+				}
+			}
+		},
+		doPassRecallChange: function (data, callback) {
+			try {
+				socket.once('recallPassChangeResult', function (json) {
+					if (Utils.isType('function', callback)) {
+						callback(json);
+					}
+				});
+				socket.emit('recallPassChange', data);
 			} catch (e) {
 				if (Utils.isType('function', callback)) {
 					callback(e.message);

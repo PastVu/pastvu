@@ -108,7 +108,7 @@ function register(session, data, cb) {
 	'use strict';
 	var error = '',
 		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail',
-		//success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
+	//success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	data.email = data.email.toLowerCase();
 
@@ -183,7 +183,7 @@ function register(session, data, cb) {
 					'X-Laziness-level': 1000
 				},
 				generateTextFromHTML: true,
-				html: 'Привет, ' + data.login + '!<br/><br/>' +
+				html: 'Здравствуйте, ' + data.login + '!<br/><br/>' +
 					'Спасибо за регистрацию на проекте OldMos51! ' +
 					'Вы указали следующие реквизиты:<br/>' +
 					'Логин: <b>' + data.login + '</b><br/>' +
@@ -191,7 +191,7 @@ function register(session, data, cb) {
 					'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>' +
 					'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>' +
 					'<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
-					'<small>(Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо зарегистрироваться повторно)</small><br/>' +
+					'<small>Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо зарегистрироваться повторно</small><br/>' +
 					'<br/><small>Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.</small>'
 			}, this.parallel());
 		},
@@ -207,13 +207,13 @@ function register(session, data, cb) {
 }
 
 function recall(session, data, cb) {
-	var error = '',
-		success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
+	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
+	//success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 
-	if (!data.login) error += 'Fill in login or e-mail.';
-	if (error) {
-		cb({message: error, error: true});
+	if (!data.login) {
+		cb({message: 'Введите логин или e-mail', error: true});
+		//cb({message: 'Fill in login or e-mail', error: true});
 		return;
 	}
 
@@ -226,16 +226,16 @@ function recall(session, data, cb) {
 		},
 		function (err, user) {
 			if (err || !user) {
-				error += 'User with such login or e-mail does not exist';
-				cb({message: error, error: true});
+				cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true});
+				//cb({message: err && err.message || 'User with such login or e-mail does not exist', error: true});
 				return;
-			} else {
-				data._id = user._id;
-				data.login = user.login;
-				data.email = user.email;
-				confirmKey = Utils.randomString(8);
-				UserConfirm.remove({user: user._id}, this);
 			}
+
+			data._id = user._id;
+			data.login = user.login;
+			data.email = user.email;
+			confirmKey = Utils.randomString(8);
+			UserConfirm.remove({user: user._id}, this);
 		},
 		function (err) {
 			if (err) {
@@ -252,23 +252,19 @@ function recall(session, data, cb) {
 			var expireOn = moment().lang('ru');
 			expireOn.add(ms('2d'));
 			Mail.send({
-				from: 'OldMos51 <confirm@oldmos2.ru>',
+				from: 'OldMos ★<confirm@oldmos2.ru>',
 				to: data.login + ' <' + data.email + '>',
-				subject: 'Request for password recovery',
+				subject: 'Запрос на восстановление пароля',
+				//subject: 'Request for password recovery',
 				headers: {
 					'X-Laziness-level': 1000
 				},
-
-				text: 'Привет, ' + data.login + '!' +
-					'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos51. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.' +
-					'Для получения нового пароля перейдите по следующей ссылке:' +
-					'http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + ' ' +
-					'Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно',
-				html: 'Привет, <b>' + data.login + '</b>!<br/><br/>' +
-					'Вы получили это письмо, так как для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos51. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
-					'Для получения нового пароля перейдите по следующей ссылке:<br/>' +
+				generateTextFromHTML: true,
+				html: 'Здравствуйте, <b>' + data.login + '</b>!<br/><br/>' +
+					'Для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
+					'Для ввода нового пароля перейдите по следующей ссылке:<br/>' +
 					'<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
-					'Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно'
+					'<small>Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно</small>'
 			}, this);
 		},
 		function finish(err) {
@@ -288,7 +284,7 @@ function checkConfirm(session, data, cb) {
 	}
 
 	var key = data.key;
-	UserConfirm.findOneAndRemove({key: key}).populate('user').exec(function (err, confirm) {
+	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
 		if (err || !confirm || !confirm.user) {
 			cb({message: err && err.message || 'Get confirm error', error: true});
 			return;
@@ -299,7 +295,8 @@ function checkConfirm(session, data, cb) {
 				function () {
 					confirm.user.active = true;
 					confirm.user.activatedate = new Date();
-					confirm.user.save(this);
+					confirm.user.save(this.parallel());
+					confirm.remove(this.parallel());
 				},
 				function (err) {
 					if (err) {
@@ -312,55 +309,49 @@ function checkConfirm(session, data, cb) {
 				}
 			);
 		} else if (key.length === 8) { //Confirm pass change
-			var newPass = Utils.randomString(6);
-
-			Step(
-				function () {
-					confirm.user.pass = newPass;
-					confirm.user.save(this);
-				},
-				function sendMail(err) {
-					if (err) {
-						errS.e500Virgin(req, res);
-					}
-					Mail.send({
-						// sender info
-						from: 'OldMos51 <confirm@oldmos2.ru>',
-
-						// Comma separated list of recipients
-						to: confirm.user.login + ' <' + confirm.user.email + '>',
-
-						// Subject of the message
-						subject: 'Your new password',
-
-						headers: {
-							'X-Laziness-level': 1000
-						},
-
-						text: 'Привет, ' + confirm.user.login + '!' +
-							'Ваш пароль успешно заменен на новый.' +
-							'Логин: ' + confirm.user.login +
-							'Пароль: ' + newPass +
-							'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты. Не забудьте сменить пароль в настройках профиля.',
-
-						html: 'Привет, <b>' + confirm.user.login + '</b>!<br/><br/>' +
-							'Ваш пароль успешно заменен на новый.<br/>' +
-							'Логин: <b>' + confirm.user.login + '</b><br/>' +
-							'Пароль: <b>' + newPass + '</b><br/><br/>' +
-							'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты.<br/>Не забудьте сменить пароль в настройках профиля.'
-					}, this);
-				},
-				function finish(err) {
-					if (err) {
-						errS.e500Virgin(req, res);
-					} else {
-						req.session.message = 'Thank you! Information with new password sent to your e-mail. You can use it right now!';
-						res.redirect('/');
-					}
-				}
-			);
+			cb({message: 'Pass change', type: 'authPassChange', login: confirm.user.login});
 		}
 
+	});
+}
+
+function recallPassChange(session, data, cb) {
+	var error = '',
+		key = data.key;
+	if (!data || !Utils.isType('string', key) || key.length !== 8) {
+		error = 'Bad params. ';
+	}
+	if (!data.pass) {
+		error += 'Fill in the password field. ';
+	}
+	if (data.pass !== data.pass2) {
+		error += 'Passwords do not match.';
+	}
+	if (error) {
+		cb({message: error, error: true});
+		return;
+	}
+
+	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
+		if (err || !confirm || !confirm.user) {
+			cb({message: err && err.message || 'Get confirm error', error: true});
+			return;
+		}
+		Step(
+			function () {
+				confirm.user.pass = data.pass;
+				confirm.user.save(this.parallel());
+				confirm.remove(this.parallel());
+			},
+			function (err) {
+				if (err) {
+					cb({message: err.message, error: true});
+					return;
+				}
+
+				cb({message: 'Новый пароль сохранен успешно'});
+			}
+		);
 	});
 }
 /**
@@ -453,6 +444,11 @@ module.exports.loadController = function (a, db, io) {
 		socket.on('checkConfirm', function (data) {
 			checkConfirm(hs.session, data, function (data) {
 				socket.emit('checkConfirmResult', data);
+			});
+		});
+		socket.on('recallPassChange', function (data) {
+			recallPassChange(hs.session, data, function (data) {
+				socket.emit('recallPassChangeResult', data);
 			});
 		});
 	});

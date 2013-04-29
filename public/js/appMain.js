@@ -154,6 +154,7 @@ require([
 					);
 				},
 				confirm: function (params) {
+					var auth = globalVM.repository['m/common/auth'];
 					this.params(_.assign(params, {_handler: 'confirm'}));
 
 					socket.once('checkConfirmResult', function (data) {
@@ -212,6 +213,10 @@ require([
 										}
 									}
 								);
+							} else if (data.type === 'authPassChange' && data.login) {
+								auth.showRecallPassChange(data.login, params.key, function (result) {
+									globalVM.router.navigateToUrl('/');
+								}, this);
 							}
 						}
 					});

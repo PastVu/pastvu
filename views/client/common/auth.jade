@@ -10,7 +10,7 @@
 		dl.dl-horizontal
 			dt Password:
 			dd
-				span(data-bind="click: function () {mode('recall')}") Recover password
+				span(data-bind="click: function () {mode('recallRequest')}") Recover password
 		div.inputwrap.lock
 			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
@@ -52,7 +52,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recall', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallRequestForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequest', working: working()}, event: {submit: submit}")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -71,17 +71,18 @@
 		dl.dl-horizontal
 			dt User name:
 		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", disabled, name="login", autocorrect="off", autocapitalize="off")
+			input(autocomplete="off", type="text", required="required", disabled, name="login", autocorrect="off", autocapitalize="off", data-bind="value: login")
 		dl.dl-horizontal
 			dt New password:
 		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}"))
+			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
 			dt Repeat new password:
 		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict(type="submit") Send
+			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
+		button.btn-strict(type="submit") Change
 		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
