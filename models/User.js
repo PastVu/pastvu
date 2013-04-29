@@ -53,7 +53,7 @@ var UserScheme = new mongoose.Schema({
 
 	dateFormat: {type: String, 'default': "dd.mm.yyyy" },
 	active: {type: Boolean, 'default': false },
-	activatedate: {type: Date, 'default': Date.now }
+	activatedate: {type: Date}
 });
 
 /**
@@ -262,9 +262,9 @@ UserScheme.statics.getUserID = function (login, cb) {
 
 var UserConfirm = new mongoose.Schema(
 	{
-		created: {type: Date, 'default': Date.now, index: {expires: '2d' }},
-		key: {type: String, index: { unique: true }},
-		user: { type: Schema.Types.ObjectId, ref: 'User', index: true }
+		created: {type: Date, 'default': Date.now, index: {expires: '2d'}},
+		key: {type: String, index: {unique: true}},
+		user: {type: Schema.Types.ObjectId, ref: 'User', index: true}
 	}
 );
 

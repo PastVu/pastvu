@@ -37,7 +37,7 @@ function login(socket, data, cb) {
 
 		// login was successful if we have a user
 		if (user) {
-			socket.handshake.session.key = Utils.randomString(50);
+			socket.handshake.session.key = Utils.randomString(12);
 			socket.handshake.session.user = user;
 			socket.handshake.session.data = {remember: data.remember};
 			socket.handshake.session.stamp = new Date();
@@ -107,7 +107,8 @@ function passchange(session, data, cb) {
 function register(session, data, cb) {
 	'use strict';
 	var error = '',
-		success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
+		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail',
+		//success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	data.email = data.email.toLowerCase();
 
@@ -143,16 +144,14 @@ function register(session, data, cb) {
 		},
 		function createUser(err, count, role) {
 			if (err) {
-				cb({message: +err, error: true});
+				cb({message: err, error: true});
 				return;
 			}
 			if (!count) {
-				cb({message: 'Increment photo counter error', error: true});
+				cb({message: 'Increment user counter error', error: true});
 				return;
 			}
-			confirmKey = Utils.randomString(80);
-
-			logger.info(data.email);
+			confirmKey = Utils.randomString(7);
 
 			var newUser = new User({
 				login: data.login,
@@ -241,7 +240,7 @@ function recall(session, data, cb) {
 				data._id = user._id;
 				data.login = user.login;
 				data.email = user.email;
-				confirmKey = Utils.randomString(79);
+				confirmKey = Utils.randomString(8);
 				UserConfirm.remove({user: user._id}, this);
 			}
 		},
@@ -286,9 +285,91 @@ function recall(session, data, cb) {
 			}
 			cb({message: success});
 		}
-	)
+	);
 }
 
+function checkConfirm(session, data, cb) {
+	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	var key = data.key;
+	UserConfirm.findOneAndRemove({key: key}).populate('user').exec(function (err, confirm) {
+		if (err || !confirm || !confirm.user) {
+			cb({message: err && err.message || 'Get confirm error', error: true});
+			return;
+		}
+
+		if (key.length === 7) { //Confirm registration
+			Step(
+				function () {
+					confirm.user.active = true;
+					confirm.user.activatedate = new Date();
+					confirm.user.save(this);
+				},
+				function (err) {
+					if (err) {
+						cb({message: err.message, error: true});
+						return;
+					}
+
+					cb({message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль', type: 'noty'});
+					//cb({message: 'Thank you! Your registration is confirmed. Now you can enter using your username and password', type: 'noty'});
+				}
+			);
+		} else if (key.length === 8) { //Confirm pass change
+			var newPass = Utils.randomString(6);
+
+			Step(
+				function () {
+					confirm.user.pass = newPass;
+					confirm.user.save(this);
+				},
+				function sendMail(err) {
+					if (err) {
+						errS.e500Virgin(req, res);
+					}
+					Mail.send({
+						// sender info
+						from: 'OldMos51 <confirm@oldmos2.ru>',
+
+						// Comma separated list of recipients
+						to: confirm.user.login + ' <' + confirm.user.email + '>',
+
+						// Subject of the message
+						subject: 'Your new password',
+
+						headers: {
+							'X-Laziness-level': 1000
+						},
+
+						text: 'Привет, ' + confirm.user.login + '!' +
+							'Ваш пароль успешно заменен на новый.' +
+							'Логин: ' + confirm.user.login +
+							'Пароль: ' + newPass +
+							'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты. Не забудьте сменить пароль в настройках профиля.',
+
+						html: 'Привет, <b>' + confirm.user.login + '</b>!<br/><br/>' +
+							'Ваш пароль успешно заменен на новый.<br/>' +
+							'Логин: <b>' + confirm.user.login + '</b><br/>' +
+							'Пароль: <b>' + newPass + '</b><br/><br/>' +
+							'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты.<br/>Не забудьте сменить пароль в настройках профиля.'
+					}, this);
+				},
+				function finish(err) {
+					if (err) {
+						errS.e500Virgin(req, res);
+					} else {
+						req.session.message = 'Thank you! Information with new password sent to your e-mail. You can use it right now!';
+						res.redirect('/');
+					}
+				}
+			);
+		}
+
+	});
+}
 /**
  * redirect to /login if user has insufficient rights
  * @param role_level
@@ -324,6 +405,13 @@ module.exports.loadController = function (a, db, io) {
 	Role = db.model('Role');
 	Counter = db.model('Counter');
 	UserConfirm = db.model('UserConfirm');
+
+	app.get('/confirm/:key', function (req, res) {
+		//var key = req.params.key;
+
+		res.statusCode = 200;
+		res.render('appMain.jade', {});
+	});
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
@@ -368,81 +456,11 @@ module.exports.loadController = function (a, db, io) {
 			}
 			socket.emit('youAre', (hs.session.user && hs.session.user.toObject ? hs.session.user.toObject() : null));
 		});
-	});
 
-	app.get('/confirm/:key', function (req, res) {
-		var key = req.params.key;
-		if (!key || key.length < 79 || key.length > 80) throw new errS.e404();
-
-		UserConfirm.findOneAndRemove({'key': key}).populate('user').exec(function (err, confirm) {
-			if (err || !confirm || !confirm.user) {
-				errS.e404Virgin(req, res);
-			} else {
-				if (key.length === 80) { //Confirm registration
-					Step(
-						function () {
-							confirm.user.active = true;
-							confirm.user.save(this);
-						},
-						function (err) {
-							if (err) {
-								errS.e500Virgin(req, res);
-							} else {
-								req.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
-								res.redirect('/');
-							}
-						}
-					);
-				} else if (key.length === 79) { //Confirm pass change
-					var newPass = Utils.randomString(6);
-
-					Step(
-						function () {
-							confirm.user.pass = newPass;
-							confirm.user.save(this);
-						},
-						function sendMail(err) {
-							if (err) {
-								errS.e500Virgin(req, res);
-							}
-							Mail.send({
-								// sender info
-								from: 'OldMos51 <confirm@oldmos2.ru>',
-
-								// Comma separated list of recipients
-								to: confirm.user.login + ' <' + confirm.user.email + '>',
-
-								// Subject of the message
-								subject: 'Your new password',
-
-								headers: {
-									'X-Laziness-level': 1000
-								},
-
-								text: 'Привет, ' + confirm.user.login + '!' +
-									'Ваш пароль успешно заменен на новый.' +
-									'Логин: ' + confirm.user.login +
-									'Пароль: ' + newPass +
-									'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты. Не забудьте сменить пароль в настройках профиля.',
-
-								html: 'Привет, <b>' + confirm.user.login + '</b>!<br/><br/>' +
-									'Ваш пароль успешно заменен на новый.<br/>' +
-									'Логин: <b>' + confirm.user.login + '</b><br/>' +
-									'Пароль: <b>' + newPass + '</b><br/><br/>' +
-									'Теперь Вы можете зайти на проект OldMos51, используя новые реквизиты.<br/>Не забудьте сменить пароль в настройках профиля.'
-							}, this);
-						},
-						function finish(err) {
-							if (err) {
-								errS.e500Virgin(req, res);
-							} else {
-								req.session.message = 'Thank you! Information with new password sent to your e-mail. You can use it right now!';
-								res.redirect('/');
-							}
-						}
-					);
-				}
-			}
+		socket.on('checkConfirm', function (data) {
+			checkConfirm(hs.session, data, function (data) {
+				socket.emit('checkConfirmResult', data);
+			});
 		});
 	});
 };

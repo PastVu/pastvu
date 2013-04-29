@@ -78,14 +78,10 @@ require([
 				{route: "u/:user/:section", handler: "userPage"},
 				{route: "u/:user/:section/", handler: "userPage"},
 				{route: "u/:user/:section/:page", handler: "userPage"},
-				{route: "u/:user/:section/:page/", handler: "userPage"}/*,
-				{route: "u/:user", handler: "profile"},
-				{route: "u/:user/photo", handler: "gallery"},
-				{route: "u/:user/comments/:page", handler: "comments"},
-				{route: "u/:user/settings", handler: "settings"},
-				{route: "u/photoUpload", handler: "photoUpload"},
-				{route: "u/clusterCalc", handler: "clusterCalc"},
-				{route: "u/conveyer", handler: "conveyer"}*/
+				{route: "u/:user/:section/:page/", handler: "userPage"},
+				{route: "confirm/:key", handler: "confirm"}/*,
+				 {route: "u/clusterCalc", handler: "clusterCalc"},
+				 {route: "u/conveyer", handler: "conveyer"}*/
 			],
 			handlers: {
 				index: function (params) {
@@ -156,6 +152,70 @@ require([
 							}
 						}
 					);
+				},
+				confirm: function (params) {
+					this.params(_.assign(params, {_handler: 'confirm'}));
+
+					socket.once('checkConfirmResult', function (data) {
+						if (data.error) {
+							console.log('checkConfirmResult', data.message);
+							globalVM.router.navigateToUrl('/');
+						} else {
+
+							renderer(
+								[
+									{module: 'm/main/mainPage', container: '#bodyContainer'}
+								],
+								{
+									parent: globalVM,
+									level: 0,
+									callback: function (bodyPage, foot) {
+									}
+								}
+							);
+
+							if (data.type === 'noty') {
+								window.noty(
+									{
+										text: data.message,
+										type: 'confirm',
+										layout: 'center',
+										modal: true,
+										force: true,
+										animation: {
+											open: {height: 'toggle'},
+											close: {},
+											easing: 'swing',
+											speed: 500
+										},
+										buttons: [
+											{addClass: 'btn-strict btn-strict-success', text: 'Ok (7)', onClick: function ($noty) {
+												// this = $button element
+												// $noty = $noty element
+												$noty.close();
+												globalVM.router.navigateToUrl('/');
+											}}
+										],
+										callback: {
+											afterShow: function () {
+												var okButton = this.$buttons.find('.btn-strict-success');
+												Utils.timer(
+													8000,
+													function (timeleft) {
+														okButton.text('Ok (' + timeleft + ')');
+													},
+													function () {
+														okButton.trigger('click');
+													}
+												);
+											}
+										}
+									}
+								);
+							}
+						}
+					});
+					socket.emit('checkConfirm', {key: params.key});
 				}
 			}
 		};
