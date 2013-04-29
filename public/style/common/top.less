@@ -10,8 +10,19 @@
 
 	.appV {
 		position: absolute;
-		top: 6px;
+		display: block;
+		top: 8px;
 		left: 5px;
+		line-height: 16px;
+		color: @MainLigthColor;
+		text-decoration: none;
+		border-color: @MainLigthColor;
+		border-style: dotted;
+		border-width: 0;
+
+		&:hover {
+			border-width: 0 0 1px 0;
+		}
 	}
 	#logo {
 		position: absolute;
