@@ -50,6 +50,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+
 		showRecallPassChange: function (login, key, callback, ctx) {
 			this.login(login);
 			this.key(key);
@@ -184,6 +185,26 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 				} else if (this.mode() === 'recallPassChange') {
 					this.doPassRecallChange(
 						$.extend(form.serializeObject(), {key: this.key()}),
+						function (data) {
+							if (data.error) {
+								this.setMessage(data.message, 'error');
+								window.setTimeout(function () {
+									this.formFocus();
+									this.formWorking(false);
+								}.bind(this), 420);
+							} else {
+								form.find('button').css('display', 'none');
+								form.find('.formfinish').css('display', '');
+								this.setMessage(data.message, 'success');
+								window.setTimeout(function () {
+									this.formWorking(false);
+								}.bind(this), 420);
+							}
+						}.bind(this)
+					);
+				} else if (this.mode() === 'recallRequestForMe') {
+					this.doPassRecall(
+						$.extend(form.serializeObject(), {login: this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');

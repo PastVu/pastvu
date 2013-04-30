@@ -89,6 +89,15 @@
 		.mess
 			div(data-bind="text: msg()")
 
+	form.fringe(name='recallRequestForMeForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequestForMe', working: working()}, event: {submit: submit}")
+		.head Recover password
+		| Send request to change your password without entering current?
+		button.btn-strict(type="submit") Send
+		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		.mess
+			div(data-bind="text: msg()")
+
 	form.fringe(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal

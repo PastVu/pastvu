@@ -22,8 +22,9 @@
 						dt Account password
 						dd
 							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
-								i.icon-wrench.icon-white
-								span Change
+								span Сменить
+							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('recallRequestForMe')}}")
+								span Восстановить
 		.accordion-group
 			.accordion-heading
 				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Map
