@@ -167,42 +167,6 @@ function register(session, data, cb) {
 	);
 }
 
-function passchange(session, data, cb) {
-	'use strict';
-	var error = '';
-
-	if (!session.user || !data || session.user.login !== data.login) {
-		cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
-		return;
-	}
-	if (!data.pass || !data.passNew || !data.passNew2) error += 'Заполните все поля. '; //'Fill in all password fields. ';
-	if (data.passNew !== data.passNew2) error += 'Новые пароли не совпадают. '; //'New passwords do not match each other.';
-	if (error) {
-		cb({message: error, error: true});
-		return;
-	}
-
-	session.user.checkPass(data.pass, function (err, isMatch) {
-		if (err) {
-			cb({message: err.message, error: true});
-			return;
-		}
-
-		if (isMatch) {
-			session.user.pass = data.passNew;
-			session.user.save(function (err) {
-				if (err) {
-					cb({message: err && err.message || 'Save error', error: true});
-					return;
-				}
-				cb({message: 'Новый пароль установлен успешно'}); //'Password was changed successfully!'
-			});
-		} else {
-			cb({message: 'Текущий пароль не верен', error: true}); //'Current password incorrect'
-		}
-	});
-}
-
 function recall(session, data, cb) {
 	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
 	//success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
@@ -298,8 +262,12 @@ function recallPassChange(session, data, cb) {
 		}
 		Step(
 			function () {
-				confirm.user.pass = data.pass;
-				confirm.user.save(this.parallel());
+				// Если залогиненный пользователь запрашивает восстановление, то пароль надо поменять в модели пользователя сессии
+				// Если аноним - то в модели пользователи конфирма
+				// (Это один и тот же пользователь, просто разные объекты)
+				var user = session.user && session.user.login === confirm.user.login ? session.user : confirm.user;
+				user.pass = data.pass;
+				user.save(this.parallel());
 				confirm.remove(this.parallel());
 			},
 			function (err) {
@@ -311,6 +279,42 @@ function recallPassChange(session, data, cb) {
 				cb({message: 'Новый пароль сохранен успешно'});
 			}
 		);
+	});
+}
+
+function passchange(session, data, cb) {
+	'use strict';
+	var error = '';
+
+	if (!session.user || !data || session.user.login !== data.login) {
+		cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
+		return;
+	}
+	if (!data.pass || !data.passNew || !data.passNew2) error += 'Заполните все поля. '; //'Fill in all password fields. ';
+	if (data.passNew !== data.passNew2) error += 'Новые пароли не совпадают. '; //'New passwords do not match each other.';
+	if (error) {
+		cb({message: error, error: true});
+		return;
+	}
+
+	session.user.checkPass(data.pass, function (err, isMatch) {
+		if (err) {
+			cb({message: err.message, error: true});
+			return;
+		}
+
+		if (isMatch) {
+			session.user.pass = data.passNew;
+			session.user.save(function (err) {
+				if (err) {
+					cb({message: err && err.message || 'Save error', error: true});
+					return;
+				}
+				cb({message: 'Новый пароль установлен успешно'}); //'Password was changed successfully!'
+			});
+		} else {
+			cb({message: 'Текущий пароль не верен', error: true}); //'Current password incorrect'
+		}
 	});
 }
 

@@ -77,6 +77,8 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.login('');
 			this.key('');
 			this.msg('');
+			delete this.callback;
+			delete this.ctx;
 			this.formWorking(false);
 			this.caps(false);
 		},
