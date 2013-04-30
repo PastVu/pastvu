@@ -10,6 +10,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 
 			this.mode = ko.observable('login');
 			this.working = ko.observable(false);
+			this.finish = ko.observable(false);
 
 			this.login = ko.observable('');
 			this.key = ko.observable('');
@@ -80,6 +81,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			delete this.callback;
 			delete this.ctx;
 			this.formWorking(false);
+			this.finish(false);
 			this.caps(false);
 		},
 		formClose: function () {
@@ -155,8 +157,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 								}.bind(this), 420);
 							} else {
-								form.find('button').css('display', 'none');
-								form.find('.formfinish').css('display', '');
+								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
@@ -175,8 +176,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 								}.bind(this), 420);
 							} else {
-								form.find('button').css('display', 'none');
-								form.find('.formfinish').css('display', '');
+								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
@@ -195,8 +195,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 								}.bind(this), 420);
 							} else {
-								form.find('button').css('display', 'none');
-								form.find('.formfinish').css('display', '');
+								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
@@ -215,8 +214,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 								}.bind(this), 420);
 							} else {
-								form.find('button').css('display', 'none');
-								form.find('.formfinish').css('display', '');
+								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
@@ -235,8 +233,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 								}.bind(this), 420);
 							} else {
-								form.find('button').css('display', 'none');
-								form.find('.formfinish').css('display', '');
+								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);

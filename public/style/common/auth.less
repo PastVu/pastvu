@@ -235,7 +235,8 @@
 			&[type='button'] {
 				right: 15px;
 
-				&.formfinish {
+				&.formFinish {
+					display: none;
 					right: 50%;
 					margin-right: -45px;
 				}
@@ -263,5 +264,17 @@
 			}
 		}
 
+		&.finish {
+			button {
+				&.formAction {
+					display: none;
+				}
+				&[type='button'] {
+					&.formFinish {
+						display: block;
+					}
+				}
+			}
+		}
 	}
 }

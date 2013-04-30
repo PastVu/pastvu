@@ -1,5 +1,5 @@
 #auth_curtain(data-bind="with: repository[M!M]")
-	form.fringe(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working()}, event: {submit: submit}")
+	form.fringe(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Authorization
 		dl.dl-horizontal
 			dt User name:
@@ -15,15 +15,15 @@
 			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
 			dt.checked#remember(onclick="this.classList.toggle('checked')") Remember me
-		button.btn-strict(type="submit") Sign in
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formAction(type="submit") Sign in
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working()}, event: {submit: submit}")
+	form.fringe(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Registration
 		dl.dl-horizontal
 			dt User name:
@@ -43,16 +43,16 @@
 			dt Repeat password:
 		div.inputwrap.lock
 			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict(type="submit") Register
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="submit") Register
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallRequestForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequest', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallRequestForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequest', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -60,13 +60,13 @@
 				span(data-bind="click: function () {mode('login')}") Authorization
 		div.inputwrap.user
 			input(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
-		button.btn-strict(type="submit") Send
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="submit") Send
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallPassChange', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallPassChange', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt User name:
@@ -80,25 +80,25 @@
 			dt Repeat new password:
 		div.inputwrap.lock
 			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict(type="submit") Change
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="submit") Change
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallRequestForMeForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequestForMe', working: working()}, event: {submit: submit}")
+	form.fringe(name='recallRequestForMeForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequestForMe', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Recover password
 		| Send request to change your password without entering current?
-		button.btn-strict(type="submit") Send
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="submit") Send
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working()}, event: {submit: submit}")
+	form.fringe(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working(), finish: finish()}, event: {submit: submit}")
 		.head Change password
 		dl.dl-horizontal
 			dt Current password:
@@ -112,9 +112,9 @@
 			dt Repeat new password:
 		div.inputwrap.lock
 			input(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict(type="submit") Change
-		button.btn-strict(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formfinish(type="button", style="display: none;", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="submit") Change
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
