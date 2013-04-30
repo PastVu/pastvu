@@ -160,7 +160,7 @@
 				br
 				.photoTools(data-bind="style: {width: ws() + 'px'}")
 					//ko if: hscalePossible()
-					.photoHeight.state(data-state="hscaleTumbler", data-bind="css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
+					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
 						i.icon-resize-vertical.icon-white
 					// /ko
 			.row-fluid.photoInfoBlock
@@ -210,7 +210,7 @@
 				br
 				.photoTools(data-bind="style: {width: ws() + 'px'}")
 					//ko if: hscalePossible()
-					.photoHeight.state(data-state="hscaleTumbler", data-bind="css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
+					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
 						i.icon-resize-vertical.icon-white
 					// /ko
 			.row-fluid.photoInfoBlock

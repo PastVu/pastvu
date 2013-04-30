@@ -9,10 +9,11 @@
   z-index: @zindexTooltip;
   display: block;
   visibility: visible;
+  font-family: sans-serif;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 12px;
   .opacity(0);
-  &.in     { .opacity(80); }
+  &.in     { .opacity(90); }
   &.top    { margin-top:  -3px; padding: 5px 0; }
   &.right  { margin-left:  3px; padding: 0 5px; }
   &.bottom { margin-top:   3px; padding: 5px 0; }
@@ -21,13 +22,12 @@
 
 // Wrapper for the tooltip content
 .tooltip-inner {
-  max-width: 200px;
-  padding: 8px;
+  max-width: 210px;
+  padding: 6px 8px;
   color: @tooltipColor;
   text-align: center;
   text-decoration: none;
   background-color: @tooltipBackground;
-  .border-radius(@baseBorderRadius);
 }
 
 // Arrows
