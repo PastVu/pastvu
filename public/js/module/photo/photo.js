@@ -144,7 +144,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.ws = ko.observable(Photo.def.full.ws);
 			this.hs = ko.observable(Photo.def.full.hs);
-			this.hscale = ko.observable(true);
+			this.hscalePossible = ko.observable(false);
+			this.hscaleTumbler = ko.observable(true);
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
@@ -242,7 +243,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-			this.subscriptions.hscale = this.hscale.subscribe(this.sizesCalcPhoto, this);
+			this.subscriptions.hscaleTumbler = this.hscaleTumbler.subscribe(this.sizesCalcPhoto, this);
 			this.subscriptions.year = this.p.year.subscribe(function (val) {
 				var v = Number(val);
 
@@ -334,8 +335,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 		sizesCalc: function () {
-			var windowW = P.window.w(),
-				rightPanelW = this.$dom.find('.rightPanel').width(),
+			var rightPanelW = this.$dom.find('.rightPanel').width(),
 				thumbW,
 				thumbH,
 				thumbWV1 = 84,
@@ -367,28 +367,32 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.applyUserRibbon();
 
-			windowW = rightPanelW = thumbW = thumbH = null;
+			rightPanelW = thumbW = thumbH = null;
 		},
 		sizesCalcPhoto: function () {
-			var maxWidth = this.$dom.find('.photoPanel').width(),
-				maxHeight,
-				hscale = this.hscale(),
+			var maxWidth = this.$dom.find('.photoPanel').width() >> 0,
+				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0,
 				ws = this.p.ws(),
 				hs = this.p.hs(),
 				aspect = ws / hs,
 				fragSelection;
 
-			if (hscale) {
-				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0;
-				if (hs > maxHeight) {
-					hs = maxHeight;
-					ws = hs * aspect >> 0;
-				}
+			// Подгоняем по максимальной ширине
+			if (ws > maxWidth) {
+				ws = maxWidth;
+				hs = Math.round(ws / aspect);
 			}
 
-			if (ws > maxWidth) {
-				hs = maxWidth / aspect >> 0;
-				ws = hs * aspect >> 0;
+			// Если устанавливаемая высота больше максимальной высоты,
+			// то делаем возможным hscale и при влюченном тумблере hscale пересчитываем высоту и ширину
+			if (hs > maxHeight) {
+				this.hscalePossible(true);
+				if (this.hscaleTumbler()) {
+					hs = maxHeight;
+					ws = Math.round(hs * aspect);
+				}
+			} else {
+				this.hscalePossible(false);
 			}
 
 			this.ws(ws);

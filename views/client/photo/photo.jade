@@ -159,8 +159,10 @@
 					// /ko
 				br
 				.photoTools(data-bind="style: {width: ws() + 'px'}")
-					.photoHeight.state(data-state="hscale", data-bind="css: {on: hscale()}, click: stateChange")
+					//ko if: hscalePossible()
+					.photoHeight.state(data-state="hscaleTumbler", data-bind="css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
 						i.icon-resize-vertical.icon-white
+					// /ko
 			.row-fluid.photoInfoBlock
 				//ko if: p.title().length > 0
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
@@ -207,8 +209,10 @@
 					.photoLoading
 				br
 				.photoTools(data-bind="style: {width: ws() + 'px'}")
-					.photoHeight.state(data-state="hscale", data-bind="css: {on: hscale()}, click: stateChange")
+					//ko if: hscalePossible()
+					.photoHeight.state(data-state="hscaleTumbler", data-bind="css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
 						i.icon-resize-vertical.icon-white
+					// /ko
 			.row-fluid.photoInfoBlock
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 				.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
