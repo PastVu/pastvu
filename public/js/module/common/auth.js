@@ -8,7 +8,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.iAm = User.vm();
 			this.loggedIn = ko.observable(false);
 
-			this.mode = ko.observable('login');
+			this.mode = ko.observable('');
 			this.working = ko.observable(false);
 			this.finish = ko.observable(false);
 
@@ -75,6 +75,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.$dom.find(':focus').blur();
 			this.$dom.find("input").val(null);
 			this.$dom.find(".mess").height(0).removeClass('text-error text-warning text-info text-success muted');
+			this.mode('');
 			this.login('');
 			this.key('');
 			this.msg('');
@@ -122,14 +123,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			text = type = css = null;
 		},
 
-		submit: function () {
-			var form = this.$dom.find('form:visible');
-			form.find(':focus').blur();
+		submit: function (data, evt) {
+			var $form = $(evt.target);
+			$form.find(':focus').blur();
 
 			try {
 				if (this.mode() === 'login') {
 					this.doLogin(
-						$.extend(form.serializeObject(), {'remember': form[0].querySelector('#remember').classList.contains('checked')}),
+						$.extend($form.serializeObject(), {'remember': $form[0].querySelector('#remember').classList.contains('checked')}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -145,10 +146,9 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 							}
 						}.bind(this)
 					);
-
 				} else if (this.mode() === 'reg') {
 					this.doRegister(
-						$.extend(form.serializeObject(), {}),
+						$.extend($form.serializeObject(), {}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -167,7 +167,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallRequest') {
 					this.doPassRecall(
-						$.extend(form.serializeObject(), {}),
+						$.extend($form.serializeObject(), {}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -186,7 +186,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallPassChange') {
 					this.doPassRecallChange(
-						$.extend(form.serializeObject(), {key: this.key()}),
+						$.extend($form.serializeObject(), {key: this.key()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -205,7 +205,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallRequestForMe') {
 					this.doPassRecall(
-						$.extend(form.serializeObject(), {login: this.iAm.login()}),
+						$.extend($form.serializeObject(), {login: this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -224,7 +224,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'passChange') {
 					this.doPassChange(
-						$.extend(form.serializeObject(), {login: this.iAm.login()}),
+						$.extend($form.serializeObject(), {login: this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');

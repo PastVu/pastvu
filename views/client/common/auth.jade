@@ -1,5 +1,12 @@
 #auth_curtain(data-bind="with: repository[M!M]")
-	form.fringe(name='loginForm', action='', autocomplete="on", method='POST', data-bind="css: {show: mode()==='login', working: working(), finish: finish()}, event: {submit: submit}")
+
+	//ko if: mode()
+	form.fringe(action='', autocomplete="on", method='POST', data-bind="attr: {name: mode() + 'Form'}, css: {working: working(), finish: finish()}, event: {submit: submit}")
+		//ko template: {name: mode() + 'Tpl'}
+		// /ko
+	// /ko
+
+	script(id="loginTpl", type="text/html")
 		.head Authorization
 		dl.dl-horizontal
 			dt User name:
@@ -23,7 +30,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='regForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='reg', working: working(), finish: finish()}, event: {submit: submit}")
+	script(id="regTpl", type="text/html")
 		.head Registration
 		dl.dl-horizontal
 			dt User name:
@@ -34,7 +41,7 @@
 		dl.dl-horizontal
 			dt E-mail:
 		div.inputwrap.envelope
-			input(autocomplete="off", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
+			input(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt Password:
 		div.inputwrap.lock
@@ -52,7 +59,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallRequestForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequest', working: working(), finish: finish()}, event: {submit: submit}")
+	script(id="recallRequestTpl", type="text/html")
 		.head Recover password
 		dl.dl-horizontal
 			dt Login or e-mail:
@@ -66,7 +73,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallChangePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallPassChange', working: working(), finish: finish()}, event: {submit: submit}")
+	script(id="recallPassChangeTpl", type="text/html")
 		.head Change password
 		dl.dl-horizontal
 			dt User name:
@@ -89,7 +96,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='recallRequestForMeForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='recallRequestForMe', working: working(), finish: finish()}, event: {submit: submit}")
+	script(id="recallRequestForMeTpl", type="text/html")
 		.head Recover password
 		| Send request to change your password without entering current?
 		button.btn-strict.formAction(type="submit") Send
@@ -98,7 +105,7 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	form.fringe(name='changePassForm', action='', autocomplete="off", method='POST', data-bind="css: {show: mode()==='passChange', working: working(), finish: finish()}, event: {submit: submit}")
+	script(id="passChangeTpl", type="text/html")
 		.head Change password
 		dl.dl-horizontal
 			dt Current password:
