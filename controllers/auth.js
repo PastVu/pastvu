@@ -64,45 +64,6 @@ function login(socket, data, cb) {
 		}
 	});
 }
-function passchange(session, data, cb) {
-	'use strict';
-	var error = '';
-
-	if (!session.user || session.user.login !== data.login) {
-		error += 'You are not authorized for this action.';
-		cb({message: 'You are not authorized for this action.', error: true});
-		return;
-	} else {
-		if (!data.pass || !data.passNew || !data.passNew2) error += 'Fill in all password fields. ';
-		if (data.passNew !== data.passNew2) error += 'New passwords do not match each other.';
-	}
-	if (error) {
-		cb({message: error, error: true});
-		return;
-	}
-
-	session.user.checkPass(data.pass, function (err, isMatch) {
-		if (err) {
-			cb({message: err.message, error: true});
-			return;
-		}
-
-		if (isMatch) {
-			session.user.pass = data.passNew;
-			session.user.save(function (err) {
-				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
-				}
-				cb({message: "Password was changed successfully!"});
-				return;
-			});
-		} else {
-			cb({message: 'Current password incorrect', error: true});
-			return;
-		}
-	});
-}
 
 function register(session, data, cb) {
 	'use strict';
@@ -184,7 +145,7 @@ function register(session, data, cb) {
 				},
 				generateTextFromHTML: true,
 				html: 'Здравствуйте, ' + data.login + '!<br/><br/>' +
-					'Спасибо за регистрацию на проекте OldMos51! ' +
+					'Спасибо за регистрацию на проекте OldMos! ' +
 					'Вы указали следующие реквизиты:<br/>' +
 					'Логин: <b>' + data.login + '</b><br/>' +
 					'E-mail: <b>' + data.email + '</b><br/><br/>' +
@@ -204,6 +165,42 @@ function register(session, data, cb) {
 			cb({message: success});
 		}
 	);
+}
+
+function passchange(session, data, cb) {
+	'use strict';
+	var error = '';
+
+	if (!session.user || !data || session.user.login !== data.login) {
+		cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
+		return;
+	}
+	if (!data.pass || !data.passNew || !data.passNew2) error += 'Заполните все поля. '; //'Fill in all password fields. ';
+	if (data.passNew !== data.passNew2) error += 'Новые пароли не совпадают. '; //'New passwords do not match each other.';
+	if (error) {
+		cb({message: error, error: true});
+		return;
+	}
+
+	session.user.checkPass(data.pass, function (err, isMatch) {
+		if (err) {
+			cb({message: err.message, error: true});
+			return;
+		}
+
+		if (isMatch) {
+			session.user.pass = data.passNew;
+			session.user.save(function (err) {
+				if (err) {
+					cb({message: err && err.message || 'Save error', error: true});
+					return;
+				}
+				cb({message: 'Новый пароль установлен успешно'}); //'Password was changed successfully!'
+			});
+		} else {
+			cb({message: 'Текущий пароль не верен', error: true}); //'Current password incorrect'
+		}
+	});
 }
 
 function recall(session, data, cb) {
@@ -277,44 +274,6 @@ function recall(session, data, cb) {
 	);
 }
 
-function checkConfirm(session, data, cb) {
-	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
-		cb({message: 'Bad params', error: true});
-		return;
-	}
-
-	var key = data.key;
-	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
-		if (err || !confirm || !confirm.user) {
-			cb({message: err && err.message || 'Get confirm error', error: true});
-			return;
-		}
-
-		if (key.length === 7) { //Confirm registration
-			Step(
-				function () {
-					confirm.user.active = true;
-					confirm.user.activatedate = new Date();
-					confirm.user.save(this.parallel());
-					confirm.remove(this.parallel());
-				},
-				function (err) {
-					if (err) {
-						cb({message: err.message, error: true});
-						return;
-					}
-
-					cb({message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль', type: 'noty'});
-					//cb({message: 'Thank you! Your registration is confirmed. Now you can enter using your username and password', type: 'noty'});
-				}
-			);
-		} else if (key.length === 8) { //Confirm pass change
-			cb({message: 'Pass change', type: 'authPassChange', login: confirm.user.login});
-		}
-
-	});
-}
-
 function recallPassChange(session, data, cb) {
 	var error = '',
 		key = data.key;
@@ -354,6 +313,45 @@ function recallPassChange(session, data, cb) {
 		);
 	});
 }
+
+function checkConfirm(session, data, cb) {
+	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	var key = data.key;
+	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
+		if (err || !confirm || !confirm.user) {
+			cb({message: err && err.message || 'Get confirm error', error: true});
+			return;
+		}
+
+		if (key.length === 7) { //Confirm registration
+			Step(
+				function () {
+					confirm.user.active = true;
+					confirm.user.activatedate = new Date();
+					confirm.user.save(this.parallel());
+					confirm.remove(this.parallel());
+				},
+				function (err) {
+					if (err) {
+						cb({message: err.message, error: true});
+						return;
+					}
+
+					cb({message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль', type: 'noty'});
+					//cb({message: 'Thank you! Your registration is confirmed. Now you can enter using your username and password', type: 'noty'});
+				}
+			);
+		} else if (key.length === 8) { //Confirm pass change
+			cb({message: 'Pass change', type: 'authPassChange', login: confirm.user.login});
+		}
+
+	});
+}
+
 /**
  * redirect to /login if user has insufficient rights
  * @param role_level

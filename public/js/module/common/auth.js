@@ -346,7 +346,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 						callback(json);
 					}
 				});
-				socket.emit('passChangeResult', data);
+				socket.emit('passChangeRequest', data);
 			} catch (e) {
 				if (Utils.isType('function', callback)) {
 					callback(e.message);
