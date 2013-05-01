@@ -222,10 +222,10 @@ require('./controllers/photo.js').loadController(app, db, io);
 require('./controllers/comment.js').loadController(app, db, io);
 require('./controllers/profile.js').loadController(app, db, io);
 require('./controllers/admin.js').loadController(app, db, io);
-
-require('./controllers/tpl.js').loadController(app);
+if (land !== 'prod') {
+	require('./controllers/tpl.js').loadController(app);
+}
 require('./controllers/registerRoutes.js').loadController(app);
-
 require('./controllers/errors.js').loadController(app);
 app.get('*', function (req, res) {
 	errS.e404Virgin(req, res);

@@ -33,7 +33,7 @@
 		"log4js": "~0.6.3",
 		"file-utils": "~0.2.5",
 		"formidable": "1.0.11",
-		"node-static": ">=0.6.8",
+		"node-static": ">=0.6.9",
 		"imagemagick": ">=0.1.3"
 	},
 	"devDependencies": {
