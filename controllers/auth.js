@@ -382,6 +382,12 @@ function restrictToRoleLevel(role_level) {
 	}
 }
 module.exports.restrictToRoleLevel = restrictToRoleLevel;
+module.exports.sendMe = function (socket) {
+	var user = socket && socket.handshake && socket.handshake.session && socket.handshake.session.user;
+	if (user) {
+		socket.emit('youAre', user);
+	}
+};
 
 module.exports.loadController = function (a, db, io) {
 	app = a;
