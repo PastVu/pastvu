@@ -47,7 +47,9 @@ function getCommentsPhoto(data, cb) {
 				cb({message: 'No such photo', error: true});
 				return;
 			}
-			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, {sort: [['stamp', 'asc']]}, this);
+			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, {sort: [
+				['stamp', 'asc']
+			]}, this);
 		},
 		cursorExtract,
 		function (err, comments) {
@@ -136,7 +138,9 @@ function getCommentsUser(data, cb) {
 			}
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id}, {_id: 0, cid: 1, photo: 1, stamp:1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [['stamp', 'desc']]}, this);
+			Comment.collection.find({user: uid._id}, {_id: 0, cid: 1, photo: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
+				['stamp', 'desc']
+			]}, this);
 		},
 		cursorExtract,
 		function (err, comments) {
@@ -214,7 +218,9 @@ function getCommentsRibbon(data, cb) {
 	step(
 		function createCursor() {
 			var limit = data.limit || 15;
-			Comment.collection.find({}, {_id: 0, cid: 1, photo: 1, txt: 1}, { limit: limit, sort: [['stamp', 'desc']]}, this);
+			Comment.collection.find({}, {_id: 0, cid: 1, photo: 1, txt: 1}, { limit: limit, sort: [
+				['stamp', 'desc']
+			]}, this);
 		},
 		cursorExtract,
 		function (err, comments) {
@@ -274,26 +280,27 @@ function getCommentsRibbon(data, cb) {
 
 /**
  * Создает комментарий для фотографии
- * @param session Сессия пользователя
+ * @param socket Сокет пользователя
  * @param data Объект
  * @param cb Коллбэк
  */
-function createComment(session, data, cb) {
-	if (!session.user || !session.user.login) {
-		cb({message: 'You are not authorized for this action.', error: true});
-		return;
-	}
+function createComment(socket, data, cb) {
 	if (!Utils.isType('object', data) || !data.photo || !data.txt || data.level > 9) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
-
-	var content = data.txt,
+	var user = socket.handshake.session.user,
+		content = data.txt,
 		comment,
 		photoObj,
 		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
 		fragObj,
 		countComment;
+
+	if (!user || !user.login) {
+		cb({message: 'You are not authorized for this action.', error: true});
+		return;
+	}
 
 	step(
 		function counters() {
@@ -334,7 +341,7 @@ function createComment(session, data, cb) {
 			comment = {
 				cid: countComment,
 				photo: photo,
-				user: session.user,
+				user: user,
 				txt: content
 			};
 			if (data.parent) {
@@ -358,19 +365,20 @@ function createComment(session, data, cb) {
 			}
 			photoObj.save(this.parallel());
 
-			session.user.ccount += 1;
-			session.user.save(this.parallel());
+			user.ccount += 1;
+			user.save(this.parallel());
 		},
 		function (err) {
 			if (err) {
 				cb({message: err.message, error: true});
 				return;
 			}
-			comment.user = session.user.login;
+			comment.user = user.login;
 			comment.photo = data.photo;
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
+			auth.sendMe(socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
 		}
 	);
@@ -378,11 +386,15 @@ function createComment(session, data, cb) {
 
 /**
  * Удаляет комментарий
- * @param session Сессия пользователя
+ * @param socket Сокет пользователя
  * @param cid
  * @param cb Коллбэк
  */
 function removeComment(socket, cid, cb) {
+	if (!Utils.isType('number', cid)) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
 	var user = socket.handshake.session.user,
 		photoObj,
 		hashComments = {},
@@ -394,10 +406,7 @@ function removeComment(socket, cid, cb) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
-	if (!Utils.isType('number', cid)) {
-		cb({message: 'Bad params', error: true});
-		return;
-	}
+
 
 	step(
 		function () {
@@ -412,7 +421,9 @@ function removeComment(socket, cid, cb) {
 				return;
 			}
 			photoObj = photo;
-			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, {sort: [['stamp', 'asc']]}, this.parallel());
+			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, {sort: [
+				['stamp', 'asc']
+			]}, this.parallel());
 		},
 		cursorExtract,
 		function (err, comments) {
@@ -486,7 +497,7 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('createComment', function (data) {
-			createComment(hs.session, data, function (result) {
+			createComment(socket, data, function (result) {
 				socket.emit('createCommentResult', result);
 			});
 		});
