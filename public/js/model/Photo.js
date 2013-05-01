@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'm/User'], function ($, _, ko, ko_mapping, Utils, User) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User'], function ($, _, ko, ko_mapping, Utils, User) {
 	'use strict';
 
 	var defaults = {

@@ -34,7 +34,7 @@ require([
     'socket',
     'EventTypes',
     'knockout', 'knockout.mapping',
-    'm/GlobalParams', 'm/User', 'm/TopPanel', 'm/i18n',
+    'm/GlobalParams', 'model/User', 'm/TopPanel', 'm/i18n',
     'KeyHandler', 'auth',
     'jquery.ui', 'jquery.jgrid', 'jquery.jgrid.en'
 ], function (domReady, $, Utils, socket, ET, ko, ko_mapping, Params, User, TopPanel, i18n, keyTarget, auth) {

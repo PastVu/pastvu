@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'm/User', 'm/Photo'], function ($, _, ko, ko_mapping, Utils, socket, User, Photo) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, User, Photo) {
 	'use strict';
 
 	var storage = {

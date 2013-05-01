@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'm/Photo', 'text!tpl/main/commentsRibbon.jade', 'css!style/main/commentsRibbon'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
+define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/commentsRibbon.jade', 'css!style/main/commentsRibbon'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
 	'use strict';
 
 	return Cliche.extend({

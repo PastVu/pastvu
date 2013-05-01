@@ -4,7 +4,7 @@
  */
 define([
 	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-	'm/User', 'm/storage', 'Locations',
+	'model/User', 'model/storage', 'Locations',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
 	'text!tpl/map/map.jade', 'css!style/map/map',
 	'jquery-ui/draggable', 'jquery-ui/effect-highlight',

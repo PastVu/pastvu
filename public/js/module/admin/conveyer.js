@@ -4,7 +4,7 @@
  */
 define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
-	'm/User', 'm/storage',
+	'model/User', 'model/storage',
 	'highstock/highstock.src',
 	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Highcharts, jade) {

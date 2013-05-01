@@ -95,7 +95,7 @@ var start = Date.now(),
 			{
 				name: "m/user/gallery",
 				exclude: [
-					'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/Photo', 'm/storage',
+					'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage',
 					'text', 'css'
 				]
 			},
