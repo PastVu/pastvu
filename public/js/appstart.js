@@ -38,7 +38,7 @@
 	function start() {
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('src', '/js/appMain.js?__=' + appHash);
+		s.setAttribute('src', '/js/module/appMain.js?__=' + appHash);
 		head.appendChild(s);
 	}
 

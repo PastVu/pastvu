@@ -1,3 +1,4 @@
+/*global define:true*/
 define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, P) {
 	var Locations = {
 		types: {'_def_': ko_mapping.toJS(P.settings.locDef)},

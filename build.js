@@ -75,7 +75,7 @@ var start = Date.now(),
 				name: "_mainConfig" //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
 			},
 			{
-				name: "appMain",
+				name: "module/appMain",
 				include: [
 					'm/common/auth', 'm/common/top',
 					'm/main/commentsRibbon', 'm/main/mainPage', 'm/main/bottomPanel',
@@ -161,7 +161,7 @@ step(
 	function requireBuild() {
 		console.dir('~~~ Start r.js build ~~~');
 		var _this = this;
-		requirejs.optimize(requireBuildConfig, function (buildResponse) {
+		requirejs.optimize(requireBuildConfig, function (/*buildResponse*/) {
 			//buildResponse is just a text output of the modules
 			//included. Load the built file for the contents.
 			//Use requireBuildConfig.out to get the optimized file contents.
@@ -185,7 +185,7 @@ step(
 			lessFiles = Utils.filesRecursive(files, requireBuildConfig.dir + '/style/', null, function getOnlyLess(element) {
 				return element.indexOf('.less') > -1;
 			});
-			lessFiles.forEach(function (item, index) {
+			lessFiles.forEach(function (item) {
 				(new File(item)).remove(_this.parallel());
 			});
 		});

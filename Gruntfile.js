@@ -22,8 +22,8 @@ module.exports = function(grunt) {
 					' */\n'
 			},
 			dist: {
-				src: ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/appMain.js'],
-				dest: 'public-build/js/appMain.js'
+				src: ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appMain.js'],
+				dest: 'public-build/js/module/appMain.js'
 			}
 		}
 	});
