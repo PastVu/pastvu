@@ -2,7 +2,6 @@ var auth = require('./auth.js'),
     _session = require('./_session.js'),
     Settings,
     User,
-    Utils = require('../commons/Utils.js'),
     step = require('step'),
     log4js = require('log4js');
 
@@ -54,7 +53,7 @@ module.exports.loadController = function (app, db, io) {
                     }
                     result({ok: 1});
                     if (itsMe) {
-                        socket.emit('youAre', user);
+	                    auth.sendMe(socket);
                     }
                     logger.info('Saved story line for ' + user.login);
                 }

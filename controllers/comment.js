@@ -1,6 +1,7 @@
 'use strict';
 
-var Settings,
+var auth = require('./auth.js'),
+	Settings,
 	User,
 	Photo,
 	Comment,
@@ -381,8 +382,15 @@ function createComment(session, data, cb) {
  * @param cid
  * @param cb Коллбэк
  */
-function removeComment(session, cid, cb) {
-	if (!session.user || !session.user.login) {
+function removeComment(socket, cid, cb) {
+	var user = socket.handshake.session.user,
+		photoObj,
+		hashComments = {},
+		hashUsers = {},
+		arrComments = [],
+		countCommentsRemoved;
+
+	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
@@ -390,11 +398,6 @@ function removeComment(session, cid, cb) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
-	var photoObj,
-		hashComments = {},
-		hashUsers = {},
-		arrComments = [],
-		countCommentsRemoved;
 
 	step(
 		function () {
@@ -459,6 +462,11 @@ function removeComment(session, cid, cb) {
 				cb({message: err.message || 'Photo or user update error', error: true});
 				return;
 			}
+			// Если среди удаляемых комментариев есть мой, вычитаем их из сессии и отправляем "обновленного себя"
+			if (hashUsers[user._id] !== undefined) {
+				user.ccount -= hashUsers[user._id];
+				auth.sendMe(socket);
+			}
 			cb({message: 'Removed ' + countCommentsRemoved + ' comments from ' + Object.keys(hashUsers).length + ' users', frags: photoObj.frags.toObject(), countComments: countCommentsRemoved});
 		}
 	);
@@ -484,7 +492,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('removeComment', function (data) {
-			removeComment(hs.session, data, function (result) {
+			removeComment(socket, data, function (result) {
 				socket.emit('removeCommentResult', result);
 			});
 		});

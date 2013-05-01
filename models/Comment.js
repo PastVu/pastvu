@@ -1,8 +1,7 @@
 'use strict';
 
 var mongoose = require('mongoose'),
-	Schema = mongoose.Schema,
-	Counter = require('mongoose').model('Counter');
+	Schema = mongoose.Schema;
 
 var CommentSheme = new mongoose.Schema(
 	{
