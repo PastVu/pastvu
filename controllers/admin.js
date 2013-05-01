@@ -9,11 +9,6 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.get('/admin', auth.restrictToRoleLevel(50), function (req, res) {
-        res.statusCode = 200;
-        res.render('adminUser.jade', {});
-    });
-
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 

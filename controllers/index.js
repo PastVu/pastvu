@@ -12,11 +12,6 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.get('/', function (req, res) {
-        res.statusCode = 200;
-        res.render('appMain.jade', {});
-    });
-
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 

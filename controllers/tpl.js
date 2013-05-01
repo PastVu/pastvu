@@ -1,5 +1,4 @@
-var log4js = require('log4js'),
-    File = require("file-utils").File,
+var File = require("file-utils").File,
     Utils = require('../commons/Utils.js'),
     tplFolder = new File('./views/client'),
     tpls = [];
@@ -15,7 +14,6 @@ tplFolder.list(function (e, files) {
 
 module.exports.loadController = function (app) {
     'use strict';
-    var logger = log4js.getLogger("tpl.js");
 
     app.get('/tpl/*', function (req, res) {
         if (tpls.indexOf(req.route.params[0]) !== -1) {

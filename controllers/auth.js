@@ -392,13 +392,6 @@ module.exports.loadController = function (a, db, io) {
 	Counter = db.model('Counter');
 	UserConfirm = db.model('UserConfirm');
 
-	app.get('/confirm/:key', function (req, res) {
-		//var key = req.params.key;
-
-		res.statusCode = 200;
-		res.render('appMain.jade', {});
-	});
-
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 

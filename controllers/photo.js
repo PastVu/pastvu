@@ -195,13 +195,6 @@ module.exports.loadController = function (app, db, io) {
 	PhotoCluster.loadController(app, db, io);
 	PhotoConverter.loadController(app, db, io);
 
-	app.get('/p/:cid?/*', function (req, res) {
-		var cid = req.params.cid;
-
-		res.statusCode = 200;
-		res.render('appMain.jade', {});
-	});
-
 	planResetStatDay(); //Планируем очистку статистики за ltym
 	planResetStatWeek(); //Планируем очистку статистики за неделю
 

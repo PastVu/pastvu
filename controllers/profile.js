@@ -12,16 +12,6 @@ module.exports.loadController = function (app, db, io) {
     Settings = db.model('Settings');
     User = db.model('User');
 
-    app.get(['/u', '/u/:login?/*', '/photoUpload'], function (req, res) {
-        var login = req.params.login;
-        /*if (!login) {
-            throw new errS.e404();
-        }*/
-
-        res.statusCode = 200;
-        res.render('appMain.jade', {});
-    });
-
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 
