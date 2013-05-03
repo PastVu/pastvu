@@ -20,3 +20,25 @@
 						| preview loading error
 					a.ahref(data-bind="attr: {href: $data.link}")
 				.photoTool(data-bind="text: $data.title")
+
+	script(id="ratingsTpl", type="text/html")
+		.row-fluid.ratings
+			.span6 Рейтинг фотографий
+				.row-fluid
+					.span6
+						| По просмотрам
+						br
+						.btn-group#byview
+							button.btn#pday(data-bind="text: 'День', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
+							button.btn#pweek(data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
+							button.btn#pall(data-bind="text: 'Всё время', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
+						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.byview[ratings.byview.selected()] }
+						// /ko
+					.span6
+						| По комментариям
+
+	script(id="ratingsColumnTpl", type="text/html")
+		a.row-fluid.ratElem(data-bind="attr: {href: $data.link}")
+			img.ratPreview(data-bind="attr: {src: $data.sfile}")
+			.ratName(data-bind="text: $data.title")
+			.ratAmount(data-bind="text: $data.amount")

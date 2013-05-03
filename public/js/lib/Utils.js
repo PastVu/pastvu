@@ -348,11 +348,17 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 				return (floatValue * 100).toFixed(2) + ' %';
 			}
 
+			var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+			function declOfNum(number, titles) {
+				return titles[ (number % 100 > 4 && number % 100 < 20) ? 2 : wordEndOfNumCases[(number % 10 < 5) ? number % 10 : 5] ];
+			}
+
 			return {
 				fileSize: formatFileSize,
 				bitrate: formatBitrate,
 				secondsToTime: secondsToTime,
-				percentage: formatPercentage
+				percentage: formatPercentage,
+				wordEndOfNum: declOfNum
 			};
 		}()),
 

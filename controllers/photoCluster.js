@@ -112,6 +112,7 @@ module.exports.loadController = function (app, db, io) {
  * Создает кластер для новых координат фото
  * @param cid id фото
  * @param oldGeo новые гео-координаты
+ * @param oldYear год фотографии до изменения
  * @param cb Коллбэк добавления
  * @param ctx Контекст
  * @return {Boolean}

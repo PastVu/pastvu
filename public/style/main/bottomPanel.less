@@ -107,5 +107,38 @@
 				}
 			}
 		}
+
+		.ratings {
+			.ratElem {
+				display: block;
+				margin: 3px 0;
+				font-size: 14px;
+				line-height: 15px;
+				cursor: pointer;
+				text-decoration: none;
+
+				&:hover {
+					background-color: fade(@MainBlueColor, 10%);
+				}
+
+				.ratPreview {
+					display: block;
+					float: left;
+					width: 60px;
+					height: 60px;
+					margin: 2px 5px 2px 2px;
+				}
+				.ratName {
+					display: block;
+					padding-bottom: 2px;
+					max-height: 45px;
+					overflow: hidden;
+				}
+				.ratAmount {
+					display: block;
+					color: @textColor;
+				}
+			}
+		}
 	}
 }
