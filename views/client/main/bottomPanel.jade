@@ -28,14 +28,21 @@
 					.span6
 						| По просмотрам
 						br
-						.btn-group#byview
-							button.btn#pday(data-bind="text: 'День', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
-							button.btn#pweek(data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
-							button.btn#pall(data-bind="text: 'Всё время', click: ratSelect, css: {active: ratings.byview.selected() === $element.id}")
-						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.byview[ratings.byview.selected()] }
+						.btn-group#pbyview
+							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
+							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
+							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
+						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
 						// /ko
 					.span6
 						| По комментариям
+						br
+						.btn-group#pbycomm
+							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
+							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
+							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
+						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
+						// /ko
 
 	script(id="ratingsColumnTpl", type="text/html")
 		a.row-fluid.ratElem(data-bind="attr: {href: $data.link}")

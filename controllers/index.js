@@ -2,6 +2,8 @@ var auth = require('./auth.js'),
 	Settings,
 	User,
 	Photo,
+	Comment,
+	moment = require('moment'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
@@ -14,6 +16,7 @@ module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	User = db.model('User');
 	Photo = db.model('Photo');
+	Comment = db.model('Comment');
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
@@ -55,6 +58,13 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('giveRatings', function (data) {
+				var st = Date.now(),
+					pviewday,
+					pviewweek,
+					pviewall,
+
+					pcommdayHash = {},
+					pcommweekHash = {};
 				if (!Utils.isType('object', data)) {
 					result({message: 'Bad params', error: true});
 					return;
@@ -62,15 +72,13 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						var pcriteria = {fresh: {$exists: false}, del: {$exists: false}};
-
-						Photo.collection.find(pcriteria, {_id: 0, cid: 1, file: 1, title: 1, stats_day: 1}, {limit: 10, sort: [
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_day: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_day: 1}, {limit: 10, sort: [
 							['stats_day', 'desc']
 						]}, this.parallel());
-						Photo.collection.find(pcriteria, {_id: 0, cid: 1, file: 1, title: 1, stats_week: 1}, {limit: 10, sort: [
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_week: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_week: 1}, {limit: 10, sort: [
 							['stats_week', 'desc']
 						]}, this.parallel());
-						Photo.collection.find(pcriteria, {_id: 0, cid: 1, file: 1, title: 1, stats_all: 1}, {limit: 10, sort: [
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_all: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_all: 1}, {limit: 10, sort: [
 							['stats_all', 'desc']
 						]}, this.parallel());
 					},
@@ -83,13 +91,77 @@ module.exports.loadController = function (app, db, io) {
 						for (var i = 1; i < arguments.length; i++) {
 							arguments[i].toArray(this.parallel());
 						}
+
+						Comment.collection.aggregate([
+							{$match: {stamp: {$gt: moment().startOf('month').toDate()}}},
+							{$group: {_id: '$photo', ccount: {$sum: 1}}},
+							{$sort: { ccount: -1}},
+							{$limit: 10}
+						], this.parallel());
+						Comment.collection.aggregate([
+							{$match: {stamp: {$gt: moment().startOf('year').toDate()}}},
+							{$group: {_id: '$photo', ccount: {$sum: 1}}},
+							{$sort: { ccount: -1}},
+							{$limit: 10}
+						], this.parallel());
 					},
-					function (err, pday, pweek, pall) {
+					function (err, pday, pweek, pall, pcday, pcweek) {
 						if (err) {
 							result({message: err && err.message, error: true});
 							return;
 						}
-						result({pday: pday || [], pweek: pweek || [], pall: pall || []});
+						pviewday = pday;
+						pviewweek = pweek;
+						pviewall = pall;
+
+						var i,
+							pcdayarr = [],
+							pcweekarr = [];
+
+						i = pcday.length;
+						while (i--) {
+							pcommdayHash[pcday[i]._id] = pcday[i].ccount;
+							pcdayarr.push(pcday[i]._id);
+						}
+						i = pcweek.length;
+						while (i--) {
+							pcommweekHash[pcweek[i]._id] = pcweek[i].ccount;
+							pcweekarr.push(pcweek[i]._id);
+						}
+						Photo.collection.find({_id: {$in: pcdayarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
+						Photo.collection.find({_id: {$in: pcweekarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}}, {_id: 0, cid: 1, file: 1, title: 1, ccount: 1}, {limit: 10, sort: [
+							['ccount', 'desc']
+						]}, this.parallel());
+					},
+					function cursors(err) {
+						if (err) {
+							result({message: err && err.message, error: true});
+							return;
+						}
+
+						for (var i = 1; i < arguments.length; i++) {
+							arguments[i].toArray(this.parallel());
+						}
+					},
+					function (err, pcday, pcweek, pcall) {
+						if (err) {
+							result({message: err && err.message, error: true});
+							return;
+						}
+						var i;
+
+						i = pcday.length;
+						while (i--) {
+							pcday[i].ccount = pcommdayHash[pcday[i]._id];
+						}
+						i = pcweek.length;
+						while (i--) {
+							pcweek[i].ccount = pcommweekHash[pcweek[i]._id];
+						}
+
+						console.log(Date.now() - st);
+						result({pday: pviewday || [], pweek: pviewweek || [], pall: pviewall || [], pcday: pcday, pcweek: pcweek, pcall: pcall});
 					}
 				);
 

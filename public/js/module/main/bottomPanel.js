@@ -20,11 +20,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.photos = ko.observableArray();
 			this.ratings = {
-				byview: {
-					pday: ko.observableArray(),
-					pweek: ko.observableArray(),
-					pall: ko.observableArray(),
-					selected: ko.observable('pday')
+				pbyview: {
+					day: ko.observableArray(),
+					week: ko.observableArray(),
+					all: ko.observableArray(),
+					selected: ko.observable('day')
+				},
+				pbycomm: {
+					day: ko.observableArray(),
+					week: ko.observableArray(),
+					all: ko.observableArray(),
+					selected: ko.observable('day')
 				}
 			};
 
@@ -93,9 +99,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (!data || data.error) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.ratings.byview.pday(this.processPhotos(data.pday, Photo.picFormats.micro, 'stats_day', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.byview.pweek(this.processPhotos(data.pweek, Photo.picFormats.micro, 'stats_week', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.byview.pall(this.processPhotos(data.pall, Photo.picFormats.micro, 'stats_all', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.micro, 'stats_day', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.micro, 'stats_week', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.micro, 'stats_all', [' просмотр', ' просмотра', ' просмотров']));
+
+						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 					}
 					this.loadingCat(false);
 				}
@@ -107,7 +117,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		ratSelect: function (data, event) {
 			var group = $(event.target).parents('.btn-group').attr('id'),
-				id = $(event.target).attr('id');
+				id = $(event.target).attr('data-time');
 			this.ratings[group].selected(id);
 		},
 		processPhotos: function (photos, picFormat, numField, numFormat) {

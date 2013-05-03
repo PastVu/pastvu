@@ -40,10 +40,10 @@ var FragmentSchema = new Schema({
 			source: {type: String},
 			author: {type: String},
 
-			stats_day: {type: Number},
-			stats_week: {type: Number},
-			stats_all: {type: Number},
-			ccount: {type: Number}, //Кол-во комментариев
+			stats_day: {type: Number, index: true},
+			stats_week: {type: Number, index: true},
+			stats_all: {type: Number, index: true},
+			ccount: {type: Number, index: true}, //Кол-во комментариев
 			frags: [FragmentSchema], //Фрагменты с комментариями
 
 			conv: {type: Boolean}, //Конвертируется
