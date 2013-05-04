@@ -59,39 +59,16 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('giveRatings', function (data) {
 				var st = Date.now(),
-					pviewday,
-					pviewweek,
-					pviewall,
-
 					pcommdayHash = {},
 					pcommweekHash = {};
+
 				if (!Utils.isType('object', data)) {
 					result({message: 'Bad params', error: true});
 					return;
 				}
 
 				step(
-					function () {
-						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_day: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_day: 1}, {limit: 10, sort: [
-							['stats_day', 'desc']
-						]}, this.parallel());
-						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_week: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_week: 1}, {limit: 10, sort: [
-							['stats_week', 'desc']
-						]}, this.parallel());
-						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_all: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_all: 1}, {limit: 10, sort: [
-							['stats_all', 'desc']
-						]}, this.parallel());
-					},
-					function cursors(err) {
-						if (err) {
-							result({message: err && err.message, error: true});
-							return;
-						}
-
-						for (var i = 1; i < arguments.length; i++) {
-							arguments[i].toArray(this.parallel());
-						}
-
+					function aggregation() {
 						Comment.collection.aggregate([
 							{$match: {stamp: {$gt: moment().startOf('day').toDate()}}},
 							{$group: {_id: '$photo', ccount: {$sum: 1}}},
@@ -105,36 +82,45 @@ module.exports.loadController = function (app, db, io) {
 							{$limit: 10}
 						], this.parallel());
 					},
-					function (err, pday, pweek, pall, pcday, pcweek) {
+					function getAggregationResultObjects(err, pcday, pcweek) {
 						if (err) {
 							result({message: err && err.message, error: true});
 							return;
 						}
-						pviewday = pday;
-						pviewweek = pweek;
-						pviewall = pall;
-
 						var i,
 							pcdayarr = [],
 							pcweekarr = [];
 
+						// Photo by views
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_day: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_day: 1}, {limit: 10, sort: [
+							['stats_day', 'desc']
+						]}, this.parallel());
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_week: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_week: 1}, {limit: 10, sort: [
+							['stats_week', 'desc']
+						]}, this.parallel());
+						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_all: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_all: 1}, {limit: 10, sort: [
+							['stats_all', 'desc']
+						]}, this.parallel());
+
+						// Photo by comments
 						i = pcday.length;
 						while (i--) {
 							pcommdayHash[pcday[i]._id] = pcday[i].ccount;
 							pcdayarr.push(pcday[i]._id);
 						}
+						Photo.collection.find({_id: {$in: pcdayarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
 						i = pcweek.length;
 						while (i--) {
 							pcommweekHash[pcweek[i]._id] = pcweek[i].ccount;
 							pcweekarr.push(pcweek[i]._id);
 						}
-						Photo.collection.find({_id: {$in: pcdayarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
 						Photo.collection.find({_id: {$in: pcweekarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
 						Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}}, {_id: 0, cid: 1, file: 1, title: 1, ccount: 1}, {limit: 10, sort: [
 							['ccount', 'desc']
 						]}, this.parallel());
+
 					},
-					function cursors(err) {
+					function cursorsExtract(err) {
 						if (err) {
 							result({message: err && err.message, error: true});
 							return;
@@ -144,7 +130,7 @@ module.exports.loadController = function (app, db, io) {
 							arguments[i].toArray(this.parallel());
 						}
 					},
-					function (err, pcday, pcweek, pcall) {
+					function (err, pday, pweek, pall, pcday, pcweek, pcall, ucall) {
 						if (err) {
 							result({message: err && err.message, error: true});
 							return;
@@ -161,7 +147,7 @@ module.exports.loadController = function (app, db, io) {
 						}
 
 						console.log(Date.now() - st);
-						result({pday: pviewday || [], pweek: pviewweek || [], pall: pviewall || [], pcday: pcday, pcweek: pcweek, pcall: pcall});
+						result({pday: pday || [], pweek: pweek || [], pall: pall || [], pcday: pcday, pcweek: pcweek, pcall: pcall, ucall: ucall});
 					}
 				);
 
