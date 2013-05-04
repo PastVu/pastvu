@@ -167,6 +167,7 @@ app.configure(function () {
 var db = mongoose.createConnection(app.set('db-uri'), {db: {safe: true}})
 	.once('open', function () {
 		logger.info("Connected to mongo: " + app.set('db-uri'));
+		require('./controllers/systemjs.js').loadController(app, db);
 	})
 	.on('error', function () {
 		logger.fatal("Connection error to mongo: " + app.set('db-uri'));
@@ -214,7 +215,6 @@ Session = db.model('Session');
 
 // loading controllers
 require('./controllers/_session.js').loadController(app, db, io);
-require('./controllers/systemjs.js').loadController(app, db);
 require('./controllers/mail.js').loadController(app);
 require('./controllers/auth.js').loadController(app, db, io);
 require('./controllers/index.js').loadController(app, db, io);
