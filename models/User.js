@@ -47,9 +47,9 @@ var UserScheme = new mongoose.Schema({
 		{ type: Schema.Types.ObjectId, ref: 'Role' }
 	],
 	regdate: {type: Date, 'default': Date.now },
-	pcount: {type: Number, 'default': 0}, //Кол-во фотографий
+	pcount: {type: Number, 'default': 0, index: true}, //Кол-во фотографий
 	bcount: {type: Number, 'default': 0}, //Кол-во блогов
-	ccount: {type: Number, 'default': 0}, //Кол-во комментариев
+	ccount: {type: Number, 'default': 0, index: true}, //Кол-во комментариев
 
 	dateFormat: {type: String, 'default': "dd.mm.yyyy" },
 	active: {type: Boolean, 'default': false },

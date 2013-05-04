@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, jade) {
 	'use strict';
 	var cats = [
 		{id: 'photos', name: 'Новые фото'},
@@ -27,6 +27,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					selected: ko.observable('day')
 				},
 				pbycomm: {
+					day: ko.observableArray(),
+					week: ko.observableArray(),
+					all: ko.observableArray(),
+					selected: ko.observable('day')
+				},
+				ubycomm: {
 					day: ko.observableArray(),
 					week: ko.observableArray(),
 					all: ko.observableArray(),
@@ -106,6 +112,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+
+						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 					}
 					this.loadingCat(false);
 				}
@@ -135,6 +145,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}
 			return photos;
+		},
+		processUsers: function (users, numField, numFormat) {
+			var i = users.length,
+				user;
+			while (i) {
+				user = users[--i];
+				if (user.avatar) {
+					user.sfile = '/_avatar/' + user.avatar;
+				} else {
+					user.sfile = User.def.full.avatar;
+				}
+				user.link = '/u/' + user.login;
+				user.title = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
+				if (numField && numFormat) {
+					user.amount = user[numField] + Utils.format.wordEndOfNum(user[numField], numFormat);
+				}
+			}
+			return users;
 		},
 		onThumbLoad: function (data, event) {
 			var photoThumb = event.target.parentNode.parentNode;

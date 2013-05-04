@@ -47,11 +47,11 @@
 				.row-fluid
 					.span6
 						.ratGroupHead По комментариям
-						.btn-group#pbyview
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
-						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
+						.btn-group#ubycomm
+							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
+							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
+							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'all'}")
+						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubycomm[ratings.ubycomm.selected()] }
 						// /ko
 					.span6
 						.ratGroupHead По загрузкам
