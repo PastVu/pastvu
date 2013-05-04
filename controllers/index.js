@@ -93,13 +93,13 @@ module.exports.loadController = function (app, db, io) {
 						}
 
 						Comment.collection.aggregate([
-							{$match: {stamp: {$gt: moment().startOf('month').toDate()}}},
+							{$match: {stamp: {$gt: moment().startOf('day').toDate()}}},
 							{$group: {_id: '$photo', ccount: {$sum: 1}}},
 							{$sort: { ccount: -1}},
 							{$limit: 10}
 						], this.parallel());
 						Comment.collection.aggregate([
-							{$match: {stamp: {$gt: moment().startOf('year').toDate()}}},
+							{$match: {stamp: {$gt: moment().startOf('week').toDate()}}},
 							{$group: {_id: '$photo', ccount: {$sum: 1}}},
 							{$sort: { ccount: -1}},
 							{$limit: 10}
