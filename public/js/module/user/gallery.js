@@ -132,9 +132,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					Array.prototype.push.apply(currArray, data);
 
 					currArray.sort(function (a, b) {
-						if (a.loaded < b.loaded) {
+						if (a.ldate < b.ldate) {
 							return 1;
-						} else if (a.loaded > b.loaded) {
+						} else if (a.ldate > b.ldate) {
 							return -1;
 						} else {
 							return 0;
@@ -149,7 +149,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).loaded, endTime: undefined});
+			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).ldate, endTime: undefined});
 			this.loadingPhoto(true);
 		},
 		onThumbLoad: function (data, event) {

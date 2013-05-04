@@ -237,7 +237,7 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now(),
 			addDate = new Date(),
 			conveyer = [],
-			photos = db.photos.find({}, {_id: 0, file: 1}).sort({loaded: 1}).toArray(),
+			photos = db.photos.find({}, {_id: 0, file: 1}).sort({adate: 1}).toArray(),
 			photoCounter = photos.length,
 			photosAllCount = photos.length;
 
@@ -531,7 +531,8 @@ module.exports.loadController = function (app, db) {
 					stack_order: photo.stack_order || undefined,
 
 					file: photo.file || '',
-					loaded: new Date((photo.date || 0) * 1000),
+					ldate: new Date((photo.date || 0) * 1000),
+					adate: new Date((photo.date || 0) * 1000),
 					w: photo.width,
 					h: photo.height,
 

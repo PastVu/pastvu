@@ -17,7 +17,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 				del: false //К удалению
 			},
 			compact: {
-				loaded: Date.now(),
+				ldate: Date.now(),
+				adate: Date.now(),
 
 				year: 2000,
 				year2: 2000,
@@ -85,7 +86,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
 
 		if (defType === 'compact' || defType === 'full') {
-			origin.loaded = new Date(origin.loaded);
+			origin.ldate = new Date(origin.ldate);
 		}
 		if (defType === 'full') {
 			origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];

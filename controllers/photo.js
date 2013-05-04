@@ -348,17 +348,17 @@ module.exports.loadController = function (app, db, io) {
 					takeUserPhotosPrivate({message: 'Not authorized', error: true});
 					return;
 				}
-				var filters = {user: user._id, loaded: {}, $or: [], del: {$exists: false}};
+				var filters = {user: user._id, ldate: {}, $or: [], del: {$exists: false}};
 				if (hs.session.user && user._id.equals(hs.session.user._id)) {
 					filters.$or.push({fresh: {$exists: true}});
 					filters.$or.push({disabled: {$exists: true}});
 				}
 
 				if (data.startTime) {
-					filters.loaded.$gte = data.startTime;
+					filters.ldate.$gte = data.startTime;
 				}
 				if (data.endTime) {
-					filters.loaded.$lte = data.endTime;
+					filters.ldate.$lte = data.endTime;
 				}
 				Photo.getPhotosCompact(filters, {}, function (err, photo) {
 					if (err) {
@@ -402,7 +402,7 @@ module.exports.loadController = function (app, db, io) {
 				approvePhotoResult({message: 'Not authorized', error: true});
 				return;
 			}
-			Photo.update({cid: cid, fresh: true, del: {$exists: false}}, { $unset: { fresh: 1 }}, {}, function (err, numberAffected) {
+			Photo.update({cid: cid, fresh: true}, { $unset: {fresh: 1}, $set: {adate: new Date()} }, {}, function (err, numberAffected) {
 				if (err) {
 					approvePhotoResult({message: err.message || '', error: true});
 					return;
@@ -411,7 +411,7 @@ module.exports.loadController = function (app, db, io) {
 					approvePhotoResult({message: 'No photo affected', error: true});
 					return;
 				}
-				approvePhotoResult({message: 'Photo appreved successfully'});
+				approvePhotoResult({message: 'Photo approved successfully'});
 			});
 		});
 
@@ -443,10 +443,10 @@ module.exports.loadController = function (app, db, io) {
 						filters.disabled = {$exists: false};
 					}
 					if (data.limitL > 0) {
-						Photo.find(filters).gt('cid', data.cid).sort('loaded').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
+						Photo.find(filters).gt('cid', data.cid).sort('ldate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
 					}
 					if (data.limitR > 0) {
-						Photo.find(filters).lt('cid', data.cid).sort('-loaded').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+						Photo.find(filters).lt('cid', data.cid).sort('-ldate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
 					}
 					filters = null;
 				},

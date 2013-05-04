@@ -19,7 +19,8 @@ var FragmentSchema = new Schema({
 			stack_order: {type: Number},
 
 			file: {type: String, index: { unique: true }},
-			loaded: {type: Date, 'default': Date.now, required: true, index: true},
+			ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
+			adate: {type: Date, index: true}, // Время активации
 			type: {type: String}, // like 'image/jpeg'
 			format: {type: String}, // like 'JPEG'
 			sign: {type: String},
@@ -137,7 +138,7 @@ PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
 		cb({message: 'cid is not specified'});
 	}
 	options = options || {};
-	this.findOne(query, null, options).select('-_id cid file loaded title year ccount fresh disabled conv convqueue del').exec(cb);
+	this.findOne(query, null, options).select('-_id cid file ldate title year ccount fresh disabled conv convqueue del').exec(cb);
 };
 
 PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
@@ -145,7 +146,7 @@ PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
 		cb({message: 'query is not specified'});
 	}
 	options = options || {};
-	this.find(query, null, options).sort('-loaded').select('-_id cid file loaded title year ccount fresh disabled conv convqueue del').exec(cb);
+	this.find(query, null, options).sort('-ldate').select('-_id cid file ldate title year ccount fresh disabled conv convqueue del').exec(cb);
 };
 
 

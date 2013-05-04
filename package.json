@@ -16,7 +16,7 @@
 		"jade": "~0.30.0",
 		"less-middleware": "~0.1.11",
 		"less": "~1.3.3",
-		"mongoose": "~3.6.8",
+		"mongoose": "~3.6.9",
 		"async": "~0.2.7",
 		"lodash": "~1.2.1",
 		"mc": "~1.0",
