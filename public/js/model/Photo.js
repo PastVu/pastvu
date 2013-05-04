@@ -87,6 +87,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 
 		if (defType === 'compact' || defType === 'full') {
 			origin.ldate = new Date(origin.ldate);
+			origin.adate = new Date(origin.adate);
 		}
 		if (defType === 'full') {
 			origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];

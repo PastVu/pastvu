@@ -286,19 +286,58 @@ module.exports.loadController = function (app, db, io) {
 					takeUserPhotos({message: err && err.message, error: true});
 					return;
 				}
-				var criteria = {user: user._id, del: {$exists: false}};
-				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
-					criteria.fresh = {$exists: false};
-					criteria.disabled = {$exists: false};
-				}
-				Photo.getPhotosCompact(criteria, {skip: data.start, limit: data.limit}, function (err, photo) {
-					if (err) {
-						takeUserPhotos({message: err && err.message, error: true});
-						return;
+				var photosFresh,
+					skip = data.skip || 0,
+					limit = data.limit || 20,
+					criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
+
+				step(
+					function () {
+						var stepthis = this;
+						if (hs.session.user && user._id.equals(hs.session.user._id)) {
+							Photo.count({user: user._id, fresh: true, del: {$exists: false}}, function (err, count) {
+								if (err) {
+									takeUserPhotos({message: err && err.message, error: true});
+									return;
+								}
+								if (count > skip) {
+									if (count - skip > limit) {
+										limit = 0;
+									} else {
+										limit -= count - skip;
+									}
+									skip = 0;
+								} else {
+									skip -= count;
+								}
+								Photo.getPhotosCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, function (err, pFresh) {
+									photosFresh = pFresh;
+									stepthis();
+								});
+							});
+						} else {
+							criteria.disabled = {$exists: false};
+							stepthis();
+						}
+					},
+					function () {
+						Photo.getPhotosCompact(criteria, {skip: skip, limit: limit}, this);
+					},
+					function (err, photos) {
+						if (err) {
+							takeUserPhotos({message: err && err.message, error: true});
+							return;
+						}
+						var result;
+						if (photosFresh && photosFresh.length > 0) {
+							result = photosFresh.concat(photos);
+						} else {
+							result = photos;
+						}
+						takeUserPhotos(result);
+						criteria = photosFresh = skip = limit = result = null;
 					}
-					takeUserPhotos(photo);
-				});
-				criteria = null;
+				);
 			});
 		});
 
@@ -443,10 +482,10 @@ module.exports.loadController = function (app, db, io) {
 						filters.disabled = {$exists: false};
 					}
 					if (data.limitL > 0) {
-						Photo.find(filters).gt('cid', data.cid).sort('ldate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
+						Photo.find(filters).gt('cid', data.cid).sort('adate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
 					}
 					if (data.limitR > 0) {
-						Photo.find(filters).lt('cid', data.cid).sort('-ldate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+						Photo.find(filters).lt('cid', data.cid).sort('-adate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
 					}
 					filters = null;
 				},

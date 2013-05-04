@@ -98,7 +98,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.getPage(this.photos().length, this.limit);
 			}
 		},
-		getPhotos: function (start, limit, cb, ctx) {
+		getPhotos: function (skip, limit, cb, ctx) {
 			socket.once('takeUserPhotos', function (data) {
 				if (!data || data.error) {
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -112,7 +112,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 				this.loadingPhoto(false);
 			}.bind(this));
-			socket.emit('giveUserPhotos', {login: this.u.login(), start: start, limit: limit});
+			socket.emit('giveUserPhotos', {login: this.u.login(), skip: skip, limit: limit});
 			this.loadingPhoto(true);
 		},
 		getPhotosPrivate: function (cb, ctx) {
@@ -132,9 +132,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					Array.prototype.push.apply(currArray, data);
 
 					currArray.sort(function (a, b) {
-						if (a.ldate < b.ldate) {
+						if (a.adate < b.a) {
 							return 1;
-						} else if (a.ldate > b.ldate) {
+						} else if (a.adate > b.adate) {
 							return -1;
 						} else {
 							return 0;
@@ -149,7 +149,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).ldate, endTime: undefined});
+			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).adate, endTime: undefined});
 			this.loadingPhoto(true);
 		},
 		onThumbLoad: function (data, event) {
