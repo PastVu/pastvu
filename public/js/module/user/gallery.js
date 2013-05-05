@@ -63,7 +63,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			// После логина перезапрашиваем ленту фотографий пользователя
 			if (this.u.pcount() > 0) {
 				this.getPhotosPrivate(function (data) {
-					if (data && !data.error && data.length > 0 && this.photos().length < this.limit * 1.5) {
+					if (data && !data.error && data.len > 0/* && this.photos().length < this.u.pcount()*/ && this.photos().length < this.limit * 1.5) {
 						this.getNextPage();
 					}
 				}, this);
@@ -120,16 +120,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				return;
 			}
 			socket.once('takeUserPhotosPrivate', function (data) {
-				if (!data || data.error) {
-					//window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
+				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
 						i;
 
 					if (data.disabled.length > 0) {
 						i = data.disabled.length;
 						while (i--) {
-							Photo.factory(data.disabled[i], 'compact', 'thumb', {title: 'No title yet'});
+							Photo.factory(data.disabled[i], 'compact', 'thumb');
 						}
 						Array.prototype.push.apply(currArray, data.disabled);
 						currArray.sort(function (a, b) {
@@ -146,7 +144,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (data.fresh.length > 0) {
 						i = data.fresh.length;
 						while (i--) {
-							Photo.factory(data.fresh[i], 'compact', 'thumb', {title: 'No title yet'});
+							Photo.factory(data.fresh[i], 'compact', 'thumb');
 						}
 						Array.prototype.unshift.apply(currArray, data.fresh);
 					}

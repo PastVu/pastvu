@@ -83,7 +83,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 		defType = defType || 'full';
 		picType = picType || 'standard';
 
-		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
+		if (customDefaults) {
+			origin = _.defaults(origin, customDefaults, defaults[defType]);
+		} else {
+			origin = _.defaults(origin, defaults[defType]);
+		}
 
 		if (defType === 'compact' || defType === 'full') {
 			origin.ldate = new Date(origin.ldate);

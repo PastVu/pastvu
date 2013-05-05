@@ -300,20 +300,19 @@ module.exports.loadController = function (app, db, io) {
 									takeUserPhotos({message: err && err.message, error: true});
 									return;
 								}
-								if (count > skip) {
-									if (count - skip > limit) {
-										limit = 0;
-									} else {
-										limit -= count - skip;
-									}
-									skip = 0;
-								} else {
+
+								if (skip > count) {
 									skip -= count;
-								}
-								Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, function (err, pFresh) {
-									photosFresh = pFresh;
 									stepthis();
-								});
+								} else {
+									var selectingFreshCount = count - skip;
+									limit = Math.max(0, limit - selectingFreshCount);
+									Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {skip: skip}, function (err, pFresh) {
+										photosFresh = pFresh;
+										stepthis();
+									});
+									skip = 0;
+								}
 							});
 						} else {
 							criteria.disabled = {$exists: false};
@@ -321,12 +320,19 @@ module.exports.loadController = function (app, db, io) {
 						}
 					},
 					function () {
-						Photo.getPhotosCompact(criteria, {skip: skip, limit: limit}, this);
+						if (limit > 0) {
+							Photo.getPhotosCompact(criteria, {skip: skip, limit: limit}, this);
+						} else {
+							this();
+						}
 					},
 					function (err, photos) {
 						if (err) {
 							takeUserPhotos({message: err && err.message, error: true});
 							return;
+						}
+						if (!photos) {
+							photos = [];
 						}
 						var result;
 						if (photosFresh && photosFresh.length > 0) {
@@ -378,7 +384,7 @@ module.exports.loadController = function (app, db, io) {
 							takeUserPhotosPrivate({message: err && err.message, error: true});
 							return;
 						}
-						takeUserPhotosPrivate({fresh: fresh || [], disabled: disabled || []});
+						takeUserPhotosPrivate({fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length});
 					}
 				);
 			});
