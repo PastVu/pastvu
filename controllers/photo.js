@@ -310,7 +310,7 @@ module.exports.loadController = function (app, db, io) {
 								} else {
 									skip -= count;
 								}
-								Photo.getPhotosCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, function (err, pFresh) {
+								Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, function (err, pFresh) {
 									photosFresh = pFresh;
 									stepthis();
 								});
@@ -341,6 +341,50 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+
+		/**
+		 * Отдаем фотографии с ограниченным доступом
+		 */
+		function takeUserPhotosPrivate(data) {
+			socket.emit('takeUserPhotosPrivate', data);
+		}
+
+		socket.on('giveUserPhotosPrivate', function (data) {
+			User.getUserID(data.login, function (err, user) {
+				if (err) {
+					takeUserPhotosPrivate({message: err && err.message, error: true});
+					return;
+				}
+				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
+					takeUserPhotosPrivate({message: 'Not authorized', error: true});
+					return;
+				}
+
+				step(
+					function () {
+						var filters = {user: user._id, disabled: true, adate: {}, del: {$exists: false}};
+						if (data.startTime) {
+							filters.adate.$gte = data.startTime;
+						}
+						if (data.endTime) {
+							filters.adate.$lte = data.endTime;
+						}
+						Photo.getPhotosCompact(filters, {}, this.parallel());
+						Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, this.parallel());
+						filters = null;
+					},
+					function (err, disabled, fresh) {
+						if (err) {
+							takeUserPhotosPrivate({message: err && err.message, error: true});
+							return;
+						}
+						takeUserPhotosPrivate({fresh: fresh || [], disabled: disabled || []});
+					}
+				);
+			});
+		});
+
+
 		(function () {
 			/**
 			 * Новые фотографии
@@ -369,46 +413,6 @@ module.exports.loadController = function (app, db, io) {
 
 			});
 		}());
-
-		/**
-		 * Отдаем фотографии с ограниченным доступом
-		 */
-		function takeUserPhotosPrivate(data) {
-			socket.emit('takeUserPhotosPrivate', data);
-		}
-
-		socket.on('giveUserPhotosPrivate', function (data) {
-			User.getUserID(data.login, function (err, user) {
-				if (err) {
-					takeUserPhotosPrivate({message: err && err.message, error: true});
-					return;
-				}
-				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
-					takeUserPhotosPrivate({message: 'Not authorized', error: true});
-					return;
-				}
-				var filters = {user: user._id, ldate: {}, $or: [], del: {$exists: false}};
-				if (hs.session.user && user._id.equals(hs.session.user._id)) {
-					filters.$or.push({fresh: {$exists: true}});
-					filters.$or.push({disabled: {$exists: true}});
-				}
-
-				if (data.startTime) {
-					filters.ldate.$gte = data.startTime;
-				}
-				if (data.endTime) {
-					filters.ldate.$lte = data.endTime;
-				}
-				Photo.getPhotosCompact(filters, {}, function (err, photo) {
-					if (err) {
-						takeUserPhotosPrivate({message: err && err.message, error: true});
-						return;
-					}
-					takeUserPhotosPrivate(photo);
-				});
-				filters = null;
-			});
-		});
 
 
 		/**

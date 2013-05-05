@@ -120,29 +120,41 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				return;
 			}
 			socket.once('takeUserPhotosPrivate', function (data) {
-				if (!data || data.error || data.length === 0) {
+				if (!data || data.error) {
 					//window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					var currArray = this.photos();
+					var currArray = this.photos(),
+						i;
 
-					data.forEach(function (item, index, array) {
-						Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
-					});
-
-					Array.prototype.push.apply(currArray, data);
-
-					currArray.sort(function (a, b) {
-						if (a.adate < b.a) {
-							return 1;
-						} else if (a.adate > b.adate) {
-							return -1;
-						} else {
-							return 0;
+					if (data.disabled.length > 0) {
+						i = data.disabled.length;
+						while (i--) {
+							Photo.factory(data.disabled[i], 'compact', 'thumb', {title: 'No title yet'});
 						}
-					});
+						Array.prototype.push.apply(currArray, data.disabled);
+						currArray.sort(function (a, b) {
+							if (a.adate < b.adate) {
+								return 1;
+							} else if (a.adate > b.adate) {
+								return -1;
+							} else {
+								return 0;
+							}
+						});
+					}
 
-					this.photos(currArray);
-					currArray = null;
+					if (data.fresh.length > 0) {
+						i = data.fresh.length;
+						while (i--) {
+							Photo.factory(data.fresh[i], 'compact', 'thumb', {title: 'No title yet'});
+						}
+						Array.prototype.unshift.apply(currArray, data.fresh);
+					}
+
+					if (data.disabled.length > 0 || data.fresh.length > 0) {
+						this.photos(currArray);
+					}
+					currArray = i = null;
 				}
 				this.loadingPhoto(false);
 				if (Utils.isType('function', cb)) {
@@ -209,29 +221,29 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		showUpload: function () {
 			if (!this.uploadVM) {
-			this.$dom.find('.photoUploadCurtain')
-				.css({display: 'block'})
-				.delay(50)
-				.queue(function (next) {
-					this.classList.add('showUpload');
-					next();
-				})
-				.delay(400)
-				.queue(function (next) {
-					renderer(
-						[
-							{module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
-								this.uploadVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)}
-						],
-						{
-							parent: this,
-							level: this.level + 1
-						}
-					);
-					next();
-				}.bind(this));
+				this.$dom.find('.photoUploadCurtain')
+					.css({display: 'block'})
+					.delay(50)
+					.queue(function (next) {
+						this.classList.add('showUpload');
+						next();
+					})
+					.delay(400)
+					.queue(function (next) {
+						renderer(
+							[
+								{module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
+									this.uploadVM = vm;
+									this.childModules[vm.id] = vm;
+								}.bind(this)}
+							],
+							{
+								parent: this,
+								level: this.level + 1
+							}
+						);
+						next();
+					}.bind(this));
 			}
 		},
 		closeUpload: function () {

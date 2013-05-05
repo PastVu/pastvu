@@ -148,6 +148,13 @@ PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
 	options = options || {};
 	this.find(query, null, options).sort('-adate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
 };
+PhotoSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
+	if (!query) {
+		cb({message: 'query is not specified'});
+	}
+	options = options || {};
+	this.find(query, null, options).sort('-ldate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
+};
 
 
 module.exports.makeModel = function (db) {
