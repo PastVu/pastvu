@@ -219,6 +219,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		showUpload: function () {
 			if (!this.uploadVM) {
+				this.waitUploadSince = new Date();
 				this.$dom.find('.photoUploadCurtain')
 					.css({display: 'block'})
 					.delay(50)
@@ -248,29 +249,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (this.uploadVM) {
 				this.$dom.find('.photoUploadCurtain').css({display: ''}).removeClass('showUpload');
 				this.uploadVM.destroy();
-				delete this.uploadVM;
 
-				var oldFirst = this.photos()[0] ? this.photos()[0].file : 0;
-				this.getPhotos(0, 11, function (data) {
+				socket.once('takePhotosFresh', function (data) {
 					if (!data || data.error) {
-						return;
-					}
-					if (oldFirst === 0) {
-						this.photos.concat(data, false);
+						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						var intersectionIndex = data.reduce(function (previousValue, currentValue, index, array) {
-							if (previousValue === 0 && currentValue.file === oldFirst) {
-								return index;
-							} else {
-								return previousValue;
+						if (data.photos.length > 0) {
+							var i = data.photos.length;
+							while (i--) {
+								Photo.factory(data.photos[i], 'compact', 'thumb');
 							}
-						}.bind(this), 0);
-						if (intersectionIndex > 0) {
-							this.photos.concat(data.slice(0, intersectionIndex), true);
+							this.photos.concat(data.photos, true);
 						}
 					}
+					this.loadingPhoto(false);
+				}.bind(this));
+				socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 
-				}, this);
+				delete this.uploadVM;
+				delete this.waitUploadSince;
 			}
 		}
 	});

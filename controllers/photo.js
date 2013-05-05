@@ -390,6 +390,61 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+		/**
+		 * Отдаем неподтвержденные фотографии
+		 */
+		function takePhotosFresh(data) {
+			socket.emit('takePhotosFresh', data);
+		}
+
+		socket.on('givePhotosFresh', function (data) {
+			if (!hs.session.user) {
+				takePhotosFresh({message: 'Not authorized', error: true});
+				return;
+			}
+			if (!data || !Utils.isType('object', data)) {
+				takePhotosFresh({message: 'Bad params', error: true});
+				return;
+			}
+			step(
+				function () {
+					if (data.login) {
+						User.getUserID(data.login, this);
+					} else {
+						this();
+					}
+				},
+				function (err, user) {
+					if (err) {
+						takePhotosFresh({message: err && err.message, error: true});
+						return;
+					}
+					var criteria = {disabled: {$exists: false}, del: {$exists: false}},
+						options = {};
+					if (user) {
+						criteria.user = user;
+					}
+					if (data.after) {
+						criteria.ldate = {$gt: data.after};
+					}
+					if (data.limit) {
+						options.limit = data.limit;
+					}
+					if (data.skip) {
+						options.skip = data.skip;
+					}
+					Photo.getPhotosFreshCompact(criteria, options, this.parallel());
+				},
+				function (err, photos) {
+					if (err) {
+						takePhotosFresh({message: err && err.message, error: true});
+						return;
+					}
+					takePhotosFresh({photos: photos || []});
+				}
+			);
+		});
+
 
 		(function () {
 			/**
