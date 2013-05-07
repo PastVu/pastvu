@@ -76,6 +76,10 @@ new File("publicContent/photos/standard").createDirectory();
 new File("publicContent/photos/origin").createDirectory();
 new File("publicContent/incoming").createDirectory();
 
+function static404(req, res) {
+	res.send(404, 'No such content!');
+}
+
 app.configure(function () {
 	app.set('appEnv', {land: land, domain: domain, port: port, uport: uport});
 
@@ -97,18 +101,18 @@ app.configure(function () {
 
 	//app.use(express.logger({ immediate: false, format: 'dev' }));
 	app.disable('x-powered-by'); // Disable default X-Powered-By
-	app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
 	app.use(express.compress());
 	app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: ms('1d') }));
 	if (land === 'dev') {
 		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
-	} else {
-		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
+		//prod: app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 	}
 	app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
 
 	app.use('/_avatar', express.static(__dirname + '/publicContent/avatars', {maxAge: ms('1d')}));
 	app.use('/_p', express.static(__dirname + '/publicContent/photos', {maxAge: ms('7d')}));
+	app.get('/_avatar/*', static404);
+	app.get('/_p/*', static404);
 
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
@@ -122,6 +126,7 @@ app.configure(function () {
 		res.setHeader('X-Powered-By', 'Paul Klimashkin | klimashkin@gmail.com');
 		next();
 	});
+	app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
 
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
 	io.set('authorization', function (handshakeData, callback) {
