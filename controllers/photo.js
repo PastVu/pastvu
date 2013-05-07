@@ -1,6 +1,7 @@
 'use strict';
 
-var Settings,
+var auth = require('./auth.js'),
+	Settings,
 	User,
 	Photo,
 	Counter,
@@ -69,8 +70,6 @@ function createPhotos(session, data, cb) {
 				cb({message: err.message || '', error: true});
 				return;
 			}
-			session.user.pcount = session.user.pcount + data.length;
-			session.user.save();
 			cb({message: data.length + ' photo successfully saved ' + data[0].file});
 		}
 	);
@@ -78,12 +77,14 @@ function createPhotos(session, data, cb) {
 
 /**
  * Проставляет фотографии в базе флаг удаления и удаляет ее из конвейера конвертаций
- * @param session Сессия пользователя
- * @param cid
+ * @param socket Сокет пользователя
+ * @param data
  * @param cb Коллбэк
  */
-function removePhoto(session, data, cb) {
-	if (!session.user || !session.user.login) {
+function removePhoto(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		query;
+	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
@@ -93,8 +94,7 @@ function removePhoto(session, data, cb) {
 		return;
 	}
 
-	var query = {del: {$exists: false}};
-
+	query = {del: {$exists: false}};
 	if (Utils.isType('number', data)) {
 		query.cid = data;
 	} else if (Utils.isType('string', data)) {
@@ -103,25 +103,21 @@ function removePhoto(session, data, cb) {
 
 	step(
 		function () {
-			//TODO FIXME: Зачем нужен loginAttempts?
-			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false }).select({user: 1, file: 1}).populate('user', 'login loginAttempts pcount').exec(this);
+			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false, select: {user: 1, file: 1}}, this);
 		},
 		function (err, photo) {
 			if (err || !photo) {
 				cb({message: (err && err.message) || 'No such photo for this user', error: true});
 				return;
 			}
-			photo.user.pcount -= 1;
-			if (session.user.login === photo.user.login) {
-				session.user.pcount -= 1;
-			}
-			photo.user.save(this.parallel());
-			PhotoConverter.removePhotos([photo.file], this.parallel());
-		},
-		function (err) {
-			if (err) {
-				cb({message: err.message, error: true});
-				return;
+			PhotoConverter.removePhotos([photo.file]);
+
+			if (photo.user.equals(user._id)) {
+				user.pcount = user.pcount - 1;
+				user.save();
+				auth.sendMe(socket);
+			} else {
+				User.update({_id: photo.user}, {$inc: {pcount: -1}}).exec();
 			}
 			cb({message: 'Photo removed'});
 		}
@@ -222,7 +218,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('removePhoto', function (data) {
-			removePhoto(hs.session, data, function (resultData) {
+			removePhoto(socket, data, function (resultData) {
 				socket.emit('removePhotoCallback', resultData);
 			});
 		});
@@ -232,6 +228,80 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+
+		/**
+		 * Подтверждаем фотографию
+		 */
+		function approvePhotoResult(data) {
+			socket.emit('approvePhotoResult', data);
+		}
+
+		socket.on('approvePhoto', function (cid) {
+			if (!hs.session.user) {
+				approvePhotoResult({message: 'Not authorized', error: true});
+				return;
+			}
+			Photo.findOneAndUpdate({cid: cid, fresh: true}, { $unset: {fresh: 1}, $set: {adate: new Date()} }, {select: {user: 1}}, function (err, photo) {
+				if (err || !photo) {
+					approvePhotoResult({message: err && err.message || 'No photo affected', error: true});
+					return;
+				}
+				approvePhotoResult({message: 'Photo approved successfully'});
+
+				if (photo.user.equals(hs.session.user._id)) {
+					hs.session.user.pcount = hs.session.user.pcount + 1;
+					hs.session.user.save();
+					auth.sendMe(socket);
+				} else {
+					User.update({_id: photo.user}, {$inc: {pcount: 1}}).exec();
+				}
+			});
+		});
+
+		/**
+		 * Активация/деактивация фото
+		 */
+		function disablePhotoResult(data) {
+			socket.emit('disablePhotoResult', data);
+		}
+
+		socket.on('disablePhoto', function (cid) {
+			if (!hs.session.user) {
+				disablePhotoResult({message: 'Not authorized', error: true});
+				return;
+			}
+			if (!cid) {
+				disablePhotoResult({message: 'cid is not defined', error: true});
+				return;
+			}
+			Photo.findOne({cid: cid, fresh: {$exists: false}, del: {$exists: false}}).select('user disabled').exec(function (err, photo) {
+				if (err) {
+					disablePhotoResult({message: err && err.message || 'Change state error', error: true});
+					return;
+				}
+				if (photo.disabled) {
+					photo.disabled = undefined;
+				} else {
+					photo.disabled = true;
+				}
+				photo.save(function (err, photoSaved) {
+					if (err) {
+						disablePhotoResult({message: err && err.message || '', error: true});
+						return;
+					}
+					disablePhotoResult({message: 'Photo state saved successfully', disabled: photoSaved.disabled});
+
+					var userPCountDelta = photoSaved.disabled ? -1 : 1;
+					if (photoSaved.user.equals(hs.session.user._id)) {
+						hs.session.user.pcount = hs.session.user.pcount + userPCountDelta;
+						hs.session.user.save();
+						auth.sendMe(socket);
+					} else {
+						User.update({_id: photoSaved.user}, {$inc: {pcount: userPCountDelta}}).exec(); //Для выполнения без коллбэка нужен .exec()
+					}
+				});
+			});
+		});
 
 		(function () {
 			function result(data) {
@@ -340,7 +410,7 @@ module.exports.loadController = function (app, db, io) {
 						} else {
 							result = photos;
 						}
-						takeUserPhotos(result);
+						takeUserPhotos({photos: result});
 						criteria = photosFresh = skip = limit = result = null;
 					}
 				);
@@ -368,12 +438,15 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						var filters = {user: user._id, disabled: true, adate: {}, del: {$exists: false}};
-						if (data.startTime) {
-							filters.adate.$gte = data.startTime;
-						}
-						if (data.endTime) {
-							filters.adate.$lte = data.endTime;
+						var filters = {user: user._id, disabled: true, del: {$exists: false}};
+						if (data.startTime || data.endTime) {
+							filters.adate = {};
+							if (data.startTime) {
+								filters.adate.$gte = data.startTime;
+							}
+							if (data.endTime) {
+								filters.adate.$lte = data.endTime;
+							}
 						}
 						Photo.getPhotosCompact(filters, {}, this.parallel());
 						Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, this.parallel());
@@ -495,31 +568,6 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		/**
-		 * Подтверждаем фотографию
-		 */
-		function approvePhotoResult(data) {
-			socket.emit('approvePhotoResult', data);
-		}
-
-		socket.on('approvePhoto', function (cid) {
-			if (!hs.session.user) {
-				approvePhotoResult({message: 'Not authorized', error: true});
-				return;
-			}
-			Photo.update({cid: cid, fresh: true}, { $unset: {fresh: 1}, $set: {adate: new Date()} }, {}, function (err, numberAffected) {
-				if (err) {
-					approvePhotoResult({message: err.message || '', error: true});
-					return;
-				}
-				if (!numberAffected) {
-					approvePhotoResult({message: 'No photo affected', error: true});
-					return;
-				}
-				approvePhotoResult({message: 'Photo approved successfully'});
-			});
-		});
-
-		/**
 		 * Берем массив до и после указанной фотографии указанной длины
 		 */
 		function takeUserPhotosAround(data) {
@@ -562,43 +610,6 @@ module.exports.loadController = function (app, db, io) {
 					takeUserPhotosAround({left: photosL, right: photosR});
 				}
 			);
-		});
-
-
-		/**
-		 * Активация/деактивация фото
-		 */
-		function disablePhotoResult(data) {
-			socket.emit('disablePhotoResult', data);
-		}
-
-		socket.on('disablePhoto', function (cid) {
-			if (!hs.session.user) {
-				disablePhotoResult({message: 'Not authorized', error: true});
-				return;
-			}
-			if (!cid) {
-				disablePhotoResult({message: 'cid is not defined', error: true});
-				return;
-			}
-			Photo.findOne({cid: cid, fresh: {$exists: false}, del: {$exists: false}}).select('disabled').exec(function (err, photo) {
-				if (err) {
-					disablePhotoResult({message: err && err.message, error: true});
-					return;
-				}
-				if (photo.disabled) {
-					photo.disabled = undefined;
-				} else {
-					photo.disabled = true;
-				}
-				photo.save(function (err, result) {
-					if (err) {
-						disablePhotoResult({message: err.message || '', error: true});
-						return;
-					}
-					disablePhotoResult({message: 'Photo saved successfully', disabled: result.disabled});
-				});
-			});
 		});
 
 

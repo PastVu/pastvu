@@ -29,7 +29,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.height = ko.observable('0px');
 
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-			this.subscriptions.login = this.u.login.subscribe(this.getForUser, this);
+			this.subscriptions.login = this.u.login.subscribe(this.getForUser, this); //Срабатывает при смене пользователя
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
@@ -61,13 +61,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
-			if (this.u.pcount() > 0) {
-				this.getPhotosPrivate(function (data) {
-					if (data && !data.error && data.len > 0/* && this.photos().length < this.u.pcount()*/ && this.photos().length < this.limit * 1.5) {
-						this.getNextPage();
-					}
-				}, this);
-			}
+			this.getPhotosPrivate(function (data) {
+				if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
+					this.getNextPage();
+				}
+			}, this);
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -75,7 +73,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.photos([]);
 			$window.off('scroll', this.scrollHandler);
 			this.scrollActive = false;
-			if (this.u.pcount() > 0) {
+			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login()) {
 				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
 				$window.on('scroll', this.scrollHandler);
 				this.scrollActive = true;
@@ -86,8 +84,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error) {
 					return;
 				}
-				this.photos.concat(data, false);
-				if (this.scrollActive && this.photos().length >= this.u.pcount()) {
+				this.photos.concat(data.photos, false);
+				if (this.scrollActive && limit > data.photos.length) {
 					$window.off('scroll', this.scrollHandler);
 					this.scrollActive = false;
 				}
@@ -101,11 +99,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		getPhotos: function (skip, limit, cb, ctx) {
 			socket.once('takeUserPhotos', function (data) {
 				if (!data || data.error) {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					data.forEach(function (item, index, array) {
-						Photo.factory(item, 'compact', 'thumb', {title: 'No title yet'});
-					});
+					var i = data.photos.length;
+					while (i--) {
+						Photo.factory(data.photos[i], 'compact', 'thumb', {title: 'No title yet'});
+					}
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -116,9 +115,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.loadingPhoto(true);
 		},
 		getPhotosPrivate: function (cb, ctx) {
-			if (this.photos().length === 0) {
-				return;
-			}
+			this.loadingPhoto(true);
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
@@ -159,8 +156,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: _.last(this.photos()).adate, endTime: undefined});
-			this.loadingPhoto(true);
+			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
 		},
 		onThumbLoad: function (data, event) {
 			$(event.target).parents('.photoThumb').animate({opacity: 1});
@@ -245,6 +241,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}.bind(this));
 			}
 		},
+		//TODO: Доделать рейтинги пользователей по фотографиям
 		closeUpload: function () {
 			if (this.uploadVM) {
 				this.$dom.find('.photoUploadCurtain').css({display: ''}).removeClass('showUpload');
