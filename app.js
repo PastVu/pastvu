@@ -130,12 +130,10 @@ app.configure(function () {
 
 	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
 	io.set('authorization', function (handshakeData, callback) {
+		var handshakeCookieString = handshakeData.headers.cookie || '';
 
-		if (!handshakeData.headers.cookie) {
-		}
-
-		handshakeData.cookie = cookie.parse(handshakeData.headers.cookie);
-		handshakeData.sessionID = handshakeData.cookie['oldmos.sid'] || 'idcap';
+		handshakeData.cookie = cookie.parse(handshakeCookieString);
+		handshakeData.sessionID = handshakeData.cookie['oldmos.sid'] || 'sidcap';
 
 		Session.findOne({key: handshakeData.sessionID}).populate('user').exec(function (err, session) {
 			if (err) {
@@ -144,7 +142,7 @@ app.configure(function () {
 			if (!session) {
 				session = new Session({});
 			}
-			session.key = Utils.randomString(50); // При каждом заходе регенирируем ключ
+			session.key = Utils.randomString(12); // При каждом заходе регенирируем ключ
 			session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
 			session.save();
 			if (session.user) {
