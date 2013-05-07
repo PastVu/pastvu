@@ -52,7 +52,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			this.catActivate('ratings');
+			this.catActivate('photos');
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
@@ -119,13 +119,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 
-						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
 
-						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'pcount', [' фотография', ' фотографии', ' фотографий']));
-						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'pcount', [' фотография', ' фотографии', ' фотографий']));
-						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
 					}
 					this.loadingCat(false);
 				}
@@ -156,7 +156,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 			return photos;
 		},
-		processUsers: function (users, numField, numFormat) {
+		processUsers: function (users, linkSection, numField, numFormat) {
 			var i = users.length,
 				user;
 			while (i) {
@@ -166,7 +166,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				} else {
 					user.sfile = User.def.full.avatar;
 				}
-				user.link = '/u/' + user.login;
+				user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
 				user.title = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
 				if (numField && numFormat) {
 					user.amount = user[numField] + Utils.format.wordEndOfNum(user[numField], numFormat);
