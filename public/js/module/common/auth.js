@@ -15,6 +15,10 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.login = ko.observable('');
 			this.key = ko.observable('');
 
+			this.avatar = ko.observable('');
+			this.name = ko.observable('');
+
+
 			this.msg = ko.observable('');
 			this.caps = ko.observable(false);
 
@@ -52,10 +56,12 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.showing = false;
 		},
 
-		showRecallPassChange: function (login, key, callback, ctx) {
-			this.login(login);
+		showPassChangeRecall: function (data, key, callback, ctx) {
+			this.login(data.login);
+			this.name(data.name);
+			this.avatar(data.avatar);
 			this.key(key);
-			this.show('recallPassChange', callback, ctx);
+			this.show('passChangeRecall', callback, ctx);
 		},
 
 		pressHandler: function (vm, event) {
@@ -77,6 +83,8 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.$dom.find(".mess").height(0).removeClass('text-error text-warning text-info text-success muted');
 			this.mode('');
 			this.login('');
+			this.name('');
+			this.avatar('');
 			this.key('');
 			this.msg('');
 			delete this.callback;
@@ -184,7 +192,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 							}
 						}.bind(this)
 					);
-				} else if (this.mode() === 'recallPassChange') {
+				} else if (this.mode() === 'passChangeRecall') {
 					this.doPassRecallChange(
 						$.extend($form.serializeObject(), {key: this.key()}),
 						function (data) {
@@ -347,12 +355,12 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		},
 		doPassRecallChange: function (data, callback) {
 			try {
-				socket.once('recallPassChangeResult', function (json) {
+				socket.once('passChangeRecallResult', function (json) {
 					if (Utils.isType('function', callback)) {
 						callback(json);
 					}
 				});
-				socket.emit('recallPassChange', data);
+				socket.emit('passChangeRecall', data);
 			} catch (e) {
 				if (Utils.isType('function', callback)) {
 					callback(e.message);

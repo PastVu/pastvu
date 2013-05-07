@@ -214,7 +214,7 @@ require([
 									}
 								);
 							} else if (data.type === 'authPassChange' && data.login) {
-								auth.showRecallPassChange(data.login, params.key, function (result) {
+								auth.showPassChangeRecall(data, params.key, function (result) {
 									globalVM.router.navigateToUrl('/');
 								}, this);
 							}

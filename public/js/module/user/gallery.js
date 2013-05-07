@@ -241,7 +241,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}.bind(this));
 			}
 		},
-		//TODO: Доделать рейтинги пользователей по фотографиям
 		closeUpload: function () {
 			if (this.uploadVM) {
 				this.$dom.find('.photoUploadCurtain').css({display: ''}).removeClass('showUpload');

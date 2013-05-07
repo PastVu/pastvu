@@ -238,7 +238,7 @@ function recall(session, data, cb) {
 	);
 }
 
-function recallPassChange(session, data, cb) {
+function passChangeRecall(session, data, cb) {
 	var error = '',
 		key = data.key;
 	if (!data || !Utils.isType('string', key) || key.length !== 8) {
@@ -330,13 +330,14 @@ function checkConfirm(session, data, cb) {
 			cb({message: err && err.message || 'Get confirm error', error: true});
 			return;
 		}
+		var user = confirm.user;
 
 		if (key.length === 7) { //Confirm registration
 			Step(
 				function () {
-					confirm.user.active = true;
-					confirm.user.activatedate = new Date();
-					confirm.user.save(this.parallel());
+					user.active = true;
+					user.activatedate = new Date();
+					user.save(this.parallel());
 					confirm.remove(this.parallel());
 				},
 				function (err) {
@@ -350,7 +351,7 @@ function checkConfirm(session, data, cb) {
 				}
 			);
 		} else if (key.length === 8) { //Confirm pass change
-			cb({message: 'Pass change', type: 'authPassChange', login: confirm.user.login});
+			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png'});
 		}
 
 	});
@@ -447,9 +448,9 @@ module.exports.loadController = function (a, db, io) {
 				socket.emit('checkConfirmResult', data);
 			});
 		});
-		socket.on('recallPassChange', function (data) {
-			recallPassChange(hs.session, data, function (data) {
-				socket.emit('recallPassChangeResult', data);
+		socket.on('passChangeRecall', function (data) {
+			passChangeRecall(hs.session, data, function (data) {
+				socket.emit('passChangeRecallResult', data);
 			});
 		});
 	});

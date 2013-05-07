@@ -73,12 +73,20 @@
 		.mess
 			div(data-bind="text: msg()")
 
-	script(id="recallPassChangeTpl", type="text/html")
-		.head Change password
-		dl.dl-horizontal
-			dt User name:
-		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", disabled, name="login", autocorrect="off", autocapitalize="off", data-bind="value: login")
+	script(id="recallRequestForMeTpl", type="text/html")
+		.head Recover password
+		| Send request to change your password without entering current?
+		button.btn-strict.formAction(type="submit") Send
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
+		.mess
+			div(data-bind="text: msg()")
+
+	script(id="passChangeRecallTpl", type="text/html")
+		.row-fluid.userTitle
+			img.userTitlePreview(data-bind="attr: {src: avatar()}")
+			.userTitleName(data-bind="text: name()")
+			.userTitleLogin(data-bind="text: login()")
 		dl.dl-horizontal
 			dt New password:
 		div.inputwrap.lock
@@ -93,15 +101,6 @@
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock pressed
-		.mess
-			div(data-bind="text: msg()")
-
-	script(id="recallRequestForMeTpl", type="text/html")
-		.head Recover password
-		| Send request to change your password without entering current?
-		button.btn-strict.formAction(type="submit") Send
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
 		.mess
 			div(data-bind="text: msg()")
 
