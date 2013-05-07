@@ -26,6 +26,13 @@
 		for /f %%a in ('type __collections.txt') do @set COLLECTIONS=%%a
 		for %%a in (%COLLECTIONS%) do mongoexport --host {YOUR SERVER} --db {YOUR DATABASE} --collection %%a --out data\%%a.json
 		del __collections.txt
+
+ПОСЛЕДОВАТЕЛЬНОСТЬ КОНВЕРТАЦИИ
+oldConvertUsers()
+oldConvertPhotos()
+oldConvertComments()
+calcUserStats()
+calcPhotoStats()
 		
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:

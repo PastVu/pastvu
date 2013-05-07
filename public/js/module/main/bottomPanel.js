@@ -37,6 +37,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					week: ko.observableArray(),
 					all: ko.observableArray(),
 					selected: ko.observable('day')
+				},
+				ubyphoto: {
+					day: ko.observableArray(),
+					week: ko.observableArray(),
+					all: ko.observableArray(),
+					selected: ko.observable('day')
 				}
 			};
 
@@ -116,6 +122,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+
+						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'pcount', [' фотография', ' фотографии', ' фотографий']));
 					}
 					this.loadingCat(false);
 				}

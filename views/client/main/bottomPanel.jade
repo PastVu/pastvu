@@ -55,11 +55,11 @@
 						// /ko
 					.span6
 						.ratGroupHead По загрузкам
-						.btn-group#pbycomm
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
-						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
+						.btn-group#ubyphoto
+							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
+							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
+							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'all'}")
+						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubyphoto[ratings.ubyphoto.selected()] }
 						// /ko
 
 	script(id="ratingsColumnTpl", type="text/html")
