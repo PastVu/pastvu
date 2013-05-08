@@ -59,7 +59,7 @@ require([
 				$('#apploader').remove();
 				delete window.wasLoading;
 			}
-			Backbone.Router.namedParameters = true;
+			//Backbone.Router.namedParameters = true;
 			Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
 		}
 	}
@@ -69,22 +69,15 @@ require([
 			root: '/',
 			routes: [
 				{route: "", handler: "index"},
-				{route: "p/:cid", handler: "photo"},
-				{route: "photoUpload", handler: "photoUpload"},
-				{route: "u", handler: "userPage"},
-				{route: "u/", handler: "userPage"},
-				{route: "u/:user", handler: "userPage"},
-				{route: "u/:user/", handler: "userPage"},
-				{route: "u/:user/:section", handler: "userPage"},
-				{route: "u/:user/:section/", handler: "userPage"},
-				{route: "u/:user/:section/:page", handler: "userPage"},
-				{route: "u/:user/:section/:page/", handler: "userPage"},
+				{route: "p/(:cid)(/)", handler: "photo"},
+				{route: "u(/)(:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
+				{route: "photoUpload(/)", handler: "photoUpload"},
 				{route: "confirm/:key", handler: "confirm"},
-				{route: "clusterCalc", handler: "clusterCalc"}/*,
-				 {route: "u/conveyer", handler: "conveyer"}*/
+				{route: "clusterCalc(/)", handler: "clusterCalc"}/*,
+				{route: "u/conveyer", handler: "conveyer"}*/
 			],
 			handlers: {
-				index: function (params) {
+				index: function (qparams) {
 					this.params({_handler: 'index'});
 
 					renderer(
@@ -100,9 +93,13 @@ require([
 						}
 					);
 				},
-				photo: function (params) {
-					this.params(_.assign(params, {_handler: 'photo'}));
+				photo: function (cid, qparams) {
+					if (!cid) {
+						location.href = '/';
+						return;
+					}
 
+					this.params(_.assign({cid: cid, _handler: 'photo'}, qparams));
 					renderer(
 						[
 							{module: 'm/photo/photo', container: '#bodyContainer'}
@@ -115,16 +112,16 @@ require([
 						}
 					);
 				},
-				userPage: function (params) {
+				userPage: function (login, section, page, qparams) {
 					var auth = globalVM.repository['m/common/auth'];
-					if (!params.user && !auth.loggedIn()) {
+					if (!login && !auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
-					if (!params.section) {
-						params.section = 'profile';
+					if (!section) {
+						section = 'profile';
 					}
-					this.params(_.assign(params, {_handler: 'profile'}));
+					this.params(_.assign({user: login, section: section, page: page, _handler: 'profile'}, qparams));
 
 					renderer(
 						[
@@ -154,7 +151,6 @@ require([
 					);
 				},
 				clusterCalc: function () {
-					console.log('clusterCalc');
 					this.params({_handler: 'clusterCalc'});
 
 					renderer(
@@ -169,9 +165,9 @@ require([
 						}
 					);
 				},
-				confirm: function (params) {
+				confirm: function (key, qparams) {
 					var auth = globalVM.repository['m/common/auth'];
-					this.params(_.assign(params, {_handler: 'confirm'}));
+					this.params(_.assign({key: key, _handler: 'confirm'}, qparams));
 
 					socket.once('checkConfirmResult', function (data) {
 						if (data.error) {
@@ -230,13 +226,13 @@ require([
 									}
 								);
 							} else if (data.type === 'authPassChange' && data.login) {
-								auth.showPassChangeRecall(data, params.key, function (result) {
+								auth.showPassChangeRecall(data, key, function (result) {
 									globalVM.router.navigateToUrl('/');
 								}, this);
 							}
 						}
 					});
-					socket.emit('checkConfirm', {key: params.key});
+					socket.emit('checkConfirm', {key: key});
 				}
 			}
 		};
