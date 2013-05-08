@@ -3,7 +3,7 @@ var auth = require('./auth.js');
 module.exports.loadController = function (app) {
 
 	// More complicated example: '/p/:cid?/*
-	['/', '/p/*', '/u*', '/photoUpload', '/confirm/:key'].forEach(function (route) {
+	['/', '/clusterCalc', '/p/*', '/u*', '/photoUpload', '/confirm/:key'].forEach(function (route) {
 		app.get(route, appMainHandler);
 	});
 	function appMainHandler(req, res) {

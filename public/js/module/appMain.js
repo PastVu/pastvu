@@ -79,8 +79,8 @@ require([
 				{route: "u/:user/:section/", handler: "userPage"},
 				{route: "u/:user/:section/:page", handler: "userPage"},
 				{route: "u/:user/:section/:page/", handler: "userPage"},
-				{route: "confirm/:key", handler: "confirm"}/*,
-				 {route: "u/clusterCalc", handler: "clusterCalc"},
+				{route: "confirm/:key", handler: "confirm"},
+				{route: "clusterCalc", handler: "clusterCalc"}/*,
 				 {route: "u/conveyer", handler: "conveyer"}*/
 			],
 			handlers: {
@@ -144,6 +144,22 @@ require([
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (top, bodyPage, foot) {
+							}
+						}
+					);
+				},
+				clusterCalc: function () {
+					console.log('clusterCalc');
+					this.params({_handler: 'clusterCalc'});
+
+					renderer(
+						[
+							{module: 'm/map/mapClusterCalc', container: '#bodyContainer'}
 						],
 						{
 							parent: globalVM,
