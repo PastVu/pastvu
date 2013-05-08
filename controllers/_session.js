@@ -1,10 +1,9 @@
 var Session,
     User,
     Role,
-    errS = require('./errors.js').err,
     Utils = require('../commons/Utils.js'),
     ms =  require('ms'), // Tiny milisecond conversion utility
-    app, io, memcashed,
+    app,
     cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
     cookieMaxAgeAnonimouse = ms('14d') / 1000;
 
