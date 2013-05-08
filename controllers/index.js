@@ -109,13 +109,13 @@ module.exports.loadController = function (app, db, io) {
 							{$limit: limit}
 						], this.parallel());
 						Photo.collection.aggregate([
-							{$match: {adate: {$gt: moment().startOf('day').toDate()}, disabled: {$exists: false}}},
+							{$match: {adate: {$gt: moment().startOf('day').toDate()}, disabled: {$exists: false}, del: {$exists: false}}},
 							{$group: {_id: '$user', pcount: {$sum: 1}}},
 							{$sort: {pcount: -1}},
 							{$limit: limit}
 						], this.parallel());
 						Photo.collection.aggregate([
-							{$match: {adate: {$gt: moment().startOf('week').toDate()}, disabled: {$exists: false}}},
+							{$match: {adate: {$gt: moment().startOf('week').toDate()}, disabled: {$exists: false}, del: {$exists: false}}},
 							{$group: {_id: '$user', pcount: {$sum: 1}}},
 							{$sort: {pcount: -1}},
 							{$limit: limit}
