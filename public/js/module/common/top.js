@@ -29,7 +29,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 			this.profileAvatar = this.co.profileAvatar = ko.computed({
 				read: function () {
 					if (this.auth.loggedIn()) {
-						return this.auth.iAm.avatar();
+						return this.auth.iAm.avatarth();
 					} else {
 						return '';
 					}

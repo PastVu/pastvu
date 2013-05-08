@@ -59,6 +59,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 		defType = defType || 'full';
 
 		if (origin.avatar) {
+			origin.avatarth = '/_avatar/th_' + origin.avatar;
 			origin.avatar = '/_avatar/' + origin.avatar;
 		}
 
