@@ -24,10 +24,10 @@
 	script(id="ratingsTpl", type="text/html")
 		.row-fluid.ratings
 			.span6
-				.ratHead Рейтинг фотографий
+				.catHead Рейтинг фотографий
 				.row-fluid
 					.span6
-						.ratGroupHead По просмотрам
+						.catGroupHead По просмотрам
 						.btn-group#pbyview
 							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
 							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
@@ -35,7 +35,7 @@
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
 						// /ko
 					.span6
-						.ratGroupHead По комментариям
+						.catGroupHead По комментариям
 						.btn-group#pbycomm
 							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
 							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
@@ -43,10 +43,10 @@
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
 						// /ko
 			.span6
-				.ratHead Рейтинг пользователей
+				.catHead Рейтинг пользователей
 				.row-fluid
 					.span6
-						.ratGroupHead По комментариям
+						.catGroupHead По комментариям
 						.btn-group#ubycomm
 							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
 							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
@@ -54,7 +54,7 @@
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubycomm[ratings.ubycomm.selected()] }
 						// /ko
 					.span6
-						.ratGroupHead По загрузкам
+						.catGroupHead По загрузкам
 						.btn-group#ubyphoto
 							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
 							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
@@ -67,3 +67,18 @@
 			img.ratPreview(data-bind="attr: {src: $data.sfile}")
 			.ratName(data-bind="text: $data.title")
 			.ratAmount(data-bind="text: $data.amount")
+
+	script(id="statsTpl", type="text/html")
+		.row-fluid.stats
+			.span6
+				.catHead Весь проект
+				.row-fluid
+					.row-fluid(data-bind="text: 'Сегодня у нас ' + stats.all.allPhotos + ' фотографий'")
+					.row-fluid(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.allUsers")
+					.row-fluid(data-bind="text: 'Больше всего фотографий относится к: ' + stats.all.popYear + ' году, их ' + stats.all.popYearCount")
+					.row-fluid(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.photosDay")
+					.row-fluid(data-bind="text: 'За неделю новых фотографий: ' + stats.all.photosWeek")
+			.span6
+				.catHead Ваш регион
+				.row-fluid
+

@@ -45,6 +45,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					selected: ko.observable('day')
 				}
 			};
+			this.stats = {
+				all: {
+					allPhotos: 0,
+					allUsers: 0,
+					popYear: 1980,
+					popYearCount: 0,
+					photosDay: 0,
+					photosWeek: 0
+				}
+			};
 
 			this.catClickBind = this.catClick.bind(this);
 
@@ -75,8 +85,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.catActivate(data.id);
 		},
 		catActivate: function (id) {
-			this.catActive(id);
-
 			switch (id) {
 			case 'photos':
 				this.getPhotos();
@@ -84,7 +92,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			case 'ratings':
 				this.getRatings();
 				break;
+			case 'stats':
+				this.getStats();
+				break;
 			}
+			this.catActive(id);
 		},
 		getPhotos: function (cb, ctx) {
 			this.loadingCat(true);
@@ -173,6 +185,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}
 			return users;
+		},
+		getStats: function (cb, ctx) {
+			this.loadingCat(true);
+			socket.once('takeStats', function (data) {
+				if (this.catActive() === 'photos') {
+					if (!data || data.error || !Array.isArray(data.photos)) {
+						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					} else {
+						this.processPhotos(data.photos, Photo.picFormats.midi);
+						this.photos(data.photos);
+					}
+					this.loadingCat(false);
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}.bind(this));
+			socket.emit('giveStats', {});
 		},
 		onThumbLoad: function (data, event) {
 			var photoThumb = event.target.parentNode.parentNode;
