@@ -277,6 +277,9 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 			}
 			return text.substring(0, cut);
 		},
+		capitalizeFirst: function (str) {
+			return str.charAt(0).toUpperCase() + str.slice(1);
+		},
 
 		/**
 		 *
@@ -349,6 +352,7 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 			}
 
 			var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+
 			function declOfNum(number, titles) {
 				return titles[ (number % 100 > 4 && number % 100 < 20) ? 2 : wordEndOfNumCases[(number % 10 < 5) ? number % 10 : 5] ];
 			}

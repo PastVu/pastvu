@@ -14,8 +14,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.loadingCat = ko.observable(true);
 			this.cats = ko.observableArray(cats);
+			this.catLoading = ko.observable('');
 			this.catActive = ko.observable('');
 
 			this.photos = ko.observableArray();
@@ -61,7 +61,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			this.catActivate('photos');
+			this.catJump('photos');
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
@@ -81,44 +81,36 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			delete this.subscriptions.loggedIn;
 		},
 		catClick: function (data) {
-			this.catActivate(data.id);
+			this.catJump(data.id);
 		},
-		catActivate: function (id) {
-			switch (id) {
-			case 'photos':
-				this.getPhotos();
-				break;
-			case 'ratings':
-				this.getRatings();
-				break;
-			case 'stats':
-				this.getStats();
-				break;
-			}
-			this.catActive(id);
+		catJump: function (id) {
+			this.catLoading(id);
+			this['get' + Utils.capitalizeFirst(id)](this.catActivate, this);
+		},
+		catActivate: function (data) {
+			this.catActive(this.catLoading());
+			this.catLoading('');
 		},
 		getPhotos: function (cb, ctx) {
-			this.loadingCat(true);
 			socket.once('takePhotosNew', function (data) {
-				if (this.catActive() === 'photos') {
+				if (this.catLoading() === 'photos') {
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.midi);
 						this.photos(data.photos);
 					}
-					this.loadingCat(false);
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx, data);
+					}
 				}
 			}.bind(this));
 			socket.emit('givePhotosNew', {limit: 24});
 		},
 		getRatings: function (cb, ctx) {
-			this.loadingCat(true);
 			socket.once('takeRatings', function (data) {
-				if (this.catActive() === 'ratings') {
+				if (this.catLoading() === 'ratings') {
 					if (!data || data.error) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
@@ -138,10 +130,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
 						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
 					}
-					this.loadingCat(false);
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx, data);
+					}
 				}
 			}.bind(this));
 			socket.emit('giveRatings', {limit: 24});
@@ -186,18 +178,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			return users;
 		},
 		getStats: function (cb, ctx) {
-			this.loadingCat(true);
 			socket.once('takeStats', function (data) {
-				if (this.catActive() === 'stats') {
+				if (this.catLoading() === 'stats') {
 					if (!data || data.error || !data.all) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						this.stats.all = data.all;
 					}
-					this.loadingCat(false);
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx, data);
+					}
 				}
 			}.bind(this));
 			socket.emit('giveStats', {});
