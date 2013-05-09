@@ -75,12 +75,17 @@
 			.span6
 				.catHead Весь проект
 				.row-fluid
-					.row-fluid(data-bind="text: 'Сегодня у нас ' + stats.all.pallCount + ' фотографий'")
+					.row-fluid(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
 					.row-fluid(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-					.row-fluid(data-bind="text: 'Больше всего фотографий относится к: ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+					.row-fluid(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
 					.row-fluid(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
 					.row-fluid(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
 			.span6
 				.catHead Ваш регион
-				.row-fluid В будущем
+				.row-fluid
+					.row-fluid(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
+					.row-fluid(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
+					.row-fluid(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+					.row-fluid(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
+					.row-fluid(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
 
