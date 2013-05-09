@@ -7,22 +7,23 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
-	appEnv = {};
+	appEnv = {},
+
+	dayStart, //Время начала дня
+	weekStart; //Время начала недели
+
+(function periodStartCalc() {
+	dayStart = moment().startOf('day').toDate();
+	weekStart = moment().startOf('week').toDate();
+	//На начало следующего дня планируем пересчет
+	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
+}());
 
 /**
  * Рейтинги
  */
 var giveRatings = (function () {
-	var limit = 10, //Ограничиваем кол-во результатов по каждому показателю
-		dayStart, //Время начала дня
-		weekStart; //Время начала недели
-
-	(function periodStartCalc() {
-		dayStart = moment().startOf('day').toDate();
-		weekStart = moment().startOf('week').toDate();
-		//На начало следующего дня планируем пересчет
-		setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
-	}());
+	var limit = 10; //Ограничиваем кол-во результатов по каждому показателю
 
 	//Так как после выборки объектов по вхождению в массив ключей ($in) порядок сортировки не гарантируется,
 	//то перед отдачей сортируем массивы по требуемому показателю
@@ -202,6 +203,66 @@ var giveRatings = (function () {
 	};
 }());
 
+/**
+ * Статистика
+ */
+var giveStats = (function () {
+
+	return function (data, cb) {
+		var st = Date.now(),
+			photoYear;
+
+		if (!Utils.isType('object', data)) {
+			cb({message: 'Bad params', error: true});
+			return;
+		}
+
+		step(
+			//Сначала запускаем агрегацию по всем показателем, требующим расчет
+			function aggregation() {
+				Photo.collection.aggregate([
+					{$match: {fresh: {$exists: false}, disabled: {$exists: false}, del: {$exists: false}}},
+					{$group: {_id: '$year', count: {$sum: 1}}},
+					{$sort: {count: -1}},
+					{$group: {
+						_id: null,
+						popYear: {$first: '$_id'},
+						popYearCount: {$first: '$count'},
+						unpopYear: {$last: '$_id'},
+						unpopYearCount: {$last: '$count'}
+					}},
+					{$project: {
+						_id: 0,
+						pop:  {year: "$popYear",  count: "$popYearCount" },
+						unpop: {year: "$unpopYear", count: "$unpopYearCount" }
+					}}
+				], this.parallel());
+			},
+			function getAggregationResultObjects(err, pMaxYear) {
+				if (err) {
+					cb({message: err && err.message, error: true});
+					return;
+				}
+				photoYear = pMaxYear[0];
+
+				Photo.count({fresh: {$exists: false}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
+				User.count({active: true}, this.parallel());
+
+				Photo.count({adate: {$gt: dayStart}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
+				Photo.count({adate: {$gt: weekStart}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
+			},
+			function (err, pallCount, userCount, pdayCount, pweekCount) {
+				if (err) {
+					cb({message: err && err.message, error: true});
+					return;
+				}
+				console.log(Date.now() - st);
+				cb({pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0});
+			}
+		);
+	};
+}());
+
 module.exports.loadController = function (app, db, io) {
 	var logger = log4js.getLogger("index.js");
 	appEnv = app.get('appEnv');
@@ -245,6 +306,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveRatings', function (data) {
 			giveRatings(data, function (resultData) {
 				socket.emit('takeRatings', resultData);
+			});
+		});
+
+		socket.on('giveStats', function (data) {
+			giveStats(data, function (resultData) {
+				socket.emit('takeStats', resultData);
 			});
 		});
 	});
