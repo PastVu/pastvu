@@ -207,8 +207,36 @@ var giveRatings = (function () {
  * Статистика
  */
 var giveStats = (function () {
+	var ttl = 10000,
+		cache,
+		waitings = [];
 
-	return function (data, cb) {
+	function memoize(data, cb) {
+		if (cache !== undefined) {
+			console.log('from cache');
+			cb(cache);
+		} else {
+			if (waitings.length === 0) {
+				console.log('calcStats');
+				calcStats(data, function (data) {
+					cache = data;
+					console.log('waitings.length ' + waitings.length);
+					for (var i = waitings.length; i--;) {
+						waitings[i](cache);
+					}
+					waitings = [];
+					setTimeout(function () {
+						cache = undefined;
+						console.log('clear cache');
+					}, ttl);
+				});
+			}
+			waitings.push(cb);
+		}
+		cb(cache);
+	}
+
+	function calcStats(data, cb) {
 		var st = Date.now(),
 			photoYear;
 
@@ -233,7 +261,7 @@ var giveStats = (function () {
 					}},
 					{$project: {
 						_id: 0,
-						pop:  {year: "$popYear",  count: "$popYearCount" },
+						pop: {year: "$popYear", count: "$popYearCount" },
 						unpop: {year: "$unpopYear", count: "$unpopYearCount" }
 					}}
 				], this.parallel());
@@ -260,7 +288,9 @@ var giveStats = (function () {
 				cb({pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0});
 			}
 		);
-	};
+	}
+
+	return memoize;
 }());
 
 module.exports.loadController = function (app, db, io) {
