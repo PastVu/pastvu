@@ -22,9 +22,34 @@
 				display: inline-block;
 				float: none;
 
-				.loading {
-					cursor: wait;
-					background-color: #f90;
+				li {
+					&::after {
+						position: absolute;
+						display: none;
+						content: '';
+						width: 0%;
+						height: 1px;
+						left: 18%;
+						bottom: 4px;
+						background-color: #c2c1c9;
+					}
+					&.loading {
+						position: relative;
+						cursor: wait;
+
+						> a {
+							cursor: wait;
+						}
+
+						&::after {
+							display: block;
+							-webkit-animation: navLoad .8s ease .4s infinite;
+							-moz-animation: navLoad .8s ease .4s infinite;
+							-ms-animation: navLoad .8s ease .4s infinite;
+							-o-animation: navLoad .8s ease .4s infinite;
+							animation: navLoad .8s ease .4s infinite;
+						}
+					}
 				}
 			}
 		}
