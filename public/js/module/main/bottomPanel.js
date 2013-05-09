@@ -47,12 +47,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			};
 			this.stats = {
 				all: {
-					allPhotos: 0,
-					allUsers: 0,
-					popYear: 1980,
-					popYearCount: 0,
-					photosDay: 0,
-					photosWeek: 0
+					pallCount: 0,
+					userCount: 0,
+					photoYear: {},
+					pdayCount: 0,
+					pweekCount: 0
 				}
 			};
 
@@ -189,12 +188,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		getStats: function (cb, ctx) {
 			this.loadingCat(true);
 			socket.once('takeStats', function (data) {
-				if (this.catActive() === 'photos') {
-					if (!data || data.error || !Array.isArray(data.photos)) {
+				if (this.catActive() === 'stats') {
+					if (!data || data.error || !data.all) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.processPhotos(data.photos, Photo.picFormats.midi);
-						this.photos(data.photos);
+						this.stats.all = data.all;
 					}
 					this.loadingCat(false);
 				}

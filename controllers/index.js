@@ -3,6 +3,7 @@ var auth = require('./auth.js'),
 	User,
 	Photo,
 	Comment,
+	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
@@ -207,33 +208,28 @@ var giveRatings = (function () {
  * Статистика
  */
 var giveStats = (function () {
-	var ttl = 10000,
+	var ttl = ms('2m'), //Время жизни кэша
 		cache,
-		waitings = [];
+		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
 
 	function memoize(data, cb) {
 		if (cache !== undefined) {
-			console.log('from cache');
 			cb(cache);
 		} else {
 			if (waitings.length === 0) {
-				console.log('calcStats');
 				calcStats(data, function (data) {
 					cache = data;
-					console.log('waitings.length ' + waitings.length);
 					for (var i = waitings.length; i--;) {
 						waitings[i](cache);
 					}
 					waitings = [];
 					setTimeout(function () {
 						cache = undefined;
-						console.log('clear cache');
 					}, ttl);
 				});
 			}
 			waitings.push(cb);
 		}
-		cb(cache);
 	}
 
 	function calcStats(data, cb) {
@@ -285,7 +281,7 @@ var giveStats = (function () {
 					return;
 				}
 				console.log(Date.now() - st);
-				cb({pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0});
+				cb({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);
 	}
@@ -341,6 +337,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('giveStats', function (data) {
 			giveStats(data, function (resultData) {
+				console.log('resultData');
 				socket.emit('takeStats', resultData);
 			});
 		});
