@@ -39,17 +39,25 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 				}
 			];
 
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
 		show: function () {
 			Utils.title.setTitle({title: 'Главная'});
+			this.sizesCalc();
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+		sizesCalc: function () {
+			this.mapSize();
+		},
+		mapSize: function () {
+			this.$dom.find('#mapContainer').css({height: P.window.h() - (this.$container.offset().top || 33) - 29 >> 0});
 		}
 	});
 });
