@@ -41,7 +41,8 @@
 		"grunt": "~0.4.1",
 		"grunt-contrib-concat": "~0.2.0",
 		"grunt-contrib-requirejs": "~0.4.0",
-		"grunt-exec": "~0.4.0"
+		"grunt-exec": "~0.4.0",
+		"jqueryui-amd": "~0.0.2"
 	},
 	"engines": {
 		"node": "~0.10.4"
