@@ -1,6 +1,6 @@
 {
 	"name": "oldplanet",
-	"version": "0.6.5-dev",
+	"version": "0.6.5",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/oldplanet",
 	"keywords": ["oldmos", "oldmos2", "oldmos51", "oldplanet"],
@@ -45,6 +45,6 @@
 		"jqueryui-amd": "~0.0.2"
 	},
 	"engines": {
-		"node": "~0.10.4"
+		"node": "~0.10.5"
 	}
 }
