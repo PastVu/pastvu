@@ -1,150 +1,122 @@
-/*global requirejs:true*/
-requirejs.config({
-    baseUrl: '/js',
-    waitSeconds: 15,
-    deps: ['lib/JSExtensions'],
-    paths: {
-        'jquery': 'lib/jquery/jquery-1.9.1',
-        'socket.io': 'lib/socket.io',
-
-        'domReady': 'lib/require/plugins/domReady',
-        'text': 'lib/require/plugins/text',
-        'css': 'lib/require/plugins/css',
-        'css.api': 'lib/require/plugins/css.api',
-        'async': 'lib/require/plugins/async',
-        'goog': 'lib/require/plugins/goog',
-        'Utils': 'lib/Utils',
-        'Browser': 'lib/Browser',
-
-        'knockout': 'lib/knockout/knockout-2.2.1',
-        'knockout.mapping': 'lib/knockout/knockout.mapping',
-
-        'jquery.ui': 'lib/jquery/ui/jquery-ui-1.8.23.custom.min',
-        'jquery.jgrid': 'lib/jquery/plugins/grid/jquery.jqGrid.min',
-        'jquery.jgrid.en': 'lib/jquery/plugins/grid/i18n/grid.locale-en'
-    }
-});
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-require(['../lib/JSExtensions']); //Делаем require вместо deps чтобы модуль заинлайнился во время оптимизации
+/*global require:true*/
+//require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require([
-    'domReady',
-    'jquery',
-    'Utils',
-    '../socket',
-    'EventTypes',
-    'knockout', 'knockout.mapping',
-    'm/GlobalParams', 'model/User', 'm/TopPanel', 'm/i18n',
-    'KeyHandler', 'auth',
-    'jquery.ui', 'jquery.jgrid', 'jquery.jgrid.en'
-], function (domReady, $, Utils, socket, ET, ko, ko_mapping, Params, User, TopPanel, i18n, keyTarget, auth) {
-    console.timeStamp('Require app Ready');
-    var login, reg, recall,
-        profileView, profileVM,
-        grid, grid_data, lastSel;
+	'domReady!',
+	'jquery',
+	'Browser', 'Utils',
+	'socket',
+	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
+	'globalVM', 'Params', 'renderer', 'RouteManager',
+	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
+	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
+	"use strict";
+	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
+		routeDFD = $.Deferred();
 
-    $.when(LoadParams(), waitForDomReady())
-        .pipe(auth.LoadMe)
-        .then(app);
+	Utils.title.setPostfix('Администрирование - Фотографии прошлого');
+	moment.lang('ru');
 
-    function waitForDomReady() {
-        var dfd = $.Deferred();
-        domReady(function () {
-            console.timeStamp('Dom Ready');
-            dfd.resolve();
-        })
-        return dfd.promise();
-    }
+	$('body').append(jade);
+	ko.applyBindings(globalVM);
 
-    function LoadParams() {
-        var dfd = $.Deferred();
-        socket.on('takeGlobeParams', function (json) {
-            ko_mapping.fromJS(json, Params);
-            dfd.resolve();
-        });
-        socket.emit('giveGlobeParams');
-        return dfd.promise();
-    }
+	globalVM.router = new RouteManager(routerDeclare(), routeDFD);
 
-    function app() {
-        new TopPanel('top');
-        grid = $("#usersGrid");
+	$.when(loadParams(), routeDFD.promise()).then(app);
 
-        CreateGrid();
+	function loadParams() {
+		var dfd = $.Deferred();
+		socket.once('takeGlobeParams', function (data) {
+			ko_mapping.fromJS({settings: data}, P);
+			dfd.resolve();
+		});
+		socket.emit('giveGlobeParams');
+		return dfd.promise();
+	}
 
-        socket.on('initMessage', function (json) {
-            var init_message = json.init_message;
-        });
-    }
+	function app() {
+		var loadTime;
 
-    function CreateGrid() {
-        socket.on('takeUsers', function (users) {
-            console.dir(users);
-            //users.forEach(function(element){});
+		if (window.wasLoading) {
+			loadTime = Number(new Date(Utils.cookie.get('oldmos.load.' + appHash)));
+			if (isNaN(loadTime)) {
+				loadTime = 100;
+			} else {
+				loadTime = Math.max(100, 2200 - (Date.now() - loadTime));
+			}
+			console.log(loadTime);
+			if (!$.urlParam('stopOnLoad')) {
+				window.setTimeout(startApp, loadTime);
+			}
+		} else {
+			Utils.cookie.set('oldmos.load.' + appHash, (new Date()).toUTCString());
+			startApp();
+		}
 
-            var avatar = '/img/caps/avatar.png';
+		function startApp() {
+			if (window.wasLoading) {
+				$('#apploader').remove();
+				delete window.wasLoading;
+			}
+			//Backbone.Router.namedParameters = true;
+			Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
+		}
+	}
 
-            function unitsInStockFormatter(cellvalue, options, rowObject) {
-                var cellValueInt = parseInt(cellvalue);
+	function routerDeclare() {
+		return {
+			root: '/admin/',
+			routes: [
+				{route: "", handler: "index"},
+				{route: "map(/)(:section)(/)", handler: "map"},
+				{route: "photo(/)(:section)(/)", handler: "photo"}
+			],
+			handlers: {
+				index: function (qparams) {
+					this.params({_handler: 'index'});
 
-                return "<div class='userGridAvatar' style='background-image: url(" + (cellvalue || avatar) + ")'></div>";
-            }
+					renderer(
+						[
+							{module: 'm/main/mainPage', container: '#bodyContainer'}
+							//{module: 'm/foot', container: '#footContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (bodyPage, foot) {
+							}
+						}
+					);
+				},
+				map: function (section, qparams) {
+					var auth = globalVM.repository['m/common/auth'];
+					if (!login && !auth.loggedIn()) {
+						location.href = '/';
+						return;
+					}
+					if (!section) {
+						section = 'profile';
+					}
+					this.params(_.assign({section: section, _handler: 'profile'}, qparams));
 
-            grid_data = users;
-            grid.jqGrid({
-                data: grid_data,
-                datatype: "local",
-                height: 'auto',
-                colNames: ['Join date', 'Avatar', 'Login', 'Email', 'Role', 'First name', 'Last name', 'Country', 'City'],
-                colModel: [
-                    {name: 'regdate', index: 'regdate', width: 110, align: 'center', sorttype: 'date', formatter: 'date', formatoptions: {newformat: 'd.m.Y'}},
-                    {name: 'avatar', index: 'avatar', width: 46, formatter: unitsInStockFormatter},
-                    {name: 'login', index: 'login', width: 150},
-                    {name: 'email', index: 'email', width: 170, align: 'left'},
-                    {name: 'roles', index: 'roles', width: 170, align: 'center',
-                        formatter: 'select', editable: true, edittype: 'select',
-                        editoptions: {
-                            value: 'registered:Registered user;spec:Special account;moderator:Moderator;admin:Administrator;super_admin:Super Administrator',
-                            multiple: true,
-                            size: 5
-                        }
-                    },
-                    {name: 'firstName', index: 'firstName', width: 100, align: 'right'},
-                    {name: 'lastName', index: 'lastName', width: 150, align: 'left'},
-                    {name: 'country', index: 'country', width: 100},
-                    {name: 'city', index: 'city', width: 130}
-                ],
-                afterInsertRow: function (rowId, data) {
-                    grid.setCell(rowId, 'roles', '', {'white-space': 'normal'});
-                },
-                loadComplete: function () {
-                    //grid.jqGrid('setCell',"","login","",{color:'red'});
-                },
-                editurl: 'clientArray',
-                onSelectRow: function (rowid) {
-                    if (rowid && rowid !== lastSel) {
-                        jQuery(this).restoreRow(lastSel);
-                        lastSel = rowid;
-                    }
-                },
-                sortname: 'regdate',
-                sortorder: "asc",
-                multiselect: false,
-                caption: "Oldmos active users"
-            });
-            $("#edit").click(function () {
-                var rowid = grid.jqGrid('getGridParam', 'selrow');
-                grid.jqGrid('editRow', rowid, true, null, null, 'clientArray');
-            });
-            $("#gotouser").click(function () {
-                var rowid = grid.jqGrid('getGridParam', 'selrow');
-                item = grid.jqGrid('getRowData', rowid);
-                if (item) {
-                    window.open("/u/" + item.login);
-                }
-            });
-        });
-        socket.emit('giveUsers', {});
-    }
+					renderer(
+						[
+							{module: 'm/map/mapClusterCalc', container: '#bodyContainer'}
+						],
+						{
+							parent: globalVM,
+							level: 0,
+							callback: function (bodyPage, foot) {
+							}
+						}
+					);
+				}
+			}
+		};
+	}
 
+	//window.appRouter = globalVM.router;
+	//window.glob = globalVM;
+	console.timeStamp('=== admin load (' + appHash + ') ===');
 });

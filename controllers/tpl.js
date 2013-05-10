@@ -1,6 +1,6 @@
 var File = require("file-utils").File,
 	Utils = require('../commons/Utils.js'),
-	tplFolder = new File('./views/client'),
+	tplFolder = new File('./views/module'),
 	tpls = [];
 
 tplFolder.list(function (e, files) {
@@ -18,7 +18,7 @@ module.exports.loadController = function (app) {
 	app.get('/tpl/*', function (req, res) {
 		if (tpls.indexOf(req.route.params[0]) !== -1) {
 			res.statusCode = 200;
-			res.render('client/' + req.route.params[0], {});
+			res.render('module/' + req.route.params[0], {});
 		} else {
 			res.send(404);
 		}

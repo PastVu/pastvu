@@ -12,8 +12,7 @@ var start = Date.now(),
 	Utils = require('./commons/Utils.js'),
 	version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version,
 
-	jadeCompileOptions = {
-		pretty: false,
+	jadeLocals = {
 		appLand: 'prod',
 		appHash: Utils.randomString(10),
 		appVersion: version
@@ -111,7 +110,7 @@ var start = Date.now(),
 step(
 	//Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
 	function searchJades() {
-		var tplFolder = new File('./views/client'),
+		var tplFolder = new File('./views/module'),
 			tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
 			_this = this;
 
@@ -154,7 +153,7 @@ step(
 	//Компилируем less и jade
 	function startCompile() {
 		lessCompile(lessFiles, this.parallel());
-		jadeCompile(jadeFiles, 'views/client/', requireBuildConfig.appDir + 'tpl/', this.parallel());
+		jadeCompile(jadeFiles, 'views/module/', requireBuildConfig.appDir + 'tpl/', this.parallel());
 	},
 
 	//Собираем require
@@ -194,24 +193,14 @@ step(
 	//Компилируем основные jade в статичные html
 	function compileMainJades() {
 		"use strict";
-		var tplFolder = new File('./views'),
-			toCompile = [],
+		var appNames = [
+				'Main',
+				'Admin'
+			],
 			_this = this;
 
-		tplFolder.list(1, function (e, files) {
-			if (e) {
-				console.dir(e);
-				process.exit(1);
-			}
-			_.forEach(files, function (val, key) {
-				if (!Utils.isType('object', val)) {
-					toCompile.push(key);
-				}
-			});
-			if (toCompile.length > 0) {
-				jadeCompile(toCompile, 'views/', requireBuildConfig.dir + '', _this.parallel(), 'html');
-			}
-			_this.parallel()();
+		appNames.forEach(function (item) {
+			jadeCompile(['app.jade'], 'views/', requireBuildConfig.dir + '', _this.parallel(), item + '.html', {appName: item});
 		});
 	},
 
@@ -225,7 +214,7 @@ step(
 );
 
 
-function jadeCompile(files, inFolder, outFolder, done, replaceJade) {
+function jadeCompile(files, inFolder, outFolder, done, replaceExtension, addOptions) {
 	var name, input, output,
 		fd,
 		i = 0;
@@ -239,8 +228,8 @@ function jadeCompile(files, inFolder, outFolder, done, replaceJade) {
 		}
 		input = inFolder + name;
 		output = outFolder + name;
-		if (replaceJade) {
-			output = output.substr(0, output.lastIndexOf('.jade') + 1) + replaceJade;
+		if (replaceExtension) {
+			output = output.substr(0, output.lastIndexOf('.jade')) + replaceExtension;
 		}
 		fs.readFile(input, 'utf-8', render);
 	}
@@ -251,9 +240,11 @@ function jadeCompile(files, inFolder, outFolder, done, replaceJade) {
 			process.exit(1);
 		}
 		console.dir('Compiling Jade ' + input);
-		var fn = jade.compile(data, _.assign(_.clone(jadeCompileOptions, false), {filename: input}));
+		var compiledFn = jade.compile(data, {pretty: false, filename: input}),
+			resultLocals = addOptions ? _.assign(_.clone(jadeLocals, false), addOptions) : jadeLocals;
+
 		fd = fs.openSync(output, "w");
-		fs.writeSync(fd, fn(jadeCompileOptions), 0, "utf8");
+		fs.writeSync(fd, compiledFn(resultLocals), 0, "utf8");
 		fs.closeSync(fd);
 		next();
 	}

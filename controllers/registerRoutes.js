@@ -1,5 +1,3 @@
-var auth = require('./auth.js');
-
 module.exports.loadController = function (app) {
 
 	// More complicated example: '/p/:cid?/*
@@ -8,12 +6,14 @@ module.exports.loadController = function (app) {
 	});
 	function appMainHandler(req, res) {
 		res.statusCode = 200;
-		res.render('appMain.jade', {});
+		res.render('app.jade', {appName: 'Main'});
 	}
 
-	app.get('/admin', auth.restrictToRoleLevel(50), function (req, res) {
-		res.statusCode = 200;
-		res.render('adminUser.jade', {});
+	['/admin*'].forEach(function (route) {
+		app.get(route, appAdminHandler);
 	});
-
+	function appAdminHandler(req, res) {
+		res.statusCode = 200;
+		res.render('app.jade', {appName: 'Admin'});
+	}
 };

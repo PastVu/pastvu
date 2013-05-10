@@ -3,6 +3,7 @@
 
 	var head = document.head || document.getElementsByTagName('head')[0],
 		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
+		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 		loadImg;
 
 	bindReady(function () {
@@ -38,7 +39,7 @@
 	function start() {
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
-		s.setAttribute('src', '/js/module/appMain.js?__=' + appHash);
+		s.setAttribute('src', '/js/module/app' + appName + '.js?__=' + appHash);
 		head.appendChild(s);
 	}
 

@@ -77,7 +77,7 @@ new File("publicContent/photos/origin").createDirectory();
 new File("publicContent/incoming").createDirectory();
 
 function static404(req, res) {
-	res.send(404, 'No such content!');
+	res.send(404);
 }
 
 app.configure(function () {

@@ -1,4 +1,4 @@
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
 	// Project configuration.
 	grunt.initConfig({
@@ -21,9 +21,11 @@ module.exports = function(grunt) {
 					' * Author: <%= pkg.author %>\n' +
 					' */\n'
 			},
-			dist: {
-				src: ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appMain.js'],
-				dest: 'public-build/js/module/appMain.js'
+			main: {
+				files: {
+					'public-build/js/module/appMain.js': ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appMain.js'],
+					'public-build/js/module/appAdmin.js': ['public-build/js/lib/require/require.js', 'public-build/js/_mainConfig.js', 'public-build/js/module/appAdmin.js']
+				}
 			}
 		}
 	});
