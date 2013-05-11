@@ -4,8 +4,8 @@
  */
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils'], function ($, _, ko, ko_mapping, socket, Utils) {
 	'use strict';
-
-	var $window = $(window),
+	var appName = (document.head.dataset && document.head.dataset.appname) || document.head.getAttribute('data-appname') || 'Main',
+		$window = $(window),
 		Params = ko_mapping.fromJS(
 			{
 				window: {
@@ -20,6 +20,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 
 					appVersion: 0,
 					appHash: 0,
+					appName: appName,
 
 					USE_OSM_API: true,
 					USE_GOOGLE_API: true,

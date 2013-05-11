@@ -3,15 +3,17 @@
 		a.appV(target="_blank", href="/history.txt")
 			| v
 			= appVersion
-		#appName.indentLogo Retro photo of mankind's habitat
+		#appName.indentLogo(data-bind="text: ($root.P.settings.appName() === 'Admin' ? 'Admin - ' : '') + 'Retro photo of mankind\\'s habitat'")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
-			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank", data-bind="style:{display: auth.iAm.role_level()>=50 ? '':'none'}")
+			//ko if: $root.P.settings.appName() !== 'Admin'
+			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank")
 				.ico
 				.text(data-bind="text: $root.i18n.admin()")
+			// /ko
 			a#toProfile.labledIco.iconBefore(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
 				.ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
