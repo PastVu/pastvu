@@ -12,61 +12,29 @@ require([
 	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
 	"use strict";
-	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
-		routeDFD = $.Deferred();
 
 	Utils.title.setPostfix('Фотографии прошлого');
-	moment.lang('ru');
 
-	$('body').append(jade);
-	ko.applyBindings(globalVM);
-
-	globalVM.router = new RouteManager(routerDeclare(), routeDFD);
-
-	$.when(loadParams(), routeDFD.promise()).then(app);
-
-	function loadParams() {
-		var dfd = $.Deferred();
-		socket.once('takeGlobeParams', function (data) {
-			ko_mapping.fromJS({settings: data}, P);
-			dfd.resolve();
-		});
-		socket.emit('giveGlobeParams');
-		return dfd.promise();
-	}
-
-	function app() {
-		var loadTime;
-
-		if (window.wasLoading) {
-			loadTime = Number(new Date(Utils.cookie.get('oldmos.load.' + appHash)));
-			if (isNaN(loadTime)) {
-				loadTime = 100;
-			} else {
-				loadTime = Math.max(100, 2200 - (Date.now() - loadTime));
-			}
-			console.log(loadTime);
-			if (!$.urlParam('stopOnLoad')) {
-				window.setTimeout(startApp, loadTime);
-			}
-		} else {
-			Utils.cookie.set('oldmos.load.' + appHash, (new Date()).toUTCString());
-			startApp();
-		}
-
-		function startApp() {
-			if (window.wasLoading) {
-				$('#apploader').remove();
-				delete window.wasLoading;
-			}
-			//Backbone.Router.namedParameters = true;
-			Backbone.history.start({pushState: true, root: routerDeclare().root || '/', silent: false});
-		}
-	}
-
-	function routerDeclare() {
-		return {
+	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
+		routerDeferred = $.Deferred(),
+		routerAnatomy = {
 			root: '/',
+			globalModules: {
+				modules: [
+					{module: 'm/common/auth', container: '#auth', global: true},
+					{module: 'm/common/top', container: '#topContainer', global: true}
+				],
+				options: {
+					parent: globalVM,
+					level: 0,
+					callback: function (auth, top) {
+						$.when(auth.loadMe()).done(function () {
+							top.show();
+							routerDeferred.resolve();
+						});
+					}
+				}
+			},
 			routes: [
 				{route: "", handler: "index"},
 				{route: "p/(:cid)(/)", handler: "photo"},
@@ -83,14 +51,7 @@ require([
 					renderer(
 						[
 							{module: 'm/main/mainPage', container: '#bodyContainer'}
-							//{module: 'm/foot', container: '#footContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (bodyPage, foot) {
-							}
-						}
+						]
 					);
 				},
 				photo: function (cid, qparams) {
@@ -103,13 +64,7 @@ require([
 					renderer(
 						[
 							{module: 'm/photo/photo', container: '#bodyContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (bodyPage) {
-							}
-						}
+						]
 					);
 				},
 				userPage: function (login, section, page, qparams) {
@@ -126,13 +81,7 @@ require([
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (bodyPage, foot) {
-							}
-						}
+						]
 					);
 				},
 				photoUpload: function () {
@@ -141,13 +90,7 @@ require([
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (top, bodyPage, foot) {
-							}
-						}
+						]
 					);
 				},
 				clusterCalc: function () {
@@ -156,13 +99,7 @@ require([
 					renderer(
 						[
 							{module: 'm/map/mapClusterCalc', container: '#bodyContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (top, bodyPage, foot) {
-							}
-						}
+						]
 					);
 				},
 				confirm: function (key, qparams) {
@@ -178,13 +115,7 @@ require([
 							renderer(
 								[
 									{module: 'm/main/mainPage', container: '#bodyContainer'}
-								],
-								{
-									parent: globalVM,
-									level: 0,
-									callback: function (bodyPage, foot) {
-									}
-								}
+								]
 							);
 
 							if (data.type === 'noty') {
@@ -236,6 +167,52 @@ require([
 				}
 			}
 		};
+
+	moment.lang('ru');
+
+	$('body').append(jade);
+	ko.applyBindings(globalVM);
+
+	globalVM.router = new RouteManager(routerAnatomy);
+
+	$.when(loadParams(), routerDeferred.promise()).then(app);
+
+	function loadParams() {
+		var dfd = $.Deferred();
+		socket.once('takeGlobeParams', function (data) {
+			ko_mapping.fromJS({settings: data}, P);
+			dfd.resolve();
+		});
+		socket.emit('giveGlobeParams');
+		return dfd.promise();
+	}
+
+	function app() {
+		var loadTime;
+
+		if (window.wasLoading) {
+			loadTime = Number(new Date(Utils.cookie.get('oldmos.load.' + appHash)));
+			if (isNaN(loadTime)) {
+				loadTime = 100;
+			} else {
+				loadTime = Math.max(100, 2200 - (Date.now() - loadTime));
+			}
+			if (!$.urlParam('stopOnLoad')) {
+				window.setTimeout(startApp, loadTime);
+			}
+		} else {
+			Utils.cookie.set('oldmos.load.' + appHash, (new Date()).toUTCString());
+			startApp();
+		}
+
+		function startApp() {
+			if (window.wasLoading) {
+				$('#apploader').remove();
+				delete window.wasLoading;
+			}
+			//Backbone.Router.namedParameters = true;
+			Backbone.history.start({pushState: true, root: routerAnatomy.root, silent: false});
+		}
 	}
 
 	//window.appRouter = globalVM.router;

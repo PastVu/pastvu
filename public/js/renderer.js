@@ -28,7 +28,7 @@ define([
 			promises = _.pluck(modules, 'module'), // Массив промисов для возврата модулей в callback функцию
 			promisesWhenNew = {}; //Хеш имен модулей, которые рендерятся первый раз. Передается последним параметром в коллбэк рендера
 
-		options = _.defaults(options, defaultOptions);
+		options = _.defaults(options || {}, defaultOptions);
 
 		/**
 		 * Уничтожаем не глобальные модули, которых нет в новом списке

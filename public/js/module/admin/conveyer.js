@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*define:true*/
 /**
  * Модель карты
  */

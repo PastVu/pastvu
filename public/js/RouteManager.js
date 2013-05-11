@@ -5,9 +5,9 @@
 define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'renderer'], function ($, Utils, _, Backbone, ko, globalVM, renderer) {
 	"use strict";
 
-	var Router = Backbone.Router.extend({
+	return Backbone.Router.extend({
 
-		initialize: function (options, dfd) {
+		initialize: function (options) {
 			this.root = '/';
 			this.useLeaf = false;
 			this.body = ko.observable('');
@@ -33,27 +33,13 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 				this.useLeaf = options.useLeaf;
 			}
 
-			//Регистрируем глобальные модули
-			renderer(
-				[
-					{module: 'm/common/auth', container: '#auth', global: true},
-					{module: 'm/common/top', container: '#topContainer', global: true}
-				],
-				{
-					parent: globalVM,
-					level: 0,
-					context: this,
-					callback: function (auth, top) {
-						if (dfd) {
-							$.when(auth.loadMe()).done(function () {
-								top.show();
-								dfd.resolve();
-							});
-						}
-					}
-				}
-
-			);
+			if (options && options.globalModules) {
+				//Регистрируем глобальные модули
+				renderer(
+					options.globalModules.modules,
+					options.globalModules.options
+				);
+			}
 
 			//Вставляем обработчики модулей обернутые в враппер
 			if (options && options.handlers) {
@@ -229,6 +215,4 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			}
 		}
 	});
-
-	return Router;
 });
