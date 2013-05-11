@@ -1,8 +1,8 @@
 /*global define:true*/
 /**
- * Модель верхнего меню админки
+ * Модель левого подменю админки
  */
-define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/menu.jade', 'css!style/admin/menu'], function (_, ko, ko_mapping, Cliche, globalVM, jade) {
+define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'text!tpl/admin/submenu.jade', 'css!style/admin/submenu'], function (_, ko, ko_mapping, Cliche, globalVM, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -11,11 +11,18 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 			this.auth = globalVM.repository['m/common/auth'];
 
 			this.section = ko.observable('');
-			this.menuItems = [
-				{name: 'Common', href: "/admin", section: 'index'},
-				{name: 'Map', href: "/admin/map", section: 'map'},
-				{name: 'Photos', href: "/admin/photo", section: 'photo'}
-			];
+			this.menuItems = ko.observableArray();
+			this.submenus = {
+				index: [
+					{name: 'News', href: "/admin/news", section: 'news'}
+				],
+				map: [
+					{name: 'Clusters', href: "/admin/map/cluster", section: 'cluster'}
+				],
+				photo: [
+					{name: 'Conveyer', href: "/admin/photo/conveyer", section: 'conveyer'}
+				]
+			};
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -38,7 +45,8 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 		routeHandler: function () {
 			var params = globalVM.router.params();
 
-			this.section(params._handler);
+			this.menuItems(this.submenus[params._handler]);
+			this.section(params.section);
 		}
 	});
 });

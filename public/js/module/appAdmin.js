@@ -1,5 +1,4 @@
 /*global require:true*/
-//require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require([
 	'domReady!',
@@ -23,42 +22,52 @@ require([
 				modules: [
 					{module: 'm/common/auth', container: '#auth', global: true},
 					{module: 'm/common/top', container: '#topContainer', global: true},
-					{module: 'm/admin/menu', container: '#menuContainer', global: true}
+					{module: 'm/admin/menu', container: '#menuContainer', global: true},
+					{module: 'm/admin/submenu', container: '#subMenuContainer', global: true}
 				],
 				options: {
 					parent: globalVM,
 					level: 0,
-					callback: function (auth, top, menu) {
+					callback: function (auth, top, menu, submenu) {
 						$.when(auth.loadMe()).done(function () {
+							if (!auth.loggedIn()) {
+								location.href = '/';
+								return;
+							}
 							top.show();
 							menu.show();
+							submenu.show();
 							routerDeferred.resolve();
 						});
 					}
 				}
 			},
 			routes: [
-				{route: "", handler: "index"},
+				{route: "(:section)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
 				{route: "photo(/)(:section)(/)", handler: "photo"}
 			],
 			handlers: {
-				index: function (qparams) {
-					var auth = globalVM.repository['m/common/auth'];
+				index: function (section, qparams) {
+					var auth = globalVM.repository['m/common/auth'],
+						modules = [];
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
-					this.params({_handler: 'index'});
+					if (!section) {
+						section = 'news';
+					}
+					this.params(_.assign({section: section, _handler: 'index'}, qparams));
 
-					renderer(
-						[
-							{module: 'm/main/mainPage', container: '#bodyContainer'}
-						]
-					);
+					if (section === 'news') {
+						modules.push({module: 'm/main/mainPage', container: '#bodyContainer'});
+					}
+					renderer(modules);
 				},
 				map: function (section, qparams) {
-					var auth = globalVM.repository['m/common/auth'];
+					var auth = globalVM.repository['m/common/auth'],
+						modules = [];
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
@@ -68,31 +77,27 @@ require([
 					}
 					this.params(_.assign({section: section, _handler: 'map'}, qparams));
 
-					renderer(
-						[
-							{module: 'm/map/mapClusterCalc', container: '#bodyContainer'}
-						],
-						{
-							parent: globalVM,
-							level: 0,
-							callback: function (bodyPage, foot) {
-							}
-						}
-					);
+					if (section === 'cluster') {
+						modules.push({module: 'm/map/mapClusterCalc', container: '#bodyContainer'});
+					}
+					renderer(modules);
 				},
-				photo: function (qparams) {
-					var auth = globalVM.repository['m/common/auth'];
+				photo: function (section, qparams) {
+					var auth = globalVM.repository['m/common/auth'],
+						modules = [];
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
-					this.params({_handler: 'photo'});
+					if (!section) {
+						section = 'conveyer';
+					}
+					this.params(_.assign({section: section, _handler: 'photo'}, qparams));
 
-					renderer(
-						[
-							{module: 'm/main/mainPage', container: '#bodyContainer'}
-						]
-					);
+					if (section === 'conveyer') {
+						modules.push({module: 'm/admin/conveyer', container: '#bodyContainer'});
+					}
+					renderer(modules);
 				}
 			}
 		};

@@ -40,9 +40,7 @@ require([
 				{route: "p/(:cid)(/)", handler: "photo"},
 				{route: "u(/)(:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
 				{route: "photoUpload(/)", handler: "photoUpload"},
-				{route: "confirm/:key", handler: "confirm"},
-				{route: "clusterCalc(/)", handler: "clusterCalc"}/*,
-				{route: "u/conveyer", handler: "conveyer"}*/
+				{route: "confirm/:key", handler: "confirm"}
 			],
 			handlers: {
 				index: function (qparams) {
@@ -90,15 +88,6 @@ require([
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
-						]
-					);
-				},
-				clusterCalc: function () {
-					this.params({_handler: 'clusterCalc'});
-
-					renderer(
-						[
-							{module: 'm/map/mapClusterCalc', container: '#bodyContainer'}
 						]
 					);
 				},
