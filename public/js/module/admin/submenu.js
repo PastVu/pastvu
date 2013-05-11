@@ -10,8 +10,6 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 
-			this.section = ko.observable('');
-			this.menuItems = ko.observableArray();
 			this.submenus = {
 				index: [
 					{name: 'News', href: "/admin/news", section: 'news'}
@@ -24,11 +22,20 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 				]
 			};
 
+			this.topmenu = ko.observable('');
+			this.section = ko.observable('');
+			this.menuItems = this.co.menuItems = ko.computed({
+				read: function () {
+					return this.submenus[this.topmenu()] || [];
+				},
+				owner: this
+			});
+
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-			this.routeHandler();
 		},
 		show: function () {
 			if (!this.showing) {
@@ -45,7 +52,7 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 		routeHandler: function () {
 			var params = globalVM.router.params();
 
-			this.menuItems(this.submenus[params._handler]);
+			this.topmenu(params._handler);
 			this.section(params.section);
 		}
 	});

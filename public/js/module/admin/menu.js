@@ -12,7 +12,7 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 
 			this.section = ko.observable('');
 			this.menuItems = [
-				{name: 'Common', href: "/admin", section: 'index'},
+				{name: 'Index', href: "/admin", section: 'index'},
 				{name: 'Map', href: "/admin/map", section: 'map'},
 				{name: 'Photos', href: "/admin/photo", section: 'photo'}
 			];
@@ -21,7 +21,6 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-			this.routeHandler();
 		},
 		show: function () {
 			if (!this.showing) {
