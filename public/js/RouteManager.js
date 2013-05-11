@@ -27,6 +27,9 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			//Указываем корень
 			if (options && options.root) {
 				this.root = options.root;
+				//Для testUrl последний слэш заменяем на (/),
+				//чтобы, например, для this.root = '/admin/' подходил путь перехода как '/admin/' так и '/admin'
+				this.rootForUrlTest = this.root.charAt(this.root.length-1) === '/' ? this.root.substring(0, this.root.length-1) + '(/)' : this.root;
 			}
 			//Указываем отслеживать ли историю переходов по url (leaf)
 			if (options && Utils.isType('boolean', options.useLeaf)) {
@@ -203,7 +206,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 		},
 		testUrl: function (url) {
 			return _.some(this.routes, function (item) {
-				return this._routeToRegExp(this.root + item.route).test(url);
+				return this._routeToRegExp(this.rootForUrlTest + item.route).test(url);
 			}, this);
 		},
 		// Блокирует переход по ссылкам
