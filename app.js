@@ -213,6 +213,7 @@ require(__dirname + '/models/User.js').makeModel(db);
 require(__dirname + '/models/Photo.js').makeModel(db);
 require(__dirname + '/models/Comment.js').makeModel(db);
 require(__dirname + '/models/Cluster.js').makeModel(db);
+require(__dirname + '/models/News.js').makeModel(db);
 require(__dirname + '/models/_initValues.js').makeModel(db);
 Session = db.model('Session');
 
