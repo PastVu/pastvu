@@ -1,0 +1,52 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.newsWrapper {
+	position: relative;
+	padding: 6px 0 7px 0;
+
+	.newsHeader {
+		margin-top: 1px;
+		margin-bottom: 0;
+		font-size: 22px;
+		font-weight: bold;
+	}
+
+	.news {
+
+		.novel {
+			margin: 12px 14px 5px 14px;
+			padding: 2px 7px 4px 7px;
+			.box-sizing(border-box);
+
+			&:hover {
+				background-color: darken(@bodyBackground, 5%);
+			}
+		}
+		.newsDate {
+			width: 24px;
+			padding-top: 2px;
+			float: left;
+			vertical-align: top;
+			font-size: 14px;
+			line-height: 15px;
+			text-align: center;
+		}
+		.newsBody {
+			margin-left: 34px;
+			vertical-align: top;
+		}
+		.newsTitle {
+			padding-bottom: 2px;
+			font-weight: bold;
+			font-size: 18px;
+		}
+		.newsNotice {
+			font-size: 16px;
+			line-height: 18px;
+		}
+	}
+}
+
+

@@ -39,6 +39,7 @@ require([
 				{route: "", handler: "index"},
 				{route: "p/(:cid)(/)", handler: "photo"},
 				{route: "u(/)(:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
+				{route: "news(/)(:cid)", handler: "news"},
 				{route: "photoUpload(/)", handler: "photoUpload"},
 				{route: "confirm/:key", handler: "confirm"}
 			],
@@ -88,6 +89,14 @@ require([
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
+						]
+					);
+				},
+				news: function (cid, qparams) {
+					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
+					renderer(
+						[
+							{module: 'm/diff/news', container: '#bodyContainer'}
 						]
 					);
 				},

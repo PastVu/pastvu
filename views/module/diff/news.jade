@@ -1,0 +1,11 @@
+.newsWrapper(data-bind="with: repository[M!M]")
+	.indentLogo.newsHeader Новости проекта
+	.row-fluid
+	.row-fluid.news
+		//ko foreach: news
+		.novel.clearfix
+			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+			.newsBody
+				.newsTitle(data-bind="text: $data.title")
+				.newsNotice(data-bind="html: $data.txt")
+		// /ko

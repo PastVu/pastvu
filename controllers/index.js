@@ -334,13 +334,33 @@ function giveIndexNews(hs, cb) {
 	step(
 		function () {
 			var now = new Date();
-			News.collection.find({pdate: {$lte: now}/*, tdate: {$gt: now}*/}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
+			News.collection.find({pdate: {$lte: now}, tdate: {$gt: now}}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
 				['pdate', 'desc']
 			]}, this);
 		},
 		cursorExtract,
 		function (err, news) {
-			console.dir(arguments)
+			if (err) {
+				cb({message: err && err.message, error: true});
+				return;
+			}
+			cb({news: news});
+		}
+	);
+}
+/**
+ * Новости
+ */
+function giveAllNews(hs, cb) {
+	step(
+		function () {
+			var now = new Date();
+			News.collection.find({pdate: {$lte: now}}, {_id: 0, user: 0, cdate: 0, notice: 0}, {sort: [
+				['pdate', 'desc']
+			]}, this);
+		},
+		cursorExtract,
+		function (err, news) {
 			if (err) {
 				cb({message: err && err.message, error: true});
 				return;
@@ -373,6 +393,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveIndexNews', function (data) {
 			giveIndexNews(hs, function (resultData) {
 				socket.emit('takeIndexNews', resultData);
+			});
+		});
+		socket.on('giveAllNews', function (data) {
+			giveAllNews(hs, function (resultData) {
+				socket.emit('takeAllNews', resultData);
 			});
 		});
 
