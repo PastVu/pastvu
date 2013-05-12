@@ -1,4 +1,5 @@
-/*define:true*/
+/*global define:true*/
+
 /**
  * Модель карты
  */

@@ -96,9 +96,8 @@ app.configure(function () {
 
 	app.locals({
 		pretty: false,
-		appLand: land,
-		appHash: app.hash,
-		appVersion: app.version
+		appLand: land, //Решает какие скрипты вставлять в head
+		appHash: app.hash //Вставляется в head страниц
 	});
 
 	//app.use(express.logger({ immediate: false, format: 'dev' }));
@@ -118,8 +117,7 @@ app.configure(function () {
 
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	//app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.exp' }));
-	app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.exp' }));
+	app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.exp' })); //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.exp' }));
 	app.use(express.methodOverride());
 	app.use(app.router);
 

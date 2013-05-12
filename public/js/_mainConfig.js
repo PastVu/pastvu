@@ -22,6 +22,11 @@ requirejs.config({
 				'jquery'
 			],
 			exports: 'Highcharts'
+		},
+		'jquery-plugins/redactor/redactor': {
+			deps: [
+				'jquery'
+			]
 		}
 	},
 	map: {

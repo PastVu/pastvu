@@ -48,7 +48,6 @@ var giveGlobeParams = (function () {
 				while (i--) {
 					params[settings[i].key] = settings[i].val;
 				}
-				console.dir(params);
 				cb(params);
 			}
 		);
