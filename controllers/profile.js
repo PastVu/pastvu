@@ -14,8 +14,6 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		//socket.emit('initMessage', {init_message: '000'});
-
 		socket.on('giveUser', function (data) {
 			User.getUserPublic(data.login, function (err, user) {
 				socket.emit('takeUser', (user && user.toObject()) || {error: true, message: err && err.messagee});

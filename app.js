@@ -53,6 +53,7 @@ var land = argv.land || 'dev',
 	domain = argv.domain || addresses[0] || 'localhost',
 	port = argv.port || 3000,
 	uport = argv.uport || 8888,
+	host = domain + (port === 80 ? '' : ':' + port),
 	pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
@@ -81,7 +82,7 @@ function static404(req, res) {
 }
 
 app.configure(function () {
-	app.set('appEnv', {land: land, domain: domain, port: port, uport: uport});
+	app.set('appEnv', {land: land, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
 
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
@@ -252,4 +253,4 @@ process.on('uncaughtException', function (err) {
 
 server.listen(port);
 
-logger.info('Express server listening %s in %s-mode \n', (domain + ':' + port), land.toUpperCase());
+logger.info('Express server listening %s in %s-mode \n', host, land.toUpperCase());

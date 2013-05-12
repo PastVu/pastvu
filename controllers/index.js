@@ -8,6 +8,7 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
+	appvar,
 	appEnv = {},
 
 	dayStart, //Время начала дня
@@ -20,6 +21,38 @@ var auth = require('./auth.js'),
 	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
 }());
 
+/**
+ * Параметры
+ */
+var giveGlobeParams = (function () {
+
+	return function (hs, cb) {
+		var params = {
+			client: hs.address,
+			server: appEnv.serverAddr,
+			appHash: appvar.hash
+		};
+		step(
+			function () {
+				Settings.collection.find({}, {_id: 0, key: 1, val: 1}, this);
+			},
+			function cursors() {
+				var i = arguments.length;
+				while (i > 1) {
+					arguments[--i].toArray(this.parallel());
+				}
+			},
+			function (err, settings) {
+				var i = settings.length;
+				while (i--) {
+					params[settings[i].key] = settings[i].val;
+				}
+				console.dir(params);
+				cb(params);
+			}
+		);
+	};
+}());
 /**
  * Рейтинги
  */
@@ -291,6 +324,7 @@ var giveStats = (function () {
 
 module.exports.loadController = function (app, db, io) {
 	var logger = log4js.getLogger("index.js");
+	appvar = app;
 	appEnv = app.get('appEnv');
 
 	Settings = db.model('Settings');
@@ -301,32 +335,10 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		//hs.session.message = 'Thank you! Your registration is confirmed. Now you can enter using your username and password';
-		if (hs.session.message) {
-			socket.emit('initMessage', {init_message: hs.session.message});
-			hs.session.message = null;
-		}
-
-		socket.on('giveGlobeParams', function (data) {
-			var params = {
-				ip: hs.address
-			};
-			step(
-				function () {
-					Settings.find({}, this);
-				},
-				function (err, settings, user) {
-					var x = settings.length - 1;
-					do {
-						params[settings[x]['key']] = settings[x]['val'];
-					} while (x--);
-					params.user = hs.session.user;
-					this();
-				},
-				function () {
-					socket.emit('takeGlobeParams', params.extend({appHash: app.hash, domain: appEnv.domain, port: appEnv.port, uport: appEnv.uport}));
-				}
-			);
+		socket.on('giveGlobeParams', function () {
+			giveGlobeParams(hs, function (resultData) {
+				socket.emit('takeGlobeParams', resultData);
+			});
 		});
 
 		socket.on('giveRatings', function (data) {
@@ -337,7 +349,6 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('giveStats', function (data) {
 			giveStats(data, function (resultData) {
-				console.log('resultData');
 				socket.emit('takeStats', resultData);
 			});
 		});

@@ -14,7 +14,7 @@ require([
 
 	Utils.title.setPostfix('Администрирование - Фотографии прошлого');
 
-	var appHash = (document.head.dataset && document.head.dataset.apphash) || document.head.getAttribute('data-apphash') || '000',
+	var appHash = P.settings.appHash(),
 		routerDeferred = $.Deferred(),
 		routerAnatomy = {
 			root: '/admin/',

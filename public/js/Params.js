@@ -2,10 +2,13 @@
 /**
  * Params
  */
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils'], function ($, _, ko, ko_mapping, socket, Utils) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _, ko, ko_mapping) {
 	'use strict';
-	var appName = (document.head.dataset && document.head.dataset.appname) || document.head.getAttribute('data-appname') || 'Main',
+	var head = document.head || document.getElementsByTagName('head')[0],
+		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
+		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 		$window = $(window),
+
 		Params = ko_mapping.fromJS(
 			{
 				window: {
@@ -14,12 +17,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'socket', 'Utils
 					square: $window.width() * $window.height()
 				},
 				settings: {
-					domain: 'localhost',
-					port: 3000,
-					uport: 8888,
+					client: {},
+					server: {},
 
 					appVersion: 0,
-					appHash: 0,
+					appHash: appHash,
 					appName: appName,
 
 					USE_OSM_API: true,

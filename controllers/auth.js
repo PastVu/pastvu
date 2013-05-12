@@ -151,7 +151,7 @@ function register(session, data, cb) {
 					'E-mail: <b>' + data.email + '</b><br/><br/>' +
 					'Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный. Это требуется для защиты от спамеров и многократной регистрации.<br/><br/>' +
 					'Для активации Вашего аккаунта, пройдите по следующей ссылке:<br/>' +
-					'<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
+					'<a href="http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '</a><br/>' +
 					'<small>Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо зарегистрироваться повторно</small><br/>' +
 					'<br/><small>Вы получили это письмо, так как этот e-mail адрес был использован при регистрации. Если Вы не регистрировались на нашем сайте, то просто проигнорируйте письмо и удалите его.</small>'
 			}, this.parallel());
@@ -224,7 +224,7 @@ function recall(session, data, cb) {
 				html: 'Здравствуйте, <b>' + data.login + '</b>!<br/><br/>' +
 					'Для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
 					'Для ввода нового пароля перейдите по следующей ссылке:<br/>' +
-					'<a href="http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.domain + ':' + appEnv.port + '/confirm/' + confirmKey + '</a><br/>' +
+					'<a href="http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '</a><br/>' +
 					'<small>Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно</small>'
 			}, this);
 		},

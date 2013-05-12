@@ -86,7 +86,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						// Initialize the jQuery File Upload widget:
 						this.$dom.find('#fileupload').fileupload();
 						this.$dom.find('#fileupload').fileupload('option', {
-							url: 'http://' + P.settings.domain() + ':' + P.settings.uport() + '/',
+							url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/',
 							dropZone: $(document), //this.$dom.find('.addfiles_area'),
 							pasteZone: $(document),
 							singleFileUploads: true,
