@@ -93,6 +93,7 @@ require([
 					);
 				},
 				news: function (cid, qparams) {
+					Utils.title.setTitle({title: 'Новости'});
 					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
 					renderer(
 						[

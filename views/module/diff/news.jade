@@ -6,6 +6,16 @@
 		.novel.clearfix
 			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
 			.newsBody
-				.newsTitle(data-bind="text: $data.title")
-				.newsNotice(data-bind="html: $data.txt")
+				.newsHead
+					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
+					//ko if: $parent.auth.loggedIn()
+					.dotDelimeter ·
+					a.newsEdit(target="_blank", data-bind="attr: {href: '/admin/news/' + $data.cid}")
+						i.icon-pencil
+						| &nbsp;Редактировать
+					// /ko
+				.newsNotice(data-bind="html: $data.notice")
+				//ko if: $data.expand
+				.newsExpand(data-bind="click: expand") Читать дальше..
+				// /ko
 		// /ko

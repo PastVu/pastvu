@@ -334,7 +334,7 @@ function giveIndexNews(hs, cb) {
 	step(
 		function () {
 			var now = new Date();
-			News.collection.find({pdate: {$lte: now}, tdate: {$gt: now}}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
+			News.collection.find({pdate: {$lte: now}/*, tdate: {$gt: now}*/}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
 				['pdate', 'desc']
 			]}, this);
 		},
@@ -355,7 +355,7 @@ function giveAllNews(hs, cb) {
 	step(
 		function () {
 			var now = new Date();
-			News.collection.find({pdate: {$lte: now}}, {_id: 0, user: 0, cdate: 0, notice: 0}, {sort: [
+			News.collection.find({pdate: {$lte: now}}, {_id: 0, user: 0, cdate: 0}, {sort: [
 				['pdate', 'desc']
 			]}, this);
 		},

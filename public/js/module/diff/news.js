@@ -35,6 +35,14 @@ define([
 				if (!data || data.error || !Array.isArray(data.news)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
+					var i = data.news.length;
+					while (i--) {
+						if (data.news[i].notice) {
+							data.news[i].expand = true;
+						} else {
+							data.news[i].notice = data.news[i].txt;
+						}
+					}
 					this.news(data.news);
 				}
 

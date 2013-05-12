@@ -61,7 +61,7 @@ require([
 					this.params(_.assign({section: section, _handler: 'index'}, qparams));
 
 					if (section === 'news') {
-						modules.push({module: 'm/admin/news', container: '#bodyContainer'});
+						modules.push({module: 'm/diff/news', container: '#bodyContainer'});
 					}
 					renderer(modules);
 				},

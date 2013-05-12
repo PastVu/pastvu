@@ -18,6 +18,7 @@
 		.novel {
 			margin: 12px 14px 5px 14px;
 			padding: 2px 7px 4px 7px;
+			cursor: default;
 			.box-sizing(border-box);
 
 			&:hover {
@@ -37,14 +38,28 @@
 			margin-left: 34px;
 			vertical-align: top;
 		}
-		.newsTitle {
+		.newsHead {
 			padding-bottom: 2px;
 			font-weight: bold;
 			font-size: 18px;
+
+			.newsEdit {
+				font-size: 15px;
+				font-weight: normal;
+			}
 		}
 		.newsNotice {
 			font-size: 16px;
 			line-height: 18px;
+		}
+		.newsExpand {
+			display: inline-block;
+			color: #3C7EC9;
+			cursor: pointer;
+
+			&:hover {
+				text-decoration: underline;
+			}
 		}
 	}
 }
