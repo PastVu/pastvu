@@ -3,6 +3,7 @@ var auth = require('./auth.js'),
 	User,
 	Photo,
 	Comment,
+	News,
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	Utils = require('../commons/Utils.js'),
@@ -21,6 +22,24 @@ var auth = require('./auth.js'),
 	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
 }());
 
+function cursorExtract(err, cursor) {
+	if (err || !cursor) {
+		this(err || {message: 'Create cursor error', error: true});
+		return;
+	}
+	cursor.toArray(this);
+}
+function cursorsExtract(err) {
+	if (err) {
+		this({message: err && err.message, error: true});
+		return;
+	}
+
+	for (var i = 1; i < arguments.length; i++) {
+		arguments[i].toArray(this.parallel());
+	}
+}
+
 /**
  * Параметры
  */
@@ -37,12 +56,7 @@ var giveGlobeParams = (function () {
 			function () {
 				Settings.collection.find({}, {_id: 0, key: 1, val: 1}, this);
 			},
-			function cursors() {
-				var i = arguments.length;
-				while (i > 1) {
-					arguments[--i].toArray(this.parallel());
-				}
-			},
+			cursorExtract,
 			function (err, settings) {
 				var i = settings.length;
 				while (i--) {
@@ -192,16 +206,7 @@ var giveRatings = (function () {
 					['pcount', 'desc']
 				]}, this.parallel());
 			},
-			function cursorsExtract(err) {
-				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
-				}
-
-				for (var i = 1; i < arguments.length; i++) {
-					arguments[i].toArray(this.parallel());
-				}
-			},
+			cursorsExtract,
 			function (err, pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall) {
 				if (err) {
 					cb({message: err && err.message, error: true});
@@ -322,6 +327,29 @@ var giveStats = (function () {
 	return memoize;
 }());
 
+/**
+ * Новости
+ */
+function giveIndexNews(hs, cb) {
+	step(
+		function () {
+			var now = new Date();
+			News.collection.find({pdate: {$lte: now}/*, tdate: {$gt: now}*/}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
+				['pdate', 'desc']
+			]}, this);
+		},
+		cursorExtract,
+		function (err, news) {
+			console.dir(arguments)
+			if (err) {
+				cb({message: err && err.message, error: true});
+				return;
+			}
+			cb({news: news});
+		}
+	);
+}
+
 module.exports.loadController = function (app, db, io) {
 	var logger = log4js.getLogger("index.js");
 	appvar = app;
@@ -331,6 +359,7 @@ module.exports.loadController = function (app, db, io) {
 	User = db.model('User');
 	Photo = db.model('Photo');
 	Comment = db.model('Comment');
+	News = db.model('News');
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
@@ -338,6 +367,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveGlobeParams', function () {
 			giveGlobeParams(hs, function (resultData) {
 				socket.emit('takeGlobeParams', resultData);
+			});
+		});
+
+		socket.on('giveIndexNews', function (data) {
+			giveIndexNews(hs, function (resultData) {
+				socket.emit('takeIndexNews', resultData);
 			});
 		});
 

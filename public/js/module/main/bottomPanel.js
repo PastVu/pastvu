@@ -14,6 +14,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+			this.news = ko.observableArray();
 			this.cats = ko.observableArray(cats);
 			this.catLoading = ko.observable('');
 			this.catActive = ko.observable('');
@@ -61,6 +62,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
+			this.getNews();
 			this.catJump('photos');
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
@@ -90,6 +92,20 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		catActivate: function (data) {
 			this.catActive(this.catLoading());
 			this.catLoading('');
+		},
+		getNews: function (cb, ctx) {
+			socket.once('takeIndexNews', function (data) {
+				if (!data || data.error || !Array.isArray(data.news)) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					this.news(data.news);
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}.bind(this));
+			socket.emit('giveIndexNews', {limit: 24});
 		},
 		getPhotos: function (cb, ctx) {
 			socket.once('takePhotosNew', function (data) {

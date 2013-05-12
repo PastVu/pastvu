@@ -806,6 +806,7 @@ module.exports.loadController = function (app, db) {
 					user: userOid,
 					cdate: new Date((novel.date || 0) * 1000),
 					pdate: new Date((novel.date || 0) * 1000),
+					tdate: new Date(((novel.date || 0) + 3*24*60*60) * 1000),
 					title: novel.title,
 					notice: novel.pre_text,
 					txt: novel.text || novel.pre_text

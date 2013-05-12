@@ -1,6 +1,15 @@
 .bottomPanel(data-bind="with: repository[M!M]")
-	//-.row-fluid
-		span Новости:
+	//ko if: news().length > 0
+	.row-fluid.news
+		h4 Новости проекта
+		//ko foreach: news
+		.novel
+			.newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
+			.newsBody
+				.newsTitle(data-bind="text: $data.title")
+				.newsNotice(data-bind="html: $data.notice")
+		// /ko
+	// /ko
 	.row-fluid
 		.navbar.catMenu
 			.navbar-inner
