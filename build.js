@@ -10,12 +10,12 @@ var start = Date.now(),
 	jade = require('jade'),
 	_ = require('lodash'),
 	Utils = require('./commons/Utils.js'),
-	version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version,
+	pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 
 	jadeLocals = {
 		appLand: 'prod',
 		appHash: Utils.randomString(10),
-		appVersion: version
+		appVersion: pkg.version
 	},
 
 	lessCompileOptions = {

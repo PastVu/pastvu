@@ -1,8 +1,6 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe#panel
-		a.appV(target="_blank", href="/history.txt")
-			| v
-			= appVersion
+		a.appV(target="_blank", href="/history.txt", data-bind="text: 'v' + $root.P.settings.appVersion()")
 		#appName.indentLogo(data-bind="text: ($root.P.settings.appName() === 'Admin' ? 'Admin - ' : '') + 'Retro photo of mankind\\'s habitat'")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()

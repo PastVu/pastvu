@@ -20,7 +20,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 					client: {},
 					server: {},
 
-					appVersion: 0,
+					appVersion: '0',
 					appHash: appHash,
 					appName: appName,
 

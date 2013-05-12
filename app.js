@@ -49,7 +49,8 @@ for (var k in interfaces) {
 /**
  * Окружение (dev, test, prod)
  */
-var land = argv.land || 'dev',
+var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
+	land = argv.land || 'dev',
 	domain = argv.domain || addresses[0] || 'localhost',
 	port = argv.port || 3000,
 	uport = argv.uport || 8888,
@@ -61,7 +62,7 @@ logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.ve
 app = express();
 server = http.createServer(app);
 
-app.version = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')).version;
+app.version = pkg.version;
 app.hash = (land === 'dev' ? app.version : Utils.randomString(10));
 logger.info('Application Hash: ' + app.hash);
 
@@ -82,7 +83,7 @@ function static404(req, res) {
 }
 
 app.configure(function () {
-	app.set('appEnv', {land: land, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
+	app.set('appEnv', {land: land, hash: app.hash, version: app.version, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
 
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');

@@ -30,7 +30,8 @@ var giveGlobeParams = (function () {
 		var params = {
 			client: hs.address,
 			server: appEnv.serverAddr,
-			appHash: appvar.hash
+			appHash: appEnv.hash,
+			appVersion: appEnv.version
 		};
 		step(
 			function () {
