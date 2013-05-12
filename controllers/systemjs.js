@@ -13,7 +13,7 @@ module.exports.loadController = function (app, db) {
 			c = (cluster && cluster.c) || 0,
 			geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
 			inc = 0,
-			$update = {$set:{}};
+			$update = {$set: {}};
 
 		if (geoPhotos.o) {
 			inc -= 1;
@@ -751,6 +751,86 @@ module.exports.loadController = function (app, db) {
 		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, fragErrors: fragCounterError, flattened: flattenedCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter, noParent: noParentCounter};
+	});
+
+
+	saveSystemJSFunc(function oldConvertNews(sourceCollectionName, byNumPerPackage, dropExisting) {
+		sourceCollectionName = sourceCollectionName || 'old_news';
+		byNumPerPackage = byNumPerPackage || 10;
+
+		if (dropExisting) {
+			print('Clearing target collection...');
+			db.news.remove();
+		}
+
+		print('Ensuring old index...');
+		db[sourceCollectionName].ensureIndex({date: 1});
+
+		var startTime = Date.now(),
+			insertBy = byNumPerPackage, // Вставляем по N документов
+			insertArr = [],
+			newNovel,
+			existsOnStart = db.news.count(),
+			maxCid,
+			okCounter = 0,
+			noUserCounter = 0,
+			allCounter = 0,
+			allCount = db[sourceCollectionName].count(),
+			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
+			usersArr,
+			users = {},
+			userOid,
+			i;
+
+		print('Filling users hash...');
+		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+		i = usersArr.length;
+		while (i--) {
+			users[usersArr[i].cid] = usersArr[i]._id;
+		}
+		print('Filled users hash with ' + usersArr.length + ' values');
+		usersArr = null;
+
+		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
+		cursor.forEach(function (novel) {
+
+			allCounter++;
+			userOid = users[novel.user_id];
+			if (userOid === undefined) {
+				noUserCounter++;
+			}
+			if (novel.id && (userOid !== undefined) && novel.date) {
+				okCounter++;
+				newNovel = {
+					cid: novel.id,
+					user: userOid,
+					cdate: new Date((novel.date || 0) * 1000),
+					pdate: new Date((novel.date || 0) * 1000),
+					title: novel.title,
+					notice: novel.pre_text,
+					txt: novel.text || novel.pre_text
+				};
+				insertArr.push(newNovel);
+			}
+			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
+				db.news.insert(insertArr);
+				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.news.count() !== okCounter + existsOnStart) {
+					printjson(insertArr[0]);
+					print('<...>');
+					printjson(insertArr[insertArr.length - 1]);
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.news.count() + '. Some error inserting data packet. Stop imports');
+				}
+				insertArr = [];
+			}
+		});
+
+		maxCid = db.news.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
+		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
+		print('Setting next news counter to ' + maxCid + ' + 1');
+		db.counters.update({_id: 'news'}, {$set: {next: maxCid + 1}}, {upsert: true});
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', newsInserted: okCounter, noUsers: noUserCounter};
 	});
 
 	/**
