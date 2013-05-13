@@ -24,6 +24,7 @@ define([
 			this.show();
 		},
 		show: function () {
+			this.$dom.find('textarea#addNews').redactor();
 			globalVM.func.showContainer(this.$container, function () {
 			}, this);
 			this.showing = true;

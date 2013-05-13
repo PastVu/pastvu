@@ -16,6 +16,6 @@
 					// /ko
 				.newsNotice(data-bind="html: $data.notice")
 				//ko if: $data.expand
-				.newsExpand(data-bind="click: expand") Читать дальше..
+				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") Читать полностью..
 				// /ko
 		// /ko
