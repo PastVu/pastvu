@@ -482,6 +482,12 @@ module.exports.loadController = function (app, db) {
 		}
 
 		var startTime = Date.now(),
+
+		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
+			importedTimezoneOffset = -4,
+			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
+			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
+
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newPhoto,
@@ -531,8 +537,8 @@ module.exports.loadController = function (app, db) {
 					stack_order: photo.stack_order || undefined,
 
 					file: photo.file || '',
-					ldate: new Date((photo.date || 0) * 1000),
-					adate: new Date((photo.date || 0) * 1000),
+					ldate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
+					adate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
 					w: photo.width,
 					h: photo.height,
 
@@ -602,6 +608,12 @@ module.exports.loadController = function (app, db) {
 		db[sourceCollectionName].ensureIndex({date: 1});
 
 		var startTime = Date.now(),
+
+		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
+			importedTimezoneOffset = -4,
+			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
+			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
+
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newComment,
@@ -690,7 +702,7 @@ module.exports.loadController = function (app, db) {
 							cid: comment.id,
 							photo: photoOid,
 							user: userOid,
-							stamp: new Date((comment.date || 0) * 1000),
+							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
 							txt: comment.text
 						};
 						if (comment.fragment) {
@@ -767,6 +779,12 @@ module.exports.loadController = function (app, db) {
 		db[sourceCollectionName].ensureIndex({date: 1});
 
 		var startTime = Date.now(),
+
+		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
+			importedTimezoneOffset = -4,
+			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
+			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
+
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newNovel,
@@ -804,9 +822,9 @@ module.exports.loadController = function (app, db) {
 				newNovel = {
 					cid: novel.id,
 					user: userOid,
-					cdate: new Date((novel.date || 0) * 1000),
-					pdate: new Date((novel.date || 0) * 1000),
-					tdate: new Date(((novel.date || 0) + 3*24*60*60) * 1000),
+					cdate: new Date((novel.date || 0) * 1000 + resultDateCorrection),
+					pdate: new Date((novel.date || 0) * 1000 + resultDateCorrection),
+					tdate: new Date(((novel.date || 0) + 3 * 24 * 60 * 60) * 1000 + resultDateCorrection),
 					title: novel.title,
 					txt: novel.text || novel.pre_text
 				};
