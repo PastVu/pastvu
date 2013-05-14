@@ -17,50 +17,24 @@ define([
 		options: {
 		},
 		create: function () {
-			var cid = Number(globalVM.router.params().cid);
-
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/common/auth'];
-			this.createMode = ko.observable(!cid);
+			this.createMode = ko.observable(true);
 
 			this.tDateExists = ko.observable(false);
 			this.noticeExists = ko.observable(false);
-			this.news = ko_mapping.fromJS({
-				pdate: ko.observable(''),
-				tdate: ko.observable(''),
-				title: ko.observable(''),
-				notice: ko.observable(''),
-				txt: ko.observable('')
-			});
+			this.news = ko_mapping.fromJS({});
 
-			if (!this.createMode()) {
-				this.getOneNews(cid, function () {
-					this.makeBinding();
-				}, this);
-			} else {
-				this.makeBinding();
-			}
+			this.$dom.find('textarea#newsPrimary').redactor();
+			this.$dom.find('#newsPdate').datetimepicker();
+
+			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
+			this.routeHandler();
+
+			ko.applyBindings(globalVM, this.$dom[0]);
+			this.show();
 		},
 		show: function () {
-			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
-				datepicker = this.$dom.find('#newsPdate').datetimepicker().data('datetimepicker');
-
-			areaPrimary.redactor();
-			if (!this.createMode()) {
-				if (this.news.txt()) {
-					areaPrimary.setCode(this.news.txt());
-				}
-				datepicker.setDate(new Date(this.news.pdate() || Date.now()));
-			} else {
-				datepicker.setDate(new Date());
-			}
-			if (this.noticeExists()) {
-				this.noticeOn();
-			}
-			if (this.tDateExists()) {
-				this.tDateOn();
-			}
-
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
@@ -69,14 +43,61 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
-			window.clearTimeout(this.timeoutUpdate);
 			this.hide();
 			destroy.call(this);
 		},
-		makeBinding: function () {
-			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
+		routeHandler: function () {
+			var cid = Number(globalVM.router.params().cid);
+
+			this.createMode(!cid);
+			if (!this.createMode()) {
+				this.getOneNews(cid, function () {
+					this.fillData();
+				}, this);
+			} else {
+				this.resetData();
+			}
 		},
+
+		resetData: function () {
+			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
+				pickerP = this.$dom.find('#newsPdate').data('datetimepicker');
+
+			areaPrimary.setCode('<p></p>');
+			pickerP.setDate(new Date());
+			this.noticeOff();
+			this.tDateOff();
+
+			this.noticeExists(false);
+			this.tDateExists(false);
+			ko_mapping.fromJS({
+				pdate: '',
+				tdate: '',
+				title: '',
+				notice: '',
+				txt: ''
+			}, this.news);
+		},
+		fillData: function () {
+			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
+				pickerP = this.$dom.find('#newsPdate').data('datetimepicker');
+
+			pickerP.setDate(new Date(this.news.pdate() || Date.now()));
+			areaPrimary.setCode(this.news.txt() || '<p></p>');
+			if (!!this.news.notice()) {
+				this.noticeOn();
+			} else {
+				this.noticeOff();
+				this.news.notice('');
+			}
+			if (!!this.news.tdate()) {
+				this.tDateOn();
+			} else {
+				this.tDateOff();
+				this.news.tdate('');
+			}
+		},
+
 		toggleNotice: function () {
 			if (this.noticeExists()) {
 				this.noticeOff();
@@ -89,10 +110,12 @@ define([
 			this.$dom.find('textarea#newsNotice').redactor().setCode(this.news.notice());
 		},
 		noticeOff: function () {
-			var areaNotice = this.$dom.find('textarea#newsNotice');
-			this.news.notice(areaNotice.getCode());
-			areaNotice.destroyEditor();
-			this.noticeExists(false);
+			if (this.noticeExists()) {
+				var areaNotice = this.$dom.find('textarea#newsNotice');
+				this.news.notice(areaNotice.getCode());
+				areaNotice.destroyEditor();
+				this.noticeExists(false);
+			}
 		},
 		toggleTDate: function () {
 			if (this.tDateExists()) {
@@ -103,21 +126,21 @@ define([
 		},
 		tDateOn: function () {
 			this.tDateExists(true);
-			var datepicker = this.$dom.find('#newsTdate').datetimepicker().data('datetimepicker');
-			datepicker.setDate(new Date(this.news.tdate() || (Date.now() + (3 * 24 * 60 * 60 * 1000))));
+			var pickerT = this.$dom.find('#newsTdate').datetimepicker().data('datetimepicker');
+			pickerT.setDate(new Date(this.news.tdate() || (Date.now() + (3 * 24 * 60 * 60 * 1000))));
 		},
 		tDateOff: function () {
-			var datepicker = this.$dom.find('#newsTdate').data('datetimepicker');
-			datepicker.disable();
-			this.tDateExists(false);
+			if (this.tDateExists()) {
+				var pickerT = this.$dom.find('#newsTdate').data('datetimepicker');
+				pickerT.disable();
+				this.tDateExists(false);
+			}
 		},
 		getOneNews: function (cid, cb, ctx) {
 			socket.once('takeNews', function (data) {
 				if (!data || data.error || !data.news) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					this.noticeExists(!!data.news.notice);
-					this.tDateExists(!!data.news.tdate);
 					ko_mapping.fromJS(data.news, this.news);
 				}
 
