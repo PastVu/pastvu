@@ -2,7 +2,7 @@
  * @license
  * =========================================================
  * bootstrap-datetimepicker.js
- * http://www.eyecon.ro/bootstrap-datepicker
+ * http://tarruda.github.io/bootstrap-datetimepicker/
  * =========================================================
  * Copyright 2012 Stefan Petre
  *
@@ -27,7 +27,7 @@
 (function (factory) {
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(['jquery'], factory);
+		define(['jquery', 'bs/bootstrap-collapse'], factory);
 	} else {
 		// Browser globals
 		factory(jQuery);

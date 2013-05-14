@@ -6,7 +6,9 @@
 define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
 	'model/User', 'model/storage',
-	'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit', 'jquery-plugins/redactor/redactor', 'css!style/jquery/redactor/redactor'
+	'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit',
+	'jquery-plugins/redactor/redactor', 'css!style/jquery/redactor/redactor',
+	'bs/bootstrap-datetimepicker', 'css!style/bootstrap-datetimepicker'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
 
@@ -21,8 +23,8 @@ define([
 			this.auth = globalVM.repository['m/common/auth'];
 			this.createMode = ko.observable(!cid);
 
-			this.noticeExists = ko.observable(false);
 			this.tDateExists = ko.observable(false);
+			this.noticeExists = ko.observable(false);
 			this.news = ko_mapping.fromJS({
 				pdate: ko.observable(''),
 				tdate: ko.observable(''),
@@ -38,21 +40,25 @@ define([
 			} else {
 				this.makeBinding();
 			}
-
-
-			this.subscriptions.noticeExists = this.noticeExists.subscribe(this.noticeHandler, this);
-
 		},
 		show: function () {
-			var areaPrimary = this.$dom.find('textarea#newsPrimary');
+			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
+				datepicker = this.$dom.find('#newsPdate').datetimepicker().data('datetimepicker');
+
 			areaPrimary.redactor();
 			if (!this.createMode()) {
 				if (this.news.txt()) {
 					areaPrimary.setCode(this.news.txt());
 				}
-				if (this.noticeExists()) {
-					this.noticeOn();
-				}
+				datepicker.setDate(new Date(this.news.pdate() || Date.now()));
+			} else {
+				datepicker.setDate(new Date());
+			}
+			if (this.noticeExists()) {
+				this.noticeOn();
+			}
+			if (this.tDateExists()) {
+				this.tDateOn();
 			}
 
 			globalVM.func.showContainer(this.$container);
@@ -89,7 +95,21 @@ define([
 			this.noticeExists(false);
 		},
 		toggleTDate: function () {
-			this.tDateExists(!this.tDateExists());
+			if (this.tDateExists()) {
+				this.tDateOff();
+			} else {
+				this.tDateOn();
+			}
+		},
+		tDateOn: function () {
+			this.tDateExists(true);
+			var datepicker = this.$dom.find('#newsTdate').datetimepicker().data('datetimepicker');
+			datepicker.setDate(new Date(this.news.tdate() || (Date.now() + (3 * 24 * 60 * 60 * 1000))));
+		},
+		tDateOff: function () {
+			var datepicker = this.$dom.find('textarea#newsTdate').data('datetimepicker');
+			datepicker.disable();
+			this.tDateExists(false);
 		},
 		getOneNews: function (cid, cb, ctx) {
 			socket.once('takeNews', function (data) {
@@ -106,6 +126,27 @@ define([
 				}
 			}.bind(this));
 			socket.emit('giveNews', {cid: cid});
+		},
+		save: function () {
+			var saveData = ko_mapping.toJS(this.news);
+
+			if (!this.tDateExists()) {
+				delete saveData.tdate;
+			}
+			if (this.noticeExists()) {
+				saveData.notice = this.$dom.find('textarea#newsNotice').getCode();
+			} else {
+				delete saveData.notice;
+			}
+			saveData.txt = this.$dom.find('textarea#newsPrimary').getCode();
+
+		},
+		submit: function (data, evt) {
+			var $form = $(evt.target);
+			$form.find(':focus').blur();
+
+			this.save();
+			return false;
 		}
 	});
 });

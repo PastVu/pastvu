@@ -1,7 +1,7 @@
 .adminNews(data-bind="with: repository[M!M]")
 	h4(data-bind="text: createMode() ? 'Создание новости' : 'Редактирование новости'")
 
-	form.form-horizontal
+	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: submit}")
 		.control-group
 			label.control-label Заголовок
 			.controls
@@ -9,11 +9,17 @@
 		.control-group
 			label.control-label Публикация
 			.controls
-				input#newsPdate(type='text', data-bind="value: news.pdate, valueUpdate: 'keyup'")
+				.input-append.date#newsPdate
+					input(data-format="dd.MM.yyyy HH:mm:ss", type="text")
+					span.add-on
+						i(data-time-icon="icon-time", data-date-icon="icon-calendar")
 				button.btn-strict.btn-strict-small.toggleTDate(type="button", data-bind="click: toggleTDate")
 					span(data-bind="text: tDateExists() ? 'Убрать окончание публикации' : 'Добавить окончание публикации'")
 				//ko if: tDateExists()
-				input#newsTdate(type='text', data-bind="value: news.tdate, valueUpdate: 'keyup'")
+				.input-append.date#newsTdate
+					input(data-format="dd.MM.yyyy HH:mm:ss", type="text")
+					span.add-on
+						i(data-time-icon="icon-time", data-date-icon="icon-calendar")
 				// /ko
 		.control-group
 			.textName
@@ -22,10 +28,13 @@
 				//ko if: noticeExists()
 				span.muted Краткая версия
 				// /ko
-
 			//ko if: noticeExists()
 			textarea#newsNotice
 			// /ko
 		.control-group
 			.textName Полная версия
 			textarea#newsPrimary
+		.control-group
+			button.btn-strict.btn-strict-success(type="submit")
+				i.icon-ok.icon-white
+				span Сохранить
