@@ -43,6 +43,11 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			this.$dom.find('textarea#newsPrimary').destroyEditor();
+			this.$dom.find('#newsPdate').data('datetimepicker').disable();
+			this.noticeOff();
+			this.tDateOff();
+
 			this.hide();
 			destroy.call(this);
 		},
