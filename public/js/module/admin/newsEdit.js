@@ -107,7 +107,7 @@ define([
 			datepicker.setDate(new Date(this.news.tdate() || (Date.now() + (3 * 24 * 60 * 60 * 1000))));
 		},
 		tDateOff: function () {
-			var datepicker = this.$dom.find('textarea#newsTdate').data('datetimepicker');
+			var datepicker = this.$dom.find('#newsTdate').data('datetimepicker');
 			datepicker.disable();
 			this.tDateExists(false);
 		},
@@ -117,7 +117,7 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					this.noticeExists(!!data.news.notice);
-					this.tDateExists(data.news.pdate !== data.news.tdate);
+					this.tDateExists(!!data.news.tdate);
 					ko_mapping.fromJS(data.news, this.news);
 				}
 
@@ -132,14 +132,29 @@ define([
 
 			if (!this.tDateExists()) {
 				delete saveData.tdate;
+			} else {
+				saveData.tdate = this.$dom.find('#newsTdate').data('datetimepicker').getDate();
 			}
+
 			if (this.noticeExists()) {
 				saveData.notice = this.$dom.find('textarea#newsNotice').getCode();
 			} else {
 				delete saveData.notice;
 			}
+
+			saveData.pdate = this.$dom.find('#newsPdate').data('datetimepicker').getDate();
 			saveData.txt = this.$dom.find('textarea#newsPrimary').getCode();
 
+			socket.once('saveNewsResult', function (data) {
+				if (!data || data.error || !data.news) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					if (this.createMode()) {
+						globalVM.router.navigateToUrl('/admin/newsedit/' + data.news.cid);
+					}
+				}
+			}.bind(this));
+			socket.emit('saveNews', saveData);
 		},
 		submit: function (data, evt) {
 			var $form = $(evt.target);

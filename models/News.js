@@ -10,9 +10,9 @@ var NewsSchema = new Schema(
 			cdate: {type: Date, 'default': Date.now, required: true}, // Время создания
 			pdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время появления новости
 			tdate: {type: Date}, // Время до которого показывается notice
-			title: {type: String}, // Заголовок
+			title: {type: String, 'default': ''}, // Заголовок
 			notice: {type: String}, // Анонс, краткий текст
-			txt: {type: String} // Полный текст
+			txt: {type: String, required: true} // Полный текст
 		},
 		{
 			strict: true
