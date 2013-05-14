@@ -43,12 +43,12 @@ require([
 				}
 			},
 			routes: [
-				{route: "(:section)", handler: "index"},
+				{route: "(:section)(/)(:cid)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
 				{route: "photo(/)(:section)(/)", handler: "photo"}
 			],
 			handlers: {
-				index: function (section, qparams) {
+				index: function (section, cid, qparams) {
 					var auth = globalVM.repository['m/common/auth'],
 						modules = [];
 					if (!auth.loggedIn()) {
@@ -58,10 +58,12 @@ require([
 					if (!section) {
 						section = 'news';
 					}
-					this.params(_.assign({section: section, _handler: 'index'}, qparams));
+					this.params(_.assign({section: section, cid: cid, _handler: 'index'}, qparams));
 
 					if (section === 'news') {
 						modules.push({module: 'm/diff/news', container: '#bodyContainer'});
+					} else if (section === 'newsedit') {
+						modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
 					}
 					renderer(modules);
 				},

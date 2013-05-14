@@ -254,6 +254,20 @@ a.disabled:hover {
 			margin-top: 8px;
 		}
 	}
+	&.btn-strict-mini {
+		padding: 0 5px;
+		font-size: @baseFontSize - 3px;
+		line-height: @baseLineHeight - 4px;
+		.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
+
+		[class^="icon-"] {
+			margin-top: 0;
+			margin-right: 5px;
+		}
+		.caret {
+			margin-top: 6px;
+		}
+	}
 
 	&:hover {
 		color: #fff;

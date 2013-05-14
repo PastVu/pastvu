@@ -10,7 +10,7 @@
 					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
 					//ko if: $parent.auth.loggedIn()
 					.dotDelimeter ·
-					a.newsEdit(target="_blank", data-bind="attr: {href: '/admin/news/' + $data.cid}")
+					a.newsEdit(target="_blank", data-bind="attr: {href: '/admin/newsedit/' + $data.cid}")
 						i.icon-pencil
 						| &nbsp;Редактировать
 					// /ko
