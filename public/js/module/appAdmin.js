@@ -62,7 +62,7 @@ require([
 
 					if (section === 'news') {
 						if (param1 === 'create' || param1 === 'edit') {
-							params = {section: 'newsedit', cid: param2};
+							params = {section: section, cid: param2};
 							modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
 						} else {
 							params = {section: section, cid: param1};

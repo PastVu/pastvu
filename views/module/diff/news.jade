@@ -1,6 +1,11 @@
 .newsWrapper(data-bind="with: repository[M!M]")
 	.indentLogo.newsHeader Новости проекта
+	//ko if: auth.loggedIn()
 	.row-fluid
+		a.addNews(href="/admin/news/create")
+			i.icon-plus
+			| Добавить новость
+	// /ko
 	.row-fluid.news
 		//ko foreach: news
 		.novel.clearfix
@@ -10,7 +15,7 @@
 					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
 					//ko if: $parent.auth.loggedIn()
 					.dotDelimeter ·
-					a.newsEdit(target="_blank", data-bind="attr: {href: '/admin/newsedit/' + $data.cid}")
+					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
 						i.icon-pencil
 						| &nbsp;Редактировать
 					// /ko

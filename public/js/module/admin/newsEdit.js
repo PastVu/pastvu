@@ -183,8 +183,9 @@ define([
 				if (!data || data.error || !data.news) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
+					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
 					if (this.createMode()) {
-						globalVM.router.navigateToUrl('/admin/newsedit/' + data.news.cid);
+						globalVM.router.navigateToUrl('/admin/news/edit/' + data.news.cid);
 					}
 				}
 			}.bind(this));
