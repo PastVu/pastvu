@@ -12,7 +12,7 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 
 			this.submenus = {
 				index: [
-					{name: 'News create', href: "/admin/newsedit", section: 'newsedit'},
+					{name: 'News create', href: "/admin/news/create", section: 'newsedit'},
 					{name: 'News', href: "/admin/news", section: 'news'}
 				],
 				map: [

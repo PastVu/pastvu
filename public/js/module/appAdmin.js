@@ -43,13 +43,14 @@ require([
 				}
 			},
 			routes: [
-				{route: "(:section)(/)(:cid)", handler: "index"},
+				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
 				{route: "photo(/)(:section)(/)", handler: "photo"}
 			],
 			handlers: {
-				index: function (section, cid, qparams) {
+				index: function (section, param1, param2, qparams) {
 					var auth = globalVM.repository['m/common/auth'],
+						params,
 						modules = [];
 					if (!auth.loggedIn()) {
 						location.href = '/';
@@ -58,13 +59,17 @@ require([
 					if (!section) {
 						section = 'news';
 					}
-					this.params(_.assign({section: section, cid: cid, _handler: 'index'}, qparams));
 
 					if (section === 'news') {
-						modules.push({module: 'm/diff/news', container: '#bodyContainer'});
-					} else if (section === 'newsedit') {
-						modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
+						if (param1 === 'create' || param1 === 'edit') {
+							params = {section: 'newsedit', cid: param2};
+							modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
+						} else {
+							params = {section: section, cid: param1};
+							modules.push({module: 'm/diff/news', container: '#bodyContainer'});
+						}
 					}
+					this.params(_.assign(params, {_handler: 'index'}, qparams));
 					renderer(modules);
 				},
 				map: function (section, qparams) {

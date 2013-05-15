@@ -23,7 +23,13 @@ define([
 
 			this.tDateExists = ko.observable(false);
 			this.noticeExists = ko.observable(false);
-			this.news = ko_mapping.fromJS({});
+			this.news = ko_mapping.fromJS({
+				pdate: '',
+				tdate: '',
+				title: '',
+				notice: '',
+				txt: ''
+			});
 
 			this.$dom.find('textarea#newsPrimary').redactor();
 			this.$dom.find('#newsPdate').datetimepicker();
@@ -63,7 +69,7 @@ define([
 				this.resetData();
 			}
 		},
-
+		//TODO: проверить флоу с переходом на другие новости
 		resetData: function () {
 			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
 				pickerP = this.$dom.find('#newsPdate').data('datetimepicker');
