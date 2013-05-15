@@ -94,7 +94,6 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('saveNews', function (data) {
 			if (data.cid) {
 				saveNews(data, function (resultData) {
-					console.dir(resultData);
 					socket.emit('saveNewsResult', resultData);
 				});
 			} else {

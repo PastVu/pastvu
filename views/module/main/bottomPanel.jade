@@ -8,6 +8,9 @@
 			.newsBody
 				.newsTitle(data-bind="text: $data.title")
 				.newsNotice(data-bind="html: $data.notice")
+				//ko if: $data.expand
+				a.newsExpand(target="_blank", data-bind="attr: {href: '/news/' + $data.cid}") Читать полностью..
+				// /ko
 		// /ko
 	// /ko
 	.row-fluid
