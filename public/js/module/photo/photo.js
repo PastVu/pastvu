@@ -216,11 +216,13 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 
 			this.commentExe = ko.observable(false);
-			this.commentReplyingTo = ko.observable(0);
+			this.commentReplyingToCid = ko.observable(0);
+			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
 			this.commentReplyBind = this.commentReply.bind(this);
-			this.commentReplyToBind = this.commentReplyTo.bind(this);
 			this.commentReplyClickBind = this.commentReplyClick.bind(this);
+			this.commentReplyToBind = this.commentReplyTo.bind(this);
+			this.commentEditBind = this.commentEdit.bind(this);
 			this.commentRemoveBind = this.commentRemove.bind(this);
 			this.commentSendBind = this.commentSend.bind(this);
 			this.commentCancelBind = this.commentCancel.bind(this);
@@ -866,7 +868,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				$media = $($(event.target).parents('li.media')[1]);
 				cid = Number($media.attr('data-cid')) || 0;
 			}
-			this.commentReplyingTo(cid);
+			this.commentEditingCid(0);
+			this.commentReplyingToCid(cid);
 			$root = $media.find('.commentAdd').last();
 
 			this.commentActivate($root, 400);
@@ -981,7 +984,8 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			input.off('keyup').off('blur').val('').height('auto');
 			root.removeClass('hasContent').removeClass('hasFocus');
-			this.commentReplyingTo(0);
+			this.commentReplyingToCid(0);
+			this.commentEditingCid(0);
 		},
 		commentSend: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),
@@ -1035,6 +1039,19 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.commentExe(false);
 			}.bind(this));
 			socket.emit('createComment', dataSend);
+		},
+		commentEdit: function (data, event) {
+			var _this = this,
+				$media = $(event.target).closest('.media'),
+				cid = Number(data.cid),
+				input;
+
+			this.commentReplyingToCid(0);
+			this.commentEditingCid(cid);
+
+			this.commentActivate($media);
+			input = $media.find('.commentInput:first');
+			input.val(data.txt);
 		},
 		commentRemove: function (data, event) {
 			var _this = this,
