@@ -49,9 +49,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 
 				frags: [],
 
-				stats_day: 0,
-				stats_week: 0,
-				stats_all: 0
+				vdcount: 0,
+				vwcount: 0,
+				vcount: 0
 			}
 		},
 		picPrefix = '/_p',

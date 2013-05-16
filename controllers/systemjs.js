@@ -551,9 +551,9 @@ module.exports.loadController = function (app, db) {
 					source: photo.source || undefined,
 					author: photo.author || undefined,
 
-					stats_day: parseInt(photo.stats_day, 10) || 0,
-					stats_week: parseInt(photo.stats_week, 10) || 0,
-					stats_all: parseInt(photo.stats_all, 10) || 0
+					vdcount: parseInt(photo.stats_day, 10) || 0,
+					vwcount: parseInt(photo.stats_week, 10) || 0,
+					vcount: parseInt(photo.stats_all, 10) || 0
 				};
 				if (!isNaN(lng) && !isNaN(lat)) {
 					newPhoto.geo = [toPrecisionRound(lng), toPrecisionRound(lat)];

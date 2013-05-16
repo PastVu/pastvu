@@ -41,9 +41,9 @@ var FragmentSchema = new Schema({
 			source: {type: String},
 			author: {type: String},
 
-			stats_day: {type: Number, index: true},
-			stats_week: {type: Number, index: true},
-			stats_all: {type: Number, index: true},
+			vdcount: {type: Number, index: true}, //Кол-во просмотров за день
+			vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
+			vcount: {type: Number, index: true}, //Кол-во просмотров всего
 			ccount: {type: Number, index: true}, //Кол-во комментариев
 			frags: [FragmentSchema], //Фрагменты с комментариями
 
@@ -119,18 +119,18 @@ PhotoSchema.pre('save', function (next) {
 });
 
 PhotoSchema.statics.resetStatDay = function (cb) {
-	this.update({}, { $set: { stats_day: 0} }, {multi: true}, cb);
+	this.update({}, { $set: { vdcount: 0} }, {multi: true}, cb);
 };
 
 PhotoSchema.statics.resetStatWeek = function (cb) {
-	this.update({}, { $set: { stats_week: 0} }, {multi: true}, cb);
+	this.update({}, { $set: { vwcount: 0} }, {multi: true}, cb);
 };
 
 PhotoSchema.statics.getPhoto = function (query, cb) {
 	if (!query || !query.cid) {
 		cb({message: 'cid is not specified'});
 	}
-	this.findOneAndUpdate(query, { $inc: { stats_day: 1, stats_week: 1, stats_all: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v -frags._id').exec(cb);
+	this.findOneAndUpdate(query, { $inc: { vdcount: 1, vwcount: 1, vcount: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v -frags._id').exec(cb);
 };
 
 PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {

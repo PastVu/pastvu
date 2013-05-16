@@ -151,14 +151,14 @@ var giveRatings = (function () {
 					upweekarr = [];
 
 				// Photo by views
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_day: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_day: 1}, {limit: limit, sort: [
-					['stats_day', 'desc']
+				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vdcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vdcount: 1}, {limit: limit, sort: [
+					['vdcount', 'desc']
 				]}, this.parallel());
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_week: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_week: 1}, {limit: limit, sort: [
-					['stats_week', 'desc']
+				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vwcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vwcount: 1}, {limit: limit, sort: [
+					['vwcount', 'desc']
 				]}, this.parallel());
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, stats_all: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, stats_all: 1}, {limit: limit, sort: [
-					['stats_all', 'desc']
+				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vcount: 1}, {limit: limit, sort: [
+					['vcount', 'desc']
 				]}, this.parallel());
 
 				// Photo by comments
