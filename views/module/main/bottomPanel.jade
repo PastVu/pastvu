@@ -1,15 +1,18 @@
 .bottomPanel(data-bind="with: repository[M!M]")
 	//ko if: news().length > 0
 	.row-fluid.news
-		h4 Новости проекта
+		.newsHeader Новости проекта
 		//ko foreach: news
+		//ko if: $index
+		hr
+		// /ko
 		.novel
 			.newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
 			.newsBody
-				.newsTitle(data-bind="text: $data.title")
+				a.newsTitle(target="_blank", data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
 				.newsNotice(data-bind="html: $data.notice")
 				//ko if: $data.expand
-				a.newsExpand(target="_blank", data-bind="attr: {href: '/news/' + $data.cid}") Читать полностью..
+				a.newsExpand(target="_blank", data-bind="attr: {href: '/news/' + $data.cid}") [Читать полностью..]
 				// /ko
 		// /ko
 	// /ko

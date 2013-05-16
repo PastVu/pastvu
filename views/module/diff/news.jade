@@ -3,11 +3,11 @@
 	//ko if: auth.loggedIn()
 	.row-fluid
 		a.addNews(href="/admin/news/create")
-			i.icon-plus
 			| Добавить новость
 	// /ko
 	.row-fluid.news
 		//ko foreach: news
+		hr
 		.novel.clearfix
 			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
 			.newsBody
@@ -19,8 +19,8 @@
 						i.icon-pencil
 						| &nbsp;Редактировать
 					// /ko
-				.newsNotice(data-bind="html: $data.notice")
+				.newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
 				//ko if: $data.expand
-				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") Читать полностью..
+				a.newsExpand(data-bind="attr: {href: '/news/' + $data.cid}") [Читать полностью..]
 				// /ko
 		// /ko

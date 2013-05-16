@@ -8,42 +8,38 @@
 
 	.newsHeader {
 		margin-top: 1px;
-		margin-bottom: 0;
+		margin-bottom: 10px;
 		font-size: 22px;
 		font-weight: bold;
 	}
 
 	.addNews {
-		display: block;
-		margin: 8px 0 0px 54px;
+		display: inline-block;
+		margin: 4px 0 6px 61px;
 	}
 
 	.news {
 
-		.novel {
-			margin: 12px 14px 5px 14px;
-			padding: 2px 7px 4px 7px;
-			cursor: default;
-			.box-sizing(border-box);
-
-			&:hover {
-				background-color: #FFF;//darken(@bodyBackground, 5%);
-			}
+		hr {
+			margin: 0;
 		}
+
 		.newsDate {
 			width: 24px;
-			padding-top: 2px;
+			padding-top: 3px;
 			float: left;
 			vertical-align: top;
+			color: #777;
 			font-size: 14px;
 			line-height: 15px;
 			text-align: center;
 		}
 		.newsBody {
-			margin-left: 34px;
+			margin-left: 40px;
 			vertical-align: top;
 		}
 		.newsHead {
+			margin-bottom: 3px;
 			padding-bottom: 2px;
 			font-weight: bold;
 			font-size: 18px;
@@ -55,7 +51,32 @@
 		}
 		.newsNotice {
 			font-size: 16px;
-			line-height: 18px;
+			line-height: 20px;
+
+			> p:last-child {
+				margin-bottom: 0;
+			}
+		}
+		.newsExpand {
+			display: inline-block;
+			margin-top: 3px;
+			font-size: 14px;
+		}
+
+		.novel {
+			margin: 0;
+			padding: 12px 21px 12px 21px;
+			cursor: default;
+			background-color: darken(@bodyBackground, 1%);
+			.box-sizing(border-box);
+
+			&:hover {
+				background-color: #FFF;
+
+				.newsDate {
+					color: #000;
+				}
+			}
 		}
 	}
 }
