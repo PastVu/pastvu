@@ -988,23 +988,23 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentEditingCid(0);
 		},
 		commentSend: function (data, event) {
-			var root = $(event.target).closest('.commentAdd'),
-				input = root.find('.commentInput'),
-				content = $.trim(input.val()),
+			var create = !!this.commentReplyingToCid(),
+				_this = this,
+				$root = $(event.target).closest('.commentAdd'),
+				$input = $root.find('.commentInput'),
+				content = $.trim($input.val()),
 				fragSelection,
 				dataSend;
 
 			if (_.isEmpty(content)) {
 				return;
 			}
+
 			dataSend = {
 				photo: this.p.cid(),
 				txt: content
 			};
-			if (Utils.isType('number', data.cid)) {
-				dataSend.parent = data.cid;
-				dataSend.level = (data.level || 0) + 1;
-			}
+
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
 				fragSelection = this.commentFragArea.getSelection(false);
 				dataSend.fragObj = {
@@ -1016,6 +1016,25 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}
 
 			this.commentExe(true);
+			if (create) {
+				this.commentSendCreate(data, dataSend, cb, this);
+			} else {
+				this.commentSendUpdate(data, dataSend, cb, this);
+			}
+			function cb (result) {
+				_this.commentExe(false);
+				if (result && !result.error && result.comment) {
+					_this.commentFragDelete();
+					_this.commentCancel(data, event);
+				}
+			}
+		},
+		commentSendCreate: function (data, dataSend, cb, ctx) {
+			if (Utils.isType('number', data.cid)) {
+				dataSend.parent = data.cid;
+				dataSend.level = (data.level || 0) + 1;
+			}
+
 			socket.once('createCommentResult', function (result) {
 				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -1031,14 +1050,37 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						if (Utils.isType('object', result.frag)) {
 							this.p.frags.push(ko_mapping.fromJS(result.frag));
 						}
-
-						this.commentFragDelete();
-						this.commentCancel(data, event);
 					}
 				}
-				this.commentExe(false);
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, result);
+				}
 			}.bind(this));
 			socket.emit('createComment', dataSend);
+		},
+		commentSendUpdate: function (data, dataSend, cb, ctx) {
+			dataSend.cid = data.cid;
+			socket.once('updateCommentResult', function (result) {
+				if (!result) {
+					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					if (result.error || !result.comment) {
+						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					} else {
+						data.txt = result.comment.txt;
+						if (Utils.isType('object', result.frag)) {
+							this.p.frags.push(ko_mapping.fromJS(result.frag));
+						}
+					}
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, result);
+				}
+			}.bind(this));
+			console.dir(dataSend);
+			socket.emit('updateComment', dataSend);
 		},
 		commentEdit: function (data, event) {
 			var _this = this,

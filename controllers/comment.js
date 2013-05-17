@@ -385,6 +385,64 @@ function createComment(socket, data, cb) {
 }
 
 /**
+ * Редактирует комментарий
+ * @param socket Сокет пользователя
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function updateComment(socket, data, cb) {
+	if (!Utils.isType('object', data) || !data.photo || !Utils.isType('number', data.cid) || !data.txt) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+	var user = socket.handshake.session.user,
+		comment,
+		photoObj,
+		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
+		fragObj;
+
+	if (!user || !user.login) {
+		cb({message: 'You are not authorized for this action.', error: true});
+		return;
+	}
+
+	step(
+		function counters() {
+			Comment.findOne({cid: data.cid}, {user: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
+		},
+		function (err, comment) {
+			if (err || !comment || data.photo !== comment.photo.cid) {
+				cb({message: (err && err.message) || 'No such comment', error: true});
+				return;
+			}
+
+			if (fragAdded) {
+				fragObj = {
+					cid: comment.cid,
+					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
+					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
+					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
+					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+				};
+				comment.photo.frags.push(fragObj);
+				comment.frag = true;
+			} else {
+				comment.frag = undefined;
+			}
+			comment.txt = data.txt;
+			comment.save(this);
+		},
+		function (err, comment) {
+			if (err) {
+				cb({message: err.message, error: true});
+				return;
+			}
+			cb({message: 'ok', comment: comment, frag: fragObj});
+		}
+	);
+}
+
+/**
  * Удаляет комментарий
  * @param socket Сокет пользователя
  * @param cid
@@ -499,6 +557,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('createComment', function (data) {
 			createComment(socket, data, function (result) {
 				socket.emit('createCommentResult', result);
+			});
+		});
+		socket.on('updateComment', function (data) {
+			updateComment(socket, data, function (result) {
+				socket.emit('updateCommentResult', result);
 			});
 		});
 
