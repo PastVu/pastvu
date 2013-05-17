@@ -303,8 +303,7 @@ module.exports.loadController = function (app, db) {
 			counter = photos.length,
 			$set,
 			$unset,
-			ccount,
-			fcount;
+			ccount;
 
 		print('Start to calc for ' + counter + ' photos');
 		while (counter--) {
@@ -312,16 +311,10 @@ module.exports.loadController = function (app, db) {
 			$set = {};
 			$unset = {};
 			ccount = db.comments.count({photo: photo._id});
-			fcount = db.comments.count({photo: photo._id, frag: {$exists: true}});
 			if (ccount > 0) {
 				$set.ccount = ccount;
 			} else {
 				$unset.ccount = 1;
-			}
-			if (fcount > 0) {
-				$set.fcount = fcount;
-			} else {
-				$unset.fcount = 1;
 			}
 			db.photos.update({_id: photo._id}, {$set: $set, $unset: $unset}, {upsert: false});
 		}

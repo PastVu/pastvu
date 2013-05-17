@@ -396,10 +396,7 @@ function updateComment(socket, data, cb) {
 		return;
 	}
 	var user = socket.handshake.session.user,
-		comment,
-		photoObj,
-		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
-		fragObj;
+		fragRecieved;
 
 	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
@@ -415,29 +412,58 @@ function updateComment(socket, data, cb) {
 				cb({message: (err && err.message) || 'No such comment', error: true});
 				return;
 			}
+			var i,
+				fragExists,
+				fragChanged;
 
-			if (fragAdded) {
-				fragObj = {
-					cid: comment.cid,
-					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
-					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
-					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
-					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
-				};
-				comment.photo.frags.push(fragObj);
-				comment.frag = true;
-			} else {
-				comment.frag = undefined;
+			if (comment.photo.frags) {
+				for (i = comment.photo.frags.length; i--;) {
+					if (comment.photo.frags[i].cid === comment.cid) {
+						fragExists = comment.photo.frags[i];
+						break;
+					}
+				}
 			}
+
+			fragRecieved = data.fragObj && {
+				cid: comment.cid,
+				l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
+				t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
+				w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
+				h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+			};
+
+			if (fragRecieved) {
+				if (!fragExists) {
+					//Если фрагмент получен и его небыло раньше, просто вставляем полученный
+					fragChanged = true;
+					comment.frag = true;
+					comment.photo.frags.push(fragRecieved);
+				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h){
+					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
+					fragChanged = true;
+					comment.photo.frags.pull(fragExists._id);
+					comment.photo.frags.push(fragRecieved);
+				}
+			} else if (fragExists) {
+				//Если фрагмент не получен, но раньше он был, то просто удаляем старый
+				fragChanged = true;
+				comment.frag = undefined;
+				comment.photo.frags.pull(fragExists._id);
+			}
+
 			comment.txt = data.txt;
-			comment.save(this);
+			comment.save(this.parallel());
+			if (fragChanged) {
+				comment.photo.save(this.parallel());
+			}
 		},
-		function (err, comment) {
+		function (err, comment, photo) {
 			if (err) {
 				cb({message: err.message, error: true});
 				return;
 			}
-			cb({message: 'ok', comment: comment, frag: fragObj});
+			cb({message: 'ok', comment: comment, frag: fragRecieved});
 		}
 	);
 }

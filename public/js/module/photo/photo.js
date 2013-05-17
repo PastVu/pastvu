@@ -903,6 +903,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					minWidth: 30, minHeight: 30,
 					handles: true, parent: $parent, persistent: true, instance: true
 				}, selections));
+				this.commentEditingFragChanged = true;
 			}
 			this.commentFraging(true);
 		},
@@ -913,6 +914,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.commentFragArea = null;
 			}
 			this.commentFraging(false);
+			this.commentEditingFragChanged = true;
 		},
 		commentFragGetByCid: function (cid) {
 			return _.find(this.p.frags(), function (frag) {
@@ -991,6 +993,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			root.removeClass('hasContent').removeClass('hasFocus');
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(0);
+			delete this.commentEditingFragChanged;
 		},
 		commentSend: function (data, event) {
 			var create = !!this.commentReplyingToCid(),
@@ -1065,7 +1068,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			socket.emit('createComment', dataSend);
 		},
 		commentSendUpdate: function (data, dataSend, cb, ctx) {
+			var fragExists = data.frag && this.commentFragGetByCid(data.cid);
+
 			dataSend.cid = data.cid;
+
+			//Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
+			//потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
+			if (fragExists && !this.commentEditingFragChanged) {
+				dataSend.fragObj = fragExists;
+			}
+
 			socket.once('updateCommentResult', function (result) {
 				if (!result) {
 					window.noty({text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -1093,7 +1105,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				input,
 				ws1percent = this.p.ws() / 100,
 				hs1percent = this.p.hs() / 100,
-				frag = data.frag && this.commentFragGetByCid(cid);
+				frag = data.frag && this.commentFragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
@@ -1109,7 +1121,14 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			//Если есть фрагмент, делаем его редактирование
 			if (frag) {
 				this.commentFraging(true);
-				this.commentFragCreate({x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent});
+				this.commentEditingFragChanged = false;
+				this.commentFragCreate({
+					onSelectEnd: function () {
+						this.commentEditingFragChanged = true;
+						console.dir(arguments);
+					}.bind(this),
+					x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent
+				});
 			}
 		},
 		commentRemove: function (data, event) {
