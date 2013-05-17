@@ -1086,9 +1086,22 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
 						data.txt = result.comment.txt;
-						if (Utils.isType('object', result.frag)) {
-							this.p.frags.push(ko_mapping.fromJS(result.frag));
+
+						if (this.commentEditingFragChanged) {
+							if (result.frag) {
+								data.frag = true;
+								if (!fragExists) {
+									this.p.frags.push(ko_mapping.fromJS(result.frag));
+								} else {
+									this.p.frags.remove(this.commentFragGetByCid(data.cid));
+									this.p.frags.push(ko_mapping.fromJS(result.frag));
+								}
+							} else if (fragExists) {
+								data.frag = false;
+								this.p.frags.remove(this.commentFragGetByCid(data.cid));
+							}
 						}
+
 					}
 				}
 
