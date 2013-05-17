@@ -876,7 +876,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 		commentFrag: function (data, event) {
 			var $root = $(event.target).closest('.commentAdd'),
-				$wrap = $('.photoImgWrap');
+				$wrap = this.$dom.find('.photoImgWrap');
 
 			this.commentFraging(true);
 			$root.addClass('hasContent');
@@ -913,6 +913,11 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.commentFragArea = null;
 			}
 			this.commentFraging(false);
+		},
+		commentFragGetByCid: function (cid) {
+			return _.find(this.p.frags(), function (frag) {
+				return frag.cid() === cid;
+			});
 		},
 		commentActivate: function (root, scrollDuration) {
 			if (this.auth.loggedIn() && (root instanceof jQuery) && root.length === 1) {
@@ -1021,7 +1026,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			} else {
 				this.commentSendUpdate(data, dataSend, cb, this);
 			}
-			function cb (result) {
+			function cb(result) {
 				_this.commentExe(false);
 				if (result && !result.error && result.comment) {
 					_this.commentFragDelete();
@@ -1063,10 +1068,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			dataSend.cid = data.cid;
 			socket.once('updateCommentResult', function (result) {
 				if (!result) {
-					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					window.noty({text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
 					if (result.error || !result.comment) {
-						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
 						data.txt = result.comment.txt;
 						if (Utils.isType('object', result.frag)) {
@@ -1083,10 +1088,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			socket.emit('updateComment', dataSend);
 		},
 		commentEdit: function (data, event) {
-			var _this = this,
-				$media = $(event.target).closest('.media'),
+			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
-				input;
+				input,
+				ws1percent = this.p.ws() / 100,
+				hs1percent = this.p.hs() / 100,
+				frag = data.frag && this.commentFragGetByCid(cid);
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
@@ -1094,6 +1101,16 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.commentActivate($media);
 			input = $media.find('.commentInput:first');
 			input.val(data.txt);
+
+			//Задаем высоту textarea под контент
+			$media.addClass('hasContent');
+			this.commentCheckInputHeight($media, input);
+
+			//Если есть фрагмент, делаем его редактирование
+			if (frag) {
+				this.commentFraging(true);
+				this.commentFragCreate({x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent});
+			}
 		},
 		commentRemove: function (data, event) {
 			var _this = this,
