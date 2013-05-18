@@ -12,7 +12,15 @@ var CommentSheme = new mongoose.Schema(
 		txt: {type: String},
 		parent: {type: Number},
 		level: {type: Number},
-		frag: {type: Boolean}
+		frag: {type: Boolean},
+
+		lastChanged: {type: Date}, //Время последнего редактирования
+		hist: [new Schema({
+			user: {type: Schema.Types.ObjectId, ref: 'User'},
+			stamp: {type: Date, 'default': Date.now, required: true},
+			frag: {type: Boolean},
+			txt: {type: String}
+		})]
 	},
 	{
 		strict: true

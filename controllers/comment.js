@@ -413,8 +413,10 @@ function updateComment(socket, data, cb) {
 				return;
 			}
 			var i,
+				hist = {user: user},
 				fragExists,
-				fragChanged;
+				fragChanged,
+				txtChanged;
 
 			if (comment.photo.frags) {
 				for (i = comment.photo.frags.length; i--;) {
@@ -439,7 +441,7 @@ function updateComment(socket, data, cb) {
 					fragChanged = true;
 					comment.frag = true;
 					comment.photo.frags.push(fragRecieved);
-				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h){
+				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
 					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
 					fragChanged = true;
 					comment.photo.frags.pull(fragExists._id);
@@ -452,13 +454,26 @@ function updateComment(socket, data, cb) {
 				comment.photo.frags.pull(fragExists._id);
 			}
 
-			comment.txt = data.txt;
-			comment.save(this.parallel());
-			if (fragChanged) {
-				comment.photo.save(this.parallel());
+			if (data.txt !== comment.txt) {
+				hist.txt = comment.txt;
+				txtChanged = true;
+			}
+
+			if (txtChanged || fragChanged) {
+				hist.frag = fragChanged || undefined;
+				comment.hist.push(hist);
+				comment.lastChanged = new Date();
+
+				comment.txt = data.txt;
+				comment.save(this.parallel());
+				if (fragChanged) {
+					comment.photo.save(this.parallel());
+				}
+			} else {
+				this(null, comment);
 			}
 		},
-		function (err, comment, photo) {
+		function (err, comment) {
 			if (err) {
 				cb({message: err.message, error: true});
 				return;
