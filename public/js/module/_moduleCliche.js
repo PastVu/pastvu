@@ -10,18 +10,18 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 	return Utils.Class.extend({
 		jade: '',
 		childs: null,
-		initialize: function (parent, moduleName, container, level, options, global) {
-			if (global) {
-				this.id = moduleName;
+		initialize: function (params) {
+			if (params.global) {
+				this.id = params.moduleName;
 			} else {
 				this.id = Utils.randomString(10);
 			}
-			this.global = global;
-			this.module = moduleName;
-			this.container = container;
-			this.level = level;
-			this.options = _.extend({}, this.options, options);
-			this.parentModule = parent;
+			this.global = params.global;
+			this.module = params.moduleName;
+			this.modal = params.modal;
+			this.level = params.level;
+			this.options = _.extend({}, this.options, params.options);
+			this.parentModule = params.parent;
 			this.childModules = {};
 			this.showing = false;
 
@@ -30,11 +30,11 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 
 			repository[this.id] = this;
 
-			this.$container = $(container).append(this.jade.replace(/M!M/g, "'" + this.id + "'"));
+			this.container = params.container;
+			this.$container = $(this.container).append(this.jade.replace(/M!M/g, "'" + this.id + "'"));
 			this.$dom = this.$container.children(":first");
 
 			this.create();
-
 			if (this.childs) {
 				renderer(
 					this.childs,
@@ -68,6 +68,10 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 
 			ko.removeNode(this.$dom[0]);
 			this.$container.empty();
+			if (this.modal && this.modal.$containerCurtain) {
+				this.modal.$containerCurtain.remove();
+				delete this.modal;
+			}
 
 			delete this.subscriptions;
 			delete this.co;

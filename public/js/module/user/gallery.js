@@ -216,7 +216,22 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		showUpload: function () {
 			if (!this.uploadVM) {
 				this.waitUploadSince = new Date();
-				this.$dom.find('.photoUploadCurtain')
+				renderer(
+					[
+						{module: 'm/user/photoUpload', modal: {topic: 'Upload photo', closeHref: '/u/' + this.u.login() + '/photo', okTxt: 'Ok'}, options: {}, callback: function (vm) {
+							this.uploadVM = vm;
+							this.childModules[vm.id] = vm;
+						}.bind(this)}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+
+
+
+				/*this.$dom.find('.photoUploadCurtain')
 					.css({display: 'block'})
 					.delay(50)
 					.queue(function (next) {
@@ -238,7 +253,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							}
 						);
 						next();
-					}.bind(this));
+					}.bind(this));*/
 			}
 		},
 		closeUpload: function () {

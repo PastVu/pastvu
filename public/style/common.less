@@ -57,6 +57,119 @@
 	}
 }
 
+.neoModalCurtain {
+	position: fixed;
+	//display: none;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	opacity: 0;
+	background-color: rgba(0, 0, 0, 0.3);
+	z-index: @zindexModalBackdrop;
+
+	// Ценрируем форму
+	text-align: center;
+	&::before {
+		content: '';
+		display: inline-block;
+		height: 100%;
+		vertical-align: middle;
+		margin-right: -0.25em; /* Adjusts for spacing */
+	}
+
+	&.showModalCurtain {
+		opacity: 1;
+		.transition(opacity .4s linear);
+	}
+
+	.neoModal {
+		position: relative;
+		display: inline-block;
+		vertical-align: middle;
+		text-align: left;
+		min-width: 1000px;
+		zoom: 1;
+		border-width: 0 1px 1px 1px;
+		border-color: @MainBlueColor;
+		background-color: darken(@MainLigthColor, 5%);
+		.box-shadow(0 0 10px 1px #222);
+		z-index: @zindexModal;
+
+		.neoModalTools {
+			position: relative;
+			height: 24px;
+			margin: 0;
+			margin-left: -1px;
+			margin-right: -1px;
+			padding: 3px 8px 0 8px;
+			text-align: left;
+			border-width: 1px 0 1px 0;
+			border-top-color: #AAA;
+			.box-shadow(0 2px 4px 0px #222);
+			z-index: 1;
+
+			&:before, &:after {
+				content: "";
+				position: absolute;
+				top: 0;
+				bottom: -55px;
+				width: 1px;
+				#gradient > .vertical(#AAA, #000);
+			}
+			&:before {
+				left: 0px;
+			}
+			&:after {
+				right: 0px;
+			}
+
+			.off {
+				position: absolute;
+				top: 5px;
+				right: 5px;
+				cursor: pointer;
+			}
+		}
+
+		.neoModalContainer {
+			position: relative;
+			min-height: 185px;
+			max-height: 90%;
+			padding: 0 20px;
+			overflow: auto;
+
+			&::-webkit-scrollbar {
+				background-color: darken(@MainLigthColor, 5%);
+			}
+
+			&::-webkit-scrollbar-button:decrement {
+				height: 0;
+			}
+			&::-webkit-scrollbar-thumb {
+				border-width: 5px 3px 5px 4px;
+			}
+
+			&.show {
+				opacity: 1;
+				.transition(opacity .4s linear);
+			}
+		}
+
+		.neoModalFoot {
+			position: relative;
+			height: 26px;
+			padding-top: 2px;
+			text-align: center;
+			border-width: 1px 0 0 0;
+			border-style: solid;
+			border-color: #161616;
+			.box-shadow(0 0px 4px 0px #777);
+			#gradient > .vertical(#DFDFDF, #AFAFAF);
+		}
+	}
+}
+
 @-webkit-keyframes navLoad {
 	0% {width: 0%;}
 	90% {width: 67%;}

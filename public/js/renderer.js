@@ -1,11 +1,12 @@
 /*global define:true*/
 
 define([
-	'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM'
-], function ($, Utils, _, Backbone, ko, globalVM) {
+	'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'text!tpl/neoModal.jade'
+], function ($, Utils, _, Backbone, ko, globalVM, modalJade) {
 	"use strict";
 
 	var repository = globalVM.repository,
+		modalTpl = _.template(modalJade),
 		defaultOptions = {
 			parent: globalVM,
 			level: 0,
@@ -79,16 +80,34 @@ define([
 		/**
 		 * Создаем новые модули
 		 */
-		_.forOwn(modules, function (item, key, object) {
+		_.forOwn(modules, function (item) {
 			var dfd = $.Deferred();
 			pushPromise(promises, dfd.promise(), item.module);
+
+			//Если передан объект modal, то модуль должен появится в модальном окне.
+			//Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
+			if (Utils.isType('object', item.modal)) {
+				item.modal.$containerCurtain = $(modalTpl({
+					topic: item.modal.topic || '',
+					closeHref: item.modal.closeHref || '',
+					okTxt: item.modal.okTxt || ''
+				}));
+				item.modal.$containerCurtain
+					.appendTo('body')
+					.delay(20)
+					.queue(function (next) {
+						this.classList.add('showModalCurtain');
+						next();
+					});
+				item.container = item.modal.$containerCurtain.find('.neoModalContainer')[0];
+			}
 
 			require([item.module], function (VM) {
 				if (replacedContainers[item.container]) {
 					repository[replacedContainers[item.container]].destroy();
 				}
 
-				var vm = new VM(options.parent, item.module, item.container, options.level, item.options || {}, item.global);
+				var vm = new VM({parent: options.parent, moduleName: item.module, modal: item.modal, container: item.container, level: options.level, options: item.options || {}, global: item.global});
 
 				//Коллбэк, вызываемый только при создании модуля, один раз
 				if (Utils.isType('function', item.callbackWhenNew)) {
