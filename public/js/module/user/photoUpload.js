@@ -121,25 +121,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 		show: function () {
-			if (this.options.popup) {
-				this.$container.addClass('show');
+			globalVM.func.showContainer(this.$container, function () {
 				this.$dom.find('#fileupload').fileupload('enable');
-			} else {
-				globalVM.func.showContainer(this.$container, function () {
-					this.$dom.find('#fileupload').fileupload('enable');
-				}, this);
-			}
+			}, this);
 
 			this.showing = true;
 		},
 		hide: function () {
 			this.$dom.find('#fileupload').fileupload('disable');
 			$(document).off('dragenter').off('dragleave');
-			if (this.options.popup) {
-				this.$container.removeClass('show');
-			} else {
-				globalVM.func.hideContainer(this.$container);
-			}
+			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {

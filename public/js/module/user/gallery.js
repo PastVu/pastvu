@@ -218,47 +218,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.waitUploadSince = new Date();
 				renderer(
 					[
-						{module: 'm/user/photoUpload', modal: {topic: 'Upload photo', closeHref: '/u/' + this.u.login() + '/photo', okTxt: 'Ok'}, options: {}, callback: function (vm) {
-							this.uploadVM = vm;
-							this.childModules[vm.id] = vm;
-						}.bind(this)}
+						{
+							module: 'm/user/photoUpload',
+							modal: {initWidth: '1000px', topic: 'Upload photo', closeHref: '/u/' + this.u.login() + '/photo', closeTxt: 'Ok'},
+							callback: function (vm) {
+								this.uploadVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
 					],
 					{
 						parent: this,
 						level: this.level + 1
 					}
 				);
-
-
-
-				/*this.$dom.find('.photoUploadCurtain')
-					.css({display: 'block'})
-					.delay(50)
-					.queue(function (next) {
-						this.classList.add('showUpload');
-						next();
-					})
-					.delay(400)
-					.queue(function (next) {
-						renderer(
-							[
-								{module: 'm/user/photoUpload', container: '.modalContainer', options: {popup: true}, callback: function (vm) {
-									this.uploadVM = vm;
-									this.childModules[vm.id] = vm;
-								}.bind(this)}
-							],
-							{
-								parent: this,
-								level: this.level + 1
-							}
-						);
-						next();
-					}.bind(this));*/
 			}
 		},
 		closeUpload: function () {
 			if (this.uploadVM) {
-				this.$dom.find('.photoUploadCurtain').css({display: ''}).removeClass('showUpload');
 				this.uploadVM.destroy();
 
 				socket.once('takePhotosFresh', function (data) {

@@ -1,5 +1,5 @@
 .neoModalCurtain.mNoDisplay.mFadeIn
-	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * $root.P.window.w() / 5 >> 0) + 'px'}")
+	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * P.window.w() / 5 >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
 			a.off(href="${ closeHref }")
@@ -8,4 +8,4 @@
 		.neoModalFoot
 			a.btn-strict.btn-strict-small(href="${ closeHref }")
 				i.icon-ok.icon-white
-				span ${ okTxt }
+				span ${ closeTxt }

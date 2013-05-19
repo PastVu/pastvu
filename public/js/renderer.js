@@ -91,7 +91,7 @@ define([
 					initWidth: item.modal.initWidth || 'auto',
 					topic: item.modal.topic || '',
 					closeHref: item.modal.closeHref || '',
-					okTxt: item.modal.okTxt || ''
+					closeTxt: item.modal.closeTxt || ''
 				}));
 				item.modal.$containerCurtain
 					.appendTo('body')
