@@ -88,6 +88,7 @@ define([
 			//Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
 			if (Utils.isType('object', item.modal)) {
 				item.modal.$containerCurtain = $(modalTpl({
+					initWidth: item.modal.initWidth || 'auto',
 					topic: item.modal.topic || '',
 					closeHref: item.modal.closeHref || '',
 					okTxt: item.modal.okTxt || ''
@@ -99,6 +100,8 @@ define([
 						this.classList.add('showModalCurtain');
 						next();
 					});
+				//Для подсчета параметров размера, необходимо забайндить
+				ko.applyBindings(globalVM, item.modal.$containerCurtain[0]);
 				item.container = item.modal.$containerCurtain.find('.neoModalContainer')[0];
 			}
 

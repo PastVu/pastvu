@@ -69,6 +69,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			ko.removeNode(this.$dom[0]);
 			this.$container.empty();
 			if (this.modal && this.modal.$containerCurtain) {
+				ko.cleanNode(this.modal.$containerCurtain[0]);
 				this.modal.$containerCurtain.remove();
 				delete this.modal;
 			}
