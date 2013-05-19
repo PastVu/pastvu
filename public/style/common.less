@@ -59,7 +59,6 @@
 
 .neoModalCurtain {
 	position: fixed;
-	//display: none;
 	top: 0;
 	left: 0;
 	right: 0;
@@ -80,7 +79,11 @@
 
 	&.showModalCurtain {
 		opacity: 1;
-		.transition(opacity .4s linear);
+		-webkit-animation: cssFadeIn .3s ease 1 alternate;
+		-moz-animation: cssFadeIn .3s ease 1 alternate;
+		-ms-animation: cssFadeIn .3s ease 1 alternate;
+		-o-animation: cssFadeIn .3s ease 1 alternate;
+		animation: cssFadeIn .3s ease 1 alternate;
 	}
 
 	.neoModal {

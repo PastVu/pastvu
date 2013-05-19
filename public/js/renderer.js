@@ -95,11 +95,8 @@ define([
 				}));
 				item.modal.$containerCurtain
 					.appendTo('body')
-					.delay(20)
-					.queue(function (next) {
-						this.classList.add('showModalCurtain');
-						next();
-					});
+					.addClass('showModalCurtain');
+
 				//Для подсчета параметров размера, необходимо забайндить
 				ko.applyBindings(globalVM, item.modal.$containerCurtain[0]);
 				item.container = item.modal.$containerCurtain.find('.neoModalContainer')[0];

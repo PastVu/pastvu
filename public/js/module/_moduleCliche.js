@@ -66,7 +66,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 
 			this.subDispose();
 
-			ko.removeNode(this.$dom[0]);
+			ko.cleanNode(this.$dom[0]); //ko.removeNode(this.$dom[0]);
 			this.$container.empty();
 			if (this.modal && this.modal.$containerCurtain) {
 				ko.cleanNode(this.modal.$containerCurtain[0]);

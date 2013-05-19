@@ -46,7 +46,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.func.showContainer(this.$container);
 			this.sizesCalc(P.window.square());
 			if (this.options.goUpload) {
-				window.setTimeout(this.showUpload.bind(this), 400);
+				window.setTimeout(this.showUpload.bind(this), 500);
 			}
 			this.showing = true;
 		},

@@ -1,10 +1,10 @@
-.neoModalCurtain.mNoDisplay.mFadeIn
+.neoModalCurtain
 	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * P.window.w() / 5 >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
 			a.off(href="${ closeHref }")
 				i.icon-off.icon-white
-		.mContainer.neoModalContainer(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
+		.neoModalContainer.mContainer.mHidden.mFadeIn(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
 		.neoModalFoot
 			a.btn-strict.btn-strict-small(href="${ closeHref }")
 				i.icon-ok.icon-white
