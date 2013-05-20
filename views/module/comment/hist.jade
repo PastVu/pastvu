@@ -1,11 +1,13 @@
 .commentHist(data-bind="with: repository[M!M]")
-	//ko foreach: hists
-	.row-fluid.hist
-		a.photoPreviewA(target="_blank", data-bind="attr: {href: '/u/' + $data.user.login}")
-			img.photoPreview(data-bind="attr: {src: $data.user.avatar}")
-		.histHead
-			a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.name")
-			.dotDelimeter ·
-			.histStamp(data-bind="text: moment($data.stamp).calendar()")
-		.histText(data-bind="attr: {href: $data.link}, html: $data.txt")
-	// /ko
+	ul.media-list
+		//ko foreach: hists
+		li.media.hist
+			a.pull-left.photoPreviewA(target="_blank", data-bind="attr: {href: '/u/' + $data.user.login}")
+				img.media-object.photoPreview(data-bind="attr: {src: $data.user.avatar}")
+			.media-body
+				.histHead
+					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.name")
+					.dotDelimeter ·
+					.histStamp(data-bind="text: moment($data.stamp).calendar()")
+				.histText(data-bind="attr: {href: $data.link}, html: $data.txt")
+		// /ko

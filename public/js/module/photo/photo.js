@@ -941,7 +941,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					[
 						{
 							module: 'm/comment/hist',
-							modal: {initWidth: '600px', topic: 'История изменений комментария', closeHref: '', closeTxt: 'Закрыть'},
+							modal: {topic: 'История изменений комментария', closeHref: '', closeTxt: 'Закрыть'},
 							options: {cid: cid},
 							callback: function (vm) {
 								this.commentHistVM = vm;
@@ -1017,7 +1017,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			delete this.commentEditingFragChanged;
 		},
 		commentSend: function (data, event) {
-			var create = !!this.commentReplyingToCid(),
+			var create = !this.commentEditingCid(),
 				_this = this,
 				$root = $(event.target).closest('.commentAdd'),
 				$input = $root.find('.commentInput'),
