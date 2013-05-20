@@ -18,7 +18,7 @@ var CommentSheme = new mongoose.Schema(
 		hist: [new Schema({
 			user: {type: Schema.Types.ObjectId, ref: 'User'},
 			stamp: {type: Date, 'default': Date.now, required: true},
-			frag: {type: Boolean},
+			frag: {type: Number},
 			txt: {type: String}
 		})]
 	},

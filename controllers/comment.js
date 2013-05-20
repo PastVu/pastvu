@@ -405,7 +405,7 @@ function updateComment(socket, data, cb) {
 
 	step(
 		function counters() {
-			Comment.findOne({cid: data.cid}, {user: 0, hist: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
+			Comment.findOne({cid: data.cid}, {user: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.photo !== comment.photo.cid) {
@@ -415,7 +415,7 @@ function updateComment(socket, data, cb) {
 			var i,
 				hist = {user: user},
 				fragExists,
-				fragChanged,
+				fragChangedType,
 				txtChanged;
 
 			if (comment.photo.frags) {
@@ -438,18 +438,18 @@ function updateComment(socket, data, cb) {
 			if (fragRecieved) {
 				if (!fragExists) {
 					//Если фрагмент получен и его небыло раньше, просто вставляем полученный
-					fragChanged = true;
+					fragChangedType = 1;
 					comment.frag = true;
 					comment.photo.frags.push(fragRecieved);
 				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
 					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
-					fragChanged = true;
+					fragChangedType = 2;
 					comment.photo.frags.pull(fragExists._id);
 					comment.photo.frags.push(fragRecieved);
 				}
 			} else if (fragExists) {
 				//Если фрагмент не получен, но раньше он был, то просто удаляем старый
-				fragChanged = true;
+				fragChangedType = 3;
 				comment.frag = undefined;
 				comment.photo.frags.pull(fragExists._id);
 			}
@@ -459,14 +459,14 @@ function updateComment(socket, data, cb) {
 				txtChanged = true;
 			}
 
-			if (txtChanged || fragChanged) {
-				hist.frag = fragChanged || undefined;
+			if (txtChanged || fragChangedType) {
+				hist.frag = fragChangedType || undefined;
 				comment.hist.push(hist);
 				comment.lastChanged = new Date();
 
 				comment.txt = data.txt;
 				comment.save(this.parallel());
-				if (fragChanged) {
+				if (fragChangedType) {
 					comment.photo.save(this.parallel());
 				}
 			} else {
@@ -478,9 +478,12 @@ function updateComment(socket, data, cb) {
 				cb({message: err.message, error: true});
 				return;
 			}
-			cb({message: 'ok', comment: comment, frag: fragRecieved});
+			cb({message: 'ok', comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved});
 		}
 	);
+}
+function commentDeleteHist (doc, ret, options) {
+	delete ret.hist;
 }
 
 /**

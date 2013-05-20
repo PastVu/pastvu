@@ -4,6 +4,11 @@
  */
 define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
+	var changeFragTexts = {
+		f1: '<i>Добавлен фрагмент</i>',
+		f2: '<i>Изменен фрагмент</i>',
+		f3: '<i>Удален фрагмент</i>'
+	};
 
 	return Cliche.extend({
 		jade: jade,
@@ -34,9 +39,14 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					var i = data.hists.length,
+						hist,
 						user;
 					while (i--) {
-						user = data.hists[i].user;
+						hist = data.hists[i];
+						if (hist.frag) {
+							hist.txt = changeFragTexts['f' + hist.frag];
+						}
+						user = hist.user;
 						user.avatar = user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png';
 						user.name = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
 					}
