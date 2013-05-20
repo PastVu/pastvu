@@ -1,0 +1,46 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.commentHist {
+	padding: 8px 0;
+
+	.hist {
+		position: relative;
+		display: block;
+		margin: 6px 0 2px 0;
+
+		.photoPreviewA {
+			display: block;
+			float: left;
+			padding: 3px 8px 3px 3px;
+		}
+		.photoPreview {
+			display: block;
+			width: 50px;
+			height: 50px;
+		}
+
+		.histHead {
+			height: 14px;
+			margin-bottom: 3px;
+			line-height: 14px;
+		}
+		.author {
+			display: inline-block;
+			font-size: 14px;
+			cursor: pointer;
+		}
+		.histStamp {
+			display: inline-block;
+			font-size: 12px;
+			color: #888;
+		}
+		.histText {
+			display: block;
+			min-height: 39px;
+			max-width: 600px;
+			color: @textColor;
+		}
+	}
+}
