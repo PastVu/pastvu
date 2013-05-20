@@ -935,6 +935,27 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				});
 			}
 		},
+		commentHist: function (cid) {
+			if (!this.commentHistVM) {
+				renderer(
+					[
+						{
+							module: 'm/comment/hist',
+							modal: {initWidth: '600px', topic: 'История изменений комментария', closeHref: '', closeTxt: 'Закрыть'},
+							options: {cid: cid},
+							callback: function (vm) {
+								this.commentHistVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2
+					}
+				);
+			}
+		},
 		commentAddKeyup: function (evt) {
 			var input = $(evt.target),
 				content = $.trim(input.val()),
@@ -1086,6 +1107,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
 						data.txt = result.comment.txt;
+						data.lastChanged = result.comment.lastChanged;
 
 						if (this.commentEditingFragChanged) {
 							if (result.frag) {

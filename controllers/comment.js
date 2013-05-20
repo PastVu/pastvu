@@ -47,7 +47,7 @@ function getCommentsPhoto(data, cb) {
 				cb({message: 'No such photo', error: true});
 				return;
 			}
-			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0}, {sort: [
+			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0, hist: 0}, {sort: [
 				['stamp', 'asc']
 			]}, this);
 		},
@@ -405,7 +405,7 @@ function updateComment(socket, data, cb) {
 
 	step(
 		function counters() {
-			Comment.findOne({cid: data.cid}, {user: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
+			Comment.findOne({cid: data.cid}, {user: 0, hist: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.photo !== comment.photo.cid) {
@@ -479,6 +479,31 @@ function updateComment(socket, data, cb) {
 				return;
 			}
 			cb({message: 'ok', comment: comment, frag: fragRecieved});
+		}
+	);
+}
+
+/**
+ * Возвращает историю редактирования комментария
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function giveCommentHist(data, cb) {
+	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	step(
+		function counters() {
+			Comment.findOne({cid: data.cid}, {_id: 0, hist: 1}).populate('hist.user', {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}).exec(this);
+		},
+		function (err, comment) {
+			if (err || !comment || data.photo !== comment.cid) {
+				cb({message: (err && err.message) || 'No such comment', error: true});
+				return;
+			}
+			cb({hists: comment.hist});
 		}
 	);
 }
@@ -603,6 +628,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('updateComment', function (data) {
 			updateComment(socket, data, function (result) {
 				socket.emit('updateCommentResult', result);
+			});
+		});
+		socket.on('giveCommentHist', function (data) {
+			giveCommentHist(data, function (result) {
+				socket.emit('takeCommentHist', result);
 			});
 		});
 

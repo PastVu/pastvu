@@ -116,7 +116,7 @@
 				a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
 				//ko if: $data.lastChanged
 				.dotDelimeter ·
-				a.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, ")
+				.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].commentHist($data.cid)}")
 				// /ko
 			.commentText(data-bind="html: $data.txt")
 			.commentActions
