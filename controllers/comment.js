@@ -482,12 +482,27 @@ function updateComment(socket, data, cb) {
 		}
 	);
 }
-function commentDeleteHist (doc, ret, options) {
+function commentDeleteHist(doc, ret, options) {
 	delete ret.hist;
+}
+
+function objectDeleteId(doc, ret, options) {
+	delete ret._id;
 }
 
 /**
  * Возвращает историю редактирования комментария
+ * В базе история хранится по строкам. В одной строке содердится одно событие.
+ * Такое событие может содержать 2 паказателя: изменение текста и(или) фрагмента.
+ * Причем в это событие текст комментария сохраняется старый, т.е.
+ * писался он в комментарий в другое время (во время другого события),
+ * а флаг изменения фрагмента относится именно к этому событию.
+ * Следовательно одна строка содержит события 2-х разных времен.
+ * Для представления этого в более нормальном по временной шкале виде
+ * необходимо изменение текста переносить во времена события предыдущего изменения текста, а
+ * текущие событие отражать только если в нём есть изменение фрагмента или в будущем будет изменение текста и
+ * оно будет установленно именно временем этого события
+ * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
  * @param data Объект
  * @param cb Коллбэк
  */
@@ -499,14 +514,48 @@ function giveCommentHist(data, cb) {
 
 	step(
 		function counters() {
-			Comment.findOne({cid: data.cid}, {_id: 0, hist: 1}).populate('hist.user', {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}).exec(this);
+			Comment.findOne({cid: data.cid}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.photo !== comment.cid) {
 				cb({message: (err && err.message) || 'No such comment', error: true});
 				return;
 			}
-			cb({hists: comment.hist});
+			var i,
+				hist,
+				hists = comment.hist.toObject({ transform: objectDeleteId }),
+				lastTxtIndex = 0, //Позиция последнего изменение текста в стеке событий
+				lastTxtObj = {user: comment.user, stamp: comment.stamp}, //Первое событие изменения текста будет равнятся созданию комментария
+				result = [];
+
+			for (i = 0; i < hists.length; i++) {
+				hist = hists[i];
+				if (hist.txt) {
+					//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
+					lastTxtObj.txt = hist.txt;
+					if (!lastTxtObj.frag) {
+						//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
+						result.splice(lastTxtIndex, 0, lastTxtObj);
+					}
+					//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
+					delete hist.txt;
+					lastTxtIndex = result.length;
+					lastTxtObj = hist;
+				}
+				//Если в записи есть изменение фрагмента, то вставляем её
+				if (hist.frag) {
+					result.push(hist);
+				}
+				//Если это последняя запись в истории и ранее была смена текста,
+				//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
+				if (i === hists.length - 1 && lastTxtIndex > 0) {
+					lastTxtObj.txt = comment.txt;
+					if (!lastTxtObj.frag) {
+						result.splice(lastTxtIndex, 0, lastTxtObj);
+					}
+				}
+			}
+			cb({hists: result});
 		}
 	);
 }
