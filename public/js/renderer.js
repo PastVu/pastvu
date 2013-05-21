@@ -90,9 +90,14 @@ define([
 				item.modal.$containerCurtain = $(modalTpl({
 					initWidth: item.modal.initWidth || 'auto',
 					topic: item.modal.topic || '',
-					closeHref: item.modal.closeHref || '',
 					closeTxt: item.modal.closeTxt || ''
 				}));
+				if (item.modal.closeFunc) {
+					item.modal.$containerCurtain.find('.closeClick').on('click', item.modal.closeFunc);
+				}
+				if (item.modal.closeHref) {
+					item.modal.$containerCurtain.find('.closeClick').attr('href', item.modal.closeHref);
+				}
 				item.modal.$containerCurtain
 					.appendTo('body')
 					.addClass('showModalCurtain');

@@ -2,10 +2,10 @@
 	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * P.window.w() / 5 >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
-			a.off(href="${ closeHref }")
+			a.off.closeClick(data-bind="tooltip: {title: '${ closeTxt }', trigger: 'hover'}")
 				i.icon-off.icon-white
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
 		.neoModalFoot
-			a.btn-strict.btn-strict-small(href="${ closeHref }")
+			a.btn-strict.btn-strict-small.closeClick
 				i.icon-ok.icon-white
 				span ${ closeTxt }

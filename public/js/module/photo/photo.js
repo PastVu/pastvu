@@ -941,7 +941,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					[
 						{
 							module: 'm/comment/hist',
-							modal: {topic: 'История изменений комментария', closeHref: '', closeTxt: 'Закрыть'},
+							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function () {
+								this.commentHistVM.destroy();
+								delete this.commentHistVM;
+							}.bind(this)},
 							options: {cid: cid},
 							callback: function (vm) {
 								this.commentHistVM = vm;
