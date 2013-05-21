@@ -31,6 +31,7 @@
 oldConvertUsers()
 oldConvertPhotos()
 oldConvertComments()
+oldConvertNews()
 calcUserStats()
 calcPhotoStats()
 		

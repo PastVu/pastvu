@@ -220,7 +220,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					[
 						{
 							module: 'm/user/photoUpload',
-							modal: {initWidth: '1000px', topic: 'Upload photo', closeHref: '/u/' + this.u.login() + '/photo', closeTxt: 'Ok'},
+							modal: {initWidth: '1000px', topic: 'Загрузка фотографий', closeHref: '/u/' + this.u.login() + '/photo', closeTxt: 'Завершить'},
 							callback: function (vm) {
 								this.uploadVM = vm;
 								this.childModules[vm.id] = vm;
