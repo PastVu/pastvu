@@ -5,9 +5,9 @@
 define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 	var changeFragTexts = {
-		f1: '<i>Добавлен фрагмент</i><br>',
-		f2: '<i>Изменен фрагмент</i><br>',
-		f3: '<i>Удален фрагмент</i><br>'
+		f1: '<b>[</b><i class="icon-plus"></i>Добавлен фрагмент<b>]</b>',
+		f2: '<b>[</b><i class="icon-retweet"></i> Изменен фрагмент<b>]</b>',
+		f3: '<b>[</b><i class="icon-minus"></i>Удален фрагмент<b>]</b>'
 	};
 
 	return Cliche.extend({
@@ -44,7 +44,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					while (i--) {
 						hist = data.hists[i];
 						if (hist.frag) {
-							hist.txt = changeFragTexts['f' + hist.frag] + (hist.txt || '');
+							hist.frag = changeFragTexts['f' + hist.frag];
 						}
 						user = hist.user;
 						user.avatar = user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png';

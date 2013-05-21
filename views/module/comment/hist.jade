@@ -9,5 +9,8 @@
 					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.name")
 					.dotDelimeter ·
 					.histStamp(data-bind="text: moment($data.stamp).calendar()")
-				.histText(data-bind="attr: {href: $data.link}, html: $data.txt")
+				//ko if: $data.frag
+				.histFrag(data-bind="html: $data.frag")
+				// /ko
+				.histText(data-bind="html: $data.txt")
 		// /ko
