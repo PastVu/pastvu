@@ -592,6 +592,44 @@ module.exports.loadController = function (app, db) {
 		sourceCollectionName = sourceCollectionName || 'old_comments';
 		byNumPerPackage = byNumPerPackage || 1000;
 
+		var commentIncomingProcess = (function () {
+			function linkifyString(inputText, targetTo) {
+				var replacedText, replacePattern1, replacePattern2, replacePattern3,
+					target = '';
+
+				if (targetTo) {
+					target = ' target="' + targetTo + '"';
+				}
+				//URLs starting with http://, https://, or ftp://
+				replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+				replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + '>$1</a>');
+
+				//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+				replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+				replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + '>$2</a>');
+
+				//Change email addresses to mailto:: links.
+				replacePattern3 = /(\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6})/gim;
+				replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+
+				return replacedText;
+			}
+
+			return function (txt) {
+				var result = String(txt);
+
+				result = result.trim(); //Обрезаем концы
+
+				//www.oldmos.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382">#22382</a>
+				result = result.replace(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldmos\.ru\/photo\/view\/(\d{1,8})/gim, ' <a target="_blank" href="/p/$1">#$1</a>');
+
+				result = linkifyString(result, '_blank'); //Оборачиваем url в ahref
+				result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
+				result = result.replace(/\s+/g, ' '); //Очищаем лишние пробелы
+				return result;
+			};
+		}());
+
 		if (dropExisting) {
 			print('Clearing target collection...');
 			db.comments.remove();
@@ -692,11 +730,11 @@ module.exports.loadController = function (app, db) {
 					if (!relationParentBroken) {
 						okCounter++;
 						newComment = {
-							cid: comment.id,
+							cid: Number(comment.id),
 							photo: photoOid,
 							user: userOid,
 							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
-							txt: comment.text
+							txt: commentIncomingProcess(comment.text)
 						};
 						if (comment.fragment) {
 							fragmentArr = comment.fragment.split(';').map(parseFloat);
