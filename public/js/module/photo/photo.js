@@ -1141,7 +1141,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		txtHtmlToInput: function (txt) {
 			var result = txt;
 
-			result = _s.unescapeHTML(result.replace(/<br\s*[\/]?>/gi,'\n'));
+			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
+			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
+			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
 			return result;
 		},
 		commentEdit: function (data, event) {

@@ -24,15 +24,27 @@ function cursorExtract(err, cursor) {
 	cursor.toArray(this);
 }
 
-function commentIncomingProcess(txt) {
-	var result = txt;
+var commentIncomingProcess = (function () {
+	var reversedEscapeChars = {"<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39"};
+	function escape (txt) {
+		//Паттерн из _s.escapeHTML(result); исключая амперсант
+		return txt.replace(/[<>"']/g, function (m) {
+			return '&' + reversedEscapeChars[m] + ';';
+		});
+	}
 
-	result = _s.trim(result);
-	result = _s.escapeHTML(result);
-	result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>');
-	result = _s.clean(result);
-	return result;
-}
+	return function (txt) {
+		var result = txt;
+
+		result = _s.trim(result); //Обрезаем концы
+		result = escape(result); //Эскейпим
+		result = Utils.linkifyString(result, '_blank'); //Оборачиваем url в ahref
+		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
+		result = _s.clean(result); //Очищаем лишние пробелы
+		return result;
+	};
+}());
+
 /**
  * Выбирает комментарии для фотографии
  * @param data Объект
