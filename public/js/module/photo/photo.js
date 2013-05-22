@@ -1016,6 +1016,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			input.off('keyup').off('blur').val('').height('auto');
 			root.removeClass('hasContent').removeClass('hasFocus');
+			this.commentFragDelete();
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(0);
 			delete this.commentEditingFragChanged;
@@ -1057,7 +1058,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			function cb(result) {
 				_this.commentExe(false);
 				if (result && !result.error && result.comment) {
-					_this.commentFragDelete();
 					_this.commentCancel(data, event);
 				}
 			}
@@ -1135,7 +1135,6 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 					cb.call(ctx, result);
 				}
 			}.bind(this));
-			console.dir(dataSend);
 			socket.emit('updateComment', dataSend);
 		},
 		commentEdit: function (data, event) {
