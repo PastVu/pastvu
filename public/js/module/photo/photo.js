@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	/**
@@ -1026,11 +1026,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				_this = this,
 				$root = $(event.target).closest('.commentAdd'),
 				$input = $root.find('.commentInput'),
-				content = $.trim($input.val()),
+				content = $input.val(), //Операции с текстом сделает сервер
 				fragSelection,
 				dataSend;
 
-			if (_.isEmpty(content)) {
+			if (_s.isBlank(content)) {
+				$input.val('');
 				return;
 			}
 
@@ -1137,6 +1138,12 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			}.bind(this));
 			socket.emit('updateComment', dataSend);
 		},
+		txtHtmlToInput: function (txt) {
+			var result = txt;
+
+			result = _s.unescapeHTML(result.replace(/<br\s*[\/]?>/gi,'\n'));
+			return result;
+		},
 		commentEdit: function (data, event) {
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
@@ -1150,7 +1157,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 			this.commentActivate($media);
 			input = $media.find('.commentInput:first');
-			input.val(data.txt);
+			input.val(this.txtHtmlToInput(data.txt));
 
 			//Задаем высоту textarea под контент
 			$media.addClass('hasContent');

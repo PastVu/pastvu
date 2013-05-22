@@ -57,6 +57,7 @@ requirejs.config({
 
 		'lodash': 'lib/lodash',
 		'underscore': 'lib/lodash',
+		'underscore.string': 'lib/underscore.string',
 		'backbone': 'lib/backbone/backbone',
 		'backbone.queryparams': 'lib/backbone/queryparams',
 

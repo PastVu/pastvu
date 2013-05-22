@@ -7,6 +7,7 @@ var auth = require('./auth.js'),
 	Comment,
 	Counter,
 	_ = require('lodash'),
+	_s = require('underscore.string'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	step = require('step'),
@@ -23,6 +24,15 @@ function cursorExtract(err, cursor) {
 	cursor.toArray(this);
 }
 
+function commentIncomingProcess(txt) {
+	var result = txt;
+
+	result = _s.trim(result);
+	result = _s.escapeHTML(result);
+	result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>');
+	result = _s.clean(result);
+	return result;
+}
 /**
  * Выбирает комментарии для фотографии
  * @param data Объект
@@ -342,7 +352,7 @@ function createComment(socket, data, cb) {
 				cid: countComment,
 				photo: photo,
 				user: user,
-				txt: content
+				txt: commentIncomingProcess(content)
 			};
 			if (data.parent) {
 				comment.parent = data.parent;
@@ -414,6 +424,7 @@ function updateComment(socket, data, cb) {
 			}
 			var i,
 				hist = {user: user},
+				content = commentIncomingProcess(data.txt),
 				fragExists,
 				fragChangedType,
 				txtChanged;
@@ -454,7 +465,7 @@ function updateComment(socket, data, cb) {
 				comment.photo.frags.pull(fragExists._id);
 			}
 
-			if (data.txt !== comment.txt) {
+			if (content !== comment.txt) {
 				hist.txt = comment.txt;
 				txtChanged = true;
 			}
@@ -464,7 +475,7 @@ function updateComment(socket, data, cb) {
 				comment.hist.push(hist);
 				comment.lastChanged = new Date();
 
-				comment.txt = data.txt;
+				comment.txt = content;
 				comment.save(this.parallel());
 				if (fragChangedType) {
 					comment.photo.save(this.parallel());
