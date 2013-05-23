@@ -38,7 +38,7 @@ var commentIncomingProcess = (function () {
 
 		result = _s.trim(result); //Обрезаем концы
 		result = escape(result); //Эскейпим
-		result = Utils.linkifyString(result, '_blank'); //Оборачиваем url в ahref
+		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
 		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
 		result = _s.clean(result); //Очищаем лишние пробелы
 		return result;
