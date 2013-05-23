@@ -38,6 +38,10 @@ var commentIncomingProcess = (function () {
 
 		result = _s.trim(result); //Обрезаем концы
 		result = escape(result); //Эскейпим
+
+		//Заменяем диез-ссылку фото #xxx на линк
+		result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s\)\.\,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
+
 		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
 		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
 		result = _s.clean(result); //Очищаем лишние пробелы
