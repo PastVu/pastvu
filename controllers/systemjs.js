@@ -11,6 +11,7 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos) {
 		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}),
 			c = (cluster && cluster.c) || 0,
+			yCluster = (cluster && cluster.y) || {},
 			geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
 			inc = 0,
 			$update = {$set: {}};
@@ -32,16 +33,16 @@ module.exports.loadController = function (app, db) {
 		}
 
 		if (yearPhotos.o !== yearPhotos.n) {
-			if (yearPhotos.o && cluster.y[yearPhotos.o] !== undefined) {
-				cluster.y[yearPhotos.o] -= 1;
-				if (cluster.y[yearPhotos.o] < 1) {
-					delete cluster.y[yearPhotos.o];
+			if (yearPhotos.o && yCluster[yearPhotos.o] !== undefined && yCluster[yearPhotos.o] > 0) {
+				yCluster[yearPhotos.o] -= 1;
+				if (yCluster[yearPhotos.o] < 1) {
+					delete yCluster[yearPhotos.o];
 				}
 			}
 			if (yearPhotos.n) {
-				cluster.y[String(yearPhotos.n)] = 1 + (cluster.y[String(yearPhotos.n)] | 0);
+				yCluster[String(yearPhotos.n)] = 1 + (yCluster[String(yearPhotos.n)] | 0);
 			}
-			$update.$set.y = cluster.y;
+			$update.$set.y = yCluster;
 		}
 
 		if (zParam.z > 11) {
