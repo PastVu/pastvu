@@ -164,7 +164,7 @@ function getCommentsUser(data, cb) {
 			}
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id}, {_id: 0, cid: 1, photo: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
+			Comment.collection.find({user: uid._id}, {_id: 0, lastChanged: 1, cid: 1, photo: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
 				['stamp', 'desc']
 			]}, this);
 		},

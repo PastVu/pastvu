@@ -10,6 +10,10 @@
 				a.photoName(data-bind="attr: {href: $parent.commentsPhotos[$data.photo].link}, html: $parent.commentsPhotos[$data.photo].name")
 				.dotDelimeter ·
 				a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
+				//ko if: $data.lastChanged
+				.dotDelimeter ·
+				.commentChanged(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parent.commentHist($data.cid)}")
+				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
 	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")

@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -130,6 +130,31 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}.bind(this));
 			socket.emit('giveCommentsUser', {login: this.u.login(), page: page});
+		},
+		commentHist: function (cid) {
+			if (!this.commentHistVM) {
+				renderer(
+					[
+						{
+							module: 'm/comment/hist',
+							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
+								this.commentHistVM.destroy();
+								delete this.commentHistVM;
+								evt.stopPropagation();
+							}.bind(this)},
+							options: {cid: cid},
+							callback: function (vm) {
+								this.commentHistVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2
+					}
+				);
+			}
 		},
 
 		onThumbLoad: function (data, event) {

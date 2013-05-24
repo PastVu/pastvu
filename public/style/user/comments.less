@@ -57,11 +57,16 @@
 			font-size: 11px;
 			white-space: nowrap;
 		}
-		.commentStamp {
+		.commentStamp, .commentChanged {
 			display: inline-block;
 			font-size: 12px;
 			cursor: pointer;
 			color: #888;
+		}
+		.commentChanged {
+			&:hover {
+				color: @MainBlueColor;
+			}
 		}
 		.commentText {
 			display: block;
