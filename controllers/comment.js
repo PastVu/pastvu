@@ -45,7 +45,11 @@ var commentIncomingProcess = (function () {
 		//Например, http://domain.com/p/123456 -> #123456
 		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,]|$)', 'gi'), '$1#$2');
 
-		//Все ссылки на адреса внутри портала оаставляем без доменного имени, от корня
+		//Восстанавливаем внтуреннюю ссылку чтобы на следующей операции обернуть её в линк
+		//Например, /u/klimashkin/photo -> http://domain.com/u/klimashkin/photo
+		result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1' + host + '$2');
+
+		//Все ссылки на адреса внутри портала оставляем без доменного имени, от корня, и оборачиваем в линк
 		//Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
 		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
 
