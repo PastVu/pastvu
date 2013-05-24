@@ -42,12 +42,18 @@ var commentIncomingProcess = (function () {
 		result = escape(result); //Эскейпим
 
 		//Заменяем ссылку на фото на диез-ссылку #xxx
+		//Например, http://domain.com/p/123456 -> #123456
 		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,]|$)', 'gi'), '$1#$2');
 
+		//Все ссылки на адреса внутри портала оаставляем без доменного имени, от корня
+		//Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
+		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
+
 		//Заменяем диез-ссылку фото #xxx на линк
+		//Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
 		result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s\)\.\,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
 
-		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
+		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
 		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
 		result = _s.clean(result); //Очищаем лишние пробелы
 		return result;
