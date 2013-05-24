@@ -13,6 +13,8 @@ var auth = require('./auth.js'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
+	appEnv = {},
+	host,
 	logger;
 
 
@@ -38,6 +40,9 @@ var commentIncomingProcess = (function () {
 
 		result = _s.trim(result); //Обрезаем концы
 		result = escape(result); //Эскейпим
+
+		//Заменяем ссылку на фото на диез-ссылку #xxx
+		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,]|$)', 'gi'), '$1#$2');
 
 		//Заменяем диез-ссылку фото #xxx на линк
 		result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s\)\.\,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
@@ -688,6 +693,8 @@ function removeComment(socket, cid, cb) {
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
+	appEnv = app.get('appEnv');
+	host = appEnv.serverAddr.host;
 
 	Settings = db.model('Settings');
 	User = db.model('User');
