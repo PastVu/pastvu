@@ -14,17 +14,17 @@
 			.media-body
 				textarea.commentInput(wrap="soft", data-bind="click: inputClickBind")
 				label.commentInputLabel(data-bind="click: inputClickBind") Нажмите, чтобы начать писать комментарий
-				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: commentExe()}, click: commentSendBind, attr: {disabled: commentExe()}")
+				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: exe()}, click: commentSendBind, attr: {disabled: exe()}")
 					i.icon-comment.icon-white
 					span Отправить
-				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: commentExe()}, click: commentCancelBind, attr: {disabled: commentExe()}")
+				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: exe()}, click: commentCancelBind, attr: {disabled: exe()}")
 					i.icon-remove.icon-white
 					span Отмена
-				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: commentExe()}, click: fragClickBind, attr: {disabled: commentExe()}")
+				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: exe()}, click: fragClickBind, attr: {disabled: exe()}")
 					i.icon-picture.icon-white
 					span Фрагмент
 				// ko if: fraging()
-				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: commentExe()}, click: fragDeleteBind, attr: {disabled: commentExe()}")
+				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: exe()}, click: fragDeleteBind, attr: {disabled: exe()}")
 					i.icon-remove.icon-white
 					span Очистить фрагмент
 				// /ko
@@ -37,17 +37,17 @@
 	script(id="commentReplyToBodyTpl", type="text/html")
 		textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].inputClickBind")
 		label.commentInputLabel(data-bind="click: $parents[$data.level].inputClickBind") Нажмите, чтобы начать писать комментарий
-		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-comment.icon-white
 			span Отправить
-		button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-remove.icon-white
 			span Отмена
-		button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].fragClickBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].fragClickBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-picture.icon-white
 			span Фрагмент
 		// ko if: $parents[$data.level].fraging()
-		button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].fragDeleteBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].fragDeleteBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-remove.icon-white
 			span Очистить фрагмент
 		// /ko

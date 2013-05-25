@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'jquery-plugins/scrollto'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -11,21 +11,19 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			type: 'photo'
 		},
 		create: function () {
-			var _this = this;
 			this.auth = globalVM.repository['m/common/auth'];
 			this.type = this.options.type;
-
 			this.cid = null;
+			this.exe = ko.observable(false);
+
 			this.comments = ko.observableArray();
 			this.users = {};
-			this.commentsWait = ko.observable(false);
 
-			this.recieveBind = this.recieve.bind(this);
-
-			this.commentExe = ko.observable(false);
 			this.commentReplyingToCid = ko.observable(0);
 			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
+
+			this.recieveBind = this.recieve.bind(this);
 			this.replyToBind = this.replyTo.bind(this);
 			this.inputClickBind = this.inputClick.bind(this);
 			this.commentEditBind = this.commentEdit.bind(this);
@@ -34,7 +32,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentCancelBind = this.commentCancel.bind(this);
 
 			this.fraging = ko.observable(false);
-			this.commentFragArea = null;
 			this.fragClickBind = this.fragClick.bind(this);
 			this.fragDeleteBind = this.fragDelete.bind(this);
 
@@ -81,7 +78,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		recieve: function (cid, cb, ctx) {
 			this.cid = cid;
 			socket.once('takeCommentsPhoto', function (data) {
-				this.commentsWait(false);
 				if (!data) {
 					console.error('Noe comments data recieved');
 				} else {
@@ -289,14 +285,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				dataSend.fragObj = this.parentModule.fragObject();
 			}
 
-			this.commentExe(true);
+			this.exe(true);
 			if (create) {
 				this.commentSendCreate(data, dataSend, cb, this);
 			} else {
 				this.commentSendUpdate(data, dataSend, cb, this);
 			}
 			function cb(result) {
-				_this.commentExe(false);
+				_this.exe(false);
 				if (result && !result.error && result.comment) {
 					_this.commentCancel(data, event);
 				}

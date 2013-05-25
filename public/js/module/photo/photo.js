@@ -151,32 +151,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.thumbM = ko.observable('1px');
 			this.userThumbN = ko.observable(3);
 
-			this.mapVM = null;
-			this.mapModulePromise = mapModuleDeffered.promise();
-			this.childs = [
-				{
-					module: 'm/map/map',
-					container: '.photoMap',
-					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
-					ctx: this,
-					callback: function (vm) {
-						this.mapVM = this.childModules[vm.id] = vm;
-						$.when(mapReadyDeffered.promise()).done(function () {
-							mapModuleDeffered.resolve();
-						}.bind(this));
-					}
-				},
-				{
-					module: 'm/comment/comments',
-					container: '.photoCommentsContainer',
-					options: {type: 'photo'},
-					ctx: this,
-					callback: function (vm) {
-						this.commentsVM = this.childModules[vm.id] = vm;
-					}
-				}
-			];
-
 			this.convertOptions = ko.observableArray([
 				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'},
 				{vName: 'Thumb', vId: 'thumb'},
@@ -206,9 +180,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}
 			});
 
-			this.comments = ko.observableArray();
-			this.commentsUsers = {};
-			this.commentsWait = ko.observable(false);
+			this.commentsLoading = ko.observable(false);
 			this.commentsInViewport = false;
 
 			this.scrollTimeout = null;
@@ -220,10 +192,37 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
 			this.scrollToBind = this.scrollTo.bind(this);
 			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
-			this.commentsRecieveBind = this.commentsRecievee.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.commentFragArea = null;
+
+			this.mapVM = null;
+			this.mapModulePromise = mapModuleDeffered.promise();
+			this.childs = [
+				{
+					module: 'm/map/map',
+					container: '.photoMap',
+					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
+					ctx: this,
+					callback: function (vm) {
+						this.mapVM = this.childModules[vm.id] = vm;
+						$.when(mapReadyDeffered.promise()).done(function () {
+							mapModuleDeffered.resolve();
+						}.bind(this));
+					}
+				},
+				{
+					module: 'm/comment/comments',
+					container: '.photoCommentsContainer',
+					options: {type: 'photo'},
+					ctx: this,
+					callback: function (vm) {
+						this.commentsVM = this.childModules[vm.id] = vm;
+						// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
+						this.routeHandler();
+					}
+				}
+			];
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -271,9 +270,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					this.p.year2(v);
 				}
 			}, 400), this);
-
-			// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
-			this.routeHandler();
 		},
 		show: function () {
 			if (this.showing) {
@@ -426,7 +422,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.photoLoading(true);
 
 				this.commentsVM.clear();
-				this.commentsWait(false);
+				this.commentsLoading(false);
 				this.commentsInViewport = false;
 
 				this.viewScrollOff();
@@ -458,7 +454,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
 						if (this.p.ccount() > 0) {
-							this.commentsWait(true);
+							this.commentsLoading(true);
 							this.viewScrollOn();
 							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, this.p.ccount() > 30 ? 500 : 300);
 						}
@@ -777,6 +773,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.p.cid(), function () {
+				this.commentsLoading(false);
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
 		},
