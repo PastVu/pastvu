@@ -33,6 +33,7 @@
 			.commentsAdd(data-bind="click: commentReply") Добавить
 			// /ko
 			.commentsLoad(data-bind="style: {display: commentsWait() ? '' : 'none'}") &nbsp;
+			.photoCommentsContainer.mContainer.mHidden
 			ul.media-list
 				//ko template: { name: 'commentTpl', foreach: comments }
 				// /ko

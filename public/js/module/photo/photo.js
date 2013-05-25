@@ -164,7 +164,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						$.when(mapReadyDeffered.promise()).done(function () {
 							mapModuleDeffered.resolve();
 						}.bind(this));
-
+					}
+				},
+				{
+					module: 'm/comment/comments',
+					container: '.photoCommentsContainer',
+					options: {},
+					ctx: this,
+					callback: function (vm) {
+						this.commentsVM = this.childModules[vm.id] = vm;
 					}
 				}
 			];
@@ -209,11 +217,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.$comments = this.$dom.find('.photoComments');
 
-			this.handleViewScrollBind = this.viewScrollHandle.bind(this);
-			this.scrollToFragCommentBind = this.scrollToFragComment.bind(this);
+			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
+			this.scrollToBind = this.scrollTo.bind(this);
 			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
-			this.recieveCommentsBind = this.commentsRecieve.bind(this);
-
+			this.commentsRecieveBind = this.commentsRecievee.bind(this);
 
 			this.commentExe = ko.observable(false);
 			this.commentReplyingToCid = ko.observable(0);
@@ -433,11 +440,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
 				this.photoLoading(true);
 
-				this.comments([]);
-				this.commentsUsers = {};
-				this.addMeToCommentsUsers();
+				this.commentsVM.clear();
 				this.commentsWait(false);
 				this.commentsInViewport = false;
+
 				this.viewScrollOff();
 				window.clearTimeout(this.commentsRecieveTimeout);
 				window.clearTimeout(this.commentsViewportTimeout);
@@ -457,7 +463,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							.on('error', this.onPhotoError.bind(this))
 							.attr('src', this.p.sfile());
 
-
 						// Вызываем обработчик изменения фото (this.p)
 						this.changePhotoHandler();
 
@@ -475,14 +480,13 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					}
 				}, this, this.p);
 			} else if (this.toFrag || this.toComment) {
-				this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 50);
+				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
 			}
 
 		},
 		loggedInHandler: function () {
-			// После логина перезапрашиваем ленту фотографий пользователя и добавляем себя в комментаторы
+			// После логина перезапрашиваем ленту фотографий пользователя
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-			this.addMeToCommentsUsers();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -754,21 +758,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.userRibbon(newRibbon);
 			n = nLeft = newRibbon = null;
 		},
-		addMeToCommentsUsers: function () {
-			if (this.auth.loggedIn() && this.commentsUsers[this.auth.iAm.login()] === undefined) {
-				this.commentsUsers[this.auth.iAm.login()] = {
-					login: this.auth.iAm.login(),
-					avatar: this.auth.iAm.avatarth(),
-					name: this.auth.iAm.fullName()
-				}
-			}
-		},
 
+		/**
+		 * COMMENTS
+		 */
 		viewScrollOn: function () {
-			$(window).on('scroll', this.handleViewScrollBind);
+			$(window).on('scroll', this.viewScrollHandleBind);
 		},
 		viewScrollOff: function () {
-			$(window).off('scroll', this.handleViewScrollBind);
+			$(window).off('scroll', this.viewScrollHandleBind);
 		},
 		viewScrollHandle: function () {
 			if (!this.commentsInViewport) {
@@ -790,64 +788,39 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		commentsGet: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.recieveCommentsBind, this.p.ccount() > 30 ? 750 : 400);
+			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.p.ccount() > 30 ? 750 : 400);
 		},
 		commentsRecieve: function () {
-			var cid = this.p.cid();
-			socket.once('takeCommentsPhoto', function (data) {
-				this.commentsWait(false);
-				if (!data) {
-					console.error('Noe comments data recieved');
-				} else {
-					if (data.error) {
-						console.error('While loading comments: ', data.message || 'Error occurred');
-					} else if (data.cid !== cid) {
-						console.info('Comments recieved for another photo ' + data.cid);
-					} else {
-						this.commentsUsers = _.assign(data.users, this.commentsUsers);
-						this.comments(this.commentsTreeBuild(data.comments));
-						this.scrollTimeout = window.setTimeout(this.scrollToFragCommentBind, 100);
-					}
-				}
-			}.bind(this));
-			socket.emit('giveCommentsPhoto', {cid: cid});
+			this.commentsVM.recieve(this.p.cid(), function () {
+				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
+			}, this);
 		},
-		commentsTreeBuild: function (arr) {
-			var i = -1,
-				len = arr.length,
-				hash = {},
-				comment,
-				results = [];
 
-			while (++i < len) {
-				comment = arr[i];
-				if (comment.level < this.commentNestingMax) {
-					comment.comments = ko.observableArray();
-				}
-				if (comment.level > 0) {
-					hash[comment.parent].comments.push(comment);
-				} else {
-					results.push(comment);
-				}
-				hash[comment.cid] = comment;
-			}
-
-			return results;
-		},
-		scrollToFragComment: function () {
-			var element;
+		scrollTo: function () {
 			if (this.toFrag) {
-				element = $('.photoFrag[data-cid="' + this.toFrag + '"]');
+				this.commentsVM.highlightOff();
+				this.scrollToFrag(this.toFrag);
 			} else if (this.toComment) {
-				element = $('.media[data-cid="' + this.toComment + '"]');
+				this.highlightFragOff();
+				this.commentsVM.scrollTo(this.toComment);
 			}
+		},
+		scrollToFrag: function (frag) {
+			var element = $('.photoFrag[data-cid="' + frag + '"]');
+
 			if (element && element.length === 1) {
-				$('.photoFrag.hl').removeClass('hl');
-				$('.media.hl').removeClass('hl');
-				$(window).scrollTo(element, {duration: 400, onAfter: function (elem, params) {
-					$(elem).addClass('hl');
-				}});
+				this.highlightOff();
+				$(window).scrollTo(element, {duration: 400, onAfter: function () {
+					this.highlightFrag(frag);
+				}}.bind(this));
 			}
+			return element;
+		},
+		highlightFrag: function (frag) {
+			this.$dom.find('.photoFrag[data-cid="' + frag + '"]').addClass('hl');
+		},
+		highlightFragOff: function () {
+			this.$dom.find('.photoFrag.hl').removeClass('hl');
 		},
 
 		commentReplyClick: function (data, event) {
