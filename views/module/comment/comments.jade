@@ -12,19 +12,19 @@
 			a.pull-left(data-bind="attr: {href: '/u/' + auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
 			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: commentReplyClickBind")
-				label.commentInputLabel(data-bind="click: commentReplyClickBind") Нажмите, чтобы начать писать комментарий
+				textarea.commentInput(wrap="soft", data-bind="click: inputClickBind")
+				label.commentInputLabel(data-bind="click: inputClickBind") Нажмите, чтобы начать писать комментарий
 				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: commentExe()}, click: commentSendBind, attr: {disabled: commentExe()}")
 					i.icon-comment.icon-white
 					span Отправить
 				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: commentExe()}, click: commentCancelBind, attr: {disabled: commentExe()}")
 					i.icon-remove.icon-white
 					span Отмена
-				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: commentExe()}, click: commentFragBind, attr: {disabled: commentExe()}")
+				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: commentExe()}, click: fragClickBind, attr: {disabled: commentExe()}")
 					i.icon-picture.icon-white
 					span Фрагмент
-				// ko if: commentFraging()
-				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: commentExe()}, click: commentFragDeleteBind, attr: {disabled: commentExe()}")
+				// ko if: fraging()
+				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: commentExe()}, click: fragDeleteBind, attr: {disabled: commentExe()}")
 					i.icon-remove.icon-white
 					span Очистить фрагмент
 				// /ko
@@ -35,19 +35,19 @@
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
 			.media-body(data-bind="template: 'commentReplyToBodyTpl'")
 	script(id="commentReplyToBodyTpl", type="text/html")
-		textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].commentReplyClickBind")
-		label.commentInputLabel(data-bind="click: $parents[$data.level].commentReplyClickBind") Нажмите, чтобы начать писать комментарий
+		textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].inputClickBind")
+		label.commentInputLabel(data-bind="click: $parents[$data.level].inputClickBind") Нажмите, чтобы начать писать комментарий
 		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].commentExe()}")
 			i.icon-comment.icon-white
 			span Отправить
 		button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].commentExe()}")
 			i.icon-remove.icon-white
 			span Отмена
-		button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentFragBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].fragClickBind, attr: {disabled: $parents[$data.level].commentExe()}")
 			i.icon-picture.icon-white
 			span Фрагмент
-		// ko if: $parents[$data.level].commentFraging()
-		button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].commentFragDeleteBind, attr: {disabled: $parents[$data.level].commentExe()}")
+		// ko if: $parents[$data.level].fraging()
+		button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: $parents[$data.level].commentExe()}, click: $parents[$data.level].fragDeleteBind, attr: {disabled: $parents[$data.level].commentExe()}")
 			i.icon-remove.icon-white
 			span Очистить фрагмент
 		// /ko
@@ -79,7 +79,7 @@
 				a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
 				//ko if: $data.lastChanged
 				.dotDelimeter ·
-				.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].commentHist($data.cid)}")
+				.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].showHistory($data.cid)}")
 				// /ko
 			.commentText(data-bind="html: $data.txt")
 			.commentActions

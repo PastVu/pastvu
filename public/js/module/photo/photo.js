@@ -169,7 +169,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				{
 					module: 'm/comment/comments',
 					container: '.photoCommentsContainer',
-					options: {},
+					options: {type: 'photo'},
 					ctx: this,
 					callback: function (vm) {
 						this.commentsVM = this.childModules[vm.id] = vm;
@@ -222,23 +222,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.commentsRecieveBind = this.commentsRecievee.bind(this);
 
-			this.commentExe = ko.observable(false);
 			this.commentReplyingToCid = ko.observable(0);
 			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
-			this.commentReplyBind = this.commentReply.bind(this);
-			this.commentReplyClickBind = this.commentReplyClick.bind(this);
-			this.commentReplyToBind = this.commentReplyTo.bind(this);
-			this.commentEditBind = this.commentEdit.bind(this);
-			this.commentRemoveBind = this.commentRemove.bind(this);
-			this.commentSendBind = this.commentSend.bind(this);
-			this.commentCancelBind = this.commentCancel.bind(this);
 
-			this.commentFraging = ko.observable(false);
+			this.fraging = ko.observable(false);
 			this.commentFragArea = null;
-			this.commentFragBind = this.commentFrag.bind(this);
-			this.commentFragCreateBind = this.commentFragCreate.bind(this);
-			this.commentFragDeleteBind = this.commentFragDelete.bind(this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -408,9 +397,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.hs(hs);
 
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
-				fragSelection = this.commentFragArea.getSelection();
-				this.commentFragDelete();
-				this.commentFragCreate(fragSelection);
+				fragSelection = this.fragSelection();
+				this.fragDelete();
+				this.fragCreate(fragSelection);
 			}
 		},
 		stateChange: function (data, event) {
@@ -823,42 +812,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.$dom.find('.photoFrag.hl').removeClass('hl');
 		},
 
-		commentReplyClick: function (data, event) {
-			this.commentActivate($(event.target).closest('.commentAdd'));
+		commentCountIncrement: function (delta) {
+			this.p.ccount(this.p.ccount() + delta);
 		},
-		commentReply: function () {
-			this.commentActivate($('ul.media-list > .media.commentAdd').last(), 600);
+		commentAdd: function () {
+			this.commentsVM.replyZero();
 		},
-		commentReplyTo: function (data, event) {
-			var cid,
-				$media,
-				$root;
 
-			if (data.level < this.commentNestingMax) {
-				$media = $(event.target).closest('li.media');
-				cid = data.cid;
-			} else if (data.level === this.commentNestingMax) {
-				$media = $($(event.target).parents('li.media')[1]);
-				cid = Number($media.attr('data-cid')) || 0;
-			}
-			this.commentEditingCid(0);
-			this.commentReplyingToCid(cid);
-			$root = $media.find('.commentAdd').last();
-
-			this.commentActivate($root, 400);
-		},
-		commentFrag: function (data, event) {
-			var $root = $(event.target).closest('.commentAdd'),
-				$wrap = this.$dom.find('.photoImgWrap');
-
-			this.commentFraging(true);
-			$root.addClass('hasContent');
-
-			$(window).scrollTo($wrap, {duration: 400, onAfter: function () {
-				this.commentFragCreate();
-			}.bind(this)});
-		},
-		commentFragCreate: function (selections) {
+		fragCreate: function (selections) {
 			if (!this.commentFragArea) {
 				var $parent = this.$dom.find('.photoImgWrap'),
 					ws = this.p.ws(), hs = this.p.hs(),
@@ -876,256 +837,57 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					minWidth: 30, minHeight: 30,
 					handles: true, parent: $parent, persistent: true, instance: true
 				}, selections));
-				this.commentEditingFragChanged = true;
 			}
-			this.commentFraging(true);
+			this.fraging(true);
 		},
-		commentFragDelete: function () {
+		fragDelete: function () {
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
 				this.commentFragArea.remove();
 				this.$dom.find('.photoImg').removeData('imgAreaSelect');
 				this.commentFragArea = null;
 			}
-			this.commentFraging(false);
-			this.commentEditingFragChanged = true;
+			this.fraging(false);
 		},
-		commentFragGetByCid: function (cid) {
+		fragSelection: function (flag) {
+			var result;
+			if (this.commentFragArea instanceof $.imgAreaSelect) {
+				this.commentFragArea.getSelection(flag);
+			}
+			return result;
+		},
+		fragObject: function () {
+			var selection,
+				result;
+			selection = this.fragSelection(false);
+			if (selection) {
+				result = {
+					l: 100 * selection.x1 / this.p.ws(),
+					t: 100 * selection.y1 / this.p.hs(),
+					w: 100 * selection.width / this.p.ws(),
+					h: 100 * selection.height / this.p.hs()
+				};
+			}
+			return result;
+		},
+		fragAdd: function (frag) {
+			this.p.frags.push(ko_mapping.fromJS(frag));
+		},
+		fragRemove: function (cid) {
+			this.p.frags.remove(this.fragGetByCid(cid));
+		},
+		fragGetByCid: function (cid) {
 			return _.find(this.p.frags(), function (frag) {
 				return frag.cid() === cid;
 			});
 		},
-		commentActivate: function (root, scrollDuration) {
-			if (this.auth.loggedIn() && (root instanceof jQuery) && root.length === 1) {
-				var input = root.find('.commentInput');
 
-				root.addClass('hasFocus');
-				input
-					.off('keyup').off('blur')
-					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 300))
-					.on('blur', _.debounce(this.commentAddBlur.bind(this), 200));
-				this.commentCheckInViewport(root, scrollDuration, function () {
-					input.focus();
-				});
-			}
-		},
-		commentHist: function (cid) {
-			if (!this.commentHistVM) {
-				renderer(
-					[
-						{
-							module: 'm/comment/hist',
-							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
-								this.commentHistVM.destroy();
-								delete this.commentHistVM;
-								evt.stopPropagation();
-							}.bind(this)},
-							options: {cid: cid},
-							callback: function (vm) {
-								this.commentHistVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 2
-					}
-				);
-			}
-		},
-		commentAddKeyup: function (evt) {
-			var input = $(evt.target),
-				content = $.trim(input.val()),
-				root = input.closest('.commentAdd');
-
-			root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.commentCheckInputHeight(root, input);
-		},
-		commentAddBlur: function (evt) {
-			var input = $(evt.target),
-				content = $.trim(input.val()),
-				root = input.closest('.commentAdd');
-
-			input.off('keyup').off('blur');
-			if (!content && !this.commentFraging()) {
-				root.removeClass('hasContent');
-				input.height('auto');
-			}
-			root.removeClass('hasFocus');
-		},
-		commentCheckInViewport: function (root, scrollDuration, cb) {
-			var btnSend = root.find('.btnCommentSend'),
-				cBottom = btnSend.offset().top + btnSend.height() + 10,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
-
-			if (wFold < cBottom) {
-				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-					if (Utils.isType('function', cb)) {
-						cb.call(this);
-					}
-				}.bind(this)});
-			} else {
-				if (Utils.isType('function', cb)) {
-					cb.call(this);
-				}
-			}
-		},
-		commentCheckInputHeight: function (root, input) {
-			var content = $.trim(input.val()),
-				height = input.height(),
-				heightScroll = (input[0].scrollHeight - 8) || height;
-
-			if (!content) {
-				input.height('auto');
-			} else if (heightScroll > height) {
-				input.height(heightScroll);
-				this.commentCheckInViewport(root);
-			}
-		},
-		commentCancel: function (data, event) {
-			var root = $(event.target).closest('.commentAdd'),
-				input = root.find('.commentInput');
-
-			input.off('keyup').off('blur').val('').height('auto');
-			root.removeClass('hasContent').removeClass('hasFocus');
-			this.commentFragDelete();
-			this.commentReplyingToCid(0);
-			this.commentEditingCid(0);
-			delete this.commentEditingFragChanged;
-		},
-		commentSend: function (data, event) {
-			var create = !this.commentEditingCid(),
-				_this = this,
-				$root = $(event.target).closest('.commentAdd'),
-				$input = $root.find('.commentInput'),
-				content = $input.val(), //Операции с текстом сделает сервер
-				fragSelection,
-				dataSend;
-
-			if (_s.isBlank(content)) {
-				$input.val('');
-				return;
-			}
-
-			dataSend = {
-				photo: this.p.cid(),
-				txt: content
-			};
-
-			if (this.commentFragArea instanceof $.imgAreaSelect) {
-				fragSelection = this.commentFragArea.getSelection(false);
-				dataSend.fragObj = {
-					l: 100 * fragSelection.x1 / this.p.ws(),
-					t: 100 * fragSelection.y1 / this.p.hs(),
-					w: 100 * fragSelection.width / this.p.ws(),
-					h: 100 * fragSelection.height / this.p.hs()
-				};
-			}
-
-			this.commentExe(true);
-			if (create) {
-				this.commentSendCreate(data, dataSend, cb, this);
-			} else {
-				this.commentSendUpdate(data, dataSend, cb, this);
-			}
-			function cb(result) {
-				_this.commentExe(false);
-				if (result && !result.error && result.comment) {
-					_this.commentCancel(data, event);
-				}
-			}
-		},
-		commentSendCreate: function (data, dataSend, cb, ctx) {
-			if (Utils.isType('number', data.cid)) {
-				dataSend.parent = data.cid;
-				dataSend.level = (data.level || 0) + 1;
-			}
-
-			socket.once('createCommentResult', function (result) {
-				if (!result) {
-					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-				} else {
-					if (result.error || !result.comment) {
-						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-					} else {
-						if (result.comment.level < this.commentNestingMax) {
-							result.comment.comments = ko.observableArray();
-						}
-						data.comments.push(result.comment);
-						this.p.ccount(this.p.ccount() + 1);
-						if (Utils.isType('object', result.frag)) {
-							this.p.frags.push(ko_mapping.fromJS(result.frag));
-						}
-					}
-				}
-
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, result);
-				}
-			}.bind(this));
-			socket.emit('createComment', dataSend);
-		},
-		commentSendUpdate: function (data, dataSend, cb, ctx) {
-			var fragExists = data.frag && this.commentFragGetByCid(data.cid);
-
-			dataSend.cid = data.cid;
-
-			//Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
-			//потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
-			if (fragExists && !this.commentEditingFragChanged) {
-				dataSend.fragObj = fragExists;
-			}
-
-			socket.once('updateCommentResult', function (result) {
-				if (!result) {
-					window.noty({text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-				} else {
-					if (result.error || !result.comment) {
-						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-					} else {
-						data.txt = result.comment.txt;
-						data.lastChanged = result.comment.lastChanged;
-
-						if (this.commentEditingFragChanged) {
-							if (result.frag) {
-								data.frag = true;
-								if (!fragExists) {
-									this.p.frags.push(ko_mapping.fromJS(result.frag));
-								} else {
-									this.p.frags.remove(this.commentFragGetByCid(data.cid));
-									this.p.frags.push(ko_mapping.fromJS(result.frag));
-								}
-							} else if (fragExists) {
-								data.frag = false;
-								this.p.frags.remove(this.commentFragGetByCid(data.cid));
-							}
-						}
-
-					}
-				}
-
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, result);
-				}
-			}.bind(this));
-			socket.emit('updateComment', dataSend);
-		},
-		txtHtmlToInput: function (txt) {
-			var result = txt;
-
-			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
-			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
-			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
-			return result;
-		},
 		commentEdit: function (data, event) {
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
 				ws1percent = this.p.ws() / 100,
 				hs1percent = this.p.hs() / 100,
-				frag = data.frag && this.commentFragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
+				frag = data.frag && this.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
@@ -1142,7 +904,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (frag) {
 				this.commentFraging(true);
 				this.commentEditingFragChanged = false;
-				this.commentFragCreate({
+				this.fragCreate({
 					onSelectEnd: function () {
 						this.commentEditingFragChanged = true;
 						console.dir(arguments);
