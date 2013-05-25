@@ -222,10 +222,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.commentsRecieveBind = this.commentsRecievee.bind(this);
 
-			this.commentReplyingToCid = ko.observable(0);
-			this.commentEditingCid = ko.observable(0);
-			this.commentNestingMax = 9;
-
 			this.fraging = ko.observable(false);
 			this.commentFragArea = null;
 
@@ -875,108 +871,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		fragRemove: function (cid) {
 			this.p.frags.remove(this.fragGetByCid(cid));
 		},
+		fragReplace: function (frags) {
+			this.p.frags(ko_mapping.fromJS({arr: frags}).arr());
+		},
 		fragGetByCid: function (cid) {
 			return _.find(this.p.frags(), function (frag) {
 				return frag.cid() === cid;
 			});
 		},
-
-		commentEdit: function (data, event) {
-			var $media = $(event.target).closest('.media'),
-				cid = Number(data.cid),
-				input,
-				ws1percent = this.p.ws() / 100,
-				hs1percent = this.p.hs() / 100,
-				frag = data.frag && this.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
-
-			this.commentReplyingToCid(0);
-			this.commentEditingCid(cid);
-
-			this.commentActivate($media);
-			input = $media.find('.commentInput:first');
-			input.val(this.txtHtmlToInput(data.txt));
-
-			//Задаем высоту textarea под контент
-			$media.addClass('hasContent');
-			this.commentCheckInputHeight($media, input);
-
-			//Если есть фрагмент, делаем его редактирование
-			if (frag) {
-				this.commentFraging(true);
-				this.commentEditingFragChanged = false;
-				this.fragCreate({
-					onSelectEnd: function () {
-						this.commentEditingFragChanged = true;
-						console.dir(arguments);
-					}.bind(this),
-					x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent
-				});
-			}
-		},
-		commentRemove: function (data, event) {
-			var _this = this,
-				root = $(event.target).closest('.media'),
-				cid = Number(data.cid);
-
-			root.addClass('hlRemove');
-
-			window.noty(
-				{
-					text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами без возможности восстановления<br>Подтверждаете операцию удаления?',
-					type: 'confirm',
-					layout: 'center',
-					modal: true,
-					force: true,
-					animation: {
-						open: {height: 'toggle'},
-						close: {},
-						easing: 'swing',
-						speed: 500
-					},
-					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
-							// this = button element
-							// $noty = $noty element
-							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
-							}
-
-							socket.once('removeCommentResult', function (result) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
-								var okButton = $noty.$buttons.find('button')
-									.attr('disabled', false)
-									.removeClass('disabled')
-									.off('click');
-
-								$noty.$message.children().html((result && result.message) || '');
-								okButton.text('Close').on('click', function () {
-									$noty.close();
-									if (!result.error) {
-										if (Utils.isType('number', result.countComments)) {
-											this.p.ccount(this.p.ccount() - result.countComments);
-										}
-										if (Utils.isType('array', result.frags)) {
-											this.p.frags(ko_mapping.fromJS({arr: result.frags}).arr());
-										}
-										this.commentsRecieve();
-									} else {
-										root.removeClass('hlRemove');
-									}
-
-								}.bind(this));
-
-							}.bind(_this));
-							socket.emit('removeComment', cid);
-						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
-							root.removeClass('hlRemove');
-							$noty.close();
-						}}
-					]
-				}
-			);
-		},
-
 
 		onPhotoLoad: function (event) {
 			var img = event.target;

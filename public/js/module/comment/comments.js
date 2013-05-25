@@ -20,13 +20,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.users = {};
 			this.commentsWait = ko.observable(false);
 
-			this.scrollTimeout = null;
-
-			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
-			this.scrollToFragCommentBind = this.scrollToFragComment.bind(this);
-			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.recieveBind = this.recieve.bind(this);
-
 
 			this.commentExe = ko.observable(false);
 			this.commentReplyingToCid = ko.observable(0);
@@ -211,31 +205,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.fraging(false);
 			this.commentEditingFragChanged = true;
 		},
-		showHistory: function (cid) {
-			if (!this.commentHistVM) {
-				renderer(
-					[
-						{
-							module: 'm/comment/hist',
-							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
-								this.commentHistVM.destroy();
-								delete this.commentHistVM;
-								evt.stopPropagation();
-							}.bind(this)},
-							options: {cid: cid},
-							callback: function (vm) {
-								this.commentHistVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 2
-					}
-				);
-			}
-		},
+
 		commentAddKeyup: function (evt) {
 			var input = $(evt.target),
 				content = $.trim(input.val()),
@@ -363,7 +333,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			socket.emit('createComment', dataSend);
 		},
 		commentSendUpdate: function (data, dataSend, cb, ctx) {
-			var fragExists = data.frag && this.parentModule.fragGetByCid(data.cid);
+			var fragExists = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(data.cid);
 
 			dataSend.cid = data.cid;
 
@@ -420,7 +390,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				input,
 				ws1percent = this.p.ws() / 100,
 				hs1percent = this.p.hs() / 100,
-				frag = data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
+				frag = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
@@ -435,12 +405,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			//Если есть фрагмент, делаем его редактирование
 			if (frag) {
-				this.fraging(true);
 				this.commentEditingFragChanged = false;
 				this.fragCreate({
 					onSelectEnd: function () {
 						this.commentEditingFragChanged = true;
-						console.dir(arguments);
 					}.bind(this),
 					x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent
 				});
@@ -486,10 +454,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 									$noty.close();
 									if (!result.error) {
 										if (Utils.isType('number', result.countComments)) {
-											this.p.ccount(this.p.ccount() - result.countComments);
+											this.parentModule.commentCountIncrement(-result.countComments);
 										}
 										if (Utils.isType('array', result.frags)) {
-											this.p.frags(ko_mapping.fromJS({arr: result.frags}).arr());
+											this.parentModule.fragReplace(result.frags);
 										}
 										this.recieve();
 									} else {
@@ -510,75 +478,36 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			);
 		},
 
+		//Вызов модального окна с модулем просмотра истории комментария
+		showHistory: function (cid) {
+			if (!this.commentHistVM) {
+				renderer(
+					[
+						{
+							module: 'm/comment/hist',
+							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
+								this.commentHistVM.destroy();
+								delete this.commentHistVM;
+								evt.stopPropagation();
+							}.bind(this)},
+							options: {cid: cid},
+							callback: function (vm) {
+								this.commentHistVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2
+					}
+				);
+			}
+		},
 
-		onPhotoLoad: function (event) {
-			var img = event.target;
-			// Если реальные размеры фото не соответствуют тем что в базе, используем реальные
-			if (Utils.isType('number', img.width) && this.p.ws() !== img.width) {
-				this.p.ws(img.width);
-			}
-			if (Utils.isType('number', img.height) && this.p.hs() !== img.height) {
-				this.p.hs(img.height);
-			}
-			this.photoSrc(this.p.sfile());
-			this.sizesCalcPhoto();
-			this.photoLoadContainer = null;
-			this.photoLoading(false);
-		},
-		onPhotoError: function (event) {
-			this.photoSrc('');
-			this.photoLoadContainer = null;
-			this.photoLoading(false);
-		},
-		onImgLoad: function (data, event) {
-			$(event.target).animate({opacity: 1});
-			data = event = null;
-		},
 		onAvatarError: function (data, event) {
 			$(event.target).attr('src', '/img/caps/avatar.png');
 			data = event = null;
-		},
-		onThumbLoad: function (data, event) {
-			$(event.target).parents('.photoTile').css({visibility: 'visible'});
-			data = event = null;
-		},
-		onThumbError: function (data, event) {
-			var $parent = $(event.target).parents('.photoTile');
-			event.target.style.visibility = 'hidden';
-			if (data.conv) {
-				$parent.addClass('photoConv');
-			} else if (data.convqueue) {
-				$parent.addClass('photoConvqueue');
-			} else {
-				$parent.addClass('photoError');
-			}
-			$parent.animate({opacity: 1});
-			data = event = $parent = null;
-		},
-		setMessage: function (text, type) {
-			var css = '';
-			switch (type) {
-			case 'error':
-				css = 'text-error';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
-			}
-
-			this.msg(text);
-			this.msgCss(css);
-
-			text = type = css = null;
 		}
 	});
 });
