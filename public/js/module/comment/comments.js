@@ -29,7 +29,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.removeBind = this.remove.bind(this);
 			this.sendBind = this.send.bind(this);
 			this.cancelBind = this.cancel.bind(this);
-			this.inputClickBind = this.inputClick.bind(this);
+			this.inputFocusBind = this.inputFocus.bind(this);
+			this.inputLabelClickBind = this.inputLabelClick.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragClickBind = this.fragClick.bind(this);
@@ -148,7 +149,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		//Активирует написание комментария нулевого уровня
 		replyZero: function () {
-			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600);
+			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600, true);
 		},
 		//Комментарий на комментарий
 		reply: function (data, event) {
@@ -167,25 +168,57 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentReplyingToCid(cid);
 			$root = $media.find('.commentAdd').last();
 
-			this.inputActivate($root, 400);
+			this.inputActivate($root, 400, true);
 		},
-		//Клик на поле ввода или на лэйбл над ним активирует редактирование
-		inputClick: function (data, event) {
-			this.inputActivate($(event.target).closest('.commentAdd'));
-		},
-		inputActivate: function (root, scrollDuration) {
+
+		inputActivate: function (root, scrollDuration, focus) {
 			if (this.auth.loggedIn() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
 
 				root.addClass('hasFocus');
 				input
 					.off('keyup').off('blur')
-					.on('keyup', _.debounce(this.commentAddKeyup.bind(this), 300))
-					.on('blur', _.debounce(this.commentAddBlur.bind(this), 200));
+					.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
+					.on('blur', _.debounce(this.inputBlur.bind(this), 200));
 				this.commentCheckInViewport(root, scrollDuration, function () {
-					input.focus();
+					if (focus) {
+						input.focus();
+					}
 				});
 			}
+		},
+		//Фокус на поле ввода активирует редактирование
+		inputFocus: function (data, event) {
+			this.inputActivate($(event.target).closest('.commentAdd'));
+		},
+		//Клик на лэйбл активирует редактирование
+		inputLabelClick: function (data, event) {
+			this.inputActivate($(event.target).closest('.commentAdd'), null, true);
+		},
+		//Отслеживанием ввод, чтобы подгонять input под высоту текста
+		inputKeyup: function (evt) {
+			var $input = $(evt.target),
+				$root = $input.closest('.commentAdd'),
+				content = $.trim($input.val());
+
+			$root[content ? 'addClass' : 'removeClass']('hasContent');
+			this.commentCheckInputHeight($root, $input);
+		},
+		//Отслеживанием ввод, чтобы подгонять input под высоту текста
+		inputBlur: function (evt) {
+			var $input = $(evt.target),
+				$root = $input.closest('.commentAdd'),
+				content = $.trim($input.val());
+
+			$input.off('keyup').off('blur');
+			if (!content && !this.fraging()) {
+				$root.removeClass('hasContent');
+				$input.height('auto');
+			}
+			if (!content) {
+				$input.val('');
+			}
+			$root.removeClass('hasFocus');
 		},
 
 		fragClick: function (data, event) {
@@ -212,26 +245,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentEditingFragChanged = true;
 		},
 
-		commentAddKeyup: function (evt) {
-			var input = $(evt.target),
-				content = $.trim(input.val()),
-				root = input.closest('.commentAdd');
-
-			root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.commentCheckInputHeight(root, input);
-		},
-		commentAddBlur: function (evt) {
-			var input = $(evt.target),
-				content = $.trim(input.val()),
-				root = input.closest('.commentAdd');
-
-			input.off('keyup').off('blur');
-			if (!content && !this.fraging()) {
-				root.removeClass('hasContent');
-				input.height('auto');
-			}
-			root.removeClass('hasFocus');
-		},
 		commentCheckInViewport: function (root, scrollDuration, cb) {
 			var btnSend = root.find('.btnCommentSend'),
 				cBottom = btnSend.offset().top + btnSend.height() + 10,
@@ -401,7 +414,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
 
-			this.inputActivate($media);
+			this.inputActivate($media, null, true);
 			input = $media.find('.commentInput:first');
 			input.val(this.txtHtmlToInput(data.txt));
 

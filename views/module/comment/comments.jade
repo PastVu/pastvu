@@ -50,8 +50,8 @@
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
 			.media-body(data-bind="template: 'replyBodyTpl'")
 	script(id="replyBodyTpl", type="text/html")
-		textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].inputClickBind")
-		label.commentInputLabel(data-bind="click: $parents[$data.level].inputClickBind") Нажмите, чтобы начать писать комментарий
+		textarea.commentInput(wrap="soft", data-bind="event: {focus: $parents[$data.level].inputFocusBind}")
+		label.commentInputLabel(data-bind="click: $parents[$data.level].inputLabelClickBind") Нажмите, чтобы начать писать комментарий
 		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].sendBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-comment.icon-white
 			span Отправить
