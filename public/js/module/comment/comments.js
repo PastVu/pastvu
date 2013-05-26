@@ -394,8 +394,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
-				ws1percent = this.p.ws() / 100,
-				hs1percent = this.p.hs() / 100,
 				frag = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
@@ -412,11 +410,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			//Если есть фрагмент, делаем его редактирование
 			if (frag) {
 				this.commentEditingFragChanged = false;
-				this.fragCreate({
+				this.parentModule.fragEdit({
 					onSelectEnd: function () {
 						this.commentEditingFragChanged = true;
-					}.bind(this),
-					x1: frag.l() * ws1percent, y1: frag.t() * hs1percent, x2: frag.l() * ws1percent + frag.w() * ws1percent, y2: frag.t() * hs1percent + frag.h() * hs1percent
+					}.bind(this)
 				});
 			}
 		},

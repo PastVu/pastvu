@@ -190,7 +190,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.$comments = this.$dom.find('.photoComments');
 
 			this.commentsRecieveBind = this.commentsRecieve.bind(this);
-			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
+			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
 			this.scrollToBind = this.scrollTo.bind(this);
 
@@ -431,9 +431,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				window.clearTimeout(this.commentsViewportTimeout);
 
 				storage.photo(cid, function (data) {
+					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
 					if (data) {
 						this.originData = data.origin;
 						this.p = Photo.vm(data.origin, this.p, true);
+						editMode = this.p.fresh() && this.IOwner();
 
 						Utils.title.setTitle({title: this.p.title()});
 
@@ -445,21 +447,18 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							.on('error', this.onPhotoError.bind(this))
 							.attr('src', this.p.sfile());
 
-						// Вызываем обработчик изменения фото (this.p)
-						this.changePhotoHandler();
-
-						// Если фото новое и пользователь - владелец, открываем его на редактирование
-						this.edit(this.p.fresh() && this.IOwner());
-
-						this.show();
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
 						this.commentsVM.setCid(cid);
-						if (this.p.ccount() > 0) {
-							this.commentsLoading(true);
-							this.viewScrollOn();
-							this.commentsViewportTimeout = window.setTimeout(this.checkCommentsInViewportBind, this.p.ccount() > 30 ? 500 : 300);
+						//Если не редактирование и есть комментарии, то откладываем их активацию,
+						//в противном случае в editHandler активируется немедленно
+						if (!editMode && this.p.ccount() > 0) {
+							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
 						}
+
+						this.changePhotoHandler(); // Вызываем обработчик изменения фото (this.p)
+						this.show();
+						this.edit(editMode);
 					}
 				}, this, this.p);
 			} else if (this.toFrag || this.toComment) {
@@ -479,7 +478,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
-				this.commentsVM.show();
+				//Если не ожается проверка на комментарии в видимой области (а она ожидается при открытии фото),
+				//то вызываем её немедленно
+				this.commentsActivate();
 			}
 		},
 		mapEditOn: function () {
@@ -758,6 +759,13 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.commentsCheckInViewport();
 			}
 		},
+		commentsActivate: function (checkTimeout) {
+			if (!this.commentsViewportTimeout) {
+				this.commentsLoading(true);
+				this.viewScrollOn();
+				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
+			}
+		},
 		commentsCheckInViewport: function () {
 			window.clearTimeout(this.commentsViewportTimeout);
 
@@ -778,7 +786,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.p.cid(), function () {
 				this.commentsLoading(false);
-				this.commentVM.show();
+				this.commentsVM.show();
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
 		},
@@ -870,15 +878,27 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		fragAdd: function (frag) {
 			this.p.frags.push(ko_mapping.fromJS(frag));
 		},
-		fragRemove: function (cid) {
-			this.p.frags.remove(this.fragGetByCid(cid));
+		fragEdit: function (ccid, options) {
+			var frag = this.fragGetByCid(ccid),
+				ws1percent = this.p.ws() / 100,
+				hs1percent = this.p.hs() / 100;
+
+			this.fragAreaCreate(_.assign({
+				x1: frag.l() * ws1percent,
+				y1: frag.t() * hs1percent,
+				x2: frag.l() * ws1percent + frag.w() * ws1percent,
+				y2: frag.t() * hs1percent + frag.h() * hs1percent
+			}, options));
+		},
+		fragRemove: function (ccid) {
+			this.p.frags.remove(this.fragGetByCid(ccid));
 		},
 		fragReplace: function (frags) {
 			this.p.frags(ko_mapping.fromJS({arr: frags}).arr());
 		},
-		fragGetByCid: function (cid) {
+		fragGetByCid: function (ccid) {
 			return _.find(this.p.frags(), function (frag) {
-				return frag.cid() === cid;
+				return frag.cid() === ccid;
 			});
 		},
 
