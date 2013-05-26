@@ -189,9 +189,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.$comments = this.$dom.find('.photoComments');
 
+			this.commentsRecieveBind = this.commentsRecieve.bind(this);
+			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
 			this.scrollToBind = this.scrollTo.bind(this);
-			this.checkCommentsInViewportBind = this.commentsCheckInViewport.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.commentFragArea = null;
@@ -214,7 +215,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				{
 					module: 'm/comment/comments',
 					container: '.photoCommentsContainer',
-					options: {type: 'photo'},
+					options: {type: 'photo', autoShowOff: true},
 					ctx: this,
 					callback: function (vm) {
 						this.commentsVM = this.childModules[vm.id] = vm;
@@ -389,9 +390,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.hs(hs);
 
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
-				fragSelection = this.fragSelection();
-				this.fragDelete();
-				this.fragCreate(fragSelection);
+				fragSelection = this.fragAreaSelection();
+				this.fragAreaDelete();
+				this.fragAreaCreate(fragSelection);
 			}
 		},
 		stateChange: function (data, event) {
@@ -453,6 +454,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						this.show();
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
+						this.commentsVM.setCid(cid);
 						if (this.p.ccount() > 0) {
 							this.commentsLoading(true);
 							this.viewScrollOn();
@@ -474,8 +476,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		editHandler: function (v) {
 			if (v) {
 				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
+				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
+				this.commentsVM.show();
 			}
 		},
 		mapEditOn: function () {
@@ -774,6 +778,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.p.cid(), function () {
 				this.commentsLoading(false);
+				this.commentVM.show();
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
 		},
@@ -812,7 +817,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentsVM.replyZero();
 		},
 
-		fragCreate: function (selections) {
+		fragAreaCreate: function (selections) {
 			if (!this.commentFragArea) {
 				var $parent = this.$dom.find('.photoImgWrap'),
 					ws = this.p.ws(), hs = this.p.hs(),
@@ -833,7 +838,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 			this.fraging(true);
 		},
-		fragDelete: function () {
+		fragAreaDelete: function () {
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
 				this.commentFragArea.remove();
 				this.$dom.find('.photoImg').removeData('imgAreaSelect');
@@ -841,17 +846,17 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 			this.fraging(false);
 		},
-		fragSelection: function (flag) {
+		fragAreaSelection: function (flag) {
 			var result;
 			if (this.commentFragArea instanceof $.imgAreaSelect) {
 				this.commentFragArea.getSelection(flag);
 			}
 			return result;
 		},
-		fragObject: function () {
+		fragAreaObject: function () {
 			var selection,
 				result;
-			selection = this.fragSelection(false);
+			selection = this.fragAreaSelection(false);
 			if (selection) {
 				result = {
 					l: 100 * selection.x1 / this.p.ws(),

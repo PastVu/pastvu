@@ -41,6 +41,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
+
+			if (!this.options.autoShowOff) {
+				this.show();
+			}
 		},
 		show: function () {
 			if (this.showing) {
@@ -50,6 +54,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.showing = true;
 		},
 		hide: function () {
+			if (!this.showing) {
+				return;
+			}
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -59,6 +66,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.addMeToCommentsUsers();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
+		},
+		setCid: function (cid) {
+			this.cid = cid;
 		},
 		clear: function () {
 			this.comments([]);
@@ -83,7 +93,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				} else {
 					if (data.error) {
 						console.error('While loading comments: ', data.message || 'Error occurred');
-					} else if (data.cid !== cid) {
+					} else if (data.cid !== this.cid) {
 						console.info('Comments recieved for another photo ' + data.cid);
 					} else {
 						this.users = _.assign(data.users, this.users);
@@ -94,7 +104,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveCommentsPhoto', {cid: cid});
+			socket.emit('giveCommentsPhoto', {cid: this.cid});
 		},
 		treeBuild: function (arr) {
 			var i = -1,
@@ -193,11 +203,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}.bind(this)});
 		},
 		fragCreate: function (selections) {
-			this.parentModule.fragCreate(selections);
+			this.parentModule.fragAreaCreate(selections);
 			this.fraging(true);
 		},
 		fragDelete: function () {
-			this.parentModule.fragDelete();
+			this.parentModule.fragAreaDelete();
 			this.fraging(false);
 			this.commentEditingFragChanged = true;
 		},
@@ -277,12 +287,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 
 			dataSend = {
-				photo: this.p.cid(),
+				photo: this.cid,
 				txt: content
 			};
 
 			if (this.type === 'photo') {
-				dataSend.fragObj = this.parentModule.fragObject();
+				dataSend.fragObj = this.parentModule.fragAreaObject();
 			}
 
 			this.exe(true);
