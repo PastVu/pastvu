@@ -195,7 +195,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.scrollToBind = this.scrollTo.bind(this);
 
 			this.fraging = ko.observable(false);
-			this.commentFragArea = null;
+			this.fragArea = null;
 
 			this.mapVM = null;
 			this.mapModulePromise = mapModuleDeffered.promise();
@@ -277,49 +277,50 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				return;
 			}
 
-			var $wrap = this.$dom.find('.photoImgWrap');
-			$wrap
-				.on('mouseenter', 'a.photoFrag', function (evt) {
-					var frag = $(evt.target),
-						fragOffset = frag.offset(),
-						fragPosition = frag.position(),
-						fragWidth = frag.width(),
-						$comment = $(".media[data-cid=" + frag.attr('data-cid') + "]"),
-						placement;
+			globalVM.func.showContainer(this.$container, function () {
+				var $wrap = this.$dom.find('.photoImgWrap');
+				$wrap
+					.on('mouseenter', 'a.photoFrag', function (evt) {
+						var frag = $(evt.target),
+							fragOffset = frag.offset(),
+							fragPosition = frag.position(),
+							fragWidth = frag.width(),
+							$comment = this.$dom.find(".media[data-cid=" + frag.attr('data-cid') + "]"),
+							placement;
 
-					if ($comment.length === 1) {
-						$wrap.addClass('fragHover');
-						$wrap.find('.photoImg').imgAreaSelect({
-							classPrefix: 'photoFragAreaShow imgareaselect',
-							x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
-							zIndex: 1,
-							parent: $wrap, disable: true
-						});
+						if ($comment.length === 1) {
+							$wrap.addClass('fragHover');
+							$wrap.find('.photoImg').imgAreaSelect({
+								classPrefix: 'photoFragAreaShow imgareaselect',
+								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
+								zIndex: 1,
+								parent: $wrap, disable: true
+							});
 
-						if (fragOffset.left + fragWidth / 2 < 150) {
-							placement = 'right';
-						} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
-							placement = 'left';
-						} else {
-							placement = 'bottom';
+							if (fragOffset.left + fragWidth / 2 < 150) {
+								placement = 'right';
+							} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
+								placement = 'left';
+							} else {
+								placement = 'bottom';
+							}
+							frag
+								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
+								.popover('show');
 						}
-						frag
-							.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
-							.popover('show');
-					}
-				}.bind(this))
-				.on('mouseleave', '.photoFrag', function (evt) {
-					var frag = $(evt.target);
-					frag.popover('destroy');
-					$wrap.find('.photoImg').imgAreaSelect({remove: true});
-					$wrap.removeClass('fragHover');
-				});
-
-			globalVM.func.showContainer(this.$container);
+					}.bind(this))
+					.on('mouseleave', '.photoFrag', function (evt) {
+						var frag = $(evt.target);
+						frag.popover('destroy');
+						$wrap.find('.photoImg').imgAreaSelect({remove: true});
+						$wrap.removeClass('fragHover');
+					});
+			}, this);
 			this.sizesCalc();
 			this.showing = true;
 		},
 		hide: function () {
+			this.$dom.find('.photoImgWrap').off();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 			//globalVM.pb.publish('/top/message', ['', 'muted']);
@@ -389,7 +390,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.ws(ws);
 			this.hs(hs);
 
-			if (this.commentFragArea instanceof $.imgAreaSelect) {
+			if (this.fragArea instanceof $.imgAreaSelect) {
 				fragSelection = this.fragAreaSelection();
 				this.fragAreaDelete();
 				this.fragAreaCreate(fragSelection);
@@ -457,14 +458,13 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						}
 
 						this.changePhotoHandler(); // Вызываем обработчик изменения фото (this.p)
+						this.edit(editMode); //Первоначально должен быть перед show, чтобы уже был вставлен tpl
 						this.show();
-						this.edit(editMode);
 					}
 				}, this, this.p);
 			} else if (this.toFrag || this.toComment) {
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
 			}
-
 		},
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
@@ -791,6 +791,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}, this);
 		},
 
+		scrollToPhoto: function (duration, cb, ctx) {
+			var $wrap = this.$dom.find('.photoImgWrap');
+
+			$(window).scrollTo($wrap, {duration: duration || 400, onAfter: function () {
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx);
+				}
+			}});
+		},
 		scrollTo: function () {
 			if (this.toFrag) {
 				this.commentsVM.highlightOff();
@@ -801,15 +810,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		scrollToFrag: function (frag) {
-			var element = $('.photoFrag[data-cid="' + frag + '"]');
+			var $element = $('.photoFrag[data-cid="' + frag + '"]');
 
-			if (element && element.length === 1) {
-				this.highlightOff();
-				$(window).scrollTo(element, {duration: 400, onAfter: function () {
+			if ($element && $element.length === 1) {
+				this.highlightFragOff();
+				$(window).scrollTo($element, {duration: 400, onAfter: function () {
 					this.highlightFrag(frag);
-				}}.bind(this));
+				}.bind(this)});
 			}
-			return element;
+			return $element;
 		},
 		highlightFrag: function (frag) {
 			this.$dom.find('.photoFrag[data-cid="' + frag + '"]').addClass('hl');
@@ -826,7 +835,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		fragAreaCreate: function (selections) {
-			if (!this.commentFragArea) {
+			if (!this.fragArea) {
 				var $parent = this.$dom.find('.photoImgWrap'),
 					ws = this.p.ws(), hs = this.p.hs(),
 					ws2, hs2;
@@ -837,7 +846,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					selections = {x1: ws2 - 50, y1: hs2 - 50, x2: ws2 + 50, y2: hs2 + 50};
 				}
 
-				this.commentFragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
+				this.fragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
 					classPrefix: 'photoFragAreaSelect imgareaselect',
 					imageWidth: ws, imageHeight: hs,
 					minWidth: 30, minHeight: 30,
@@ -847,17 +856,17 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.fraging(true);
 		},
 		fragAreaDelete: function () {
-			if (this.commentFragArea instanceof $.imgAreaSelect) {
-				this.commentFragArea.remove();
+			if (this.fragArea instanceof $.imgAreaSelect) {
+				this.fragArea.remove();
 				this.$dom.find('.photoImg').removeData('imgAreaSelect');
-				this.commentFragArea = null;
+				this.fragArea = null;
 			}
 			this.fraging(false);
 		},
 		fragAreaSelection: function (flag) {
 			var result;
-			if (this.commentFragArea instanceof $.imgAreaSelect) {
-				this.commentFragArea.getSelection(flag);
+			if (this.fragArea instanceof $.imgAreaSelect) {
+				result = this.fragArea.getSelection(flag);
 			}
 			return result;
 		},
@@ -926,7 +935,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			data = event = null;
 		},
 		onAvatarError: function (data, event) {
-			$(event.target).attr('src', '/img/caps/avatar.png');
+			event.target.setAttribute('src', '/img/caps/avatar.png');
 			data = event = null;
 		},
 		onThumbLoad: function (data, event) {

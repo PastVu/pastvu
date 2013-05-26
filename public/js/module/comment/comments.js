@@ -130,15 +130,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			return results;
 		},
 		scrollTo: function (ccid) {
-			var element = this.$dom.find('.media[data-cid="' + ccid + '"]');
+			var $element = this.$dom.find('.media[data-cid="' + ccid + '"]');
 
-			if (element && element.length === 1) {
+			if ($element && $element.length === 1) {
 				this.highlightOff();
-				$(window).scrollTo(element, {duration: 400, onAfter: function () {
+				$(window).scrollTo($element, {duration: 400, onAfter: function () {
 					this.highlight(ccid);
-				}}.bind(this));
+				}.bind(this)});
 			}
-			return element;
+			return $element;
 		},
 		highlight: function (ccid) {
 			this.$dom.find('.media[data-cid="' + ccid + '"]').addClass('hl');
@@ -180,7 +180,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					.off('keyup').off('blur')
 					.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
 					.on('blur', _.debounce(this.inputBlur.bind(this), 200));
-				this.commentCheckInViewport(root, scrollDuration, function () {
+				this.checkInViewport(root, scrollDuration, function () {
 					if (focus) {
 						input.focus();
 					}
@@ -202,7 +202,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				content = $.trim($input.val());
 
 			$root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.commentCheckInputHeight($root, $input);
+			this.inputCheckHeight($root, $input);
 		},
 		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputBlur: function (evt) {
@@ -220,24 +220,30 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 			$root.removeClass('hasFocus');
 		},
+		inputCheckHeight: function (root, input) {
+			var content = $.trim(input.val()),
+				height = input.height(),
+				heightScroll = (input[0].scrollHeight - 8) || height;
+
+			if (!content) {
+				input.height('auto');
+			} else if (heightScroll > height) {
+				input.height(heightScroll);
+				this.checkInViewport(root);
+			}
+		},
 
 		fragClick: function (data, event) {
-			var $root = $(event.target).closest('.commentAdd'),
-				$wrap = this.$dom.find('.photoImgWrap');
+			var $root = $(event.target).closest('.commentAdd');
 
 			this.fraging(true);
 			if (!data.frag) {
 				this.commentEditingFragChanged = true;
 			}
 			$root.addClass('hasContent');
-
-			$(window).scrollTo($wrap, {duration: 400, onAfter: function () {
-				this.fragCreate();
-			}.bind(this)});
-		},
-		fragCreate: function (selections) {
-			this.parentModule.fragAreaCreate(selections);
-			this.fraging(true);
+			this.parentModule.scrollToPhoto(400, function () {
+				this.parentModule.fragAreaCreate();
+			}, this);
 		},
 		fragDelete: function () {
 			this.parentModule.fragAreaDelete();
@@ -245,7 +251,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentEditingFragChanged = true;
 		},
 
-		commentCheckInViewport: function (root, scrollDuration, cb) {
+		checkInViewport: function (root, scrollDuration, cb) {
 			var btnSend = root.find('.btnCommentSend'),
 				cBottom = btnSend.offset().top + btnSend.height() + 10,
 				wTop = $(window).scrollTop(),
@@ -261,18 +267,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				if (Utils.isType('function', cb)) {
 					cb.call(this);
 				}
-			}
-		},
-		commentCheckInputHeight: function (root, input) {
-			var content = $.trim(input.val()),
-				height = input.height(),
-				heightScroll = (input[0].scrollHeight - 8) || height;
-
-			if (!content) {
-				input.height('auto');
-			} else if (heightScroll > height) {
-				input.height(heightScroll);
-				this.commentCheckInViewport(root);
 			}
 		},
 
@@ -311,9 +305,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.exe(true);
 			if (create) {
-				this.commentSendCreate(data, dataSend, cb, this);
+				this.sendCreate(data, dataSend, cb, this);
 			} else {
-				this.commentSendUpdate(data, dataSend, cb, this);
+				this.sendUpdate(data, dataSend, cb, this);
 			}
 			function cb(result) {
 				_this.exe(false);
@@ -322,7 +316,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}
 			}
 		},
-		commentSendCreate: function (data, dataSend, cb, ctx) {
+		sendCreate: function (data, dataSend, cb, ctx) {
 			//Если data.cid, значит создается дочерний комментарий
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
@@ -353,7 +347,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}.bind(this));
 			socket.emit('createComment', dataSend);
 		},
-		commentSendUpdate: function (data, dataSend, cb, ctx) {
+		sendUpdate: function (data, dataSend, cb, ctx) {
 			var fragExists = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(data.cid);
 
 			dataSend.cid = data.cid;
@@ -420,16 +414,19 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			//Задаем высоту textarea под контент
 			$media.addClass('hasContent');
-			this.commentCheckInputHeight($media, input);
+			this.inputCheckHeight($media, input);
 
 			//Если есть фрагмент, делаем его редактирование
 			if (frag) {
 				this.commentEditingFragChanged = false;
-				this.parentModule.fragEdit({
-					onSelectEnd: function () {
-						this.commentEditingFragChanged = true;
-					}.bind(this)
-				});
+				this.fraging(true);
+				this.parentModule.fragEdit(cid,
+					{
+						onSelectEnd: function () {
+							this.commentEditingFragChanged = true;
+						}.bind(this)
+					}
+				);
 			}
 		},
 		remove: function (data, event) {
@@ -524,7 +521,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		onAvatarError: function (data, event) {
-			$(event.target).attr('src', '/img/caps/avatar.png');
+			event.target.setAttribute('src', '/img/caps/avatarth.png');
 			data = event = null;
 		}
 	});
