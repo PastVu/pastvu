@@ -19,17 +19,17 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.comments = ko.observableArray();
 			this.users = {};
 
+			this.dataForZeroReply = {level: 0, comments: this.comments};
 			this.commentReplyingToCid = ko.observable(0);
 			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
 
-			this.recieveBind = this.recieve.bind(this);
-			this.replyToBind = this.replyTo.bind(this);
+			this.replyBind = this.reply.bind(this);
+			this.editBind = this.edit.bind(this);
+			this.removeBind = this.remove.bind(this);
+			this.sendBind = this.send.bind(this);
+			this.cancelBind = this.cancel.bind(this);
 			this.inputClickBind = this.inputClick.bind(this);
-			this.commentEditBind = this.commentEdit.bind(this);
-			this.commentRemoveBind = this.commentRemove.bind(this);
-			this.commentSendBind = this.commentSend.bind(this);
-			this.commentCancelBind = this.commentCancel.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragClickBind = this.fragClick.bind(this);
@@ -151,7 +151,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600);
 		},
 		//Комментарий на комментарий
-		replyTo: function (data, event) {
+		reply: function (data, event) {
 			var cid,
 				$media,
 				$root;
@@ -262,7 +262,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.commentCheckInViewport(root);
 			}
 		},
-		commentCancel: function (data, event) {
+
+		cancel: function (data, event) {
 			var root = $(event.target).closest('.commentAdd'),
 				input = root.find('.commentInput');
 
@@ -273,7 +274,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentEditingCid(0);
 			delete this.commentEditingFragChanged;
 		},
-		commentSend: function (data, event) {
+		send: function (data, event) {
 			var create = !this.commentEditingCid(),
 				_this = this,
 				$root = $(event.target).closest('.commentAdd'),
@@ -304,11 +305,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			function cb(result) {
 				_this.exe(false);
 				if (result && !result.error && result.comment) {
-					_this.commentCancel(data, event);
+					_this.cancel(data, event);
 				}
 			}
 		},
 		commentSendCreate: function (data, dataSend, cb, ctx) {
+			//Если data.cid, значит создается дочерний комментарий
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
 				dataSend.level = (data.level || 0) + 1;
@@ -390,7 +392,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
 			return result;
 		},
-		commentEdit: function (data, event) {
+		edit: function (data, event) {
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
@@ -417,7 +419,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				});
 			}
 		},
-		commentRemove: function (data, event) {
+		remove: function (data, event) {
 			var _this = this,
 				root = $(event.target).closest('.media'),
 				cid = Number(data.cid);

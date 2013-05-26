@@ -3,44 +3,59 @@
 		//ko template: { name: 'commentTpl', foreach: comments }
 		// /ko
 		//ko if: auth.loggedIn()
-		//ko template: 'commentReplyTpl'
+		//ko template: {name: 'replyTpl', data: dataForZeroReply}
 		// /ko
 		// /ko
 
-	script(id="commentReplyTpl", type="text/html")
-		li.media.commentAdd(data-bind="attr: {}")
-			a.pull-left(data-bind="attr: {href: '/u/' + auth.iAm.login()}")
-				img.media-object(data-bind="attr: {src: '/_avatar/th_' + auth.iAm.avatar()}, event: {error: onAvatarError}")
-			.media-body
-				textarea.commentInput(wrap="soft", data-bind="click: inputClickBind")
-				label.commentInputLabel(data-bind="click: inputClickBind") Нажмите, чтобы начать писать комментарий
-				button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: exe()}, click: commentSendBind, attr: {disabled: exe()}")
-					i.icon-comment.icon-white
-					span Отправить
-				button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: exe()}, click: commentCancelBind, attr: {disabled: exe()}")
-					i.icon-remove.icon-white
-					span Отмена
-				button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: exe()}, click: fragClickBind, attr: {disabled: exe()}")
-					i.icon-picture.icon-white
-					span Фрагмент
-				// ko if: fraging()
-				button.btn-strict.btn-strict-small.btnCommentFragDel(type="button", data-bind="css: {disabled: exe()}, click: fragDeleteBind, attr: {disabled: exe()}")
-					i.icon-remove.icon-white
-					span Очистить фрагмент
-				// /ko
+		script(id="commentTpl", type="text/html")
+			li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid()}")
+				a.pull-left(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}")
+					img.media-object(data-bind="attr: {src: $parents[$data.level].users[$data.user].avatar}")
+				.media-body
+					//ko template: {name: $data.cid === $parents[$data.level].commentEditingCid() ? 'replyBodyTpl' : 'commentBodyTpl'}
+					// /ko
+					//ko template: {name: 'commentTpl', foreach: $data.comments }
+					// /ko
+					//ko if: $data.cid === $parents[$data.level].commentReplyingToCid()
+					//ko template: 'replyTpl'
+					// /ko
+					// /ko
+		script(id="commentBodyTpl", type="text/html")
+			.commentBody
+				.commentHead
+					a.author(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}, text: $parents[$data.level].users[$data.user].name")
+					//ko if: $data.frag
+					.dotDelimeter ·
+					a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
+						i.icon-picture
+						| Комментируемый фрагмент
+					// /ko
+					.dotDelimeter ·
+					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
+					//ko if: $data.lastChanged
+					.dotDelimeter ·
+					.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].showHistory($data.cid)}")
+					// /ko
+				.commentText(data-bind="html: $data.txt")
+				.commentActions
+					span.commentAction.reply(data-bind="click: $parents[$data.level].replyBind") Ответить
+					.dotDelimeter ·
+					span.commentAction.edit(data-bind="click: $parents[$data.level].editBind") Редактировать
+					.dotDelimeter ·
+					span.commentAction.remove(data-bind="click: $parents[$data.level].removeBind") Удалить
 
-	script(id="commentReplyToTpl", type="text/html")
+	script(id="replyTpl", type="text/html")
 		li.media.commentAdd
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].auth.iAm.login()}")
 				img.media-object(data-bind="attr: {src: '/_avatar/th_' + $parents[$data.level].auth.iAm.avatar()}, event: {error: $parents[$data.level].onAvatarError}")
-			.media-body(data-bind="template: 'commentReplyToBodyTpl'")
-	script(id="commentReplyToBodyTpl", type="text/html")
+			.media-body(data-bind="template: 'replyBodyTpl'")
+	script(id="replyBodyTpl", type="text/html")
 		textarea.commentInput(wrap="soft", data-bind="click: $parents[$data.level].inputClickBind")
 		label.commentInputLabel(data-bind="click: $parents[$data.level].inputClickBind") Нажмите, чтобы начать писать комментарий
-		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].commentSendBind, attr: {disabled: $parents[$data.level].exe()}")
+		button.btn-strict.btn-strict-success.btn-strict-small.btnCommentSend(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].sendBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-comment.icon-white
 			span Отправить
-		button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].commentCancelBind, attr: {disabled: $parents[$data.level].exe()}")
+		button.btn-strict.btn-strict-warning.btn-strict-small.btnCommentCancel(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].cancelBind, attr: {disabled: $parents[$data.level].exe()}")
 			i.icon-remove.icon-white
 			span Отмена
 		button.btn-strict.btn-strict-small.btnCommentFrag(type="button", data-bind="css: {disabled: $parents[$data.level].exe()}, click: $parents[$data.level].fragClickBind, attr: {disabled: $parents[$data.level].exe()}")
@@ -51,40 +66,3 @@
 			i.icon-remove.icon-white
 			span Очистить фрагмент
 		// /ko
-
-	script(id="commentTpl", type="text/html")
-		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid()}")
-			a.pull-left(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}")
-				img.media-object(data-bind="attr: {src: $parents[$data.level].users[$data.user].avatar}")
-			.media-body
-				//ko template: {name: $data.cid === $parents[$data.level].commentEditingCid() ? 'commentReplyToBodyTpl' : 'commentBodyTpl'}
-				// /ko
-				//ko template: {name: 'commentTpl', foreach: $data.comments }
-				// /ko
-				//ko if: $data.cid === $parents[$data.level].commentReplyingToCid()
-				//ko template: 'commentReplyToTpl'
-				// /ko
-				// /ko
-	script(id="commentBodyTpl", type="text/html")
-		.commentBody
-			.commentHead
-				a.author(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}, text: $parents[$data.level].users[$data.user].name")
-				//ko if: $data.frag
-				.dotDelimeter ·
-				a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
-					i.icon-picture
-					| Комментируемый фрагмент
-				// /ko
-				.dotDelimeter ·
-				a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
-				//ko if: $data.lastChanged
-				.dotDelimeter ·
-				.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].showHistory($data.cid)}")
-				// /ko
-			.commentText(data-bind="html: $data.txt")
-			.commentActions
-				span.commentAction.reply(data-bind="click: $parents[$data.level].commentReplyToBind") Ответить
-				.dotDelimeter ·
-				span.commentAction.edit(data-bind="click: $parents[$data.level].commentEditBind") Редактировать
-				.dotDelimeter ·
-				span.commentAction.remove(data-bind="click: $parents[$data.level].commentRemoveBind") Удалить
