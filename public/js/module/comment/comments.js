@@ -87,7 +87,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		recieve: function (cid, cb, ctx) {
-			this.cid = cid;
+			if (cid) {
+				this.cid = cid;
+			}
 			socket.once('takeCommentsPhoto', function (data) {
 				if (!data) {
 					console.error('Noe comments data recieved');

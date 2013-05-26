@@ -430,6 +430,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.viewScrollOff();
 				window.clearTimeout(this.commentsRecieveTimeout);
 				window.clearTimeout(this.commentsViewportTimeout);
+				this.commentsRecieveTimeout = null;
+				this.commentsViewportTimeout = null;
 
 				storage.photo(cid, function (data) {
 					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
@@ -768,6 +770,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		commentsCheckInViewport: function () {
 			window.clearTimeout(this.commentsViewportTimeout);
+			this.commentsViewportTimeout = null;
 
 			var cTop = this.$comments.offset().top,
 				wTop = $(window).scrollTop(),
