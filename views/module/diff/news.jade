@@ -1,26 +1,26 @@
-.photo(data-bind="with: repository[M!M]")
+.newsApart(data-bind="with: repository[M!M]")
 	.indentLogo.newsHeader Новости проекта
 
 	.row-fluid.news
 		.novel
-			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+			.newsDate(data-bind="text: moment(news.pdate()).format('D MMM YYYY')")
 			.newsBody
 				.newsHead
-					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
-					//ko if: $parent.auth.loggedIn()
+					a.newsTitle(data-bind="text: news.title(), attr: {href: '/news/' + news.cid()}")
+					//ko if: auth.loggedIn()
 					.dotDelimeter ·
-					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
+					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + news.cid()}")
 						i.icon-pencil
 						| &nbsp;Редактировать
 					// /ko
-				.newsTxt(data-bind="html: $data.txt")
+				.newsTxt(data-bind="html: news.txt()")
 	.row-fluid.newsComments
 		.commentsHead Комментарии
 		.dotDelimeter ·
-		.commentsCount(data-bind="text: p.ccount()")
+		.commentsCount(data-bind="text: news.ccount()")
 		//ko if: auth.loggedIn()
 		.dotDelimeter ·
 		.commentsAdd(data-bind="click: commentAdd") Добавить
 		// /ko
 		.commentsLoad(data-bind="style: {display: commentsLoading() ? '' : 'none'}") &nbsp;
-		.photoCommentsContainer.mContainer.mHidden
+		.photoCommentsContainer.mContainer.mHidden(data-bind="allowBindings: false")

@@ -2,228 +2,62 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
-.photo {
+.newsApart {
 	position: relative;
-	margin-top: 40px;
+	padding: 6px 0 7px 0;
 
-	.photoTop {
-		display: none;
-		position: relative;
-		min-height: 37px;
-		margin-top: -37px;
-
-		.photoAction {
-			display: inline-block;
-
-			button {
-				min-width: 110px;
-				margin-top: 3px;
-				margin-bottom: 5px;
-			}
-		}
-		.convertAction{
-			.btn-strict.btnConvert {
-				min-width: 45px;
-				margin-left: 0;
-				.box-shadow(~'1px 0 0 0 #000, 1px 1px 0 0 #000, 1px -1px 0 0 #000, 1px 2px 6px 0px #222');
-			}
-			.btn-strict.multiselect {
-				min-width: 138px;
-				margin-right: 0;
-			}
-			&.disabled .btn-strict {
-				cursor: default;
-				.opacity(65);
-				.box-shadow(~'0 0 0 1px #000');
-			}
-		}
-		.photoMsg {
-			display: inline-block;
-			vertical-align: middle;
-		}
+	.newsHeader {
+		margin-top: 1px;
+		margin-bottom: 10px;
+		font-size: 22px;
+		font-weight: bold;
 	}
 
-
-
-	.photoData {
-		width: auto;
-		margin: 0 .5% 0 1.2%;
+	hr {
+		margin: 0;
 	}
 
-	.photoImgRow {
-		text-align: center;
-	}
-	.photoImgWrap {
-		position: relative;
-		display: inline-block;
-		max-width: 100%;
-		text-align: center;
+	.news {
+		.newsDate {
+			width: 24px;
+			padding-top: 3px;
+			float: left;
+			vertical-align: top;
+			color: #000;
+			font-size: 14px;
+			line-height: 15px;
+			text-align: center;
+		}
+		.newsBody {
+			margin-left: 40px;
+			vertical-align: top;
+		}
+		.newsHead {
+			margin-bottom: 3px;
+			padding-bottom: 2px;
+			font-weight: bold;
+			font-size: 18px;
 
-		.photoLoading {
-			position: absolute;
-			display: none;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: fade(@bodyBackground, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
+			.newsEdit {
+				font-size: 15px;
+				font-weight: normal;
+			}
+		}
+		.newsTxt {
+			font-size: 16px;
+			line-height: 20px;
+
+			> p:last-child {
+				margin-bottom: 0;
+			}
 		}
 
-		.photoFrag {
-			position: absolute;
-			display: none;
-			text-decoration: none;
-			cursor: pointer;
-			border: 1px solid transparent;
+		.novel {
+			margin: 0;
+			padding: 12px 21px 12px 21px;
+			cursor: default;
+			background-color: #FFF;
 			.box-sizing(border-box);
-		}
-		&.fragSensitive {
-			.photoFrag {
-				display: block;
-			}
-
-			&:hover .photoFrag, .photoFrag.hl {
-				.box-shadow(0 0 0 1px #000);
-			}
-			&:hover .photoFrag {
-				border-color: #fff;
-				background-color: rgba(255, 255, 255, 0.1);
-			}
-			&:hover .photoFrag.hl, .photoFrag.hl {
-				border-color: #ffbe00;
-				background-color: transparent;
-			}
-			//Такая отмена стилей требуется IE9
-			&.fragHover {
-				&:hover .photoFrag, .photoFrag.hl {
-					.box-shadow(none);
-				}
-				&:hover .photoFrag {
-					border-color: transparent;
-					background-color: transparent;
-				}
-				&:hover .photoFrag.hl, .photoFrag.hl {
-					border-color: transparent;
-					background-color: transparent;
-				}
-			}
-			&:hover .photoFrag:hover, &:hover .photoFrag.hl:hover {
-				border-color: #fff !important;
-			}
-		}
-
-		.popover {
-			z-index: 10010;
-			.popover-content {
-				max-height: 195px;
-			}
-		}
-
-		&.loading {
-			.photoLoading {
-				display: block;
-			}
-			.photoFrag {
-				display: none;
-			}
-		}
-	}
-	.photoImg {
-		max-width: 100%;
-	}
-
-	.photoTools {
-		//position: relative;
-		display: inline-block;
-		margin-top: 2px;
-		text-align: right;
-
-		.photoHeight {
-			display: inline-block;
-			width: 14px;
-			height: 15px;
-		}
-	}
-
-	/*
-	* imgAreaSelect animated border style
-	*/
-	.photoFragAreaSelect {
-		&.imgareaselect-border1 {
-			background: url(/img/misc/border-anim-v.gif) repeat-y left top;
-		}
-
-		&.imgareaselect-border2 {
-			background: url(/img/misc/border-anim-h.gif) repeat-x left top;
-		}
-
-		&.imgareaselect-border3 {
-			background: url(/img/misc/border-anim-v.gif) repeat-y right top;
-		}
-
-		&.imgareaselect-border4 {
-			background: url(/img/misc/border-anim-h.gif) repeat-x left bottom;
-		}
-	}
-
-	.imgareaselect-border1, .imgareaselect-border2,
-	.imgareaselect-border3, .imgareaselect-border4 {
-		opacity: 0.6;
-	}
-
-	.imgareaselect-handle {
-		background-color: #fff;
-		border: solid 1px #000;
-		opacity: 0.6;
-	}
-
-	.imgareaselect-outer {
-		background-color: #000;
-		opacity: 0.6;
-	}
-
-	.imgareaselect-selection {
-	}
-
-	.photoInfoBlock {
-		.photoInfo {
-			margin-top: 0;
-			margin-bottom: 0;
-			text-align: justify;
-
-			&.photoTitle {
-				font-weight: bold;
-				font-size: 18px;
-				line-height: 20px;
-				text-rendering: optimizelegibility;
-			}
-
-			.infoName, .editable {
-				display: inline-block;
-			}
-
-			.infoName {
-				margin-right: 5px;
-				font-weight: bold;
-			}
-		}
-	}
-
-	.h_separator {
-		margin: 12px 0;
-	}
-
-	.rightPanel {
-		float: right;
-		zoom: 1;
-		.row-fluid {
-			margin-bottom: 7px;
-		}
-		.row-fluid:last-child {
-			margin-bottom: 0;
-		}
-		.lineBehind {
-			margin-bottom: 1px;
 		}
 	}
 
@@ -242,97 +76,7 @@
 		}
 	}
 
-	.photoMap {
-		height: 500px;
-	}
-
-	.photoTiles {
-		height: auto;
-		white-space: nowrap;
-		overflow: hidden;
-
-		.photoTile {
-			display: inline-block;
-			visibility: hidden;
-			opacity: 0.95;
-			cursor: pointer;
-			background-color: #E1E2E4;
-			background-position: 50% 50%;
-			background-repeat: no-repeat;
-
-			&:last-child {
-				margin-right: 0 !important;
-			}
-
-			&:hover {
-				opacity: 1;
-			}
-
-			&.photoConvqueue {
-				background-image: url(/img/misc/photoConvQueue.png);
-			}
-			&.photoConv {
-				background-image: url(/img/misc/photoConv.png);
-			}
-			&.photoError {
-				background-image: url(/img/misc/photoError.png);
-			}
-		}
-	}
-
-	.photoData {
-		&.editMode {
-			.photoInfoBlock {
-				.photoInfo {
-					&:not(:first-child) {
-						margin-top: 5px;
-					}
-
-					div.editable {
-						display: block;
-					}
-
-					.infoName {
-						display: none;
-					}
-				}
-			}
-			select {
-				margin-bottom: 4px;
-				background-color: #F0F0F0;
-				&:focus {
-					background-color: #fdfdfd;
-				}
-			}
-			.editable {
-				padding: 0 3px;
-				border: 1px solid #BDBDBD;
-				background-color: #F0F0F0;
-
-				&:hover {
-					border-color: rgba(222, 176, 43, 0.56);
-				}
-				&:focus {
-					background-color: #fdfdfd;
-				}
-
-				&.cap {
-					color: #a0a0a0;
-
-					&:hover {
-						color: darken(#8d8d8d, 20%);
-					}
-					&:focus {
-						color: #000;
-					}
-				}
-
-			}
-		}
-	}
-	.photoComments {
-		clear: left;
-
+	.newsComments {
 		.commentsHead {
 			display: inline-block;
 			font-weight: bold;

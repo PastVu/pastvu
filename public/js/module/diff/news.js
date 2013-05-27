@@ -25,7 +25,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
-			this.$comments = this.$dom.find('.photoComments');
+			this.$comments = this.$dom.find('.newsComments');
 
 			this.commentsRecieveBind = this.commentsRecieve.bind(this);
 			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
@@ -36,7 +36,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				{
 					module: 'm/comment/comments',
 					container: '.photoCommentsContainer',
-					options: {type: 'photo', autoShowOff: true},
+					options: {type: 'news', autoShowOff: true},
 					ctx: this,
 					callback: function (vm) {
 						this.commentsVM = this.childModules[vm.id] = vm;
@@ -70,6 +70,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		makeBinding: function () {
 			if (!this.binded) {
 				ko.applyBindings(globalVM, this.$dom[0]);
+				this.binded = true;
 			}
 			this.show();
 		},
@@ -102,10 +103,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					Utils.title.setTitle({title: data.news.title});
 					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
 						this.commentsVM.setCid(cid);
-						if (this.news.ccount() > 0) {
-							this.commentsActivate(this.news.ccount() > 30 ? 600 : 410);
-						}
-					}});
+						this.commentsActivate(this.news.ccount() > 30 ? 600 : 410);
+					}.bind(this)});
 
 					this.makeBinding();
 				}, this);
@@ -167,7 +166,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				wTop = $(window).scrollTop(),
 				wFold = $(window).height() + wTop;
 
-			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
+			if (this.toComment || cTop < wFold) {
 				this.commentsInViewport = true;
 				this.viewScrollOff();
 				this.commentsGet();
@@ -175,10 +174,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		commentsGet: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.p.ccount() > 30 ? 750 : 400);
+			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.news.ccount() > 30 ? 750 : 400);
 		},
 		commentsRecieve: function () {
-			this.commentsVM.recieve(this.p.cid(), function () {
+			this.commentsVM.recieve(this.news.cid(), function () {
 				this.commentsLoading(false);
 				this.commentsVM.show();
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
@@ -222,157 +221,15 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		commentCountIncrement: function (delta) {
-			this.p.ccount(this.p.ccount() + delta);
+			this.news.ccount(this.news.ccount() + delta);
 		},
 		commentAdd: function () {
 			this.commentsVM.replyZero();
 		},
 
-		fragAreaCreate: function (selections) {
-			if (!this.fragArea) {
-				var $parent = this.$dom.find('.photoImgWrap'),
-					ws = this.p.ws(), hs = this.p.hs(),
-					ws2, hs2;
-
-				if (!selections) {
-					ws2 = ws / 2 >> 0;
-					hs2 = hs / 2;
-					selections = {x1: ws2 - 50, y1: hs2 - 50, x2: ws2 + 50, y2: hs2 + 50};
-				}
-
-				this.fragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
-					classPrefix: 'photoFragAreaSelect imgareaselect',
-					imageWidth: ws, imageHeight: hs,
-					minWidth: 30, minHeight: 30,
-					handles: true, parent: $parent, persistent: true, instance: true
-				}, selections));
-			}
-			this.fraging(true);
-		},
-		fragAreaDelete: function () {
-			if (this.fragArea instanceof $.imgAreaSelect) {
-				this.fragArea.remove();
-				this.$dom.find('.photoImg').removeData('imgAreaSelect');
-				this.fragArea = null;
-			}
-			this.fraging(false);
-		},
-		fragAreaSelection: function (flag) {
-			var result;
-			if (this.fragArea instanceof $.imgAreaSelect) {
-				result = this.fragArea.getSelection(flag);
-			}
-			return result;
-		},
-		fragAreaObject: function () {
-			var selection,
-				result;
-			selection = this.fragAreaSelection(false);
-			if (selection) {
-				result = {
-					l: 100 * selection.x1 / this.p.ws(),
-					t: 100 * selection.y1 / this.p.hs(),
-					w: 100 * selection.width / this.p.ws(),
-					h: 100 * selection.height / this.p.hs()
-				};
-			}
-			return result;
-		},
-		fragAdd: function (frag) {
-			this.p.frags.push(ko_mapping.fromJS(frag));
-		},
-		fragEdit: function (ccid, options) {
-			var frag = this.fragGetByCid(ccid),
-				ws1percent = this.p.ws() / 100,
-				hs1percent = this.p.hs() / 100;
-
-			this.fragAreaCreate(_.assign({
-				x1: frag.l() * ws1percent,
-				y1: frag.t() * hs1percent,
-				x2: frag.l() * ws1percent + frag.w() * ws1percent,
-				y2: frag.t() * hs1percent + frag.h() * hs1percent
-			}, options));
-		},
-		fragRemove: function (ccid) {
-			this.p.frags.remove(this.fragGetByCid(ccid));
-		},
-		fragReplace: function (frags) {
-			this.p.frags(ko_mapping.fromJS({arr: frags}).arr());
-		},
-		fragGetByCid: function (ccid) {
-			return _.find(this.p.frags(), function (frag) {
-				return frag.cid() === ccid;
-			});
-		},
-
-		onPhotoLoad: function (event) {
-			var img = event.target;
-			// Если реальные размеры фото не соответствуют тем что в базе, используем реальные
-			if (Utils.isType('number', img.width) && this.p.ws() !== img.width) {
-				this.p.ws(img.width);
-			}
-			if (Utils.isType('number', img.height) && this.p.hs() !== img.height) {
-				this.p.hs(img.height);
-			}
-			this.photoSrc(this.p.sfile());
-			this.sizesCalcPhoto();
-			this.photoLoadContainer = null;
-			this.photoLoading(false);
-		},
-		onPhotoError: function (event) {
-			this.photoSrc('');
-			this.photoLoadContainer = null;
-			this.photoLoading(false);
-		},
-		onImgLoad: function (data, event) {
-			$(event.target).animate({opacity: 1});
-			data = event = null;
-		},
 		onAvatarError: function (data, event) {
 			event.target.setAttribute('src', '/img/caps/avatar.png');
 			data = event = null;
-		},
-		onThumbLoad: function (data, event) {
-			$(event.target).parents('.photoTile').css({visibility: 'visible'});
-			data = event = null;
-		},
-		onThumbError: function (data, event) {
-			var $parent = $(event.target).parents('.photoTile');
-			event.target.style.visibility = 'hidden';
-			if (data.conv) {
-				$parent.addClass('photoConv');
-			} else if (data.convqueue) {
-				$parent.addClass('photoConvqueue');
-			} else {
-				$parent.addClass('photoError');
-			}
-			$parent.animate({opacity: 1});
-			data = event = $parent = null;
-		},
-		setMessage: function (text, type) {
-			var css = '';
-			switch (type) {
-			case 'error':
-				css = 'text-error';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
-			}
-
-			this.msg(text);
-			this.msgCss(css);
-
-			text = type = css = null;
 		}
 	});
 });
