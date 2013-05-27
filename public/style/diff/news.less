@@ -18,25 +18,16 @@
 	}
 
 	.news {
-		.newsDate {
-			width: 24px;
-			padding-top: 3px;
-			float: left;
-			vertical-align: top;
-			color: #000;
-			font-size: 14px;
-			line-height: 15px;
-			text-align: center;
-		}
+		position: relative;
+
 		.newsBody {
-			margin-left: 40px;
 			vertical-align: top;
 		}
 		.newsHead {
 			margin-bottom: 3px;
 			padding-bottom: 2px;
 			font-weight: bold;
-			font-size: 18px;
+			font-size: 22px;
 
 			.newsEdit {
 				font-size: 15px;
@@ -45,7 +36,7 @@
 		}
 		.newsTxt {
 			font-size: 16px;
-			line-height: 20px;
+			line-height: 22px;
 
 			> p:last-child {
 				margin-bottom: 0;
@@ -54,29 +45,47 @@
 
 		.novel {
 			margin: 0;
-			padding: 12px 21px 12px 21px;
+			padding: 67px 20px 12px 20px;
 			cursor: default;
 			background-color: #FFF;
 			.box-sizing(border-box);
 		}
 	}
 
-	.avatar {
-		float: left;
-		margin-right: 7px;
-		overflow: hidden;
-		cursor: pointer;
+	.novelAuthor {
+		position: absolute;
+		top: 2px;
+		left: 21px;
+		width: 400px;
 
-		img {
-			min-width: 75px;
-			max-width: 100px;
-			min-height: 75px;
-			max-height: 75px;
-			opacity: 0;
+		.avatar {
+			margin-top: 3px;
+			margin-right: 8px;
+
+			img {
+				width: 50px;
+				height: 50px;
+				opacity: 0;
+			}
+		}
+
+		.authorInfo {
+			position: relative;
+			margin-left: 61px;
+		}
+		.authorName {
+
+		}
+		.newsDate {
+			font-size: 14px;
+			line-height: 15px;
 		}
 	}
 
 	.newsComments {
+		position: relative;
+		padding: 7px 20px 12px 20px;
+
 		.commentsHead {
 			display: inline-block;
 			font-weight: bold;

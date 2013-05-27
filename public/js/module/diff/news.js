@@ -123,6 +123,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					_.defaults(data.news, newsDefault);
+					data.news.user.avatar = data.news.user.avatar ? '/_avatar/th_' + data.news.user.avatar : '/img/caps/avatarth.png';
+					data.news.user.name = ((data.news.user.firstName && (data.news.user.firstName + ' ') || '') + (data.news.user.lastName || '')) || data.news.user.login;
 					if (this.news) {
 						this.news = ko_mapping.fromJS(data.news, this.news);
 					} else {
@@ -227,8 +229,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentsVM.replyZero();
 		},
 
+		onImgLoad: function (data, event) {
+			$(event.target).animate({opacity: 1});
+			data = event = null;
+		},
 		onAvatarError: function (data, event) {
-			event.target.setAttribute('src', '/img/caps/avatar.png');
+			//event.target.setAttribute('src', '/img/caps/avatar.png');
 			data = event = null;
 		}
 	});

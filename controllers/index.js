@@ -395,7 +395,7 @@ function giveNewsPublic(data, cb) {
 	}
 	step(
 		function () {
-			News.collection.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}, this);
+			News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
 		},
 		function (err, news) {
 			if (err) {
