@@ -1,5 +1,5 @@
 .fullComments(data-bind="with: repository[M!M]")
-	ul.media-list(data-bind="css: {loggedIn: auth.loggedIn()}")
+	ul.media-list(data-bind="css: {loggedIn: auth.loggedIn(), canFrag: canFrag}")
 		//ko template: { name: 'commentTpl', foreach: comments }
 		// /ko
 		//ko if: auth.loggedIn()

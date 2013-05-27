@@ -15,6 +15,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.type = this.options.type;
 			this.cid = null;
 			this.exe = ko.observable(false);
+			this.canFrag = this.type === 'photo';
 
 			this.comments = ko.observableArray();
 			this.users = {};
@@ -236,6 +237,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		fragClick: function (data, event) {
+			if (!this.canFrag){
+				return;
+			}
 			var $root = $(event.target).closest('.commentAdd');
 
 			this.fraging(true);
@@ -248,6 +252,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}, this);
 		},
 		fragDelete: function () {
+			if (!this.canFrag){
+				return;
+			}
 			this.parentModule.fragAreaDelete();
 			this.fraging(false);
 			this.commentEditingFragChanged = true;
@@ -302,7 +309,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				txt: content
 			};
 
-			if (this.type === 'photo') {
+			if (this.canFrag) {
 				dataSend.fragObj = this.parentModule.fragAreaObject();
 			}
 
@@ -338,7 +345,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						}
 						data.comments.push(result.comment);
 						this.parentModule.commentCountIncrement(1);
-						if (this.type === 'photo' && Utils.isType('object', result.frag)) {
+						if (this.canFrag && Utils.isType('object', result.frag)) {
 							this.parentModule.fragAdd(result.frag);
 						}
 					}
@@ -351,7 +358,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (data, dataSend, cb, ctx) {
-			var fragExists = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(data.cid);
+			var fragExists = this.canFrag && data.frag && this.parentModule.fragGetByCid(data.cid);
 
 			dataSend.cid = data.cid;
 
@@ -371,7 +378,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						data.txt = result.comment.txt;
 						data.lastChanged = result.comment.lastChanged;
 
-						if (this.type === 'photo' && this.commentEditingFragChanged) {
+						if (this.canFrag && this.commentEditingFragChanged) {
 							if (Utils.isType('object', result.frag)) {
 								data.frag = true;
 								if (!fragExists) {
@@ -406,7 +413,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
-				frag = this.type === 'photo' && data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
+				frag = this.canFrag && data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);

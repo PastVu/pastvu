@@ -95,7 +95,7 @@
 			.commentInputLabel {
 				display: none;
 			}
-			.btnCommentSend, .btnCommentCancel, .btnCommentFrag, .btnCommentFragDel {
+			.btnCommentSend, .btnCommentCancel{
 				display: inline-block;
 			}
 		}
@@ -127,6 +127,15 @@
 		&.loggedIn {
 			.commentActions {
 				display: block;
+			}
+		}
+		&.canFrag {
+			.commentAdd {
+				&.hasFocus, &.hasContent {
+					.btnCommentFrag, .btnCommentFragDel {
+						display: inline-block;
+					}
+				}
 			}
 		}
 	}
