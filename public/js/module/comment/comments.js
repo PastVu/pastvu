@@ -508,7 +508,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 								delete this.commentHistVM;
 								evt.stopPropagation();
 							}.bind(this)},
-							options: {cid: cid},
+							options: {cid: cid, type: this.type},
 							callback: function (vm) {
 								this.commentHistVM = vm;
 								this.childModules[vm.id] = vm;

@@ -13,10 +13,12 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			cid: 0
+			cid: 0,
+			type: 'photo'
 		},
 		create: function () {
 			this.cid = this.options.cid;
+			this.type = this.options.type;
 			this.hists = ko.observableArray();
 			this.loading = ko.observable(true);
 
@@ -57,7 +59,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveCommentHist', {cid: this.cid});
+			socket.emit('giveCommentHist', {cid: this.cid, type: this.type});
 		}
 	});
 });

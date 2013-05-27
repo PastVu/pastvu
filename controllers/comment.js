@@ -581,10 +581,17 @@ function giveCommentHist(data, cb) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
+	var commentModel;
+
+	if (data.type === 'news') {
+		commentModel = CommentN;
+	} else {
+		commentModel = Comment;
+	}
 
 	step(
 		function counters() {
-			Comment.findOne({cid: data.cid}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
+			commentModel.findOne({cid: data.cid}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment) {
