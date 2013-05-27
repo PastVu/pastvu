@@ -4,7 +4,9 @@ var auth = require('./auth.js'),
 	Settings,
 	User,
 	Photo,
+	News,
 	Comment,
+	CommentN,
 	Counter,
 	_ = require('lodash'),
 	_s = require('underscore.string'),
@@ -26,7 +28,7 @@ function cursorExtract(err, cursor) {
 	cursor.toArray(this);
 }
 
-var commentIncomingProcess = (function () {
+var commentIncomingParse = (function () {
 	var reversedEscapeChars = {"<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39"};
 	function escape (txt) {
 		//Паттерн из _s.escapeHTML(result); исключая амперсант
@@ -65,30 +67,39 @@ var commentIncomingProcess = (function () {
 }());
 
 /**
- * Выбирает комментарии для фотографии
+ * Выбирает комментарии для объекта
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsPhoto(data, cb) {
+function getCommentsObj(data, cb) {
 	var //start = Date.now(),
 		commentsArr,
+		objModel,
+		commentModel,
 		usersHash = {};
 
 	if (!data || !Utils.isType('object', data)) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
+	if (data.type === 'news') {
+		objModel = News;
+		commentModel = CommentN;
+	} else {
+		objModel = Photo;
+		commentModel = Comment;
+	}
 
 	step(
 		function findPhoto() {
-			Photo.findOne({cid: data.cid}, {_id: 1}, this);
+			objModel.findOne({cid: data.cid}, {_id: 1}, this);
 		},
-		function createCursor(err, pid) {
-			if (err || !pid) {
-				cb({message: 'No such photo', error: true});
+		function createCursor(err, oid) {
+			if (err || !oid) {
+				cb({message: 'No such object', error: true});
 				return;
 			}
-			Comment.collection.find({photo: pid._id}, {_id: 0, photo: 0, hist: 0}, {sort: [
+			commentModel.collection.find({obj: oid._id}, {_id: 0, obj: 0, hist: 0}, {sort: [
 				['stamp', 'asc']
 			]}, this);
 		},
@@ -242,7 +253,7 @@ function getCommentsUser(data, cb) {
 }
 
 /**
- * Выбирает комментарии для фотографии
+ * Выбирает последние комментарии по фотографиям
  * @param data Объект
  * @param cb Коллбэк
  */
@@ -320,27 +331,37 @@ function getCommentsRibbon(data, cb) {
 }
 
 /**
- * Создает комментарий для фотографии
+ * Создает комментарий
  * @param socket Сокет пользователя
  * @param data Объект
  * @param cb Коллбэк
  */
 function createComment(socket, data, cb) {
-	if (!Utils.isType('object', data) || !data.photo || !data.txt || data.level > 9) {
+	if (!Utils.isType('object', data) || !data.obj || !data.txt || data.level > 9) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 	var user = socket.handshake.session.user,
+		obj,
+		objModel,
+		commentModel,
 		content = data.txt,
 		comment,
-		photoObj,
-		fragAdded = !data.frag && Utils.isType('object', data.fragObj),
+		fragAdded = data.type === 'photo' && !data.frag && Utils.isType('object', data.fragObj),
 		fragObj,
 		countComment;
 
 	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
+	}
+
+	if (data.type === 'news') {
+		objModel = News;
+		commentModel = CommentN;
+	} else {
+		objModel = Photo;
+		commentModel = Comment;
 	}
 
 	step(
@@ -363,27 +384,27 @@ function createComment(socket, data, cb) {
 				};
 			}
 
-			Photo.findOne({cid: Number(data.photo)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+			objModel.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 			if (data.parent) {
-				Comment.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
+				commentModel.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
 			}
 		},
-		function (err, photo, parent) {
-			if (err || !photo) {
-				cb({message: err.message || 'No such photo', error: true});
+		function (err, o, parent) {
+			if (err || !o) {
+				cb({message: err.message || 'No such object', error: true});
 				return;
 			}
 			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
 				cb({message: 'Something wrong with parent comment', error: true});
 				return;
 			}
-			photoObj = photo;
+			obj = o;
 
 			comment = {
 				cid: countComment,
-				photo: photo,
+				obj: o,
 				user: user,
-				txt: commentIncomingProcess(content)
+				txt: commentIncomingParse(content)
 			};
 			if (data.parent) {
 				comment.parent = data.parent;
@@ -392,7 +413,7 @@ function createComment(socket, data, cb) {
 			if (fragAdded) {
 				comment.frag = true;
 			}
-			new Comment(comment).save(this);
+			new commentModel(comment).save(this);
 		},
 		function (err) {
 			if (err) {
@@ -400,11 +421,11 @@ function createComment(socket, data, cb) {
 				return;
 			}
 
-			photoObj.ccount = (photoObj.ccount || 0) + 1;
+			obj.ccount = (obj.ccount || 0) + 1;
 			if (fragAdded) {
-				photoObj.frags.push(fragObj);
+				obj.frags.push(fragObj);
 			}
-			photoObj.save(this.parallel());
+			obj.save(this.parallel());
 
 			user.ccount += 1;
 			user.save(this.parallel());
@@ -415,7 +436,7 @@ function createComment(socket, data, cb) {
 				return;
 			}
 			comment.user = user.login;
-			comment.photo = data.photo;
+			comment.obj = data.obj;
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
@@ -432,44 +453,51 @@ function createComment(socket, data, cb) {
  * @param cb Коллбэк
  */
 function updateComment(socket, data, cb) {
-	if (!Utils.isType('object', data) || !data.photo || !Utils.isType('number', data.cid) || !data.txt) {
+	if (!Utils.isType('object', data) || !data.obj || !Utils.isType('number', data.cid) || !data.txt) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 	var user = socket.handshake.session.user,
-		fragRecieved;
+		fragRecieved,
+		commentModel;
 
 	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
 
+	if (data.type === 'news') {
+		commentModel = CommentN;
+	} else {
+		commentModel = Comment;
+	}
+
 	step(
 		function counters() {
-			Comment.findOne({cid: data.cid}, {user: 0}).populate('photo', {cid: 1, frags: 1}).exec(this);
+			commentModel.findOne({cid: data.cid}, {user: 0}).populate('obj', {cid: 1, frags: 1}).exec(this);
 		},
 		function (err, comment) {
-			if (err || !comment || data.photo !== comment.photo.cid) {
+			if (err || !comment || data.obj !== comment.obj.cid) {
 				cb({message: (err && err.message) || 'No such comment', error: true});
 				return;
 			}
 			var i,
 				hist = {user: user},
-				content = commentIncomingProcess(data.txt),
+				content = commentIncomingParse(data.txt),
 				fragExists,
 				fragChangedType,
 				txtChanged;
 
-			if (comment.photo.frags) {
-				for (i = comment.photo.frags.length; i--;) {
-					if (comment.photo.frags[i].cid === comment.cid) {
-						fragExists = comment.photo.frags[i];
+			if (comment.obj.frags) {
+				for (i = comment.obj.frags.length; i--;) {
+					if (comment.obj.frags[i].cid === comment.cid) {
+						fragExists = comment.obj.frags[i];
 						break;
 					}
 				}
 			}
 
-			fragRecieved = data.fragObj && {
+			fragRecieved = data.type === 'photo' && data.fragObj && {
 				cid: comment.cid,
 				l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
 				t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
@@ -482,18 +510,18 @@ function updateComment(socket, data, cb) {
 					//Если фрагмент получен и его небыло раньше, просто вставляем полученный
 					fragChangedType = 1;
 					comment.frag = true;
-					comment.photo.frags.push(fragRecieved);
+					comment.obj.frags.push(fragRecieved);
 				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
 					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
 					fragChangedType = 2;
-					comment.photo.frags.pull(fragExists._id);
-					comment.photo.frags.push(fragRecieved);
+					comment.obj.frags.pull(fragExists._id);
+					comment.obj.frags.push(fragRecieved);
 				}
 			} else if (fragExists) {
 				//Если фрагмент не получен, но раньше он был, то просто удаляем старый
 				fragChangedType = 3;
 				comment.frag = undefined;
-				comment.photo.frags.pull(fragExists._id);
+				comment.obj.frags.pull(fragExists._id);
 			}
 
 			if (content !== comment.txt) {
@@ -509,7 +537,7 @@ function updateComment(socket, data, cb) {
 				comment.txt = content;
 				comment.save(this.parallel());
 				if (fragChangedType) {
-					comment.photo.save(this.parallel());
+					comment.obj.save(this.parallel());
 				}
 			} else {
 				this(null, comment);
@@ -559,7 +587,7 @@ function giveCommentHist(data, cb) {
 			Comment.findOne({cid: data.cid}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
 		},
 		function (err, comment) {
-			if (err || !comment || data.photo !== comment.cid) {
+			if (err || !comment) {
 				cb({message: (err && err.message) || 'No such comment', error: true});
 				return;
 			}
@@ -605,41 +633,50 @@ function giveCommentHist(data, cb) {
 /**
  * Удаляет комментарий
  * @param socket Сокет пользователя
- * @param cid
+ * @param data
  * @param cb Коллбэк
  */
-function removeComment(socket, cid, cb) {
-	if (!Utils.isType('number', cid)) {
+function removeComment(socket, data, cb) {
+	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 	var user = socket.handshake.session.user,
-		photoObj,
+		obj,
 		hashComments = {},
 		hashUsers = {},
 		arrComments = [],
-		countCommentsRemoved;
+		countCommentsRemoved,
+		objModel,
+		commentModel;
 
 	if (!user || !user.login) {
 		cb({message: 'You are not authorized for this action.', error: true});
 		return;
 	}
 
+	if (data.type === 'news') {
+		objModel = News;
+		commentModel = CommentN;
+	} else {
+		objModel = Photo;
+		commentModel = Comment;
+	}
 
 	step(
 		function () {
-			Comment.findOne({cid: cid}, {photo: 1}, this);
+			commentModel.findOne({cid: data.cid}, {_id: 0, obj: 1}, this);
 		},
 		function findPhoto(err, comment) {
-			Photo.findOne({_id: comment.photo}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+			objModel.findOne({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 		},
-		function createCursor(err, photo) {
-			if (err || !photo) {
-				cb({message: (err && err.message) || 'No such photo', error: true});
+		function createCursor(err, o) {
+			if (err || !o) {
+				cb({message: (err && err.message) || 'No such object', error: true});
 				return;
 			}
-			photoObj = photo;
-			Comment.collection.find({photo: photo._id}, {_id: 0, photo: 0, stamp: 0, txt: 0}, {sort: [
+			obj = o;
+			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, stamp: 0, txt: 0}, {sort: [
 				['stamp', 'asc']
 			]}, this.parallel());
 		},
@@ -655,29 +692,29 @@ function removeComment(socket, cid, cb) {
 
 			while (++i < len) {
 				comment = comments[i];
-				if (comment.cid === cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
+				if (comment.cid === data.cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
 					hashComments[comment.cid] = comment;
 					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
 					arrComments.push(comment.cid);
 				}
 			}
-			Comment.remove({cid: {$in: arrComments}}, this);
+			commentModel.remove({cid: {$in: arrComments}}, this);
 		},
 		function (err, countRemoved) {
 			if (err) {
 				cb({message: err.message || 'Comment remove error', error: true});
 				return;
 			}
-			var frags = photoObj.frags.toObject(),
+			var frags = obj.frags.toObject(),
 				i = frags.length,
 				u;
 			while (i--) {
 				if (hashComments[frags[i].cid] !== undefined) {
-					photoObj.frags.id(frags[i]._id).remove();
+					obj.frags.id(frags[i]._id).remove();
 				}
 			}
-			photoObj.ccount -= countRemoved;
-			photoObj.save(this.parallel());
+			obj.ccount -= countRemoved;
+			obj.save(this.parallel());
 
 			for (u in hashUsers) {
 				if (hashUsers[u] !== undefined) {
@@ -688,7 +725,7 @@ function removeComment(socket, cid, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb({message: err.message || 'Photo or user update error', error: true});
+				cb({message: err.message || 'Object or user update error', error: true});
 				return;
 			}
 			// Если среди удаляемых комментариев есть мой, вычитаем их из сессии и отправляем "обновленного себя"
@@ -696,7 +733,7 @@ function removeComment(socket, cid, cb) {
 				user.ccount -= hashUsers[user._id];
 				auth.sendMe(socket);
 			}
-			cb({message: 'Removed ' + countCommentsRemoved + ' comments from ' + Object.keys(hashUsers).length + ' users', frags: photoObj.frags.toObject(), countComments: countCommentsRemoved});
+			cb({message: 'Removed ' + countCommentsRemoved + ' comments from ' + Object.keys(hashUsers).length + ' users', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved});
 		}
 	);
 }
@@ -709,7 +746,9 @@ module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	User = db.model('User');
 	Photo = db.model('Photo');
+	News = db.model('News');
 	Comment = db.model('Comment');
+	CommentN = db.model('CommentN');
 	Counter = db.model('Counter');
 
 
@@ -738,9 +777,9 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('giveCommentsPhoto', function (data) {
-			getCommentsPhoto(data, function (result) {
-				socket.emit('takeCommentsPhoto', result);
+		socket.on('giveCommentsObj', function (data) {
+			getCommentsObj(data, function (result) {
+				socket.emit('takeCommentsObj', result);
 			});
 		});
 		socket.on('giveCommentsUser', function (data) {

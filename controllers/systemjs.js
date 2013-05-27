@@ -591,7 +591,7 @@ module.exports.loadController = function (app, db) {
 
 	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_comments';
-		byNumPerPackage = byNumPerPackage || 1000;
+		byNumPerPackage = byNumPerPackage || 5000;
 
 		var commentIncomingProcess = (function () {
 			function linkifyUrlString(inputText, target, className) {
@@ -727,7 +727,7 @@ module.exports.loadController = function (app, db) {
 						okCounter++;
 						newComment = {
 							cid: Number(comment.id),
-							photo: photoOid,
+							obj: photoOid,
 							user: userOid,
 							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
 							txt: commentIncomingProcess(comment.text)

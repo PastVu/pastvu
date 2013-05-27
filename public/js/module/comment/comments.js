@@ -90,14 +90,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (cid) {
 				this.cid = cid;
 			}
-			socket.once('takeCommentsPhoto', function (data) {
+			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
 					console.error('Noe comments data recieved');
 				} else {
 					if (data.error) {
 						console.error('While loading comments: ', data.message || 'Error occurred');
 					} else if (data.cid !== this.cid) {
-						console.info('Comments recieved for another photo ' + data.cid);
+						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
 					} else {
 						this.users = _.assign(data.users, this.users);
 						this.comments(this.treeBuild(data.comments));
@@ -107,7 +107,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveCommentsPhoto', {cid: this.cid});
+			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
 		treeBuild: function (arr) {
 			var i = -1,
@@ -297,7 +297,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 
 			dataSend = {
-				photo: this.cid,
+				type: this.type,
+				obj: this.cid,
 				txt: content
 			};
 
@@ -484,7 +485,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 								}.bind(this));
 
 							}.bind(_this));
-							socket.emit('removeComment', cid);
+							socket.emit('removeComment', {type: this.type, cid: cid});
 						}},
 						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
 							root.removeClass('hlRemove');
