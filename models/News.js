@@ -12,7 +12,9 @@ var NewsSchema = new Schema(
 			tdate: {type: Date}, // Время до которого показывается notice
 			title: {type: String, 'default': ''}, // Заголовок
 			notice: {type: String}, // Анонс, краткий текст
-			txt: {type: String, required: true} // Полный текст
+			txt: {type: String, required: true}, // Полный текст
+
+			ccount: {type: Number} //Кол-во комментариев
 		},
 		{
 			strict: true

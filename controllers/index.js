@@ -370,7 +370,7 @@ function giveAllNews(hs, cb) {
 	);
 }
 
-function giveNews(data, cb) {
+function giveNewsFull(data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
 		cb({message: 'Bad params', error: true});
 		return;
@@ -378,6 +378,24 @@ function giveNews(data, cb) {
 	step(
 		function () {
 			News.collection.findOne({cid: data.cid}, {_id: 0}, this);
+		},
+		function (err, news) {
+			if (err) {
+				cb({message: err && err.message, error: true});
+				return;
+			}
+			cb({news: news});
+		}
+	);
+}
+function giveNewsPublic(data, cb) {
+	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+	step(
+		function () {
+			News.collection.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}, this);
 		},
 		function (err, news) {
 			if (err) {
@@ -420,8 +438,13 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNews', function (data) {
-			giveNews(data, function (resultData) {
+			giveNewsFull(data, function (resultData) {
 				socket.emit('takeNews', resultData);
+			});
+		});
+		socket.on('giveNewsPublic', function (data) {
+			giveNewsPublic(data, function (resultData) {
+				socket.emit('takeNewsPublic', resultData);
 			});
 		});
 

@@ -1,0 +1,26 @@
+.photo(data-bind="with: repository[M!M]")
+	.indentLogo.newsHeader Новости проекта
+
+	.row-fluid.news
+		.novel
+			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+			.newsBody
+				.newsHead
+					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
+					//ko if: $parent.auth.loggedIn()
+					.dotDelimeter ·
+					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
+						i.icon-pencil
+						| &nbsp;Редактировать
+					// /ko
+				.newsTxt(data-bind="html: $data.txt")
+	.row-fluid.newsComments
+		.commentsHead Комментарии
+		.dotDelimeter ·
+		.commentsCount(data-bind="text: p.ccount()")
+		//ko if: auth.loggedIn()
+		.dotDelimeter ·
+		.commentsAdd(data-bind="click: commentAdd") Добавить
+		// /ko
+		.commentsLoad(data-bind="style: {display: commentsLoading() ? '' : 'none'}") &nbsp;
+		.photoCommentsContainer.mContainer.mHidden

@@ -17,7 +17,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 
 			if (this.options.userVM) {
 				this.user = this.options.userVM;
-				this.makeVM();
+				this.makeBinding();
 			} else {
 				this.options.userLogin = this.options.userLogin || globalVM.router.params().user || (this.auth.loggedIn() && this.auth.iAm.login());
 				if (this.options.userLogin) {
@@ -50,7 +50,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 					this.updateUserVM(login);
 
 					if (!this.userInited) {
-						this.makeVM();
+						this.makeBinding();
 					}
 				}
 			}, this);
@@ -58,7 +58,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 		updateUserVM: function (login) {
 			this.user = User.vm(storage.userImmediate(login).origin, this.user, true);
 		},
-		makeVM: function () {
+		makeBinding: function () {
 			this.can_pm = this.co.can_pm = ko.computed({
 				read: function () {
 					return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());

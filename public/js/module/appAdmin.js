@@ -66,7 +66,7 @@ require([
 							modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
 						} else {
 							params = {section: section, cid: param1};
-							modules.push({module: 'm/diff/news', container: '#bodyContainer'});
+							modules.push({module: 'm/diff/newsList', container: '#bodyContainer'});
 						}
 					}
 					this.params(_.assign(params, {_handler: 'index'}, qparams));

@@ -95,9 +95,11 @@ require([
 				news: function (cid, qparams) {
 					Utils.title.setTitle({title: 'Новости'});
 					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
+					var mName = Number(cid) ? 'm/diff/news' : 'm/diff/newsList';
+
 					renderer(
 						[
-							{module: 'm/diff/news', container: '#bodyContainer'}
+							{module: mName, container: '#bodyContainer'}
 						]
 					);
 				},
