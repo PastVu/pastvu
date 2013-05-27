@@ -7,7 +7,7 @@
 				span start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 
-	.row-fluid.photoData(data-bind="css: {editMode: edit(), loggedIn: auth.loggedIn()}")
+	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
 		//ko template: edit() ? 'photoEdit' : 'photoView'
 		// /ko
 		.span3-4.rightPanel
