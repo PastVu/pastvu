@@ -9,7 +9,11 @@
 		//ko foreach: news
 		hr
 		.novel.clearfix
-			.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+			.newsLeft
+				.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
+				//ko if: $data.ccount > 0
+				.newsComms(data-bind="text: $data.ccount")
+				// /ko
 			.newsBody
 				.newsHead
 					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")

@@ -24,15 +24,39 @@
 			margin: 0;
 		}
 
-		.newsDate {
+		.newsLeft {
 			width: 24px;
 			padding-top: 3px;
 			float: left;
+		}
+		.newsDate {
 			vertical-align: top;
 			color: #777;
 			font-size: 14px;
 			line-height: 15px;
 			text-align: center;
+		}
+		.newsComms {
+			position: relative;
+			margin-top: 5px;
+			padding-top: 1px;
+			font-size: 14px;
+			line-height: 17px;
+			color: #F2F2F2;
+			text-align: center;
+			background-color: #999;
+
+			&::after {
+				position: absolute;
+				display: block;
+				content: '';
+				left: 15%;
+				bottom: -8px;
+				width: 0;
+				height: 0;
+				border-top: 8px solid #999;
+				border-right: 8px solid transparent;
+			}
 		}
 		.newsBody {
 			margin-left: 40px;
@@ -75,6 +99,14 @@
 
 				.newsDate {
 					color: #000;
+				}
+				.newsComms {
+					color: #fff;
+					background-color: #555;
+
+					&::after {
+						border-top-color: #555;
+					}
 				}
 			}
 		}

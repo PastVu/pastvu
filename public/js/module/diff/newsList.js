@@ -65,6 +65,7 @@ define([
 				} else {
 					var i = data.news.length;
 					while (i--) {
+						data.news.ccount = data.news.ccount || 0;
 						if (data.news[i].notice) {
 							data.news[i].expand = true;
 						} else {
