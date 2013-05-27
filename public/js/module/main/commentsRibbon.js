@@ -30,7 +30,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					i = data.comments.length;
 					while (i) {
 						comment = data.comments[--i];
-						comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
+						comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
 					}
 					this.comments(data.comments);
 				}

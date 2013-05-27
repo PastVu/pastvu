@@ -190,7 +190,7 @@ function getCommentsUser(data, cb) {
 			}
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id}, {_id: 0, lastChanged: 1, cid: 1, photo: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
+			Comment.collection.find({user: uid._id}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
 				['stamp', 'desc']
 			]}, this);
 		},
@@ -205,7 +205,7 @@ function getCommentsUser(data, cb) {
 				photosArr = [];
 
 			while (i) {
-				photoId = comments[--i].photo;
+				photoId = comments[--i].obj;
 				if (photosHash[photoId] === undefined) {
 					photosHash[photoId] = true;
 					photosArr.push(photoId);
@@ -243,7 +243,7 @@ function getCommentsUser(data, cb) {
 			i = commentsArr.length;
 			while (i) {
 				comment = commentsArr[--i];
-				comment.photo = photosHash[comment.photo].cid;
+				comment.obj = photosHash[comment.obj].cid;
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
@@ -270,7 +270,7 @@ function getCommentsRibbon(data, cb) {
 	step(
 		function createCursor() {
 			var limit = data.limit || 15;
-			Comment.collection.find({}, {_id: 0, cid: 1, photo: 1, txt: 1}, { limit: limit, sort: [
+			Comment.collection.find({}, {_id: 0, cid: 1, obj: 1, txt: 1}, { limit: limit, sort: [
 				['stamp', 'desc']
 			]}, this);
 		},
@@ -285,7 +285,7 @@ function getCommentsRibbon(data, cb) {
 				photosArr = [];
 
 			while (i) {
-				photoId = comments[--i].photo;
+				photoId = comments[--i].obj;
 				if (photosHash[photoId] === undefined) {
 					photosHash[photoId] = true;
 					photosArr.push(photoId);
@@ -321,7 +321,7 @@ function getCommentsRibbon(data, cb) {
 			i = commentsArr.length;
 			while (i) {
 				comment = commentsArr[--i];
-				comment.photo = photosHash[comment.photo].cid;
+				comment.obj = photosHash[comment.obj].cid;
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');

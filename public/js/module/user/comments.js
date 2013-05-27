@@ -116,7 +116,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						i = data.comments.length;
 						while (i) {
 							comment = data.comments[--i];
-							comment.link = this.commentsPhotos[comment.photo].link + '?hl=comment-' + comment.cid;
+							comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
 						}
 						this.comments(data.comments);
 						if (this.pageLast() > 1) {
