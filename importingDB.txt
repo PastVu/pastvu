@@ -34,6 +34,8 @@ oldConvertComments()
 oldConvertNews()
 calcUserStats()
 calcPhotoStats()
+
+sudo node app.js --land prod --domain jsteam.ru --port 80 --uport 8888
 		
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:

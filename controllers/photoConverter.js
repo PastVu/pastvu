@@ -425,6 +425,7 @@ function conveyerControl() {
 /**
  * Очередной шаг конвейера
  * @param file Имя файла
+ * @param variants Варианты для конвертации
  * @param cb Коллбэк завершения шага
  * @param ctx Контекст вызова коллбэка
  */
