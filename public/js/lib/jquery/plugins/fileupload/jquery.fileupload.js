@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload Plugin 5.30
+ * jQuery File Upload Plugin 5.31.2
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -16,7 +16,7 @@
 	'use strict';
 	if (typeof define === 'function' && define.amd) {
 		// Register as an anonymous AMD module:
-		define(['jquery', 'jquery-ui/widget'], factory);
+		define(['jquery', 'jquery.ui.widget'], factory);
 	} else {
 		// Browser globals:
 		factory(window.jQuery);
@@ -219,8 +219,9 @@
 			cache: false
 		},
 
-		// A list of options that require a refresh after assigning a new value:
-		_refreshOptionsList: ['fileInput', 'dropZone', 'pasteZone', 'multipart', 'forceIframeTransport'],
+		// A list of options that require reinitializing event listeners and/or
+		// special initialization code:
+		_specialOptions: ['fileInput', 'dropZone', 'pasteZone', 'multipart', 'forceIframeTransport'],
 
 		_BitrateTimer: function() {
 			this.timestamp = ((Date.now) ? Date.now() : (new Date()).getTime());
@@ -413,12 +414,13 @@
 		},
 
 		_initIframeSettings: function(options) {
+			var targetHost = $('<a></a>').prop('href', options.url).prop('host');
 			// Setting the dataType to iframe enables the iframe transport:
 			options.dataType = 'iframe ' + (options.dataType || '');
 			// The iframe transport accepts a serialized array as form data:
 			options.formData = this._getFormData(options);
 			// Add redirect url to form data on cross-domain uploads:
-			if (options.redirect && $('<a></a>').prop('href', options.url).prop('host') !== location.host) {
+			if (options.redirect && targetHost && targetHost !== location.host) {
 				options.formData.push({
 					name: options.redirectParamName || 'redirect',
 					value: options.redirect
@@ -634,7 +636,7 @@
 					// Create a progress event if no final progress event
 					// with loaded equaling total has been triggered
 					// for this chunk:
-					if (o._progress.loaded === currentLoaded) {
+					if (currentLoaded + o.chunkSize - o._progress.loaded) {
 						that._onProgress($.Event('progress', {
 							lengthComputable: true,
 							loaded: ub - o.uploadedBytes,
@@ -1066,12 +1068,12 @@
 		},
 
 		_setOption: function(key, value) {
-			var refresh = $.inArray(key, this._refreshOptionsList) !== -1;
-			if (refresh) {
+			var reinit = $.inArray(key, this._specialOptions) !== -1;
+			if (reinit) {
 				this._destroyEventHandlers();
 			}
 			this._super(key, value);
-			if (refresh) {
+			if (reinit) {
 				this._initSpecialOptions();
 				this._initEventHandlers();
 			}
@@ -1099,14 +1101,17 @@
 			return new RegExp(parts.join('/'), modifiers);
 		},
 
+		_isRegExpOption: function(key, value) {
+			return key !== 'url' && $.type(value) === 'string' && /^\/.*\/[igm]{0,3}$/.test(value);
+		},
+
 		_initDataAttributes: function() {
 			var that = this,
 				options = this.options;
 			// Initialize options set via HTML5 data-attributes:
 			$.each(
 				$(this.element[0].cloneNode(false)).data(), function(key, value) {
-					// Initialize RegExp options:
-					if ($.type(value) === 'string' && value.charAt(0) === '/') {
+					if (that._isRegExpOption(key, value)) {
 						value = that._getRegExp(value);
 					}
 					options[key] = value;

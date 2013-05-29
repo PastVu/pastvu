@@ -279,7 +279,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 		},
 		onFileProgress: function (e, data) {
-			var progress = parseInt(data.loaded / data.total * 100, 10);
+			var progress = data.loaded / data.total * 100 >> 0;
 			data.files.forEach(function (file, index) {
 				file.ext.progress(progress);
 			}, this);
@@ -287,7 +287,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		onFileProgressAll: function (e, data) {
 			//console.log('onFileProgressAll ', data.loaded, data.total);
-			this.fileProgressAll(parseInt(data.loaded / data.total * 100, 10));
+			this.fileProgressAll(data.loaded / data.total * 100 >> 0);
 			this.fileProgressAllText(this.calcProgress(data));
 		},
 		calcProgress: function (data) {
