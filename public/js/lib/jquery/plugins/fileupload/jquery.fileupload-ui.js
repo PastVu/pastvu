@@ -1,5 +1,5 @@
 /*
- * jQuery File Upload User Interface Plugin 7.4.2
+ * jQuery File Upload User Interface Plugin 7.4.4
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -331,11 +331,11 @@
 						that._transition(data.context).done(
 							function () {
 								$(this).remove();
+								that._adjustMaxNumberOfFiles(1);
 								that._trigger('destroyed', e, data);
 							}
 						);
 					});
-					that._adjustMaxNumberOfFiles(1);
 				}
 			}
 		},
@@ -602,8 +602,7 @@
 			var button = $(e.currentTarget);
 			this._trigger('destroy', e, $.extend({
 				context: button.closest('.template-download'),
-				type: 'DELETE',
-				dataType: this.options.dataType
+				type: 'DELETE'
 			}, button.data()));
 		},
 

@@ -1,5 +1,5 @@
 /*
- * JavaScript Load Image 1.2.3
+ * JavaScript Load Image 1.5
  * https://github.com/blueimp/JavaScript-Load-Image
  *
  * Copyright 2011, Sebastian Tschan
@@ -15,218 +15,231 @@
 /*jslint nomen: true, bitwise: true */
 /*global window, document, URL, webkitURL, Blob, File, FileReader, define */
 
-(function ($) {
-    'use strict';
+(function($) {
+	'use strict';
 
-    // Loads an image for a given File object.
-    // Invokes the callback with an img or optional canvas
-    // element (if supported by the browser) as parameter:
-    var loadImage = function (file, callback, options) {
-            var img = document.createElement('img'),
-                url,
-                oUrl;
-            img.onerror = callback;
-            img.onload = function () {
-                if (oUrl && !(options && options.noRevoke)) {
-                    loadImage.revokeObjectURL(oUrl);
-                }
-                callback(loadImage.scale(img, options));
-            };
-            if ((window.Blob && file instanceof Blob) ||
-                // Files are also Blob instances, but some browsers
-                // (Firefox 3.6) support the File API but not Blobs:
-                    (window.File && file instanceof File)) {
-                url = oUrl = loadImage.createObjectURL(file);
-                // Store the file type for resize processing:
-                img._type = file.type;
-            } else {
-                url = file;
-            }
-            if (url) {
-                img.src = url;
-                return img;
-            }
-            return loadImage.readFile(file, function (e) {
-                var target = e.target;
-                if (target && target.result) {
-                    img.src = target.result;
-                } else {
-                    callback(e);
-                }
-            });
-        },
-        // The check for URL.revokeObjectURL fixes an issue with Opera 12,
-        // which provides URL.createObjectURL but doesn't properly implement it:
-        urlAPI = (window.createObjectURL && window) ||
-            (window.URL && URL.revokeObjectURL && URL) ||
-            (window.webkitURL && webkitURL);
+	// Loads an image for a given File object.
+	// Invokes the callback with an img or optional canvas
+	// element (if supported by the browser) as parameter:
+	var loadImage = function(file, callback, options) {
+			var img = document.createElement('img'),
+				url, oUrl;
+			img.onerror = callback;
+			img.onload = function() {
+				if (oUrl && !(options && options.noRevoke)) {
+					loadImage.revokeObjectURL(oUrl);
+				}
+				if (callback) {
+					callback(loadImage.scale(img, options));
+				}
+			};
+			if (loadImage.isInstanceOf('Blob', file) ||
+				// Files are also Blob instances, but some browsers
+				// (Firefox 3.6) support the File API but not Blobs:
+				loadImage.isInstanceOf('File', file)) {
+				url = oUrl = loadImage.createObjectURL(file);
+				// Store the file type for resize processing:
+				img._type = file.type;
+			} else if (typeof file === 'string') {
+				url = file;
+				if (options && options.crossOrigin) {
+					img.crossOrigin = options.crossOrigin;
+				}
+			} else {
+				return false;
+			}
+			if (url) {
+				img.src = url;
+				return img;
+			}
+			return loadImage.readFile(file, function(e) {
+				var target = e.target;
+				if (target && target.result) {
+					img.src = target.result;
+				} else {
+					if (callback) {
+						callback(e);
+					}
+				}
+			});
+		},
+	// The check for URL.revokeObjectURL fixes an issue with Opera 12,
+	// which provides URL.createObjectURL but doesn't properly implement it:
+		urlAPI = (window.createObjectURL && window) || (window.URL && URL.revokeObjectURL && URL) || (window.webkitURL && webkitURL);
 
-    // Detects subsampling in JPEG images:
-    loadImage.detectSubsampling = function (img) {
-        var iw = img.width,
-            ih = img.height,
-            canvas,
-            ctx;
-        if (iw * ih > 1024 * 1024) { // only consider mexapixel images
-            canvas = document.createElement('canvas');
-            canvas.width = canvas.height = 1;
-            ctx = canvas.getContext('2d');
-            ctx.drawImage(img, -iw + 1, 0);
-            // subsampled image becomes half smaller in rendering size.
-            // check alpha channel value to confirm image is covering edge pixel or not.
-            // if alpha value is 0 image is not covering, hence subsampled.
-            return ctx.getImageData(0, 0, 1, 1).data[3] === 0;
-        }
-        return false;
-    };
+	loadImage.isInstanceOf = function(type, obj) {
+		// Cross-frame instanceof check
+		return Object.prototype.toString.call(obj) === '[object ' + type + ']';
+	};
 
-    // Detects vertical squash in JPEG images:
-    loadImage.detectVerticalSquash = function (img, ih) {
-        var canvas = document.createElement('canvas'),
-            ctx = canvas.getContext('2d'),
-            data,
-            sy,
-            ey,
-            py,
-            alpha;
-        canvas.width = 1;
-        canvas.height = ih;
-        ctx.drawImage(img, 0, 0);
-        data = ctx.getImageData(0, 0, 1, ih).data;
-        // search image edge pixel position in case it is squashed vertically:
-        sy = 0;
-        ey = ih;
-        py = ih;
-        while (py > sy) {
-            alpha = data[(py - 1) * 4 + 3];
-            if (alpha === 0) {
-                ey = py;
-            } else {
-                sy = py;
-            }
-            py = (ey + sy) >> 1;
-        }
-        return py / ih;
-    };
+	// Detects subsampling in JPEG images:
+	loadImage.detectSubsampling = function(img) {
+		var canvas, context;
+		if (img.width * img.height > 1024 * 1024) { // only consider mexapixel images
+			canvas = document.createElement('canvas');
+			canvas.width = canvas.height = 1;
+			context = canvas.getContext('2d');
+			context.drawImage(img, -img.width + 1, 0);
+			// subsampled image becomes half smaller in rendering size.
+			// check alpha channel value to confirm image is covering edge pixel or not.
+			// if alpha value is 0 image is not covering, hence subsampled.
+			return context.getImageData(0, 0, 1, 1).data[3] === 0;
+		}
+		return false;
+	};
 
-    // Renders image to canvas while working around iOS image scaling bugs:
-    // https://github.com/blueimp/JavaScript-Load-Image/issues/13
-    loadImage.renderImageToCanvas = function (img, canvas, width, height) {
-        var iw = img.width,
-            ih = img.height,
-            ctx = canvas.getContext('2d'),
-            vertSquashRatio,
-            d = 1024, // size of tiling canvas
-            tmpCanvas = document.createElement('canvas'),
-            tmpCtx,
-            sy,
-            sh,
-            sx,
-            sw;
-        ctx.save();
-        if (loadImage.detectSubsampling(img)) {
-            iw /= 2;
-            ih /= 2;
-        }
-        vertSquashRatio = loadImage.detectVerticalSquash(img, ih);
-        tmpCanvas.width = tmpCanvas.height = d;
-        tmpCtx = tmpCanvas.getContext('2d');
-        sy = 0;
-        while (sy < ih) {
-            sh = sy + d > ih ? ih - sy : d;
-            sx = 0;
-            while (sx < iw) {
-                sw = sx + d > iw ? iw - sx : d;
-                tmpCtx.clearRect(0, 0, d, d);
-                tmpCtx.drawImage(img, -sx, -sy);
-                ctx.drawImage(
-                    tmpCanvas,
-                    0,
-                    0,
-                    sw,
-                    sh,
-                    Math.floor(sx * width / iw),
-                    Math.floor(sy * height / ih / vertSquashRatio),
-                    Math.ceil(sw * width / iw),
-                    Math.ceil(sh * height / ih / vertSquashRatio)
-                );
-                sx += d;
-            }
-            sy += d;
-        }
-        ctx.restore();
-        tmpCanvas = tmpCtx = null;
-    };
+	// Detects vertical squash in JPEG images:
+	loadImage.detectVerticalSquash = function(img, correctedHeight) {
+		var canvas = document.createElement('canvas'),
+			context = canvas.getContext('2d'),
+			data, sy, ey, py, alpha;
+		canvas.width = 1;
+		canvas.height = correctedHeight;
+		context.drawImage(img, 0, 0);
+		data = context.getImageData(0, 0, 1, correctedHeight).data;
+		// search image edge pixel position in case it is squashed vertically:
+		sy = 0;
+		ey = correctedHeight;
+		py = correctedHeight;
+		while (py > sy) {
+			alpha = data[(py - 1) * 4 + 3];
+			if (alpha === 0) {
+				ey = py;
+			} else {
+				sy = py;
+			}
+			py = (ey + sy) >> 1;
+		}
+		return (py / correctedHeight) || 1;
+	};
 
-    // Scales the given image (img or canvas HTML element)
-    // using the given options.
-    // Returns a canvas object if the browser supports canvas
-    // and the canvas option is true or a canvas object is passed
-    // as image, else the scaled image:
-    loadImage.scale = function (img, options) {
-        options = options || {};
-        var canvas = document.createElement('canvas'),
-            width = img.width,
-            height = img.height,
-            scale = Math.max(
-                (options.minWidth || width) / width,
-                (options.minHeight || height) / height
-            );
-        if (scale > 1) {
-            width = parseInt(width * scale, 10);
-            height = parseInt(height * scale, 10);
-        }
-        scale = Math.min(
-            (options.maxWidth || width) / width,
-            (options.maxHeight || height) / height
-        );
-        if (scale < 1) {
-            width = parseInt(width * scale, 10);
-            height = parseInt(height * scale, 10);
-        }
-        if (img.getContext || (options.canvas && canvas.getContext)) {
-            canvas.width = width;
-            canvas.height = height;
-            if (img._type === 'image/jpeg') {
-                loadImage
-                    .renderImageToCanvas(img, canvas, width, height);
-            } else {
-                canvas.getContext('2d')
-                    .drawImage(img, 0, 0, width, height);
-            }
-            return canvas;
-        }
-        img.width = width;
-        img.height = height;
-        return img;
-    };
+	// Renders image to canvas while working around iOS image scaling bugs:
+	// https://github.com/blueimp/JavaScript-Load-Image/issues/13
+	loadImage.renderImageToCanvas = function(
+		canvas, img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight) {
+		var context = canvas.getContext('2d'),
+			tmpCanvas = document.createElement('canvas'),
+			tileSize = tmpCanvas.width = tmpCanvas.height = 1024,
+			tmpContext = tmpCanvas.getContext('2d'),
+			vertSquashRatio, tileX, tileY;
+		context.save();
+		if (loadImage.detectSubsampling(img)) {
+			sourceWidth /= 2;
+			sourceHeight /= 2;
+		}
+		vertSquashRatio = loadImage.detectVerticalSquash(img, sourceHeight);
+		destWidth = Math.ceil(tileSize * destWidth / sourceWidth);
+		destHeight = Math.ceil(
+			tileSize * destHeight / sourceHeight / vertSquashRatio);
+		destY = 0;
+		tileY = 0;
+		while (tileY < sourceHeight) {
+			destX = 0;
+			tileX = 0;
+			while (tileX < sourceWidth) {
+				tmpContext.clearRect(0, 0, tileSize, tileSize);
+				tmpContext.drawImage(
+					img, sourceX, sourceY, sourceWidth, sourceHeight, -tileX, -tileY, sourceWidth, sourceHeight);
+				context.drawImage(
+					tmpCanvas, 0, 0, tileSize, tileSize, destX, destY, destWidth, destHeight);
+				tileX += tileSize;
+				destX += destWidth;
+			}
+			tileY += tileSize;
+			destY += destHeight;
+		}
+		context.restore();
+	};
 
-    loadImage.createObjectURL = function (file) {
-        return urlAPI ? urlAPI.createObjectURL(file) : false;
-    };
+	// Scales the given image (img or canvas HTML element)
+	// using the given options.
+	// Returns a canvas object if the browser supports canvas
+	// and the canvas or crop option is true or a canvas object
+	// is passed as image, else the scaled image:
+	loadImage.scale = function(img, options) {
+		options = options || {};
+		var canvas = document.createElement('canvas'),
+			useCanvas = img.getContext || ((options.canvas || options.crop) && canvas.getContext),
+			width = img.width,
+			height = img.height,
+			maxWidth = options.maxWidth,
+			maxHeight = options.maxHeight,
+			sourceWidth = width,
+			sourceHeight = height,
+			sourceX = 0,
+			sourceY = 0,
+			destX = 0,
+			destY = 0,
+			destWidth, destHeight, scale;
+		if (useCanvas && maxWidth && maxHeight && options.crop) {
+			destWidth = maxWidth;
+			destHeight = maxHeight;
+			if (width / height < maxWidth / maxHeight) {
+				sourceHeight = maxHeight * width / maxWidth;
+				sourceY = (height - sourceHeight) / 2;
+			} else {
+				sourceWidth = maxWidth * height / maxHeight;
+				sourceX = (width - sourceWidth) / 2;
+			}
+		} else {
+			destWidth = width;
+			destHeight = height;
+			scale = Math.max(
+				(options.minWidth || destWidth) / destWidth, (options.minHeight || destHeight) / destHeight);
+			if (scale > 1) {
+				destWidth = Math.ceil(destWidth * scale);
+				destHeight = Math.ceil(destHeight * scale);
+			}
+			scale = Math.min(
+				(maxWidth || destWidth) / destWidth, (maxHeight || destHeight) / destHeight);
+			if (scale < 1) {
+				destWidth = Math.ceil(destWidth * scale);
+				destHeight = Math.ceil(destHeight * scale);
+			}
+		}
+		if (useCanvas) {
+			canvas.width = destWidth;
+			canvas.height = destHeight;
+			if (img._type === 'image/jpeg') {
+				loadImage.renderImageToCanvas(
+					canvas, img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+			} else {
+				canvas.getContext('2d').drawImage(
+					img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+			}
+			return canvas;
+		}
+		img.width = destWidth;
+		img.height = destHeight;
+		return img;
+	};
 
-    loadImage.revokeObjectURL = function (url) {
-        return urlAPI ? urlAPI.revokeObjectURL(url) : false;
-    };
+	loadImage.createObjectURL = function(file) {
+		return urlAPI ? urlAPI.createObjectURL(file) : false;
+	};
 
-    // Loads a given File object via FileReader interface,
-    // invokes the callback with the event object (load or error).
-    // The result can be read via event.target.result:
-    loadImage.readFile = function (file, callback) {
-        if (window.FileReader && FileReader.prototype.readAsDataURL) {
-            var fileReader = new FileReader();
-            fileReader.onload = fileReader.onerror = callback;
-            fileReader.readAsDataURL(file);
-            return fileReader;
-        }
-        return false;
-    };
+	loadImage.revokeObjectURL = function(url) {
+		return urlAPI ? urlAPI.revokeObjectURL(url) : false;
+	};
 
-    if (typeof define === 'function' && define.amd) {
-        define(function () {
-            return loadImage;
-        });
-    } else {
-        $.loadImage = loadImage;
-    }
+	// Loads a given File object via FileReader interface,
+	// invokes the callback with the event object (load or error).
+	// The result can be read via event.target.result:
+	loadImage.readFile = function(file, callback) {
+		if (window.FileReader && FileReader.prototype.readAsDataURL) {
+			var fileReader = new FileReader();
+			fileReader.onload = fileReader.onerror = callback;
+			fileReader.readAsDataURL(file);
+			return fileReader;
+		}
+		return false;
+	};
+
+	if (typeof define === 'function' && define.amd) {
+		define(function() {
+			return loadImage;
+		});
+	} else {
+		$.loadImage = loadImage;
+	}
 }(this));
