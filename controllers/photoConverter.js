@@ -16,6 +16,7 @@ var path = require('path'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
+	logger = log4js.getLogger("PhotoConverter.js"),
 	appEnv = {},
 
 	conveyerEnabled = true,
@@ -23,8 +24,9 @@ var path = require('path'),
 	conveyerMaxLength = 0,
 	conveyerConverted = 0,
 
-	logger = log4js.getLogger("PhotoConverter.js"),
-	uploadDir = __dirname + '/../publicContent/photos',
+	sourceDir = __dirname + '/../../store/private/photos/origin/',
+	targetDir = __dirname + '/../../store/public/photos/',
+
 	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
@@ -39,7 +41,7 @@ var path = require('path'),
 		 postfix: '>'
 		 },*/
 		standard: {
-			parent: 'origin',
+			parent: sourceDir,
 			width: 1050,
 			height: 700,
 			strip: true,
@@ -104,9 +106,13 @@ var path = require('path'),
 			postfix: '^'
 		}
 	},
-	imageVersionsPriority = fillImgPrior('origin', 0),
+	imageVersionsPriority = fillImgPrior(sourceDir, 0),
 	imageVersionsKeys = Object.keys(imageVersionsPriority),
 	imageSequenceDefault = fillImgSequence(imageVersionsKeys);
+
+console.dir(imageVersionsPriority);
+console.dir(imageVersionsKeys);
+console.dir(imageSequenceDefault);
 
 function fillImgPrior(parent, level) {
 	var result = {},
@@ -436,14 +442,15 @@ function conveyerStep(file, variants, cb, ctx) {
 	asyncSequence.push(function (callback) {
 		callback(null, file);
 	});
-	asyncSequence.push(identifyFile);
+	asyncSequence.push(identifySourceFile);
 	asyncSequence.push(saveIdentifiedInfo);
 
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
+			src = variant.parent === sourceDir ? sourceDir : targetDir + variant.parent + '/',
 			o = {
-				srcPath: path.normalize(uploadDir + '/' + variant.parent + '/' + file),
-				dstPath: path.normalize(uploadDir + '/' + variantName + '/' + file)
+				srcPath: path.normalize(src + file),
+				dstPath: path.normalize(targetDir + variantName + '/' + file)
 			};
 
 		if (variant.strip) {
@@ -488,7 +495,7 @@ function conveyerStep(file, variants, cb, ctx) {
 
 	});
 	asyncSequence.push(function (info, callback) {
-		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(uploadDir + '/standard/' + file)], function (err, data) {
+		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + 'standard/' + file)], function (err, data) {
 			var info = {};
 			if (err) {
 				logger.error(err);
@@ -511,8 +518,8 @@ function conveyerStep(file, variants, cb, ctx) {
 	});
 }
 
-function identifyFile(file, callback) {
-	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(uploadDir + '/origin/' + file)], function (err, data) {
+function identifySourceFile(file, callback) {
+	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(sourceDir + file)], function (err, data) {
 		var info = {};
 		if (err) {
 			logger.error(err);

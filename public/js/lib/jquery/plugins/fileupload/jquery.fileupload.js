@@ -16,7 +16,7 @@
 	'use strict';
 	if (typeof define === 'function' && define.amd) {
 		// Register as an anonymous AMD module:
-		define(['jquery', 'jquery.ui.widget'], factory);
+		define(['jquery', 'jquery-ui/widget'], factory);
 	} else {
 		// Browser globals:
 		factory(window.jQuery);

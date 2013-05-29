@@ -11,7 +11,7 @@ function generate(user, data, cb) {
     'use strict';
 
     var session = new Session({
-        key: Utils.randomString(50),
+        key: Utils.randomString(12),
         stamp: new Date()
     });
 
