@@ -124,7 +124,7 @@
 		},
 
 		genFileName = function (name) {
-			return Utils.randomString(18) + name.substr(name.lastIndexOf('.'));
+			return Utils.randomString(18, true) + name.substr(name.lastIndexOf('.'));
 		},
 		FileInfo = function (file) {
 			this.name = file.name;

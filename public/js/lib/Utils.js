@@ -1,4 +1,4 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
  * Utils
  * @author Klimashkin P.
@@ -252,17 +252,20 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 
 		randomString: (function () {
 			'use strict';
-			var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
+			var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
+				charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
-			return function (len) {
-				var str = '';
+			return function (resultLen, lowOnly) {
+				var chars = lowOnly ? charsLow : charsAll,
+					charsLen = chars.length,
+					str = '';
 
-				if (!len) {
-					len = Math.random() * 62 + 1 >> 0;
+				if (!resultLen) {
+					resultLen = Math.random() * charsLen + 1 >> 0;
 				}
 
-				while (len--) {
-					str += chars[Math.random() * 62 >> 0];
+				while (resultLen--) {
+					str += chars[Math.random() * charsLen >> 0];
 				}
 
 				return str;

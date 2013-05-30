@@ -14,17 +14,20 @@ Utils.isType = function (type, obj) {
 
 Utils.randomString = (function () {
 	'use strict';
-	var chars = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split('');
+	var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
+		charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
-	return function (length) {
-		var str = '';
+	return function (resultLen, lowOnly) {
+		var chars = lowOnly ? charsLow : charsAll,
+			charsLen = chars.length,
+			str = '';
 
-		if (!length) {
-			length = Math.random() * 62 + 1 >> 0;
+		if (!resultLen) {
+			resultLen = Math.random() * charsLen + 1 >> 0;
 		}
 
-		while (length--) {
-			str += chars[Math.random() * 62 >> 0];
+		while (resultLen--) {
+			str += chars[Math.random() * charsLen >> 0];
 		}
 
 		return str;
