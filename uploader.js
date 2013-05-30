@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/*global require, __dirname, unescape, console */
 
 (function (port) {
 	'use strict';
@@ -8,34 +7,22 @@
 		fs = require('fs'),
 		_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
 		formidable = require('formidable'),
-		nodeStatic = require('node-static'),
 		Utils = require('./commons/Utils.js'),
 		options = {
-			tmpDir: __dirname + '/../store/incoming',
-			publicDir: __dirname + '/../store/public/photos',
-			uploadDir: __dirname + '/../store/private/photos',
+			incomeDir: __dirname + '/../store/incoming',
+			targetDir: __dirname + '/../store/private/photos/',
 			uploadUrl: '/',
-			maxPostSize: 11000000000, // 11 GB
-			minFileSize: 1,
-			maxFileSize: 10000000000, // 10 GB
-			acceptFileTypes: /.+/i,
-			// Files not matched by this regular expression force a download dialog,
-			// to prevent executing any scripts in the context of the service domain:
-			safeFileTypes: /\.(jpe?g|png)$/i,
+			minFileSize: 10240, //10kB
+			maxFileSize: 52428800, //50Mb
+			maxPostSize: 53477376, //51Mb,
+			acceptFileTypes: /\.(jpe?g|png)$/i,
 			accessControl: {
 				allowOrigin: '*',
 				allowMethods: 'OPTIONS, POST',
 				allowHeaders: 'Content-Type, Content-Range, Content-Disposition'
-			},
-			nodeStatic: {
-				cache: 3600 // seconds to cache served files
 			}
 		},
-		utf8encode = function (str) {
-			return unescape(encodeURIComponent(str));
-		},
 
-		fileServer = new nodeStatic.Server(options.publicDir, options.nodeStatic),
 		setAccessControlHeaders = function (res) {
 			res.setHeader('Access-Control-Allow-Origin', options.accessControl.allowOrigin);
 			res.setHeader('Access-Control-Allow-Methods', options.accessControl.allowMethods);
@@ -53,65 +40,61 @@
 			res.end(JSON.stringify(result));
 		},
 		postHandler = function (req, res, cb) {
-			console.log('postHandler');
 			var form = new formidable.IncomingForm(),
 				tmpFiles = [],
 				files = [],
 				map = {},
-				counter = 1,
-				finish = function () {
-					counter -= 1;
-					if (!counter) {
-						files.forEach(function (fileInfo) {
-							fileInfo.initUrls(req);
-						});
-						cb(req, res, {files: files});
-					}
-				};
-			form.uploadDir = options.tmpDir;
+				counter = 1;
+
+			form.uploadDir = options.incomeDir;
 			form
-				.on('fileBegin',function (name, file) {
-					console.log('fileBegin');
+				.on('fileBegin', function (name, file) {
 					tmpFiles.push(file.path);
 					var fileInfo = new FileInfo(file, req, true);
-					fileInfo.safeName();
+					fileInfo.validateName();
 					map[path.basename(file.path)] = fileInfo;
 					files.push(fileInfo);
 				})
-				.on('file',function (name, file) {
-					console.log('file');
+				.on('file', function (name, file) {
 					var fileInfo = map[path.basename(file.path)];
 
 					fileInfo.size = file.size;
 					if (!fileInfo.validate()) {
-						fs.unlink(file.path);
+						fs.unlinkSync(file.path);
 						return;
 					}
-					fs.renameSync(file.path, options.uploadDir + '/origin/' + fileInfo.file);
-				}).on('aborted',function () {
-					console.log('aborted');
+					fs.renameSync(file.path, options.targetDir + 'origin/' + fileInfo.file);
+				})
+				.on('aborted', function () {
 					tmpFiles.forEach(function (file) {
-						fs.unlink(file);
+						fs.unlinkSync(file);
 					});
-				}).on('error',function (e) {
-					console.log('error');
-					console.log(e);
-				}).on('progress',function (bytesReceived, bytesExpected) {
-					console.log('progress');
+				})
+				.on('error', function (e) {
+					console.dir(e);
+				})
+				.on('progress', function (bytesReceived/*, bytesExpected*/) {
 					if (bytesReceived > options.maxPostSize) {
+						console.log('~~~~');
+						console.log('Too big, dropping');
 						req.connection.destroy();
 					}
-				}).on('end', finish).parse(req);
+				})
+				.on('end', function () {
+					counter -= 1;
+					if (!counter) {
+						cb(req, res, {files: files});
+					}
+				})
+				.parse(req);
 		},
 		serve = function (req, res) {
 			switch (req.method) {
 			case 'OPTIONS':
-				console.log('OPTIONS');
 				setAccessControlHeaders(res);
 				res.end();
 				break;
 			case 'POST':
-				console.log('POST');
 				setAccessControlHeaders(res);
 				setNoCacheHeaders(res);
 				postHandler(req, res, postHandlerResponse);
@@ -133,46 +116,23 @@
 			this.type = file.type;
 		};
 
-
-	fileServer.respond = function (pathname, status, _headers, files, stat, req, res, finish) {
-		if (!options.safeFileTypes.test(files[0])) {
-			// Force a download dialog for unsafe file extensions:
-			res.setHeader(
-				'Content-Disposition',
-				'attachment; filename="' + utf8encode(path.basename(files[0])) + '"'
-			);
-		} else {
-			// Prevent Internet Explorer from MIME-sniffing the content-type:
-			res.setHeader('X-Content-Type-Options', 'nosniff');
-		}
-		nodeStatic.Server.prototype.respond
-			.call(this, pathname, status, _headers, files, stat, req, res, finish);
-	};
-
-
 	FileInfo.prototype.validate = function () {
 		if (options.minFileSize && options.minFileSize > this.size) {
 			this.error = 'File is too small';
 		} else if (options.maxFileSize && options.maxFileSize < this.size) {
 			this.error = 'File is too big';
 		} else if (!options.acceptFileTypes.test(this.name)) {
+			console.log('Filetype not allowed');
 			this.error = 'Filetype not allowed';
 		}
 		return !this.error;
 	};
-	FileInfo.prototype.safeName = function () {
+	FileInfo.prototype.validateName = function () {
 		// Prevent directory traversal and creating hidden system files:
 		this.file = path.basename(this.file).replace(/^\.+/, '');
 		// Prevent overwriting existing files:
-		while (_existsSync(options.uploadDir + '/origin/' + this.file)) {
+		while (_existsSync(options.targetDir + 'origin/' + this.file)) {
 			this.file = genFileName(this.file);
-		}
-	};
-	FileInfo.prototype.initUrls = function (req) {
-		console.log(66);
-		if (!this.error) {
-			var baseUrl = (options.ssl ? 'https:' : 'http:') + '//' + req.headers.host + options.uploadUrl;
-			this.url = baseUrl + 'origin/' + encodeURIComponent(this.file);
 		}
 	};
 
