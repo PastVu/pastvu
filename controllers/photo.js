@@ -52,12 +52,16 @@ function createPhotos(session, data, cb) {
 			data.forEach(function (item, index) {
 				var photo = new Photo({
 					cid: count.next - index,
+					user: session.user._id,
+					file: item.file,
+					path: item.file.substr(0, 3).split('').join('/') + '/' + item.file,
+					type: item.type,
+					size: item.size,
 					geo: undefined,
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
-					user: session.user._id,
 					fresh: true
-				}.extend(item));
+				});
 				if (data.length > 1) {
 					photo.save(this.parallel());
 				} else {

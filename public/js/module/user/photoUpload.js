@@ -56,7 +56,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.fileOptions = {
 				auto: true,
 				maxFiles: 10,
-				maxSize: 926214400, //25Mb
+				maxSize: 52428800, //50Mb
 				minSize: 10240, //10kB
 				acceptTypes: /(\.|\/)(jpe?g|png)$/i,
 				previewTypes: /(\.|\/)(jpe?g|png)$/i,

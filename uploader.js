@@ -49,7 +49,6 @@
 			form.uploadDir = options.incomeDir;
 			form
 				.on('fileBegin', function (name, file) {
-					console.dir(file);
 					tmpFiles.push(file.path);
 					var fileInfo = new FileInfo(file, req, true);
 					map[path.basename(file.path)] = fileInfo;

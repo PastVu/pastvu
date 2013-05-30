@@ -18,7 +18,9 @@ var FragmentSchema = new Schema({
 			stack: {type: String},
 			stack_order: {type: Number},
 
-			file: {type: String, index: { unique: true }},
+			file: {type: String, required: true, index: { unique: true }}, //Имя файла, например 'ino6k6k6yz.jpg'
+			path: {type: String, required: true}, //Путь с именем, например 'i/n/o/ino6k6k6yz.jpg'
+
 			ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
 			adate: {type: Date, index: true}, // Время активации
 			type: {type: String}, // like 'image/jpeg'
