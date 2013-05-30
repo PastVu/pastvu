@@ -6,12 +6,12 @@
 	var path = require('path'),
 		fs = require('fs'),
 		_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
+		mkdirp = require('mkdirp'),
 		formidable = require('formidable'),
 		Utils = require('./commons/Utils.js'),
 		options = {
 			incomeDir: __dirname + '/../store/incoming',
-			targetDir: __dirname + '/../store/private/photos/',
-			uploadUrl: '/',
+			targetDir: __dirname + '/../store/private/photos/origin/',
 			minFileSize: 10240, //10kB
 			maxFileSize: 52428800, //50Mb
 			maxPostSize: 53477376, //51Mb,
@@ -49,9 +49,9 @@
 			form.uploadDir = options.incomeDir;
 			form
 				.on('fileBegin', function (name, file) {
+					console.dir(file);
 					tmpFiles.push(file.path);
 					var fileInfo = new FileInfo(file, req, true);
-					fileInfo.validateName();
 					map[path.basename(file.path)] = fileInfo;
 					files.push(fileInfo);
 				})
@@ -63,7 +63,7 @@
 						fs.unlinkSync(file.path);
 						return;
 					}
-					fs.renameSync(file.path, options.targetDir + 'origin/' + fileInfo.file);
+					fs.renameSync(file.path, options.targetDir + fileInfo.fileDir + fileInfo.file);
 				})
 				.on('aborted', function () {
 					tmpFiles.forEach(function (file) {
@@ -106,34 +106,40 @@
 			}
 		},
 
-		genFileName = function (name) {
+		fileNameGen = function (name) {
 			return Utils.randomString(18, true) + name.substr(name.lastIndexOf('.'));
+		},
+		fileNameDir = function (fileName) {
+			var result = fileName.substr(0, 3).split('').join('/') + '/';
+			mkdirp.sync(options.targetDir + result);
+			return result;
 		},
 		FileInfo = function (file) {
 			this.name = file.name;
-			this.file = genFileName(file.name);
 			this.size = file.size;
 			this.type = file.type;
+			this.createFileName();
 		};
 
+	FileInfo.prototype.createFileName = function () {
+		this.file = fileNameGen(this.name);
+		this.fileDir = fileNameDir(this.file);
+
+		//Циклично проверяем на существование файла с таким имемнем, пока не найдем уникальное
+		while (_existsSync(options.targetDir + this.fileDir + this.file)) {
+			this.file = fileNameGen(this.file);
+			this.fileDir = fileNameDir(this.file);
+		}
+	};
 	FileInfo.prototype.validate = function () {
 		if (options.minFileSize && options.minFileSize > this.size) {
 			this.error = 'File is too small';
 		} else if (options.maxFileSize && options.maxFileSize < this.size) {
 			this.error = 'File is too big';
 		} else if (!options.acceptFileTypes.test(this.name)) {
-			console.log('Filetype not allowed');
 			this.error = 'Filetype not allowed';
 		}
 		return !this.error;
-	};
-	FileInfo.prototype.validateName = function () {
-		// Prevent directory traversal and creating hidden system files:
-		this.file = path.basename(this.file).replace(/^\.+/, '');
-		// Prevent overwriting existing files:
-		while (_existsSync(options.targetDir + 'origin/' + this.file)) {
-			this.file = genFileName(this.file);
-		}
 	};
 
 
