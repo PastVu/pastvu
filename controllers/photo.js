@@ -40,6 +40,8 @@ function createPhotos(session, data, cb) {
 		data = [data];
 	}
 
+	var resultCids = [];
+
 	step(
 		function increment() {
 			Counter.incrementBy('photo', data.length, this);
@@ -62,6 +64,8 @@ function createPhotos(session, data, cb) {
 					//dir: dirs[_.random(0, dirs.length - 1)],
 					fresh: true
 				});
+
+				resultCids.push({file: item.file, cid: photo.cid});
 				if (data.length > 1) {
 					photo.save(this.parallel());
 				} else {
@@ -75,7 +79,7 @@ function createPhotos(session, data, cb) {
 				cb({message: err.message || '', error: true});
 				return;
 			}
-			cb({message: data.length + ' photo successfully saved ' + data[0].file});
+			cb({message: data.length + ' photo successfully saved ' + data[0].file, cids: resultCids});
 		}
 	);
 }
@@ -108,14 +112,14 @@ function removePhoto(socket, data, cb) {
 
 	step(
 		function () {
-			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false, select: {user: 1, file: 1}}, this);
+			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false, select: {cid: 1, user: 1}}, this);
 		},
 		function (err, photo) {
 			if (err || !photo) {
 				cb({message: (err && err.message) || 'No such photo for this user', error: true});
 				return;
 			}
-			PhotoConverter.removePhotos([photo.file]);
+			PhotoConverter.removePhotos([photo.cid]);
 
 			if (photo.user.equals(user._id)) {
 				user.pcount = user.pcount - 1;
@@ -212,11 +216,7 @@ module.exports.loadController = function (app, db, io) {
 					if (!Array.isArray(data) && Utils.isType('object', data)) {
 						data = [data];
 					}
-					var toConvert = [];
-					data.forEach(function (item, index) {
-						toConvert.push({file: item.file});
-					});
-					PhotoConverter.addPhotos(toConvert);
+					PhotoConverter.addPhotos(createData.cids);
 				}
 				socket.emit('createPhotoCallback', createData);
 			});

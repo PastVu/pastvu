@@ -3,6 +3,7 @@
 var path = require('path'),
 	async = require('async'),
 	imageMagick = require('imagemagick'),
+	mkdirp = require('mkdirp'),
 	dbNative,
 	Settings,
 	User,
@@ -200,7 +201,7 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('getStatConveyer', data);
 			}
 
-			socket.on('statConveyer', function (data) {
+			socket.on('statConveyer', function () {
 				if (!hs.session.user) {
 					result({message: 'Not authorized for statConveyer', error: true});
 					return;
@@ -219,7 +220,7 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 		(function statFast() {
-			socket.on('giveStatFastConveyer', function (data) {
+			socket.on('giveStatFastConveyer', function () {
 				socket.emit('takeStatFastConveyer', {
 					conveyerEnabled: conveyerEnabled,
 					clength: conveyerLength,
@@ -253,7 +254,7 @@ function CollectConveyerStat() {
 
 /**
  * Добавление в конвейер конвертации фотографий
- * @param data Массив объектов {file: '', variants: []}
+ * @param data Массив объектов {cid: 123, variants: []}
  * @param cb Коллбэк успешности добавления
  */
 module.exports.addPhotos = function (data, cb) {
@@ -266,17 +267,17 @@ module.exports.addPhotos = function (data, cb) {
 	step(
 		function () {
 			for (i = 0; i < data.length; i++) {
-				if (data[i].file) {
-					toConvertObj = {file: data[i].file, added: stamp};
+				if (data[i].cid) {
+					toConvertObj = {cid: data[i].cid, added: stamp};
 					if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
 						toConvertObj.variants = data[i].variants;
 					}
 					toConvertObjs.push(toConvertObj);
 				}
 			}
-			toConvert = _.pluck(toConvertObjs, 'file');
+			toConvert = _.pluck(toConvertObjs, 'cid');
 			PhotoConveyer.collection.insert(toConvertObjs, this.parallel());
-			Photo.update({file: {$in: toConvert}, del: {$ne: true}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
+			Photo.update({cid: {$in: toConvert}, del: {$ne: true}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
 		},
 		function (err) {
 			if (err) {
@@ -329,15 +330,15 @@ module.exports.addPhotosAll = function (data, cb) {
 
 /**
  * Удаление фотографий из конвейера конвертаций
- * @param data Массив имен фотографий
+ * @param data Массив cid
  * @param cb Коллбэк успешности удаления
  */
 module.exports.removePhotos = function (data, cb) {
-	PhotoConveyer.remove({file: {$in: data}}, function (err, doc) {
+	PhotoConveyer.remove({cid: {$in: data}}, function (err, docs) {
 		if (cb) {
 			cb(err);
 		}
-		conveyerLength -= data.length;
+		conveyerLength -= docs.length;
 	});
 };
 
@@ -374,19 +375,19 @@ function conveyerControl() {
 			return;
 		}
 
-		files.forEach(function (item, index) {
+		files.forEach(function (item) {
 			goingToWork -= 1;
 			working += 1;
 			step(
 				function setFlag() {
 					item.converting = true; //Ставим флаг, что конвертация файла началась
 					item.save(this.parallel());
-					Photo.findOneAndUpdate({file: item.file, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
+					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
 				},
 				function toConveyer(err, photoConv, photo) {
 					if (err || !photoConv || !photo) {
 						(new PhotoConveyerError({
-							file: photoConv.file,
+							cid: photoConv.cid,
 							added: photoConv.added,
 							error: (err ? String(err) : (!photo ? 'No such photo' : 'Conveyer setting converting=true save error'))
 						})).save(this.parallel());
@@ -400,10 +401,10 @@ function conveyerControl() {
 						}
 						conveyerConverted -= 1;
 					} else {
-						conveyerStep(photoConv.file, photoConv.variants, function (err) {
+						conveyerStep(photo.cid, photo.path, photoConv.variants, function (err) {
 							if (err) {
 								(new PhotoConveyerError({
-									file: photoConv.file,
+									cid: photoConv.cid,
 									added: photoConv.added,
 									error: String(err)
 								})).save(this.parallel());
@@ -430,17 +431,18 @@ function conveyerControl() {
 
 /**
  * Очередной шаг конвейера
- * @param file Имя файла
+ * @param cid cid файла
+ * @param filePath path файла
  * @param variants Варианты для конвертации
  * @param cb Коллбэк завершения шага
  * @param ctx Контекст вызова коллбэка
  */
-function conveyerStep(file, variants, cb, ctx) {
+function conveyerStep(cid, filePath, variants, cb, ctx) {
 	var asyncSequence = [],
 		imgSequence = fillImgSequence(variants);
 
 	asyncSequence.push(function (callback) {
-		callback(null, file);
+		callback(null, cid, filePath);
 	});
 	asyncSequence.push(identifySourceFile);
 	asyncSequence.push(saveIdentifiedInfo);
@@ -448,9 +450,10 @@ function conveyerStep(file, variants, cb, ctx) {
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
 			src = variant.parent === sourceDir ? sourceDir : targetDir + variant.parent + '/',
+			dstDir = path.normalize(targetDir + variantName + '/' + filePath.substr(0, 5)),
 			o = {
-				srcPath: path.normalize(src + file),
-				dstPath: path.normalize(targetDir + variantName + '/' + file)
+				srcPath: path.normalize(src + filePath),
+				dstPath: path.normalize(targetDir + variantName + '/' + filePath)
 			};
 
 		if (variant.strip) {
@@ -464,7 +467,13 @@ function conveyerStep(file, variants, cb, ctx) {
 			o.filter = variant.filter;
 		}
 
+
 		//console.dir(o);
+		asyncSequence.push(function (info, callback) {
+			mkdirp(dstDir, null, function (err) {
+				callback(err, info);
+			});
+		});
 		asyncSequence.push(function (info, callback) {
 			var gravity,
 				extent;
@@ -495,31 +504,31 @@ function conveyerStep(file, variants, cb, ctx) {
 
 	});
 	asyncSequence.push(function (info, callback) {
-		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + 'standard/' + file)], function (err, data) {
+		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + 'standard/' + filePath)], function (err, data) {
 			var info = {};
 			if (err) {
 				logger.error(err);
-				callback(err, file, info);
+				callback(err, info);
 			} else {
 				data = JSON.parse(data);
 
 				info.ws = parseInt(data.w, 10) || undefined;
 				info.hs = parseInt(data.h, 10) || undefined;
 
-				Photo.findOneAndUpdate({file: file}, { $set: info}, { new: false, upsert: false }, function (err) {
+				Photo.findOneAndUpdate({cid: cid}, { $set: info}, { new: false, upsert: false }, function (err) {
 					callback(err, info);
 				});
 			}
 		});
 	});
 
-	async.waterfall(asyncSequence, function (err, result) {
+	async.waterfall(asyncSequence, function (err) {
 		cb.call(ctx, err);
 	});
 }
 
-function identifySourceFile(file, callback) {
-	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(sourceDir + file)], function (err, data) {
+function identifySourceFile(cid, filePath, callback) {
+	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(sourceDir + filePath)], function (err, data) {
 		var info = {};
 		if (err) {
 			logger.error(err);
@@ -531,11 +540,11 @@ function identifySourceFile(file, callback) {
 			info.format = data.f || undefined;
 			info.sign = data.signature || undefined;
 		}
-		callback(err, file, info);
+		callback(err, cid, filePath, info);
 	});
 }
-function saveIdentifiedInfo(file, info, callback) {
-	Photo.findOneAndUpdate({file: file, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
+function saveIdentifiedInfo(cid, filePath, info, callback) {
+	Photo.findOneAndUpdate({cid: cid, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
 		callback(err, info);
 	});
 }

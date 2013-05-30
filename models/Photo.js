@@ -61,7 +61,7 @@ var FragmentSchema = new Schema({
 	),
 	PhotoConveyerSchema = new Schema(
 		{
-			file: {type: String, index: true},
+			cid: {type: Number, index: true},
 			added: {type: Date, 'default': Date.now, required: true, index: true},
 			variants: [String], // Версии, которые необходимо конвертировать
 			converting: {type: Boolean}
@@ -73,7 +73,7 @@ var FragmentSchema = new Schema({
 // Ошибки конвертирования
 	PhotoConveyerErrorSchema = new Schema(
 		{
-			file: {type: String, index: true},
+			cid: {type: String, index: true},
 			added: {type: Date},
 			stamp: {type: Date, 'default': Date.now},
 			error: {type: String}

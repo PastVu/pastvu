@@ -690,7 +690,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.exe(false);
 			}.bind(this));
 			socket.emit('convertPhotos', [
-				{file: this.p.file(), variants: this.selectedOpt()}
+				{cid: this.p.cid(), variants: this.selectedOpt()}
 			]);
 		},
 

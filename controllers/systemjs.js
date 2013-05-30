@@ -238,7 +238,7 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now(),
 			addDate = new Date(),
 			conveyer = [],
-			photos = db.photos.find({}, {_id: 0, file: 1}).sort({adate: 1}).toArray(),
+			photos = db.photos.find({}, {_id: 0, cid: 1}).sort({adate: 1}).toArray(),
 			photoCounter = photos.length,
 			photosAllCount = photos.length;
 
@@ -247,7 +247,7 @@ module.exports.loadController = function (app, db) {
 		while (photoCounter) {
 			conveyer.push(
 				{
-					file: photos[--photoCounter].file,
+					cid: photos[--photoCounter].cid,
 					added: addDate
 				}
 			);
