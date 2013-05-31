@@ -55,8 +55,7 @@ function createPhotos(session, data, cb) {
 				var photo = new Photo({
 					cid: count.next - index,
 					user: session.user._id,
-					file: item.file,
-					path: item.file.substr(0, 3).split('').join('/') + '/' + item.file,
+					file: item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1"),
 					type: item.type,
 					size: item.size,
 					geo: undefined,

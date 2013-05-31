@@ -530,9 +530,7 @@ module.exports.loadController = function (app, db) {
 					stack: photo.stack_id || undefined,
 					stack_order: photo.stack_order || undefined,
 
-					file: photo.file,
-					path: photo.file.substr(0, 3).split('').join('/') + '/' + photo.file,
-
+					file: photo.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1"),
 					ldate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
 					adate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
 					w: photo.width,

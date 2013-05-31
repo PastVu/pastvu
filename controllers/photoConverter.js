@@ -401,7 +401,7 @@ function conveyerControl() {
 						}
 						conveyerConverted -= 1;
 					} else {
-						conveyerStep(photo.cid, photo.path, photoConv.variants, function (err) {
+						conveyerStep(photo.cid, photo.file, photoConv.variants, function (err) {
 							if (err) {
 								(new PhotoConveyerError({
 									cid: photoConv.cid,

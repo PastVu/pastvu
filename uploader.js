@@ -109,7 +109,7 @@
 			return Utils.randomString(18, true) + name.substr(name.lastIndexOf('.'));
 		},
 		fileNameDir = function (fileName) {
-			var result = fileName.substr(0, 3).split('').join('/') + '/';
+			var result = fileName.substr(0, 3).replace(/(.)/gi, '$1/');
 			mkdirp.sync(options.targetDir + result);
 			return result;
 		},
