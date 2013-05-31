@@ -144,13 +144,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			file.ext.jqXHR = file.ext.data.submit();
 		},
 		cancelFile: function (file) {
-			if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
-				socket.emit('removePhoto', file.ext.file);
+			//Если фото с этим файлом уже создалось, то вызываем его удаление из базы,
+			//если нет, значит оно загружается, и отменяем запрос на загрузку
+			if (this.fileUploaded.hasOwnProperty(file.ext.file) && this.fileUploaded[file.ext.file].cid) {
+				socket.emit('removePhoto', this.fileUploaded[file.ext.file].cid);
 				delete this.fileUploaded[file.ext.file];
+				this.destroyFile(file);
 			} else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
 				file.ext.jqXHR.abort();
+				this.destroyFile(file);
 			}
-			this.destroyFile(file);
 		},
 		destroyFile: function (file) {
 			this.fileList.remove(file);
@@ -244,15 +247,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				receivedFiles = result.files || [],
 				toSaveArr = [];
 
-			receivedFiles.forEach(function (receivedFile, index, array) {
+			receivedFiles.forEach(function (receivedFile) {
 				if (receivedFile.name && receivedFile.file) {
 
-					data.files.forEach(function (file, index) {
+					data.files.forEach(function (file) {
 						if (file.name === receivedFile.name) {
 							file.ext.file = receivedFile.file;
 							file.ext.jqXHR = null;
 							delete file.ext.jqXHR;
-							this.fileUploaded[receivedFile.file] = file;
+							this.fileUploaded[receivedFile.file] = {file: file};
 							window.setTimeout(function () {
 								file.ext.uploading(false);
 								file.ext.uploaded(true);
@@ -266,6 +269,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 
 			if (toSaveArr.length > 0) {
+				socket.once('createPhotoCallback', function (result) {
+					result.cids.forEach(function (item) {
+						this.fileUploaded[item.file] = item;
+					}, this);
+				}.bind(this));
 				socket.emit('createPhoto', toSaveArr);
 			}
 		},

@@ -98,17 +98,12 @@ function removePhoto(socket, data, cb) {
 		return;
 	}
 
-	if (!data && (!Utils.isType('number', data) || !Utils.isType('string', data))) {
+	if (!data && (!Utils.isType('number', data))) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 
-	query = {del: {$exists: false}};
-	if (Utils.isType('number', data)) {
-		query.cid = data;
-	} else if (Utils.isType('string', data)) {
-		query.file = data;
-	}
+	query = {cid: data, del: {$exists: false}};
 
 	step(
 		function () {
