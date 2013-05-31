@@ -49,7 +49,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 							hist.frag = changeFragTexts['f' + hist.frag];
 						}
 						user = hist.user;
-						user.avatar = user.avatar ? '/_avatar/th_' + user.avatar : '/img/caps/avatarth.png';
+						user.avatar = user.avatar ? '/_avatar/th/' + user.avatar : '/img/caps/avatarth.png';
 						user.name = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
 					}
 					this.hists(data.hists);
