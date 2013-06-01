@@ -48,7 +48,15 @@ sudo node app.js --land prod --domain jsteam.ru --port 80 --uport 8888
 		Через регулярное выражение: ^(?:[^_]+_)?(.+)   достать $1
 
 		С помощью CMD. http://stackoverflow.com/questions/15135920/remove-file-name-prefix-with-cmd
-		Создаем bat-file:
+		Создаем bat-file рекуивно итерирующийся по папкам и вызыващим для них следующий bat:
+		@echo off
+		call "%~dp0dashrem.bat"
+		for /r /d %%x in (*) do (
+			pushd "%%x"
+			call "%~dp0dashrem.bat"
+			popd
+		)
+		Создаем bat-file для переименования всех файлов в папке
 		setlocal enabledelayedexpansion
 		for %%F in (*.jpg) do (
 		  set "FN=%%F"
