@@ -50,6 +50,8 @@ for (var k in interfaces) {
  * Окружение (dev, test, prod)
  */
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
+	confFile = argv.conffile || __dirname + '/config.json',
+	conf = JSON.parse(fs.readFileSync(confFile, 'utf8')),
 	land = argv.land || 'dev',
 	domain = argv.domain || addresses[0] || 'localhost',
 	port = argv.port || 3000,
@@ -68,7 +70,7 @@ logger.info('Application Hash: ' + app.hash);
 
 io = require('socket.io').listen(server);
 
-new File("publicContent/avatars").createDirectory();
+new File("../store/public/avatars").createDirectory();
 new File("../store/public/photos/micros").createDirectory();
 new File("../store/public/photos/micro").createDirectory();
 new File("../store/public/photos/mini").createDirectory();

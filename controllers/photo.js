@@ -15,7 +15,7 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger,
-	photoDir = process.cwd() + '/publicContent/photos',
+	photoDir = process.cwd() + '/../store/public/photos',
 	imageFolders = [photoDir + '/micros/', photoDir + '/micro/', photoDir + '/mini/', photoDir + '/midi/', photoDir + '/thumb/', photoDir + '/standard/', photoDir + '/origin/'];
 
 /**

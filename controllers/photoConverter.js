@@ -25,7 +25,7 @@ var path = require('path'),
 	conveyerMaxLength = 0,
 	conveyerConverted = 0,
 
-	sourceDir = __dirname + '/../../store/private/photos/origin/',
+	sourceDir = __dirname + '/../../store/private/photos/',
 	targetDir = __dirname + '/../../store/public/photos/',
 
 	maxWorking = 2, // Возможно параллельно конвертировать

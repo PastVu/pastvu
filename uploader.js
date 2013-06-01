@@ -11,7 +11,7 @@
 		Utils = require('./commons/Utils.js'),
 		options = {
 			incomeDir: __dirname + '/../store/incoming',
-			targetDir: __dirname + '/../store/private/photos/origin/',
+			targetDir: __dirname + '/../store/private/photos/',
 			minFileSize: 10240, //10kB
 			maxFileSize: 52428800, //50Mb
 			maxPostSize: 53477376, //51Mb,
