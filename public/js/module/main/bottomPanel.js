@@ -190,7 +190,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			while (i) {
 				user = users[--i];
 				if (user.avatar) {
-					user.sfile = '/_avatar/normal/' + user.avatar;
+					user.sfile = '/_avatar/d/' + user.avatar;
 				} else {
 					user.sfile = User.def.full.avatar;
 				}

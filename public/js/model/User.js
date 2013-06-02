@@ -59,8 +59,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 		defType = defType || 'full';
 
 		if (origin.avatar) {
-			origin.avatarth = '/_avatar/th/' + origin.avatar;
-			origin.avatar = '/_avatar/normal/' + origin.avatar;
+			origin.avatarth = '/_avatar/h/' + origin.avatar;
+			origin.avatar = '/_avatar/d/' + origin.avatar;
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

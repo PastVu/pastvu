@@ -351,7 +351,7 @@ function checkConfirm(session, data, cb) {
 				}
 			);
 		} else if (key.length === 8) { //Confirm pass change
-			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: user.avatar ? '/_avatar/th/' + user.avatar : '/img/caps/avatarth.png'});
+			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: user.avatar ? '/_avatar/h/' + user.avatar : '/img/caps/avatarth.png'});
 		}
 
 	});
