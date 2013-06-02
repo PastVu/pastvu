@@ -122,7 +122,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.processPhotos(data.photos, Photo.picFormats.midi);
+						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
 					}
 
@@ -139,13 +139,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (!data || data.error) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.micro, 'vdcount', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.micro, 'vwcount', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.micro, 'vcount', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.s, 'vdcount', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.s, 'vwcount', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.s, 'vcount', [' просмотр', ' просмотра', ' просмотров']));
 
-						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.micro, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
 
 						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
 						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));

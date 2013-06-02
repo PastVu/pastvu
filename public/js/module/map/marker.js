@@ -345,7 +345,7 @@ define([
 			} else {
 				// Если оно новое - создаем его объект и маркер
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					curr.sfile = Photo.picFormats.midi + curr.file;
+					curr.sfile = Photo.picFormats.m + curr.file;
 					divIcon = L.divIcon(
 						{
 							className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -467,7 +467,7 @@ define([
 				if (!this.mapObjects.photos[curr.cid]) {
 					// Если оно новое - создаем его объект и маркер
 					if (!boundChanged || this.calcBound.contains(curr.geo)) {
-						curr.sfile = Photo.picFormats.midi + curr.file;
+						curr.sfile = Photo.picFormats.m + curr.file;
 						divIcon = L.divIcon(
 							{
 								className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -586,16 +586,16 @@ define([
 						if (cluster.c > 2999) {
 							size = this.sizeClusterb;
 							measure = 'b';
-							picFormat = Photo.picFormats.micro;
+							picFormat = Photo.picFormats.s;
 						} else {
 							size = this.sizeClusterm;
 							measure = 'm';
-							picFormat = Photo.picFormats.microm;
+							picFormat = Photo.picFormats.s;
 						}
 					} else {
 						size = this.sizeCluster;
 						measure = '';
-						picFormat = Photo.picFormats.micros;
+						picFormat = Photo.picFormats.x;
 					}
 					cluster.p.sfile = picFormat + cluster.p.file;
 					divIcon = L.divIcon({
@@ -868,13 +868,13 @@ define([
 
 		while (++i < len) {
 			photo = photos[i];
-			photo.sfile = Photo.picFormats.midi + photo.file;
+			photo.sfile = Photo.picFormats.m + photo.file;
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTpl({img: Photo.picFormats.micros + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.thumb + photo.file, title: photo.title, href: '/p/' + photo.cid, year: this.makeTextYear(photo)});
+			content += this.popupClusterTpl({img: Photo.picFormats.x + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.h + photo.file, title: photo.title, href: '/p/' + photo.cid, year: this.makeTextYear(photo)});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.thumb + photos[photos.length - 1].file, year: this.makeTextYear(photos[photos.length - 1]), txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.h + photos[photos.length - 1].file, year: this.makeTextYear(photos[photos.length - 1]), txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);

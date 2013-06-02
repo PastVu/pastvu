@@ -346,12 +346,12 @@ define([
 			};
 
 			this.convertOptions = ko.observableArray([
-				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'standard'},
-				{vName: 'Thumb', vId: 'thumb'},
-				{vName: 'Midi', vId: 'midi'},
-				{vName: 'Mini', vId: 'mini'},
-				{vName: 'Micro', vId: 'micro'},
-				{vName: 'Micros', vId: 'micros'}
+				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'd'},
+				{vName: 'Thumb', vId: 'h'},
+				{vName: 'Midi', vId: 'm'},
+				{vName: 'Mini', vId: 'q'},
+				{vName: 'Micro', vId: 's'},
+				{vName: 'Micros', vId: 'x'}
 			]);
 			this.selectedOpt = ko.observableArray([]);
 			this.$dom.find('#convertSelect').multiselect({

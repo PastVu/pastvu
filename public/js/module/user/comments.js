@@ -105,7 +105,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						for (i in data.photos) {
 							if (data.photos[i] !== undefined) {
 								photo = data.photos[i];
-								photo.sfile = Photo.picFormats.micro + photo.file;
+								photo.sfile = Photo.picFormats.s + photo.file;
 								photo.link = '/p/' + photo.cid;
 								photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
 								photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';

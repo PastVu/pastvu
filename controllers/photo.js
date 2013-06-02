@@ -16,7 +16,7 @@ var auth = require('./auth.js'),
 	log4js = require('log4js'),
 	logger,
 	photoDir = process.cwd() + '/../store/public/photos',
-	imageFolders = [photoDir + '/micros/', photoDir + '/micro/', photoDir + '/mini/', photoDir + '/midi/', photoDir + '/thumb/', photoDir + '/standard/', photoDir + '/origin/'];
+	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
 
 /**
  * Создает фотографии в базе данных

@@ -13,6 +13,7 @@ var express = require('express'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
+	mkdirp = require('mkdirp'),
 	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
 	mc = require('mc'), // memcashed
@@ -61,6 +62,10 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
 
+mkdirp.sync("../store/incoming");
+mkdirp.sync("../store/private");
+mkdirp.sync("../store/public");
+
 app = express();
 server = http.createServer(app);
 
@@ -69,16 +74,6 @@ app.hash = (land === 'dev' ? app.version : Utils.randomString(10));
 logger.info('Application Hash: ' + app.hash);
 
 io = require('socket.io').listen(server);
-
-new File("../store/public/avatars").createDirectory();
-new File("../store/public/photos/micros").createDirectory();
-new File("../store/public/photos/micro").createDirectory();
-new File("../store/public/photos/mini").createDirectory();
-new File("../store/public/photos/midi").createDirectory();
-new File("../store/public/photos/thumb").createDirectory();
-new File("../store/public/photos/standard").createDirectory();
-new File("../store/public/photos/origin").createDirectory();
-new File("../store/incoming").createDirectory();
 
 function static404(req, res) {
 	res.send(404);

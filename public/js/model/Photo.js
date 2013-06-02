@@ -56,14 +56,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 		},
 		picPrefix = '/_p',
 		picFormats = {
-			micros: picPrefix + '/micros/',
-			microm: picPrefix + '/micro/',
-			micro: picPrefix + '/micro/',
-			mini: picPrefix + '/mini/',
-			midi: picPrefix + '/midi/',
-			thumb: picPrefix + '/thumb/',
-			standard: picPrefix + '/standard/',
-			origin: picPrefix + '/origin/'
+			a: picPrefix + '/a/',
+			d: picPrefix + '/d/',
+			h: picPrefix + '/h/',
+			m: picPrefix + '/m/',
+			q: picPrefix + '/q/',
+			s: picPrefix + '/s/',
+			x: picPrefix + '/x/'
 		};
 
 	_.assign(defaults.compact, defaults.base);
@@ -81,7 +80,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 	function factory(origin, defType, picType, customDefaults) {
 		origin = origin || {};
 		defType = defType || 'full';
-		picType = picType || 'standard';
+		picType = picType || 'd';
 
 		if (customDefaults) {
 			origin = _.defaults(origin, customDefaults, defaults[defType]);
@@ -121,7 +120,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 	 */
 	function vm(data, vmExist, withoutFactory) {
 		if (!withoutFactory) {
-			factory(data, 'full', 'standard');
+			factory(data, 'full', 'd');
 		}
 		if (!vmExist) {
 			vmExist = vmCreate(data);

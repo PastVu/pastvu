@@ -33,24 +33,30 @@ var path = require('path'),
 	working = 0, //Сейчас конвертируется
 
 	imageVersions = {
-		/*origin: {
-		 parent: 0,
+		/*a: {
+		 parent: sourceDir,
+		 desc: 'Origin with watermark',
+		 dir: 'a/',
 		 width: 1050,
 		 height: 700,
 		 strip: true,
 		 filter: 'Sinc',
 		 postfix: '>'
 		 },*/
-		standard: {
+		d: {
 			parent: sourceDir,
+			desc: 'Standard for photo page',
+			dir: 'd/',
 			width: 1050,
 			height: 700,
 			strip: true,
 			filter: 'Sinc',
 			postfix: '>'
 		},
-		thumb: {
-			parent: 'standard',
+		h: {
+			parent: 'd',
+			desc: 'Thumb',
+			dir: 'h/',
 			width: 246,
 			height: 164,
 			filter: 'Sinc',
@@ -75,31 +81,39 @@ var path = require('path'),
 			},
 			postfix: '^'
 		},
-		midi: {
-			parent: 'standard',
+		m: {
+			parent: 'd',
+			desc: 'Midi',
+			dir: 'm/',
 			width: 150,
 			height: 100,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
 		},
-		mini: {
-			parent: 'midi',
+		q: {
+			parent: 'm',
+			desc: 'Mini',
+			dir: 'q/',
 			width: 90,
 			height: 60,
 			filter: 'Sinc',
 			gravity: 'center',
 			postfix: '^'
 		},
-		micro: {
-			parent: 'mini',
+		s: {
+			parent: 'q',
+			desc: 'Micro',
+			dir: 's/',
 			width: 60,
 			height: 60,
 			crop: true,
 			gravity: 'center'
 		},
-		micros: {
-			parent: 'micro',
+		x: {
+			parent: 's',
+			desc: 'Micros',
+			dir: 'x/',
 			width: 40,
 			height: 40,
 			filter: 'Sinc',
@@ -449,11 +463,11 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
-			src = variant.parent === sourceDir ? sourceDir : targetDir + variant.parent + '/',
-			dstDir = path.normalize(targetDir + variantName + '/' + filePath.substr(0, 5)),
+			src = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir,
+			dstDir = path.normalize(targetDir + variant.dir + filePath.substr(0, 5)),
 			o = {
 				srcPath: path.normalize(src + filePath),
-				dstPath: path.normalize(targetDir + variantName + '/' + filePath)
+				dstPath: path.normalize(targetDir + variant.dir + filePath)
 			};
 
 		if (variant.strip) {
@@ -504,7 +518,7 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 
 	});
 	asyncSequence.push(function (info, callback) {
-		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + 'standard/' + filePath)], function (err, data) {
+		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + imageVersions.d.dir + filePath)], function (err, data) {
 			var info = {};
 			if (err) {
 				logger.error(err);
@@ -548,3 +562,32 @@ function saveIdentifiedInfo(cid, filePath, info, callback) {
 		callback(err, info);
 	});
 }
+
+/**
+ a - origin
+ b
+ c
+ d - standard 1050x700
+ e
+ f
+ g
+ h - thumb 246x164
+ i
+ j
+ k
+ l
+ m - midi 150x100
+ n
+ o
+ p
+ q - mini 90x60
+ r
+ s - micro 60x60
+ t
+ u
+ v
+ w
+ x - micros 40x40
+ y
+ z
+ */

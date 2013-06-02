@@ -103,7 +103,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				} else {
 					var i = data.photos.length;
 					while (i--) {
-						Photo.factory(data.photos[i], 'compact', 'thumb', {title: 'No title yet'});
+						Photo.factory(data.photos[i], 'compact', 'h', {title: 'No title yet'});
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -124,7 +124,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (data.disabled.length > 0) {
 						i = data.disabled.length;
 						while (i--) {
-							Photo.factory(data.disabled[i], 'compact', 'thumb');
+							Photo.factory(data.disabled[i], 'compact', 'h');
 						}
 						Array.prototype.push.apply(currArray, data.disabled);
 						currArray.sort(function (a, b) {
@@ -141,7 +141,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (data.fresh.length > 0) {
 						i = data.fresh.length;
 						while (i--) {
-							Photo.factory(data.fresh[i], 'compact', 'thumb');
+							Photo.factory(data.fresh[i], 'compact', 'h');
 						}
 						Array.prototype.unshift.apply(currArray, data.fresh);
 					}
@@ -245,7 +245,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						if (data.photos.length > 0) {
 							var i = data.photos.length;
 							while (i--) {
-								Photo.factory(data.photos[i], 'compact', 'thumb');
+								Photo.factory(data.photos[i], 'compact', 'h');
 							}
 							this.photos.concat(data.photos, true);
 						}
