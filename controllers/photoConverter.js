@@ -126,18 +126,38 @@ var path = require('path'),
 
 	waterMarkGen = (function () {
 		var waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf'),
-			waterLogo = path.normalize(waterDir + 'logo.png'),
-			waterLogoSmall = path.normalize(waterDir + 'logoSmall.png');
+			sizes = {
+				size: {
+					small: '260x14',
+					mid: '700x28',
+					big: '900x40'
+				},
+				pointsize: {
+					small: '11',
+					mid: '24',
+					big: '32'
+				},
+				geometry: {
+					small: '+20+3',
+					mid: '+36+7',
+					big: '+46+8'
+				},
+				logo: {
+					small: path.normalize(waterDir + 'logoSmall.png'),
+					mid: path.normalize(waterDir + 'logoMid.png'),
+					big: path.normalize(waterDir + 'logo.png')
+				}
+			};
 
 		return function (options) {
 			return [
 				'-size',
-				(options.small ? '260x14' : '900x40'),
+				sizes.size[options.size],
 				'xc:none',
 				'-font',
 				waterFontPath,
 				'-pointsize',
-				(options.small ? '11' : '32'),
+				sizes.pointsize[options.size],
 				'-gravity',
 				'west',
 				'-stroke',
@@ -153,7 +173,7 @@ var path = require('path'),
 				'-stroke',
 				'none',
 				'-fill',
-				'#eaeaea',
+				'#e8e8e8',
 				'-annotate',
 				'+0+0',
 				options.txt,
@@ -162,13 +182,13 @@ var path = require('path'),
 				'-gravity',
 				'southwest',
 				'-geometry',
-				(options.small ? '+20+3' : '+46+8'),
+				sizes.geometry[options.size],
 				'-composite',
 				'-gravity',
 				'southwest',
 				'-geometry',
 				'+3+3',
-				(options.small ? waterLogoSmall : waterLogo),
+				sizes.logo[options.size],
 				'-composite',
 				options.target
 			];
@@ -591,12 +611,19 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 				var original = variantName === 'a',
 					w = original ? info.w : info.ws,
 					h = original ? info.h : info.hs,
-					small = w < 1500 && h < 1000,
+					size = 'small',
 					source = original ? o.srcPath : o.dstPath,
 					target = o.dstPath;
-				console.log(variantName, w, h);
+
+				if (w > 2400 || h > 1600) {
+					size = 'big';
+				} else if (w > 1350 || h > 900) {
+					size = 'mid';
+				}
+
+				console.log(variantName, size, w, h);
 				imageMagick.convert(
-					waterMarkGen({txt: waterTxt, small: small, source: source, target: target}),
+					waterMarkGen({txt: waterTxt, size: size, source: source, target: target}),
 					function (err) {
 						callback(err, info);
 					}
