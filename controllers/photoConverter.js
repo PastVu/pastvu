@@ -132,12 +132,12 @@ var path = require('path'),
 		return function (options) {
 			return [
 				'-size',
-				'260x14',
+				(options.small ? '260x14' : '900x40'),
 				'xc:none',
 				'-font',
 				waterFontPath,
 				'-pointsize',
-				'11',
+				(options.small ? '11' : '32'),
 				'-gravity',
 				'west',
 				'-stroke',
@@ -162,7 +162,7 @@ var path = require('path'),
 				'-gravity',
 				'southwest',
 				'-geometry',
-				'+20+3',
+				(options.small ? '+20+3' : '+46+8'),
 				'-composite',
 				'-gravity',
 				'southwest',
@@ -525,7 +525,6 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 			o.filter = variant.filter;
 		}
 
-		//console.dir(o);
 		asyncSequence.push(function (info, callback) {
 			mkdirp(dstDir, null, function (err) {
 				callback(err, info);
@@ -563,15 +562,36 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 					});
 				}
 			});
+
+			if (variantName === 'd') {
+				asyncSequence.push(function (info, callback) {
+					imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', o.dstPath], function (err, data) {
+						var info = {};
+						if (err) {
+							logger.error(err);
+							callback(err, info);
+						} else {
+							data = JSON.parse(data);
+
+							info.ws = parseInt(data.w, 10) || undefined;
+							info.hs = parseInt(data.h, 10) || undefined;
+
+							Photo.findOneAndUpdate({cid: cid}, { $set: info}, { new: false, upsert: false }, function (err) {
+								callback(err, info);
+							});
+						}
+					});
+				});
+			}
 		}
+
 		if (variant.water) {
-			//TODO: Определять стандартные размеры сразу после конверта стандарта
 			asyncSequence.push(function (info, callback) {
 				var original = variantName === 'a',
 					w = original ? info.w : info.ws,
 					h = original ? info.h : info.hs,
 					small = w < 1500 && h < 1000,
-					source = original ?  o.srcPath : o.dstPath,
+					source = original ? o.srcPath : o.dstPath,
 					target = o.dstPath;
 				console.log(variantName, w, h);
 				imageMagick.convert(
@@ -583,24 +603,6 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 
 			});
 		}
-	});
-	asyncSequence.push(function (info, callback) {
-		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + imageVersions.d.dir + filePath)], function (err, data) {
-			var info = {};
-			if (err) {
-				logger.error(err);
-				callback(err, info);
-			} else {
-				data = JSON.parse(data);
-
-				info.ws = parseInt(data.w, 10) || undefined;
-				info.hs = parseInt(data.h, 10) || undefined;
-
-				Photo.findOneAndUpdate({cid: cid}, { $set: info}, { new: false, upsert: false }, function (err) {
-					callback(err, info);
-				});
-			}
-		});
 	});
 
 	async.waterfall(asyncSequence, function (err) {
