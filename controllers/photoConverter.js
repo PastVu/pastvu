@@ -621,7 +621,6 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 					size = 'mid';
 				}
 
-				console.log(variantName, size, w, h);
 				imageMagick.convert(
 					waterMarkGen({txt: waterTxt, size: size, source: source, target: target}),
 					function (err) {
