@@ -27,22 +27,18 @@ var path = require('path'),
 
 	sourceDir = __dirname + '/../../store/private/photos/',
 	targetDir = __dirname + '/../../store/public/photos/',
+	water = __dirname + '/../misc/water3.png',
 
 	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
 
 	imageVersions = {
-		/*a: {
-		 parent: sourceDir,
-		 desc: 'Origin with watermark',
-		 dir: 'a/',
-		 width: 1050,
-		 height: 700,
-		 strip: true,
-		 filter: 'Sinc',
-		 postfix: '>'
-		 },*/
+		a: {
+			parent: sourceDir,
+			desc: 'Origin with watermark',
+			dir: 'a/'
+		},
 		d: {
 			parent: sourceDir,
 			desc: 'Standard for photo page',
@@ -461,6 +457,67 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 	asyncSequence.push(identifySourceFile);
 	asyncSequence.push(saveIdentifiedInfo);
 
+
+	asyncSequence.push(function (info, callback) {
+		mkdirp(targetDir + 'a/' + filePath.substr(0, 5), null, function (err) {
+			callback(err, info);
+		});
+	});
+	asyncSequence.push(function (info, callback) {
+		imageMagick.convert(
+			[
+				'-size',
+				'260x14',
+				'xc:none',
+				'-font',
+				'Verdana',
+				'-pointsize',
+				'11',
+				'-gravity',
+				'west',
+				'-stroke',
+				'rgba(0,0,0,0.35)',
+				'-strokewidth',
+				'3',
+				'-fill',
+				'#888',
+				'-annotate',
+				'0',
+				'pastvu',
+				'+repage',
+				'-stroke',
+				'none',
+				'-fill',
+				'#eaeaea',
+				'-annotate',
+				'+0+0',
+				'pastvu',
+				path.normalize(sourceDir + filePath),
+				'+swap',
+				'-gravity',
+				'southwest',
+				'-geometry',
+				'+20+3',
+				'-composite',
+				'-gravity',
+				'southwest',
+				'-geometry',
+				'+3+3',
+				water,
+				'-composite',
+				path.normalize(targetDir + 'a/' + filePath)
+			],
+			function (err, stdout) {
+				var info = {};
+				if (err) {
+					logger.error(err);
+				}
+				console.log('stdout:', stdout);
+				callback(err, info);
+			}
+		);
+	});
+
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
 			src = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir,
@@ -480,7 +537,6 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 		if (variant.filter) {
 			o.filter = variant.filter;
 		}
-
 
 		//console.dir(o);
 		asyncSequence.push(function (info, callback) {
@@ -561,6 +617,9 @@ function saveIdentifiedInfo(cid, filePath, info, callback) {
 	Photo.findOneAndUpdate({cid: cid, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
 		callback(err, info);
 	});
+}
+function converOrigin(cid, filePath, callback) {
+
 }
 
 /**

@@ -152,7 +152,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.userThumbN = ko.observable(3);
 
 			this.convertOptions = ko.observableArray([
-				/*{vName: 'Origin', id: 'origin'}, */{vName: 'Standard', vId: 'd'},
+				{vName: 'Origin', vId: 'a'},
+				{vName: 'Standard', vId: 'd'},
 				{vName: 'Thumb', vId: 'h'},
 				{vName: 'Midi', vId: 'm'},
 				{vName: 'Mini', vId: 'q'},

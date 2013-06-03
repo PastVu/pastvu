@@ -66,6 +66,18 @@ sudo node app.js --land prod --domain jsteam.ru --port 80 --uport 8888
 		  )
 		)
 
+
+composite -dissolve 100% -gravity southwest -geometry +2+2 water2.png test2.jpg res2.jpg
+convert res2.jpg -gravity southwest -font "Verdana" -pointsize 10 -fill rgba(255,255,255,0.75) -annotate +19+3 http://pastvu.com/u/Duche res3.jpg
+
+D:\_PROJS\pastvu\app\misc>convert -size 260x14 xc:none -font Verdana -pointsize 12 -gravity west -stroke rgba(0,0,0,0.35) -strokewidth 3 -fill #888 -annotate 0 "www.pastvu.com | ArchitectorS
+ | #101604" +repage -stroke none -fill #eaeaea     -annotate +0+0 "www.pastvu.com | ArchitectorS | #101604" test4.jpg +swap -gravity southwest -geometry +20+4 -composite -gravity southwest -
+geometry +3+3 water3.png -composite exmpl8.jpg
+
+D:\_PROJS\pastvu\app\misc>convert -size 260x14 xc:none -font C:\Windows\Fonts\AdobeFanHeitiStd-Bold.otf -pointsize 11 -gravity west -stroke rgba(0,0,0,0.35) -strokewidth 3 -fill #888 -annota
+te 0 " www.pastvu.com  |  ArchitectorS  |  #101604" +repage -stroke none -fill #eaeaea     -annotate +0+0 " www.pastvu.com  |  ArchitectorS  |  #101604" test4.jpg +swap -gravity southwest -g
+eometry +20+3 -composite -gravity southwest -geometry +3+3 water3.png -composite exmpl10.jpg
+
 		
 Пакетный конверт всех jpg в папке в webP
 	setlocal enabledelayedexpansion
