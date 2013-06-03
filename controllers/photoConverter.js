@@ -27,7 +27,7 @@ var path = require('path'),
 
 	sourceDir = __dirname + '/../../store/private/photos/',
 	targetDir = __dirname + '/../../store/public/photos/',
-	water = __dirname + '/../misc/water3.png',
+	waterDir = __dirname + '/../misc/watermark/',
 
 	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
@@ -37,7 +37,9 @@ var path = require('path'),
 		a: {
 			parent: sourceDir,
 			desc: 'Origin with watermark',
-			dir: 'a/'
+			dir: 'a/',
+			noTransforn: true,
+			water: true
 		},
 		d: {
 			parent: sourceDir,
@@ -47,7 +49,8 @@ var path = require('path'),
 			height: 700,
 			strip: true,
 			filter: 'Sinc',
-			postfix: '>'
+			postfix: '>',
+			water: true
 		},
 		h: {
 			parent: 'd',
@@ -119,11 +122,59 @@ var path = require('path'),
 	},
 	imageVersionsPriority = fillImgPrior(sourceDir, 0),
 	imageVersionsKeys = Object.keys(imageVersionsPriority),
-	imageSequenceDefault = fillImgSequence(imageVersionsKeys);
+	imageSequenceDefault = fillImgSequence(imageVersionsKeys),
 
-console.dir(imageVersionsPriority);
-console.dir(imageVersionsKeys);
-console.dir(imageSequenceDefault);
+	waterMarkGen = (function () {
+		var waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf'),
+			waterLogo = path.normalize(waterDir + 'logo.png'),
+			waterLogoSmall = path.normalize(waterDir + 'logoSmall.png');
+
+		return function (options) {
+			return [
+				'-size',
+				'260x14',
+				'xc:none',
+				'-font',
+				waterFontPath,
+				'-pointsize',
+				'11',
+				'-gravity',
+				'west',
+				'-stroke',
+				'rgba(0,0,0,0.35)',
+				'-strokewidth',
+				'3',
+				'-fill',
+				'#888',
+				'-annotate',
+				'0',
+				options.txt,
+				'+repage',
+				'-stroke',
+				'none',
+				'-fill',
+				'#eaeaea',
+				'-annotate',
+				'+0+0',
+				options.txt,
+				options.source,
+				'+swap',
+				'-gravity',
+				'southwest',
+				'-geometry',
+				'+20+3',
+				'-composite',
+				'-gravity',
+				'southwest',
+				'-geometry',
+				'+3+3',
+				(options.small ? waterLogoSmall : waterLogo),
+				'-composite',
+				options.target
+			];
+		};
+	}());
+
 
 function fillImgPrior(parent, level) {
 	var result = {},
@@ -449,6 +500,7 @@ function conveyerControl() {
  */
 function conveyerStep(cid, filePath, variants, cb, ctx) {
 	var asyncSequence = [],
+		waterTxt = ' www.pastvu.com  |  ArchitectorS  |  #' + cid,
 		imgSequence = fillImgSequence(variants);
 
 	asyncSequence.push(function (callback) {
@@ -456,67 +508,6 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 	});
 	asyncSequence.push(identifySourceFile);
 	asyncSequence.push(saveIdentifiedInfo);
-
-
-	asyncSequence.push(function (info, callback) {
-		mkdirp(targetDir + 'a/' + filePath.substr(0, 5), null, function (err) {
-			callback(err, info);
-		});
-	});
-	asyncSequence.push(function (info, callback) {
-		imageMagick.convert(
-			[
-				'-size',
-				'260x14',
-				'xc:none',
-				'-font',
-				'Verdana',
-				'-pointsize',
-				'11',
-				'-gravity',
-				'west',
-				'-stroke',
-				'rgba(0,0,0,0.35)',
-				'-strokewidth',
-				'3',
-				'-fill',
-				'#888',
-				'-annotate',
-				'0',
-				'pastvu',
-				'+repage',
-				'-stroke',
-				'none',
-				'-fill',
-				'#eaeaea',
-				'-annotate',
-				'+0+0',
-				'pastvu',
-				path.normalize(sourceDir + filePath),
-				'+swap',
-				'-gravity',
-				'southwest',
-				'-geometry',
-				'+20+3',
-				'-composite',
-				'-gravity',
-				'southwest',
-				'-geometry',
-				'+3+3',
-				water,
-				'-composite',
-				path.normalize(targetDir + 'a/' + filePath)
-			],
-			function (err, stdout) {
-				var info = {};
-				if (err) {
-					logger.error(err);
-				}
-				console.log('stdout:', stdout);
-				callback(err, info);
-			}
-		);
-	});
 
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
@@ -530,10 +521,6 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 		if (variant.strip) {
 			o.strip = variant.strip;
 		}
-		if (variant.width && variant.height) {
-			o.width = variant.width;
-			o.height = variant.height + (variant.postfix || ''); // Only Shrink Larger Images
-		}
 		if (variant.filter) {
 			o.filter = variant.filter;
 		}
@@ -544,34 +531,58 @@ function conveyerStep(cid, filePath, variants, cb, ctx) {
 				callback(err, info);
 			});
 		});
-		asyncSequence.push(function (info, callback) {
-			var gravity,
-				extent;
-			if (variant.crop) {
-				o.quality = 1;
-
-				if (variant.gravity) {
-					o.gravity = variant.gravity;
-				}
-				imageMagick.crop(o, function (err) {
-					callback(err, info);
-				});
-			} else {
-				if (variant.gravity) { // Превью генерируем путем вырезания аспекта из центра
-					// Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-					gravity = Utils.isType('function', variant.gravity) ? variant.gravity(info.w, info.h, variant.width, variant.height) : {gravity: variant.gravity};
-					extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : variant.width + "x" + variant.height;
-					o.customArgs = [
-						"-gravity", gravity.gravity,
-						"-extent", extent
-					];
-				}
-				imageMagick.resize(o, function (err) {
-					callback(err, info);
-				});
+		if (!variant.noTransforn) {
+			if (variant.width && variant.height) {
+				o.width = variant.width;
+				o.height = variant.height + (variant.postfix || ''); // Only Shrink Larger Images
 			}
-		});
+			asyncSequence.push(function (info, callback) {
+				var gravity,
+					extent;
+				if (variant.crop) {
+					o.quality = 1;
 
+					if (variant.gravity) {
+						o.gravity = variant.gravity;
+					}
+					imageMagick.crop(o, function (err) {
+						callback(err, info);
+					});
+				} else {
+					if (variant.gravity) { // Превью генерируем путем вырезания аспекта из центра
+						// Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
+						gravity = Utils.isType('function', variant.gravity) ? variant.gravity(info.w, info.h, variant.width, variant.height) : {gravity: variant.gravity};
+						extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : variant.width + "x" + variant.height;
+						o.customArgs = [
+							"-gravity", gravity.gravity,
+							"-extent", extent
+						];
+					}
+					imageMagick.resize(o, function (err) {
+						callback(err, info);
+					});
+				}
+			});
+		}
+		if (variant.water) {
+			//TODO: Определять стандартные размеры сразу после конверта стандарта
+			asyncSequence.push(function (info, callback) {
+				var original = variantName === 'a',
+					w = original ? info.w : info.ws,
+					h = original ? info.h : info.hs,
+					small = w < 1500 && h < 1000,
+					source = original ?  o.srcPath : o.dstPath,
+					target = o.dstPath;
+				console.log(variantName, w, h);
+				imageMagick.convert(
+					waterMarkGen({txt: waterTxt, small: small, source: source, target: target}),
+					function (err) {
+						callback(err, info);
+					}
+				);
+
+			});
+		}
 	});
 	asyncSequence.push(function (info, callback) {
 		imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', path.normalize(targetDir + imageVersions.d.dir + filePath)], function (err, data) {

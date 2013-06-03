@@ -346,7 +346,7 @@ define([
 			};
 
 			this.convertOptions = ko.observableArray([
-				{vName: 'Origin', vId: 's'},
+				{vName: 'Origin', vId: 'a'},
 				{vName: 'Standard', vId: 'd'},
 				{vName: 'Thumb', vId: 'h'},
 				{vName: 'Midi', vId: 'm'},
