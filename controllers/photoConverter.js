@@ -443,7 +443,7 @@ function conveyerControl() {
 				function setFlag() {
 					item.converting = true; //Ставим флаг, что конвертация файла началась
 					item.save(this.parallel());
-					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }, this.parallel());
+					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }).select({file: 1, user: 1, conv: 1, convqueue: 1}).populate({path: 'user', select: {_id: 0, login: 1}}).exec(this.parallel());
 				},
 				function toConveyer(err, photoConv, photo) {
 					if (err || !photoConv || !photo) {
@@ -462,7 +462,7 @@ function conveyerControl() {
 						}
 						conveyerConverted -= 1;
 					} else {
-						conveyerStep(photo.cid, photo.file, photoConv.variants, function (err) {
+						conveyerStep(photoConv.cid, photo.file, photo.user.login, photoConv.variants, function (err) {
 							if (err) {
 								(new PhotoConveyerError({
 									cid: photoConv.cid,
@@ -494,13 +494,14 @@ function conveyerControl() {
  * Очередной шаг конвейера
  * @param cid cid файла
  * @param filePath path файла
+ * @param login Логин владельца фотографии
  * @param variants Варианты для конвертации
  * @param cb Коллбэк завершения шага
  * @param ctx Контекст вызова коллбэка
  */
-function conveyerStep(cid, filePath, variants, cb, ctx) {
+function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 	var asyncSequence = [],
-		waterTxt = ' www.pastvu.com  |  ArchitectorS  |  #' + cid,
+		waterTxt = ' www.pastvu.com  |  ' + login + '  |  #' + cid,
 		imgSequence = fillImgSequence(variants);
 
 	asyncSequence.push(function (callback) {
