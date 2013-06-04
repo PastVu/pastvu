@@ -15,7 +15,7 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger,
-	photoDir = process.cwd() + '/../store/public/photos',
+	photoDir = global.appVar.storePath + 'public/photos',
 	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
 
 /**

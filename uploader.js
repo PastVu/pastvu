@@ -6,12 +6,17 @@
 	var path = require('path'),
 		fs = require('fs'),
 		_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
+		argv = require('optimist').argv,
 		mkdirp = require('mkdirp'),
 		formidable = require('formidable'),
 		Utils = require('./commons/Utils.js'),
+
+		conf = JSON.parse(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')),
+		storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")),
+
 		options = {
-			incomeDir: __dirname + '/../store/incoming',
-			targetDir: __dirname + '/../store/private/photos/',
+			incomeDir: storePath + 'incoming',
+			targetDir: storePath + 'private/photos/',
 			minFileSize: 10240, //10kB
 			maxFileSize: 52428800, //50Mb
 			maxPostSize: 53477376, //51Mb,

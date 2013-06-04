@@ -5,6 +5,7 @@ var express = require('express'),
 
 	Session,
 
+	path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
 	cookie = require('express/node_modules/cookie'),
@@ -47,24 +48,29 @@ for (var k in interfaces) {
 	}
 }
 
-/**
- * Окружение (dev, test, prod)
- */
+
+global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
+
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
-	confFile = argv.conffile || __dirname + '/config.json',
-	conf = JSON.parse(fs.readFileSync(confFile, 'utf8')),
-	land = argv.land || 'dev',
-	domain = argv.domain || addresses[0] || 'localhost',
-	port = argv.port || 3000,
-	uport = argv.uport || 8888,
-	host = domain + (port === 80 ? '' : ':' + port),
+	conf = JSON.parse(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')),
+
+	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
+	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
+	port = argv.port || conf.port || 3000, //Порт сервера
+	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
+	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
+
+	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
+	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
+	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
+
 	pub = (land === 'prod' ? '/public-build' : '/public');
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
 
-mkdirp.sync("../store/incoming");
-mkdirp.sync("../store/private");
-mkdirp.sync("../store/public");
+mkdirp.sync(storePath + "incoming");
+mkdirp.sync(storePath + "private");
+mkdirp.sync(storePath + "public");
 
 app = express();
 server = http.createServer(app);
@@ -80,7 +86,8 @@ function static404(req, res) {
 }
 
 app.configure(function () {
-	app.set('appEnv', {land: land, hash: app.hash, version: app.version, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
+	global.appVar.storePath = storePath;
+	app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
 
 	app.set('views', __dirname + '/views');
 	app.set('view engine', 'jade');
@@ -105,12 +112,15 @@ app.configure(function () {
 		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
 		//prod: app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 	}
-	app.use(express.static(__dirname + pub, {maxAge: ms('1d')}));
-
-	app.use('/_avatar', express.static(__dirname + '/../store/public/avatars', {maxAge: ms('1d')}));
-	app.use('/_p', express.static(__dirname + '/../store/public/photos', {maxAge: ms('7d')}));
-	app.get('/_avatar/*', static404);
-	app.get('/_p/*', static404);
+	if (!noServePublic) {
+		app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
+	}
+	if (!noServeStore) {
+		app.use('/_avatar', express.static(__dirname + 'public/avatars', {maxAge: ms('2d')}));
+		app.use('/_p', express.static(storePath + 'public/photos', {maxAge: ms('7d')}));
+		app.get('/_avatar/*', static404);
+		app.get('/_p/*', static404);
+	}
 
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
@@ -125,7 +135,7 @@ app.configure(function () {
 	});
 	app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
 
-	io.set('transports', ['websocket', 'htmlfile', 'xhr-polling', 'jsonp-polling']);
+	io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
 	io.set('authorization', function (handshakeData, callback) {
 		var handshakeCookieString = handshakeData.headers.cookie || '';
 

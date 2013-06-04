@@ -1,2 +1,9 @@
 {
+	"land": "dev",
+	"domain": "",
+	"port": 3000,
+	"uport": 8888,
+	"storePath": "",
+	"noServePublic": false,
+	"noServeStore": false
 }

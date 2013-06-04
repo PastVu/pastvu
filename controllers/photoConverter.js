@@ -25,11 +25,11 @@ var path = require('path'),
 	conveyerMaxLength = 0,
 	conveyerConverted = 0,
 
-	sourceDir = __dirname + '/../../store/private/photos/',
-	targetDir = __dirname + '/../../store/public/photos/',
+	sourceDir = global.appVar.storePath + 'private/photos/',
+	targetDir = global.appVar.storePath + 'public/photos/',
 	waterDir = __dirname + '/../misc/watermark/',
 
-	maxWorking = 2, // Возможно параллельно конвертировать
+	maxWorking = 1, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
 
@@ -128,17 +128,17 @@ var path = require('path'),
 		var waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf'),
 			sizes = {
 				size: {
-					small: '260x14',
+					small: '280x14',
 					mid: '700x28',
 					big: '900x40'
 				},
 				pointsize: {
-					small: '11',
+					small: '12',
 					mid: '24',
 					big: '32'
 				},
 				geometry: {
-					small: '+20+3',
+					small: '+20+2',
 					mid: '+36+7',
 					big: '+46+8'
 				},
