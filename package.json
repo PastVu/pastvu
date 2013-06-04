@@ -41,9 +41,12 @@
 	"devDependencies": {
 		"nodemon": "~0.7.8",
 		"grunt": "~0.4.1",
+		"grunt-contrib-copy": "~0.4.1",
 		"grunt-contrib-concat": "~0.3.0",
-		"grunt-contrib-requirejs": "~0.4.0",
-		"grunt-exec": "~0.4.0",
+		"grunt-contrib-compress": "~0.5.2",
+		"grunt-contrib-requirejs": "~0.4.1",
+		"grunt-mkdir": "~0.1.1",
+		"grunt-exec": "~0.4.1",
 		"jqueryui-amd": "~0.0.2"
 	},
 	"engines": {
