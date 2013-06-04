@@ -13,13 +13,6 @@ module.exports = function (grunt) {
 				}
 			}
 		},
-		copy: {
-			main: {
-				files: [
-					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir}
-				]
-			}
-		},
 		exec: {
 			buildjs: {
 				command: 'node build.js',
@@ -45,10 +38,19 @@ module.exports = function (grunt) {
 				}
 			}
 		},
+		copy: {
+			main: {
+				files: [
+					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
+					{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
+					{expand: true, src: ['app.js', 'build.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
+				]
+			}
+		},
 		compress: {
 			main: {
 				options: {
-					archive: '../archive.tgz',
+					archive: upperDir + 'app.tgz',
 					mode: 'tgz'
 				},
 				files: [
@@ -66,5 +68,5 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir', 'copy', /*'exec', 'concat',*/ 'compress']);
+	grunt.registerTask('default', ['mkdir', 'exec', 'concat', 'copy',  'compress']);
 };

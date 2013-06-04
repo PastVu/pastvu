@@ -64,7 +64,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
 	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
 
-	pub = (land === 'prod' ? '/public-build' : '/public');
+	pub = '/public/';
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
 
@@ -107,9 +107,9 @@ app.configure(function () {
 	//app.use(express.logger({ immediate: false, format: 'dev' }));
 	app.disable('x-powered-by'); // Disable default X-Powered-By
 	app.use(express.compress());
-	app.use(express.favicon(__dirname + pub + '/favicon.ico', { maxAge: ms('1d') }));
+	app.use(express.favicon(__dirname + pub + 'favicon.ico', { maxAge: ms('1d') }));
 	if (land === 'dev') {
-		app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: true, once: false, compress: false, debug: false}));
+		app.use('/style', lessMiddleware({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
 		//prod: app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 	}
 	if (!noServePublic) {
