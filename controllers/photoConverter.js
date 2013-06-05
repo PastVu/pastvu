@@ -100,13 +100,14 @@ var path = require('path'),
 			postfix: '^'
 		},
 		s: {
-			parent: 'q',
+			parent: 'm',
 			desc: 'Micro',
 			dir: 's/',
 			width: 60,
 			height: 60,
-			crop: true,
-			gravity: 'center'
+			gravity: 'center',
+			postfix: '^'
+			//crop: true //Crop занимает больше места чем ресайз http://www.imagemagick.org/discourse-server/viewtopic.php?f=1&t=20415
 		},
 		x: {
 			parent: 's',
