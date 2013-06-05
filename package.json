@@ -2,7 +2,7 @@
 	"name": "pastvu",
 	"version": "0.7.0-dev",
 	"description": "Retrospective topography of media content",
-	"homepage": "https://github.com/klimashkin/oldplanet",
+	"homepage": "https://github.com/klimashkin/pastvu",
 	"keywords": ["oldmos", "pastvu"],
 	"private": true,
 	"author": {
@@ -11,10 +11,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git@github.com:klimashkin/oldplanet.git"
+		"url": "git@github.com:klimashkin/pastvu.git"
 	},
 	"bugs": {
-		"url": "https://github.com/klimashkin/oldplanet/issues",
+		"url": "https://github.com/klimashkin/pastvu/issues",
 		"email": "klimashkin@gmail.com"
 	},
 	"main": "app.js",
