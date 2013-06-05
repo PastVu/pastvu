@@ -29,7 +29,7 @@ var path = require('path'),
 	targetDir = global.appVar.storePath + 'public/photos/',
 	waterDir = __dirname + '/../misc/watermark/',
 
-	maxWorking = 1, // Возможно параллельно конвертировать
+	maxWorking = 2, // Возможно параллельно конвертировать
 	goingToWork = 0, // Происходит выборка для дальнейшей конвертации
 	working = 0, //Сейчас конвертируется
 

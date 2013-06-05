@@ -15,7 +15,6 @@ var express = require('express'),
 	argv = require('optimist').argv,
 
 	mkdirp = require('mkdirp'),
-	lessMiddleware = require('less-middleware'),
 	mongoose = require('mongoose'),
 	mc = require('mc'), // memcashed
 	ms = require('ms'), // Tiny milisecond conversion utility
@@ -67,6 +66,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	pub = '/public/';
 
 logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
+logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch);
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");
@@ -109,8 +109,8 @@ app.configure(function () {
 	app.use(express.compress());
 	app.use(express.favicon(__dirname + pub + 'favicon.ico', { maxAge: ms('1d') }));
 	if (land === 'dev') {
-		app.use('/style', lessMiddleware({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
-		//prod: app.use('/style', lessMiddleware({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
+		app.use('/style', require('less-middleware')({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
+		//prod: app.use('/style', require('less-middleware')({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 	}
 	if (!noServePublic) {
 		app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
