@@ -38,11 +38,17 @@ module.exports = function (grunt) {
 				}
 			}
 		},
+		rename: {
+			moveThis: {
+				src: ['public-build'],
+				dest: targetDir + 'public'
+			}
+		},
 		copy: {
 			main: {
 				files: [
 					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
-					{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
+					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
 					{expand: true, src: ['app.js', 'build.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
 				]
 			}
@@ -65,8 +71,9 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-compress');
 	grunt.loadNpmTasks('grunt-contrib-requirejs');
 	grunt.loadNpmTasks('grunt-exec');
+	grunt.loadNpmTasks('grunt-rename');
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir', 'exec', 'concat', 'copy',  'compress']);
+	grunt.registerTask('default', ['mkdir', 'exec', 'concat', 'rename', 'copy',  'compress']);
 };
