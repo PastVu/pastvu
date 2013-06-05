@@ -1,12 +1,9 @@
 doctype 5
 html
 	include includes/head_meta
-		if appLand == 'prod'
-			include ../public-build/style/appstart.css
-			include ../public-build/js/appstart.js
-		else
-			include ../public/style/appstart.css
-			include ../public/js/appstart.js
+		include ../public/style/appstart.css
+		include ../public/js/appstart.js
+		if appLand === 'dev'
 			include ../public/js/lib/require/require.js
 			include ../public/js/_mainConfig.js
 
