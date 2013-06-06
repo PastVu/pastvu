@@ -462,7 +462,7 @@ function conveyerControl() {
 				function setFlag() {
 					item.converting = true; //Ставим флаг, что конвертация файла началась
 					item.save(this.parallel());
-					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }).select({file: 1, user: 1, conv: 1, convqueue: 1}).populate({path: 'user', select: {_id: 0, login: 1}}).exec(this.parallel());
+					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }).select({cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}).populate({path: 'user', select: {_id: 0, login: 1}}).exec(this.parallel());
 				},
 				function toConveyer(err, photoConv, photo) {
 					if (err || !photoConv || !photo) {
@@ -481,7 +481,7 @@ function conveyerControl() {
 						}
 						conveyerConverted -= 1;
 					} else {
-						conveyerStep(photoConv.cid, photo.file, photo.user.login, photoConv.variants, function (err) {
+						conveyerStep(photo, photoConv.variants, function (err) {
 							if (err) {
 								(new PhotoConveyerError({
 									cid: photoConv.cid,
@@ -511,31 +511,37 @@ function conveyerControl() {
 
 /**
  * Очередной шаг конвейера
- * @param cid cid файла
- * @param filePath path файла
- * @param login Логин владельца фотографии
+ * @param photo Объект фотографии
  * @param variants Варианты для конвертации
  * @param cb Коллбэк завершения шага
  * @param ctx Контекст вызова коллбэка
  */
-function conveyerStep(cid, filePath, login, variants, cb, ctx) {
+function conveyerStep(photo, variants, cb, ctx) {
 	var asyncSequence = [],
-		waterTxt = ' www.pastvu.com  |  ' + login + '  |  #' + cid,
-		imgSequence = fillImgSequence(variants);
+		imgSequence = fillImgSequence(variants),
+
+		data = {
+			photo: photo,
+			variants: variants,
+			waterTxt: ' www.pastvu.com  |  ' + photo.user.login + '  |  #' + photo.cid
+		};
 
 	asyncSequence.push(function (callback) {
-		callback(null, cid, filePath);
+		callback(null, data);
 	});
-	asyncSequence.push(identifySourceFile);
-	asyncSequence.push(saveIdentifiedInfo);
+
+	//Если инфо не существует, запускаем identify
+	if (!photo.w || !photo.h) {
+		asyncSequence.push(identifySourceFile);
+	}
 
 	imgSequence.forEach(function (variantName) {
 		var variant = imageVersions[variantName],
 			src = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir,
-			dstDir = path.normalize(targetDir + variant.dir + filePath.substr(0, 5)),
+			dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5)),
 			o = {
-				srcPath: path.normalize(src + filePath),
-				dstPath: path.normalize(targetDir + variant.dir + filePath)
+				srcPath: path.normalize(src + photo.file),
+				dstPath: path.normalize(targetDir + variant.dir + photo.file)
 			};
 
 		if (variant.strip) {
@@ -545,9 +551,9 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 			o.filter = variant.filter;
 		}
 
-		asyncSequence.push(function (info, callback) {
+		asyncSequence.push(function (data, callback) {
 			mkdirp(dstDir, null, function (err) {
-				callback(err, info);
+				callback(err, data);
 			});
 		});
 		if (!variant.noTransforn) {
@@ -555,7 +561,7 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 				o.width = variant.width;
 				o.height = variant.height + (variant.postfix || ''); // Only Shrink Larger Images
 			}
-			asyncSequence.push(function (info, callback) {
+			asyncSequence.push(function (data, callback) {
 				var gravity,
 					extent;
 				if (variant.crop) {
@@ -565,12 +571,13 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 						o.gravity = variant.gravity;
 					}
 					imageMagick.crop(o, function (err) {
-						callback(err, info);
+						callback(err, data);
 					});
 				} else {
-					if (variant.gravity) { // Превью генерируем путем вырезания аспекта из центра
+					if (variant.gravity) {
+						// Превью генерируем путем вырезания аспекта из центра
 						// Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-						gravity = Utils.isType('function', variant.gravity) ? variant.gravity(info.w, info.h, variant.width, variant.height) : {gravity: variant.gravity};
+						gravity = Utils.isType('function', variant.gravity) ? variant.gravity(data.photo.w, data.photo.h, variant.width, variant.height) : {gravity: variant.gravity};
 						extent = Utils.isType('object', gravity) && gravity.extent ? gravity.extent : variant.width + "x" + variant.height;
 						o.customArgs = [
 							"-gravity", gravity.gravity,
@@ -578,38 +585,33 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 						];
 					}
 					imageMagick.resize(o, function (err) {
-						callback(err, info);
+						callback(err, data);
 					});
 				}
 			});
 
 			if (variantName === 'd') {
-				asyncSequence.push(function (info, callback) {
-					imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', o.dstPath], function (err, data) {
-						var info = {};
+				asyncSequence.push(function (data, callback) {
+					imageMagick.identify(['-format', '{"w": "%w", "h": "%h"}', o.dstPath], function (err, result) {
 						if (err) {
 							logger.error(err);
-							callback(err, info);
 						} else {
-							data = JSON.parse(data);
+							result = JSON.parse(result);
 
-							info.ws = parseInt(data.w, 10) || undefined;
-							info.hs = parseInt(data.h, 10) || undefined;
-
-							Photo.findOneAndUpdate({cid: cid}, { $set: info}, { new: false, upsert: false }, function (err) {
-								callback(err, info);
-							});
+							data.photo.ws = parseInt(result.w, 10) || undefined;
+							data.photo.hs = parseInt(result.h, 10) || undefined;
 						}
+						callback(err, data);
 					});
 				});
 			}
 		}
 
 		if (variant.water) {
-			asyncSequence.push(function (info, callback) {
+			asyncSequence.push(function (data, callback) {
 				var original = variantName === 'a',
-					w = original ? info.w : info.ws,
-					h = original ? info.h : info.hs,
+					w = original ? data.photo.w : data.photo.ws,
+					h = original ? data.photo.h : data.photo.hs,
 					size = 'small',
 					source = original ? o.srcPath : o.dstPath,
 					target = o.dstPath;
@@ -621,9 +623,9 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 				}
 
 				imageMagick.convert(
-					waterMarkGen({txt: waterTxt, size: size, source: source, target: target}),
+					waterMarkGen({txt: data.waterTxt, size: size, source: source, target: target}),
 					function (err) {
-						callback(err, info);
+						callback(err, data);
 					}
 				);
 
@@ -636,29 +638,20 @@ function conveyerStep(cid, filePath, login, variants, cb, ctx) {
 	});
 }
 
-function identifySourceFile(cid, filePath, callback) {
-	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(sourceDir + filePath)], function (err, data) {
-		var info = {};
+function identifySourceFile(data, callback) {
+	imageMagick.identify(['-format', '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}', path.normalize(sourceDir + data.photo.file)], function (err, result) {
 		if (err) {
 			logger.error(err);
 		} else {
-			data = JSON.parse(data);
+			result = JSON.parse(result);
 
-			info.w = parseInt(data.w, 10) || undefined;
-			info.h = parseInt(data.h, 10) || undefined;
-			info.format = data.f || undefined;
-			info.sign = data.signature || undefined;
+			data.photo.w = parseInt(result.w, 10) || undefined;
+			data.photo.h = parseInt(result.h, 10) || undefined;
+			data.photo.format = result.f || undefined;
+			data.photo.sign = result.signature || undefined;
 		}
-		callback(err, cid, filePath, info);
+		callback(err, data);
 	});
-}
-function saveIdentifiedInfo(cid, filePath, info, callback) {
-	Photo.findOneAndUpdate({cid: cid, del: {$ne: true}}, { $set: info}, { new: false, upsert: false }, function (err) {
-		callback(err, info);
-	});
-}
-function converOrigin(cid, filePath, callback) {
-
 }
 
 /**
