@@ -311,7 +311,7 @@ module.exports.loadController = function (app, db) {
 			photo = photos[counter];
 			$set = {};
 			$unset = {};
-			ccount = db.comments.count({photo: photo._id});
+			ccount = db.comments.count({obj: photo._id});
 			if (ccount > 0) {
 				$set.ccount = ccount;
 			} else {

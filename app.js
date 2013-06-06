@@ -65,7 +65,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 
 	pub = '/public/';
 
-logger.info('Starting Node(' + process.versions.node + ') with v8(' + process.versions.v8 + '), Express(' + express.version + ') and Mongoose(' + mongoose.version + ') on process pid:' + process.pid);
+logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] and Express[' + express.version + '] on process pid:' + process.pid);
 logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch);
 
 mkdirp.sync(storePath + "incoming");
@@ -176,8 +176,11 @@ app.configure(function () {
 // connecting to db with mongoose
 var db = mongoose.createConnection(app.set('db-uri'), {db: {safe: true}})
 	.once('open', function () {
-		logger.info("Connected to mongo: " + app.set('db-uri'));
-		require('./controllers/systemjs.js').loadController(app, db);
+		var admin = new mongoose.mongo.Admin(db.db);
+		admin.buildInfo(function (err, info) {
+			logger.info('Mongoose[' + mongoose.version + '] connected to MongoDB[' + info.version + ', x' + info.bits + '] at: ' + app.set('db-uri'));
+			require('./controllers/systemjs.js').loadController(app, db);
+		});
 	})
 	.on('error', function () {
 		logger.fatal("Connection error to mongo: " + app.set('db-uri'));
