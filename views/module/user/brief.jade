@@ -1,7 +1,7 @@
 .user_brief(data-bind="with: repository[M!M]")
 	.row-fluid
 		.avatar.fringe
-			img(data-bind="attr: {src: user.avatar()}, style:{width: user.avatarW()+'px', height: user.avatarH()+'px'}, event: {load: onAvatarLoad, error: onAvatarError}")
+			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
 			button.btn-strict.btn-strict-small#avatar_edit(type="button", data-bind="event: {}, style: {display: can_avatar() ? '' : 'none'}")
 				i.icon-picture.icon-white
 				span Change avatar

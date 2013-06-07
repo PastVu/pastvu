@@ -8,8 +8,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 
 			avatar: '/img/caps/avatar.png',
 			avatarth: '/img/caps/avatarth.png',
-			avatarW: 100,
-			avatarH: 100,
 			firstName: '',
 			lastName: ''
 		},

@@ -24,8 +24,6 @@ var UserScheme = new mongoose.Schema({
 
 	//Profile
 	avatar: {type: String},
-	avatarW: {type: Number},
-	avatarH: {type: Number},
 	firstName: {type: String},
 	lastName: {type: String},
 	birthdate: {type: String},

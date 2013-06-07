@@ -131,7 +131,7 @@ PhotoSchema.statics.getPhoto = function (query, cb) {
 	if (!query || !query.cid) {
 		cb({message: 'cid is not specified'});
 	}
-	this.findOneAndUpdate(query, { $inc: { vdcount: 1, vwcount: 1, vcount: 1} }, {new: true}).populate('user', 'login avatar avatarW avatarH firstName lastName').select('-_id -__v -frags._id').exec(cb);
+	this.findOneAndUpdate(query, { $inc: { vdcount: 1, vwcount: 1, vcount: 1} }, {new: true}).populate('user', 'login avatar firstName lastName').select('-_id -__v -frags._id').exec(cb);
 };
 
 PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
