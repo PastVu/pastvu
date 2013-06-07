@@ -370,7 +370,7 @@ module.exports.loadController = function (app, db) {
 	/**
 	 * Функции импорта конвертации старой базы олдмос
 	 */
-	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, byNumPerPackage, dropExisting) {
+	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_users';
 		byNumPerPackage = byNumPerPackage || 1000;
 
@@ -386,22 +386,58 @@ module.exports.loadController = function (app, db) {
 			insertArr = [],
 			newUser,
 			existsOnStart = db.users.count(),
+			cidDelta = 0,
 			maxCid,
 			okCounter = 0,
 			noactiveCounter = 0,
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1});
+			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
 
-		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
+			usersArr,
+			usersLogin = {},
+			usersEmail = {},
+			userValid,
+			userMergeCounter = 0,
+			userLoginChangedCounter = 0,
+			i;
 
+		if (spbMode) {
+			cidDelta = db.counters.findOne({_id: 'user'}).next;
+			print('Filling users hash...');
+			usersArr = db.users.find({}, {_id: 1, login: 1, email: 1}).sort({cid: -1}).toArray();
+			i = usersArr.length;
+			while (i--) {
+				usersEmail[usersArr[i].email] = usersArr[i]._id;
+				usersLogin[usersArr[i].login] = usersArr[i]._id;
+			}
+			print('Filled users hash with ' + usersArr.length + ' values');
+			usersArr = null;
+		}
+
+		print('Start to convert ' + allCount + ' docs with cid delta ' + cidDelta + ' by ' + insertBy + ' in one package');
 		cursor.forEach(function (user) {
-
 			allCounter++;
+			userValid = false;
 			if (user.id && user.username && user.email) {
+				if (spbMode) {
+					if (usersEmail[user.email]) {
+						userMergeCounter++;
+					} else {
+						if (usersLogin[user.username]) {
+							user.username += 'Spb';
+							userLoginChangedCounter++;
+						}
+						userValid = true;
+					}
+				} else {
+					userValid = true;
+				}
+			}
+			if (userValid) {
 				okCounter++;
 				newUser = {
-					cid: user.id,
+					cid: Number(user.id) + cidDelta,
 					login: user.username,
 					email: user.email,
 					pass: 'init',
@@ -446,9 +482,11 @@ module.exports.loadController = function (app, db) {
 			}
 
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				db.users.insert(insertArr);
+				if (insertArr.length > 0){
+					db.users.insert(insertArr);
+				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.users.count() !== okCounter + existsOnStart) {
+				if (db.users.count() !== (okCounter + existsOnStart)) {
 					printjson(insertArr[0]);
 					print('<...>');
 					printjson(insertArr[insertArr.length - 1]);
@@ -463,7 +501,7 @@ module.exports.loadController = function (app, db) {
 		print('Setting next user counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'user'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.users.count(), usersInserted: okCounter, noACtive: noactiveCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
 	});
 
 	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExisting) {
