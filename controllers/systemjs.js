@@ -517,7 +517,7 @@ module.exports.loadController = function (app, db) {
 
 	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_photos';
-		byNumPerPackage = byNumPerPackage || 1000;
+		byNumPerPackage = byNumPerPackage || 2000;
 
 		if (dropExisting) {
 			print('Clearing target collection...');
@@ -555,7 +555,7 @@ module.exports.loadController = function (app, db) {
 			db.photosSpbMap.drop();
 			cidDelta = db.counters.findOne({_id: 'photo'}).next;
 			photosSpbMapping = [];
-			usersArr = db.usersSpbMap.find({}, {id: 1, cidOld: 1}).toArray();
+			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
 			for (i = usersArr.length; i--;) {
 				users[usersArr[i].cidOld] = usersArr[i].id;
 			}
@@ -634,7 +634,9 @@ module.exports.loadController = function (app, db) {
 				}
 			}
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				db.photos.insert(insertArr);
+				if (insertArr.length > 0) {
+					db.photos.insert(insertArr);
+				}
 				if (spbMode) {
 					db.photosSpbMap.insert(photosSpbMapping);
 					photosSpbMapping = [];
@@ -656,17 +658,17 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: okCounter, noUsers: noUserCounter, noGeo: noGeoCounter};
 	});
 
-	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, byNumPerPackage, dropExisting) {
+	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_comments';
 		byNumPerPackage = byNumPerPackage || 5000;
 
-		var commentIncomingProcess = (function () {
+		var commentIncomingParse = (function () {
 			function linkifyUrlString(inputText, target, className) {
 				var replacedText, replacePattern1, replacePattern2;
 
 				target = target ? ' target="' + target + '"' : '';
 				className = className ? ' class="' + className + '"' : '';
-				print(className);
+
 				//URLs starting with http://, https://, or ftp://
 				replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
 				replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
@@ -713,6 +715,7 @@ module.exports.loadController = function (app, db) {
 			newComment,
 			existsOnStart = db.comments.count(),
 			maxCid,
+			cidDelta = 0,
 			okCounter = 0,
 			fragCounter = 0,
 			fragCounterError = 0,
@@ -738,11 +741,18 @@ module.exports.loadController = function (app, db) {
 			relation,
 			relationParentBroken;
 
-		print('Filling users hash...');
-		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
-		i = usersArr.length;
-		while (i--) {
-			users[usersArr[i].cid] = usersArr[i]._id;
+		if (spbMode) {
+			db.photosSpbMap.ensureIndex({cidOld: 1});
+			cidDelta = db.counters.findOne({_id: 'comment'}).next;
+			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
+			for (i = usersArr.length; i--;) {
+				users[usersArr[i].cidOld] = usersArr[i].id;
+			}
+		} else {
+			usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+			for (i = usersArr.length; i--;) {
+				users[usersArr[i].cid] = usersArr[i]._id;
+			}
 		}
 		print('Filled users hash with ' + usersArr.length + ' values');
 		usersArr = null;
@@ -759,9 +769,14 @@ module.exports.loadController = function (app, db) {
 
 				photoOid = photos[comment.photo_id];
 				if (photoOid === undefined) {
-					photoOid = db.photos.findOne({cid: comment.photo_id}, {_id: 1});
-					if (photoOid && (photoOid._id !== undefined)) {
-						photoOid = photoOid._id;
+					if (spbMode) {
+						photoOid = db.photosSpbMap.findOne({cidOld: comment.photo_id}, {_id: 0, id: 1});
+						photoOid = photoOid && photoOid.id;
+					} else {
+						photoOid = db.photos.findOne({cid: comment.photo_id}, {_id: 1});
+						photoOid = photoOid && photoOid._id;
+					}
+					if (photoOid) {
 						photos[comment.photo_id] = photoOid;
 					}
 				}
@@ -793,11 +808,11 @@ module.exports.loadController = function (app, db) {
 					if (!relationParentBroken) {
 						okCounter++;
 						newComment = {
-							cid: Number(comment.id),
+							cid: Number(comment.id) + cidDelta,
 							obj: photoOid,
 							user: userOid,
 							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
-							txt: commentIncomingProcess(comment.text)
+							txt: commentIncomingParse(comment.text)
 						};
 						if (comment.fragment) {
 							fragmentArr = comment.fragment.split(';').map(parseFloat);
@@ -831,7 +846,9 @@ module.exports.loadController = function (app, db) {
 				}
 			}
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				db.comments.insert(insertArr);
+				if (insertArr.length > 0) {
+					db.comments.insert(insertArr);
+				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.comments.count() !== okCounter + existsOnStart) {
 					printjson(insertArr[0]);
@@ -846,7 +863,7 @@ module.exports.loadController = function (app, db) {
 
 		for (i in photosFragment) {
 			if (photosFragment[i] !== undefined) {
-				db.photos.update({cid: Number(i)}, {$set: {frags: photosFragment[i]}}, {upsert: false});
+				db.photos.update({_id: photos[Number(i)]}, {$set: {frags: photosFragment[i]}}, {upsert: false});
 			}
 		}
 		print('Inserted ' + fragCounter + ' fragments to ' + Object.keys(photosFragment).length + ' photos');
