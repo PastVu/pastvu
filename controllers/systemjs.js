@@ -400,10 +400,12 @@ module.exports.loadController = function (app, db) {
 			userValid,
 			userMergeCounter = 0,
 			userLoginChangedCounter = 0,
+			usersSpbMapping,
 			i;
 
 		if (spbMode) {
 			cidDelta = db.counters.findOne({_id: 'user'}).next;
+			usersSpbMapping = [];
 			print('Filling users hash...');
 			usersArr = db.users.find({}, {_id: 1, login: 1, email: 1}).sort({cid: -1}).toArray();
 			i = usersArr.length;
@@ -440,6 +442,7 @@ module.exports.loadController = function (app, db) {
 			if (userValid) {
 				okCounter++;
 				newUser = {
+					_id: ObjectId(),
 					cid: Number(user.id) + cidDelta,
 					login: user.username,
 					email: user.email,
@@ -478,11 +481,18 @@ module.exports.loadController = function (app, db) {
 
 				//printjson(newUser);
 				insertArr.push(newUser);
+				if (spbMode) {
+					usersSpbMapping.push({cidOld: Number(user.id), cidNew: newUser.cid, id: newUser._id});
+				}
 			}
 
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
 				if (insertArr.length > 0){
 					db.users.insert(insertArr);
+					if (spbMode) {
+						db.usersSpbMap.insert(usersSpbMapping);
+						usersSpbMapping = [];
+					}
 				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.users.count() !== (okCounter + existsOnStart)) {
