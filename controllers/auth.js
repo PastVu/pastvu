@@ -137,7 +137,7 @@ function register(session, data, cb) {
 			expireOn.add(ms('2d'));
 
 			Mail.send({
-				from: 'OldMos ★<confirm@oldmos2.ru>',
+				from: 'PastVu ★<confirm@pastvu.com>',
 				to: data.login + ' <' + data.email + '>',
 				subject: 'Registration confirm', //
 				headers: {
@@ -145,7 +145,7 @@ function register(session, data, cb) {
 				},
 				generateTextFromHTML: true,
 				html: 'Здравствуйте, ' + data.login + '!<br/><br/>' +
-					'Спасибо за регистрацию на проекте OldMos! ' +
+					'Спасибо за регистрацию на проекте PastVu! ' +
 					'Вы указали следующие реквизиты:<br/>' +
 					'Логин: <b>' + data.login + '</b><br/>' +
 					'E-mail: <b>' + data.email + '</b><br/><br/>' +
@@ -213,7 +213,7 @@ function recall(session, data, cb) {
 			var expireOn = moment().lang('ru');
 			expireOn.add(ms('2d'));
 			Mail.send({
-				from: 'OldMos ★<confirm@oldmos2.ru>',
+				from: 'PastVu ★<confirm@pastvu.com>',
 				to: data.login + ' <' + data.email + '>',
 				subject: 'Запрос на восстановление пароля',
 				//subject: 'Request for password recovery',
@@ -222,7 +222,7 @@ function recall(session, data, cb) {
 				},
 				generateTextFromHTML: true,
 				html: 'Здравствуйте, <b>' + data.login + '</b>!<br/><br/>' +
-					'Для Вашей учетной записи был создан запрос на восстановление пароля на проекте OldMos. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
+					'Для Вашей учетной записи был создан запрос на восстановление пароля на проекте PastVu. Если Вы не производили таких действий на нашем сайте, то просто проигнорируйте и удалите письмо.<br/><br/>' +
 					'Для ввода нового пароля перейдите по следующей ссылке:<br/>' +
 					'<a href="http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '" target="_blank">http://' + appEnv.serverAddr.host + '/confirm/' + confirmKey + '</a><br/>' +
 					'<small>Ссылка действительна ' + moment.duration(ms('2d')).humanize() + ' (до ' + expireOn.format("LLL") + '), по истечении которых Вам будет необходимо запрашивать смену пароля повторно</small>'

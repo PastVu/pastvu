@@ -9,7 +9,7 @@ require([
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
-	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/oldmos'
+	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/pastvu'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
 	"use strict";
 
@@ -192,7 +192,7 @@ require([
 		var loadTime;
 
 		if (window.wasLoading) {
-			loadTime = Number(new Date(Utils.cookie.get('oldmos.load.' + appHash)));
+			loadTime = Number(new Date(Utils.cookie.get('pastvu.load.' + appHash)));
 			if (isNaN(loadTime)) {
 				loadTime = 100;
 			} else {
@@ -202,7 +202,7 @@ require([
 				window.setTimeout(startApp, loadTime);
 			}
 		} else {
-			Utils.cookie.set('oldmos.load.' + appHash, (new Date()).toUTCString());
+			Utils.cookie.set('pastvu.load.' + appHash, (new Date()).toUTCString());
 			startApp();
 		}
 

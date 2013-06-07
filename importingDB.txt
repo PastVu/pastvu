@@ -1,12 +1,12 @@
 ИМПОРТ в Mongo json коллекции (например из myphpadmin)
 	1. Вариант загрузки как массива объектов
-	mongoimport -d oldmos -c old_photos --drop --type json --jsonArray --file import\photos.json
+	mongoimport -d pastvu -c old_photos --drop --type json --jsonArray --file import\photos.json
 
 		\n ->> \\n или <br> если надо сохранить пробелы в html
 		\t ->> (пробел)
 
 	2. Вариант загрузки как строки объектов
-	mongoimport -d oldmos -c photosold --drop --type json --jsonArray --file photos.json
+	mongoimport -d pastvu -c photosold --drop --type json --jsonArray --file photos.json
 
 		Удалить скобки массива
 		\n ->> \\n или <br> если надо сохранить пробелы в html
@@ -16,9 +16,9 @@
 		
 ПЕРЕНОС ДАМПА Mongo
 	1. Делаем полный дамп (bson)
-		mongodump -db oldmos -o C:\Mongo\bin\dump
+		mongodump -db pastvu -o C:\Mongo\bin\dump
 	2. Восстановление из дампа
-		mongorestore --db oldmos C:\Mongo\bin\dump\oldmos
+		mongorestore --db pastvu C:\Mongo\bin\dump\pastvu
 		
 	Можно экспортировать все коллекции и потом импортировать по одной
 	Batch срипт для экспорта всех коллекций (http://stackoverflow.com/questions/11255630/how-to-export-all-collection-in-mongodb)
@@ -42,7 +42,7 @@ sudo node app.js --land prod --domain jsteam.ru --port 80 --uport 8888
 		
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
-	forfiles /s /m *.* /p \_test\oldmos\photosAll /c "cmd /c move @file \_test\oldmos\result"
+	forfiles /s /m *.* /p \_test\pastvu\photosAll /c "cmd /c move @file \_test\pastvu\result"
 
 	Cкрипт для переименовани файлов путем удаления части до подчеркивания
 		С помощью Bash:
@@ -80,6 +80,6 @@ eometry +20+3 -composite -gravity southwest -geometry +3+3 water3.png -composite
 		
 Пакетный конверт всех jpg в папке в webP
 	setlocal enabledelayedexpansion
-	for %%F in (D:\_PROJS\oldmos\publicContent\photos\micros\*.jpg) do (
+	for %%F in (D:\_PROJS\pastvu\publicContent\photos\micros\*.jpg) do (
 	  C:\libwebp-0.2.1\cwebp -short %%F -o %%F.webp
 	)

@@ -96,7 +96,7 @@ app.configure(function () {
 	} else {
 		app.enable('view cache');
 	}
-	app.set('db-uri', 'mongodb://localhost:27017/oldmos');
+	app.set('db-uri', 'mongodb://localhost:27017/pastvu');
 
 	app.locals({
 		pretty: false,
@@ -124,7 +124,7 @@ app.configure(function () {
 
 	app.use(express.bodyParser());
 	app.use(express.cookieParser());
-	app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'OldMosSess', key: 'oldmos.exp' })); //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'OldMosSess', key: 'oldmos.exp' }));
+	app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'PastvuSess', key: 'pastvu.exp' })); //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'PastVuSess', key: 'pastvu.exp' }));
 	app.use(express.methodOverride());
 	app.use(app.router);
 
@@ -140,7 +140,7 @@ app.configure(function () {
 		var handshakeCookieString = handshakeData.headers.cookie || '';
 
 		handshakeData.cookie = cookie.parse(handshakeCookieString);
-		handshakeData.sessionID = handshakeData.cookie['oldmos.sid'] || 'sidcap';
+		handshakeData.sessionID = handshakeData.cookie['pastvu.sid'] || 'sidcap';
 
 		Session.findOne({key: handshakeData.sessionID}).populate('user').exec(function (err, session) {
 			if (err) {

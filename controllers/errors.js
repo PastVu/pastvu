@@ -5,7 +5,7 @@ var ms404 = {
         body: 'The page you requested was not found'
     },
     ms500 = {
-        title: 'Oldmos Error',
+        title: 'Pastvu Error',
         body: 'Sorry, server failed to fulfill an apparently request'
     };
 

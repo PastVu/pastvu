@@ -7,7 +7,7 @@
 		loadImg;
 
 	bindReady(function () {
-		if (!getCookie('oldmos.load.' + appHash)) {
+		if (!getCookie('pastvu.load.' + appHash)) {
 			document.title = 'Фотографии прошлого';
 			window.wasLoading = true;
 
@@ -25,7 +25,7 @@
 				start();
 			};
 			loadImg.onload = function () {
-				setCookie('oldmos.load.' + appHash, new Date().toUTCString());
+				setCookie('pastvu.load.' + appHash, new Date().toUTCString());
 				document.getElementById('apploader').className += ' show';
 				loadImg = null;
 				start();

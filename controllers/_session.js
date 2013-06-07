@@ -71,7 +71,7 @@ module.exports.setData = setData;
 function emitCookie(socket) {
     'use strict';
 
-    var newCoockie = {name: 'oldmos.sid', key: socket.handshake.session.key, path: '/'};
+    var newCoockie = {name: 'pastvu.sid', key: socket.handshake.session.key, path: '/'};
 
     if (socket.handshake.session.user) {
         if (socket.handshake.session.data && socket.handshake.session.data.remember) {
