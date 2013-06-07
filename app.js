@@ -58,6 +58,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	port = argv.port || conf.port || 3000, //Порт сервера
 	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
 	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
+	smtp = conf.smtp,
 
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
@@ -87,6 +88,7 @@ function static404(req, res) {
 
 app.configure(function () {
 	global.appVar.storePath = storePath;
+	global.appVar.smtp = smtp;
 	app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
 
 	app.set('views', __dirname + '/views');

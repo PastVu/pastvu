@@ -5,5 +5,15 @@
 	"uport": 8888,
 	"storePath": "",
 	"noServePublic": false,
-	"noServeStore": false
+	"noServeStore": false,
+
+	"smtp": {
+		"service": "Gmail",
+		"host": "",
+		"port": 0,
+		"auth": {
+			"user": "oldmos2@gmail.com",
+			"pass": "zaq1xsw21"
+		}
+	}
 }
