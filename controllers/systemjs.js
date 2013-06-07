@@ -419,7 +419,10 @@ module.exports.loadController = function (app, db) {
 		cursor.forEach(function (user) {
 			allCounter++;
 			userValid = false;
-			if (user.id && user.username && user.email) {
+
+			if (user.activated !== 'yes') {
+				noactiveCounter++;
+			} else if (user.id && user.username && user.email) {
 				if (spbMode) {
 					if (usersEmail[user.email]) {
 						userMergeCounter++;
@@ -458,7 +461,9 @@ module.exports.loadController = function (app, db) {
 					blogger: user.blogger || undefined,
 					aboutme: user.about || undefined,
 
-					regdate: regDate
+					regdate: regDate,
+					active: true,
+					activatedate: startDate
 				};
 
 				// Удаляем undefined значения
@@ -471,12 +476,6 @@ module.exports.loadController = function (app, db) {
 					newUser.avatar = user.ava;
 				}
 
-				if (user.activated === 'yes') {
-					newUser.active = true;
-					newUser.activatedate = startDate;
-				} else {
-					noactiveCounter++;
-				}
 				//printjson(newUser);
 				insertArr.push(newUser);
 			}
@@ -501,7 +500,7 @@ module.exports.loadController = function (app, db) {
 		print('Setting next user counter to ' + maxCid + ' + 1');
 		db.counters.update({_id: 'user'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAll: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', usersAllNow: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
 	});
 
 	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExisting) {
