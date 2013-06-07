@@ -965,6 +965,47 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', newsInserted: okCounter, noUsers: noUserCounter};
 	});
 
+	saveSystemJSFunc(function oldConvertAll() {
+		print('Removing exists data..');
+		db.users.remove();
+		db.photos.remove();
+		db.comments.remove();
+		db.news.remove();
+
+		print('~~~~~~~');
+		print('oldConvertUsers()');
+		printjson(oldConvertUsers());
+		print('~~~~~~~');
+		print('oldConvertPhotos()');
+		printjson(oldConvertPhotos());
+		print('~~~~~~~');
+		print('oldConvertComments()');
+		printjson(oldConvertComments());
+		print('~~~~~~~');
+		print('oldConvertNews()');
+		printjson(oldConvertNews());
+		print('~~~~~~~');
+		print("oldConvertUsers('old_usersSpb', true)");
+		printjson(oldConvertUsers('old_usersSpb', true));
+		print('~~~~~~~');
+		print('oldConvertPhotos("old_photosSpb", true)');
+		printjson(oldConvertPhotos('old_photosSpb', true));
+		print('~~~~~~~');
+		print("oldConvertComments('old_commentsSpb', true)");
+		printjson(oldConvertComments('old_commentsSpb', true));
+		print('~~~~~~~');
+		print('calcUserStats()');
+		printjson(calcUserStats());
+		print('~~~~~~~');
+		print('calcPhotoStats()');
+		printjson(calcPhotoStats());
+
+		print('~~~~~~~');
+		db.usersSpbMap.drop();
+		db.photosSpbMap.drop();
+		print('OK, FINISH');
+	});
+
 	/**
 	 * Save function to db.system.js
 	 * @param func

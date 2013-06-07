@@ -28,15 +28,18 @@
 		del __collections.txt
 
 ПОСЛЕДОВАТЕЛЬНОСТЬ КОНВЕРТАЦИИ
-oldConvertUsers()
-oldConvertPhotos()
-oldConvertComments()
-oldConvertNews()
-oldConvertUsers('old_usersSpb', true)
-oldConvertPhotos('old_photosSpb', true)
-oldConvertComments('old_commentsSpb', true)
-calcUserStats()
-calcPhotoStats()
+db.loadServerScripts()
+oldConvertAll()
+	Или последовательность:
+	oldConvertUsers()
+	oldConvertPhotos()
+	oldConvertComments()
+	oldConvertNews()
+	oldConvertUsers('old_usersSpb', true)
+	oldConvertPhotos('old_photosSpb', true)
+	oldConvertComments('old_commentsSpb', true)
+	calcUserStats()
+	calcPhotoStats()
 
 sudo node app.js --land prod --domain pastvu.com --port 80 --uport 8888
 		
