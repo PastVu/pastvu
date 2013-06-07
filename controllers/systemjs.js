@@ -404,6 +404,7 @@ module.exports.loadController = function (app, db) {
 			i;
 
 		if (spbMode) {
+			db.usersSpbMap.drop();
 			cidDelta = db.counters.findOne({_id: 'user'}).next;
 			usersSpbMapping = [];
 			print('Filling users hash...');
@@ -428,6 +429,7 @@ module.exports.loadController = function (app, db) {
 				if (spbMode) {
 					if (usersEmail[user.email]) {
 						userMergeCounter++;
+						usersSpbMapping.push({cidOld: Number(user.id), id: usersEmail[user.email]});
 					} else {
 						if (usersLogin[user.username]) {
 							user.username += 'Spb';
@@ -513,7 +515,7 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', usersAllNow: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
 	});
 
-	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, byNumPerPackage, dropExisting) {
+	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_photos';
 		byNumPerPackage = byNumPerPackage || 1000;
 
@@ -538,6 +540,7 @@ module.exports.loadController = function (app, db) {
 			noUserCounter = 0,
 			existsOnStart = db.photos.count(),
 			maxCid,
+			cidDelta = 0,
 			okCounter = 0,
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
@@ -545,13 +548,22 @@ module.exports.loadController = function (app, db) {
 			usersArr,
 			users = {},
 			userOid,
+			photosSpbMapping,
 			i;
 
-		print('Filling users hash...');
-		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
-		i = usersArr.length;
-		while (i--) {
-			users[usersArr[i].cid] = usersArr[i]._id;
+		if (spbMode) {
+			db.photosSpbMap.drop();
+			cidDelta = db.counters.findOne({_id: 'photo'}).next;
+			photosSpbMapping = [];
+			usersArr = db.usersSpbMap.find({}, {id: 1, cidOld: 1}).toArray();
+			for (i = usersArr.length; i--;) {
+				users[usersArr[i].cidOld] = usersArr[i].id;
+			}
+		} else {
+			usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
+			for (i = usersArr.length; i--;) {
+				users[usersArr[i].cid] = usersArr[i]._id;
+			}
 		}
 		print('Filled users hash with ' + usersArr.length + ' values');
 		usersArr = null;
@@ -571,7 +583,8 @@ module.exports.loadController = function (app, db) {
 				okCounter++;
 
 				newPhoto = {
-					cid: photo.id,
+					_id: ObjectId(),
+					cid: Number(photo.id) + cidDelta,
 					user: userOid,
 					album: photo.album_id || undefined,
 					stack: photo.stack_id || undefined,
@@ -616,9 +629,16 @@ module.exports.loadController = function (app, db) {
 
 				//printjson(newPhoto);
 				insertArr.push(newPhoto);
+				if (spbMode) {
+					photosSpbMapping.push({cidOld: Number(photo.id), cidNew: newPhoto.cid, id: newPhoto._id});
+				}
 			}
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
 				db.photos.insert(insertArr);
+				if (spbMode) {
+					db.photosSpbMap.insert(photosSpbMapping);
+					photosSpbMapping = [];
+				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.photos.count() !== okCounter + existsOnStart) {
 					//printjson(insertArr);
