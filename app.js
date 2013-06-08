@@ -11,13 +11,11 @@ var express = require('express'),
 	os = require('os'),
 	cookie = require('express/node_modules/cookie'),
 	Utils = require('./commons/Utils.js'),
-	File = require("file-utils").File,
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
-	mc = require('mc'), // memcashed
 	ms = require('ms'), // Tiny milisecond conversion utility
 	errS = require('./controllers/errors.js').err;
 
@@ -74,21 +72,34 @@ mkdirp.sync(storePath + "private");
 mkdirp.sync(storePath + "public");
 
 async.waterfall([
-	function connectMongo(callback) {
-		db = mongoose.createConnection(moongoUri, {db: {safe: true}})
-			.once('open', function () {
-				var admin = new mongoose.mongo.Admin(db.db);
-				admin.buildInfo(function (err, info) {
-					logger.info('Mongoose[' + mongoose.version + '] connected to MongoDB[' + info.version + ', x' + info.bits + '] at: ' + moongoUri);
-					callback(null);
-				});
-			})
-			.on('error', function (err) {
-				logger.fatal("Connection error to MongoDB at: " + moongoUri);
-				callback(err);
-			});
+	function connectMongo(cb) {
+		db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
+			.once('open', openHandler)
+			.once('error', errFirstHandler);
+		db.open(moongoUri, {server: { auto_reconnect: true }, db: {safe: true}});
 
-//		var memcached = new mc.Client();
+		function openHandler() {
+			var admin = new mongoose.mongo.Admin(db.db);
+			admin.buildInfo(function (err, info) {
+				logger.info('Mongoose[' + mongoose.version + '] connected to MongoDB[' + info.version + ', x' + info.bits + '] at: ' + moongoUri);
+				cb(null);
+			});
+			db.removeListener('error', errFirstHandler);
+			db.on('error', function (err) {
+				logger.error("Connection error to MongoDB at: " + moongoUri);
+				logger.error(err && (err.message || err));
+			});
+			db.on('reconnected', function () {
+				logger.info("Reconnected to MongoDB at: " + moongoUri);
+			});
+		}
+		function errFirstHandler(err) {
+			logger.error("Connection error to MongoDB at: " + moongoUri);
+			cb(err);
+		}
+
+//		var mc = require('mc'), // memcashed
+//          memcached = new mc.Client();
 //		memcached.connect(function () {
 //			logger.info("Connected to the localhost memcache on port 11211");
 //		});
@@ -250,19 +261,22 @@ async.waterfall([
 ],
 	function finish(err) {
 		if (err) {
-			console.dir(err);
-			process.exit(1);
-		}
-		/**
-		 * Handling uncaught exceptions
-		 */
-		process.on('uncaughtException', function (err) {
-			// Add here storage for saving and resuming
-			logger.fatal("PROCESS uncaughtException: " + err.message);
-			logger.fatal(err.stack);
-		});
+			logger.fatal(err && (err.message || err));
+			setTimeout(function () {
+				process.exit(1); // Запускаем в setTimeout, т.к. в некоторых консолях в противном случае не выводятся предыдущие console.log
+			}, 100);
+		} else {
+			/**
+			 * Handling uncaught exceptions
+			 */
+			process.on('uncaughtException', function (err) {
+				// Add here storage for saving and resuming
+				logger.fatal("PROCESS uncaughtException: " + (err && (err.message || err)));
+				logger.trace(err && (err.stack || err));
+			});
 
-		server.listen(port);
-		logger.info('Express server listening %s in %s-mode \n', host, land.toUpperCase());
+			server.listen(port);
+			logger.info('Express server listening %s in %s-mode \n', host, land.toUpperCase());
+		}
 	}
 );
