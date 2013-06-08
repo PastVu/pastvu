@@ -1,7 +1,29 @@
 'use strict';
 
-var mongoose = require('mongoose'),
-    Utils = require('../commons/Utils.js');
+var mongoose = require('mongoose');
+
+mongoose.Model.saveUpsert = function (findQuery, properties, cb) {
+	this.findOne(findQuery, function (err, doc) {
+		if (err && cb) {
+			cb(err);
+		}
+		if (!doc) {
+			doc = new this(findQuery);
+		}
+		for (var p in properties) {
+			if (properties.hasOwnProperty(p)) {
+				doc[p] = properties[p];
+			}
+		}
+		doc.save(!cb ? undefined : function (err, doc) {
+			if (err) {
+				cb(err);
+				return;
+			}
+			cb(null, doc);
+		});
+	}.bind(this));
+};
 
 module.exports.makeModel = function (db) {
 

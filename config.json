@@ -7,6 +7,8 @@
 	"noServePublic": false,
 	"noServeStore": false,
 
+	"mongo": "mongodb://localhost:27017/pastvu",
+
 	"smtp": {
 		"service": "Gmail",
 		"host": "",
