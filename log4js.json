@@ -2,14 +2,31 @@
 	"appenders": [
 		{
 			"type": "file",
-			"filename": "log.log",
+			"filename": "common.log",
 			"maxLogSize": 524288,
-			"backups": 3,
+			"backups": 2,
 			"pollInterval": 15,
 			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		},
 		{
-			"type": "console"
+			"type": "file",
+			"filename": "status.log",
+			"maxLogSize": 524288,
+			"backups": 2,
+			"pollInterval": 10,
+			"category": ["error.js"]
+		},
+		{
+			"type": "file",
+			"filename": "photoConverter.log",
+			"maxLogSize": 524288,
+			"backups": 2,
+			"pollInterval": 15,
+			"category": ["photoConverter.js"]
+		},
+		{
+			"type": "console",
+			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		}
 	],
 	"replaceConsole": true

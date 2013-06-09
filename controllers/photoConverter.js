@@ -17,7 +17,7 @@ var path = require('path'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	log4js = require('log4js'),
-	logger = log4js.getLogger("PhotoConverter.js"),
+	logger = log4js.getLogger("photoConverter.js"),
 	appEnv = {},
 
 	conveyerEnabled = true,
@@ -323,7 +323,7 @@ function CollectConveyerStat() {
 	});
 	st.save(function (err) {
 		if (err) {
-			logger.error('STPhotoConveyer error. ' + err);
+			logger.error('STPhotoConveyer error.\n ' + err);
 		}
 	});
 

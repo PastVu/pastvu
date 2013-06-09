@@ -23,6 +23,7 @@ var express = require('express'),
  * log the cheese logger messages to a file, and the console ones as well.
  */
 console.log('\n');
+mkdirp.sync('./logs');
 log4js.configure('./log4js.json', {cwd: './logs'});
 var logger = log4js.getLogger("app.js");
 
