@@ -53,7 +53,7 @@ module.exports = function (grunt) {
 		copy: {
 			main: {
 				files: [
-					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
+					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/*', 'misc/watermark/**'], dest: targetDir},
 					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
 					{expand: true, src: ['app.js', 'build.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
 				]

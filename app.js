@@ -16,8 +16,9 @@ var express = require('express'),
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
-	ms = require('ms'), // Tiny milisecond conversion utility
-	errS = require('./controllers/errors.js').err;
+	ms = require('ms'); // Tiny milisecond conversion utility
+
+global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 
 /**
  * log the cheese logger messages to a file, and the console ones as well.
@@ -47,8 +48,6 @@ for (var k in interfaces) {
 	}
 }
 
-
-global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	conf = JSON.parse(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')),
@@ -134,6 +133,7 @@ async.waterfall([
 		}
 
 		app.configure(function () {
+			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.smtp = smtp;
 			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: {domain: domain, host: host, port: port, uport: uport}});

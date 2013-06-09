@@ -204,6 +204,9 @@ step(
 		appNames.forEach(function (item) {
 			jadeCompile(['app.jade'], 'views/', requireBuildConfig.dir + '', _this.parallel(), item + '.html', {appName: item});
 		});
+
+		jadeCompile(['404.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
+		jadeCompile(['500.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
 	},
 
 	function finish(e) {
