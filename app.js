@@ -173,14 +173,8 @@ async.waterfall([
 			app.use(express.cookieParser());
 			app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'PastvuSess', key: 'pastvu.exp' })); //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'PastVuSess', key: 'pastvu.exp' }));
 			app.use(express.methodOverride());
-			app.use(app.router);
 
-			// Set custom X-Powered-By for non-static
-			app.get('*', function (req, res, next) {
-				res.setHeader('X-Powered-By', 'Paul Klimashkin | klimashkin@gmail.com');
-				next();
-			});
-			app.use(express.errorHandler({ dumpExceptions: (land !== 'prod'), showStack: (land !== 'prod') }));
+			app.use(app.router);
 		});
 		callback(null);
 	},
@@ -243,12 +237,9 @@ async.waterfall([
 			require('./controllers/tpl.js').loadController(app);
 		}
 		require('./controllers/registerRoutes.js').loadController(app);
-		require('./controllers/errors.js').loadController(app);
 		require('./controllers/systemjs.js').loadController(app, db);
+		require('./controllers/errors.js').registerErrorHandling(app);
 
-		app.get('*', function (req, res) {
-			errS.e404Virgin(req, res);
-		});
 		callback(null);
 	}
 ],
