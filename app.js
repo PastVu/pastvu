@@ -65,7 +65,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	noServeStore = argv.noServeStore || conf.noServeStore || false; //Флаг, что node не должен раздавать статику хранилища
 
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] and Express[' + express.version + '] on process pid:' + process.pid);
-logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch);
+logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ', cpu cores: ' + os.cpus().length);
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");
@@ -189,13 +189,6 @@ async.waterfall([
 		server = http.createServer(app);
 		io = require('socket.io').listen(server);
 
-		/**
-		 * Set zero for unlimited listeners
-		 * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
-		 */
-		server.setMaxListeners(0);
-		io.setMaxListeners(0);
-
 		callback(null);
 	},
 	function ioConfigure(callback) {
@@ -266,6 +259,13 @@ async.waterfall([
 				process.exit(1); // Запускаем в setTimeout, т.к. в некоторых консолях в противном случае не выводятся предыдущие console.log
 			}, 100);
 		} else {
+			/**
+			 * Set zero for unlimited listeners
+			 * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
+			 */
+			server.setMaxListeners(0);
+			io.setMaxListeners(0);
+			process.setMaxListeners(0);
 			/**
 			 * Handling uncaught exceptions
 			 */

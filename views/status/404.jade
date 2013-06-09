@@ -1,44 +1,56 @@
 doctype 5
 html
 	include ../includes/head_meta
-		title= pageTitle
+		title Not found [404] - PastVu
 		link(rel="stylesheet", type="text/css", href="/style/common.css?__=" + appHash)
 		script(type='text/javascript', src="/js/lib/jquery/jquery-1.10.1.js")
 		script(type='text/javascript', src="/js/lib/jquery/plugins/plaxmove.js")
 		style.
-			html,body{height:100%;min-height:100%;overflow:hidden}
-			div {
-				position:absolute;
+			html,body{height:100%; min-height:100%; overflow:hidden;}
+			.back, .front {
+				position: absolute;
 			}
-			.layer1{
+			.back {
 				background: url(/img/misc/404.jpg) 0 0 no-repeat;
 				background-size: cover;
 				margin-left: 0px;
 				width: 100%;
 				height: 100%;
-				top:0;left:0;
-				opacity:1;
+				top:0; left:0;
 			}
-			.layer2{
+			.front {
 				background: url(/img/misc/nlo.png) 0 0 no-repeat;
-				width: 121px;height:91px; top:100px;left:221px;
+				width: 121px; height:91px; top:150px; left:221px;
 				opacity:0.9;
 			}
-			.msg{
-				color: #FFFFFF;
-				font: 30px/30px UCondensed;
-				left: 40px;
-				opacity: 0.8;
+			.msg {
+				position: absolute;
+				display: block;
 				top: 40px;
+				left: 40px;
+				padding: 3px 0 0 60px;
+				height: 60px;
+				color: #f3f3f3;
+				font: 30px/30px UCondensed;
+				opacity: 0.9;                  ``
+				text-decoration: none;
+				cursor: pointer;
+				text-shadow: 1px 2px 3px #888;
+				background: url(/img/misc/logow.png) 0 0 no-repeat;
 			}
-		
+			.msg:hover {
+				color: #fff;
+				text-decoration: none;
+			}
+
 	body
-		div.layer1
-		div.layer2
-		div.msg
-			= mess
+		div.back
+		div.front
+		a.msg(href="/")
+			span The page you requested was not found
+			span(style="display: block; font-size: 18px; line-height: 18px;") &nbsp;[click here to go to the main page]
 		script.
 			$(function(){
-				//$('.layer1').plaxmove({ratioH:0.05, ratioV:0,reversed:true,invertH:false});
-				$('.layer2').plaxmove({ratioH:0.3,ratioV:0.2,reversed:true,invertH:false});
+				//$('.back').plaxmove({ratioH:0.05, ratioV:0,reversed:true,invertH:false});
+				$('.front').plaxmove({ratioH:0.6,ratioV:0.2,reversed:true,invertH:false});
 			});

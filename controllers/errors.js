@@ -1,11 +1,9 @@
 'use strict';
 
 var ms404 = {
-        title: '404 NotFound',
         body: 'The page you requested was not found'
     },
     ms500 = {
-        title: 'Pastvu Error',
         body: 'Sorry, server failed to fulfill an apparently request'
     };
 
@@ -21,7 +19,7 @@ var neoError = {
             msgs = {}.extend(ms404).extend(msgss);
         }
         res.statusCode = 404;
-        res.render('status/404.jade', {pageTitle: msgs.title, mess: msgs.body});
+        res.render('status/404.jade', {mess404: msgs.body});
     },
     e500: function e500(msgs) {
         this.msgs = msgs;
@@ -34,7 +32,7 @@ var neoError = {
             msgs = {}.extend(ms500).extend(msgss);
         }
         res.statusCode = 500;
-        res.render('status/500.jade', {pageTitle: msgs.title, mess: msgs.body});
+        res.render('status/500.jade', {mess500: msgs.body});
     }
 };
 neoError.e404.prototype = Object.create(Error.prototype);
