@@ -13,6 +13,12 @@ module.exports = function (grunt) {
 				}
 			}
 		},
+		clean: {
+			options: {
+				force: true //This overrides grunt.file.delete from blocking deletion of folders outside cwd
+			},
+			publicTarget: [targetDir + 'public']
+		},
 		exec: {
 			buildjs: {
 				command: 'node build.js',
@@ -26,9 +32,9 @@ module.exports = function (grunt) {
 				stripBanners: true,
 				banner: '/**\n' +
 					' * Hello, inquiring mind!\n' +
-					' * This is application of <%= pkg.description %>.\n' +
+					' * This is <%= pkg.name %> application of <%= pkg.description %>.\n' +
 					' * Version: <%= pkg.version %>, <%= grunt.template.today("dd.mm.yyyy") %>\n' +
-					' * Author: <%= pkg.author %>\n' +
+					' * Author: <%= pkg.author.name %> <<%=pkg.author.email%>>\n' +
 					' */\n'
 			},
 			main: {
@@ -66,6 +72,7 @@ module.exports = function (grunt) {
 		}
 	});
 
+	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-compress');
@@ -75,5 +82,5 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir', 'exec', 'concat', 'rename', 'copy',  'compress']);
+	grunt.registerTask('default', ['mkdir', 'clean', 'exec', 'concat', 'rename', 'copy',  'compress']);
 };
