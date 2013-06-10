@@ -1,25 +1,6 @@
 'use strict';
 
 var logger = require('log4js').getLogger("error.js"),
-	fs = require('fs'),
-	sendHtml = (function () {
-		var htmls;
-		if (global.appVar.land === 'dev') {
-			return function (status, res) {
-				res.statusCode = status;
-				res.render('status/' + status + '.jade');
-			};
-		} else {
-			htmls = {
-				'404': fs.readFileSync(__dirname + '/misc/404.html', 'utf8'),
-				'500': fs.readFileSync(__dirname + '/misc/500.html', 'utf8')
-			};
-			return function (status, res) {
-				res.statusCode = status;
-				res.send(htmls[status]);
-			};
-		}
-	}()),
 	neoError = {
 		e404: function e404(msgs) {
 			this.message = msgs;
@@ -40,7 +21,8 @@ function send404(req, res, err) {
 	if (req.xhr) {
 		res.send(404, {error: 'Not found'});
 	} else {
-		sendHtml(404, res);
+		res.statusCode = 404;
+		res.render('status/404.jade');
 	}
 }
 function send500(req, res, err) {
@@ -48,7 +30,8 @@ function send500(req, res, err) {
 	if (req.xhr) {
 		res.send(500, {error: err.message});
 	} else {
-		sendHtml(500, res);
+		res.statusCode = 500;
+		res.render('status/500.jade');
 	}
 }
 

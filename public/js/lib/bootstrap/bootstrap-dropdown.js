@@ -1,5 +1,5 @@
 /* ============================================================
- * bootstrap-dropdown.js v2.3.1
+ * bootstrap-dropdown.js v2.3.2
  * http://twitter.github.com/bootstrap/javascript.html#dropdowns
  * ============================================================
  * Copyright 2012 Twitter, Inc.
@@ -56,10 +56,14 @@
 
       isActive = $parent.hasClass('open')
 
-      clearMenus()
+      clearMenus();
 
       if (!isActive) {
-        $parent.toggleClass('open')
+        if ('ontouchstart' in document.documentElement) {
+          // if mobile we we use a backdrop because click events don't delegate
+          $('<div class="dropdown-backdrop"/>').insertBefore($(this)).on('click', clearMenus);
+        }
+        $parent.toggleClass('open');
       }
 
       $this.focus()
@@ -111,6 +115,7 @@
   }
 
   function clearMenus() {
+    $('.dropdown-backdrop').remove();
     $(toggle).each(function () {
       getParent($(this)).removeClass('open')
     })
@@ -165,7 +170,6 @@
   $(document)
     .on('click.dropdown.data-api', clearMenus)
     .on('click.dropdown.data-api', '.dropdown form', function (e) { e.stopPropagation() })
-    .on('click.dropdown-menu', function (e) { e.stopPropagation() })
     .on('click.dropdown.data-api'  , toggle, Dropdown.prototype.toggle)
     .on('keydown.dropdown.data-api', toggle + ', [role=menu]' , Dropdown.prototype.keydown)
 

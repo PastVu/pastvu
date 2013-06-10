@@ -207,9 +207,6 @@ step(
 			jadeCompile(['app.jade'], 'views/', 'views/html/', _this.parallel(), item + '.html', {appName: item});
 		});
 
-		//TODO: Проапдэйтить bootstrap и удалить из misc
-		//TODO: В проде не отдается скомпиленный app.jade, возможно его тоже надо положить в misc
-		//TODO: При переносе питерский фото не перенеслись вложенные комментарии [4635, 105775]
 		jadeCompile(['404.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
 		jadeCompile(['500.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
 	},
