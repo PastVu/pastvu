@@ -1,7 +1,7 @@
+/*global ObjectId:true, print:true, printjson:true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
 'use strict';
 
-var step = require('step'),
-	log4js = require('log4js'),
+var log4js = require('log4js'),
 	mongoose = require('mongoose'),
 	logger;
 
@@ -662,39 +662,6 @@ module.exports.loadController = function (app, db) {
 		sourceCollectionName = sourceCollectionName || 'old_comments';
 		byNumPerPackage = byNumPerPackage || 5000;
 
-		var commentIncomingParse = (function () {
-			function linkifyUrlString(inputText, target, className) {
-				var replacedText, replacePattern1, replacePattern2;
-
-				target = target ? ' target="' + target + '"' : '';
-				className = className ? ' class="' + className + '"' : '';
-
-				//URLs starting with http://, https://, or ftp://
-				replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-				replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
-
-				//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-				replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-				replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
-
-				return replacedText;
-			}
-
-			return function (txt) {
-				var result = String(txt);
-
-				result = result.trim(); //Обрезаем концы
-
-				//www.oldmos.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382">#22382</a>
-				result = result.replace(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldmos\.ru\/photo\/view\/(\d{1,8})/gim, ' <a target="_blank" class="sharpPhoto" href="/p/$1">#$1</a>');
-
-				result = linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
-				result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
-				result = result.replace(/\s+/g, ' '); //Очищаем лишние пробелы
-				return result;
-			};
-		}());
-
 		if (dropExisting) {
 			print('Clearing target collection...');
 			db.comments.remove();
@@ -705,8 +672,7 @@ module.exports.loadController = function (app, db) {
 
 		var startTime = Date.now(),
 
-		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
-			importedTimezoneOffset = -4,
+			importedTimezoneOffset = -4, //В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
 			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
 			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
 
@@ -739,7 +705,40 @@ module.exports.loadController = function (app, db) {
 			relationFlattenLevel = 9,
 			relationParent,
 			relation,
-			relationParentBroken;
+			relationParentBroken,
+
+			commentIncomingParse = (function () {
+				function linkifyUrlString(inputText, target, className) {
+					var replacedText, replacePattern1, replacePattern2;
+
+					target = target ? ' target="' + target + '"' : '';
+					className = className ? ' class="' + className + '"' : '';
+
+					//URLs starting with http://, https://, or ftp://
+					replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+					replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
+
+					//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+					replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+					replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
+
+					return replacedText;
+				}
+
+				return function (txt) {
+					var result = String(txt);
+
+					result = result.trim(); //Обрезаем концы
+
+					//www.oldmos.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382">#22382</a>
+					result = result.replace(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldmos\.ru\/photo\/view\/(\d{1,8})/gim, ' <a target="_blank" class="sharpPhoto" href="/p/$1">#$1</a>');
+
+					result = linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
+					result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
+					result = result.replace(/\s+/g, ' '); //Очищаем лишние пробелы
+					return result;
+				};
+			}());
 
 		if (spbMode) {
 			db.photosSpbMap.ensureIndex({cidOld: 1});
@@ -786,7 +785,7 @@ module.exports.loadController = function (app, db) {
 					relationParent = undefined;
 					relationParentBroken = false;
 					if (typeof comment.sub === 'number' && comment.sub > 0) {
-						relationParent = commentsRelationsHash[comment.sub];
+						relationParent = commentsRelationsHash[comment.sub + cidDelta];
 						if (relationParent !== undefined) {
 							if (relationParent.level > relationFlattenLevel) {
 								print('ERROR WITH RELATIONS FLATTEN LEVEL');
@@ -795,7 +794,7 @@ module.exports.loadController = function (app, db) {
 								relation = relationParent;
 								flattenedCounter++;
 							} else {
-								relation.parent = comment.sub;
+								relation.parent = comment.sub + cidDelta;
 								relation.level = relationParent.level + 1;
 							}
 						} else {
