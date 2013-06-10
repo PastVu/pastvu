@@ -14,7 +14,7 @@ define(['jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'renderer'], fu
 			if (params.global) {
 				this.id = params.moduleName;
 			} else {
-				this.id = Utils.randomString(10);
+				this.id = Utils.randomString(5);
 			}
 			this.global = params.global;
 			this.module = params.moduleName;

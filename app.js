@@ -60,7 +60,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	moongoUri = argv.mongo || conf.mongo,
 	smtp = conf.smtp,
 
-	buildJson = land === 'dev' ? {} : fs.readFileSync(__dirname + '/build.json', 'utf8'),
+	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
 	noServeStore = argv.noServeStore || conf.noServeStore || false; //Флаг, что node не должен раздавать статику хранилища
@@ -70,7 +70,8 @@ logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch 
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");
-mkdirp.sync(storePath + "public");
+mkdirp.sync(storePath + "public/avatars");
+mkdirp.sync(storePath + "public/photos");
 
 async.waterfall([
 	function connectMongo(cb) {
@@ -165,7 +166,7 @@ async.waterfall([
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
 			}
 			if (!noServeStore) {
-				app.use('/_avatar', express.static(__dirname + 'public/avatars', {maxAge: ms('2d')}));
+				app.use('/_avatar', express.static(storePath + 'public/avatars', {maxAge: ms('2d')}));
 				app.use('/_p', express.static(storePath + 'public/photos', {maxAge: ms('7d')}));
 				app.get('/_avatar/*', static404);
 				app.get('/_p/*', static404);
