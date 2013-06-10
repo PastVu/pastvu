@@ -5,6 +5,7 @@ var start = Date.now(),
 	sys = require('util'),
 	step = require('step'),
 	File = require('file-utils').File,
+	mkdirp = require('mkdirp'),
 	requirejs = require('requirejs'),
 	less = require('less'),
 	jade = require('jade'),
@@ -201,16 +202,16 @@ step(
 			],
 			_this = this;
 
+		mkdirp.sync('views/html/status/');
 		appNames.forEach(function (item) {
-			jadeCompile(['app.jade'], 'views/', requireBuildConfig.dir + '', _this.parallel(), item + '.html', {appName: item});
+			jadeCompile(['app.jade'], 'views/', 'views/html/', _this.parallel(), item + '.html', {appName: item});
 		});
-
 
 		//TODO: Проапдэйтить bootstrap и удалить из misc
 		//TODO: В проде не отдается скомпиленный app.jade, возможно его тоже надо положить в misc
 		//TODO: При переносе питерский фото не перенеслись вложенные комментарии [4635, 105775]
-		jadeCompile(['404.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
-		jadeCompile(['500.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
+		jadeCompile(['404.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
+		jadeCompile(['500.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
 	},
 
 	//Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные

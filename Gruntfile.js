@@ -17,7 +17,10 @@ module.exports = function (grunt) {
 			options: {
 				force: true //This overrides grunt.file.delete from blocking deletion of folders outside cwd
 			},
-			publicTarget: [targetDir + 'public']
+			all: {
+				//Очищаем целевую директорию кроме вложенной папки node_modules
+				src: [targetDir + '/*', '!' + targetDir + '/node_modules']
+			}
 		},
 		exec: {
 			buildjs: {
@@ -44,6 +47,16 @@ module.exports = function (grunt) {
 				}
 			}
 		},
+		copy: {
+			main: {
+				files: [
+					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
+					{expand: true, src: ['views/app.jade', 'views/includes/**', 'views/status/**'], dest: targetDir},
+					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
+					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', './README'], dest: targetDir}
+				]
+			}
+		},
 		rename: {
 			movePublic: {
 				src: ['public-build'],
@@ -52,15 +65,10 @@ module.exports = function (grunt) {
 			moveBuildJson: {
 				src: ['./build.json'],
 				dest: targetDir
-			}
-		},
-		copy: {
-			main: {
-				files: [
-					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/*', 'misc/watermark/**'], dest: targetDir},
-					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
-					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
-				]
+			},
+			moveViewHtml: {
+				src: ['views/html'],
+				dest: targetDir + 'views/html'
 			}
 		},
 		compress: {
@@ -70,7 +78,7 @@ module.exports = function (grunt) {
 					mode: 'tgz'
 				},
 				files: [
-					{cwd: targetDir, src: ['**/*'], dest: 'app/'}
+					{cwd: targetDir, src: ['**/*', '!node_modules/**'], dest: 'app/'}
 				]
 			}
 		}
@@ -86,5 +94,5 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir', 'clean', 'exec', 'concat', 'rename', 'copy',  'compress']);
+	grunt.registerTask('default', ['mkdir', 'clean', 'exec', 'concat', 'copy', 'rename',  'compress']);
 };
