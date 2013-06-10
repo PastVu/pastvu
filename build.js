@@ -14,7 +14,7 @@ var start = Date.now(),
 
 	jadeLocals = {
 		appLand: 'prod',
-		appHash: Utils.randomString(10),
+		appHash: Utils.randomString(5),
 		appVersion: pkg.version
 	},
 
@@ -205,8 +205,18 @@ step(
 			jadeCompile(['app.jade'], 'views/', requireBuildConfig.dir + '', _this.parallel(), item + '.html', {appName: item});
 		});
 
+
+		//TODO: Проапдэйтить bootstrap и удалить из misc
+		//TODO: В проде не отдается скомпиленный app.jade, возможно его тоже надо положить в misc
+		//TODO: При переносе питерский фото не перенеслись вложенные комментарии [4635, 105775]
 		jadeCompile(['404.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
 		jadeCompile(['500.jade'], 'views/status/', 'misc/', _this.parallel(), '.html', {});
+	},
+
+	//Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
+	function writeBuildParams () {
+		fs.writeFileSync('./build.json', JSON.stringify({appHash: jadeLocals.appHash}), 'utf8');
+		this();
 	},
 
 	function finish(e) {

@@ -60,6 +60,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	moongoUri = argv.mongo || conf.mongo,
 	smtp = conf.smtp,
 
+	buildJson = land === 'dev' ? {} : fs.readFileSync(__dirname + '/build.json', 'utf8'),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
 	noServeStore = argv.noServeStore || conf.noServeStore || false; //Флаг, что node не должен раздавать статику хранилища
@@ -125,7 +126,7 @@ async.waterfall([
 
 		app = express();
 		app.version = pkg.version;
-		app.hash = (land === 'dev' ? app.version : Utils.randomString(10));
+		app.hash = land === 'dev' ? app.version : buildJson.appHash;
 		logger.info('Application Hash: ' + app.hash);
 
 		function static404(req, res) {

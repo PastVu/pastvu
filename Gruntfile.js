@@ -45,9 +45,13 @@ module.exports = function (grunt) {
 			}
 		},
 		rename: {
-			moveThis: {
+			movePublic: {
 				src: ['public-build'],
 				dest: targetDir + 'public'
+			},
+			moveBuildJson: {
+				src: ['./build.json'],
+				dest: targetDir
 			}
 		},
 		copy: {
@@ -55,7 +59,7 @@ module.exports = function (grunt) {
 				files: [
 					{expand: true, src: ['commons/**', 'controllers/**', 'models/**', 'misc/*', 'misc/watermark/**'], dest: targetDir},
 					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
-					{expand: true, src: ['app.js', 'build.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
+					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js'], dest: targetDir}
 				]
 			}
 		},
