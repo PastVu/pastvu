@@ -386,7 +386,7 @@ module.exports.loadController = function (app, db) {
 			insertArr = [],
 			newUser,
 			existsOnStart = db.users.count(),
-			cidDelta = 0,
+			cidShift = 0,
 			maxCid,
 			okCounter = 0,
 			noactiveCounter = 0,
@@ -405,7 +405,7 @@ module.exports.loadController = function (app, db) {
 
 		if (spbMode) {
 			db.usersSpbMap.drop();
-			cidDelta = db.counters.findOne({_id: 'user'}).next;
+			cidShift = db.counters.findOne({_id: 'user'}).next;
 			usersSpbMapping = [];
 			print('Filling users hash...');
 			usersArr = db.users.find({}, {_id: 1, login: 1, email: 1}).sort({cid: -1}).toArray();
@@ -418,7 +418,7 @@ module.exports.loadController = function (app, db) {
 			usersArr = null;
 		}
 
-		print('Start to convert ' + allCount + ' docs with cid delta ' + cidDelta + ' by ' + insertBy + ' in one package');
+		print('Start to convert ' + allCount + ' docs with cid delta ' + cidShift + ' by ' + insertBy + ' in one package');
 		cursor.forEach(function (user) {
 			allCounter++;
 			userValid = false;
@@ -445,7 +445,7 @@ module.exports.loadController = function (app, db) {
 				okCounter++;
 				newUser = {
 					_id: ObjectId(),
-					cid: Number(user.id) + cidDelta,
+					cid: Number(user.id) + cidShift,
 					login: user.username,
 					email: user.email,
 					pass: 'init',
@@ -489,7 +489,7 @@ module.exports.loadController = function (app, db) {
 			}
 
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0){
+				if (insertArr.length > 0) {
 					db.users.insert(insertArr);
 					if (spbMode) {
 						db.usersSpbMap.insert(usersSpbMapping);
@@ -540,7 +540,7 @@ module.exports.loadController = function (app, db) {
 			noUserCounter = 0,
 			existsOnStart = db.photos.count(),
 			maxCid,
-			cidDelta = 0,
+			cidShift = 0,
 			okCounter = 0,
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
@@ -553,7 +553,7 @@ module.exports.loadController = function (app, db) {
 
 		if (spbMode) {
 			db.photosSpbMap.drop();
-			cidDelta = db.counters.findOne({_id: 'photo'}).next;
+			cidShift = db.counters.findOne({_id: 'photo'}).next;
 			photosSpbMapping = [];
 			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
 			for (i = usersArr.length; i--;) {
@@ -584,7 +584,7 @@ module.exports.loadController = function (app, db) {
 
 				newPhoto = {
 					_id: ObjectId(),
-					cid: Number(photo.id) + cidDelta,
+					cid: Number(photo.id) + cidShift,
 					user: userOid,
 					album: photo.album_id || undefined,
 					stack: photo.stack_id || undefined,
@@ -658,7 +658,7 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: okCounter, noUsers: noUserCounter, noGeo: noGeoCounter};
 	});
 
-	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
+	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_comments';
 		byNumPerPackage = byNumPerPackage || 5000;
 
@@ -681,7 +681,7 @@ module.exports.loadController = function (app, db) {
 			newComment,
 			existsOnStart = db.comments.count(),
 			maxCid,
-			cidDelta = 0,
+			cidShift = 0,
 			okCounter = 0,
 			fragCounter = 0,
 			fragCounterError = 0,
@@ -725,13 +725,35 @@ module.exports.loadController = function (app, db) {
 					return replacedText;
 				}
 
+				function spbReplace(inputText) {
+					var matches = inputText.match(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldsp\.ru\/photo\/view\/(\d{1,8})/gim),
+						shifted,
+						i;
+
+					if (matches && matches.length > 0) {
+						for (i = matches.length; i--;) {
+							shifted = parseInt(matches[i].substr(matches[0].lastIndexOf('/') + 1), 10) + spbPhotoShift;
+							if (!isNaN(shifted)) {
+								inputText = inputText.replace(matches[i], ' <a target="_blank" class="sharpPhoto" href="/p/' + shifted + '">#' + shifted + '</a> ');
+							}
+						}
+					}
+
+					return inputText;
+				}
+
 				return function (txt) {
 					var result = String(txt);
 
 					result = result.trim(); //Обрезаем концы
 
 					//www.oldmos.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382">#22382</a>
-					result = result.replace(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldmos\.ru\/photo\/view\/(\d{1,8})/gim, ' <a target="_blank" class="sharpPhoto" href="/p/$1">#$1</a>');
+					result = result.replace(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldmos\.ru\/photo\/view\/(\d{1,8})/gim, ' <a target="_blank" class="sharpPhoto" href="/p/$1">#$1</a> ');
+
+					if (spbPhotoShift) {
+						//www.oldsp.ru/photo/view/22382 ->> <a target="_blank" href="/p/22382 + spbPhotoShift">#22382 + spbPhotoShift</a>
+						result = spbReplace(result);
+					}
 
 					result = linkifyUrlString(result, '_blank'); //Оборачиваем url в ahref
 					result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
@@ -742,7 +764,7 @@ module.exports.loadController = function (app, db) {
 
 		if (spbMode) {
 			db.photosSpbMap.ensureIndex({cidOld: 1});
-			cidDelta = db.counters.findOne({_id: 'comment'}).next;
+			cidShift = db.counters.findOne({_id: 'comment'}).next;
 			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
 			for (i = usersArr.length; i--;) {
 				users[usersArr[i].cidOld] = usersArr[i].id;
@@ -785,7 +807,7 @@ module.exports.loadController = function (app, db) {
 					relationParent = undefined;
 					relationParentBroken = false;
 					if (typeof comment.sub === 'number' && comment.sub > 0) {
-						relationParent = commentsRelationsHash[comment.sub + cidDelta];
+						relationParent = commentsRelationsHash[comment.sub + cidShift];
 						if (relationParent !== undefined) {
 							if (relationParent.level > relationFlattenLevel) {
 								print('ERROR WITH RELATIONS FLATTEN LEVEL');
@@ -794,7 +816,7 @@ module.exports.loadController = function (app, db) {
 								relation = relationParent;
 								flattenedCounter++;
 							} else {
-								relation.parent = comment.sub + cidDelta;
+								relation.parent = comment.sub + cidShift;
 								relation.level = relationParent.level + 1;
 							}
 						} else {
@@ -807,7 +829,7 @@ module.exports.loadController = function (app, db) {
 					if (!relationParentBroken) {
 						okCounter++;
 						newComment = {
-							cid: Number(comment.id) + cidDelta,
+							cid: Number(comment.id) + cidShift,
 							obj: photoOid,
 							user: userOid,
 							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
@@ -965,6 +987,7 @@ module.exports.loadController = function (app, db) {
 	});
 
 	saveSystemJSFunc(function oldConvertAll() {
+		var spbPhotoShift;
 		print('Removing exists data..');
 		db.users.remove();
 		db.photos.remove();
@@ -984,14 +1007,15 @@ module.exports.loadController = function (app, db) {
 		print('oldConvertNews()');
 		printjson(oldConvertNews());
 		print('~~~~~~~');
+		spbPhotoShift = db.counters.findOne({_id: 'photo'}).next;
 		print("oldConvertUsers('old_usersSpb', true)");
 		printjson(oldConvertUsers('old_usersSpb', true));
 		print('~~~~~~~');
 		print('oldConvertPhotos("old_photosSpb", true)');
 		printjson(oldConvertPhotos('old_photosSpb', true));
 		print('~~~~~~~');
-		print("oldConvertComments('old_commentsSpb', true)");
-		printjson(oldConvertComments('old_commentsSpb', true));
+		print("oldConvertComments('old_commentsSpb', true, " + spbPhotoShift + ")");
+		printjson(oldConvertComments('old_commentsSpb', true, spbPhotoShift));
 		print('~~~~~~~');
 		print('calcUserStats()');
 		printjson(calcUserStats());
@@ -1002,6 +1026,7 @@ module.exports.loadController = function (app, db) {
 		print('~~~~~~~');
 		db.usersSpbMap.drop();
 		db.photosSpbMap.drop();
+		print('SPB photo shift: ' + spbPhotoShift);
 		print('OK, FINISH');
 	});
 
