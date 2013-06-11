@@ -92,13 +92,13 @@ var path = require('path'),
 			.parse(req);
 	},
 	serve = function (req, res) {
+		setAccessControlHeaders(res);
+
 		switch (req.method) {
 		case 'OPTIONS':
-			setAccessControlHeaders(res);
 			res.end();
 			break;
 		case 'POST':
-			setAccessControlHeaders(res);
 			setNoCacheHeaders(res);
 			postHandler(req, res, postHandlerResponse);
 			break;

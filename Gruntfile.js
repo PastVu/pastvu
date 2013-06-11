@@ -78,7 +78,7 @@ module.exports = function (grunt) {
 					mode: 'tgz'
 				},
 				files: [
-					{cwd: targetDir, src: ['**/*', '!node_modules/**'], dest: 'app/'}
+					{expand: true, cwd: targetDir, src: ['**/*', '!node_modules/**'], dest: 'app/'}
 				]
 			}
 		}
