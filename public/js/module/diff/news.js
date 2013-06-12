@@ -47,7 +47,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			];
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
-			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);

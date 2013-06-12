@@ -229,7 +229,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
-			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
 
 			// Subscriptions
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
@@ -405,6 +405,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		routeHandler: function () {
+			console.log('routeHandler');
 			var cid = Number(globalVM.router.params().cid),
 				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
