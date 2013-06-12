@@ -405,7 +405,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		routeHandler: function () {
-			console.log('routeHandler');
 			var cid = Number(globalVM.router.params().cid),
 				hl = globalVM.router.params().hl,
 				appHistory = globalVM.router.getFlattenStack('/p/', ''),
