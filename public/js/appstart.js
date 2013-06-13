@@ -2,6 +2,12 @@
 (function () {
 	'use strict';
 
+	if (!Date.now) {
+		Date.now = function now() {
+			return new Date().getTime();
+		};
+	}
+
 	var head = document.head || document.getElementsByTagName('head')[0],
 		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
 		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
@@ -74,7 +80,6 @@
 				start();
 			};
 			loadImg.onload = function () {
-				docCookies.setItem('pastvu.load.' + appHash, new Date().toUTCString(), null, '/', null);
 				document.getElementById('apploader').className += ' show';
 				loadImg = null;
 				start();
@@ -86,6 +91,9 @@
 	});
 
 	function start() {
+		//Всё время устанавливаем куку, продлевая её каждый раз на 7 дней с последнего захода
+		docCookies.setItem('pastvu.load.' + appHash, String(Date.now()), 604800, '/', null);
+
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
 		s.setAttribute('src', '/js/module/app' + appName + '.js?__=' + appHash);
