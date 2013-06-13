@@ -132,7 +132,7 @@ require([
 		var loadTime;
 
 		if (window.wasLoading) {
-			loadTime = Number(new Date(Utils.cookie.get('pastvu.load.' + appHash)));
+			loadTime = Number(new Date(Utils.cookie.getItem('pastvu.load.' + appHash)));
 			if (isNaN(loadTime)) {
 				loadTime = 100;
 			} else {
@@ -142,7 +142,7 @@ require([
 				window.setTimeout(startApp, loadTime);
 			}
 		} else {
-			Utils.cookie.set('pastvu.load.' + appHash, (new Date()).toUTCString());
+			Utils.cookie.setItem('pastvu.load.' + appHash, new Date().toUTCString(), null, '/', null);
 			startApp();
 		}
 

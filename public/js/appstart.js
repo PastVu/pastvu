@@ -1,13 +1,62 @@
+/*global escape:true, unescape:true*/
 (function () {
 	'use strict';
 
 	var head = document.head || document.getElementsByTagName('head')[0],
 		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
 		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
-		loadImg;
+		loadImg,
+		docCookies = {
+			getItem: function (sKey) {
+				return unescape(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+			},
+			setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+				if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) {
+					return false;
+				}
+				var sExpires = "";
+				if (vEnd) {
+					switch (vEnd.constructor) {
+					case Number:
+						if (vEnd === Infinity) {
+							sExpires = "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+						} else {
+							sExpires = "; expires=" + new Date(Date.now() + vEnd * 1000).toUTCString() + "; max-age=" + vEnd;
+						}
+						break;
+					case String:
+						sExpires = "; expires=" + vEnd;
+						break;
+					case Date:
+						sExpires = "; expires=" + vEnd.toGMTString();
+						break;
+					}
+				}
+				document.cookie = escape(sKey) + "=" + escape(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+				return true;
+			},
+			removeItem: function (sKey, sPath) {
+				if (!sKey || !this.hasItem(sKey)) {
+					return false;
+				}
+				document.cookie = escape(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + (sPath ? "; path=" + sPath : "");
+				return true;
+			},
+			hasItem: function (sKey) {
+				return (new RegExp("(?:^|;\\s*)" + escape(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+			},
+			keys: /* optional method: you can safely remove it! */ function () {
+				var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/),
+					nIdx;
+				for (nIdx = 0; nIdx < aKeys.length; nIdx++) {
+					aKeys[nIdx] = unescape(aKeys[nIdx]);
+				}
+				return aKeys;
+			}
+		};
 
 	bindReady(function () {
-		if (!getCookie('pastvu.load.' + appHash)) {
+		if (!docCookies.getItem('pastvu.load.' + appHash)) {
 			document.title = 'Фотографии прошлого';
 			window.wasLoading = true;
 
@@ -25,7 +74,7 @@
 				start();
 			};
 			loadImg.onload = function () {
-				setCookie('pastvu.load.' + appHash, new Date().toUTCString());
+				docCookies.setItem('pastvu.load.' + appHash, new Date().toUTCString(), null, '/', null);
 				document.getElementById('apploader').className += ' show';
 				loadImg = null;
 				start();
@@ -41,41 +90,6 @@
 		s.setAttribute('type', 'text/javascript');
 		s.setAttribute('src', '/js/module/app' + appName + '.js?__=' + appHash);
 		head.appendChild(s);
-	}
-
-	function getCookie(name) {
-		var matches = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"));
-		return matches ? decodeURIComponent(matches[1]) : undefined;
-	}
-
-	function setCookie(name, value, props) {
-		props = props || {};
-		value = encodeURIComponent(value);
-
-		var updatedCookie = name + "=" + value,
-			exp = props.expires,
-			dat,
-			propName,
-			propValue;
-		if (typeof exp === "number" && exp) {
-			dat = new Date();
-			dat.setTime(dat.getTime() + exp * 1000);
-			exp = props.expires = dat;
-		}
-		if (exp && exp.toUTCString) {
-			props.expires = exp.toUTCString();
-		}
-
-		for (propName in props) {
-			if (props.hasOwnProperty(propName)) {
-				updatedCookie += "; " + propName;
-				propValue = props[propName];
-				if (propValue !== true) {
-					updatedCookie += "=" + propValue;
-				}
-			}
-		}
-		document.cookie = updatedCookie;
 	}
 
 	// Inspired by http://javascript.info/tutorial/onload-ondomcontentloaded
