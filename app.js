@@ -189,8 +189,11 @@ async.waterfall([
 		callback(null);
 	},
 	function ioConfigure(callback) {
+		var _session = require('./controllers/_session.js');
+
 		io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
 		io.set('authorization', function (handshakeData, callback) {
+			console.log('authorization');
 			var handshakeCookieString = handshakeData.headers.cookie || '';
 
 			handshakeData.cookie = cookie.parse(handshakeCookieString);
@@ -200,14 +203,16 @@ async.waterfall([
 				if (err) {
 					return callback('Error: ' + err, false);
 				}
+				console.log(session && session.key);
 				if (!session) {
-					session = new Session({});
-				}
-				session.key = Utils.randomString(12); // При каждом заходе регенирируем ключ
-				session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
-				session.save();
-				if (session.user) {
-					console.info("%s entered", session.user.login);
+					session = _session.create();
+					console.log('Create session', session.key);
+				} else {
+					_session.regen(session);
+					console.log('Regen session', session.key);
+					if (session.user) {
+						console.info("%s entered", session.user.login);
+					}
 				}
 
 				handshakeData.session = session;
@@ -225,10 +230,11 @@ async.waterfall([
 			io.enable('browser client gzip');          // gzip the file
 			io.set('log level', 1);                    // reduce logging
 		}
+
+		_session.loadController(app, db, io);
 		callback(null);
 	},
 	function loadingControllers(callback) {
-		require('./controllers/_session.js').loadController(app, db, io);
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);
