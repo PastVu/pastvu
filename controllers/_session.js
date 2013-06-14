@@ -7,7 +7,7 @@ var Session,
 	cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
 	cookieMaxAgeAnonimouse = ms('14d') / 1000;
 
-function generate(user, data, cb) {
+function generate(data, cb) {
 	'use strict';
 
 	var session = new Session({
@@ -15,9 +15,6 @@ function generate(user, data, cb) {
 		stamp: new Date()
 	});
 
-	if (user) {
-		session.user = user;
-	}
 	if (data) {
 		session.data = data;
 	}
@@ -110,8 +107,5 @@ module.exports.loadController = function (a, db, io) {
 	User = db.model('User');
 	Role = db.model('Role');
 
-	io.sockets.on('connection', function (socket) {
-		console.log('Connection in _session');
-		emitCookie(socket);
-	});
+	//io.sockets.on('connection', function (socket) {});
 };

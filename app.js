@@ -220,6 +220,11 @@ async.waterfall([
 				return callback(null, true);
 			});
 		});
+		io.sockets.on('connection', function (socket) {
+			console.log('Connection in _session');
+			//Сразу по установлению соединения отправляем клиенту новый ключ сессии в куки
+			_session.emitCookie(socket);
+		});
 
 		if (land === 'dev') {
 			io.set('log level', 1);

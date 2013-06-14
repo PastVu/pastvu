@@ -20,7 +20,8 @@ moment.lang('ru');
 
 function login(socket, data, cb) {
 	'use strict';
-	var error = '';
+	var error = '',
+		session = socket.handshake.session;
 
 	if (!data.login) error += 'Fill in the login field. ';
 	if (!data.pass) error += 'Fill in the password field.';
@@ -37,17 +38,13 @@ function login(socket, data, cb) {
 
 		// login was successful if we have a user
 		if (user) {
-			socket.handshake.session.key = Utils.randomString(12);
-			socket.handshake.session.user = user;
-			socket.handshake.session.data = {remember: data.remember};
-			socket.handshake.session.stamp = new Date();
-			socket.handshake.session.save(function (err, session) {
-				Session.findOne({key: session.key}).populate('user').exec(function (err, session) {
-					socket.handshake.session = session;
-					_session.emitCookie(socket);
-					cb(session, {message: "Success login", youAre: session.user});
-				});
+			session.user = user;
+			session.data = {remember: data.remember};
+			_session.regen(session, function (err, session) {
+				_session.emitCookie(socket);
+				cb(session, {message: "Success login", youAre: user});
 			});
+
 			return;
 		}
 
