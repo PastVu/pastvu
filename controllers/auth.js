@@ -408,9 +408,11 @@ module.exports.loadController = function (a, db, io) {
 			});
 		});
 
-		socket.on('logoutRequest', function (data) {
+		socket.on('logoutRequest', function () {
 			_session.destroy(hs.session, function (err) {
-				socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: '/'});
+				//TODO: Если находится в области, требующей логина, надо перенаправлять на '/'
+				var restrictedArea = false;
+				socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: restrictedArea ? '/' : null});
 			});
 		});
 

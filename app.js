@@ -191,25 +191,29 @@ async.waterfall([
 	function ioConfigure(callback) {
 		var _session = require('./controllers/_session.js');
 
+		io.set('log level', land === 'dev' ? 1 : 0);
+		io.set('browser client', false);
 		io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
 		io.set('authorization', function (handshakeData, callback) {
-			console.log('authorization');
-			var handshakeCookieString = handshakeData.headers.cookie || '';
+			var cookieString = handshakeData.headers.cookie || '',
+				cookieObj = cookie.parse(cookieString),
+				existsSid = cookieObj['pastvu.sid'];
 
-			handshakeData.cookie = cookie.parse(handshakeCookieString);
-			handshakeData.sessionID = handshakeData.cookie['pastvu.sid'] || 'sidcap';
+			if (existsSid) {
+				Session.findOne({key: existsSid}).populate('user').exec(sessionProcess);
+			} else {
+				sessionProcess();
+			}
 
-			Session.findOne({key: handshakeData.sessionID}).populate('user').exec(function (err, session) {
+			function sessionProcess(err, session) {
 				if (err) {
 					return callback('Error: ' + err, false);
 				}
-				console.log(session && session.key);
+				//console.log(session && session.key);
 				if (!session) {
-					session = _session.create();
-					console.log('Create session', session.key);
+					session = _session.create(); //console.log('Create session', session.key);
 				} else {
-					_session.regen(session);
-					console.log('Regen session', session.key);
+					_session.regen(session); //console.log('Regen session', session.key);
 					if (session.user) {
 						console.info("%s entered", session.user.login);
 					}
@@ -218,23 +222,12 @@ async.waterfall([
 				handshakeData.session = session;
 
 				return callback(null, true);
-			});
+			}
 		});
+		//Сразу поcле установки соединения отправляем клиенту новый ключ сессии в куки
 		io.sockets.on('connection', function (socket) {
-			console.log('Connection in _session');
-			//Сразу по установлению соединения отправляем клиенту новый ключ сессии в куки
 			_session.emitCookie(socket);
 		});
-
-		if (land === 'dev') {
-			io.set('log level', 1);
-		} else {
-			io.set('browser client', false);
-			io.enable('browser client minification');  // send minified client
-			io.enable('browser client etag');          // apply etag caching logic based on version number
-			io.enable('browser client gzip');          // gzip the file
-			io.set('log level', 1);                    // reduce logging
-		}
 
 		_session.loadController(app, db, io);
 		callback(null);

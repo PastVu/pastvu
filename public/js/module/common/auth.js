@@ -315,7 +315,12 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					if (json.error) {
 						console.log('Logout error' + json.message);
 					} else {
-						document.location = json.logoutPath;
+						Utils.cookie.removeItem('pastvu.sid', '/');
+						if (json.logoutPath) {
+							document.location = json.logoutPath;
+						} else {
+							location.reload();
+						}
 					}
 				});
 				socket.emit('logoutRequest', {});

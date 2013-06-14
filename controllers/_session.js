@@ -27,7 +27,6 @@ function generate(data, cb) {
 
 	return session;
 }
-module.exports.create = generate;
 
 function regen(session, cb) {
 	'use strict';
@@ -43,16 +42,16 @@ function regen(session, cb) {
 
 	return session;
 }
-module.exports.regen = regen;
 
 function destroy(session, cb) {
 	'use strict';
 
 	if (session) {
 		session.remove(cb);
+	} else {
+		cb();
 	}
 }
-module.exports.destroy = destroy;
 
 function setUser(socket, user, data, cb) {
 	'use strict';
@@ -98,9 +97,11 @@ function emitCookie(socket) {
 
 	socket.emit('newCookie', newCoockie);
 }
+
+module.exports.create = generate;
+module.exports.regen = regen;
+module.exports.destroy = destroy;
 module.exports.emitCookie = emitCookie;
-
-
 module.exports.loadController = function (a, db, io) {
 	app = a;
 	Session = db.model('Session');
