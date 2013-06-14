@@ -10,6 +10,7 @@ var express = require('express'),
 	fs = require('fs'),
 	os = require('os'),
 	cookie = require('express/node_modules/cookie'),
+	uaParser = require('ua-parser'),
 	Utils = require('./commons/Utils.js'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
@@ -95,6 +96,7 @@ async.waterfall([
 				logger.info("Reconnected to MongoDB at: " + moongoUri);
 			});
 		}
+
 		function errFirstHandler(err) {
 			logger.error("Connection error to MongoDB at: " + moongoUri);
 			cb(err);
@@ -211,7 +213,9 @@ async.waterfall([
 				}
 				//console.log(session && session.key);
 				if (!session) {
-					session = _session.create(); //console.log('Create session', session.key);
+					var uaParsed = uaParser.parse(handshakeData.headers['user-agent']),
+						uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
+					session = _session.create({ua: uaData}); //console.log('Create session', session.key);
 				} else {
 					_session.regen(session); //console.log('Regen session', session.key);
 					if (session.user) {
