@@ -2,6 +2,7 @@ var Session,
 	User,
 	Role,
 	Utils = require('../commons/Utils.js'),
+	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	app,
 	cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
@@ -12,12 +13,9 @@ function generate(data, cb) {
 
 	var session = new Session({
 		key: Utils.randomString(12),
-		stamp: new Date()
+		stamp: new Date(),
+		data: data || {}
 	});
-
-	if (data) {
-		session.data = data;
-	}
 
 	session.save(function (err, session) {
 		if (cb) {
@@ -28,12 +26,15 @@ function generate(data, cb) {
 	return session;
 }
 
-function regen(session, cb) {
+function regen(session, data, cb) {
 	'use strict';
 
 	session.key = Utils.randomString(12); // При каждом заходе регенерируем ключ
 	session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
-
+	if (data) {
+		_.assign(session.data, data);
+		session.markModified('data');
+	}
 	session.save(function (err, session) {
 		if (cb) {
 			cb(err, session);
@@ -52,35 +53,6 @@ function destroy(session, cb) {
 		cb();
 	}
 }
-
-function setUser(socket, user, data, cb) {
-	'use strict';
-
-	socket.handshake.session.user = user;
-	if (data) {
-		socket.handshake.session.extend(data);
-	}
-	socket.handshake.session.save(function (err, session) {
-		socket.handshake.session = session;
-		if (cb) {
-			cb(err);
-		}
-	});
-}
-module.exports.setUser = setUser;
-
-function setData(socket, data, cb) {
-	'use strict';
-
-	socket.handshake.session.extend(data);
-	socket.handshake.session.save(function (err, session) {
-		socket.handshake.session = session;
-		if (cb) {
-			cb(err);
-		}
-	});
-}
-module.exports.setData = setData;
 
 function emitCookie(socket) {
 	'use strict';

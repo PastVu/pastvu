@@ -21,7 +21,6 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('saveUser', function (data) {
-			//var updateData = {}.extend(data).extend({'$unset': toDel});
 			var itsMe = hs.session.user && hs.session.user.login === data.login,
 				result = function (data) {
 					socket.emit('saveUserResult', data);

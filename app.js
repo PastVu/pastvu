@@ -10,7 +10,6 @@ var express = require('express'),
 	fs = require('fs'),
 	os = require('os'),
 	cookie = require('express/node_modules/cookie'),
-	uaParser = require('ua-parser'),
 	Utils = require('./commons/Utils.js'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
@@ -211,20 +210,19 @@ async.waterfall([
 				if (err) {
 					return callback('Error: ' + err, false);
 				}
+				var ip = handshakeData.address && handshakeData.address.address;
+
 				//console.log(session && session.key);
 				if (!session) {
-					var uaParsed = uaParser.parse(handshakeData.headers['user-agent']),
-						uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
-					session = _session.create({ua: uaData}); //console.log('Create session', session.key);
+					session = _session.create({ip: ip}); //console.log('Create session', session.key);
 				} else {
-					_session.regen(session); //console.log('Regen session', session.key);
+					_session.regen(session, {ip: ip}); //console.log('Regen session', session.key);
 					if (session.user) {
 						console.info("%s entered", session.user.login);
 					}
 				}
 
 				handshakeData.session = session;
-
 				return callback(null, true);
 			}
 		});
