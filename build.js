@@ -5,17 +5,9 @@ var start = Date.now(),
 	sys = require('util'),
 	step = require('step'),
 	File = require('file-utils').File,
-	mkdirp = require('mkdirp'),
 	requirejs = require('requirejs'),
 	less = require('less'),
-	jade = require('jade'),
-	_ = require('lodash'),
 	Utils = require('./commons/Utils.js'),
-
-	jadeLocals = {
-		appLand: 'prod',
-		appHash: Utils.randomString(5)
-	},
 
 	lessCompileOptions = {
 		compress: true,
@@ -105,35 +97,9 @@ var start = Date.now(),
 			}*/
 		]
 	},
-	jadeFiles = [],
 	lessFiles = [];
 
 step(
-	//Находим клиентские jade-шаблоны и создаем плоский массив и создаем временную папку tpl для рендеренных
-	function searchJades() {
-		var tplFolder = new File('./views/module'),
-			tplFolderTemp = new File('./' + requireBuildConfig.appDir + 'tpl'),
-			_this = this;
-
-		tplFolder.list(function (e, files) {
-			if (e) {
-				console.dir(e);
-				process.exit(1);
-			}
-			jadeFiles = Utils.filesRecursive(files, '');
-
-			//Создаём временные директории и поддиректории для скомпилированных Jade-шаблонов
-			tplFolderTemp.createDirectory();
-			tplFolderTemp.removeOnExit(); //Удаляем временную папку скомпилированных шаблонов после завершения сборки
-			Object.keys(files).forEach(function (element) {
-				if (Utils.isType('object', files[element])) {
-					new File('./' + requireBuildConfig.appDir + 'tpl/' + element).createDirectory(_this.parallel());
-				}
-			});
-			_this.parallel()();
-		});
-	},
-
 	//Ищем less-файлы для компиляции и создаем плоский массив
 	function searchLess() {
 		var lessFolder = new File('./' + requireBuildConfig.appDir + 'style'),
@@ -151,15 +117,14 @@ step(
 		});
 	},
 
-	//Компилируем less и jade
+	//Компилируем less
 	function startCompile() {
-		lessCompile(lessFiles, this.parallel());
-		jadeCompile(jadeFiles, 'views/module/', requireBuildConfig.appDir + 'tpl/', this.parallel());
+		lessCompile(lessFiles, this);
 	},
 
 	//Собираем require
 	function requireBuild() {
-		console.dir('~~~ Start r.js build ~~~');
+		console.log('~~~ Start r.js build ~~~');
 		var _this = this;
 		requirejs.optimize(requireBuildConfig, function (/*buildResponse*/) {
 			//buildResponse is just a text output of the modules
@@ -191,30 +156,6 @@ step(
 		});
 	},
 
-/*	//Компилируем основные jade в статичные html
-	function compileMainJades() {
-		"use strict";
-		var appNames = [
-				'Main',
-				'Admin'
-			],
-			_this = this;
-
-		mkdirp.sync('views/html/status/');
-		appNames.forEach(function (item) {
-			jadeCompile(['app.jade'], 'views/', 'views/html/', _this.parallel(), item + '.html', {appName: item});
-		});
-
-		jadeCompile(['404.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
-		jadeCompile(['500.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
-	},*/
-
-	//Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
-	function writeBuildParams () {
-		fs.writeFileSync('./build.json', JSON.stringify({appHash: jadeLocals.appHash}), 'utf8');
-		this();
-	},
-
 	function finish(e) {
 		if (e) {
 			console.dir(e);
@@ -224,42 +165,6 @@ step(
 	}
 );
 
-
-function jadeCompile(files, inFolder, outFolder, done, replaceExtension, addOptions) {
-	var name, input, output,
-		fd,
-		i = 0;
-
-	next();
-
-	function next() {
-		name = files[i++];
-		if (!name) {
-			return done();
-		}
-		input = inFolder + name;
-		output = outFolder + name;
-		if (replaceExtension) {
-			output = output.substr(0, output.lastIndexOf('.jade')) + replaceExtension;
-		}
-		fs.readFile(input, 'utf-8', render);
-	}
-
-	function render(e, data) {
-		if (e) {
-			sys.puts("jade readFile error: " + e.message);
-			process.exit(1);
-		}
-		console.dir('Compiling Jade ' + input);
-		var compiledFn = jade.compile(data, {pretty: false, filename: input}),
-			resultLocals = addOptions ? _.assign(_.clone(jadeLocals, false), addOptions) : jadeLocals;
-
-		fd = fs.openSync(output, "w");
-		fs.writeSync(fd, compiledFn(resultLocals), 0, "utf8");
-		fs.closeSync(fd);
-		next();
-	}
-}
 
 function lessCompile(files, done) {
 	var input, output,

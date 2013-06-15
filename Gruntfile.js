@@ -1,21 +1,20 @@
 module.exports = function (grunt) {
 	var path = require('path'),
+		Utils = require('./commons/Utils.js'),
 		upperDir = path.normalize(path.resolve('../') + '/'),
 		targetDir = path.normalize(upperDir + 'appBuild/'),
+		appHash = Utils.randomString(5),
 		buildJSON;
+
+	grunt.file.defaultEncoding = 'utf8';
 
 	// Project configuration.
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		mkdir: {
-			all: {
+			target: {
 				options: {
 					create: [targetDir]
-				}
-			},
-			htmlViews: {
-				options: {
-					create: [targetDir + 'views/html/status/']
 				}
 			}
 		},
@@ -23,9 +22,13 @@ module.exports = function (grunt) {
 			options: {
 				force: true //This overrides grunt.file.delete from blocking deletion of folders outside cwd
 			},
-			all: {
+			target: {
 				//Очищаем целевую директорию кроме вложенной папки node_modules
 				src: [targetDir + '/*', '!' + targetDir + '/node_modules']
+			},
+			publicTpl: {
+				//Очищаем целевую директорию кроме вложенной папки node_modules
+				src: ['public/tpl']
 			}
 		},
 		exec: {
@@ -67,25 +70,31 @@ module.exports = function (grunt) {
 			movePublic: {
 				src: ['public-build'],
 				dest: targetDir + 'public'
-			},
-			moveBuildJson: {
-				src: ['./build.json'],
-				dest: targetDir
 			}
 		},
 		jade: {
+			compileTpls: {
+				options: {
+					data: {
+						appLand: 'prod', appHash: appHash, pretty: false
+					}
+				},
+				files: [
+					{expand: true, cwd: 'views/module/', src: '**/*.jade', dest: 'public/tpl/'}
+				]
+			},
 			compileMainJades: {
 				options: {
 					data: function (dest, src) {
 						var name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
 						grunt.log.write('appName: ' + name + '. ');
-						return {appName: name, appLand: 'prod', appHash: buildJSON.appHash, pretty: false};
+						return {appName: name, appLand: 'prod', appHash: appHash, pretty: false};
 					}
 				},
 				files: [
 					{expand: true, cwd: targetDir + 'views/', ext: 'Main.html', src: 'app.jade', dest: targetDir + 'views/html/'},
 					{expand: true, cwd: targetDir + 'views/', ext: 'Admin.html', src: 'app.jade', dest: targetDir + 'views/html/'},
-					{expand: true, cwd: targetDir + 'views/status/', ext: '.html', src: '*.jade', dest: targetDir + 'views/html/status/'}
+					{expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status/*.jade', dest: targetDir + 'views/html/'}
 				]
 			}
 		},
@@ -113,10 +122,25 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir:all', 'clean', 'exec', 'concat', 'copy', 'rename', 'mkdir:htmlViews', 'readBuidJSON', 'jade', 'compress']);
+	grunt.registerTask('default', [
+		'mkdir:target',
+		'clean:target',
+		'jade:compileTpls',
+		'exec:buildjs',
+		'concat',
+		'copy',
+		'rename:movePublic',
+		'jade:compileMainJades',
+		'clean:publicTpl',
+		'writeBuildParams',
+		'compress'
+	]);
 
-	grunt.registerTask('readBuidJSON', function () {
-		buildJSON = grunt.file.readJSON(targetDir + 'build.json');
-		grunt.log.writeln('Build hash: ' + buildJSON.appHash);
+	//Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
+	grunt.registerTask('writeBuildParams', function () {
+		var buildString = JSON.stringify({appHash: appHash});
+
+		grunt.file.write(targetDir + 'build.json', buildString);
+		grunt.log.writeln('Build json: ' + buildString);
 	});
 };
