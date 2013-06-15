@@ -1,7 +1,8 @@
 module.exports = function (grunt) {
 	var path = require('path'),
 		upperDir = path.normalize(path.resolve('../') + '/'),
-		targetDir = path.normalize(upperDir + 'appBuild/');
+		targetDir = path.normalize(upperDir + 'appBuild/'),
+		buildJSON;
 
 	// Project configuration.
 	grunt.initConfig({
@@ -10,6 +11,11 @@ module.exports = function (grunt) {
 			all: {
 				options: {
 					create: [targetDir]
+				}
+			},
+			htmlViews: {
+				options: {
+					create: [targetDir + 'views/html/status/']
 				}
 			}
 		},
@@ -65,10 +71,22 @@ module.exports = function (grunt) {
 			moveBuildJson: {
 				src: ['./build.json'],
 				dest: targetDir
-			},
-			moveViewHtml: {
-				src: ['views/html'],
-				dest: targetDir + 'views/html'
+			}
+		},
+		jade: {
+			compileMainJades: {
+				options: {
+					data: function (dest, src) {
+						var name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
+						grunt.log.write('appName: ' + name + '. ');
+						return {appName: name, appLand: 'prod', appHash: buildJSON.appHash, pretty: false};
+					}
+				},
+				files: [
+					{expand: true, cwd: targetDir + 'views/', ext: 'Main.html', src: 'app.jade', dest: targetDir + 'views/html/'},
+					{expand: true, cwd: targetDir + 'views/', ext: 'Admin.html', src: 'app.jade', dest: targetDir + 'views/html/'},
+					{expand: true, cwd: targetDir + 'views/status/', ext: '.html', src: '*.jade', dest: targetDir + 'views/html/status/'}
+				]
 			}
 		},
 		compress: {
@@ -86,6 +104,7 @@ module.exports = function (grunt) {
 
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
+	grunt.loadNpmTasks('grunt-contrib-jade');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-compress');
 	grunt.loadNpmTasks('grunt-contrib-requirejs');
@@ -94,5 +113,10 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-mkdir');
 
 	// Default task(s).
-	grunt.registerTask('default', ['mkdir', 'clean', 'exec', 'concat', 'copy', 'rename',  'compress']);
+	grunt.registerTask('default', ['mkdir:all', 'clean', 'exec', 'concat', 'copy', 'rename', 'mkdir:htmlViews', 'readBuidJSON', 'jade', 'compress']);
+
+	grunt.registerTask('readBuidJSON', function () {
+		buildJSON = grunt.file.readJSON(targetDir + 'build.json');
+		grunt.log.writeln('Build hash: ' + buildJSON.appHash);
+	});
 };

@@ -11,12 +11,10 @@ var start = Date.now(),
 	jade = require('jade'),
 	_ = require('lodash'),
 	Utils = require('./commons/Utils.js'),
-	pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 
 	jadeLocals = {
 		appLand: 'prod',
-		appHash: Utils.randomString(5),
-		appVersion: pkg.version
+		appHash: Utils.randomString(5)
 	},
 
 	lessCompileOptions = {
@@ -193,7 +191,7 @@ step(
 		});
 	},
 
-	//Компилируем основные jade в статичные html
+/*	//Компилируем основные jade в статичные html
 	function compileMainJades() {
 		"use strict";
 		var appNames = [
@@ -209,7 +207,7 @@ step(
 
 		jadeCompile(['404.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
 		jadeCompile(['500.jade'], 'views/status/', 'views/html/status/', _this.parallel(), '.html', {});
-	},
+	},*/
 
 	//Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
 	function writeBuildParams () {
