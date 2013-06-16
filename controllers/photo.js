@@ -759,7 +759,8 @@ module.exports.loadController = function (app, db, io) {
 					oldValues,
 					newGeo,
 					oldGeo,
-					oldYear;
+					oldYear,
+					sendingBack = {};
 
 				step(
 					function findPhoto() {
@@ -781,6 +782,10 @@ module.exports.loadController = function (app, db, io) {
 						}
 						if (newValues.geo !== undefined) {
 							Utils.geo.geoToPrecisionRound(newValues.geo);
+						}
+						if (newValues.desc !== undefined) {
+							newValues.desc = Utils.inputIncomingParse(newValues.desc);
+							sendingBack.desc = newValues.desc;
 						}
 						_.assign(photo, newValues);
 
@@ -817,7 +822,7 @@ module.exports.loadController = function (app, db, io) {
 							result({message: obj.message || '', error: true});
 							return;
 						}
-						result({message: 'Photo saved successfully'});
+						result({message: 'Photo saved successfully', data: sendingBack});
 					}
 				);
 

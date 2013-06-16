@@ -1,6 +1,7 @@
 var fs = require('fs'),
 	Utils = new Object(null),
-	_ = require('lodash');
+	_ = require('lodash'),
+	_s = require('underscore.string');
 
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
@@ -49,6 +50,45 @@ Utils.linkifyUrlString = function (inputText, target, className) {
 
 	return replacedText;
 };
+Utils.inputIncomingParse = (function () {
+	var host = global.appVar.serverAddr.host,
+		reversedEscapeChars = {"<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39"};
+
+	function escape (txt) {
+		//Паттерн из _s.escapeHTML(result); исключая амперсант
+		return txt.replace(/[<>"']/g, function (m) {
+			return '&' + reversedEscapeChars[m] + ';';
+		});
+	}
+
+	return function (txt) {
+		var result = txt;
+
+		result = _s.trim(result); //Обрезаем концы
+		result = escape(result); //Эскейпим
+
+		//Заменяем ссылку на фото на диез-ссылку #xxx
+		//Например, http://domain.com/p/123456 -> #123456
+		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,]|$)', 'gi'), '$1#$2');
+
+		//Восстанавливаем внтуреннюю ссылку чтобы на следующей операции обернуть её в линк
+		//Например, /u/klimashkin/photo -> http://domain.com/u/klimashkin/photo
+		result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1' + host + '$2');
+
+		//Все ссылки на адреса внутри портала оставляем без доменного имени, от корня, и оборачиваем в линк
+		//Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
+		result = result.replace(new RegExp('(^|\\s|\\()(?:https?://)?(?:www.)?' + host + '(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
+
+		//Заменяем диез-ссылку фото #xxx на линк
+		//Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
+		result = result.replace(/(^|\s|\()#(\d{1,8})(?=[\s\)\.\,]|$)/g, '$1<a target="_blank" class="sharpPhoto" href="/p/$2">#$2</a>');
+
+		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
+		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
+		result = _s.clean(result); //Очищаем лишние пробелы
+		return result;
+	};
+}());
 
 Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, filter) {
 	'use strict';

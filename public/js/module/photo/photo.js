@@ -416,6 +416,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		editHandler: function (v) {
 			if (v) {
 				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
+				this.descSetEdit();
 				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
@@ -456,7 +457,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		inputLabelClick: function (data, event) {
 			this.descActivate($(event.target).closest('.photoInfo'), null, true);
 		},
-		descActivate: function  (root, scrollDuration, focus) {
+		descActivate: function (root, scrollDuration, focus) {
 			var input = root.find('.descInput');
 
 			root.addClass('hasFocus');
@@ -476,6 +477,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				$root = $input.closest('.photoInfo'),
 				content = $.trim($input.val());
 
+			this.descEditingChanged = true;
 			$root[content ? 'addClass' : 'removeClass']('hasContent');
 			this.inputCheckHeight($root, $input);
 		},
@@ -497,7 +499,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		inputCheckHeight: function (root, input) {
 			var content = $.trim(input.val()),
 				height = input.height(),
-				heightScroll = (input[0].scrollHeight - 8) || height;
+				heightScroll = (input[0].scrollHeight) || height;
 
 			if (!content) {
 				input.height('auto');
@@ -656,7 +658,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			);
 		},
 		save: function (cb, ctx) {
-			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'),
+			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'source', 'author'),
 				key;
 
 			for (key in target) {
@@ -672,17 +674,27 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (target.geo) {
 				target.geo.reverse();
 			}
+
+			if (this.descEditingChanged) {
+				target.desc = this.$dom.find('.descInput').val();
+			}
+
 			if (Utils.getObjectPropertyLength(target) > 0) {
 				target.cid = this.p.cid();
-				socket.once('savePhotoResult', function (data) {
-					if (data && !data.error) {
+				socket.once('savePhotoResult', function (result) {
+					if (result && !result.error) {
 						if (target.geo) {
 							target.geo.reverse();
+						}
+						if (this.descEditingChanged) {
+							target.desc = result.data.desc;
+							this.p.desc(result.data.desc);
+							delete this.descEditingChanged;
 						}
 						_.assign(this.originData, target);
 					}
 					if (cb) {
-						cb.call(ctx, data);
+						cb.call(ctx, result);
 					}
 				}.bind(this));
 				socket.emit('savePhoto', target);
@@ -698,6 +710,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					this.p[key](item);
 				}
 			}.bind(this));
+			delete this.descEditingChanged;
 		},
 
 		toConvert: function (data, event) {

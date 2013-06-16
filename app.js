@@ -10,7 +10,6 @@ var express = require('express'),
 	fs = require('fs'),
 	os = require('os'),
 	cookie = require('express/node_modules/cookie'),
-	Utils = require('./commons/Utils.js'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
@@ -139,7 +138,8 @@ async.waterfall([
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.smtp = smtp;
-			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: {domain: domain, host: host, port: port, uport: uport}});
+			global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport};
+			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
 
 			app.set('views', __dirname + '/views');
 			app.set('view engine', 'jade');
@@ -235,6 +235,7 @@ async.waterfall([
 		callback(null);
 	},
 	function loadingControllers(callback) {
+		require('./commons/Utils.js');
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);

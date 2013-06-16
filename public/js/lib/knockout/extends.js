@@ -70,7 +70,6 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 						.css({display: ''})
 						.attr('contenteditable', "true")
 						.on('blur', function () {
-							console.log('blur');
 							var modelValue = obj.val,
 								elementValue = $.trim($element.text());
 
@@ -84,7 +83,6 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 							}
 						})
 						.on('focus', function () {
-							console.log('focus');
 							$element.removeClass('cap');
 							if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
 								$element.html('&nbsp;');

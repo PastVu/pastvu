@@ -90,7 +90,7 @@
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
 				// /ko
 				//ko if: p.desc().length > 0
-				.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
+				.row-fluid.photoInfo.photoDesc(data-bind="html: p.desc()")
 				// /ko
 			.row-fluid.photoInfoBlock
 				//ko if: p.address().length > 0
