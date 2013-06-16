@@ -128,7 +128,7 @@ module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb, ctx) {
 
 	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ',' + oldYear + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
-			console.log(cid + ' reclustered in ' + (Date.now() - start));
+			//console.log(cid + ' reclustered in ' + (Date.now() - start));
 			cb.apply(ctx, arguments);
 		}
 	});

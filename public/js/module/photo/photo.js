@@ -344,9 +344,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		routeHandler: function () {
 			var cid = Number(globalVM.router.params().cid),
-				hl = globalVM.router.params().hl,
-				appHistory = globalVM.router.getFlattenStack('/p/', ''),
-				offset = globalVM.router.offset;
+				hl = globalVM.router.params().hl;
 
 			this.toComment = this.toFrag = undefined;
 			window.clearTimeout(this.scrollTimeout);
@@ -705,11 +703,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		cancel: function () {
-			_.forEach(this.originData, function (item, key) {
-				if (Utils.isType('function', this.p[key]) && this.p[key]() !== item) {
-					this.p[key](item);
-				}
-			}.bind(this));
+			ko_mapping.fromJS(this.originData, this.p);
 			delete this.descEditingChanged;
 		},
 
