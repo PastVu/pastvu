@@ -569,7 +569,7 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', usersAllNow: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
 	});
 
-	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
+	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
 		sourceCollectionName = sourceCollectionName || 'old_photos';
 		byNumPerPackage = byNumPerPackage || 2000;
 
@@ -655,7 +655,7 @@ module.exports.loadController = function (app, db) {
 					title: photo.title || '',
 					year: Math.min(Math.max(Number(photo.year_from) || 2000, 1826), 2000),
 					address: photo.address || undefined,
-					desc: photo.description ? inputIncomingParse(photo.description) : undefined,
+					desc: photo.description ? inputIncomingParse(photo.description, spbPhotoShift) : undefined,
 					source: photo.source || undefined,
 					author: photo.author || undefined,
 
@@ -1011,8 +1011,8 @@ module.exports.loadController = function (app, db) {
 		print("oldConvertUsers('old_usersSpb', true)");
 		printjson(oldConvertUsers('old_usersSpb', true));
 		print('~~~~~~~');
-		print('oldConvertPhotos("old_photosSpb", true)');
-		printjson(oldConvertPhotos('old_photosSpb', true));
+		print("oldConvertPhotos('old_photosSpb', true, " + spbPhotoShift + ")");
+		printjson(oldConvertPhotos('old_photosSpb', true, spbPhotoShift));
 		print('~~~~~~~');
 		print("oldConvertComments('old_commentsSpb', true, " + spbPhotoShift + ")");
 		printjson(oldConvertComments('old_commentsSpb', true, spbPhotoShift));
