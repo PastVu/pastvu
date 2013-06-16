@@ -3,7 +3,7 @@
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends'], function ($, _, _s) {
 	var Utils = {
 
 		/**
@@ -297,6 +297,14 @@ define(['jquery', 'underscore', 'lib/jquery/plugins/extends'], function ($, _) {
 			replacedText = replacedText.replace(replacePattern, '<a href="mailto:$1"' + className + '>$1</a>');
 
 			return replacedText;
+		},
+		txtHtmlToInput: function (txt) {
+			var result = txt;
+
+			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
+			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
+			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
+			return result;
 		},
 
 		cutStringByWord: function (text, n) {

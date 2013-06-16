@@ -137,7 +137,9 @@
 					// /ko
 			.row-fluid.photoInfoBlock
 				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
-				.row-fluid.photoInfo.photoDesc.editable(data-bind="cEdit: {edit: edit(), val: p.desc, cap: 'Describe the photo'}")
+				.row-fluid.photoInfo.photoDesc
+					textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
+					label.descInputLabel(data-bind="click: descLabelClickBind") Describe the photo
 			.row-fluid.photoInfoBlock
 				.row-fluid.photoInfo
 					.infoName Adress:

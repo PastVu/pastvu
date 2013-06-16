@@ -49,4 +49,68 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 
 		return methodCallResult;
 	};
+
+	/**
+	 * Редактирование содержимого элементов с помошью contenteditable
+	 * Inspired by https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
+	 * @type {Object}
+	 */
+	ko.bindingHandlers.cEdit = {
+		init: function (element, valueAccessor, allBindingsAccessor) {
+		},
+		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+			var obj = ko.utils.unwrapObservable(valueAccessor()),
+				$element = $(element);
+
+			$element.text(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val);
+
+			if (obj.edit) {
+				if (!$element.attr('contenteditable')) {
+					$element
+						.css({display: ''})
+						.attr('contenteditable', "true")
+						.on('blur', function () {
+							console.log('blur');
+							var modelValue = obj.val,
+								elementValue = $.trim($element.text());
+
+							$element.text(elementValue);
+							if (ko.isWriteableObservable(modelValue)) {
+								if (elementValue === modelValue()) {
+									checkForCap();
+								} else {
+									modelValue(elementValue);
+								}
+							}
+						})
+						.on('focus', function () {
+							console.log('focus');
+							$element.removeClass('cap');
+							if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
+								$element.html('&nbsp;');
+							}
+						});
+					checkForCap();
+				} else {
+					checkForCap();
+				}
+			} else {
+				if ($element.attr('contenteditable') === 'true') {
+					$element.off('blur').off('focus').removeAttr('contenteditable').removeClass('cap');
+				}
+				if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
+					$element.css({display: 'none'});
+				}
+			}
+
+			function checkForCap() {
+				if (obj.edit && obj.cap && _.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
+					$element.addClass('cap');
+					$element.text(obj.cap);
+				} else {
+					$element.removeClass('cap');
+				}
+			}
+		}
+	};
 });

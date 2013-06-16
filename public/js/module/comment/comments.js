@@ -207,7 +207,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			$root[content ? 'addClass' : 'removeClass']('hasContent');
 			this.inputCheckHeight($root, $input);
 		},
-		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputBlur: function (evt) {
 			var $input = $(evt.target),
 				$root = $input.closest('.commentAdd'),
@@ -235,6 +234,24 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.checkInViewport(root);
 			}
 		},
+		checkInViewport: function (root, scrollDuration, cb) {
+			var btnSend = root.find('.btnCommentSend'),
+				cBottom = btnSend.offset().top + btnSend.height() + 10,
+				wTop = $(window).scrollTop(),
+				wFold = $(window).height() + wTop;
+
+			if (wFold < cBottom) {
+				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+					if (Utils.isType('function', cb)) {
+						cb.call(this);
+					}
+				}.bind(this)});
+			} else {
+				if (Utils.isType('function', cb)) {
+					cb.call(this);
+				}
+			}
+		},
 
 		fragClick: function (data, event) {
 			if (!this.canFrag){
@@ -258,25 +275,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.parentModule.fragAreaDelete();
 			this.fraging(false);
 			this.commentEditingFragChanged = true;
-		},
-
-		checkInViewport: function (root, scrollDuration, cb) {
-			var btnSend = root.find('.btnCommentSend'),
-				cBottom = btnSend.offset().top + btnSend.height() + 10,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
-
-			if (wFold < cBottom) {
-				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-					if (Utils.isType('function', cb)) {
-						cb.call(this);
-					}
-				}.bind(this)});
-			} else {
-				if (Utils.isType('function', cb)) {
-					cb.call(this);
-				}
-			}
 		},
 
 		cancel: function (data, event) {
@@ -401,14 +399,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}.bind(this));
 			socket.emit('updateComment', dataSend);
 		},
-		txtHtmlToInput: function (txt) {
-			var result = txt;
-
-			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
-			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
-			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
-			return result;
-		},
 		edit: function (data, event) {
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
@@ -420,7 +410,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.inputActivate($media, null, true);
 			input = $media.find('.commentInput:first');
-			input.val(this.txtHtmlToInput(data.txt));
+			input.val(Utils.txtHtmlToInput(data.txt));
 
 			//Задаем высоту textarea под контент
 			$media.addClass('hasContent');

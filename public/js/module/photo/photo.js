@@ -1,73 +1,9 @@
 /*global define:true*/
 /**
- * Модель профиля пользователя
+ * Модель страницы фотографии
  */
 define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
-
-	/**
-	 * Редактирование содержимого элементов с помошью contenteditable
-	 * Inspired by https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
-	 * @type {Object}
-	 */
-	ko.bindingHandlers.cEdit = {
-		init: function (element, valueAccessor, allBindingsAccessor) {
-		},
-		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-			var obj = ko.utils.unwrapObservable(valueAccessor()),
-				$element = $(element);
-
-			$element.text(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val);
-
-			if (obj.edit) {
-				if (!$element.attr('contenteditable')) {
-					$element
-						.css({display: ''})
-						.attr('contenteditable', "true")
-						.on('blur', function () {
-							console.log('blur');
-							var modelValue = obj.val,
-								elementValue = $.trim($element.text());
-
-							$element.text(elementValue);
-							if (ko.isWriteableObservable(modelValue)) {
-								if (elementValue === modelValue()) {
-									checkForCap();
-								} else {
-									modelValue(elementValue);
-								}
-							}
-						})
-						.on('focus', function () {
-							console.log('focus');
-							$element.removeClass('cap');
-							if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
-								$element.html('&nbsp;');
-							}
-						});
-					checkForCap();
-				} else {
-					checkForCap();
-				}
-			} else {
-				if ($element.attr('contenteditable') === 'true') {
-					$element.off('blur').off('focus').removeAttr('contenteditable').removeClass('cap');
-				}
-				if (_.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
-					$element.css({display: 'none'});
-				}
-			}
-
-			function checkForCap() {
-				if (obj.edit && obj.cap && _.isEmpty(String(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val))) {
-					$element.addClass('cap');
-					$element.text(obj.cap);
-				} else {
-					$element.removeClass('cap');
-				}
-			}
-		}
-	};
 
 	return Cliche.extend({
 		jade: jade,
@@ -190,6 +126,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.$comments = this.$dom.find('.photoComments');
 
+			this.descFocusBind = this.inputFocus.bind(this);
+			this.descLabelClickBind = this.inputLabelClick.bind(this);
 			this.commentsRecieveBind = this.commentsRecieve.bind(this);
 			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
 			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
@@ -499,6 +437,91 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		// Установить точку на карту
 		setMapPoint: function () {
 			this.mapVM.setPoint(this.p);
+		},
+
+		descSetEdit: function () {
+			var $root = this.$dom.find('.photoDesc'),
+				$input = $root.find('.descInput');
+			$input.val(Utils.txtHtmlToInput(this.p.desc()));
+
+			//Задаем высоту textarea под контент
+			$root.addClass('hasContent');
+			this.inputCheckHeight($root, $input);
+		},
+		//Фокус на поле ввода активирует его редактирование
+		inputFocus: function (data, event) {
+			this.descActivate($(event.target).closest('.photoInfo'));
+		},
+		//Клик на лэйбл активирует редактирование
+		inputLabelClick: function (data, event) {
+			this.descActivate($(event.target).closest('.photoInfo'), null, true);
+		},
+		descActivate: function  (root, scrollDuration, focus) {
+			var input = root.find('.descInput');
+
+			root.addClass('hasFocus');
+			input
+				.off('keyup').off('blur')
+				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
+				.on('blur', _.debounce(this.inputBlur.bind(this), 200));
+			this.checkInViewport(root, scrollDuration, function () {
+				if (focus) {
+					input.focus();
+				}
+			});
+		},
+		//Отслеживанием ввод, чтобы подгонять input под высоту текста
+		inputKeyup: function (evt) {
+			var $input = $(evt.target),
+				$root = $input.closest('.photoInfo'),
+				content = $.trim($input.val());
+
+			$root[content ? 'addClass' : 'removeClass']('hasContent');
+			this.inputCheckHeight($root, $input);
+		},
+		inputBlur: function (evt) {
+			var $input = $(evt.target),
+				$root = $input.closest('.photoInfo'),
+				content = $.trim($input.val());
+
+			$input.off('keyup').off('blur');
+			if (!content && !this.fraging()) {
+				$root.removeClass('hasContent');
+				$input.height('auto');
+			}
+			if (!content) {
+				$input.val('');
+			}
+			$root.removeClass('hasFocus');
+		},
+		inputCheckHeight: function (root, input) {
+			var content = $.trim(input.val()),
+				height = input.height(),
+				heightScroll = (input[0].scrollHeight - 8) || height;
+
+			if (!content) {
+				input.height('auto');
+			} else if (heightScroll > height) {
+				input.height(heightScroll);
+				this.checkInViewport(input);
+			}
+		},
+		checkInViewport: function (input, scrollDuration, cb) {
+			var cBottom = input.offset().top + input.height() + 10,
+				wTop = $(window).scrollTop(),
+				wFold = $(window).height() + wTop;
+
+			if (wFold < cBottom) {
+				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+					if (Utils.isType('function', cb)) {
+						cb.call(this);
+					}
+				}.bind(this)});
+			} else {
+				if (Utils.isType('function', cb)) {
+					cb.call(this);
+				}
+			}
 		},
 
 		editSave: function (/*data, event*/) {

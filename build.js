@@ -46,6 +46,7 @@ var start = Date.now(),
 				properties: true,
 				unused: true,
 				join_vars: true,
+				screw_ie8: true,
 				global_defs: {
 					DEBUG: false
 				}
