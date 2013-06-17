@@ -1,10 +1,11 @@
 module.exports = function (grunt) {
+	global.appVar = {};
+
 	var path = require('path'),
 		Utils = require('./commons/Utils.js'),
 		upperDir = path.normalize(path.resolve('../') + '/'),
 		targetDir = path.normalize(upperDir + 'appBuild/'),
-		appHash = Utils.randomString(5),
-		buildJSON;
+		appHash = Utils.randomString(5);
 
 	grunt.file.defaultEncoding = 'utf8';
 

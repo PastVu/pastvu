@@ -28,7 +28,7 @@ log4js.configure('./log4js.json', {cwd: './logs'});
 var logger = log4js.getLogger("app.js");
 
 /**
- * Включаем "наши" модули
+ * Включаем "наши" расширения js
  */
 require('./commons/JExtensions.js');
 

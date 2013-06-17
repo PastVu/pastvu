@@ -51,7 +51,7 @@ Utils.linkifyUrlString = function (inputText, target, className) {
 	return replacedText;
 };
 Utils.inputIncomingParse = (function () {
-	var host = global.appVar.serverAddr.host,
+	var host = global.appVar && global.appVar.serverAddr && global.appVar.serverAddr.host || '',
 		reversedEscapeChars = {"<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39"};
 
 	function escape (txt) {
