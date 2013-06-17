@@ -1,4 +1,4 @@
-/*global ObjectId:true, print:true, printjson:true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
+/*global ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -367,6 +367,23 @@ module.exports.loadController = function (app, db) {
 	});
 
 
+	saveSystemJSFunc(function linkifyUrlString(inputText, target, className) {
+		var replacedText, replacePattern1, replacePattern2;
+
+		target = target ? ' target="' + target + '"' : '';
+		className = className ? ' class="' + className + '"' : '';
+
+		//URLs starting with http://, https://, or ftp://
+		replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+		replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
+
+		//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+		replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+		replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
+
+		return replacedText;
+	});
+
 	saveSystemJSFunc(function inputIncomingParse(txt, spbPhotoShift) {
 		var result = String(txt);
 
@@ -384,23 +401,6 @@ module.exports.loadController = function (app, db) {
 		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
 		result = result.replace(/\s+/g, ' '); //Очищаем лишние пробелы
 		return result;
-
-		function linkifyUrlString(inputText, target, className) {
-			var replacedText, replacePattern1, replacePattern2;
-
-			target = target ? ' target="' + target + '"' : '';
-			className = className ? ' class="' + className + '"' : '';
-
-			//URLs starting with http://, https://, or ftp://
-			replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-			replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
-
-			//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-			replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-			replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
-
-			return replacedText;
-		}
 
 		function spbReplace(inputText) {
 			var matches = inputText.match(/[\s\,\.]?(?:http\:\/\/)?(?:www\.)?oldsp\.ru\/photo\/view\/(\d{1,8})/gim),
@@ -655,8 +655,8 @@ module.exports.loadController = function (app, db) {
 					title: photo.title || '',
 					year: Math.min(Math.max(Number(photo.year_from) || 2000, 1826), 2000),
 					address: photo.address || undefined,
-					desc: photo.description ? inputIncomingParse(photo.description, spbPhotoShift) : undefined,
-					source: photo.source || undefined,
+					desc: photo.description && typeof photo.description === 'string' ? inputIncomingParse(photo.description, spbPhotoShift) : undefined,
+					source: photo.source && typeof photo.source === 'string' ? inputIncomingParse(photo.source) : undefined,
 					author: photo.author || undefined,
 
 					vdcount: parseInt(photo.stats_day, 10) || 0,
