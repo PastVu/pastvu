@@ -415,7 +415,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (v) {
 				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
 				this.descSetEdit();
-				this.commentsVM.hide();
+				this.commentsDeActivate();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
 				//Если не ожается проверка на комментарии в видимой области (а она ожидается при открытии фото),
@@ -811,6 +811,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.viewScrollOn();
 				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
 			}
+		},
+		commentsDeActivate: function () {
+			this.commentsInViewport = false;
+			this.commentsLoading(true);
+			this.viewScrollOff();
+			this.commentsVM.hide();
 		},
 		commentsCheckInViewport: function () {
 			window.clearTimeout(this.commentsViewportTimeout);
