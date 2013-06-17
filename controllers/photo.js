@@ -784,8 +784,10 @@ module.exports.loadController = function (app, db, io) {
 							Utils.geo.geoToPrecisionRound(newValues.geo);
 						}
 						if (newValues.desc !== undefined) {
-							newValues.desc = Utils.inputIncomingParse(newValues.desc);
-							sendingBack.desc = newValues.desc;
+							sendingBack.desc = newValues.desc = Utils.inputIncomingParse(newValues.desc);
+						}
+						if (newValues.source !== undefined) {
+							sendingBack.source = newValues.source = Utils.inputIncomingParse(newValues.source);
 						}
 						_.assign(photo, newValues);
 

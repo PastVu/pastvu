@@ -101,7 +101,7 @@
 				//ko if: p.source().length > 0
 				.row-fluid.photoInfo
 					.infoName Source:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+					.editable(data-bind="html: p.source()")
 				// /ko
 				//ko if: p.author().length > 0
 				.row-fluid.photoInfo

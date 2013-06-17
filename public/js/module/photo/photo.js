@@ -446,6 +446,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			//Задаем высоту textarea под контент
 			$root.addClass('hasContent');
 			this.inputCheckHeight($root, $input);
+
+			this.sourceEditingOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.p.source(this.sourceEditingOrigin);
 		},
 		//Фокус на поле ввода активирует его редактирование
 		inputFocus: function (data, event) {
@@ -656,7 +659,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			);
 		},
 		save: function (cb, ctx) {
-			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'source', 'author'),
+			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'author'),
 				key;
 
 			for (key in target) {
@@ -677,6 +680,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				target.desc = this.$dom.find('.descInput').val();
 			}
 
+			if (this.p.source() !== this.sourceEditingOrigin) {
+				target.source = this.p.source();
+			}
+
 			if (Utils.getObjectPropertyLength(target) > 0) {
 				target.cid = this.p.cid();
 				socket.once('savePhotoResult', function (result) {
@@ -688,6 +695,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							target.desc = result.data.desc;
 							this.p.desc(result.data.desc);
 							delete this.descEditingChanged;
+						}
+						if (target.source) {
+							target.source = result.data.source;
+							this.p.source(result.data.source);
+							delete this.sourceEditingOrigin;
 						}
 						_.assign(this.originData, target);
 					}
@@ -705,6 +717,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		cancel: function () {
 			ko_mapping.fromJS(this.originData, this.p);
 			delete this.descEditingChanged;
+			delete this.sourceEditingOrigin;
 		},
 
 		toConvert: function (data, event) {
