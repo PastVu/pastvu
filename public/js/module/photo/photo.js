@@ -217,43 +217,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 
 			globalVM.func.showContainer(this.$container, function () {
-				var $wrap = this.$dom.find('.photoImgWrap');
-				$wrap
-					.on('mouseenter', 'a.photoFrag', function (evt) {
-						var frag = $(evt.target),
-							fragOffset = frag.offset(),
-							fragPosition = frag.position(),
-							fragWidth = frag.width(),
-							$comment = this.$dom.find(".media[data-cid=" + frag.attr('data-cid') + "]"),
-							placement;
-
-						if ($comment.length === 1) {
-							$wrap.addClass('fragHover');
-							$wrap.find('.photoImg').imgAreaSelect({
-								classPrefix: 'photoFragAreaShow imgareaselect',
-								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
-								zIndex: 1,
-								parent: $wrap, disable: true
-							});
-
-							if (fragOffset.left + fragWidth / 2 < 150) {
-								placement = 'right';
-							} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
-								placement = 'left';
-							} else {
-								placement = 'bottom';
-							}
-							frag
-								.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
-								.popover('show');
-						}
-					}.bind(this))
-					.on('mouseleave', '.photoFrag', function (evt) {
-						var frag = $(evt.target);
-						frag.popover('destroy');
-						$wrap.find('.photoImg').imgAreaSelect({remove: true});
-						$wrap.removeClass('fragHover');
-					});
+				this.fragAreasActivate();
 			}, this);
 			this.sizesCalc();
 			this.showing = true;
@@ -440,11 +404,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		descSetEdit: function () {
 			var $root = this.$dom.find('.photoDesc'),
-				$input = $root.find('.descInput');
-			$input.val(Utils.txtHtmlToInput(this.p.desc()));
+				$input = $root.find('.descInput'),
+				content = Utils.txtHtmlToInput(this.p.desc());
 
-			//Задаем высоту textarea под контент
-			$root.addClass('hasContent');
+			if (content) {
+				$input.val(Utils.txtHtmlToInput(this.p.desc()));
+				//Задаем высоту textarea под контент
+				$root.addClass('hasContent');
+			}
 			this.inputCheckHeight($root, $input);
 
 			this.sourceEditingOrigin = Utils.txtHtmlToInput(this.p.source());
@@ -741,7 +708,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
-					console.error('While loading user ribbon: ', data.message || 'Error occurred');
+					console.error('While loading user ribbon: ' + data.message || 'Error occurred');
 				} else {
 					var left = [],
 						right = [];
@@ -887,6 +854,46 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.commentsVM.replyZero();
 		},
 
+
+		fragAreasActivate: function () {
+			var $wrap = this.$dom.find('.photoImgWrap');
+			$wrap
+				.on('mouseenter', 'a.photoFrag', function (evt) {
+					var frag = $(evt.target),
+						fragOffset = frag.offset(),
+						fragPosition = frag.position(),
+						fragWidth = frag.width(),
+						$comment = this.$dom.find(".media[data-cid=" + frag.attr('data-cid') + "]"),
+						placement;
+
+					if ($comment.length === 1) {
+						$wrap.addClass('fragHover');
+						$wrap.find('.photoImg').imgAreaSelect({
+							classPrefix: 'photoFragAreaShow imgareaselect',
+							x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
+							zIndex: 1,
+							parent: $wrap, disable: true
+						});
+
+						if (fragOffset.left + fragWidth / 2 < 150) {
+							placement = 'right';
+						} else if ($(evt.delegateTarget).width() - fragOffset.left - fragWidth / 2 < 150) {
+							placement = 'left';
+						} else {
+							placement = 'bottom';
+						}
+						frag
+							.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
+							.popover('show');
+					}
+				}.bind(this))
+				.on('mouseleave', '.photoFrag', function (evt) {
+					var frag = $(evt.target);
+					frag.popover('destroy');
+					$wrap.find('.photoImg').imgAreaSelect({remove: true});
+					$wrap.removeClass('fragHover');
+				});
+		},
 		fragAreaCreate: function (selections) {
 			if (!this.fragArea) {
 				var $parent = this.$dom.find('.photoImgWrap'),

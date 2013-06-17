@@ -8,8 +8,24 @@
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 
 	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
-		//ko template: edit() ? 'photoEdit' : 'photoView'
-		// /ko
+		.span8-9.photoPanel
+			.row-fluid.photoImgRow
+				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
+					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
+					.photoLoading
+					//ko if: !edit()
+					//ko foreach: p.frags
+					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
+					// /ko
+					// /ko
+				br
+				.photoTools(data-bind="style: {width: ws() + 'px'}")
+					//ko if: hscalePossible()
+					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
+						i.icon-resize-vertical.icon-white
+					// /ko
+			//ko template: edit() ? 'photoEdit' : 'photoView'
+			// /ko
 		.span3-4.rightPanel
 			.row-fluid.photoUser
 				a.avatar.fringe(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
@@ -71,90 +87,65 @@
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
-		.span8-9.photoPanel
-			.row-fluid.photoImgRow
-				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !fraging()}")
-					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
-					.photoLoading
-					//ko foreach: p.frags
-					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
-					// /ko
-				br
-				.photoTools(data-bind="style: {width: ws() + 'px'}")
-					//ko if: hscalePossible()
-					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
-						i.icon-resize-vertical.icon-white
-					// /ko
-			.row-fluid.photoInfoBlock
-				//ko if: p.title().length > 0
-				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+		.row-fluid.photoInfoBlock
+			//ko if: p.title().length > 0
+			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+			// /ko
+			//ko if: p.desc().length > 0
+			.row-fluid.photoInfo.photoDesc(data-bind="html: p.desc()")
+			// /ko
+		.row-fluid.photoInfoBlock
+			//ko if: p.address().length > 0
+			.row-fluid.photoInfo
+				.infoName Adress:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+			// /ko
+			//ko if: p.source().length > 0
+			.row-fluid.photoInfo
+				.infoName Source:
+				.editable(data-bind="html: p.source()")
+			// /ko
+			//ko if: p.author().length > 0
+			.row-fluid.photoInfo
+				.infoName Author:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+			// /ko
+		.row-fluid.photoInfoBlock
+			.row-fluid.photoInfo
+				| We believe that the photo was taken
+				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
+				span(data-bind="html: p.year()")
+				span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
+				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
+				//ko if: p.dir && p.dir() && p.dir().length > 0
+				span &nbsp;(shooting direction &minus;&nbsp;
+				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+				| )
 				// /ko
-				//ko if: p.desc().length > 0
-				.row-fluid.photoInfo.photoDesc(data-bind="html: p.desc()")
-				// /ko
-			.row-fluid.photoInfoBlock
-				//ko if: p.address().length > 0
-				.row-fluid.photoInfo
-					.infoName Adress:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-				// /ko
-				//ko if: p.source().length > 0
-				.row-fluid.photoInfo
-					.infoName Source:
-					.editable(data-bind="html: p.source()")
-				// /ko
-				//ko if: p.author().length > 0
-				.row-fluid.photoInfo
-					.infoName Author:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
-				// /ko
-			.row-fluid.photoInfoBlock
-				.row-fluid.photoInfo
-					| We believe that the photo was taken
-					span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
-					span(data-bind="html: p.year()")
-					span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
-					span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
-					//ko if: p.dir && p.dir() && p.dir().length > 0
-					span &nbsp;(shooting direction &minus;&nbsp;
-					span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
-					| )
-					// /ko
-			.h_separator
+		.h_separator
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
-		.span8-9.photoPanel
-			.row-fluid.photoImgRow
-				.photoImgWrap(data-bind="css: {loading: photoLoading()}")
-					img.photoImg(data-bind="attr: {src: photoSrc()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
-					.photoLoading
-				br
-				.photoTools(data-bind="style: {width: ws() + 'px'}")
-					//ko if: hscalePossible()
-					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscalePossible() && hscaleTumbler()}, click: stateChange")
-						i.icon-resize-vertical.icon-white
-					// /ko
-			.row-fluid.photoInfoBlock
-				.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
-				.row-fluid.photoInfo.photoDesc
-					textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
-					label.descInputLabel(data-bind="click: descLabelClickBind") Describe the photo
-			.row-fluid.photoInfoBlock
-				.row-fluid.photoInfo
-					.infoName Adress:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-				.row-fluid.photoInfo
-					.infoName Source:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
-				.row-fluid.photoInfo
-					.infoName Author:
-					.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
-			.row-fluid.photoInfoBlock
-				.row-fluid.photoInfo
-					| The photo was taken between&nbsp;
-					span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
-					| &nbsp;and&nbsp;
-					span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
-					| &nbsp;&nbsp;Shooting direction&nbsp;
-					select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
+		.row-fluid.photoInfoBlock
+			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+			.row-fluid.photoInfo.photoDesc
+				textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
+				label.descInputLabel(data-bind="click: descLabelClickBind") Describe the photo
+		.row-fluid.photoInfoBlock
+			.row-fluid.photoInfo
+				.infoName Adress:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+			.row-fluid.photoInfo
+				.infoName Source:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+			.row-fluid.photoInfo
+				.infoName Author:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+		.row-fluid.photoInfoBlock
+			.row-fluid.photoInfo
+				| The photo was taken between&nbsp;
+				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
+				| &nbsp;and&nbsp;
+				span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
+				| &nbsp;&nbsp;Shooting direction&nbsp;
+				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
