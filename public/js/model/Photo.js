@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/User'], function ($, _, ko, ko_mapping, Utils, User) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User'], function ($, _, ko, ko_mapping, Utils, P, User) {
 	'use strict';
 
 	var defaults = {
@@ -68,7 +68,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 	_.assign(defaults.compact, defaults.base);
 	_.assign(defaults.full, defaults.compact);
 
-
 	/**
 	 * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями
 	 * @param origin Входящий объект
@@ -98,7 +97,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'model/
 			origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
 			User.factory(origin.user, 'base');
 		}
-		origin.sfile = picFormats[picType] + origin.file;
+
+		origin.sfile = P.preaddr + picFormats[picType] + origin.file;
 
 		return origin;
 	}

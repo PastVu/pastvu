@@ -8,9 +8,10 @@ require([
 	'socket',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
+	'model/Photo', 'model/User',
 	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
 	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts/center', 'noty.themes/pastvu'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, Photo, User, jade) {
 	"use strict";
 
 	Utils.title.setPostfix('Фотографии прошлого');
@@ -182,6 +183,16 @@ require([
 		var dfd = $.Deferred();
 		socket.once('takeGlobeParams', function (data) {
 			ko_mapping.fromJS({settings: data}, P);
+			if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
+				P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
+				P.preaddrs = P.settings.server.subdomains().map(function (sub) {
+					return 'http://' + sub + '.' + P.settings.server.host();
+				});
+				P.preaddr = P.preaddrs[0];
+			} else {
+				P.preaddrs = [];
+				P.preaddr = '';
+			}
 			dfd.resolve();
 		});
 		socket.emit('giveGlobeParams');

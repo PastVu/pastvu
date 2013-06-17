@@ -6,6 +6,7 @@
 	"storePath": "",
 	"noServePublic": false,
 	"noServeStore": false,
+	"subdomains": "",
 
 	"mongo": "mongodb://localhost:27017/pastvu",
 

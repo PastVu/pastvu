@@ -55,7 +55,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
 	port = argv.port || conf.port || 3000, //Порт сервера
 	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
-	host = domain + (port === 80 ? '' : ':' + port),//Имя хоста (адрес+порт)
+	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
+	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {return typeof item === 'string' && item.length > 0;}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo,
 	smtp = conf.smtp,
 
@@ -138,7 +139,7 @@ async.waterfall([
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.smtp = smtp;
-			global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport};
+			global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
 			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
 
 			app.set('views', __dirname + '/views');
