@@ -1,6 +1,6 @@
-/*global requirejs:true, require:true, define:true*/
+/*global define:true*/
 /**
- * Модель карты
+ * Класс управления маркерами
  */
 define([
 	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
@@ -23,6 +23,8 @@ define([
 		this.firstClientWorkZoom = P.settings.FIRST_CLIENT_WORK_ZOOM();
 		this.clientClustering = P.settings.CLUSTERING_ON_CLIENT();
 		this.clientClusteringDelta = ko_mapping.toJS(P.settings.CLUSTERING_ON_CLIENT_PIX_DELTA);
+
+		this.subdl = P.preaddrs.length; // Для ускорения проверки сохраняем кол-во поддоменов в объект
 
 		this.sizePoint = new L.Point(8, 8);
 		this.sizeCluster = new L.Point(42, 42);
@@ -345,7 +347,7 @@ define([
 			} else {
 				// Если оно новое - создаем его объект и маркер
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
-					curr.sfile = Photo.picFormats.m + curr.file;
+					curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
 					divIcon = L.divIcon(
 						{
 							className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -467,7 +469,7 @@ define([
 				if (!this.mapObjects.photos[curr.cid]) {
 					// Если оно новое - создаем его объект и маркер
 					if (!boundChanged || this.calcBound.contains(curr.geo)) {
-						curr.sfile = Photo.picFormats.m + curr.file;
+						curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
 						divIcon = L.divIcon(
 							{
 								className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
@@ -576,7 +578,7 @@ define([
 			divIcon,
 			result = {};
 
-		if (Array.isArray(clusters) && clusters.length > 0) {
+		if (Array.isArray(clusters) && clusters.length) {
 			i = clusters.length;
 			while (i) {
 				cluster = clusters[--i];
@@ -597,7 +599,11 @@ define([
 						measure = '';
 						picFormat = Photo.picFormats.x;
 					}
-					cluster.p.sfile = picFormat + cluster.p.file;
+					if (this.subdl) {
+						cluster.p.sfile = P.preaddrs[i % this.subdl] + picFormat + cluster.p.file;
+					} else {
+						cluster.p.sfile = picFormat + cluster.p.file;
+					}
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe ' + measure,
 						iconSize: size,
@@ -850,6 +856,8 @@ define([
 	MarkerManager.prototype.popupClusterLocalOpen = function (marker) {
 		var photos = marker.options.data.obj.photos,
 			photo,
+			photoPrevFile,
+			photoPosterFile,
 			i = -1,
 			len = photos.length,
 			small = len <= 3,
@@ -868,13 +876,21 @@ define([
 
 		while (++i < len) {
 			photo = photos[i];
-			photo.sfile = Photo.picFormats.m + photo.file;
+			if (this.subdl) {
+				photo.sfile = P.preaddrs[i % this.subdl] + Photo.picFormats.m + photo.file;
+				photoPosterFile = small ? photo.sfile :  P.preaddrs[i % this.subdl] + Photo.picFormats.h + photo.file;
+				photoPrevFile = P.preaddrs[i % this.subdl] + Photo.picFormats.x + photo.file;
+			} else {
+				photo.sfile = Photo.picFormats.m + photo.file;
+				photoPosterFile = small ? photo.sfile : Photo.picFormats.h + photo.file;
+				photoPrevFile = Photo.picFormats.x + photo.file;
+			}
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';
 			}
-			content += this.popupClusterTpl({img: Photo.picFormats.x + photo.file || '', cid: photo.cid || '', sfile: small ? photo.sfile : Photo.picFormats.h + photo.file, title: photo.title, href: '/p/' + photo.cid, year: this.makeTextYear(photo)});
+			content += this.popupClusterTpl({img: photoPrevFile, cid: photo.cid || '', sfile: photoPosterFile, title: photo.title, href: '/p/' + photo.cid, year: this.makeTextYear(photo)});
 		}
-		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: small ? photos[photos.length - 1].sfile : Photo.picFormats.h + photos[photos.length - 1].file, year: this.makeTextYear(photos[photos.length - 1]), txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
+		content += '</div><div class="popupPoster" data-href="' + '/p/' + photos[photos.length - 1].cid + '" onclick="' + this.popupClusterClickFN + '(this)" >' + this.popupPhotoTpl({img: photoPosterFile, year: this.makeTextYear(photos[photos.length - 1]), txt: photos[photos.length - 1].title}) + '<div class="h_separatorWhite"></div> ' + '</div>';
 		popup
 			.setLatLng(marker.getLatLng())
 			.setContent(content);
