@@ -1,5 +1,5 @@
-/*global requirejs:true, require:true, define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _, ko, ko_mapping) {
+/*global define:true*/
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], function ($, _, ko, ko_mapping, P) {
 	'use strict';
 
 	var defaults = {
@@ -57,8 +57,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 		defType = defType || 'full';
 
 		if (origin.avatar) {
-			origin.avatarth = '/_avatar/h/' + origin.avatar;
-			origin.avatar = '/_avatar/d/' + origin.avatar;
+			origin.avatarth = P.preaddr + '/_avatar/h/' + origin.avatar;
+			origin.avatar = P.preaddr + '/_avatar/d/' + origin.avatar;
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

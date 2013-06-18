@@ -12,6 +12,10 @@ var _session = require('./_session.js'),
 	log4js = require('log4js'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
+	subdl = global.appVar.serverAddr.subdomains.length,
+	preaddrs = global.appVar.serverAddr.subdomains.map(function (sub) {
+		return 'http://' + sub + '.' + global.appVar.serverAddr.host;
+	}),
 	appEnv = {},
 	app,
 	io;
@@ -332,7 +336,8 @@ function checkConfirm(session, data, cb) {
 			cb({message: err && err.message || 'Get confirm error', error: true});
 			return;
 		}
-		var user = confirm.user;
+		var user = confirm.user,
+			avatar;
 
 		if (key.length === 7) { //Confirm registration
 			Step(
@@ -353,7 +358,16 @@ function checkConfirm(session, data, cb) {
 				}
 			);
 		} else if (key.length === 8) { //Confirm pass change
-			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: user.avatar ? '/_avatar/h/' + user.avatar : '/img/caps/avatarth.png'});
+			if (user.avatar) {
+				if (subdl) {
+					avatar = preaddrs[0] + '/_avatar/h/' + user.avatar;
+				} else {
+					avatar = '/_avatar/h/' + user.avatar;
+				}
+			} else {
+				avatar = '/img/caps/avatarth.png';
+			}
+			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: avatar});
 		}
 
 	});

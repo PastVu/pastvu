@@ -21,8 +21,12 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					for (i in data.photos) {
 						if (data.photos[i] !== undefined) {
 							photo = data.photos[i];
-							photo.sfile = Photo.picFormats.s + photo.file;
 							photo.link = '/p/' + photo.cid;
+							if (P.preaddrs.length) {
+								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
+							} else {
+								photo.sfile = Photo.picFormats.s + photo.file;
+							}
 						}
 					}
 					this.commentsPhotos = data.photos;

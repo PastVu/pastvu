@@ -8,6 +8,10 @@ var auth = require('./auth.js'),
 	Comment,
 	CommentN,
 	Counter,
+	subdl = global.appVar.serverAddr.subdomains.length,
+	preaddrs = global.appVar.serverAddr.subdomains.map(function (sub) {
+		return 'http://' + sub + '.' + global.appVar.serverAddr.host;
+	}),
 	_ = require('lodash'),
 	_s = require('underscore.string'),
 	ms = require('ms'), // Tiny milisecond conversion utility
@@ -96,14 +100,24 @@ function getCommentsObj(data, cb) {
 				comment,
 				user,
 				userFormatted,
-				userFormattedHash = {};
+				userFormattedHash = {},
+				avatar;
 
 			i = users.length;
 			while (i) {
 				user = users[--i];
+				if (user.avatar) {
+					if (subdl) {
+						avatar = preaddrs[i % subdl] + '/_avatar/h/' + user.avatar;
+					} else {
+						avatar = '/_avatar/h/' + user.avatar;
+					}
+				} else {
+					avatar = '/img/caps/avatarth.png';
+				}
 				userFormatted = {
 					login: user.login,
-					avatar: user.avatar ? '/_avatar/h/' + user.avatar : '/img/caps/avatarth.png',
+					avatar: avatar,
 					name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;

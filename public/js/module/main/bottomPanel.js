@@ -173,7 +173,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				photo;
 			while (i) {
 				photo = photos[--i];
-				photo.sfile = picFormat + photo.file;
+				if (P.preaddrs.length) {
+					photo.sfile = P.preaddrs[i % P.preaddrs.length] + picFormat + photo.file;
+				} else {
+					photo.sfile = picFormat + photo.file;
+				}
 				photo.link = '/p/' + photo.cid;
 				if (!photo.title) {
 					photo.title = 'Без названия';
@@ -190,7 +194,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			while (i) {
 				user = users[--i];
 				if (user.avatar) {
-					user.sfile = '/_avatar/d/' + user.avatar;
+					user.sfile = P.preaddr + '/_avatar/d/' + user.avatar;
 				} else {
 					user.sfile = User.def.full.avatar;
 				}
