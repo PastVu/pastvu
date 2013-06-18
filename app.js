@@ -49,12 +49,13 @@ for (var k in interfaces) {
 
 
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
-	conf = JSON.parse(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')),
+	conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
 
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.port || conf.port || 3000, //Порт сервера
-	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
+	port = argv.port || conf.port || 3000, //Порт сервера для клиента
+	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий для клиента
+	listenport = argv.listenport || conf.listenport || port, //Порт прослушки сервера
 	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
 	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {return typeof item === 'string' && item.length > 0;}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo,
@@ -277,8 +278,9 @@ async.waterfall([
 				logger.trace(err && (err.stack || err));
 			});
 
-			server.listen(port);
-			logger.info('Express server listening %s in %s-mode \n', host, land.toUpperCase());
+			server.listen(listenport);
+			logger.info('Host for users: %s', host);
+			logger.info('Express server listening %s:%s in %s-mode \n', domain, listenport, land.toUpperCase());
 		}
 	}
 );

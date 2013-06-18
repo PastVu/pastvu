@@ -186,7 +186,7 @@ require([
 			if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
 				P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
 				P.preaddrs = P.settings.server.subdomains().map(function (sub) {
-					return 'http://' + sub + '.' + P.settings.server.host();
+					return 'http://' + sub + '.' + location.host;
 				});
 				P.preaddr = P.preaddrs[0];
 			} else {

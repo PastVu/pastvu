@@ -1,14 +1,18 @@
 {
-	"land": "dev",
-	"domain": "",
-	"port": 3000,
-	"uport": 8888,
-	"storePath": "",
-	"noServePublic": false,
-	"noServeStore": false,
-	"subdomains": "a_b_c",
+	"land": "dev", /* Landscape: dev, test, prod. @Default "dev" */
+	"listenport": 3000, /* Application app.js will listen this port. @Default 3000 */
+	"listenuport": 8888, /* Application uploader.js will listen this port. @Default 8888 */
 
-	"mongo": "mongodb://localhost:27017/pastvu",
+	"domain": "", /* Domain for external users, i.e. site entry point. @Default "127.0.0.1" */
+	"port": 3000, /* Port for external users. @Default 3000 */
+	"uport": 8888, /* Upload files port for external users. @Default 8888 */
+
+	"storePath": "", /* Store folder with static user content (avatars, photos, etc). @Default "/../store/" */
+	"noServePublic": false, /* Tell app.js not to serve out its public folder (js, css, etc). @Default false */
+	"noServeStore": false, /* Tell app.js not to serve out its public folder (js, css, etc).  @Default false */
+	"subdomains": "", /* Subdomains for serving store path's public folder divided by _.  @Default "" */
+
+	"mongo": "mongodb://localhost:27017/pastvu", /* DB connection string */
 
 	"smtp": {
 		"service": "Gmail",

@@ -11,6 +11,8 @@ var path = require('path'),
 	interfaces = os.networkInterfaces(),
 	addresses = [];
 
+require('./commons/JExtensions.js');
+
 for (var k in interfaces) {
 	if (interfaces.hasOwnProperty(k)) {
 		for (var k2 in interfaces[k]) {
@@ -24,12 +26,13 @@ for (var k in interfaces) {
 	}
 }
 
-var conf = JSON.parse(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')),
+var conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
 	port = argv.port || conf.port || 3000, //Порт сервера
 	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
+	listenuport = argv.listenuport || conf.listenuport || uport, //Порт прослушки сервера загрузки фотографий
 	host = domain + (port === 80 ? '' : ':' + port); //Имя хоста (адрес+порт)
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
@@ -169,4 +172,4 @@ FileInfo.prototype.validate = function () {
 };
 
 
-require('http').createServer(serve).listen(uport);
+require('http').createServer(serve).listen(listenuport);
