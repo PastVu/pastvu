@@ -36,8 +36,17 @@ function regen(session, data, cb) {
 		session.markModified('data');
 	}
 	session.save(function (err, session) {
-		if (cb) {
-			cb(err, session);
+		//TODO: Fix when fix https://github.com/LearnBoost/mongoose/issues/1530
+		if (session.user) {
+			session.populate('user', function () {
+				if (cb) {
+					cb(err, session);
+				}
+			});
+		} else {
+			if (cb) {
+				cb(err, session);
+			}
 		}
 	});
 
