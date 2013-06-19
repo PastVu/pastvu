@@ -173,10 +173,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				photo;
 			while (i) {
 				photo = photos[--i];
-				if (P.preaddrs.length) {
+				if (P.preaddrs.length > 1) {
 					photo.sfile = P.preaddrs[i % P.preaddrs.length] + picFormat + photo.file;
 				} else {
-					photo.sfile = picFormat + photo.file;
+					photo.sfile = P.preaddr + picFormat + photo.file;
 				}
 				photo.link = '/p/' + photo.cid;
 				if (!photo.title) {

@@ -20,7 +20,7 @@ var express = require('express'),
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 
 /**
- * log the cheese logger messages to a file, and the console ones as well.
+ * Вызов логера
  */
 console.log('\n');
 mkdirp.sync('./logs');
@@ -52,10 +52,10 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
 
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
+	listenport = argv.port || conf.port || 3000, //Порт прослушки сервера
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.port || conf.port || 3000, //Порт сервера для клиента
-	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий для клиента
-	listenport = argv.listenport || conf.listenport || port, //Порт прослушки сервера
+	port = argv.projectport || conf.projectport || 80, //Порт сервера для клиента
+	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий для клиента
 	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
 	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {return typeof item === 'string' && item.length > 0;}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo,
@@ -101,12 +101,6 @@ async.waterfall([
 			logger.error("Connection error to MongoDB at: " + moongoUri);
 			cb(err);
 		}
-
-//		var mc = require('mc'), // memcashed
-//          memcached = new mc.Client();
-//		memcached.connect(function () {
-//			logger.info("Connected to the localhost memcache on port 11211");
-//		});
 	},
 
 	function loadingModels(callback) {
@@ -280,7 +274,7 @@ async.waterfall([
 
 			server.listen(listenport);
 			logger.info('Host for users: %s', host);
-			logger.info('Express server listening %s:%s in %s-mode \n', domain, listenport, land.toUpperCase());
+			logger.info('Server listening %s port in %s-mode \n', listenport, land.toUpperCase());
 		}
 	}
 );

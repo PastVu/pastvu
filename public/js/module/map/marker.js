@@ -599,10 +599,10 @@ define([
 						measure = '';
 						picFormat = Photo.picFormats.x;
 					}
-					if (this.subdl) {
+					if (this.subdl > 1) {
 						cluster.p.sfile = P.preaddrs[i % this.subdl] + picFormat + cluster.p.file;
 					} else {
-						cluster.p.sfile = picFormat + cluster.p.file;
+						cluster.p.sfile = P.preaddr + picFormat + cluster.p.file;
 					}
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe ' + measure,
@@ -876,14 +876,14 @@ define([
 
 		while (++i < len) {
 			photo = photos[i];
-			if (this.subdl) {
+			if (this.subdl > 1) {
 				photo.sfile = P.preaddrs[i % this.subdl] + Photo.picFormats.m + photo.file;
 				photoPosterFile = small ? photo.sfile :  P.preaddrs[i % this.subdl] + Photo.picFormats.h + photo.file;
 				photoPrevFile = P.preaddrs[i % this.subdl] + Photo.picFormats.x + photo.file;
 			} else {
-				photo.sfile = Photo.picFormats.m + photo.file;
-				photoPosterFile = small ? photo.sfile : Photo.picFormats.h + photo.file;
-				photoPrevFile = Photo.picFormats.x + photo.file;
+				photo.sfile = P.preaddr + Photo.picFormats.m + photo.file;
+				photoPosterFile = P.preaddr + (small ? photo.sfile : Photo.picFormats.h + photo.file);
+				photoPrevFile = P.preaddr + Photo.picFormats.x + photo.file;
 			}
 			if (i > 0 && i % 5 === 0) {
 				content += '<br/>';

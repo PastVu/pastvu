@@ -5,11 +5,17 @@ var path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
 	_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
+	log4js = require('log4js'),
 	argv = require('optimist').argv,
 	mkdirp = require('mkdirp'),
 	formidable = require('formidable'),
 	interfaces = os.networkInterfaces(),
 	addresses = [];
+
+console.log('\n');
+mkdirp.sync('./logs');
+log4js.configure('./log4js.json', {cwd: './logs'});
+var logger = log4js.getLogger("uploader.js");
 
 require('./commons/JExtensions.js');
 
@@ -29,10 +35,10 @@ for (var k in interfaces) {
 var conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
+	listenuport = argv.uport || conf.uport || 3001, //Порт прослушки сервера загрузки фотографий
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.port || conf.port || 3000, //Порт сервера
-	uport = argv.uport || conf.uport || 8888, //Порт сервера загрузки фотографий
-	listenuport = argv.listenuport || conf.listenuport || uport, //Порт прослушки сервера загрузки фотографий
+	port = argv.projectport || conf.projectport || 3000, //Порт сервера
+	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий
 	host = domain + (port === 80 ? '' : ':' + port); //Имя хоста (адрес+порт)
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
@@ -173,3 +179,5 @@ FileInfo.prototype.validate = function () {
 
 
 require('http').createServer(serve).listen(listenuport);
+logger.info('Port for users: %s', uport);
+logger.info('Uploader server listening %s port\n', listenuport);

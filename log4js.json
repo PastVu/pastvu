@@ -25,8 +25,16 @@
 			"category": ["photoConverter.js"]
 		},
 		{
+			"type": "file",
+			"filename": "uploader.log",
+			"maxLogSize": 524288,
+			"backups": 2,
+			"pollInterval": 15,
+			"category": ["uploader.js"]
+		},
+		{
 			"type": "console",
-			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
+			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		}
 	],
 	"replaceConsole": true

@@ -41,7 +41,7 @@ oldConvertAll()
 	calcUserStats()
 	calcPhotoStats()
 
-sudo node app.js --land prod --domain pastvu.com --port 80 --uport 8888
+sudo node app.js --land prod --domain pastvu.com --port 80 --uport 3001
 		
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
