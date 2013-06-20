@@ -1,8 +1,9 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, User, Photo) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'globalVM', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo) {
 	'use strict';
 
-	var storage = {
+	var auth = globalVM.repository['m/common/auth'],
+		storage = {
 		users: {},
 		photos: {},
 		waitings: {},
@@ -45,7 +46,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 				socket.once('takePhoto', function (data) {
 					if (!data.error && data.cid === cid) {
 						Photo.factory(data, 'full', 'd');
-						storage.photos[cid] = {origin: data, vm: Photo.vm(data, undefined, true)};
+						storage.photos[cid] = {vm: Photo.vm(data, undefined, true), origin: data, can: data.can || {}};
 					}
 					if (storage.waitings['p' + cid]) {
 						storage.waitings['p' + cid].forEach(function (item) {
@@ -54,7 +55,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						delete storage.waitings['p' + cid];
 					}
 				});
-				socket.emit('givePhoto', {cid: cid});
+				socket.emit('givePhoto', {cid: cid, checkCan: auth.loggedIn()});
 			}
 		}
 	};

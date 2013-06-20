@@ -547,24 +547,31 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		(function () {
+			/**
+			 * Отдаем фотографию
+			 */
+			function result(data) {
+				socket.emit('takePhoto', data);
+			}
 
-		/**
-		 * Отдаем фотографию
-		 */
-		function takePhoto(data) {
-			socket.emit('takePhoto', data);
-		}
-
-		socket.on('givePhoto', function (data) {
-			Photo.getPhoto({cid: data.cid}, function (err, photo) {
-				if (err) {
-					takePhoto({message: err && err.message, error: true});
-					return;
-				}
-				//console.dir(photo);
-				takePhoto(photo.toObject());
+			socket.on('givePhoto', function (data) {
+				Photo.getPhoto({cid: data.cid}, function (err, photo) {
+					if (err) {
+						result({message: err && err.message, error: true});
+						return;
+					}
+					var can = {};
+					if (data.checkCan && hs.session.user) {
+						if (photo.user.login === hs.session.user.login) {
+							can.edit = true;
+						}
+					}
+					//console.dir(photo);
+					result({photo: photo.toObject(), can: can});
+				});
 			});
-		});
+		}());
 
 		/**
 		 * Берем массив до и после указанной фотографии указанной длины

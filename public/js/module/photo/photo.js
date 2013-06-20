@@ -25,10 +25,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.IOwner = this.co.IOwner = ko.computed(function () {
-				return this.auth.iAm.login() === this.p.user.login();
+				//return this.auth.iAm.login() === this.p.user.login();
+				return this.auth.iAm.login() === this.p.can();
 			}, this);
 			this.IAdmin = this.co.IAdmin = ko.computed(function () {
-				return this.auth.loggedIn() && this.auth.iAm.role_level() >= 0;
+				//return this.auth.loggedIn() && this.auth.iAm.role_level() >= 0;
+				return this.auth.loggedIn() && this.p.can.admin();
 			}, this);
 
 			this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
