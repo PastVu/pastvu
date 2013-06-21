@@ -22,6 +22,8 @@ var UserScheme = new mongoose.Schema({
 	loginAttempts: {type: Number, required: true, 'default': 0},
 	lockUntil: {type: Number},
 
+	role: {type: Number},
+
 	//Profile
 	avatar: {type: String},
 	firstName: {type: String},
@@ -40,10 +42,6 @@ var UserScheme = new mongoose.Schema({
 	blogger: {type: String},
 	aboutme: {type: String},
 
-	//Service
-	roles: [
-		{ type: Schema.Types.ObjectId, ref: 'Role' }
-	],
 	regdate: {type: Date, 'default': Date.now },
 	pcount: {type: Number, 'default': 0, index: true}, //Кол-во фотографий
 	bcount: {type: Number, 'default': 0}, //Кол-во блогов

@@ -1,7 +1,6 @@
 var _session = require('./_session.js'),
 	Session,
 	User,
-	Role,
 	Counter,
 	UserConfirm,
 	Step = require('step'),
@@ -107,9 +106,8 @@ function register(session, data, cb) {
 				return;
 			}
 			Counter.increment('user', this.parallel());
-			Role.findOne({name: 'registered'}, this.parallel());
 		},
-		function createUser(err, count, role) {
+		function createUser(err, count) {
 			if (err) {
 				cb({message: err, error: true});
 				return;
@@ -124,8 +122,7 @@ function register(session, data, cb) {
 				login: data.login,
 				cid: count.next,
 				email: data.email,
-				pass: data.pass,
-				roles: [role._id]
+				pass: data.pass
 			});
 
 			newUser.save(this.parallel());
@@ -373,32 +370,6 @@ function checkConfirm(session, data, cb) {
 	});
 }
 
-/**
- * redirect to /login if user has insufficient rights
- * @param role_level
- */
-function restrictToRoleLevel(role_level) {
-	return function (req, res, next) {
-		var user = req.session.neoStore.user;
-		if (req.session.login &&
-			req.session.neoStore && req.session.neoStore.roles &&
-			req.session.neoStore.roles[0]['level'] >= role_level) {
-			next();
-		} else {
-			throw new errS.e404();
-
-			/*var url = '/login';
-			 if (req.xhr) {
-			 url = {redirect: url};
-			 res.send(url, 403);
-			 } else {
-			 req.sessionStore.cameFrom = req.url;
-			 res.redirect(url);
-			 }*/
-		}
-	}
-}
-module.exports.restrictToRoleLevel = restrictToRoleLevel;
 module.exports.sendMe = function (socket) {
 	var user = socket && socket.handshake && socket.handshake.session && socket.handshake.session.user;
 	if (user) {
@@ -411,7 +382,6 @@ module.exports.loadController = function (a, db, io) {
 	appEnv = app.get('appEnv');
 	Session = db.model('Session');
 	User = db.model('User');
-	Role = db.model('Role');
 	Counter = db.model('Counter');
 	UserConfirm = db.model('UserConfirm');
 
@@ -454,10 +424,6 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('whoAmI', function (data) {
-			if (hs.session.user && hs.session.roles) {
-				//hs.session.user.role_level = hs.session.roles[0]['level'];
-				//hs.session.user.role_name = hs.session.roles[0]['name'];
-			}
 			socket.emit('youAre', (hs.session.user && hs.session.user.toObject ? hs.session.user.toObject() : null));
 		});
 

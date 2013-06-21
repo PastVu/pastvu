@@ -107,7 +107,6 @@ async.waterfall([
 		require(__dirname + '/models/Sessions.js').makeModel(db);
 		require(__dirname + '/models/Counter.js').makeModel(db);
 		require(__dirname + '/models/Settings.js').makeModel(db);
-		require(__dirname + '/models/Role.js').makeModel(db);
 		require(__dirname + '/models/User.js').makeModel(db);
 		require(__dirname + '/models/Photo.js').makeModel(db);
 		require(__dirname + '/models/Comment.js').makeModel(db);

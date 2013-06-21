@@ -36,7 +36,7 @@ function regen(session, data, cb) {
 		session.markModified('data');
 	}
 	session.save(function (err, session) {
-		//TODO: Fix when fix https://github.com/LearnBoost/mongoose/issues/1530
+		//FIXME: Fix when fix https://github.com/LearnBoost/mongoose/issues/1530
 		if (session.user) {
 			session.populate('user', function () {
 				if (cb) {
