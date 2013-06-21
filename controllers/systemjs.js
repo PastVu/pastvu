@@ -534,6 +534,14 @@ module.exports.loadController = function (app, db) {
 				if (user.ava && user.ava !== '0.png') {
 					newUser.avatar = user.ava;
 				}
+				if (user.role_id === 2) {
+					newUser.role = 5; //Администраторы становятся модераторами
+					if (newUser.cid === 1 || newUser.cid === 6 || newUser.cid === 75 || newUser.cid === 6023) {
+						newUser.role = 11;
+					} else if (newUser.cid === 5209) {
+						newUser.role = 10;
+					}
+				}
 
 				//printjson(newUser);
 				insertArr.push(newUser);
