@@ -24,33 +24,24 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.userRibbonRight = [];
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
-			this.IOwner = this.co.IOwner = ko.computed(function () {
-				//return this.auth.iAm.login() === this.p.user.login();
-				return this.auth.iAm.login() === this.p.can();
-			}, this);
-			this.IAdmin = this.co.IAdmin = ko.computed(function () {
-				//return this.auth.loggedIn() && this.auth.iAm.role_level() >= 0;
-				return this.auth.loggedIn() && this.p.can.admin();
-			}, this);
+			this.can = ko_mapping.fromJS({
+				edit: false,
+				disable: false,
+				remove: false,
+				approve: false,
+				convert: false
+			});
 
-			this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
-				return this.IOwner() || this.IAdmin();
+			this.IOwner = this.co.IOwner = ko.computed(function () {
+				return this.auth.iAm.login() === this.p.user.login();
 			}, this);
 
 			this.canBeApprove = this.co.canBeApprove = ko.computed(function () {
-				return this.p.fresh() && this.IAdmin();
+				return this.p.fresh() && this.can.approve();
 			}, this);
 
 			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
-				return !this.p.fresh() && this.IAdmin();
-			}, this);
-
-			this.canBeRemove = this.co.canBeRemove = ko.computed(function () {
-				return this.IAdmin();
-			}, this);
-
-			this.canBeConvert = this.co.canBeConvert = ko.computed(function () {
-				return this.IAdmin();
+				return !this.p.fresh() && this.can.disable();
 			}, this);
 
 			this.edit = ko.observable(undefined);
@@ -341,7 +332,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					if (data) {
 						this.originData = data.origin;
 						this.p = Photo.vm(data.origin, this.p, true);
-						editMode = this.p.fresh() && this.IOwner();
+						this.can = ko_mapping.fromJS(data.can, this.can);
+
+						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
 
 						Utils.title.setTitle({title: this.p.title()});
 
@@ -374,6 +367,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+			// Запрашиваем разрешенные действия для фото
+			storage.photoCan(this.p.cid(), function (data) {
+					if (!data.error) {
+						this.can = ko_mapping.fromJS(data.can, this.can);
+					}
+			}, this);
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -497,7 +496,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		editSave: function (/*data, event*/) {
-			if (this.canBeEdit()) {
+			if (this.can.edit()) {
 				if (!this.edit()) {
 					this.edit(true);
 				} else {
@@ -517,7 +516,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		editCancel: function (data, event) {
-			if (this.canBeEdit() && this.edit()) {
+			if (this.can.edit() && this.edit()) {
 				this.cancel();
 				this.edit(false);
 			}
@@ -554,7 +553,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		remove: function (data, event) {
-			if (!this.canBeRemove()) {
+			if (!this.can.remove()) {
 				return false;
 			}
 
@@ -690,7 +689,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 
 		toConvert: function (data, event) {
-			if (!this.canBeConvert() || this.selectedOpt().length === 0) {
+			if (!this.can.convert() || this.selectedOpt().length === 0) {
 				return false;
 			}
 			this.exe(true);

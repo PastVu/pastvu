@@ -54,6 +54,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				vcount: 0
 			}
 		},
+		canDef = {
+			edit: false,
+			disable: false,
+			remove: false,
+			approve: false,
+			convert: false
+		},
 		picPrefix = '/_p',
 		picFormats = {
 			a: picPrefix + '/a/',
@@ -130,5 +137,5 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 		return vmExist;
 	}
 
-	return {factory: factory, vm: vm, def: defaults, picFormats: picFormats};
+	return {factory: factory, vm: vm, def: defaults, canDef: canDef, picFormats: picFormats};
 });

@@ -555,21 +555,60 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takePhoto', data);
 			}
 
+			function getCanPhoto (photo) {
+				var can = {
+					edit: false,
+					disable: false,
+					remove: false,
+					approve: false,
+					convert: false
+				};
+
+				if (photo.user.login === hs.session.user.login) {
+					can.edit = true;
+				} else if (hs.session.user.role > 4) {
+					can.edit = true;
+					can.disable = true;
+					can.remove = true;
+					if (photo.fresh) {
+						can.approve = true;
+					}
+
+					if (hs.session.user.role > 9) {
+						can.convert = true;
+					}
+				}
+				return can;
+			}
+
 			socket.on('givePhoto', function (data) {
 				Photo.getPhoto({cid: data.cid}, function (err, photo) {
 					if (err) {
 						result({message: err && err.message, error: true});
 						return;
 					}
-					var can = {};
+					var can;
 					if (data.checkCan && hs.session.user) {
-						if (photo.user.login === hs.session.user.login) {
-							can.edit = true;
-						}
+						can = getCanPhoto(photo);
 					}
 					//console.dir(photo);
 					result({photo: photo.toObject(), can: can});
 				});
+			});
+
+			socket.on('giveCanPhoto', function (data) {
+				if (hs.session.user) {
+					Photo.findOne({cid: data.cid}, {_id: 1, user: 1}).populate('user', {_id: -1, login: 1}).exec(function (err, photo) {
+						if (err) {
+							socket.emit('takeCanPhoto', {message: err && err.message, error: true});
+							return;
+						}
+						//console.dir(photo);
+						socket.emit('takeCanPhoto', {can: getCanPhoto(photo)});
+					});
+				} else {
+					socket.emit('takeCanPhoto', {});
+				}
 			});
 		}());
 

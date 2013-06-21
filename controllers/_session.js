@@ -1,6 +1,5 @@
 var Session,
 	User,
-	Role,
 	Utils = require('../commons/Utils.js'),
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
@@ -87,7 +86,6 @@ module.exports.loadController = function (a, db, io) {
 	app = a;
 	Session = db.model('Session');
 	User = db.model('User');
-	Role = db.model('Role');
 
 	//io.sockets.on('connection', function (socket) {});
 };

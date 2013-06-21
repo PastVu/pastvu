@@ -2,8 +2,7 @@
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket', 'globalVM', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo) {
 	'use strict';
 
-	var auth = globalVM.repository['m/common/auth'],
-		storage = {
+	var storage = {
 		users: {},
 		photos: {},
 		waitings: {},
@@ -28,7 +27,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						delete storage.waitings['u' + login];
 					}
 				});
-				socket.emit('giveUser', {login: login});
+				socket.emit('giveUser', {login: login, checkCan: globalVM.repository['m/common/auth'].loggedIn()});
 			}
 		},
 		userImmediate: function (login) {
@@ -44,9 +43,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 					{cb: callback, ctx: context}
 				];
 				socket.once('takePhoto', function (data) {
-					if (!data.error && data.cid === cid) {
-						Photo.factory(data, 'full', 'd');
-						storage.photos[cid] = {vm: Photo.vm(data, undefined, true), origin: data, can: data.can || {}};
+					if (!data.error && data.photo.cid === cid) {
+						Photo.factory(data.photo, 'full', 'd');
+						storage.photos[cid] = {vm: Photo.vm(data.photo, undefined, true), origin: data.photo, can: data.can || Photo.canDef};
 					}
 					if (storage.waitings['p' + cid]) {
 						storage.waitings['p' + cid].forEach(function (item) {
@@ -55,8 +54,22 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						delete storage.waitings['p' + cid];
 					}
 				});
-				socket.emit('givePhoto', {cid: cid, checkCan: auth.loggedIn()});
+				socket.emit('givePhoto', {cid: cid, checkCan: globalVM.repository['m/common/auth'].loggedIn()});
 			}
+		},
+		photoCan: function (cid, callback, context) {
+			if (!storage.photos[cid]) {
+				return false;
+			}
+			socket.once('takeCanPhoto', function (data) {
+				if (!data.error) {
+					storage.photos[cid].can = data.can || Photo.canDef;
+				}
+				if (callback) {
+					callback.call(context, data);
+				}
+			});
+			socket.emit('giveCanPhoto', {cid: cid});
 		}
 	};
 

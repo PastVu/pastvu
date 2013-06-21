@@ -22,6 +22,7 @@ var UserScheme = new mongoose.Schema({
 	loginAttempts: {type: Number, required: true, 'default': 0},
 	lockUntil: {type: Number},
 
+	// 11 - owner, 10 - admin, 5 - moderator, undefined - regular
 	role: {type: Number},
 
 	//Profile

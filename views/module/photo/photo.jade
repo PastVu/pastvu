@@ -1,7 +1,7 @@
 .photo(data-bind="with: repository[M!M]")
-	.indentLogo.photoTop(data-bind="style: {display: canBeEdit() ? 'block' : 'none'}")
+	.indentLogo.photoTop(data-bind="style: {display: can.edit() ? 'block' : 'none'}")
 		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
-		.photoAction.convertAction(data-bind="style: {display: !edit() && canBeConvert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
+		.photoAction.convertAction(data-bind="style: {display: !edit() && can.convert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
 			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
 			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
 				span start
@@ -70,7 +70,7 @@
 				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
 				span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
 			// /ko
-			//ko if: canBeRemove()
+			//ko if: can.remove()
 			button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
 				i.icon-remove-circle.icon-white
 				span Remove
