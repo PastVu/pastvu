@@ -434,8 +434,6 @@ module.exports.loadController = function (app, db) {
 		}
 
 		var startTime = Date.now(),
-			startDate = new Date(),
-			regDate = new Date(),
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newUser,
@@ -447,6 +445,11 @@ module.exports.loadController = function (app, db) {
 			allCounter = 0,
 			allCount = db[sourceCollectionName].count(),
 			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
+
+			//Размазываем даты регистрации пользователей по периоду с 1 марта 2009 до текущей даты
+			expectingUsersCount = db.old_usersSpb.count({activated: 'yes'}),
+			firstUserStamp = (spbMode ? new Date("Sat, 1 Aug 2009 12:00:00 GMT") : new Date("Sun, 1 Mar 2009 12:00:00 GMT")).getTime(),
+			stepUserStamp = (startTime - firstUserStamp) / expectingUsersCount >> 0,
 
 			usersArr,
 			usersLogin = {},
@@ -520,9 +523,9 @@ module.exports.loadController = function (app, db) {
 					blogger: user.blogger || undefined,
 					aboutme: user.about || undefined,
 
-					regdate: regDate,
+					regdate: new Date(firstUserStamp + (okCounter - 1) * stepUserStamp),
 					active: true,
-					activatedate: startDate
+					activatedate: new Date(firstUserStamp + okCounter * stepUserStamp)
 				};
 
 				// Удаляем undefined значения
