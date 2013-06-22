@@ -20,14 +20,6 @@ var express = require('express'),
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 
 /**
- * Вызов логера
- */
-console.log('\n');
-mkdirp.sync('./logs');
-log4js.configure('./log4js.json', {cwd: './logs'});
-var logger = log4js.getLogger("app.js");
-
-/**
  * Включаем "наши" расширения js
  */
 require('./commons/JExtensions.js');
@@ -64,7 +56,18 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
-	noServeStore = argv.noServeStore || conf.noServeStore || false; //Флаг, что node не должен раздавать статику хранилища
+	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
+
+	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке хранилища
+
+
+/**
+ * Вызов логера
+ */
+console.log('\n');
+mkdirp.sync(logPath);
+log4js.configure('./log4js.json', {cwd: logPath});
+var logger = log4js.getLogger("app.js");
 
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] and Express[' + express.version + '] on process pid:' + process.pid);
 logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ', cpu cores: ' + os.cpus().length);

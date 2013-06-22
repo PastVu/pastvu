@@ -12,6 +12,8 @@
 	"noServeStore": false, /* Tell app.js not to serve out store public folder.  @Default false */
 	"subdomains": "", /* Subdomains for serving store path's public folder divided by _.  @Default "" */
 
+	"logPath": "", /* Folder for logs. @Default "./logs" */
+
 	"mongo": "mongodb://localhost:27017/pastvu", /* DB connection string */
 
 	"smtp": {
