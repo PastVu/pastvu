@@ -45,6 +45,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
 	listenport = argv.port || conf.port || 3000, //Порт прослушки сервера
+	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
+
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
 	port = argv.projectport || conf.projectport || 80, //Порт сервера для клиента
 	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий для клиента
@@ -183,7 +185,7 @@ async.waterfall([
 
 	function (callback) {
 		server = http.createServer(app);
-		io = require('socket.io').listen(server);
+		io = require('socket.io').listen(server, listenhost);
 
 		callback(null);
 	},
@@ -274,9 +276,11 @@ async.waterfall([
 				logger.trace(err && (err.stack || err));
 			});
 
-			server.listen(listenport);
-			logger.info('Host for users: %s', host);
-			logger.info('Server listening %s port in %s-mode \n', listenport, land.toUpperCase());
+			server.listen(listenport, listenhost, function() {
+				logger.info('Host for users: [%s]', host);
+				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
+			});
+
 		}
 	}
 );

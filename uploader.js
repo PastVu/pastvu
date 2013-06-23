@@ -12,11 +12,6 @@ var path = require('path'),
 	interfaces = os.networkInterfaces(),
 	addresses = [];
 
-console.log('\n');
-mkdirp.sync('./logs');
-log4js.configure('./log4js.json', {cwd: './logs'});
-var logger = log4js.getLogger("uploader.js");
-
 require('./commons/JExtensions.js');
 
 for (var k in interfaces) {
@@ -36,10 +31,20 @@ var conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/con
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
 	listenuport = argv.uport || conf.uport || 3001, //Порт прослушки сервера загрузки фотографий
+	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
+
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
 	port = argv.projectport || conf.projectport || 3000, //Порт сервера
 	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий
-	host = domain + (port === 80 ? '' : ':' + port); //Имя хоста (адрес+порт)
+	host = domain + (uport === 80 ? '' : ':' + uport), //Имя хоста (адрес+порт)
+
+	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке логов
+
+
+console.log('\n');
+mkdirp.sync(logPath);
+log4js.configure('./log4js.json', {cwd: logPath});
+var logger = log4js.getLogger("uploader.js");
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport};
@@ -178,6 +183,7 @@ FileInfo.prototype.validate = function () {
 };
 
 
-require('http').createServer(serve).listen(listenuport);
-logger.info('Port for users: %s', uport);
-logger.info('Uploader server listening %s port\n', listenuport);
+require('http').createServer(serve).listen(listenuport, listenhost, function() {
+	logger.info('Uploader host for users: [%s]', host);
+	logger.info('Uploader server listening [%s:%s]\n', listenhost ? listenhost : '*', listenuport);
+});
