@@ -342,79 +342,81 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
-		/**
-		 * Отдаем фотографии пользователя в компактном виде
-		 */
-		function takeUserPhotos(data) {
-			socket.emit('takeUserPhotos', data);
-		}
+		(function () {
+			/**
+			 * Отдаем фотографии пользователя в компактном виде
+			 */
+			function result(data) {
+				socket.emit('takeUserPhotos', data);
+			}
 
-		socket.on('giveUserPhotos', function (data) {
-			User.getUserID(data.login, function (err, user) {
-				if (err) {
-					takeUserPhotos({message: err && err.message, error: true});
-					return;
-				}
-				var photosFresh,
-					skip = data.skip || 0,
-					limit = data.limit || 20,
-					criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
-
-				step(
-					function () {
-						var stepthis = this;
-						if (hs.session.user && user._id.equals(hs.session.user._id)) {
-							Photo.count({user: user._id, fresh: true, del: {$exists: false}}, function (err, count) {
-								if (err) {
-									takeUserPhotos({message: err && err.message, error: true});
-									return;
-								}
-
-								if (skip > count) {
-									skip -= count;
-									stepthis();
-								} else {
-									var selectingFreshCount = count - skip;
-									limit = Math.max(0, limit - selectingFreshCount);
-									Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {skip: skip}, function (err, pFresh) {
-										photosFresh = pFresh;
-										stepthis();
-									});
-									skip = 0;
-								}
-							});
-						} else {
-							criteria.disabled = {$exists: false};
-							stepthis();
-						}
-					},
-					function () {
-						if (limit > 0) {
-							Photo.getPhotosCompact(criteria, {skip: skip, limit: limit}, this);
-						} else {
-							this();
-						}
-					},
-					function (err, photos) {
-						if (err) {
-							takeUserPhotos({message: err && err.message, error: true});
-							return;
-						}
-						if (!photos) {
-							photos = [];
-						}
-						var result;
-						if (photosFresh && photosFresh.length > 0) {
-							result = photosFresh.concat(photos);
-						} else {
-							result = photos;
-						}
-						takeUserPhotos({photos: result});
-						criteria = photosFresh = skip = limit = result = null;
+			socket.on('giveUserPhotos', function (data) {
+				User.getUserID(data.login, function (err, user) {
+					if (err) {
+						result({message: err && err.message, error: true});
+						return;
 					}
-				);
+					var photosFresh,
+						skip = data.skip || 0,
+						limit = data.limit || 20,
+						criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
+
+					step(
+						function () {
+							var stepthis = this;
+							if (hs.session.user && user._id.equals(hs.session.user._id)) {
+								Photo.count({user: user._id, fresh: true, del: {$exists: false}}, function (err, count) {
+									if (err) {
+										result({message: err && err.message, error: true});
+										return;
+									}
+
+									if (skip > count) {
+										skip -= count;
+										stepthis();
+									} else {
+										var selectingFreshCount = count - skip;
+										limit = Math.max(0, limit - selectingFreshCount);
+										Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {skip: skip}, function (err, pFresh) {
+											photosFresh = pFresh;
+											stepthis();
+										});
+										skip = 0;
+									}
+								});
+							} else {
+								criteria.disabled = {$exists: false};
+								stepthis();
+							}
+						},
+						function () {
+							if (limit > 0) {
+								Photo.getPhotosCompact(criteria, {skip: skip, limit: limit}, this);
+							} else {
+								this();
+							}
+						},
+						function (err, photos) {
+							if (err) {
+								result({message: err && err.message, error: true});
+								return;
+							}
+							if (!photos) {
+								photos = [];
+							}
+							var res;
+							if (photosFresh && photosFresh.length > 0) {
+								res = photosFresh.concat(photos);
+							} else {
+								res = photos;
+							}
+							result({photos: res});
+							criteria = photosFresh = skip = limit = res = null;
+						}
+					);
+				});
 			});
-		});
+		}());
 
 
 		/**
@@ -462,60 +464,62 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		/**
-		 * Отдаем неподтвержденные фотографии
-		 */
-		function takePhotosFresh(data) {
-			socket.emit('takePhotosFresh', data);
-		}
+		(function () {
+			/**
+			 * Отдаем неподтвержденные фотографии
+			 */
+			function result(data) {
+				socket.emit('takePhotosFresh', data);
+			}
 
-		socket.on('givePhotosFresh', function (data) {
-			if (!hs.session.user) {
-				takePhotosFresh({message: 'Not authorized', error: true});
-				return;
-			}
-			if (!data || !Utils.isType('object', data)) {
-				takePhotosFresh({message: 'Bad params', error: true});
-				return;
-			}
-			step(
-				function () {
-					if (data.login) {
-						User.getUserID(data.login, this);
-					} else {
-						this();
-					}
-				},
-				function (err, user) {
-					if (err) {
-						takePhotosFresh({message: err && err.message, error: true});
-						return;
-					}
-					var criteria = {disabled: {$exists: false}, del: {$exists: false}},
-						options = {};
-					if (user) {
-						criteria.user = user;
-					}
-					if (data.after) {
-						criteria.ldate = {$gt: data.after};
-					}
-					if (data.limit) {
-						options.limit = data.limit;
-					}
-					if (data.skip) {
-						options.skip = data.skip;
-					}
-					Photo.getPhotosFreshCompact(criteria, options, this.parallel());
-				},
-				function (err, photos) {
-					if (err) {
-						takePhotosFresh({message: err && err.message, error: true});
-						return;
-					}
-					takePhotosFresh({photos: photos || []});
+			socket.on('givePhotosFresh', function (data) {
+				if (!hs.session.user) {
+					result({message: 'Not authorized', error: true});
+					return;
 				}
-			);
-		});
+				if (!data || !Utils.isType('object', data)) {
+					result({message: 'Bad params', error: true});
+					return;
+				}
+				step(
+					function () {
+						if (data.login) {
+							User.getUserID(data.login, this);
+						} else {
+							this();
+						}
+					},
+					function (err, user) {
+						if (err) {
+							result({message: err && err.message, error: true});
+							return;
+						}
+						var criteria = {disabled: {$exists: false}, del: {$exists: false}},
+							options = {};
+						if (user) {
+							criteria.user = user;
+						}
+						if (data.after) {
+							criteria.ldate = {$gt: data.after};
+						}
+						if (data.limit) {
+							options.limit = data.limit;
+						}
+						if (data.skip) {
+							options.skip = data.skip;
+						}
+						Photo.getPhotosFreshCompact(criteria, options, this.parallel());
+					},
+					function (err, photos) {
+						if (err) {
+							result({message: err && err.message, error: true});
+							return;
+						}
+						result({photos: photos || []});
+					}
+				);
+			});
+		}());
 
 
 		(function () {
@@ -547,38 +551,39 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+
+		function getCanPhoto(photo) {
+			var can = {
+				edit: false,
+				disable: false,
+				remove: false,
+				approve: false,
+				convert: false
+			};
+
+			if (photo.user.login === hs.session.user.login) {
+				can.edit = true;
+			} else if (hs.session.user.role > 4) {
+				can.edit = true;
+				can.disable = true;
+				can.remove = true;
+				if (photo.fresh) {
+					can.approve = true;
+				}
+
+				if (hs.session.user.role > 9) {
+					can.convert = true;
+				}
+			}
+			return can;
+		}
+
 		(function () {
 			/**
 			 * Отдаем фотографию
 			 */
 			function result(data) {
 				socket.emit('takePhoto', data);
-			}
-
-			function getCanPhoto (photo) {
-				var can = {
-					edit: false,
-					disable: false,
-					remove: false,
-					approve: false,
-					convert: false
-				};
-
-				if (photo.user.login === hs.session.user.login) {
-					can.edit = true;
-				} else if (hs.session.user.role > 4) {
-					can.edit = true;
-					can.disable = true;
-					can.remove = true;
-					if (photo.fresh) {
-						can.approve = true;
-					}
-
-					if (hs.session.user.role > 9) {
-						can.convert = true;
-					}
-				}
-				return can;
 			}
 
 			socket.on('givePhoto', function (data) {
@@ -612,50 +617,52 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
-		/**
-		 * Берем массив до и после указанной фотографии указанной длины
-		 */
-		function takeUserPhotosAround(data) {
-			socket.emit('takeUserPhotosAround', data);
-		}
-
-		socket.on('giveUserPhotosAround', function (data) {
-			if (!data.cid || (!data.limitL && !data.limitR)) {
-				takeUserPhotosAround({message: 'Bad params', error: true});
-				return;
+		(function () {
+			/**
+			 * Берем массив до и после указанной фотографии указанной длины
+			 */
+			function result(data) {
+				socket.emit('takeUserPhotosAround', data);
 			}
 
-			step(
-				function findUserId() {
-					Photo.findOne({cid: data.cid}).select('-_id user').exec(this);
-				},
-				function findAroundPhotos(err, photo) {
-					if (err || !photo || !photo.user) {
-						takeUserPhotosAround({message: 'No such photo', error: true});
-						return;
-					}
-					var filters = {user: photo.user, del: {$exists: false}};
-					if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
-						filters.fresh = {$exists: false};
-						filters.disabled = {$exists: false};
-					}
-					if (data.limitL > 0) {
-						Photo.find(filters).gt('cid', data.cid).sort('adate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
-					}
-					if (data.limitR > 0) {
-						Photo.find(filters).lt('cid', data.cid).sort('-adate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
-					}
-					filters = null;
-				},
-				function (err, photosL, photosR) {
-					if (err) {
-						takeUserPhotosAround({message: err.message || '', error: true});
-						return;
-					}
-					takeUserPhotosAround({left: photosL, right: photosR});
+			socket.on('giveUserPhotosAround', function (data) {
+				if (!data.cid || (!data.limitL && !data.limitR)) {
+					result({message: 'Bad params', error: true});
+					return;
 				}
-			);
-		});
+
+				step(
+					function findUserId() {
+						Photo.findOne({cid: data.cid}, {id: -1, user: 1}, this);
+					},
+					function findAroundPhotos(err, photo) {
+						if (err || !photo || !photo.user) {
+							result({message: 'No such photo', error: true});
+							return;
+						}
+						var filters = {user: photo.user, del: {$exists: false}};
+						if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
+							filters.fresh = {$exists: false};
+							filters.disabled = {$exists: false};
+						}
+						if (data.limitL > 0) {
+							Photo.find(filters).gt('cid', data.cid).sort('adate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
+						}
+						if (data.limitR > 0) {
+							Photo.find(filters).lt('cid', data.cid).sort('-adate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
+						}
+						filters = null;
+					},
+					function (err, photosL, photosR) {
+						if (err) {
+							result({message: err.message || '', error: true});
+							return;
+						}
+						result({left: photosL, right: photosR});
+					}
+				);
+			});
+		}());
 
 
 		(function () {
@@ -764,10 +771,7 @@ module.exports.loadController = function (app, db, io) {
 		(function () {
 
 			function geoCheck(geo) {
-				if (!Array.isArray(geo) || geo.length !== 2 || geo[0] < -180 || geo[0] > 180 || geo[1] < -90 || geo[1] > 90) {
-					return false;
-				}
-				return true;
+				return Array.isArray(geo) && geo.length === 2 && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 			}
 
 			function diff(a, b) {

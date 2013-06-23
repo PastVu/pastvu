@@ -58,7 +58,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
 	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
 
-	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке хранилища
+	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке логов
 
 
 /**
