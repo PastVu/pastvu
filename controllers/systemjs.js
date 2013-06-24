@@ -259,7 +259,7 @@ module.exports.loadController = function (app, db) {
 			}
 		}
 
-		db.photoconveyers.insert(conveyer);
+		db.photos_conveyer.insert(conveyer);
 		return {message: 'Added ' + photosAllCount + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: photosAllCount};
 	});
 

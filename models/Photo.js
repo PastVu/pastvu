@@ -63,6 +63,7 @@ var FragmentSchema = new Schema({
 			converting: {type: Boolean}
 		},
 		{
+			collection: 'photos_conveyer',
 			strict: true
 		}
 	),
@@ -75,6 +76,7 @@ var FragmentSchema = new Schema({
 			error: {type: String}
 		},
 		{
+			collection: 'photos_conveyer_errors',
 			strict: true
 		}
 	),
