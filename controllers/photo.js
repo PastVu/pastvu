@@ -4,6 +4,9 @@ var auth = require('./auth.js'),
 	Settings,
 	User,
 	Photo,
+	PhotoFresh,
+	PhotoDis,
+	PhotoDel,
 	Counter,
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
@@ -150,38 +153,37 @@ function dropPhotos(cb) {
 	});
 }
 
-/**
- * Ежедневно обнуляет статистику дневных просмотров
- */
-function resetStatDay() {
-	Photo.resetStatDay(function (err, updatedCount) {
-		logger.info('Reset day display statistics for ' + updatedCount + ' photos');
-		if (err) {
-			logger.error(err);
-			return;
+//Обнуляет статистику просмотров за день и неделю
+var planResetDisplayStat = (function () {
+	function resetStat() {
+		var setQuery = {vdcount: 0},
+			needWeek = moment().day() === 1; //Начало недели - понедельник
+
+		if (needWeek) {
+			setQuery.vwcount = 0;
 		}
-		planResetStatDay();
-	});
-}
-function planResetStatDay() {
-	setTimeout(resetStatDay, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
-}
-/**
- * Еженедельно обнуляет статистику недельных просмотров
- */
-function resetStatWeek() {
-	Photo.resetStatWeek(function (err, updatedCount) {
-		logger.info('Reset week display statistics for ' + updatedCount + ' photos');
-		if (err) {
-			logger.error(err);
-			return;
-		}
-		planResetStatWeek();
-	});
-}
-function planResetStatWeek() {
-	setTimeout(resetStatWeek, moment().add('w', 1).day(1).startOf('day').diff(moment()) + 1000);
-}
+		step(
+			function () {
+				Photo.update({}, {$set: setQuery}, {multi: true}, this.parallel());
+				PhotoDis.update({}, {$set: setQuery}, {multi: true}, this.parallel());
+				PhotoDel.update({}, {$set: setQuery}, {multi: true}, this.parallel());
+			},
+			function (err, count, countDis, countDel) {
+				planResetDisplayStat();
+				if (err) {
+					logger.error(err);
+					return;
+				}
+				logger.info('Reset day' + (needWeek ? ' and week ' : ' ') +'display statistics for %s public, %s disabled and %s deleted photos', count, countDis, countDel);
+			}
+		);
+	}
+
+	return function () {
+		setTimeout(resetStat, moment().add('d', 1).startOf('day').diff(moment()) + 2000);
+	};
+}());
+
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("photo.js");
@@ -189,13 +191,15 @@ module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	User = db.model('User');
 	Photo = db.model('Photo');
+	PhotoFresh = db.model('PhotoFresh');
+	PhotoDis = db.model('PhotoDisabled');
+	PhotoDel = db.model('PhotoDel');
 	Counter = db.model('Counter');
 
 	PhotoCluster.loadController(app, db, io);
 	PhotoConverter.loadController(app, db, io);
 
-	planResetStatDay(); //Планируем очистку статистики за ltym
-	planResetStatWeek(); //Планируем очистку статистики за неделю
+	planResetDisplayStat; //Планируем очистку статистики
 
 	// Регулярно проводим чистку удаленных файлов
 	setInterval(dropPhotos, ms('5m'));
@@ -642,11 +646,11 @@ module.exports.loadController = function (app, db, io) {
 						}
 						var filters = {user: photo.user, del: {$exists: false}};
 						/*if (!can.fresh) {
-							filters.fresh = {$exists: false};
-						}
-						if (!can.disabled) {
-							filters.disabled = {$exists: false};
-						}*/
+						 filters.fresh = {$exists: false};
+						 }
+						 if (!can.disabled) {
+						 filters.disabled = {$exists: false};
+						 }*/
 						if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
 							filters.fresh = {$exists: false};
 							filters.disabled = {$exists: false};

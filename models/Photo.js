@@ -102,36 +102,11 @@ PhotoSchema.add(additionalStructure);
 PhotoSchema.index({ g: '2d', year: 1});
 
 
-/**
- * Перед каждым сохранением делаем проверки
- * @instance
- * @param {string}
- * @param {function} cb
- */
-PhotoSchema.pre('save', function (next) {
+PhotoSchema.pre('save', preSave);
+PhotoSchema_Fresh.pre('save', preSave);
+PhotoSchema_Disabled.pre('save', preSave);
+PhotoSchema_Del.pre('save', preSave);
 
-	// check year2
-	if (this.isModified('year') || this.isModified('year2')) {
-		if (this.year < 1826) {
-			this.year = 1826;
-		} else if (this.year > 2000) {
-			this.year = 2000;
-		}
-		if (!Number(this.year2) || this.year2 < this.year || this.year2 > 2000) {
-			this.year2 = this.year;
-		}
-	}
-
-	return next();
-});
-
-PhotoSchema.statics.resetStatDay = function (cb) {
-	this.update({}, { $set: { vdcount: 0} }, {multi: true}, cb);
-};
-
-PhotoSchema.statics.resetStatWeek = function (cb) {
-	this.update({}, { $set: { vwcount: 0} }, {multi: true}, cb);
-};
 
 PhotoSchema.statics.getPhoto = function (query, cb) {
 	if (!query || !query.cid) {
@@ -162,6 +137,23 @@ PhotoSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
 	options = options || {};
 	this.find(query, null, options).sort('-ldate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
 };
+
+
+function preSave(next) {
+	// check year2
+	if (this.isModified('year') || this.isModified('year2')) {
+		if (this.year < 1826) {
+			this.year = 1826;
+		} else if (this.year > 2000) {
+			this.year = 2000;
+		}
+		if (!Number(this.year2) || this.year2 < this.year || this.year2 > 2000) {
+			this.year2 = this.year;
+		}
+	}
+
+	return next();
+}
 
 
 module.exports.makeModel = function (db) {
