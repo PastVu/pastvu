@@ -1,6 +1,6 @@
 {
 	"land": "dev", /* Landscape: dev, test, prod. @Default "dev" */
-	"hostname": "", /* Accept only on this host. If the hostname is omitted, the server will accept connections directed to any IPv4 address (INADDR_ANY). @Default "" */
+	"hostname": "", /* Accept only this host. If the hostname is omitted, the server will accept connections directed to any IPv4 address (INADDR_ANY). @Default "" */
 	"port": 3000, /* Application app.js will listen this port. @Default 3000 */
 	"uport": 3001, /* Application uploader.js will listen this port. @Default 3001 */
 

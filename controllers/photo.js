@@ -641,6 +641,12 @@ module.exports.loadController = function (app, db, io) {
 							return;
 						}
 						var filters = {user: photo.user, del: {$exists: false}};
+						/*if (!can.fresh) {
+							filters.fresh = {$exists: false};
+						}
+						if (!can.disabled) {
+							filters.disabled = {$exists: false};
+						}*/
 						if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
 							filters.fresh = {$exists: false};
 							filters.disabled = {$exists: false};

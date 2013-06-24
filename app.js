@@ -134,6 +134,7 @@ async.waterfall([
 			res.send(404);
 		}
 
+		app.enable('trust proxy');
 		app.configure(function () {
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
@@ -199,6 +200,8 @@ async.waterfall([
 			var cookieString = handshakeData.headers.cookie || '',
 				cookieObj = cookie.parse(cookieString),
 				existsSid = cookieObj['pastvu.sid'];
+
+			logger.info(handshakeData);
 
 			if (existsSid) {
 				Session.findOne({key: existsSid}).populate('user').exec(sessionProcess);

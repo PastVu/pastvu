@@ -10,54 +10,51 @@ var FragmentSchema = new Schema({
 		w: {type: Number}, //Width
 		h: {type: Number}  //Height
 	}),
-	PhotoSchema = new Schema(
-		{
-			cid: {type: Number, index: { unique: true }},
-			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-			album: {type: Number},
-			stack: {type: String},
-			stack_order: {type: Number},
+	commonStructure = {
+		cid: {type: Number, index: { unique: true }},
+		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 
-			file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
+		file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
 
-			ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
-			adate: {type: Date, index: true}, // Время активации
-			type: {type: String}, // like 'image/jpeg'
-			format: {type: String}, // like 'JPEG'
-			sign: {type: String},
-			size: {type: Number},
-			w: {type: Number}, //Оригинальная ширина
-			h: {type: Number}, //Оригинальная высота
-			ws: {type: Number}, //Стандартная ширина
-			hs: {type: Number}, //Стандартная высота
+		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
+		type: {type: String}, // like 'image/jpeg'
+		format: {type: String}, // like 'JPEG'
+		sign: {type: String},
+		size: {type: Number},
+		w: {type: Number}, //Оригинальная ширина
+		h: {type: Number}, //Оригинальная высота
+		ws: {type: Number}, //Стандартная ширина
+		hs: {type: Number}, //Стандартная высота
 
-			geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
-			dir: {type: String, 'default': ''},
+		geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
+		dir: {type: String, 'default': ''},
 
-			title: {type: String, 'default': ''},
-			year: {type: Number, 'default': 2000},
-			year2: {type: Number},
-			address: {type: String},
-			desc: {type: String},
-			source: {type: String},
-			author: {type: String},
+		title: {type: String, 'default': ''},
+		year: {type: Number, 'default': 2000},
+		year2: {type: Number},
+		address: {type: String},
+		desc: {type: String},
+		source: {type: String},
+		author: {type: String},
 
-			vdcount: {type: Number, index: true}, //Кол-во просмотров за день
-			vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
-			vcount: {type: Number, index: true}, //Кол-во просмотров всего
-			ccount: {type: Number, index: true}, //Кол-во комментариев
-			frags: [FragmentSchema], //Фрагменты с комментариями
+		conv: {type: Boolean}, //Конвертируется
+		convqueue: {type: Boolean} //В очереди на конвертацию
+	},
+	additionalStructure = {
+		adate: {type: Date, index: true}, // Время активации
 
-			conv: {type: Boolean}, //Конвертируется
-			convqueue: {type: Boolean}, //В очереди на конвертацию
-			fresh: {type: Boolean}, //Новое
-			disabled: {type: Boolean}, //Не активное
-			del: {type: Boolean} //К удалению
-		},
-		{
-			strict: true
-		}
-	),
+		vdcount: {type: Number, index: true}, //Кол-во просмотров за день
+		vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
+		vcount: {type: Number, index: true}, //Кол-во просмотров всего
+		ccount: {type: Number, index: true}, //Кол-во комментариев
+		frags: [FragmentSchema] //Фрагменты с комментариями
+	},
+
+	PhotoSchema_Fresh = new Schema(commonStructure, {collection: 'photos_fresh', strict: true}),
+	PhotoSchema_Disabled = new Schema(commonStructure, {collection: 'photos_disabled', strict: true}),
+	PhotoSchema_Del = new Schema(commonStructure, {collection: 'photos_del', strict: true}),
+	PhotoSchema = new Schema(commonStructure, {strict: true}),
+
 	PhotoConveyerSchema = new Schema(
 		{
 			cid: {type: Number, index: true},
@@ -93,7 +90,14 @@ var FragmentSchema = new Schema({
 		}
 	);
 
-PhotoSchema.index({ g: '2d', year: 1}); // Compound index   http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+
+PhotoSchema_Disabled.add(additionalStructure);
+PhotoSchema_Del.add(additionalStructure);
+PhotoSchema.add(additionalStructure);
+
+//В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
+//Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+PhotoSchema.index({ g: '2d', year: 1});
 
 
 /**
@@ -160,6 +164,10 @@ PhotoSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
 
 module.exports.makeModel = function (db) {
 	db.model('Photo', PhotoSchema);
+	db.model('PhotoFresh', PhotoSchema_Fresh);
+	db.model('PhotoDisabled', PhotoSchema_Disabled);
+	db.model('PhotoDel', PhotoSchema_Del);
+
 	db.model('PhotoConveyer', PhotoConveyerSchema);
 	db.model('PhotoConveyerError', PhotoConveyerErrorSchema);
 	db.model('STPhotoConveyer', STPhotoConveyerSchema);
