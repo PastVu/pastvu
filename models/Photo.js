@@ -108,13 +108,6 @@ PhotoSchema_Disabled.pre('save', preSave);
 PhotoSchema_Del.pre('save', preSave);
 
 
-PhotoSchema.statics.getPhoto = function (query, cb) {
-	if (!query || !query.cid) {
-		cb({message: 'cid is not specified'});
-	}
-	this.findOneAndUpdate(query, { $inc: { vdcount: 1, vwcount: 1, vcount: 1} }, {new: true}).populate('user', 'login avatar firstName lastName').select('-_id -__v -frags._id').exec(cb);
-};
-
 PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
 	if (!query || !query.cid) {
 		cb({message: 'cid is not specified'});

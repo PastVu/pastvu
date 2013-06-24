@@ -174,7 +174,7 @@ var planResetDisplayStat = (function () {
 					logger.error(err);
 					return;
 				}
-				logger.info('Reset day' + (needWeek ? ' and week ' : ' ') +'display statistics for %s public, %s disabled and %s deleted photos', count, countDis, countDel);
+				logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s public, %s disabled and %s deleted photos', count, countDis, countDel);
 			}
 		);
 	}
@@ -584,30 +584,65 @@ module.exports.loadController = function (app, db, io) {
 
 		(function () {
 			/**
-			 * Отдаем фотографию
+			 * Отдаем фотографию для её страницы
 			 */
 			function result(data) {
 				socket.emit('takePhoto', data);
 			}
 
-			socket.on('givePhoto', function (data) {
-				Photo.getPhoto({cid: data.cid}, function (err, photo) {
+			function process(photo, checkCan) {
+				if (!photo) {
+					return result({message: 'Requested photo does not exist', error: true});
+				}
+				photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}, function (err, photo) {
 					if (err) {
-						result({message: err && err.message, error: true});
-						return;
+						return result({message: err && err.message, error: true});
 					}
 					var can;
-					if (data.checkCan && hs.session.user) {
+					if (checkCan && hs.session.user) {
 						can = getCanPhoto(photo);
 					}
 					//console.dir(photo);
 					result({photo: photo.toObject(), can: can});
 				});
+			}
+
+			socket.on('givePhoto', function (data) {
+				var cid = Number(data.cid);
+				if (isNaN(cid)) {
+					return result({message: 'Requested photo does not exist', error: true});
+				}
+				Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: {_id: 0, 'frags._id': 0}}, function (err, photo) {
+					if (err) {
+						return result({message: err && err.message, error: true});
+					}
+					if (photo) {
+						process(photo, data.checkCan);
+					} else {
+						PhotoDis.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+							if (err) {
+								return result({message: err && err.message, error: true});
+							}
+							if (photo) {
+								process(photo, data.checkCan);
+							} else {
+								PhotoDel.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+									if (err) {
+										return result({message: err && err.message, error: true});
+									}
+									process(photo, data.checkCan);
+								});
+							}
+
+						});
+					}
+
+				});
 			});
 
 			socket.on('giveCanPhoto', function (data) {
 				if (hs.session.user) {
-					Photo.findOne({cid: data.cid}, {_id: 1, user: 1}).populate('user', {_id: -1, login: 1}).exec(function (err, photo) {
+					Photo.findOne({cid: data.cid}, {_id: 1, user: 1}).populate('user', {_id: 0, login: 1}).exec(function (err, photo) {
 						if (err) {
 							socket.emit('takeCanPhoto', {message: err && err.message, error: true});
 							return;
@@ -637,7 +672,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function findUserId() {
-						Photo.findOne({cid: data.cid}, {id: -1, user: 1}, this);
+						Photo.findOne({cid: data.cid}, {_id: 0, user: 1}, this);
 					},
 					function findAroundPhotos(err, photo) {
 						if (err || !photo || !photo.user) {
