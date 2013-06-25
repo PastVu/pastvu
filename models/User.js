@@ -253,7 +253,7 @@ UserScheme.statics.getUserID = function (login, cb) {
 	if (!login) {
 		cb(null, 'Login is not specified');
 	}
-	this.findOne({login: new RegExp('^' + login + '$', 'i') }, '_id', { safe: true }, cb);
+	this.findOne({login: new RegExp('^' + login + '$', 'i')}, {_id: 1}, {safe: true}, cb);
 };
 
 

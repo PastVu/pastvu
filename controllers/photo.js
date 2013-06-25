@@ -22,43 +22,62 @@ var auth = require('./auth.js'),
 	photoDir = global.appVar.storePath + 'public/photos',
 	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
 
-var photoPermissions = {
-	getCan: function (photo, user) {
-		var can = {
-			edit: false,
-			disable: false,
-			remove: false,
-			approve: false,
-			convert: false
-		};
+function cursorExtract(err, cursor) {
+	if (err || !cursor) {
+		this(err || {message: 'Create cursor error', error: true});
+		return;
+	}
+	cursor.toArray(this);
+}
+function cursorsExtract(err) {
+	if (err) {
+		this({message: err && err.message, error: true});
+		return;
+	}
 
-		if (user) {
-			if (photo.user.login === user.login) {
-				can.edit = true;
-			} else if (user.role > 4) {
-				can.edit = true;
-				can.disable = true;
-				can.remove = true;
-				if (photo.fresh) {
-					can.approve = true;
-				}
+	for (var i = 1; i < arguments.length; i++) {
+		arguments[i].toArray(this.parallel());
+	}
+}
 
-				if (user.role > 9) {
-					can.convert = true;
+var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
+	photoPermissions = {
+		getCan: function (photo, user) {
+			var can = {
+				edit: false,
+				disable: false,
+				remove: false,
+				approve: false,
+				convert: false
+			};
+
+			if (user) {
+				if (photo.user.login === user.login) {
+					can.edit = true;
+				} else if (user.role > 4) {
+					can.edit = true;
+					can.disable = true;
+					can.remove = true;
+					if (photo.fresh) {
+						can.approve = true;
+					}
+
+					if (user.role > 9) {
+						can.convert = true;
+					}
 				}
 			}
+			return can;
+		},
+		checkType: function (type, photo, user) {
+			if (type === 'fresh' || type === 'dis') {
+				return user.role > 4 || photo.user.equals(user._id);
+			} else if (type === 'del') {
+				return user.role > 9;
+			}
+			return false;
 		}
-		return can;
-	},
-	checkType: function (type, photo, user) {
-		if (type === 'fresh' || type === 'dis') {
-			return user.role > 4 || photo.user.equals(user._id);
-		} else if (type === 'del') {
-			return user.role > 9;
-		}
-		return false;
-	}
-};
+	};
 
 /**
  * Создает фотографии в базе данных
@@ -69,13 +88,11 @@ var photoPermissions = {
 var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
 function createPhotos(session, data, cb) {
 	if (!session.user || !session.user.login) {
-		cb({message: 'You are not authorized for this action.', error: true});
-		return;
+		return cb({message: 'You are not authorized for this action.', error: true});
 	}
 
 	if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 
 	if (!Array.isArray(data) && Utils.isType('object', data)) {
@@ -90,20 +107,18 @@ function createPhotos(session, data, cb) {
 		},
 		function savePhotos(err, count) {
 			if (err || !count) {
-				cb({message: 'Increment photo counter error', error: true});
-				return;
+				return cb({message: 'Increment photo counter error', error: true});
 			}
 			data.forEach(function (item, index) {
-				var photo = new Photo({
+				var photo = new PhotoFresh({
 					cid: count.next - index,
 					user: session.user._id,
 					file: item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1"),
 					type: item.type,
 					size: item.size,
-					geo: undefined,
+					geo: undefined
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
-					fresh: true
 				});
 
 				resultCids.push({file: item.file, cid: photo.cid});
@@ -117,8 +132,7 @@ function createPhotos(session, data, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb({message: err.message || '', error: true});
-				return;
+				return cb({message: err.message || '', error: true});
 			}
 			cb({message: data.length + ' photo successfully saved ' + data[0].file, cids: resultCids});
 		}
@@ -210,8 +224,7 @@ var planResetDisplayStat = (function () {
 			function (err, count, countDis, countDel) {
 				planResetDisplayStat();
 				if (err) {
-					logger.error(err);
-					return;
+					return logger.error(err);
 				}
 				logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s public, %s disabled and %s deleted photos', count, countDis, countDel);
 			}
@@ -401,7 +414,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 					var photosFresh,
 						skip = data.skip || 0,
-						limit =  Math.max(data.limit || 20, 100),
+						limit = Math.min(data.limit || 20, 100),
 						criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
 
 					step(
@@ -507,23 +520,22 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+		//Отдаем новые фотографии
 		(function () {
-			/**
-			 * Отдаем неподтвержденные фотографии
-			 */
 			function result(data) {
 				socket.emit('takePhotosFresh', data);
 			}
 
 			socket.on('givePhotosFresh', function (data) {
-				if (!hs.session.user) {
-					result({message: 'Not authorized', error: true});
-					return;
-				}
 				if (!data || !Utils.isType('object', data)) {
-					result({message: 'Bad params', error: true});
-					return;
+					return result({message: 'Bad params', error: true});
 				}
+				if (!hs.session.user ||
+					(!data.login && hs.session.user.role < 5) ||
+					(data.login && hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
+					return result({message: 'Not authorized', error: true});
+				}
+
 				step(
 					function () {
 						if (data.login) {
@@ -534,29 +546,25 @@ module.exports.loadController = function (app, db, io) {
 					},
 					function (err, user) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
-						var criteria = {disabled: {$exists: false}, del: {$exists: false}},
-							options = {};
+
+						var criteria = {};
 						if (user) {
-							criteria.user = user;
+							criteria.user = user._id;
 						}
 						if (data.after) {
-							criteria.ldate = {$gt: data.after};
+							criteria.ldate = {$gt: new Date(data.after)};
 						}
-						if (data.limit) {
-							options.limit =  Math.max(data.limit, 100);
-						}
-						if (data.skip) {
-							options.skip = data.skip;
-						}
-						Photo.getPhotosFreshCompact(criteria, options, this.parallel());
+						PhotoFresh.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
 					},
+					cursorExtract,
 					function (err, photos) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
+						}
+						for (var i = photos.length; i--;) {
+							photos[i].fresh = true;
 						}
 						result({photos: photos || []});
 					}
@@ -579,7 +587,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						Photo.getPhotosCompact({}, {skip: data.limit || 0, limit: Math.max(data.limit || 20, 100)}, function (err, photos) {
+						Photo.getPhotosCompact({}, {skip: data.limit || 0, limit: Math.min(data.limit || 20, 100)}, function (err, photos) {
 							if (err) {
 								return result({message: err && err.message, error: true});
 							}
@@ -677,10 +685,11 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 		//Отдаем разрешенные can для фото
-		(function (){
+		(function () {
 			function result(data) {
 				socket.emit('takeCanPhoto', data);
 			}
+
 			socket.on('giveCanPhoto', function (data) {
 				var cid = Number(data.cid);
 
@@ -724,12 +733,6 @@ module.exports.loadController = function (app, db, io) {
 							return;
 						}
 						var filters = {user: photo.user, del: {$exists: false}};
-						/*if (!can.fresh) {
-						 filters.fresh = {$exists: false};
-						 }
-						 if (!can.disabled) {
-						 filters.disabled = {$exists: false};
-						 }*/
 						if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
 							filters.fresh = {$exists: false};
 							filters.disabled = {$exists: false};
