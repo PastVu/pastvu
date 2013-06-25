@@ -111,6 +111,26 @@ Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, fi
 	return result;
 };
 
+//Экстракт данных из курсора MongoDB-native
+Utils.cursorExtract = function (err, cursor) {
+	if (err || !cursor) {
+		this(err || {message: 'Create cursor error', error: true});
+		return;
+	}
+	cursor.toArray(this);
+};
+//Экстракт всех входящих параметров-курсоров MongoDB-native
+Utils.cursorsExtract = function cursorsExtract(err) {
+	if (err) {
+		this({message: err && err.message, error: true});
+		return;
+	}
+
+	for (var i = 1; i < arguments.length; i++) {
+		arguments[i].toArray(this.parallel());
+	}
+};
+
 Utils.math = (function () {
 	'use strict';
 

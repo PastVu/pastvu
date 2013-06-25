@@ -1,3 +1,5 @@
+'use strict';
+
 var auth = require('./auth.js'),
 	Settings,
 	User,
@@ -22,24 +24,6 @@ var auth = require('./auth.js'),
 	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
 }());
 
-function cursorExtract(err, cursor) {
-	if (err || !cursor) {
-		this(err || {message: 'Create cursor error', error: true});
-		return;
-	}
-	cursor.toArray(this);
-}
-function cursorsExtract(err) {
-	if (err) {
-		this({message: err && err.message, error: true});
-		return;
-	}
-
-	for (var i = 1; i < arguments.length; i++) {
-		arguments[i].toArray(this.parallel());
-	}
-}
-
 /**
  * Параметры
  */
@@ -56,7 +40,7 @@ var giveGlobeParams = (function () {
 			function () {
 				Settings.collection.find({}, {_id: 0, key: 1, val: 1}, this);
 			},
-			cursorExtract,
+			Utils.cursorExtract,
 			function (err, settings) {
 				var i = settings.length;
 				while (i--) {
@@ -67,9 +51,8 @@ var giveGlobeParams = (function () {
 		);
 	};
 }());
-/**
- * Рейтинги
- */
+
+//Рейтинги
 var giveRatings = (function () {
 	var limit = 10; //Ограничиваем кол-во результатов по каждому показателю
 
@@ -206,7 +189,7 @@ var giveRatings = (function () {
 					['pcount', 'desc']
 				]}, this.parallel());
 			},
-			cursorsExtract,
+			Utils.cursorsExtract,
 			function (err, pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall) {
 				if (err) {
 					cb({message: err && err.message, error: true});
@@ -338,7 +321,7 @@ function giveIndexNews(hs, cb) {
 				['pdate', 'desc']
 			]}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, news) {
 			if (err) {
 				cb({message: err && err.message, error: true});
@@ -359,7 +342,7 @@ function giveAllNews(hs, cb) {
 				['pdate', 'desc']
 			]}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, news) {
 			if (err) {
 				cb({message: err && err.message, error: true});

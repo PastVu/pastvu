@@ -23,15 +23,6 @@ var auth = require('./auth.js'),
 	host,
 	logger;
 
-
-function cursorExtract(err, cursor) {
-	if (err || !cursor) {
-		this(err || {message: 'Create cursor error', error: true});
-		return;
-	}
-	cursor.toArray(this);
-}
-
 /**
  * Выбирает комментарии для объекта
  * @param data Объект
@@ -69,7 +60,7 @@ function getCommentsObj(data, cb) {
 				['stamp', 'asc']
 			]}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: err || 'Cursor extract error', error: true});
@@ -90,7 +81,7 @@ function getCommentsObj(data, cb) {
 			commentsArr = comments;
 			User.collection.find({"_id": { "$in": usersArr }}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, users) {
 			if (err || !users) {
 				cb({message: 'Cursor users extract error', error: true});
@@ -170,7 +161,7 @@ function getCommentsUser(data, cb) {
 				['stamp', 'desc']
 			]}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: err || 'Cursor extract error', error: true});
@@ -191,7 +182,7 @@ function getCommentsUser(data, cb) {
 			commentsArr = comments;
 			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, photos) {
 			if (err || !photos) {
 				cb({message: 'Cursor photos extract error', error: true});
@@ -250,7 +241,7 @@ function getCommentsRibbon(data, cb) {
 				['stamp', 'desc']
 			]}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: err || 'Cursor extract error', error: true});
@@ -271,7 +262,7 @@ function getCommentsRibbon(data, cb) {
 			commentsArr = comments;
 			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1}, this);
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, photos) {
 			if (err || !photos) {
 				cb({message: 'Cursor photos extract error', error: true});
@@ -663,7 +654,7 @@ function removeComment(socket, data, cb) {
 				['stamp', 'asc']
 			]}, this.parallel());
 		},
-		cursorExtract,
+		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				cb({message: (err && err.message) || 'Cursor extract error', error: true});

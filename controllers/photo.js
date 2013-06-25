@@ -22,24 +22,6 @@ var auth = require('./auth.js'),
 	photoDir = global.appVar.storePath + 'public/photos',
 	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
 
-function cursorExtract(err, cursor) {
-	if (err || !cursor) {
-		this(err || {message: 'Create cursor error', error: true});
-		return;
-	}
-	cursor.toArray(this);
-}
-function cursorsExtract(err) {
-	if (err) {
-		this({message: err && err.message, error: true});
-		return;
-	}
-
-	for (var i = 1; i < arguments.length; i++) {
-		arguments[i].toArray(this.parallel());
-	}
-}
-
 var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
@@ -558,7 +540,7 @@ module.exports.loadController = function (app, db, io) {
 						}
 						PhotoFresh.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
 					},
-					cursorExtract,
+					Utils.cursorExtract,
 					function (err, photos) {
 						if (err) {
 							return result({message: err && err.message, error: true});
