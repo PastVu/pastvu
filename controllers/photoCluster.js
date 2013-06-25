@@ -49,9 +49,7 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		/**
-		 * Устанавливаем новые параметры кластеров и отправляем их на пересчет
-		 */
+		//Устанавливаем новые параметры кластеров и отправляем их на пересчет
 		(function () {
 			function result(data) {
 				socket.emit('clusterAllResult', data);
@@ -59,8 +57,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('clusterAll', function (data) {
 				if (!hs.session.user) {
-					result({message: 'Not authorized', error: true});
-					return;
+					return result({message: 'Not authorized', error: true});
 				}
 				step(
 					function clearClusters() {
@@ -68,34 +65,29 @@ module.exports.loadController = function (app, db, io) {
 					},
 					function setClusterParams(err, numRemovedParams) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
 						ClusterParams.collection.insert(data.clusters, {safe: true}, this.parallel());
 						ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
 					},
 					function (err, clusters, conditions) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
 						readClusterParams(this);
 					},
 					function runClusterRecalc(err, clusters, conditions) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
 						dbNative.eval('clusterPhotosAll(true)', this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {
-							result({message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
 						if (ret && ret.error) {
-							result({message: ret.message || '', error: true});
-							return;
+							return result({message: ret.message || '', error: true});
 						}
 						result(ret);
 					}
@@ -124,7 +116,7 @@ module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb, ctx) {
 		}
 		return false;
 	}
-	var start = Date.now();
+	/*var start = Date.now();*/
 
 	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ',' + oldYear + ')', function (err, result) {
 		if (Utils.isType('function', cb)) {
@@ -151,8 +143,7 @@ module.exports.getBounds = function (data, cb) {
 		},
 		function cursors(err) {
 			if (err) {
-				cb(err);
-				return;
+				return cb(err);
 			}
 			var i = arguments.length;
 			while (i > 1) {
@@ -161,8 +152,7 @@ module.exports.getBounds = function (data, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb(err);
-				return;
+				return cb(err);
 			}
 			var clusters = [],  // Массив кластеров
 				photos = [], // Массив фотографий
@@ -196,8 +186,9 @@ module.exports.getBounds = function (data, cb) {
  * @return {Object}
  */
 module.exports.getBoundsByYear = function (data, cb) {
-	var start = Date.now(),
+	var /*start = Date.now(),*/
 		clustersAll = [];
+
 	step(
 		function () {
 			var i = data.bounds.length;
@@ -207,8 +198,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		},
 		function cursors(err) {
 			if (err) {
-				cb(err);
-				return;
+				return	cb(err);
 			}
 			var i = arguments.length;
 			while (i > 1) {
@@ -217,8 +207,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb(err);
-				return;
+				return cb(err);
 			}
 
 			var bound,
@@ -256,8 +245,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb(err);
-				return;
+				return cb(err);
 			}
 
 			var clusters = [],  // Массив кластеров
@@ -282,7 +270,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 function getClusterPoster(cluster, yearCriteria, cb) {
 	Photo.collection.findOne({geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
 		if (err) {
-			cb(err);
+			return cb(err);
 		}
 		cluster.p = photo;
 		cb(null);

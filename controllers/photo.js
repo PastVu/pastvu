@@ -34,16 +34,13 @@ var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year
 			};
 
 			if (user) {
-				if (photo.user.login === user.login) {
-					can.edit = true;
-				} else if (user.role > 4) {
-					can.edit = true;
+				can.edit = photo.user.login === user.login || user.role > 4;
+				if (user.role > 4) {
 					can.disable = true;
 					can.remove = true;
 					if (photo.fresh) {
 						can.approve = true;
 					}
-
 					if (user.role > 9) {
 						can.convert = true;
 					}
@@ -233,7 +230,7 @@ module.exports.loadController = function (app, db, io) {
 	PhotoCluster.loadController(app, db, io);
 	PhotoConverter.loadController(app, db, io);
 
-	planResetDisplayStat; //Планируем очистку статистики
+	planResetDisplayStat(); //Планируем очистку статистики
 
 	// Регулярно проводим чистку удаленных файлов
 	setInterval(dropPhotos, ms('5m'));
@@ -266,34 +263,52 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 
-		/**
-		 * Подтверждаем фотографию
-		 */
-		function approvePhotoResult(data) {
-			socket.emit('approvePhotoResult', data);
-		}
-
-		socket.on('approvePhoto', function (cid) {
-			if (!hs.session.user) {
-				approvePhotoResult({message: 'Not authorized', error: true});
-				return;
+		//Подтверждаем новую фотографию
+		(function () {
+			function result(data) {
+				socket.emit('approvePhotoResult', data);
 			}
-			Photo.findOneAndUpdate({cid: cid, fresh: true}, { $unset: {fresh: 1}, $set: {adate: new Date()} }, {select: {user: 1}}, function (err, photo) {
-				if (err || !photo) {
-					approvePhotoResult({message: err && err.message || 'No photo affected', error: true});
-					return;
-				}
-				approvePhotoResult({message: 'Photo approved successfully'});
 
-				if (photo.user.equals(hs.session.user._id)) {
-					hs.session.user.pcount = hs.session.user.pcount + 1;
-					hs.session.user.save();
-					auth.sendMe(socket);
-				} else {
-					User.update({_id: photo.user}, {$inc: {pcount: 1}}).exec();
+			socket.on('approvePhoto', function (cid) {
+				cid = Number(cid);
+				if (isNaN(cid)) {
+					return result({message: 'Requested photo does not exist', error: true});
 				}
+				if (!hs.session.user || hs.session.user.role < 5) {
+					return result({message: 'You do not have permission for this action', error: true});
+				}
+
+				PhotoFresh.collection.findOne({cid: cid}, {_id: 0}, function (err, photoFresh) {
+					if (err) {
+						return result({message: err && err.message, error: true});
+					}
+					if (!photoFresh) {
+						return result({message: 'Requested photo does not exist', error: true});
+					}
+					var photo = new Photo(photoFresh);
+					photo.adate = new Date();
+					photo.frags = undefined;
+					if (!photoFresh.geo) {
+						photo.geo = undefined;
+					}
+					photo.save(function (err, photoSaved) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result({message: 'Photo approved successfully'});
+
+						PhotoFresh.remove({cid: cid}).exec();
+						if (photo.user.equals(hs.session.user._id)) {
+							hs.session.user.pcount = hs.session.user.pcount + 1;
+							hs.session.user.save();
+							auth.sendMe(socket);
+						} else {
+							User.update({_id: photo.user}, {$inc: {pcount: 1}}).exec();
+						}
+					});
+				});
 			});
-		});
+		}());
 
 		/**
 		 * Активация/деактивация фото
@@ -304,7 +319,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('disablePhoto', function (cid) {
 			if (!hs.session.user) {
-				disablePhotoResult({message: 'Not authorized', error: true});
+				disablePhotoResult({message: 'You do not have permission for this action', error: true});
 				return;
 			}
 			if (!cid) {
@@ -471,7 +486,7 @@ module.exports.loadController = function (app, db, io) {
 					return;
 				}
 				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
-					takeUserPhotosPrivate({message: 'Not authorized', error: true});
+					takeUserPhotosPrivate({message: 'You do not have permission for this action', error: true});
 					return;
 				}
 
@@ -515,7 +530,7 @@ module.exports.loadController = function (app, db, io) {
 				if (!hs.session.user ||
 					(!data.login && hs.session.user.role < 5) ||
 					(data.login && hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
-					return result({message: 'Not authorized', error: true});
+					return result({message: 'You do not have permission for this action', error: true});
 				}
 
 				step(
@@ -600,28 +615,28 @@ module.exports.loadController = function (app, db, io) {
 					if (checkCan) {
 						can = photoPermissions.getCan(photo, hs.session.user);
 					}
-					result({photo: photo.toObject(), can: can});
+					result({photo: photo.toObject({getters: true}), can: can});
 				});
 			}
 
 			socket.on('givePhoto', function (data) {
-				var cid = Number(data.cid);
+				var cid = Number(data.cid),
+					fieldSelect = {_id: 0, 'frags._id': 0};
 
 				if (isNaN(cid)) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
-				Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: {_id: 0, 'frags._id': 0}}, function (err, photo) {
+				Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
 					if (err) {
 						return result({message: err && err.message, error: true});
 					}
 
-					//Если фото не найдено и пользователь залогинен (имеет свои фото или обладает правами),
-					//то ищем в новых, неактивных и удаленных
-					if (!photo && hs.session.user && (hs.session.user.pcount > 0 || hs.session.user.role)) {
+					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
+					if (!photo && hs.session.user) {
 						async.series(
 							[
 								function (callback) {
-									PhotoFresh.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+									PhotoFresh.findOne({cid: cid}, fieldSelect, function (err, photo) {
 										if (err) {
 											return result({message: err && err.message, error: true});
 										}
@@ -635,20 +650,21 @@ module.exports.loadController = function (app, db, io) {
 									});
 								},
 								function (callback) {
-									PhotoDis.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+									PhotoDis.findOne({cid: cid}, fieldSelect, function (err, photo) {
 										if (err) {
 											return result({message: err && err.message, error: true});
 										}
+
 										if (photo && photoPermissions.checkType('dis', photo, hs.session.user) || hs.session.user.role < 10) {
 											photo = {photo: photo};
 										} else {
-											photo = null;
+											photo = null; //Если фото не найдено и юзер админ, то ищем дальше в удаленных
 										}
 										callback(photo);
 									});
 								},
 								function (callback) {
-									PhotoDel.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+									PhotoDel.findOne({cid: cid}, fieldSelect, function (err, photo) {
 										if (err) {
 											return result({message: err && err.message, error: true});
 										}
@@ -739,10 +755,8 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 
+		//Фотографии и кластеры по границам
 		(function () {
-			/**
-			 * Фотографии и кластеры по границам
-			 */
 			function result(data) {
 				socket.emit('getBoundsResult', data);
 			}
@@ -793,16 +807,12 @@ module.exports.loadController = function (app, db, io) {
 								if (year) {
 									criteria.year = yearCriteria;
 								}
-								criteria.del = {$exists: false};
-								criteria.fresh = {$exists: false};
-								criteria.disabled = {$exists: false};
 								Photo.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
 							}
 						},
 						function cursors(err) {
 							if (err) {
-								result({message: err && err.message, error: true});
-								return;
+								return result({message: err && err.message, error: true});
 							}
 							var i = arguments.length;
 							while (i > 1) {
@@ -811,29 +821,26 @@ module.exports.loadController = function (app, db, io) {
 						},
 						function (err, photos) {
 							if (err) {
-								res(err);
-								return;
+								return result({message: err && err.message, error: true});
 							}
-							var result = photos,
+							var allPhotos = photos,
 								i = arguments.length;
 
 							while (i > 2) {
-								result.push.apply(result, arguments[--i]);
+								allPhotos.push.apply(allPhotos, arguments[--i]);
 							}
-							res(err, result);
+							res(err, allPhotos);
 						}
 					);
 				}
 
 				function res(err, photos, clusters) {
 					if (err) {
-						result({message: err && err.message, error: true});
-						return;
+						return result({message: err && err.message, error: true});
 					}
 
 					// Реверсируем geo
-					var i = photos.length;
-					while (i--) {
+					for (var i = photos.length; i--;) {
 						photos[i].geo.reverse();
 					}
 					result({photos: photos, clusters: clusters, startAt: data.startAt});
@@ -868,7 +875,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('savePhoto', function (data) {
 				if (!hs.session.user) {
-					result({message: 'Not authorized', error: true});
+					result({message: 'You do not have permission for this action', error: true});
 					return;
 				}
 				if (!Utils.isType('object', data) || !data.cid) {
