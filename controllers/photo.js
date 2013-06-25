@@ -401,7 +401,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 					var photosFresh,
 						skip = data.skip || 0,
-						limit = data.limit || 20,
+						limit =  Math.max(data.limit || 20, 100),
 						criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
 
 					step(
@@ -546,7 +546,7 @@ module.exports.loadController = function (app, db, io) {
 							criteria.ldate = {$gt: data.after};
 						}
 						if (data.limit) {
-							options.limit = data.limit;
+							options.limit =  Math.max(data.limit, 100);
 						}
 						if (data.skip) {
 							options.skip = data.skip;
@@ -565,15 +565,13 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 
+		//Отдаем последние публичные фотографии
 		(function () {
-			/**
-			 * Новые фотографии
-			 */
 			function result(data) {
-				socket.emit('takePhotosNew', data);
+				socket.emit('takePhotosPublic', data);
 			}
 
-			socket.on('givePhotosNew', function (data) {
+			socket.on('givePhotosPublic', function (data) {
 				if (!Utils.isType('object', data)) {
 					result({message: 'Bad params', error: true});
 					return;
@@ -581,10 +579,9 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						Photo.getPhotosCompact({convqueue: {$exists: false}, fresh: {$exists: false}, disabled: {$exists: false}, del: {$exists: false}}, {skip: 0, limit: data.limit || 20}, function (err, photos) {
+						Photo.getPhotosCompact({}, {skip: data.limit || 0, limit: Math.max(data.limit || 20, 100)}, function (err, photos) {
 							if (err) {
-								result({message: err && err.message, error: true});
-								return;
+								return result({message: err && err.message, error: true});
 							}
 							result({photos: photos});
 						});
@@ -595,10 +592,8 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 
+		//Отдаем фотографию для её страницы
 		(function () {
-			/**
-			 * Отдаем фотографию для её страницы
-			 */
 			function result(data) {
 				socket.emit('takePhoto', data);
 			}
@@ -679,7 +674,13 @@ module.exports.loadController = function (app, db, io) {
 					}
 				});
 			});
+		}());
 
+		//Отдаем разрешенные can для фото
+		(function (){
+			function result(data) {
+				socket.emit('takeCanPhoto', data);
+			}
 			socket.on('giveCanPhoto', function (data) {
 				var cid = Number(data.cid);
 
@@ -689,13 +690,12 @@ module.exports.loadController = function (app, db, io) {
 				if (hs.session.user) {
 					Photo.findOne({cid: cid}, {_id: 1, user: 1}).populate('user', {_id: 0, login: 1}).exec(function (err, photo) {
 						if (err) {
-							socket.emit('takeCanPhoto', {message: err && err.message, error: true});
-							return;
+							return result({message: err && err.message, error: true});
 						}
-						socket.emit('takeCanPhoto', {can: photoPermissions.getCan(photo, hs.session.user)});
+						result({can: photoPermissions.getCan(photo, hs.session.user)});
 					});
 				} else {
-					socket.emit('takeCanPhoto', {});
+					result({});
 				}
 			});
 		}());
