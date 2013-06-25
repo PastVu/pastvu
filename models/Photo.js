@@ -97,6 +97,16 @@ PhotoSchema_Disabled.add(additionalStructure);
 PhotoSchema_Del.add(additionalStructure);
 PhotoSchema.add(additionalStructure);
 
+PhotoSchema_Fresh.virtual('fresh').get(function () {
+	return true;
+});
+PhotoSchema_Disabled.virtual('disabled').get(function () {
+	return true;
+});
+PhotoSchema_Del.virtual('del').get(function () {
+	return true;
+});
+
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
 //Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoSchema.index({ g: '2d', year: 1});

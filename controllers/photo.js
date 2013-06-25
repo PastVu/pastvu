@@ -15,6 +15,7 @@ var auth = require('./auth.js'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	step = require('step'),
+	async = require('async'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger,
@@ -582,6 +583,15 @@ module.exports.loadController = function (app, db, io) {
 			return can;
 		}
 
+		function checkCanPhotoType(type, photo, user) {
+			if (type === 'fresh' || type === 'dis') {
+				return user.role > 4 || photo.user.equals(user._id);
+			} else if (type === 'del') {
+				return user.role > 9;
+			}
+			return false;
+		}
+
 		(function () {
 			/**
 			 * Отдаем фотографию для её страницы
@@ -602,13 +612,13 @@ module.exports.loadController = function (app, db, io) {
 					if (checkCan && hs.session.user) {
 						can = getCanPhoto(photo);
 					}
-					//console.dir(photo);
 					result({photo: photo.toObject(), can: can});
 				});
 			}
 
 			socket.on('givePhoto', function (data) {
 				var cid = Number(data.cid);
+
 				if (isNaN(cid)) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
@@ -616,27 +626,56 @@ module.exports.loadController = function (app, db, io) {
 					if (err) {
 						return result({message: err && err.message, error: true});
 					}
-					if (photo) {
-						process(photo, data.checkCan);
+
+					//Если фото не найдено и пользователь залогинен (имеет свои фото или обладает правами),
+					//то ищем в новых, неактивных и удаленных
+					if (!photo && hs.session.user && (hs.session.user.pcount > 0 || hs.session.user.role)) {
+						async.series(
+							[
+								function (callback) {
+									PhotoFresh.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+										if (err) {
+											return result({message: err && err.message, error: true});
+										}
+
+										if (photo && checkCanPhotoType('fresh', photo, hs.session.user)) {
+											photo = {photo: photo};
+										} else {
+											photo = null;
+										}
+										callback(photo);
+									});
+								},
+								function (callback) {
+									PhotoDis.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+										if (err) {
+											return result({message: err && err.message, error: true});
+										}
+										if (photo && checkCanPhotoType('dis', photo, hs.session.user) || hs.session.user.role < 10) {
+											photo = {photo: photo};
+										} else {
+											photo = null;
+										}
+										callback(photo);
+									});
+								},
+								function (callback) {
+									PhotoDel.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
+										if (err) {
+											return result({message: err && err.message, error: true});
+										}
+										process({photo: photo}, data.checkCan);
+									});
+								}
+							],
+							function (obj) {
+								process(obj && obj.photo, data.checkCan);
+							});
+
+
 					} else {
-						PhotoDis.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							if (photo) {
-								process(photo, data.checkCan);
-							} else {
-								PhotoDel.findOne({cid: cid}, {_id: 0, 'frags._id': 0}, function (err, photo) {
-									if (err) {
-										return result({message: err && err.message, error: true});
-									}
-									process(photo, data.checkCan);
-								});
-							}
-
-						});
+						process(photo, data.checkCan);
 					}
-
 				});
 			});
 
