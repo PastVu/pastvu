@@ -22,6 +22,44 @@ var auth = require('./auth.js'),
 	photoDir = global.appVar.storePath + 'public/photos',
 	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
 
+var photoPermissions = {
+	getCan: function (photo, user) {
+		var can = {
+			edit: false,
+			disable: false,
+			remove: false,
+			approve: false,
+			convert: false
+		};
+
+		if (user) {
+			if (photo.user.login === user.login) {
+				can.edit = true;
+			} else if (user.role > 4) {
+				can.edit = true;
+				can.disable = true;
+				can.remove = true;
+				if (photo.fresh) {
+					can.approve = true;
+				}
+
+				if (user.role > 9) {
+					can.convert = true;
+				}
+			}
+		}
+		return can;
+	},
+	checkType: function (type, photo, user) {
+		if (type === 'fresh' || type === 'dis') {
+			return user.role > 4 || photo.user.equals(user._id);
+		} else if (type === 'del') {
+			return user.role > 9;
+		}
+		return false;
+	}
+};
+
 /**
  * Создает фотографии в базе данных
  * @param session Сессия польщователя
@@ -557,41 +595,6 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 
-		function getCanPhoto(photo) {
-			var can = {
-				edit: false,
-				disable: false,
-				remove: false,
-				approve: false,
-				convert: false
-			};
-
-			if (photo.user.login === hs.session.user.login) {
-				can.edit = true;
-			} else if (hs.session.user.role > 4) {
-				can.edit = true;
-				can.disable = true;
-				can.remove = true;
-				if (photo.fresh) {
-					can.approve = true;
-				}
-
-				if (hs.session.user.role > 9) {
-					can.convert = true;
-				}
-			}
-			return can;
-		}
-
-		function checkCanPhotoType(type, photo, user) {
-			if (type === 'fresh' || type === 'dis') {
-				return user.role > 4 || photo.user.equals(user._id);
-			} else if (type === 'del') {
-				return user.role > 9;
-			}
-			return false;
-		}
-
 		(function () {
 			/**
 			 * Отдаем фотографию для её страницы
@@ -609,8 +612,8 @@ module.exports.loadController = function (app, db, io) {
 						return result({message: err && err.message, error: true});
 					}
 					var can;
-					if (checkCan && hs.session.user) {
-						can = getCanPhoto(photo);
+					if (checkCan) {
+						can = photoPermissions.getCan(photo, hs.session.user);
 					}
 					result({photo: photo.toObject(), can: can});
 				});
@@ -638,7 +641,7 @@ module.exports.loadController = function (app, db, io) {
 											return result({message: err && err.message, error: true});
 										}
 
-										if (photo && checkCanPhotoType('fresh', photo, hs.session.user)) {
+										if (photo && photoPermissions.checkType('fresh', photo, hs.session.user)) {
 											photo = {photo: photo};
 										} else {
 											photo = null;
@@ -651,7 +654,7 @@ module.exports.loadController = function (app, db, io) {
 										if (err) {
 											return result({message: err && err.message, error: true});
 										}
-										if (photo && checkCanPhotoType('dis', photo, hs.session.user) || hs.session.user.role < 10) {
+										if (photo && photoPermissions.checkType('dis', photo, hs.session.user) || hs.session.user.role < 10) {
 											photo = {photo: photo};
 										} else {
 											photo = null;
@@ -671,8 +674,6 @@ module.exports.loadController = function (app, db, io) {
 							function (obj) {
 								process(obj && obj.photo, data.checkCan);
 							});
-
-
 					} else {
 						process(photo, data.checkCan);
 					}
@@ -680,14 +681,18 @@ module.exports.loadController = function (app, db, io) {
 			});
 
 			socket.on('giveCanPhoto', function (data) {
+				var cid = Number(data.cid);
+
+				if (isNaN(cid)) {
+					return result({message: 'Requested photo does not exist', error: true});
+				}
 				if (hs.session.user) {
-					Photo.findOne({cid: data.cid}, {_id: 1, user: 1}).populate('user', {_id: 0, login: 1}).exec(function (err, photo) {
+					Photo.findOne({cid: cid}, {_id: 1, user: 1}).populate('user', {_id: 0, login: 1}).exec(function (err, photo) {
 						if (err) {
 							socket.emit('takeCanPhoto', {message: err && err.message, error: true});
 							return;
 						}
-						//console.dir(photo);
-						socket.emit('takeCanPhoto', {can: getCanPhoto(photo)});
+						socket.emit('takeCanPhoto', {can: photoPermissions.getCan(photo, hs.session.user)});
 					});
 				} else {
 					socket.emit('takeCanPhoto', {});
