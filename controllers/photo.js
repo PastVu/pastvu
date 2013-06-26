@@ -185,6 +185,55 @@ function dropPhotos(cb) {
 	});
 }
 
+function findNoPublicPhoto(cid, user, fieldSelect, cb) {
+	if (!cid || !user) {
+		cb({message: 'No such photo for this user'});
+	}
+	async.series(
+		[
+			function (callback) {
+				PhotoFresh.findOne({cid: cid}, fieldSelect, function (err, photo) {
+					if (err) {
+						return cb(err);
+					}
+
+					if (photo && photoPermissions.checkType('fresh', photo, user)) {
+						photo = {photo: photo};
+					} else {
+						photo = null;
+					}
+					callback(photo);
+				});
+			},
+			function (callback) {
+				PhotoDis.findOne({cid: cid}, fieldSelect, function (err, photo) {
+					if (err) {
+						return cb(err);
+					}
+
+					if (photo && photoPermissions.checkType('dis', photo, user) || user.role < 10) {
+						photo = {photo: photo};
+					} else {
+						photo = null; //Если фото не найдено и юзер админ, то ищем дальше в удаленных
+					}
+					callback(photo);
+				});
+			},
+			function (callback) {
+				PhotoDel.findOne({cid: cid}, fieldSelect, function (err, photo) {
+					if (err) {
+						return cb(err);
+					}
+					callback({photo: photo});
+				});
+			}
+		],
+		function (obj) {
+			cb(null, obj.photo);
+		}
+	);
+}
+
 //Обнуляет статистику просмотров за день и неделю
 var planResetDisplayStat = (function () {
 	function resetStat() {
@@ -297,6 +346,12 @@ module.exports.loadController = function (app, db, io) {
 						}
 						result({message: 'Photo approved successfully'});
 
+						if (!_.isEmpty(photo.geo)) {
+							console.log('Go cluster');
+							PhotoCluster.clusterPhoto(photo.cid);
+						}
+
+						//Удаляем из коллекции новых
 						PhotoFresh.remove({cid: cid}).exec();
 						if (photo.user.equals(hs.session.user._id)) {
 							hs.session.user.pcount = hs.session.user.pcount + 1;
@@ -633,48 +688,12 @@ module.exports.loadController = function (app, db, io) {
 
 					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
 					if (!photo && hs.session.user) {
-						async.series(
-							[
-								function (callback) {
-									PhotoFresh.findOne({cid: cid}, fieldSelect, function (err, photo) {
-										if (err) {
-											return result({message: err && err.message, error: true});
-										}
-
-										if (photo && photoPermissions.checkType('fresh', photo, hs.session.user)) {
-											photo = {photo: photo};
-										} else {
-											photo = null;
-										}
-										callback(photo);
-									});
-								},
-								function (callback) {
-									PhotoDis.findOne({cid: cid}, fieldSelect, function (err, photo) {
-										if (err) {
-											return result({message: err && err.message, error: true});
-										}
-
-										if (photo && photoPermissions.checkType('dis', photo, hs.session.user) || hs.session.user.role < 10) {
-											photo = {photo: photo};
-										} else {
-											photo = null; //Если фото не найдено и юзер админ, то ищем дальше в удаленных
-										}
-										callback(photo);
-									});
-								},
-								function (callback) {
-									PhotoDel.findOne({cid: cid}, fieldSelect, function (err, photo) {
-										if (err) {
-											return result({message: err && err.message, error: true});
-										}
-										process({photo: photo}, data.checkCan);
-									});
-								}
-							],
-							function (obj) {
-								process(obj && obj.photo, data.checkCan);
-							});
+						findNoPublicPhoto(cid, hs.session.user, fieldSelect, function (err, photo) {
+							if (err) {
+								return result({message: err && err.message, error: true});
+							}
+							process(photo, data.checkCan);
+						});
 					} else {
 						process(photo, data.checkCan);
 					}
@@ -850,7 +869,6 @@ module.exports.loadController = function (app, db, io) {
 
 
 		(function () {
-
 			function geoCheck(geo) {
 				return Array.isArray(geo) && geo.length === 2 && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 			}
@@ -886,7 +904,9 @@ module.exports.loadController = function (app, db, io) {
 					delete data.geo;
 				}
 
-				var newValues,
+				var cid = Number(data.cid),
+					photoObj,
+					newValues,
 					oldValues,
 					newGeo,
 					oldGeo,
@@ -894,22 +914,41 @@ module.exports.loadController = function (app, db, io) {
 					sendingBack = {};
 
 				step(
-					function findPhoto() {
-						Photo.findOne({cid: data.cid}).populate('user', 'login').exec(this);
+					function () {
+						Photo.findOne({cid: data.cid}, {frags: 0}, this);
+					},
+					function findPhoto(err, photo) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						if (photo) {
+							this(null, photo);
+						} else {
+							var _this = this;
+							findNoPublicPhoto(cid, hs.session.user, {frags: 0}, function (err, photo) {
+								if (err) {
+									return result({message: err && err.message, error: true});
+								}
+								_this(null, photo);
+							});
+						}
+					},
+					function checkPhoto(err, photo) {
+						if (!photo) {
+							return result({message: 'Requested photo does not exist', error: true});
+						}
+						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
+							return result({message: 'You do not have permission for this action', error: true});
+						}
+						this(null, photo);
 					},
 					function checkData(err, photo) {
-						if (err) {
-							result({message: err && err.message, error: true});
-							return;
-						}
-						var photoObj = photo.toObject(),
-							i;
+						photoObj = photo.toObject({getters: true});
 
 						//Новые значения действительно изменяемых свойств
 						newValues = diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoObj);
 						if (_.isEmpty(newValues)) {
-							result({message: 'Nothing to save', error: true});
-							return;
+							return result({message: 'Nothing to save', error: true});
 						}
 						if (newValues.geo !== undefined) {
 							Utils.geo.geoToPrecisionRound(newValues.geo);
@@ -922,6 +961,14 @@ module.exports.loadController = function (app, db, io) {
 						}
 						_.assign(photo, newValues);
 
+						photo.save(this);
+					},
+					function savePhoto(err, photoSaved) {
+						if (err) {
+							return result({message: err.message || 'Save error', error: true});
+						}
+						var i;
+
 						//Старые значения изменяемых свойств
 						oldValues = {};
 						for (i in newValues) {
@@ -932,19 +979,15 @@ module.exports.loadController = function (app, db, io) {
 
 						oldYear = photoObj.year;
 						oldGeo = photoObj.geo;
-						newGeo = photo.geo;
+						newGeo = photoSaved.geo;
 
-						photo.save(this);
-					},
-					function savePhoto(err) {
-						if (err) {
-							result({message: err.message || 'Save error', error: true});
-							return;
-						}
-
-						// Если есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
+						// Если фото - публичное, у него
+						// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
 						// то запускаем пересчет кластеров этой фотографии
-						if ((!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) && (!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+						if (!photoObj.fresh && !photoObj.disabled && !photoObj.del &&
+							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
+							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+							console.log('Go cluster save');
 							PhotoCluster.clusterPhoto(data.cid, oldGeo, oldYear, this);
 						} else {
 							this(null);
