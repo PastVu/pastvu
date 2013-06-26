@@ -185,7 +185,8 @@ function dropPhotos(cb) {
 	});
 }
 
-function findNoPublicPhoto(cid, user, fieldSelect, cb) {
+//Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
+function findPhotosNotPublic(cid, user, fieldSelect, cb) {
 	if (!cid || !user) {
 		cb({message: 'No such photo for this user'});
 	}
@@ -633,18 +634,20 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('givePhotosPublic', function (data) {
 				if (!Utils.isType('object', data)) {
-					result({message: 'Bad params', error: true});
-					return;
+					return result({message: 'Bad params', error: true});
 				}
-
 				step(
 					function () {
-						Photo.getPhotosCompact({}, {skip: data.limit || 0, limit: Math.min(data.limit || 20, 100)}, function (err, photos) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							result({photos: photos});
-						});
+						Photo.collection.find({}, compactFields, {sort: [
+							['adate', 'desc']
+						], skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
+					},
+					Utils.cursorExtract,
+					function (err, photos) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result({photos: photos});
 					}
 				);
 
@@ -688,7 +691,7 @@ module.exports.loadController = function (app, db, io) {
 
 					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
 					if (!photo && hs.session.user) {
-						findNoPublicPhoto(cid, hs.session.user, fieldSelect, function (err, photo) {
+						findPhotosNotPublic(cid, hs.session.user, fieldSelect, function (err, photo) {
 							if (err) {
 								return result({message: err && err.message, error: true});
 							}
@@ -768,6 +771,130 @@ module.exports.loadController = function (app, db, io) {
 							return;
 						}
 						result({left: photosL, right: photosR});
+					}
+				);
+			});
+		}());
+
+
+		//Сохраняем информацию о фотографии
+		(function () {
+			function result(data) {
+				socket.emit('savePhotoResult', data);
+			}
+
+			socket.on('savePhoto', function (data) {
+				if (!hs.session.user) {
+					result({message: 'You do not have permission for this action', error: true});
+					return;
+				}
+				if (!Utils.isType('object', data) || !data.cid) {
+					result({message: 'Bad params', error: true});
+					return;
+				}
+
+				var cid = Number(data.cid),
+					photoOldObj,
+					newValues,
+					sendingBack = {};
+
+				step(
+					function () {
+						Photo.findOne({cid: data.cid}, {frags: 0}, this);
+					},
+					function findPhoto(err, photo) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						if (photo) {
+							this(null, photo);
+						} else {
+							var _this = this;
+							findPhotosNotPublic(cid, hs.session.user, {frags: 0}, function (err, photo) {
+								if (err) {
+									return result({message: err && err.message, error: true});
+								}
+								_this(null, photo);
+							});
+						}
+					},
+					function checkPhoto(err, photo) {
+						if (!photo) {
+							return result({message: 'Requested photo does not exist', error: true});
+						}
+						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
+							return result({message: 'You do not have permission for this action', error: true});
+						}
+						this(null, photo);
+					},
+					function checkData(err, photo) {
+						photoOldObj = photo.toObject({getters: true});
+
+						//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
+						if (data.desc) {
+							data.desc = Utils.inputIncomingParse(data.desc);
+						}
+						if (data.source) {
+							data.source = Utils.inputIncomingParse(data.source);
+						}
+						if (data.geo && !Utils.geoCheck(data.geo)) {
+							delete data.geo;
+						}
+
+						//Новые значения действительно изменяемых свойств
+						newValues = Utils.diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
+						if (_.isEmpty(newValues)) {
+							return result({message: 'Nothing to save'});
+						}
+
+						if (newValues.geo !== undefined) {
+							Utils.geo.geoToPrecisionRound(newValues.geo);
+						}
+						if (newValues.desc !== undefined) {
+							sendingBack.desc = newValues.desc;
+						}
+						if (newValues.source !== undefined) {
+							sendingBack.source = newValues.source;
+						}
+
+						_.assign(photo, newValues);
+						photo.save(this);
+					},
+					function savePhoto(err, photoSaved) {
+						if (err) {
+							return result({message: err.message || 'Save error', error: true});
+						}
+						var oldValues = {}, //Старые значения изменяемых свойств
+							oldGeo,
+							newGeo,
+							i;
+
+						for (i in newValues) {
+							if (newValues[i] !== undefined) {
+								oldValues[i] = photoOldObj[i];
+							}
+						}
+
+						oldGeo = photoOldObj.geo;
+						newGeo = photoSaved.geo;
+
+						// Если фото - публичное, у него
+						// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
+						// то запускаем пересчет кластеров этой фотографии
+						if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
+							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
+							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+							console.log('Go cluster save');
+							PhotoCluster.clusterPhoto(data.cid, oldGeo, photoOldObj.year, this);
+						} else {
+							this(null);
+						}
+					},
+					function (obj) {
+						if (obj && obj.error) {
+							return result({message: obj.message || '', error: true});
+						}
+						result({message: 'Photo saved successfully', saved: true, data: sendingBack});
 					}
 				);
 			});
@@ -866,148 +993,5 @@ module.exports.loadController = function (app, db, io) {
 				}
 			});
 		}());
-
-
-		(function () {
-			function geoCheck(geo) {
-				return Array.isArray(geo) && geo.length === 2 && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
-			}
-
-			function diff(a, b) {
-				var res = {},
-					i;
-				for (i in a) {
-					if (a[i] !== undefined && !_.isEqual(a[i], b[i])) {
-						res[i] = a[i];
-					}
-				}
-				return res;
-			}
-
-			/**
-			 * Сохраняем информацию о фотографии
-			 */
-			function result(data) {
-				socket.emit('savePhotoResult', data);
-			}
-
-			socket.on('savePhoto', function (data) {
-				if (!hs.session.user) {
-					result({message: 'You do not have permission for this action', error: true});
-					return;
-				}
-				if (!Utils.isType('object', data) || !data.cid) {
-					result({message: 'Bad params', error: true});
-					return;
-				}
-
-				var cid = Number(data.cid),
-					photoOldObj,
-					newValues,
-					sendingBack = {};
-
-				step(
-					function () {
-						Photo.findOne({cid: data.cid}, {frags: 0}, this);
-					},
-					function findPhoto(err, photo) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						if (photo) {
-							this(null, photo);
-						} else {
-							var _this = this;
-							findNoPublicPhoto(cid, hs.session.user, {frags: 0}, function (err, photo) {
-								if (err) {
-									return result({message: err && err.message, error: true});
-								}
-								_this(null, photo);
-							});
-						}
-					},
-					function checkPhoto(err, photo) {
-						if (!photo) {
-							return result({message: 'Requested photo does not exist', error: true});
-						}
-						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
-							return result({message: 'You do not have permission for this action', error: true});
-						}
-						this(null, photo);
-					},
-					function checkData(err, photo) {
-						photoOldObj = photo.toObject({getters: true});
-
-						//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-						if (data.desc) {
-							data.desc = Utils.inputIncomingParse(data.desc);
-						}
-						if (data.source) {
-							data.source = Utils.inputIncomingParse(data.source);
-						}
-						if (data.geo && !geoCheck(data.geo)) {
-							delete data.geo;
-						}
-
-						//Новые значения действительно изменяемых свойств
-						newValues = diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
-						if (_.isEmpty(newValues)) {
-							return result({message: 'Nothing to save'});
-						}
-
-						if (newValues.geo !== undefined) {
-							Utils.geo.geoToPrecisionRound(newValues.geo);
-						}
-						if (newValues.desc !== undefined) {
-							sendingBack.desc = newValues.desc;
-						}
-						if (newValues.source !== undefined) {
-							sendingBack.source = newValues.source;
-						}
-
-						_.assign(photo, newValues);
-						photo.save(this);
-					},
-					function savePhoto(err, photoSaved) {
-						if (err) {
-							return result({message: err.message || 'Save error', error: true});
-						}
-						var oldValues = {}, //Старые значения изменяемых свойств
-							oldGeo,
-							newGeo,
-							i;
-
-						for (i in newValues) {
-							if (newValues[i] !== undefined) {
-								oldValues[i] = photoOldObj[i];
-							}
-						}
-
-						oldGeo = photoOldObj.geo;
-						newGeo = photoSaved.geo;
-
-						// Если фото - публичное, у него
-						// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
-						// то запускаем пересчет кластеров этой фотографии
-						if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
-							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
-							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-							console.log('Go cluster save');
-							PhotoCluster.clusterPhoto(data.cid, oldGeo, photoOldObj.year, this);
-						} else {
-							this(null);
-						}
-					},
-					function (obj) {
-						if (obj && obj.error) {
-							return result({message: obj.message || '', error: true});
-						}
-						result({message: 'Photo saved successfully', saved: true, data: sendingBack});
-					}
-				);
-
-			});
-		}());
-
 	});
 };

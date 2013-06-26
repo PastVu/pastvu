@@ -131,6 +131,23 @@ Utils.cursorsExtract = function cursorsExtract(err) {
 	}
 };
 
+//Проверка на валидность geo [lng, lat]
+Utils.geoCheck = function (geo) {
+	return Array.isArray(geo) && geo.length === 2 && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+};
+
+//Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
+Utils.diff = function (a, b) {
+	var res = {},
+		i;
+	for (i in a) {
+		if (a[i] !== undefined && !_.isEqual(a[i], b[i])) {
+			res[i] = a[i];
+		}
+	}
+	return res;
+};
+
 Utils.math = (function () {
 	'use strict';
 
