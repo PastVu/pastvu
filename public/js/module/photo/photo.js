@@ -548,7 +548,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					}
 					this.exe(false);
 				}.bind(this));
-				socket.emit('disablePhoto', this.p.cid());
+				socket.emit('disablePhoto', {cid: this.p.cid(), disable: !this.p.disabled()});
 			}
 		},
 

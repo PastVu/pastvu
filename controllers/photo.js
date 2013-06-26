@@ -366,50 +366,79 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
-		/**
-		 * Активация/деактивация фото
-		 */
-		function disablePhotoResult(data) {
-			socket.emit('disablePhotoResult', data);
-		}
 
-		socket.on('disablePhoto', function (cid) {
-			if (!hs.session.user) {
-				disablePhotoResult({message: 'You do not have permission for this action', error: true});
-				return;
+		//Активация/деактивация фото
+		(function () {
+			function result(data) {
+				socket.emit('disablePhotoResult', data);
 			}
-			if (!cid) {
-				disablePhotoResult({message: 'cid is not defined', error: true});
-				return;
-			}
-			Photo.findOne({cid: cid, fresh: {$exists: false}, del: {$exists: false}}).select('user disabled').exec(function (err, photo) {
-				if (err) {
-					disablePhotoResult({message: err && err.message || 'Change state error', error: true});
-					return;
-				}
-				if (photo.disabled) {
-					photo.disabled = undefined;
-				} else {
-					photo.disabled = true;
-				}
-				photo.save(function (err, photoSaved) {
-					if (err) {
-						disablePhotoResult({message: err && err.message || '', error: true});
-						return;
-					}
-					disablePhotoResult({message: 'Photo state saved successfully', disabled: photoSaved.disabled});
 
-					var userPCountDelta = photoSaved.disabled ? -1 : 1;
-					if (photoSaved.user.equals(hs.session.user._id)) {
-						hs.session.user.pcount = hs.session.user.pcount + userPCountDelta;
-						hs.session.user.save();
-						auth.sendMe(socket);
-					} else {
-						User.update({_id: photoSaved.user}, {$inc: {pcount: userPCountDelta}}).exec(); //Для выполнения без коллбэка нужен .exec()
+			socket.on('disablePhoto', function (data) {
+				if (!hs.session.user || hs.session.user.role < 5) {
+					return result({message: 'You do not have permission for this action', error: true});
+				}
+				if (!data || !Utils.isType('object', data)) {
+					return result({message: 'Bad params', error: true});
+				}
+				var cid = Number(data.cid),
+					makeDisabled = !!data.disable;
+				if (!cid) {
+					return result({message: 'Requested photo does not exist', error: true});
+				}
+
+				step(
+					function () {
+						if (makeDisabled) {
+							Photo.collection.findOne({cid: cid}, {__v: 0}, this);
+						} else {
+							PhotoDis.collection.findOne({cid: cid}, {__v: 0}, this);
+						}
+					},
+					function (err, photo) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						if (!photo) {
+							return result({message: 'Requested photo does not exist', error: true});
+						}
+						var newPhoto;
+
+						if (makeDisabled) {
+							newPhoto = new PhotoDis(photo);
+						} else {
+							newPhoto = new Photo(photo);
+						}
+						newPhoto.save(this);
+					},
+					function (err, photoSaved) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+
+						var userPCountDelta = makeDisabled ? -1 : 1;
+						if (photoSaved.user.equals(hs.session.user._id)) {
+							hs.session.user.pcount = hs.session.user.pcount + userPCountDelta;
+							hs.session.user.save();
+							auth.sendMe(socket);
+						} else {
+							User.update({_id: photoSaved.user}, {$inc: {pcount: userPCountDelta}}).exec(); //Для выполнения без коллбэка нужен .exec()
+						}
+
+						if (makeDisabled) {
+							Photo.remove({cid: cid}).exec(this);
+						} else {
+							PhotoDis.remove({cid: cid}).exec(this);
+						}
+					},
+					function (err) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result({disabled: makeDisabled});
 					}
-				});
+				);
 			});
-		});
+		}());
 
 		(function () {
 			function result(data) {
