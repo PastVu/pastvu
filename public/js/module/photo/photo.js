@@ -655,18 +655,26 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (Utils.getObjectPropertyLength(target) > 0) {
 				target.cid = this.p.cid();
 				socket.once('savePhotoResult', function (result) {
-					if (result && !result.error) {
+					if (result && !result.error && result.saved) {
 						if (target.geo) {
 							target.geo.reverse();
 						}
 						if (this.descEditingChanged) {
-							target.desc = result.data.desc;
-							this.p.desc(result.data.desc);
+							if (result.data.desc) {
+								target.desc = result.data.desc;
+								this.p.desc(result.data.desc);
+							} else {
+								delete target.desc; //Если desc не вернулся, значит он не был изменен
+							}
 							delete this.descEditingChanged;
 						}
 						if (target.source) {
-							target.source = result.data.source;
-							this.p.source(result.data.source);
+							if (result.data.source) {
+								target.source = result.data.source;
+								this.p.source(result.data.source);
+							} else {
+								delete target.source; //Если source не вернулся, значит он не был изменен
+							}
 							delete this.sourceEditingOrigin;
 						}
 						_.assign(this.originData, target);
