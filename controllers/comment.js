@@ -21,23 +21,26 @@ var auth = require('./auth.js'),
 	log4js = require('log4js'),
 	appEnv = {},
 	host,
-	logger;
+	logger,
+
+	photoController = require('./photo.js');
 
 /**
  * Выбирает комментарии для объекта
+ * @param user
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsObj(data, cb) {
+function getCommentsObj(user, data, cb) {
 	var //start = Date.now(),
+		cid,
 		commentsArr,
 		objModel,
 		commentModel,
 		usersHash = {};
 
-	if (!data || !Utils.isType('object', data)) {
-		cb({message: 'Bad params', error: true});
-		return;
+	if (!Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
 	}
 	if (data.type === 'news') {
 		objModel = News;
@@ -47,24 +50,27 @@ function getCommentsObj(data, cb) {
 		commentModel = Comment;
 	}
 
+	cid = Number(data.cid);
 	step(
 		function findPhoto() {
-			objModel.findOne({cid: data.cid}, {_id: 1}, this);
-		},
-		function createCursor(err, oid) {
-			if (err || !oid) {
-				cb({message: 'No such object', error: true});
-				return;
+			if (data.type === 'news') {
+				objModel.findOne({cid: cid}, {_id: 1}, this);
+			} else {
+				photoController.findPhoto(cid, user, {_id: 1}, true, this);
 			}
-			commentModel.collection.find({obj: oid._id}, {_id: 0, obj: 0, hist: 0}, {sort: [
+		},
+		function createCursor(err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {sort: [
 				['stamp', 'asc']
 			]}, this);
 		},
 		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
-				cb({message: err || 'Cursor extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
 			var i = comments.length,
 				userId,
@@ -84,8 +90,7 @@ function getCommentsObj(data, cb) {
 		Utils.cursorExtract,
 		function (err, users) {
 			if (err || !users) {
-				cb({message: 'Cursor users extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor users extract error', error: true});
 			}
 			var i,
 				comment,
@@ -124,7 +129,7 @@ function getCommentsObj(data, cb) {
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: data.cid, comments: commentsArr, users: userFormattedHash});
+			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash});
 		}
 	);
 }
@@ -138,12 +143,10 @@ var commentsUserPerPage = 15;
  */
 function getCommentsUser(data, cb) {
 	var start = Date.now(),
-		commentsArr,
-		photosHash = {};
+		commentsArr;
 
 	if (!data || !Utils.isType('object', data) || !data.login) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 
 	step(
@@ -152,47 +155,47 @@ function getCommentsUser(data, cb) {
 		},
 		function createCursor(err, uid) {
 			if (err || !uid) {
-				cb({message: 'No such user', error: true});
-				return;
+				return cb({message: err && err.message || 'No such user', error: true});
 			}
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, { skip: skip, limit: commentsUserPerPage, sort: [
+			Comment.collection.find({user: uid._id, hidden: {$exists: false}}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, {sort: [
 				['stamp', 'desc']
-			]}, this);
+			], skip: skip, limit: commentsUserPerPage}, this);
 		},
 		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
-				cb({message: err || 'Cursor extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
 			var i = comments.length,
 				photoId,
-				photosArr = [];
+				photosArr = [],
+				photosExistsHash = {};
 
 			while (i) {
 				photoId = comments[--i].obj;
-				if (photosHash[photoId] === undefined) {
-					photosHash[photoId] = true;
+				if (photosExistsHash[photoId] === undefined) {
+					photosExistsHash[photoId] = true;
 					photosArr.push(photoId);
 				}
 			}
 
 			commentsArr = comments;
-			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1}, this);
+			Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1, year: 1, year2: 1}, this);
 		},
 		Utils.cursorExtract,
 		function (err, photos) {
 			if (err || !photos) {
-				cb({message: 'Cursor photos extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor photos extract error', error: true});
 			}
 			var i,
 				comment,
+				commentsArrResult = [],
 				photo,
 				photoFormatted,
-				photoFormattedHash = {};
+				photoFormattedHashId = {},
+				photoFormattedHashCid = {};
 
 			i = photos.length;
 			while (i) {
@@ -204,17 +207,21 @@ function getCommentsUser(data, cb) {
 					year: photo.year,
 					year2: photo.year2
 				};
-				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+				photoFormattedHashCid[photo.cid] = photoFormattedHashId[photo._id] = photoFormatted;
 			}
 
+			//Для каждого комментария проверяем существование публичной фотографии и присваиваем ему cid фотографии
 			i = commentsArr.length;
 			while (i) {
 				comment = commentsArr[--i];
-				comment.obj = photosHash[comment.obj].cid;
+				if (photoFormattedHashId[comment.obj] !== undefined) {
+					comment.obj = photoFormattedHashId[comment.obj].cid;
+					commentsArrResult.push(comment);
+				}
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', page: data.page, comments: commentsArr, photos: photoFormattedHash});
+			cb({message: 'ok', page: data.page, comments: commentsArrResult, photos: photoFormattedHashCid});
 		}
 	);
 }
@@ -562,7 +569,7 @@ function giveCommentHist(data, cb) {
 		},
 		function (err, comment) {
 			if (err || !comment) {
-				cb({message: (err && err.message) || 'No such comment', error: true});
+				cb({message: err && err.message || 'No such comment', error: true});
 				return;
 			}
 			var i,
@@ -752,7 +759,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCommentsObj', function (data) {
-			getCommentsObj(data, function (result) {
+			getCommentsObj(socket.handshake.session.user, data, function (result) {
 				socket.emit('takeCommentsObj', result);
 			});
 		});

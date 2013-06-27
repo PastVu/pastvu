@@ -97,6 +97,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			socket.once('takeCommentsUser', function (data) {
 				var photo,
 					comment,
+					commentsToInsert = [],
 					i;
 				if (data.page === page) {
 					if (!data || data.error || !Array.isArray(data.comments)) {
@@ -121,9 +122,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						i = data.comments.length;
 						while (i) {
 							comment = data.comments[--i];
-							comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+							if (this.commentsPhotos[comment.obj] !== undefined) {
+								comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+								commentsToInsert.push(comment);
+							}
 						}
-						this.comments(data.comments);
+						this.comments(commentsToInsert);
 						if (this.pageLast() > 1) {
 							this.paginationShow(true);
 						}
