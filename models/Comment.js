@@ -21,7 +21,9 @@ var histScheme = {
 			frag: {type: Boolean},
 
 			lastChanged: {type: Date}, //Время последнего редактирования
-			hist: [new Schema(histScheme)]
+			hist: [new Schema(histScheme)],
+
+			hidden: {type: Boolean} //Скрытый комментарий, например, у неактивной фотографии. Не отображается в списке пользователя и не участвует в статистике
 		},
 		{
 			strict: true

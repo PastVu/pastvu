@@ -35,7 +35,6 @@ function getCommentsObj(user, data, cb) {
 	var //start = Date.now(),
 		cid,
 		commentsArr,
-		objModel,
 		commentModel,
 		usersHash = {};
 
@@ -43,10 +42,8 @@ function getCommentsObj(user, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 	if (data.type === 'news') {
-		objModel = News;
 		commentModel = CommentN;
 	} else {
-		objModel = Photo;
 		commentModel = Comment;
 	}
 
@@ -54,7 +51,7 @@ function getCommentsObj(user, data, cb) {
 	step(
 		function findPhoto() {
 			if (data.type === 'news') {
-				objModel.findOne({cid: cid}, {_id: 1}, this);
+				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
 				photoController.findPhoto(cid, user, {_id: 1}, true, this);
 			}
@@ -85,7 +82,7 @@ function getCommentsObj(user, data, cb) {
 			}
 
 			commentsArr = comments;
-			User.collection.find({"_id": { "$in": usersArr }}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1}, this);
+			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1}, this);
 		},
 		Utils.cursorExtract,
 		function (err, users) {
@@ -142,7 +139,7 @@ var commentsUserPerPage = 15;
  * @param cb Коллбэк
  */
 function getCommentsUser(data, cb) {
-	var start = Date.now(),
+	var /*start = Date.now(),*/
 		commentsArr;
 
 	if (!data || !Utils.isType('object', data) || !data.login) {
@@ -151,15 +148,16 @@ function getCommentsUser(data, cb) {
 
 	step(
 		function findUser() {
-			User.findOne({login: data.login}, {_id: 1}, this);
+			User.getUserID(data.login, this);
 		},
-		function createCursor(err, uid) {
-			if (err || !uid) {
+		function createCursor(err, userid) {
+			if (err || !userid) {
 				return cb({message: err && err.message || 'No such user', error: true});
 			}
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
-			Comment.collection.find({user: uid._id, hidden: {$exists: false}}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, {sort: [
+
+			Comment.collection.find({user: userid, hidden: {$exists: false}}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, {sort: [
 				['stamp', 'desc']
 			], skip: skip, limit: commentsUserPerPage}, this);
 		},
@@ -311,72 +309,61 @@ function getCommentsRibbon(data, cb) {
  * @param cb Коллбэк
  */
 function createComment(socket, data, cb) {
-	if (!Utils.isType('object', data) || !data.obj || !data.txt || data.level > 9) {
-		cb({message: 'Bad params', error: true});
-		return;
+	if (!socket.handshake.session.user) {
+		return cb({message: 'You do not have permission for this action', error: true});
 	}
+	if (!Utils.isType('object', data) || !data.obj || !data.txt || data.level > 9) {
+		return cb({message: 'Bad params', error: true});
+	}
+
 	var user = socket.handshake.session.user,
 		obj,
-		objModel,
 		commentModel,
 		content = data.txt,
 		comment,
 		fragAdded = data.type === 'photo' && !data.frag && Utils.isType('object', data.fragObj),
-		fragObj,
-		countComment;
-
-	if (!user || !user.login) {
-		cb({message: 'You are not authorized for this action.', error: true});
-		return;
-	}
+		fragObj;
 
 	if (data.type === 'news') {
-		objModel = News;
 		commentModel = CommentN;
 	} else {
-		objModel = Photo;
 		commentModel = Comment;
 	}
 
 	step(
-		function counters() {
-			Counter.increment('comment', this);
-		},
-		function (err, countC) {
-			if (err || !countC) {
-				cb({message: (err && err.message) || 'Increment comment counter error', error: true});
-				return;
-			}
-			countComment = countC.next;
-			if (fragAdded) {
-				fragObj = {
-					cid: countComment,
-					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
-					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
-					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
-					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
-				};
+		function findObjectAndParent() {
+			if (data.type === 'news') {
+				News.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+			} else {
+				photoController.findPhoto(Number(data.obj), user, {_id: 1, ccount: 1, frags: 1}, true, this.parallel());
 			}
 
-			objModel.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 			if (data.parent) {
 				commentModel.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
 			}
 		},
-		function (err, o, parent) {
+		function counterUp(err, o, parent) {
 			if (err || !o) {
-				cb({message: err.message || 'No such object', error: true});
-				return;
+				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			if (data.type === 'photo' && o.fresh) {
+				return cb({message: 'Comments for new photo are not allowed', error: true});
 			}
 			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
-				cb({message: 'Something wrong with parent comment', error: true});
-				return;
+				return cb({message: 'Something wrong with parent comment', error: true});
 			}
 			obj = o;
 
+			Counter.increment('comment', this);
+		},
+		function (err, countC) {
+			if (err || !countC) {
+				return cb({message: err && err.message || 'Increment comment counter error', error: true});
+			}
+
 			comment = {
-				cid: countComment,
-				obj: o,
+				cid: countC.next,
+				obj: obj,
 				user: user,
 				txt: Utils.inputIncomingParse(content)
 			};
@@ -384,30 +371,40 @@ function createComment(socket, data, cb) {
 				comment.parent = data.parent;
 				comment.level = data.level;
 			}
+			if (obj.disabled || obj.del) {
+				comment.hidden = true;
+			}
 			if (fragAdded) {
 				comment.frag = true;
 			}
 			new commentModel(comment).save(this);
 		},
-		function (err) {
+		function (err, savedComment) {
 			if (err) {
-				cb({message: err.message || 'Comment save error', error: true});
-				return;
+				return cb({message: err.message || 'Comment save error', error: true});
+			}
+			if (fragAdded) {
+				fragObj = {
+					cid: savedComment.cid,
+					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
+					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
+					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
+					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+				};
+				obj.frags.push(fragObj);
 			}
 
 			obj.ccount = (obj.ccount || 0) + 1;
-			if (fragAdded) {
-				obj.frags.push(fragObj);
-			}
 			obj.save(this.parallel());
 
-			user.ccount += 1;
-			user.save(this.parallel());
+			if (!savedComment.hidden) {
+				user.ccount += 1;
+				user.save(this.parallel());
+			}
 		},
 		function (err) {
 			if (err) {
-				cb({message: err.message, error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 			comment.user = user.login;
 			comment.obj = data.obj;
