@@ -40,7 +40,7 @@
 					img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 				// /ko
 		.row-fluid.photoComments
-			//ko if: !edit()
+			//ko if: !edit() && !p.fresh()
 			.commentsHead Комментарии
 			.dotDelimeter ·
 			.commentsCount(data-bind="text: p.ccount()")

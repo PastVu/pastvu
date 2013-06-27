@@ -349,8 +349,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
 						this.commentsVM.setCid(cid);
-						//Если не редактирование и есть комментарии, то откладываем их активацию,
-						//в противном случае в editHandler активируется немедленно
+						//Если есть комментарии, пытаемся их активировать с необходимой задержкой
 						if (!editMode && this.p.ccount() > 0) {
 							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
 						}
@@ -383,8 +382,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.commentsDeActivate();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
-				//Если не ожается проверка на комментарии в видимой области (а она ожидается при открытии фото),
-				//то вызываем её немедленно
 				this.commentsActivate();
 			}
 		},
@@ -528,6 +525,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					if (data && !data.error) {
 						this.p.fresh(false);
 						this.originData.fresh = false;
+						this.commentsActivate(100);
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 					}
@@ -782,7 +780,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		commentsActivate: function (checkTimeout) {
-			if (!this.commentsViewportTimeout) {
+			//Активируем, если фото не новое, не редактируется и еще не проверяется на активацию
+			if (!this.edit() && !this.p.fresh() && !this.commentsViewportTimeout) {
 				this.commentsLoading(true);
 				this.viewScrollOn();
 				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);

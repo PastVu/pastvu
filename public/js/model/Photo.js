@@ -12,9 +12,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 
 				conv: false, //Конвертируется
 				convqueue: false, //В очереди на конвертацию
+
 				fresh: false, //Новое
 				disabled: false, //Не активное
-				del: false //К удалению
+				del: false //Удаленное
 			},
 			compact: {
 				ldate: Date.now(),
