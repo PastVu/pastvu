@@ -185,14 +185,14 @@ function dropPhotos(cb) {
 }
 
 //Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
-function findPhotoNotPublic(cid, user, fieldSelect, cb) {
-	if (!cid || !user) {
+function findPhotoNotPublic(query, fieldSelect, user, cb) {
+	if (!user) {
 		cb({message: 'No such photo for this user'});
 	}
 	async.series(
 		[
 			function (callback) {
-				PhotoFresh.findOne({cid: cid}, fieldSelect, function (err, photo) {
+				PhotoFresh.findOne(query, fieldSelect, function (err, photo) {
 					if (err) {
 						return cb(err);
 					}
@@ -206,7 +206,7 @@ function findPhotoNotPublic(cid, user, fieldSelect, cb) {
 				});
 			},
 			function (callback) {
-				PhotoDis.findOne({cid: cid}, fieldSelect, function (err, photo) {
+				PhotoDis.findOne(query, fieldSelect, function (err, photo) {
 					if (err) {
 						return cb(err);
 					}
@@ -220,7 +220,7 @@ function findPhotoNotPublic(cid, user, fieldSelect, cb) {
 				});
 			},
 			function (callback) {
-				PhotoDel.findOne({cid: cid}, fieldSelect, function (err, photo) {
+				PhotoDel.findOne(query, fieldSelect, function (err, photo) {
 					if (err) {
 						return cb(err);
 					}
@@ -236,19 +236,19 @@ function findPhotoNotPublic(cid, user, fieldSelect, cb) {
 
 /**
  * Находим фотографию
- * @param cid
- * @param user Пользователь сессии
+ * @param query
  * @param fieldSelect Выбор полей
+ * @param user Пользователь сессии
  * @param noPublicToo Искать ли в непубличных при наличии прав
  * @param cb
  */
-function findPhoto(cid, user, fieldSelect, noPublicToo, cb) {
-	Photo.findOne({cid: cid}, fieldSelect, function (err, photo) {
+function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
+	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
 		if (!photo && noPublicToo && user) {
-			findPhotoNotPublic(cid, user, fieldSelect, function (err, photo) {
+			findPhotoNotPublic(query, fieldSelect, user, function (err, photo) {
 				cb(err, photo);
 			});
 		} else {
@@ -452,6 +452,12 @@ module.exports.loadController = function (app, db, io) {
 						} else {
 							PhotoDis.remove({cid: cid}).exec(this);
 						}
+					},
+					function hideComments(err) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						this();
 					},
 					function (err) {
 						if (err) {
@@ -742,7 +748,7 @@ module.exports.loadController = function (app, db, io) {
 
 					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
 					if (!photo && hs.session.user) {
-						findPhotoNotPublic(cid, hs.session.user, fieldSelect, function (err, photo) {
+						findPhotoNotPublic({cid: cid}, fieldSelect, hs.session.user, function (err, photo) {
 							if (err) {
 								return result({message: err && err.message, error: true});
 							}
@@ -851,7 +857,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						findPhoto(cid, hs.session.user, {frags: 0}, true, this);
+						findPhoto({cid: cid}, {frags: 0}, hs.session.user, true, this);
 					},
 					function checkPhoto(err, photo) {
 						if (!photo) {
