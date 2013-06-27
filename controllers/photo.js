@@ -512,7 +512,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('giveUserPhotos', function (data) {
-				User.getUserID(data.login, function (err, user) {
+				User.getUserID(data.login, function (err, userid) {
 					if (err) {
 						result({message: err && err.message, error: true});
 						return;
@@ -520,13 +520,13 @@ module.exports.loadController = function (app, db, io) {
 					var photosFresh,
 						skip = data.skip || 0,
 						limit = Math.min(data.limit || 20, 100),
-						criteria = {user: user._id, fresh: {$exists: false}, del: {$exists: false}};
+						criteria = {user: userid, fresh: {$exists: false}, del: {$exists: false}};
 
 					step(
 						function () {
 							var stepthis = this;
-							if (hs.session.user && user._id.equals(hs.session.user._id)) {
-								Photo.count({user: user._id, fresh: true, del: {$exists: false}}, function (err, count) {
+							if (hs.session.user && userid.equals(hs.session.user._id)) {
+								Photo.count({user: userid, fresh: true, del: {$exists: false}}, function (err, count) {
 									if (err) {
 										result({message: err && err.message, error: true});
 										return;
@@ -538,7 +538,7 @@ module.exports.loadController = function (app, db, io) {
 									} else {
 										var selectingFreshCount = count - skip;
 										limit = Math.max(0, limit - selectingFreshCount);
-										Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {skip: skip}, function (err, pFresh) {
+										Photo.getPhotosFreshCompact({user: userid, fresh: true, del: {$exists: false}}, {skip: skip}, function (err, pFresh) {
 											photosFresh = pFresh;
 											stepthis();
 										});
@@ -588,19 +588,19 @@ module.exports.loadController = function (app, db, io) {
 		}
 
 		socket.on('giveUserPhotosPrivate', function (data) {
-			User.getUserID(data.login, function (err, user) {
+			User.getUserID(data.login, function (err, userid) {
 				if (err) {
 					takeUserPhotosPrivate({message: err && err.message, error: true});
 					return;
 				}
-				if (!hs.session.user || !user._id.equals(hs.session.user._id)) {
+				if (!hs.session.user || !userid.equals(hs.session.user._id)) {
 					takeUserPhotosPrivate({message: 'You do not have permission for this action', error: true});
 					return;
 				}
 
 				step(
 					function () {
-						var filters = {user: user._id, disabled: true, del: {$exists: false}};
+						var filters = {user: userid, disabled: true, del: {$exists: false}};
 						if (data.startTime || data.endTime) {
 							filters.adate = {};
 							if (data.startTime) {
@@ -611,7 +611,7 @@ module.exports.loadController = function (app, db, io) {
 							}
 						}
 						Photo.getPhotosCompact(filters, {}, this.parallel());
-						Photo.getPhotosFreshCompact({user: user._id, fresh: true, del: {$exists: false}}, {}, this.parallel());
+						Photo.getPhotosFreshCompact({user: userid, fresh: true, del: {$exists: false}}, {}, this.parallel());
 						filters = null;
 					},
 					function (err, disabled, fresh) {
@@ -649,14 +649,13 @@ module.exports.loadController = function (app, db, io) {
 							this();
 						}
 					},
-					function (err, user) {
+					function (err, userid) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-
 						var criteria = {};
-						if (user) {
-							criteria.user = user._id;
+						if (userid) {
+							criteria.user = userid;
 						}
 						if (data.after) {
 							criteria.ldate = {$gt: new Date(data.after)};

@@ -249,11 +249,11 @@ UserScheme.statics.getUserAllLoginMail = function (login, cb) {
 		{ active: true }
 	] }).exec(cb);
 };
+
 UserScheme.statics.getUserID = function (login, cb) {
-	if (!login) {
-		cb(null, 'Login is not specified');
-	}
-	this.findOne({login: new RegExp('^' + login + '$', 'i')}, {_id: 1}, {safe: true}, cb);
+	this.collection.findOne({login: login}, {_id: 1}, function (err, user) {
+		cb(err, user && user._id);
+	});
 };
 
 
