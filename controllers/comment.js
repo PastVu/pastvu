@@ -710,6 +710,59 @@ function giveCommentHist(data, cb) {
 	);
 }
 
+/**
+ * Скрывает комментарии объекта (делает их не публичными)
+ * @param oid _id объекта
+ * @param hide Скрыть или наоборот
+ * @param cb Коллбэк
+ */
+function hideObjComments(oid, hide, cb) {
+	step (
+		function () {
+			var command = {};
+			if (hide) {
+				command.$set = {hidden: true};
+			} else {
+				command.$unset = {hidden: 1};
+			}
+			Comment.update({obj: oid}, command, {multi: true}, this);
+		},
+		function (err, count) {
+			if (err) {
+				return cb(err);
+			}
+			if (count === 0) {
+				return cb(null);
+			}
+			Comment.collection.find({obj: oid}, this);
+		},
+		Utils.cursorExtract,
+		function (err, comments) {
+			if (err) {
+				return cb(err);
+			}
+			var i,
+				len = comments.length,
+				comment,
+				hashUsers = {};
+
+			for (i = 0; i < len; i++) {
+				comment = comments[i];
+				hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+			}
+			for (i in hashUsers) {
+				if (hashUsers[i] !== undefined) {
+					User.update({_id: i}, {$inc: {ccount: hide ? -hashUsers[i] : hashUsers[i]}}, this.parallel());
+				}
+			}
+			this.parallel()(); //Если юзеров не было, то просто перейдем дальше
+		},
+		function (err) {
+			cb(err);
+		}
+	);
+}
+
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
@@ -768,3 +821,4 @@ module.exports.loadController = function (app, db, io) {
 
 	});
 };
+module.exports.hideObjComments = hideObjComments;

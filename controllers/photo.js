@@ -20,7 +20,9 @@ var auth = require('./auth.js'),
 	log4js = require('log4js'),
 	logger,
 	photoDir = global.appVar.storePath + 'public/photos',
-	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'];
+	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'],
+
+	commentController = require('./comment.js');
 
 var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
 	photoPermissions = {
@@ -404,6 +406,7 @@ module.exports.loadController = function (app, db, io) {
 					return result({message: 'Bad params', error: true});
 				}
 				var cid = Number(data.cid),
+					oid,
 					makeDisabled = !!data.disable;
 				if (!cid) {
 					return result({message: 'Requested photo does not exist', error: true});
@@ -447,21 +450,22 @@ module.exports.loadController = function (app, db, io) {
 							User.update({_id: photoSaved.user}, {$inc: {pcount: userPCountDelta}}).exec(); //Для выполнения без коллбэка нужен .exec()
 						}
 
+						oid = photoSaved._id;
 						if (makeDisabled) {
 							Photo.remove({cid: cid}).exec(this);
 						} else {
 							PhotoDis.remove({cid: cid}).exec(this);
 						}
 					},
-					function hideComments(err) {
+					function hideComments(err, removeCount) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						this();
+						commentController.hideObjComments(oid, makeDisabled, this);
 					},
 					function (err) {
 						if (err) {
-							return result({message: err && err.message, error: true});
+							return result({message: err && err.message || 'Comments hide error', error: true});
 						}
 						result({disabled: makeDisabled});
 					}
