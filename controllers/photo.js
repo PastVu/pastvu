@@ -60,7 +60,7 @@ var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year
 
 /**
  * Создает фотографии в базе данных
- * @param session Сессия польщователя
+ * @param session Сессия пользователя
  * @param data Объект или массив фотографий
  * @param cb Коллбэк
  */
@@ -69,7 +69,6 @@ function createPhotos(session, data, cb) {
 	if (!session.user || !session.user.login) {
 		return cb({message: 'You are not authorized for this action.', error: true});
 	}
-
 	if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
 		return cb({message: 'Bad params', error: true});
 	}
@@ -186,7 +185,7 @@ function dropPhotos(cb) {
 }
 
 //Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
-function findPhotosNotPublic(cid, user, fieldSelect, cb) {
+function findPhotoNotPublic(cid, user, fieldSelect, cb) {
 	if (!cid || !user) {
 		cb({message: 'No such photo for this user'});
 	}
@@ -233,6 +232,30 @@ function findPhotosNotPublic(cid, user, fieldSelect, cb) {
 			cb(null, obj.photo);
 		}
 	);
+}
+
+/**
+ * Находим фотографию
+ * @param cid
+ * @param user Пользователь сессии
+ * @param fieldSelect Выбор полей
+ * @param noPublicToo Искать ли в непубличных при наличии прав
+ * @param cb
+ */
+function findPhoto(cid, user, fieldSelect, noPublicToo, cb) {
+	Photo.findOne({cid: cid}, fieldSelect, function (err, photo) {
+		if (err) {
+			return cb(err);
+		}
+		if (!photo && noPublicToo && user) {
+			findPhotoNotPublic(cid, user, fieldSelect, function (err, photo) {
+				cb(err, photo);
+			});
+		} else {
+			cb(null, photo);
+		}
+	});
+
 }
 
 //Обнуляет статистику просмотров за день и неделю
@@ -720,7 +743,7 @@ module.exports.loadController = function (app, db, io) {
 
 					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
 					if (!photo && hs.session.user) {
-						findPhotosNotPublic(cid, hs.session.user, fieldSelect, function (err, photo) {
+						findPhotoNotPublic(cid, hs.session.user, fieldSelect, function (err, photo) {
 							if (err) {
 								return result({message: err && err.message, error: true});
 							}
@@ -817,7 +840,7 @@ module.exports.loadController = function (app, db, io) {
 					result({message: 'You do not have permission for this action', error: true});
 					return;
 				}
-				if (!Utils.isType('object', data) || !data.cid) {
+				if (!Utils.isType('object', data) || !Number(data.cid)) {
 					result({message: 'Bad params', error: true});
 					return;
 				}
@@ -829,23 +852,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						Photo.findOne({cid: data.cid}, {frags: 0}, this);
-					},
-					function findPhoto(err, photo) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						if (photo) {
-							this(null, photo);
-						} else {
-							var _this = this;
-							findPhotosNotPublic(cid, hs.session.user, {frags: 0}, function (err, photo) {
-								if (err) {
-									return result({message: err && err.message, error: true});
-								}
-								_this(null, photo);
-							});
-						}
+						findPhoto(cid, hs.session.user, {frags: 0}, true, this);
 					},
 					function checkPhoto(err, photo) {
 						if (!photo) {
@@ -1024,3 +1031,5 @@ module.exports.loadController = function (app, db, io) {
 		}());
 	});
 };
+module.exports.findPhoto = findPhoto;
+module.exports.findPhotoNotPublic = findPhotoNotPublic;
