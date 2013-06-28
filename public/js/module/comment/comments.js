@@ -1,6 +1,6 @@
 /*global define:true*/
 /**
- * Модель профиля пользователя
+ * Модель комментариев к объекту
  */
 define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'jquery-plugins/scrollto'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
@@ -8,7 +8,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			type: 'photo'
+			type: 'photo' //Тип объекта по умолчанию (фото, новость и т.д.)
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];

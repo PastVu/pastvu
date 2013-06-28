@@ -20,8 +20,8 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 					}
 				},
 				{
-					module: 'm/main/commentsRibbon',
-					container: '#commentsRibbon',
+					module: 'm/main/commentsFeed',
+					container: '#commentsFeed',
 					options: {},
 					ctx: this,
 					callback: function (vm) {

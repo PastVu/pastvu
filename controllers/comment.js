@@ -225,32 +225,29 @@ function getCommentsUser(data, cb) {
 }
 
 /**
- * Выбирает последние комментарии по фотографиям
+ * Выбирает последние комментарии по публичным фотографиям
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsRibbon(data, cb) {
-	var start = Date.now(),
+function getCommentsFeed(data, cb) {
+	var /*start = Date.now(),*/
 		commentsArr,
 		photosHash = {};
 
 	if (!data || !Utils.isType('object', data)) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 
 	step(
 		function createCursor() {
-			var limit = data.limit || 15;
-			Comment.collection.find({}, {_id: 0, cid: 1, obj: 1, txt: 1}, { limit: limit, sort: [
+			Comment.collection.find({hidden: {$exists: false}}, {_id: 0, cid: 1, obj: 1, txt: 1}, {limit: Math.min(data.limit || 20, 100), sort: [
 				['stamp', 'desc']
 			]}, this);
 		},
 		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
-				cb({message: err || 'Cursor extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
 			var i = comments.length,
 				photoId,
@@ -265,13 +262,12 @@ function getCommentsRibbon(data, cb) {
 			}
 
 			commentsArr = comments;
-			Photo.collection.find({"_id": { "$in": photosArr }}, {_id: 1, cid: 1, file: 1, title: 1}, this);
+			Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this);
 		},
 		Utils.cursorExtract,
 		function (err, photos) {
 			if (err || !photos) {
-				cb({message: 'Cursor photos extract error', error: true});
-				return;
+				return cb({message: err && err.message || 'Cursor photos extract error', error: true});
 			}
 			var i,
 				comment,
@@ -297,7 +293,7 @@ function getCommentsRibbon(data, cb) {
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', page: data.page, comments: commentsArr, photos: photoFormattedHash});
+			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash});
 		}
 	);
 }
@@ -813,9 +809,9 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takeCommentsUser', result);
 			});
 		});
-		socket.on('giveCommentsRibbon', function (data) {
-			getCommentsRibbon(data, function (result) {
-				socket.emit('takeCommentsRibbon', result);
+		socket.on('giveCommentsFeed', function (data) {
+			getCommentsFeed(data, function (result) {
+				socket.emit('takeCommentsFeed', result);
 			});
 		});
 

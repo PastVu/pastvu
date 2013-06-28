@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/commentsRibbon.jade', 'css!style/main/commentsRibbon'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
+define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -11,9 +11,10 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};
 
-			socket.once('takeCommentsRibbon', function (data) {
+			socket.once('takeCommentsFeed', function (data) {
 				var photo,
 					comment,
+					commentsToInsert = [],
 					i;
 				if (!data || data.error || !Array.isArray(data.comments)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -34,14 +35,17 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					i = data.comments.length;
 					while (i) {
 						comment = data.comments[--i];
-						comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+						if (this.commentsPhotos[comment.obj] !== undefined) {
+							comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+							commentsToInsert.unshift(comment);
+						}
 					}
-					this.comments(data.comments);
+					this.comments(commentsToInsert);
 				}
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
 			}.bind(this));
-			socket.emit('giveCommentsRibbon', {limit: 20});
+			socket.emit('giveCommentsFeed', {limit: 20});
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
