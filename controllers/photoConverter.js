@@ -20,6 +20,8 @@ var path = require('path'),
 	logger = log4js.getLogger("photoConverter.js"),
 	appEnv = {},
 
+	photoController = require('./photo.js'),
+
 	conveyerEnabled = true,
 	conveyerLength = 0,
 	conveyerMaxLength = 0,
@@ -455,56 +457,63 @@ function conveyerControl() {
 			return;
 		}
 
-		files.forEach(function (item) {
+		files.forEach(function (photoConv) {
 			goingToWork -= 1;
 			working += 1;
-			step(
-				function setFlag() {
-					item.converting = true; //Ставим флаг, что конвертация файла началась
-					item.save(this.parallel());
-					Photo.findOneAndUpdate({cid: item.cid, del: {$ne: true}}, { $set: { conv: true }}, { new: true, upsert: false }).select({cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}).populate({path: 'user', select: {_id: 0, login: 1}}).exec(this.parallel());
-				},
-				function toConveyer(err, photoConv, photo) {
-					if (err || !photoConv || !photo) {
-						(new PhotoConveyerError({
-							cid: photoConv.cid,
-							added: photoConv.added,
-							error: (err ? String(err) : (!photo ? 'No such photo' : 'Conveyer setting converting=true save error'))
-						})).save(this.parallel());
-						if (photo) {
-							photo.conv = undefined;
-							photo.convqueue = undefined;
-							photo.save(this.parallel());
+			async.waterfall(
+				[
+					function find(callback) {
+						photoController.findPhoto({cid: photoConv.cid}, {cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}, {role: 10}, true, callback);
+					},
+					function getUser(photo, callback) {
+						if (!photo) {
+							return callback({message: 'Can not find such photo'}, photo);
 						}
-						if (photoConv) {
-							photoConv.remove(this.parallel());
-						}
-						conveyerConverted -= 1;
-					} else {
-						conveyerStep(photo, photoConv.variants, function (err) {
+						photo.populate({path: 'user', select: {_id: 0, login: 1}}, callback);
+					},
+					function setFlag(photo, callback) {
+						step (
+							function () {
+								photo.conv = true;
+								photo.save(this.parallel());
+								photoConv.converting = true;
+								photoConv.save(this.parallel());
+							},
+							function (err, photo, photoConv) {
+								conveyerStep(photo, photoConv.variants, function (err) {
+									callback(err, photo, photoConv);
+								}, this);
+							}
+						);
+					}
+				],
+				function (err, photo, photoConv) {
+					step (
+						function () {
 							if (err) {
 								(new PhotoConveyerError({
 									cid: photoConv.cid,
 									added: photoConv.added,
-									error: String(err)
+									error: String(err && err.message)
 								})).save(this.parallel());
+							} else {
+								conveyerConverted += 1;
 							}
-							//Присваиваем undefined, чтобы удалить свойства
-							photo.conv = undefined;
-							photo.convqueue = undefined;
-							photo.save(this.parallel());
+							if (photo) {
+								photo.conv = undefined; //Присваиваем undefined, чтобы удалить свойства
+								photo.convqueue = undefined;
+								photo.save(this.parallel());
+							}
 							photoConv.remove(this.parallel());
-						}, this);
-					}
-				},
-				function finish() {
-					working -= 1;
-					conveyerLength -= 1;
-					conveyerConverted += 1;
-					conveyerControl();
+						},
+						function (err) {
+							working -= 1;
+							conveyerLength -= 1;
+							conveyerControl();
+						}
+					);
 				}
 			);
-
 		});
 	});
 }
