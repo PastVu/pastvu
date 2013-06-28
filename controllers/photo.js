@@ -440,38 +440,9 @@ module.exports.loadController = function (app, db, io) {
 						photo = p;
 						newPhoto.save(this);
 					},
-					function (err, photoSaved) {
+					function removeFromOldModel(err, photoSaved) {
 						if (err) {
 							return result({message: err && err.message, error: true});
-						}
-						//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-						commentController.hideObjComments(photo._id, makeDisabled, hs.session.user, this.parallel());
-
-						//Пересчитывам кол-во публичных фото у владельца
-						User.update({_id: photoSaved.user}, {$inc: {pcount: makeDisabled ? -1 : 1}}, this.parallel());
-						if (photo.user.equals(hs.session.user._id)) {
-							hs.session.user.pcount = hs.session.user.pcount + (makeDisabled ? -1 : 1);
-							affectMe = true;
-						}
-
-						//Если у фото есть координаты, значит надо провести действие с кластером
-						if (!_.isEmpty(photo.geo)) {
-							if (makeDisabled) {
-								console.log('Go decluster');
-								PhotoCluster.declusterPhoto(photoSaved, this.parallel());
-							} else {
-								console.log('Go cluster');
-								PhotoCluster.clusterPhoto(photoSaved, null, null, this.parallel());
-							}
-						}
-					},
-					function removeFromOldModel(err, hideCommentsResult) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						if (hideCommentsResult.myCount) {
-							hs.session.user.ccount = hs.session.user.ccount + (makeDisabled ? -1 : 1) * hideCommentsResult.myCount;
-							affectMe = true;
 						}
 						if (makeDisabled) {
 							Photo.remove({cid: cid}).exec(this);
@@ -481,7 +452,36 @@ module.exports.loadController = function (app, db, io) {
 					},
 					function (err) {
 						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+						commentController.hideObjComments(photo._id, makeDisabled, hs.session.user, this.parallel());
+
+						//Пересчитывам кол-во публичных фото у владельца
+						User.update({_id: photo.user}, {$inc: {pcount: makeDisabled ? -1 : 1}}, this.parallel());
+						if (photo.user.equals(hs.session.user._id)) {
+							hs.session.user.pcount = hs.session.user.pcount + (makeDisabled ? -1 : 1);
+							affectMe = true;
+						}
+
+						//Если у фото есть координаты, значит надо провести действие с кластером
+						if (!_.isEmpty(photo.geo)) {
+							if (makeDisabled) {
+								console.log('Go decluster');
+								PhotoCluster.declusterPhoto(photo, this.parallel());
+							} else {
+								console.log('Go cluster');
+								PhotoCluster.clusterPhoto(photo, null, null, this.parallel());
+							}
+						}
+					},
+					function (err, hideCommentsResult) {
+						if (err) {
 							return result({message: err && err.message || 'Comments hide error', error: true});
+						}
+						if (hideCommentsResult.myCount) {
+							hs.session.user.ccount = hs.session.user.ccount + (makeDisabled ? -1 : 1) * hideCommentsResult.myCount;
+							affectMe = true;
 						}
 						// Если поменялись данные в своей сессии, отправляем их себе
 						if (affectMe) {
