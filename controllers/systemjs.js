@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -7,95 +7,6 @@ var log4js = require('log4js'),
 
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
-
-	saveSystemJSFunc(function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos) {
-		var cluster = db.clusters.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}),
-			c = (cluster && cluster.c) || 0,
-			yCluster = (cluster && cluster.y) || {},
-			geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
-			inc = 0,
-			$update = {$set: {}};
-
-		if (geoPhotos.o) {
-			inc -= 1;
-		}
-		if (geoPhotos.n) {
-			inc += 1;
-		}
-
-		if (cluster && c <= 1 && inc === -1) {
-			// Если после удаления фото из кластера, кластер останется пустым - удаляем его
-			db.clusters.remove({g: g, z: zParam.z});
-			return;
-		}
-		if (inc !== 0) {
-			$update.$inc = {c: inc};
-		}
-
-		if (yearPhotos.o !== yearPhotos.n) {
-			if (yearPhotos.o && yCluster[yearPhotos.o] !== undefined && yCluster[yearPhotos.o] > 0) {
-				yCluster[yearPhotos.o] -= 1;
-				if (yCluster[yearPhotos.o] < 1) {
-					delete yCluster[yearPhotos.o];
-				}
-			}
-			if (yearPhotos.n) {
-				yCluster[String(yearPhotos.n)] = 1 + (yCluster[String(yearPhotos.n)] | 0);
-			}
-			$update.$set.y = yCluster;
-		}
-
-		if (zParam.z > 11) {
-			// Если находимся на масштабе, где должен считаться центр тяжести,
-			// то при наличии старой координаты вычитаем её, а при наличии новой - прибавляем.
-			// Если переданы обе, значит координата фотографии изменилась в пределах одной ячейки,
-			// и тогда вычитаем старую и прибавляем новую.
-			// Если координаты не переданы, заничит просто обновим постер кластера
-			if (geoPhotos.o) {
-				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c]);
-			}
-			if (geoPhotos.n) {
-				geoCluster = geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhotos.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhotos.n[1]) / (c + 2)]);
-			}
-		}
-
-		$update.$set.geo = geoCluster;
-		$update.$set.p = db.photos.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
-
-		db.clusters.update({g: g, z: zParam.z}, $update, {multi: false, upsert: true});
-	});
-
-	saveSystemJSFunc(function declusterPhoto(cid) {
-		var photo = db.photos.findOne({cid: cid}, {_id: 0, geo: 1, year: 1}),
-			clusterZooms,
-
-			geoPhoto,
-			geoPhotoCorrection,
-
-			g; // Координаты левого верхнего угла ячейки кластера
-
-		if (!photo) {
-			return {message: 'No such photo', error: true};
-		}
-		if (!photo.geo) {
-			return {message: 'Photo does not have the coordinates, so did not participate in the clustering'};
-		}
-
-		geoPhoto = photo.geo;
-		geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
-
-		// Итерируемся по каждому масштабу, для которого заданы параметры серверной кластеризации
-		clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray();
-		clusterZooms.forEach(function (clusterZoom) {
-			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
-			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
-
-			g = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
-			clusterRecalcByPhoto(g, clusterZoom, {o: geoPhoto}, {o: photo.year});
-		});
-
-		return {message: 'Ok'};
-	});
 
 	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
 		var startFullTime = Date.now(),

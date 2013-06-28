@@ -194,7 +194,10 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
  */
 module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 	if (!photo.geo || !photo.year) {
-		return {message: 'Bad params to set photo cluster', error: true};
+		if (Utils.isType('function', cb)) {
+			cb({message: 'Bad params to set photo cluster'});
+		}
+		return;
 	}
 	var start = Date.now();
 	geoPhotoOld = !_.isEmpty(geoPhotoOld) ? geoPhotoOld : undefined;
@@ -263,27 +266,48 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 		}
 	);
 };
+
 /**
  * Удаляет фото из кластеров
- * @param cid id фото
+ * @param photo фото
  * @param cb Коллбэк добавления
  * @return {Boolean}
  */
-module.exports.declusterPhoto = function (cid, cb) {
-	if (!cid) {
+module.exports.declusterPhoto = function (photo, cb) {
+	if (!photo.geo || !photo.year) {
 		if (Utils.isType('function', cb)) {
-			cb({message: 'Bad params'});
+			cb({message: 'Bad params to set photo cluster'});
 		}
-		return false;
+		return;
 	}
 	var start = Date.now();
 
-	dbNative.eval('declusterPhoto(' + cid + ')', function (err, result) {
-		console.log(cid + ' declustered in ' + (Date.now() - start));
-		if (Utils.isType('function', cb)) {
-			cb(null, result);
+	step(
+		function () {
+			var geoPhoto = photo.geo,
+				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
+
+				g,
+
+				clusterZoom,
+				i = clusterParams.length;
+
+			while (i--) {
+				clusterZoom = clusterParams[i];
+				clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
+				clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
+
+				g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+				clusterRecalcByPhoto(g, clusterZoom, {o: geoPhoto}, {o: photo.year}, this.parallel());
+			}
+		},
+		function (err) {
+			console.log(photo.cid + ' declustered in ' + (Date.now() - start));
+			if (Utils.isType('function', cb)) {
+				cb(err);
+			}
 		}
-	});
+	);
 };
 
 

@@ -458,7 +458,7 @@ module.exports.loadController = function (app, db, io) {
 						if (!_.isEmpty(photo.geo)) {
 							if (makeDisabled) {
 								console.log('Go decluster');
-								PhotoCluster.declusterPhoto(photoSaved.cid, this.parallel());
+								PhotoCluster.declusterPhoto(photoSaved, this.parallel());
 							} else {
 								console.log('Go cluster');
 								PhotoCluster.clusterPhoto(photoSaved, null, null, this.parallel());
