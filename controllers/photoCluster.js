@@ -106,13 +106,12 @@ module.exports.loadController = function (app, db, io) {
  * @param oldGeo новые гео-координаты
  * @param oldYear год фотографии до изменения
  * @param cb Коллбэк добавления
- * @param ctx Контекст
  * @return {Boolean}
  */
-module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb, ctx) {
+module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb) {
 	if (!cid) {
 		if (Utils.isType('function', cb)) {
-			cb('Bad params');
+			cb({message: 'Bad params'});
 		}
 		return false;
 	}
@@ -121,7 +120,29 @@ module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb, ctx) {
 	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ',' + oldYear + ')', function (err, result) {
 		console.log(cid + ' reclustered in ' + (Date.now() - start));
 		if (Utils.isType('function', cb)) {
-			cb.apply(ctx, arguments);
+			cb(null, result);
+		}
+	});
+};
+/**
+ * Удаляет фото из кластеров
+ * @param cid id фото
+ * @param cb Коллбэк добавления
+ * @return {Boolean}
+ */
+module.exports.declusterPhoto = function (cid, cb) {
+	if (!cid) {
+		if (Utils.isType('function', cb)) {
+			cb({message: 'Bad params'});
+		}
+		return false;
+	}
+	var start = Date.now();
+
+	dbNative.eval('declusterPhoto(' + cid + ')', function (err, result) {
+		console.log(cid + ' declustered in ' + (Date.now() - start));
+		if (Utils.isType('function', cb)) {
+			cb(null, result);
 		}
 	});
 };

@@ -446,7 +446,7 @@ function removeComment(socket, data, cb) {
 			commentModel.findOne({cid: cid}, {_id: 0, obj: 1}, this);
 		},
 		function findObj(err, comment) {
-			if (err || comment) {
+			if (err || !comment) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
 			if (data.type === 'news') {
@@ -546,12 +546,12 @@ function updateComment(socket, data, cb) {
 	}
 
 	step(
-		function counters() {
+		function () {
 			commentModel.findOne({cid: data.cid}, {user: 0}).populate('obj', {cid: 1, frags: 1}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.obj !== comment.obj.cid) {
-				return cb({message: (err && err.message) || 'No such comment', error: true});
+				return cb({message: err && err.message || 'No such comment', error: true});
 			}
 			var i,
 				hist = {user: user},
@@ -710,9 +710,10 @@ function giveCommentHist(data, cb) {
  * Скрывает комментарии объекта (делает их не публичными)
  * @param oid _id объекта
  * @param hide Скрыть или наоборот
+ * @param user Пользователь сессии, считаем сколько его комментариев затронуто
  * @param cb Коллбэк
  */
-function hideObjComments(oid, hide, cb) {
+function hideObjComments(oid, hide, user, cb) {
 	step (
 		function () {
 			var command = {};
@@ -748,13 +749,10 @@ function hideObjComments(oid, hide, cb) {
 			}
 			for (i in hashUsers) {
 				if (hashUsers[i] !== undefined) {
-					User.update({_id: i}, {$inc: {ccount: hide ? -hashUsers[i] : hashUsers[i]}}, this.parallel());
+					User.update({_id: i}, {$inc: {ccount: hide ? -hashUsers[i] : hashUsers[i]}}).exec();
 				}
 			}
-			this.parallel()(); //Если юзеров не было, то просто перейдем дальше
-		},
-		function (err) {
-			cb(err);
+			cb(null, {myCount: hashUsers[user._id] || 0});
 		}
 	);
 }

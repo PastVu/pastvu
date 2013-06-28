@@ -406,8 +406,10 @@ module.exports.loadController = function (app, db, io) {
 					return result({message: 'Bad params', error: true});
 				}
 				var cid = Number(data.cid),
-					oid,
-					makeDisabled = !!data.disable;
+					photo,
+					makeDisabled = !!data.disable,
+					affectMe;
+
 				if (!cid) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
@@ -420,52 +422,70 @@ module.exports.loadController = function (app, db, io) {
 							PhotoDis.collection.findOne({cid: cid}, {__v: 0}, this);
 						}
 					},
-					function (err, photo) {
+					function createInNewModel(err, p) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						if (!photo) {
+						if (!p) {
 							return result({message: 'Requested photo does not exist', error: true});
 						}
 						var newPhoto;
 
 						if (makeDisabled) {
-							newPhoto = new PhotoDis(photo);
+							newPhoto = new PhotoDis(p);
 						} else {
-							newPhoto = new Photo(photo);
+							newPhoto = new Photo(p);
 						}
+
+						photo = p;
 						newPhoto.save(this);
 					},
 					function (err, photoSaved) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
+						//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+						commentController.hideObjComments(photo._id, makeDisabled, hs.session.user, this.parallel());
 
-						var userPCountDelta = makeDisabled ? -1 : 1;
-						if (photoSaved.user.equals(hs.session.user._id)) {
-							hs.session.user.pcount = hs.session.user.pcount + userPCountDelta;
-							hs.session.user.save();
-							auth.sendMe(socket);
-						} else {
-							User.update({_id: photoSaved.user}, {$inc: {pcount: userPCountDelta}}).exec(); //Для выполнения без коллбэка нужен .exec()
+						//Пересчитывам кол-во публичных фото у владельца
+						User.update({_id: photoSaved.user}, {$inc: {pcount: makeDisabled ? -1 : 1}}, this.parallel());
+						if (photo.user.equals(hs.session.user._id)) {
+							hs.session.user.pcount = hs.session.user.pcount + (makeDisabled ? -1 : 1);
+							affectMe = true;
 						}
 
-						oid = photoSaved._id;
+						//Если у фото есть координаты, значит надо провести действие с кластером
+						if (!_.isEmpty(photo.geo)) {
+							if (makeDisabled) {
+								console.log('Go decluster');
+								PhotoCluster.declusterPhoto(photoSaved.cid, this.parallel());
+							} else {
+								console.log('Go cluster');
+								PhotoCluster.clusterPhoto(photoSaved.cid, null, null, this.parallel());
+							}
+						}
+					},
+					function removeFromOldModel(err, hideCommentsResult) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						if (hideCommentsResult.myCount) {
+							hs.session.user.ccount = hs.session.user.ccount + (makeDisabled ? -1 : 1) * hideCommentsResult.myCount;
+							affectMe = true;
+						}
 						if (makeDisabled) {
 							Photo.remove({cid: cid}).exec(this);
 						} else {
 							PhotoDis.remove({cid: cid}).exec(this);
 						}
 					},
-					function hideComments(err, removeCount) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						commentController.hideObjComments(oid, makeDisabled, this);
-					},
 					function (err) {
 						if (err) {
 							return result({message: err && err.message || 'Comments hide error', error: true});
+						}
+						// Если поменялись данные в своей сессии, отправляем их себе
+						if (affectMe) {
+							auth.sendMe(socket);
 						}
 						result({disabled: makeDisabled});
 					}

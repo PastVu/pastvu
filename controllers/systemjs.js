@@ -1,4 +1,4 @@
-/*global ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, clusterRecalcByPhoto:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -132,6 +132,38 @@ module.exports.loadController = function (app, db) {
 		});
 
 		return {message: 'Ok', error: false};
+	});
+
+	saveSystemJSFunc(function declusterPhoto(cid) {
+		var photo = db.photos.findOne({cid: cid}, {_id: 0, geo: 1, year: 1}),
+			clusterZooms,
+
+			geoPhoto,
+			geoPhotoCorrection,
+
+			g; // Координаты левого верхнего угла ячейки кластера
+
+		if (!photo) {
+			return {message: 'No such photo', error: true};
+		}
+		if (!photo.geo) {
+			return {message: 'Photo does not have the coordinates, so did not participate in the clustering'};
+		}
+
+		geoPhoto = photo.geo;
+		geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
+
+		// Итерируемся по каждому масштабу, для которого заданы параметры серверной кластеризации
+		clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray();
+		clusterZooms.forEach(function (clusterZoom) {
+			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
+			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
+
+			g = geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+			clusterRecalcByPhoto(g, clusterZoom, {o: geoPhoto}, {o: photo.year});
+		});
+
+		return {message: 'Ok'};
 	});
 
 	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
