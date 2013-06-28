@@ -374,7 +374,7 @@ module.exports.loadController = function (app, db, io) {
 
 						if (!_.isEmpty(photo.geo)) {
 							console.log('Go cluster');
-							PhotoCluster.clusterPhoto(photo.cid);
+							PhotoCluster.clusterPhoto(photo);
 						}
 
 						//Удаляем из коллекции новых
@@ -461,7 +461,7 @@ module.exports.loadController = function (app, db, io) {
 								PhotoCluster.declusterPhoto(photoSaved.cid, this.parallel());
 							} else {
 								console.log('Go cluster');
-								PhotoCluster.clusterPhoto(photoSaved.cid, null, null, this.parallel());
+								PhotoCluster.clusterPhoto(photoSaved, null, null, this.parallel());
 							}
 						}
 					},
@@ -950,7 +950,7 @@ module.exports.loadController = function (app, db, io) {
 							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
 							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
 							console.log('Go cluster save');
-							PhotoCluster.clusterPhoto(data.cid, oldGeo, photoOldObj.year, this);
+							PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, this);
 						} else {
 							this(null);
 						}

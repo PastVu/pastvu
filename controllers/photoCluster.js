@@ -4,8 +4,10 @@ var dbNative,
 	Photo,
 	Cluster, // Коллекция кластеров
 	ClusterParams, // Коллекция параметров кластера
-	Clusters, // Параметры кластера
-	ClusterConditions, // Параметры установки кластера
+
+	clusterParams, // Параметры кластера
+	clusterConditions, // Параметры установки кластера
+
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
@@ -17,15 +19,18 @@ var dbNative,
 function readClusterParams(cb) {
 	step(
 		function () {
-			ClusterParams.find({sgeo: {$exists: false}}, {_id: 0}).sort('z').exec(this.parallel());
-			ClusterParams.find({sgeo: {$exists: true}}, {_id: 0}).exec(this.parallel());
+			ClusterParams.collection.find({sgeo: {$exists: false}}, {_id: 0}, {sort: [
+				['z', 'asc']
+			]}, this.parallel());
+			ClusterParams.collection.find({sgeo: {$exists: true}}, {_id: 0}, this.parallel());
 		},
+		Utils.cursorsExtract,
 		function (err, clusters, conditions) {
 			if (err) {
 				logger.error(err && err.message);
 			} else {
-				Clusters = clusters;
-				ClusterConditions = conditions;
+				clusterParams = clusters;
+				clusterConditions = conditions;
 			}
 
 			if (cb) {
@@ -56,7 +61,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('clusterAll', function (data) {
-				if (!hs.session.user) {
+				if (!hs.session.user || hs.session.user.role < 10) {
 					return result({message: 'Not authorized', error: true});
 				}
 				step(
@@ -67,8 +72,8 @@ module.exports.loadController = function (app, db, io) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						ClusterParams.collection.insert(data.clusters, {safe: true}, this.parallel());
 						ClusterParams.collection.insert(data.params, {safe: true}, this.parallel());
+						ClusterParams.collection.insert(data.conditions, {safe: true}, this.parallel());
 					},
 					function (err, clusters, conditions) {
 						if (err) {
@@ -100,29 +105,163 @@ module.exports.loadController = function (app, db, io) {
 };
 
 
+function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
+	var $update = {$set: {}};
+
+	step(
+		function () {
+			Cluster.collection.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this);
+		},
+		function (err, cluster) {
+			if (err) {
+				return cb(err);
+			}
+			var c = (cluster && cluster.c) || 0,
+				yCluster = (cluster && cluster.y) || {},
+				geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
+				inc = 0;
+
+			if (geoPhotos.o) {
+				inc -= 1;
+			}
+			if (geoPhotos.n) {
+				inc += 1;
+			}
+			if (cluster && c <= 1 && inc === -1) {
+				// Если после удаления фото из кластера, кластер останется пустым - удаляем его
+				Cluster.remove({g: g, z: zParam.z}).exec();
+				return cb(null);
+			}
+
+			if (inc !== 0) {
+				$update.$inc = {c: inc};
+			}
+
+			if (yearPhotos.o !== yearPhotos.n) {
+				if (yearPhotos.o && yCluster[yearPhotos.o] !== undefined && yCluster[yearPhotos.o] > 0) {
+					yCluster[yearPhotos.o] -= 1;
+					if (yCluster[yearPhotos.o] < 1) {
+						delete yCluster[yearPhotos.o];
+					}
+				}
+				if (yearPhotos.n) {
+					yCluster[String(yearPhotos.n)] = 1 + (yCluster[String(yearPhotos.n)] | 0);
+				}
+				$update.$set.y = yCluster;
+			}
+
+			//Такой ситуации не должно быть. Она означает что у фото перед изменением координаты уже была координата, но она не участвовала в кластеризации
+			if (geoPhotos.o && !c) {
+				logger.warn('Strange. While recluster photo trying to remove it old geo from unexisting cluster.');
+			}
+
+			if (zParam.z > 11) {
+				// Если находимся на масштабе, где должен считаться центр тяжести,
+				// то при наличии старой координаты вычитаем её, а при наличии новой - прибавляем.
+				// Если переданы обе, значит координата фотографии изменилась в пределах одной ячейки,
+				// и тогда вычитаем старую и прибавляем новую.
+				// Если координаты не переданы, заничит просто обновим постер кластера
+				if (geoPhotos.o && c) {
+					geoCluster = Utils.geo.geoToPrecisionRound([(geoCluster[0] * (c + 1) - geoPhotos.o[0]) / c, (geoCluster[1] * (c + 1) - geoPhotos.o[1]) / c]);
+				}
+				if (geoPhotos.n) {
+					geoCluster = Utils.geo.geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhotos.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhotos.n[1]) / (c + 2)]);
+				}
+			}
+
+			$update.$set.geo = geoCluster;
+			Photo.collection.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
+		},
+		function (err, photo) {
+			if (err) {
+				return cb(err);
+			}
+			$update.$set.p = photo;
+			Cluster.update({g: g, z: zParam.z}, $update, {multi: false, upsert: true}, this);
+		},
+		function (err) {
+			cb(err);
+		}
+	);
+}
+
 /**
  * Создает кластер для новых координат фото
- * @param cid id фото
- * @param oldGeo новые гео-координаты
- * @param oldYear год фотографии до изменения
- * @param cb Коллбэк добавления
- * @return {Boolean}
+ * @param photo Фото
+ * @param geoPhotoOld гео-координаты до изменения
+ * @param yearPhotoOld год фотографии до изменения
+ * @param cb Коллбэк
  */
-module.exports.clusterPhoto = function (cid, oldGeo, oldYear, cb) {
-	if (!cid) {
-		if (Utils.isType('function', cb)) {
-			cb({message: 'Bad params'});
-		}
-		return false;
+module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
+	if (!photo.geo || !photo.year) {
+		return {message: 'Bad params to set photo cluster', error: true};
 	}
 	var start = Date.now();
+	geoPhotoOld = !_.isEmpty(geoPhotoOld) ? geoPhotoOld : undefined;
 
-	dbNative.eval('clusterPhoto(' + cid + ',' + JSON.stringify(!_.isEmpty(oldGeo) ? oldGeo : undefined) + ',' + oldYear + ')', function (err, result) {
-		console.log(cid + ' reclustered in ' + (Date.now() - start));
-		if (Utils.isType('function', cb)) {
-			cb(null, result);
+	step(
+		function () {
+			var geoPhoto = photo.geo, // Новые координаты фото, которые уже сохранены в базе
+				geoPhotoCorrection,
+				geoPhotoOldCorrection,
+
+				g, // Координаты левого верхнего угла ячейки кластера для новой координаты
+				gOld,
+
+				clusterZoom,
+				i = clusterParams.length;
+
+			// Коррекция для кластера.
+			// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
+			// Так как отображение кластера идет от верхнего угла, то для положительного lat надо прибавить единицу
+			if (geoPhoto) {
+				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0]; // Корекция для кластера текущих координат
+			}
+			if (geoPhotoOld) {
+				geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0]; // Корекция для кластера старых координат
+			}
+
+			while (i--) {
+				clusterZoom = clusterParams[i];
+				clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
+				clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
+
+				// Определяем ячейки для старой и новой координаты, если они есть
+				if (geoPhotoOld) {
+					gOld = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]), clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1])]);
+				}
+				if (geoPhoto) {
+					g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+				}
+
+				if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
+					// Если старые и новые координаты заданы и для них ячейка кластера на этом масштабе одна,
+					// то если координата не изменилась, пересчитываем только постер,
+					// если изменилась - пересчитаем центр тяжести (отнимем старую, прибавим новую)
+					if (geoPhotoOld[0] === geoPhoto[0] && geoPhotoOld[1] === geoPhoto[1]) {
+						clusterRecalcByPhoto(g, clusterZoom, {}, {o: yearPhotoOld, n: photo.year}, this.parallel());
+					} else {
+						clusterRecalcByPhoto(g, clusterZoom, {o: geoPhotoOld, n: geoPhoto}, {o: yearPhotoOld, n: photo.year}, this.parallel());
+					}
+				} else {
+					// Если ячейка для координат изменилась, или какой-либо координаты нет вовсе,
+					// то пересчитываем старую и новую ячейку, если есть соответствующая координата
+					if (gOld) {
+						clusterRecalcByPhoto(gOld, clusterZoom, {o: geoPhotoOld}, {o: yearPhotoOld}, this.parallel());
+					}
+					if (g) {
+						clusterRecalcByPhoto(g, clusterZoom, {n: geoPhoto}, {n: photo.year}, this.parallel());
+					}
+				}
+			}
+		},
+		function (err) {
+			console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
+			if (Utils.isType('function', cb)) {
+				cb(err);
+			}
 		}
-	});
+	);
 };
 /**
  * Удаляет фото из кластеров
@@ -219,7 +358,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		},
 		function cursors(err) {
 			if (err) {
-				return	cb(err);
+				return    cb(err);
 			}
 			var i = arguments.length;
 			while (i > 1) {

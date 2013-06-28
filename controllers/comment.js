@@ -729,7 +729,7 @@ function hideObjComments(oid, hide, user, cb) {
 				return cb(err);
 			}
 			if (count === 0) {
-				return cb(null);
+				return cb(null, {myCount: 0});
 			}
 			Comment.collection.find({obj: oid}, this);
 		},

@@ -302,7 +302,7 @@ define([
 									}.bind(this));
 								}
 							}.bind(_this));
-							socket.emit('clusterAll', {clusters: arr, params: _this.saveParams});
+							socket.emit('clusterAll', {params: arr, conditions: _this.saveParams});
 						}},
 						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
