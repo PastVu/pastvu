@@ -103,7 +103,7 @@ var Utils = require('./commons/Utils.js'),
 					fs.unlinkSync(file.path);
 					return;
 				}
-				fs.renameSync(file.path, options.targetDir + fileInfo.fileDir + fileInfo.file);
+				fs.renameSync(file.path, options.incomeDir + '/' + fileInfo.file);
 			})
 			.on('aborted', function () {
 				tmpFiles.forEach(function (file) {

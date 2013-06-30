@@ -19,8 +19,10 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger,
-	photoDir = global.appVar.storePath + 'public/photos',
-	imageFolders = [photoDir + '/x/', photoDir + '/s/', photoDir + '/q/', photoDir + '/m/', photoDir + '/h/', photoDir + '/d/', photoDir + '/a/'],
+	incomeDir = global.appVar.storePath + 'incoming/',
+	privateDir = global.appVar.storePath + 'private/photos/',
+	publicDir = global.appVar.storePath + 'public/photos/',
+	imageFolders = [publicDir + 'x/', publicDir + 's/', publicDir + 'q/', publicDir + 'm/', publicDir + 'h/', publicDir + 'd/', publicDir + 'a/'],
 
 	commentController = require('./comment.js');
 
@@ -82,18 +84,31 @@ function createPhotos(session, data, cb) {
 	var resultCids = [];
 
 	step(
-		function increment() {
+		function filesToPrivate() {
+			var item,
+				i = data.length;
+
+			while(i--) {
+				item = data[i];
+				item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
+				fs.rename(incomeDir + item.file, privateDir + item.fullfile, this.parallel());
+			}
+		},
+		function increment(err) {
+			if (err) {
+				return cb({message: err.message || 'File transfer error', error: true});
+			}
 			Counter.incrementBy('photo', data.length, this);
 		},
 		function savePhotos(err, count) {
 			if (err || !count) {
-				return cb({message: 'Increment photo counter error', error: true});
+				return cb({message: err && err.message || 'Increment photo counter error', error: true});
 			}
 			data.forEach(function (item, index) {
 				var photo = new PhotoFresh({
 					cid: count.next - index,
 					user: session.user._id,
-					file: item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1"),
+					file: item.fullfile,
 					type: item.type,
 					size: item.size,
 					geo: undefined
@@ -101,20 +116,19 @@ function createPhotos(session, data, cb) {
 					//dir: dirs[_.random(0, dirs.length - 1)],
 				});
 
-				resultCids.push({file: item.file, cid: photo.cid});
+				resultCids.push({file: photo.file, cid: photo.cid});
 				if (data.length > 1) {
 					photo.save(this.parallel());
 				} else {
 					photo.save(this);
 				}
 			}.bind(this));
-
 		},
 		function (err) {
 			if (err) {
-				return cb({message: err.message || '', error: true});
+				return cb({message: err.message, error: true});
 			}
-			cb({message: data.length + ' photo successfully saved ' + data[0].file, cids: resultCids});
+			cb({message: data.length + ' photo successfully saved', cids: resultCids});
 		}
 	);
 }
