@@ -220,7 +220,21 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					[
 						{
 							module: 'm/user/photoUpload',
-							modal: {initWidth: '1000px', topic: 'Загрузка фотографий', closeHref: '/u/' + this.u.login() + '/photo', closeTxt: 'Завершить'},
+							modal: {
+								initWidth: '1000px',
+								topic: 'Загрузка фотографий',
+								closeTxt: 'Завершить',
+								closeFunc: function (evt) {
+									this.uploadVM.createPhotos(function (data) {
+										if (data && !data.error) {
+											this.uploadVM.destroy();
+											delete this.uploadVM;
+
+											globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
+										}
+									}, this);
+									evt.stopPropagation();
+								}.bind(this)},
 							callback: function (vm) {
 								this.uploadVM = vm;
 								this.childModules[vm.id] = vm;

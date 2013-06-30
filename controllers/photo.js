@@ -315,13 +315,15 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('createPhoto', function (data) {
+			console.dir(data);
 			createPhotos(hs.session, data, function (createData) {
 				if (!createData.error) {
 					if (!Array.isArray(data) && Utils.isType('object', data)) {
 						data = [data];
 					}
-					PhotoConverter.addPhotos(createData.cids);
+					//PhotoConverter.addPhotos(createData.cids);
 				}
+				console.dir(createData);
 				socket.emit('createPhotoCallback', createData);
 			});
 		});

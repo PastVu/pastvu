@@ -336,7 +336,7 @@ function CollectConveyerStat() {
 
 /**
  * Добавление в конвейер конвертации фотографий
- * @param data Массив объектов {cid: 123, variants: []}
+ * @param data Массив объектов {photo: obj, variants: []}
  * @param cb Коллбэк успешности добавления
  */
 module.exports.addPhotos = function (data, cb) {
@@ -349,8 +349,8 @@ module.exports.addPhotos = function (data, cb) {
 	step(
 		function () {
 			for (i = 0; i < data.length; i++) {
-				if (data[i].cid) {
-					toConvertObj = {cid: data[i].cid, added: stamp};
+				if (data[i].photo) {
+					toConvertObj = {cid: data[i].photo.cid, added: stamp};
 					if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
 						toConvertObj.variants = data[i].variants;
 					}
@@ -359,7 +359,8 @@ module.exports.addPhotos = function (data, cb) {
 			}
 			toConvert = _.pluck(toConvertObjs, 'cid');
 			PhotoConveyer.collection.insert(toConvertObjs, this.parallel());
-			Photo.update({cid: {$in: toConvert}, del: {$ne: true}}, { $set: { convqueue: true }}, { multi: true }, this.parallel());
+			//TODO:
+			Photo.update({cid: {$in: toConvert}}, {$set: { convqueue: true }}, {multi: true}, this.parallel());
 		},
 		function (err) {
 			if (err) {

@@ -1,6 +1,6 @@
 /*global define:true*/
 /**
- * Модель фотографий пользователя
+ * Модель загрузки фотографии
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'load-image', 'text!tpl/user/photoUpload.jade', 'css!style/user/photoUpload', 'jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, loadImage, jade) {
 	'use strict';
@@ -93,13 +93,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							sequentialUploads: false,
 							limitConcurrentUploads: 3,
 
-							/*process: [
-							 {
-							 action: 'load',
-							 fileTypes: /^image\/(jpeg|png)$/,
-							 maxFileSize: 26214400 // 25MB
-							 }
-							 ],*/
 							add: this.onFileAdd.bind(this),
 							submit: this.onFileSubmit.bind(this),
 							send: this.onFileSend.bind(this),
@@ -168,7 +161,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
 			$.each(files, function (index, file) {
 				file.ext = {
-					uid: Utils.randomString(7),
+					uid: Utils.randomString(5),
 					data: data,
 					humansize: Utils.format.fileSize(file.size),
 					progress: ko.observable(0),
@@ -244,18 +237,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		onFileDone: function (e, data) {
 			var result = JSON.parse(data.result),
-				receivedFiles = result.files || [],
-				toSaveArr = [];
+				receivedFiles = result.files || [];
 
 			receivedFiles.forEach(function (receivedFile) {
 				if (receivedFile.name && receivedFile.file) {
-
 					data.files.forEach(function (file) {
 						if (file.name === receivedFile.name) {
 							file.ext.file = receivedFile.file;
 							file.ext.jqXHR = null;
 							delete file.ext.jqXHR;
-							this.fileUploaded[receivedFile.file] = {file: file};
+							this.fileUploaded[receivedFile.file] = _.pick(receivedFile, 'file', 'name', 'type', 'size');
 							window.setTimeout(function () {
 								file.ext.uploading(false);
 								file.ext.uploaded(true);
@@ -263,18 +254,22 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							}.bind(this), 500);
 						}
 					}, this);
-
-					toSaveArr.push(_.pick(receivedFile, 'file', 'type', 'size'));
 				}
 			}, this);
-
+		},
+		createPhotos: function (cb, ctx) {
+			var toSaveArr = [];
+			_.forEach(this.fileUploaded, function (file, fileName) {
+				toSaveArr.push(file);
+			});
 			if (toSaveArr.length > 0) {
 				socket.once('createPhotoCallback', function (result) {
-					result.cids.forEach(function (item) {
-						this.fileUploaded[item.file] = item;
-					}, this);
+					console.dir(result);
+					cb.call(ctx || window, result);
 				}.bind(this));
 				socket.emit('createPhoto', toSaveArr);
+			} else {
+				cb.call(ctx || window, {});
 			}
 		},
 		onFileFail: function (e, data) {
