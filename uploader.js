@@ -103,6 +103,7 @@ var Utils = require('./commons/Utils.js'),
 					fs.unlinkSync(file.path);
 					return;
 				}
+				//Переименовываем файл в сгенерированное нами имя
 				fs.renameSync(file.path, options.incomeDir + '/' + fileInfo.file);
 			})
 			.on('aborted', function () {

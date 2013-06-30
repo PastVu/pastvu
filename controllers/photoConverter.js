@@ -340,27 +340,27 @@ function CollectConveyerStat() {
  * @param cb Коллбэк успешности добавления
  */
 module.exports.addPhotos = function (data, cb) {
-	var toConvert = [],
+	var photo,
 		toConvertObj,
 		toConvertObjs = [],
-		stamp = new Date(),
-		i;
+		stamp = new Date();
 
 	step(
 		function () {
-			for (i = 0; i < data.length; i++) {
-				if (data[i].photo) {
-					toConvertObj = {cid: data[i].photo.cid, added: stamp};
+			for (var i = 0; i < data.length; i++) {
+				photo = data[i].photo;
+				if (photo) {
+					toConvertObj = {cid: photo.cid, added: stamp};
 					if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
 						toConvertObj.variants = data[i].variants;
 					}
 					toConvertObjs.push(toConvertObj);
+
+					photo.convqueue = true;
+					photo.save(this.parallel());
 				}
 			}
-			toConvert = _.pluck(toConvertObjs, 'cid');
 			PhotoConveyer.collection.insert(toConvertObjs, this.parallel());
-			//TODO:
-			Photo.update({cid: {$in: toConvert}}, {$set: { convqueue: true }}, {multi: true}, this.parallel());
 		},
 		function (err) {
 			if (err) {
@@ -370,11 +370,11 @@ module.exports.addPhotos = function (data, cb) {
 				return;
 			}
 
-			conveyerLength += toConvert.length;
+			conveyerLength += toConvertObjs.length;
 			conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
 
 			if (cb) {
-				cb({message: toConvert.length + ' photos added to convert conveyer'});
+				cb({message: toConvertObjs.length + ' photos added to convert conveyer'});
 			}
 			conveyerControl();
 		}

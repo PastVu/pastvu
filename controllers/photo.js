@@ -81,7 +81,7 @@ function createPhotos(session, data, cb) {
 		data = [data];
 	}
 
-	var resultCids = [];
+	var result = [];
 
 	step(
 		function filesToPrivate() {
@@ -115,8 +115,11 @@ function createPhotos(session, data, cb) {
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
 				});
+				if (item.name) {
+					photo.title = item.name;
+				}
 
-				resultCids.push({file: photo.file, cid: photo.cid});
+				result.push({photo: photo});
 				if (data.length > 1) {
 					photo.save(this.parallel());
 				} else {
@@ -128,7 +131,7 @@ function createPhotos(session, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			cb({message: data.length + ' photo successfully saved', cids: resultCids});
+			cb({message: data.length + ' photo successfully saved', photos: result});
 		}
 	);
 }
@@ -331,13 +334,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('createPhoto', function (data) {
 			console.dir(data);
 			createPhotos(hs.session, data, function (createData) {
-				if (!createData.error) {
-					if (!Array.isArray(data) && Utils.isType('object', data)) {
-						data = [data];
-					}
-					//PhotoConverter.addPhotos(createData.cids);
+				if (!createData.error && createData.photos && createData.photos.length) {
+					PhotoConverter.addPhotos(createData.photos);
 				}
 				console.dir(createData);
+				delete createData.photos;
 				socket.emit('createPhotoCallback', createData);
 			});
 		});
@@ -515,14 +516,22 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('convertPhotos', function (data) {
-				if (!hs.session.user) {
-					result({message: 'You are not authorized for this action.', error: true});
-					return;
+				if (!hs.session.user || hs.session.user.role < 10) {
+					return result({message: 'You do not have permission for this action', error: true});
 				}
 				if (!Array.isArray(data) || data.length === 0) {
-					result({message: 'Bad params. Need to be array of file names', error: true});
-					return;
+					return result({message: 'Bad params', error: true});
 				}
+				step (
+					function () {
+						for (var i = 0; i < data.length; i++) {
+							findPhoto({cid: data[i].cid}, {cid: 1, file: 1}, hs.session.user, true, this.parallel());
+						}
+					},
+					function (err) {
+
+					}
+				);
 				PhotoConverter.addPhotos(data, function (addResult) {
 					result(addResult);
 				});
