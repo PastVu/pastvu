@@ -88,7 +88,7 @@ function createPhotos(session, data, cb) {
 			var item,
 				i = data.length;
 
-			while(i--) {
+			while (i--) {
 				item = data[i];
 				item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
 				fs.rename(incomeDir + item.file, privateDir + item.fullfile, this.parallel());
@@ -111,15 +111,14 @@ function createPhotos(session, data, cb) {
 					file: item.fullfile,
 					type: item.type,
 					size: item.size,
-					geo: undefined
+					geo: undefined,
+					title: item.name || undefined,
+					convqueue: true
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
 				});
-				if (item.name) {
-					photo.title = item.name;
-				}
 
-				result.push({photo: photo});
+				result.push({cid: photo.cid});
 				if (data.length > 1) {
 					photo.save(this.parallel());
 				} else {
@@ -131,7 +130,7 @@ function createPhotos(session, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			cb({message: data.length + ' photo successfully saved', photos: result});
+			cb({message: data.length + ' photo successfully saved', cids: result});
 		}
 	);
 }
@@ -274,7 +273,6 @@ function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
 			cb(null, photo);
 		}
 	});
-
 }
 
 //Обнуляет статистику просмотров за день и неделю
@@ -332,13 +330,10 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('createPhoto', function (data) {
-			console.dir(data);
 			createPhotos(hs.session, data, function (createData) {
-				if (!createData.error && createData.photos && createData.photos.length) {
-					PhotoConverter.addPhotos(createData.photos);
+				if (!createData.error && createData.cids && createData.cids.length) {
+					PhotoConverter.addPhotos(createData.cids);
 				}
-				console.dir(createData);
-				delete createData.photos;
 				socket.emit('createPhotoCallback', createData);
 			});
 		});
@@ -484,10 +479,8 @@ module.exports.loadController = function (app, db, io) {
 						//Если у фото есть координаты, значит надо провести действие с кластером
 						if (!_.isEmpty(photo.geo)) {
 							if (makeDisabled) {
-								console.log('Go decluster');
 								PhotoCluster.declusterPhoto(photo, this.parallel());
 							} else {
-								console.log('Go cluster');
 								PhotoCluster.clusterPhoto(photo, null, null, this.parallel());
 							}
 						}
@@ -510,6 +503,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		//Отправляет выбранные фото на конвертацию
 		(function () {
 			function result(data) {
 				socket.emit('convertPhotosResult', data);
@@ -522,19 +516,48 @@ module.exports.loadController = function (app, db, io) {
 				if (!Array.isArray(data) || data.length === 0) {
 					return result({message: 'Bad params', error: true});
 				}
-				step (
+				var cids = [],
+					i = data.length;
+
+				while (i--) {
+					data[i].cid = Number(data[i].cid);
+					if (data[i].cid) {
+						cids.push(data[i].cid);
+					}
+				}
+				if (!cids.length) {
+					return result({message: 'Bad params', error: true});
+				}
+				step(
 					function () {
-						for (var i = 0; i < data.length; i++) {
-							findPhoto({cid: data[i].cid}, {cid: 1, file: 1}, hs.session.user, true, this.parallel());
-						}
+						var _this = this;
+						Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, function (err, count) {
+							if (err) {
+								_this(err);
+							}
+							//Если не все нашлись в публичных, пробуем обновить в остальных статусах
+							if (count !== cids.length) {
+								PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+								PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+								PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+							} else {
+								_this();
+							}
+						});
 					},
 					function (err) {
-
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						PhotoConverter.addPhotos(data, this);
+					},
+					function (err, addResult) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result(addResult);
 					}
 				);
-				PhotoConverter.addPhotos(data, function (addResult) {
-					result(addResult);
-				});
 			});
 		}());
 
