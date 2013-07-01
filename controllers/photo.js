@@ -503,82 +503,6 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
-		//Отправляет выбранные фото на конвертацию
-		(function () {
-			function result(data) {
-				socket.emit('convertPhotosResult', data);
-			}
-
-			socket.on('convertPhotos', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: 'You do not have permission for this action', error: true});
-				}
-				if (!Array.isArray(data) || data.length === 0) {
-					return result({message: 'Bad params', error: true});
-				}
-				var cids = [],
-					i = data.length;
-
-				while (i--) {
-					data[i].cid = Number(data[i].cid);
-					if (data[i].cid) {
-						cids.push(data[i].cid);
-					}
-				}
-				if (!cids.length) {
-					return result({message: 'Bad params', error: true});
-				}
-				step(
-					function () {
-						var _this = this;
-						Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, function (err, count) {
-							if (err) {
-								_this(err);
-							}
-							//Если не все нашлись в публичных, пробуем обновить в остальных статусах
-							if (count !== cids.length) {
-								PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-								PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-								PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-							} else {
-								_this();
-							}
-						});
-					},
-					function (err) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						PhotoConverter.addPhotos(data, this);
-					},
-					function (err, addResult) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result(addResult);
-					}
-				);
-			});
-		}());
-
-		//Отправляет все фото выбранных вариантов на конвертацию
-		(function () {
-			function result(data) {
-				socket.emit('convertPhotosAllResult', data);
-			}
-
-			socket.on('convertPhotosAll', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: 'You do not have permission for this action', error: true});
-				}
-				if (!Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-				PhotoConverter.addPhotosAll(data, function (addResult) {
-					result(addResult);
-				});
-			});
-		}());
 
 		(function () {
 			/**
@@ -709,13 +633,13 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('givePhotosFresh', function (data) {
-				if (!data || !Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
 				if (!hs.session.user ||
 					(!data.login && hs.session.user.role < 5) ||
 					(data.login && hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
 					return result({message: 'You do not have permission for this action', error: true});
+				}
+				if (!data || !Utils.isType('object', data)) {
+					return result({message: 'Bad params', error: true});
 				}
 
 				step(
@@ -1103,6 +1027,84 @@ module.exports.loadController = function (app, db, io) {
 					}
 					result({photos: photos, clusters: clusters, startAt: data.startAt});
 				}
+			});
+		}());
+
+
+		//Отправляет выбранные фото на конвертацию
+		(function () {
+			function result(data) {
+				socket.emit('convertPhotosResult', data);
+			}
+
+			socket.on('convertPhotos', function (data) {
+				if (!hs.session.user || hs.session.user.role < 10) {
+					return result({message: 'You do not have permission for this action', error: true});
+				}
+				if (!Array.isArray(data) || data.length === 0) {
+					return result({message: 'Bad params', error: true});
+				}
+				var cids = [],
+					i = data.length;
+
+				while (i--) {
+					data[i].cid = Number(data[i].cid);
+					if (data[i].cid) {
+						cids.push(data[i].cid);
+					}
+				}
+				if (!cids.length) {
+					return result({message: 'Bad params', error: true});
+				}
+				step(
+					function () {
+						Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this);
+					},
+					function (err, count) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						//Если не все нашлись в публичных, пробуем обновить в остальных статусах
+						if (count !== cids.length) {
+							PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+							PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+							PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+						} else {
+							this();
+						}
+					},
+					function (err) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						PhotoConverter.addPhotos(data, this);
+					},
+					function (err, addResult) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result(addResult);
+					}
+				);
+			});
+		}());
+
+		//Отправляет все фото выбранных вариантов на конвертацию
+		(function () {
+			function result(data) {
+				socket.emit('convertPhotosAllResult', data);
+			}
+
+			socket.on('convertPhotosAll', function (data) {
+				if (!hs.session.user || hs.session.user.role < 10) {
+					return result({message: 'You do not have permission for this action', error: true});
+				}
+				if (!Utils.isType('object', data)) {
+					return result({message: 'Bad params', error: true});
+				}
+				PhotoConverter.addPhotosAll(data, function (addResult) {
+					result(addResult);
+				});
 			});
 		}());
 	});

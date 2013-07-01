@@ -227,10 +227,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 								closeFunc: function (evt) {
 									this.uploadVM.createPhotos(function (data) {
 										if (data && !data.error) {
-											this.uploadVM.destroy();
-											delete this.uploadVM;
-
-											globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
+											this.closeUpload();
 										}
 									}, this);
 									evt.stopPropagation();
@@ -270,6 +267,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 				delete this.uploadVM;
 				delete this.waitUploadSince;
+				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
 			}
 		}
 	});

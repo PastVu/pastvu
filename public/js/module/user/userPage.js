@@ -161,9 +161,6 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					}
 					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.fullName()});
 				} else {
-					if (this.contentVM && this.contentVM.module === module) {
-						this.contentVM.closeUpload();
-					}
 					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
 				}
 			} else if (section === 'comments') {
