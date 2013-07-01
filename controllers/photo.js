@@ -561,19 +561,18 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		//Отправляет все фото выбранных вариантов на конвертацию
 		(function () {
 			function result(data) {
 				socket.emit('convertPhotosAllResult', data);
 			}
 
 			socket.on('convertPhotosAll', function (data) {
-				if (!hs.session.user) {
-					result({message: 'You are not authorized for this action.', error: true});
-					return;
+				if (!hs.session.user || hs.session.user.role < 10) {
+					return result({message: 'You do not have permission for this action', error: true});
 				}
 				if (!Utils.isType('object', data)) {
-					result({message: 'Bad params. Need to be object', error: true});
-					return;
+					return result({message: 'Bad params', error: true});
 				}
 				PhotoConverter.addPhotosAll(data, function (addResult) {
 					result(addResult);

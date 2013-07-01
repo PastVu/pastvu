@@ -396,12 +396,10 @@ module.exports.addPhotosAll = function (data, cb) {
 
 	dbNative.eval('convertPhotosAll(' + variantsArrString + ')', function (err, ret) {
 		if (err) {
-			cb({message: err && err.message, error: true});
-			return;
+			return cb({message: err && err.message, error: true});
 		}
 		if (ret && ret.error) {
-			cb({message: ret.message || '', error: true});
-			return;
+			return cb({message: ret.message || '', error: true});
 		}
 
 		conveyerLength += ret.photosAdded;

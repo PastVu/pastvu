@@ -357,14 +357,14 @@ define([
 			this.selectedOpt = ko.observableArray([]);
 			this.$dom.find('#convertSelect').multiselect({
 				buttonClass: 'btn-strict btn-strict-small',
-				buttonWidth: 'auto', // Default
+				buttonWidth: '150', // Default
 				buttonText: function (options) {
 					if (options.length === 0) {
-						return 'All convert variants <b class="caret"></b>';
+						return 'Выберите варианты фото <b class="caret"></b>';
 					} else if (options.length === _this.convertOptions().length) {
-						return 'All variants selected <b class="caret"></b>';
+						return 'Все варианты выбранны <b class="caret"></b>';
 					} else if (options.length > 2) {
-						return options.length + ' variants selected <b class="caret"></b>';
+						return options.length + ' вариантов выбранно <b class="caret"></b>';
 					} else {
 						var selected = '';
 						options.each(function () {
@@ -462,7 +462,7 @@ define([
 
 			window.noty(
 				{
-					text: 'Conveyer will be cleared.<br>Confirm this operation?',
+					text: 'Конвейер будет очищен.<br>Подтвердить операцию?',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -474,7 +474,7 @@ define([
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Ok', onClick: function ($noty) {
+						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -490,7 +490,7 @@ define([
 
 								$noty.$message.children().html((data && data.message) || '');
 
-								okButton.text('Close').on('click', function () {
+								okButton.text('Закрыть').on('click', function () {
 									$noty.close();
 									this.exe(false);
 									this.statFast();
@@ -498,7 +498,7 @@ define([
 							}.bind(_this));
 							socket.emit('conveyerClear', true);
 						}},
-						{addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {
+						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							_this.exe(false);
 						}}

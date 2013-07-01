@@ -112,29 +112,38 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now(),
 			addDate = new Date(),
 			conveyer = [],
-			photos = db.photos.find({}, {_id: 0, cid: 1}).sort({adate: 1}).toArray(),
-			photoCounter = photos.length,
-			photosAllCount = photos.length;
+			selectFields = {_id: 0, cid: 1},
+			photoCounter,
+			iterator = function (photo) {
+				conveyer.push(
+					{
+						cid: photo.cid,
+						added: addDate
+					}
+				);
+			};
 
-		print('Start to fill new conveyer for ' + photosAllCount + ' photos');
+		print('Start to fill conveyer for ' + db.photos.count() + ' public photos');
+		db.photos.find({}, selectFields).sort({adate: 1}).forEach(iterator);
 
-		while (photoCounter) {
-			conveyer.push(
-				{
-					cid: photos[--photoCounter].cid,
-					added: addDate
-				}
-			);
-		}
+		print('Start to fill conveyer for ' + db.photos_fresh.count() + ' new photos');
+		db.photos_fresh.find({}, selectFields).sort({adate: 1}).forEach(iterator);
+
+		print('Start to fill conveyer for ' + db.photos_disabled.count() + ' disabled photos');
+		db.photos_disabled.find({}, selectFields).sort({adate: 1}).forEach(iterator);
+
+		print('Start to fill conveyer for ' + db.photos_del.count() + ' deleted photos');
+		db.photos_del.find({}, selectFields).sort({adate: 1}).forEach(iterator);
+
 		if (Array.isArray(variants) && variants.length > 0) {
 			photoCounter = conveyer.length;
-			while (photoCounter) {
-				conveyer[--photoCounter].variants = variants;
+			while (photoCounter--) {
+				conveyer[photoCounter].variants = variants;
 			}
 		}
 
 		db.photos_conveyer.insert(conveyer);
-		return {message: 'Added ' + photosAllCount + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: photosAllCount};
+		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
 	saveSystemJSFunc(function calcUserStats() {
@@ -320,7 +329,7 @@ module.exports.loadController = function (app, db) {
 			allCount = db[sourceCollectionName].count(),
 			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
 
-			//Размазываем даты регистрации пользователей по периоду с 1 марта 2009 до текущей даты
+		//Размазываем даты регистрации пользователей по периоду с 1 марта 2009 до текущей даты
 			expectingUsersCount = db.old_usersSpb.count({activated: 'yes'}),
 			firstUserStamp = (spbMode ? new Date("Sat, 1 Aug 2009 12:00:00 GMT") : new Date("Sun, 1 Mar 2009 12:00:00 GMT")).getTime(),
 			stepUserStamp = (startTime - firstUserStamp) / expectingUsersCount >> 0,
