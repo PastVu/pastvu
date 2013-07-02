@@ -859,7 +859,9 @@ module.exports.loadController = function (app, db) {
 				insertArr.push(newNovel);
 			}
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				db.news.insert(insertArr);
+				if (insertArr.length > 0) {
+					db.news.insert(insertArr);
+				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
 				if (db.news.count() !== okCounter + existsOnStart) {
 					printjson(insertArr[0]);
@@ -877,6 +879,67 @@ module.exports.loadController = function (app, db) {
 		db.counters.update({_id: 'news'}, {$set: {next: maxCid + 1}}, {upsert: true});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', newsInserted: okCounter, noUsers: noUserCounter};
+	});
+
+	saveSystemJSFunc(function fillUsersPhotos(byNumPerPackage) {
+		byNumPerPackage = byNumPerPackage || 2000;
+
+		print('Clearing target collection...');
+		db.users_photos.remove();
+
+		var startTime = Date.now(),
+			insertArr = [],
+			okCounter = 0,
+			allCounter = 0,
+			allCount = db.photos.count() + db.photos_disabled.count() + db.photos_del.count(),
+			usersArr,
+			users = {},
+			userLogin,
+			i;
+
+		print('Filling users hash...');
+		usersArr = db.users.find({}, {_id: 1, login: 1}).sort({cid: -1}).toArray();
+		for (i = usersArr.length; i--;) {
+			users[usersArr[i]._id] = usersArr[i].login;
+		}
+		print('Filled users hash with ' + usersArr.length + ' values');
+		usersArr = null;
+
+		print('Start to fill ' + db.photos.count() + ' public photos');
+		db.photos.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+		print('Start to fill ' + db.photos_disabled.count() + ' disabled photos');
+		db.photos_disabled.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+		print('Start to fill ' + db.photos_del.count() + 'del photos');
+		db.photos_del.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+
+		function iterator(photo) {
+			userLogin = users[photo.user];
+			allCounter++;
+
+			if (userLogin !== undefined) {
+				okCounter++;
+				insertArr.push({
+					login: userLogin,
+					cid: photo.cid,
+					stamp: photo.adate
+				});
+			}
+			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
+				if (insertArr.length > 0) {
+					db.users_photos.insert(insertArr);
+				}
+				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
+				if (db.users_photos.count() !== okCounter) {
+					printjson(insertArr[0]);
+					print('<...>');
+					printjson(insertArr[insertArr.length - 1]);
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.users_photos.count() + '. Some error inserting data packet. Stop imports');
+				}
+				insertArr = [];
+			}
+		}
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', inserted: okCounter};
 	});
 
 	saveSystemJSFunc(function oldConvertAll() {
@@ -913,6 +976,9 @@ module.exports.loadController = function (app, db) {
 		print('~~~~~~~');
 		print('calcUserStats()');
 		printjson(calcUserStats());
+		print('~~~~~~~');
+		print('fillUsersPhotos()');
+		printjson(fillUsersPhotos());
 		print('~~~~~~~');
 		print('calcPhotoStats()');
 		printjson(calcPhotoStats());
