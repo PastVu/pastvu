@@ -103,7 +103,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				} else {
 					var i = data.photos.length;
 					while (i--) {
-						Photo.factory(data.photos[i], 'compact', 'h', {title: 'No title yet'});
+						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 					}
 				}
 				if (Utils.isType('function', cb)) {
