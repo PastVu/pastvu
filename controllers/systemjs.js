@@ -974,11 +974,11 @@ module.exports.loadController = function (app, db) {
 		print("oldConvertComments('old_commentsSpb', true, " + spbPhotoShift + ")");
 		printjson(oldConvertComments('old_commentsSpb', true, spbPhotoShift));
 		print('~~~~~~~');
-		print('calcUserStats()');
-		printjson(calcUserStats());
-		print('~~~~~~~');
 		print('fillUsersPhotos()');
 		printjson(fillUsersPhotos());
+		print('~~~~~~~');
+		print('calcUserStats()');
+		printjson(calcUserStats());
 		print('~~~~~~~');
 		print('calcPhotoStats()');
 		printjson(calcPhotoStats());

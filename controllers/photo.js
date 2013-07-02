@@ -39,7 +39,7 @@ var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year
 			};
 
 			if (user) {
-				can.edit = photo.user.login === user.login || user.role > 4;
+				can.edit = user.role > 4 || photo.user && photo.user.login === user.login;
 				if (user.role > 4) {
 					can.disable = true;
 					can.remove = true;
@@ -369,7 +369,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('approvePhoto', function (cid) {
 				cid = Number(cid);
-				if (cid) {
+				if (!cid) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
 				if (!hs.session.user || hs.session.user.role < 5) {
@@ -378,7 +378,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						PhotoFresh.findOne({cid: cid}, {_id: 0}).populate('user', {_id: 0, login: 1}).exec(this);
+						PhotoFresh.findOne({cid: cid}, {_id: 0}).populate('user', {_id: 1, login: 1}).exec(this);
 					},
 					function (err, photoFresh) {
 						if (err) {
@@ -387,15 +387,18 @@ module.exports.loadController = function (app, db, io) {
 						if (!photoFresh) {
 							return result({message: 'Requested photo does not exist', error: true});
 						}
-						photoFresh = photoFresh.toObject();
 
-						var photo = new Photo(photoFresh),
-							userPhoto = new UsersPhotos({
+						var userPhoto = new UsersPhotos({
 								login: photoFresh.user.login,
 								cid: photoFresh.cid,
 								stamp: new Date()
-							});
+							}),
+							photo;
 
+						photoFresh = photoFresh.toObject();
+						photoFresh.user = photoFresh.user._id;
+
+						photo = new Photo(photoFresh);
 						photo.adate = userPhoto.stamp;
 						photo.frags = undefined;
 						if (!photoFresh.geo) {
@@ -617,7 +620,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			function sortAdate(a, b) {
-				return a.adate > b.adate ? 1 : (a.adate < b.adate ? -1 : 0);
+				return a.adate > b.adate ? -1 : (a.adate < b.adate ? 1 : 0);
 			}
 
 			socket.on('giveUserPhotos', function (data) {
@@ -633,12 +636,13 @@ module.exports.loadController = function (app, db, io) {
 					if (hs.session.user && (user._id.equals(hs.session.user._id) || hs.session.user.role > 4)) {
 						step(
 							function () {
+								var _this = this;
 								user.pfcount = user.pfcount || 0;
 								if (user.pfcount > skip) {
 									//Если кол-во новых больше пропуска, значит они попадают на страницу
-									var selectingFreshCount = user.pfcount - skip; //Кол-во новых, которые попадут на страницу
-									limit = Math.max(0, limit - selectingFreshCount); //Кол-во остальных уменьшаем на кол-во новых
-									PhotoFresh.find(query, compactFields, {sort: {ldate: -1}, skip: skip, limit: limit}, this);
+									PhotoFresh.collection.find(query, compactFields, {sort: {ldate: -1}, skip: skip, limit: limit}, function (err, cursor) {
+										cursor.toArray(_this);
+									});
 									skip = 0;
 								} else {
 									//Если новых меньше чем пропуск, значит они не попадаю на страницу,
@@ -653,8 +657,8 @@ module.exports.loadController = function (app, db, io) {
 								}
 
 								if (pFresh && pFresh.length) {
-									limit -= pFresh.length;
-									photosFresh = pFresh.toObject();
+									limit -= pFresh.length; //Кол-во остальных уменьшаем на кол-во новых
+									photosFresh = pFresh;
 								}
 
 								UsersPhotos.collection.find({login: data.login}, {_id: 0, cid: 1}, {sort: [
@@ -693,12 +697,14 @@ module.exports.loadController = function (app, db, io) {
 
 								if (photosDis && photosDis.length) {
 									for (i = photosDis.length; i--;) {
+										photosDis[i].disabled = true;
 										photosPublic.push(photosDis[i]);
 									}
 									needSort = true;
 								}
 								if (photosDel && photosDel.length) {
 									for (i = photosDel.length; i--;) {
+										photosDis[i].del = true;
 										photosPublic.push(photosDel[i]);
 									}
 									needSort = true;
@@ -706,8 +712,12 @@ module.exports.loadController = function (app, db, io) {
 								if (needSort) {
 									photosPublic.sort(sortAdate);
 								}
+
 								if (photosFresh && photosFresh.length) {
-									photosPublic = photosFresh.concat(photosPublic);
+									for (i = photosFresh.length; i--;) {
+										photosFresh[i].fresh = true;
+										photosPublic.unshift(photosFresh[i]);
+									}
 								}
 
 								finish(null, photosPublic);
