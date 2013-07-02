@@ -620,7 +620,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			function sortAdate(a, b) {
-				return a.adate > b.adate ? -1 : (a.adate < b.adate ? 1 : 0);
+				return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
 			}
 
 			socket.on('giveUserPhotos', function (data) {
@@ -640,15 +640,13 @@ module.exports.loadController = function (app, db, io) {
 								user.pfcount = user.pfcount || 0;
 								if (user.pfcount > skip) {
 									//Если кол-во новых больше пропуска, значит они попадают на страницу
-									PhotoFresh.collection.find(query, compactFields, {sort: {ldate: -1}, skip: skip, limit: limit}, function (err, cursor) {
-										cursor.toArray(_this);
-									});
+									PhotoFresh.find(query, compactFields, {lean: true, sort: {ldate: -1}, skip: skip, limit: limit}, this);
 									skip = 0;
 								} else {
 									//Если новых меньше чем пропуск, значит они не попадаю на страницу,
 									//но уменьшают пропуск остальных на свое кол-во
 									skip -= user.pfcount;
-									this(null, []);
+									this();
 								}
 							},
 							function (err, pFresh) {
@@ -685,7 +683,6 @@ module.exports.loadController = function (app, db, io) {
 								if (hs.session.user.role > 9) {
 									PhotoDel.collection.find({cid: {$in: cids}}, compactFields, this.parallel());
 								}
-
 							},
 							Utils.cursorsExtract,
 							function (err, photosPublic, photosDis, photosDel) {
@@ -709,6 +706,8 @@ module.exports.loadController = function (app, db, io) {
 									}
 									needSort = true;
 								}
+								//Если есть неактивные или удаленные, то они должны не просто добавиться,
+								//а подмешаться, поэтому нужно пересортировать
 								if (needSort) {
 									photosPublic.sort(sortAdate);
 								}
@@ -750,50 +749,67 @@ module.exports.loadController = function (app, db, io) {
 		}());
 
 
-		/**
-		 * Отдаем фотографии с ограниченным доступом
-		 */
-		function takeUserPhotosPrivate(data) {
-			socket.emit('takeUserPhotosPrivate', data);
-		}
+		//Отдаем непубличные фотографии
+		(function () {
+			function result(data) {
+				socket.emit('takeUserPhotosPrivate', data);
+			}
 
-		socket.on('giveUserPhotosPrivate', function (data) {
-			User.getUserID(data.login, function (err, userid) {
-				if (err) {
-					takeUserPhotosPrivate({message: err && err.message, error: true});
-					return;
+			socket.on('giveUserPhotosPrivate', function (data) {
+				if (!hs.session.user ||
+					(hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
+					return result({message: 'You do not have permission for this action', error: true});
 				}
-				if (!hs.session.user || !userid.equals(hs.session.user._id)) {
-					takeUserPhotosPrivate({message: 'You do not have permission for this action', error: true});
-					return;
-				}
-
-				step(
-					function () {
-						var filters = {user: userid, disabled: true, del: {$exists: false}};
-						if (data.startTime || data.endTime) {
-							filters.adate = {};
-							if (data.startTime) {
-								filters.adate.$gte = data.startTime;
-							}
-							if (data.endTime) {
-								filters.adate.$lte = data.endTime;
-							}
-						}
-						Photo.getPhotosCompact(filters, {}, this.parallel());
-						Photo.getPhotosFreshCompact({user: userid, fresh: true, del: {$exists: false}}, {}, this.parallel());
-						filters = null;
-					},
-					function (err, disabled, fresh) {
-						if (err) {
-							takeUserPhotosPrivate({message: err && err.message, error: true});
-							return;
-						}
-						takeUserPhotosPrivate({fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length});
+				User.getUserID(data.login, function (err, userid) {
+					if (err) {
+						return result({message: err && err.message, error: true});
 					}
-				);
+
+					step(
+						function () {
+							var query = {user: userid};
+							if (data.startTime || data.endTime) {
+								query.adate = {};
+								if (data.startTime) {
+									query.adate.$gte = new Date(data.startTime);
+								}
+								if (data.endTime) {
+									query.adate.$lte = new Date(data.endTime);
+								}
+							}
+
+							PhotoFresh.collection.find({user: userid}, compactFields, {sort: {ldate: -1}}, this.parallel());
+							PhotoDis.collection.find(query, compactFields, this.parallel());
+							if (hs.session.user.role > 9) {
+								PhotoDel.collection.find(query, compactFields, this.parallel());
+							}
+						},
+						Utils.cursorsExtract,
+						function (err, fresh, disabled, del) {
+							if (err) {
+								return result({message: err && err.message, error: true});
+							}
+							var res = {fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length},
+								i;
+							for (i = res.fresh.length; i--;) {
+								res.fresh[i].fresh = true;
+							}
+							for (i = res.disabled.length; i--;) {
+								res.disabled[i].disabled = true;
+							}
+							if (hs.session.user.role > 9) {
+								res.del = del || [];
+								res.len += res.del.length;
+								for (i = res.del.length; i--;) {
+									res.del[i].del = true;
+								}
+							}
+							result(res);
+						}
+					);
+				});
 			});
-		});
+		}());
 
 		//Отдаем новые фотографии
 		(function () {

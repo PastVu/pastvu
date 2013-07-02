@@ -119,34 +119,36 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
+						needSort,
+						needReplacement,
 						i;
 
-					if (data.disabled.length > 0) {
-						i = data.disabled.length;
-						while (i--) {
-							Photo.factory(data.disabled[i], 'compact', 'h');
+					if (data.disabled && data.disabled.length) {
+						for (i = data.disabled.length; i--;) {
+							currArray.push(Photo.factory(data.disabled[i], 'compact', 'h', {title: 'Без названия'}));
 						}
-						Array.prototype.push.apply(currArray, data.disabled);
+						needReplacement = needSort = true;
+					}
+					if (data.del && data.del.length) {
+						for (i = data.del.length; i--;) {
+							currArray.push(Photo.factory(data.del[i], 'compact', 'h', {title: 'Без названия'}));
+						}
+						needReplacement = needSort = true;
+					}
+					if (needSort) {
 						currArray.sort(function (a, b) {
-							if (a.adate < b.adate) {
-								return 1;
-							} else if (a.adate > b.adate) {
-								return -1;
-							} else {
-								return 0;
-							}
+							return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
 						});
 					}
 
-					if (data.fresh.length > 0) {
-						i = data.fresh.length;
-						while (i--) {
-							Photo.factory(data.fresh[i], 'compact', 'h');
+					if (data.fresh && data.fresh.length) {
+						for (i = data.fresh.length; i--;) {
+							currArray.unshift(Photo.factory(data.fresh[i], 'compact', 'h', {title: 'Без названия'}));
 						}
-						Array.prototype.unshift.apply(currArray, data.fresh);
+						needReplacement = true;
 					}
 
-					if (data.disabled.length > 0 || data.fresh.length > 0) {
+					if (needReplacement) {
 						this.photos(currArray);
 					}
 					currArray = i = null;
