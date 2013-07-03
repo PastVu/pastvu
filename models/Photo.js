@@ -59,7 +59,6 @@ var FragmentSchema = new Schema({
 	PhotosSortSchema = new Schema({
 			photo: {type: Schema.Types.ObjectId, ref: 'Photo', index: true},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-			//cid: {type: Number, index: {unique: true}},
 			stamp: {type: Date, index: true},
 			state: {type: Number}
 		},

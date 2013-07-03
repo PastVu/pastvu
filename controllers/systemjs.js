@@ -881,59 +881,59 @@ module.exports.loadController = function (app, db) {
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', newsInserted: okCounter, noUsers: noUserCounter};
 	});
 
-	saveSystemJSFunc(function fillUsersPhotos(byNumPerPackage) {
+	saveSystemJSFunc(function fillPhotosSort(byNumPerPackage) {
 		byNumPerPackage = byNumPerPackage || 2000;
 
 		print('Clearing target collection...');
-		db.users_photos.remove();
+		db.photos_sort.remove();
 
 		var startTime = Date.now(),
 			insertArr = [],
 			okCounter = 0,
 			allCounter = 0,
-			allCount = db.photos.count() + db.photos_disabled.count() + db.photos_del.count(),
-			usersArr,
-			users = {},
-			userLogin,
+			allCount = db.photos_fresh.count() + db.photos.count() + db.photos_disabled.count() + db.photos_del.count(),
+			stampName,
+			state,
 			i;
 
-		print('Filling users hash...');
-		usersArr = db.users.find({}, {_id: 1, login: 1}).sort({cid: -1}).toArray();
-		for (i = usersArr.length; i--;) {
-			users[usersArr[i]._id] = usersArr[i].login;
-		}
-		print('Filled users hash with ' + usersArr.length + ' values');
-		usersArr = null;
+		print('Start to fill ' + db.photos_fresh.count() + ' fresh photos');
+		stampName = 'ldate';
+		state = 1;
+		db.photos_fresh.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
 
 		print('Start to fill ' + db.photos.count() + ' public photos');
-		db.photos.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+		stampName = 'ldate';
+		state = 5;
+		db.photos.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
+
 		print('Start to fill ' + db.photos_disabled.count() + ' disabled photos');
-		db.photos_disabled.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+		state = 7;
+		db.photos_disabled.find({}, {_id: 0, user: 1, adate: 1}).forEach(iterator);
+
 		print('Start to fill ' + db.photos_del.count() + 'del photos');
-		db.photos_del.find({}, {_id: 0, cid: 1, user: 1, adate: 1}).forEach(iterator);
+		state = 9;
+		db.photos_del.find({}, {_id: 0, user: 1, adate: 1}).forEach(iterator);
 
 		function iterator(photo) {
-			userLogin = users[photo.user];
 			allCounter++;
 
-			if (userLogin !== undefined) {
-				okCounter++;
-				insertArr.push({
-					login: userLogin,
-					cid: photo.cid,
-					stamp: photo.adate
-				});
-			}
+			okCounter++;
+			insertArr.push({
+				photo: photo._id,
+				user: photo.user,
+				stamp: photo[stampName],
+				state: state
+			});
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
 				if (insertArr.length > 0) {
-					db.users_photos.insert(insertArr);
+					db.photos_sort.insert(insertArr);
 				}
 				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.users_photos.count() !== okCounter) {
+				if (db.photos_sort.count() !== okCounter) {
 					printjson(insertArr[0]);
 					print('<...>');
 					printjson(insertArr[insertArr.length - 1]);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.users_photos.count() + '. Some error inserting data packet. Stop imports');
+					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.photos_sort.count() + '. Some error inserting data packet. Stop imports');
 				}
 				insertArr = [];
 			}
@@ -974,8 +974,8 @@ module.exports.loadController = function (app, db) {
 		print("oldConvertComments('old_commentsSpb', true, " + spbPhotoShift + ")");
 		printjson(oldConvertComments('old_commentsSpb', true, spbPhotoShift));
 		print('~~~~~~~');
-		print('fillUsersPhotos()');
-		printjson(fillUsersPhotos());
+		print('fillPhotosSort()');
+		printjson(fillPhotosSort());
 		print('~~~~~~~');
 		print('calcUserStats()');
 		printjson(calcUserStats());

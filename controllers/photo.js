@@ -756,51 +756,33 @@ module.exports.loadController = function (app, db, io) {
 					if (err || !photo || !photo.user) {
 						return result({message: 'Requested photo does not exist', error: true});
 					}
-					if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
-						step(
-							function () {
-								photo.populate({path: 'user', select: {_id: 0, login: 1, pfcount: 1}});
-							},
-							function (err, user) {
-								if (err) {
-									return result({message: err && err.message, error: true});
+					step(
+						function () {
+							if (limitL) {
+								if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
+									PhotoSort.find({user: photo.user, stamp: {$gt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
+								} else {
+									Photo.find({user: photo.user, adate: {$gt: photo.adate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
 								}
-								if (limitL) {
-									PhotoFresh.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {ldate: 1}, limit: limitL}, this.parallel());
-									PhotoDis.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-								}
-								if (limitR) {
-									PhotoFresh.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {ldate: -1}, limit: limitR}, this.parallel());
-									PhotoDis.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-								}
-								if (hs.session.user.role > 9) {
-									if (limitL) {
-										PhotoDel.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-									}
-									if (limitR) {
-										PhotoDel.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-									}
-								}
-							},
-							function (err) {
+							} else {
+								this.parallel()(null, []);
 							}
-						);
-					} else {
-						if (limitL) {
-							Photo.find({user: photo.user, cid: {$gt: cid}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+							if (limitR) {
+								if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
+									PhotoSort.find({user: photo.user, stamp: {$lt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
+								} else {
+									Photo.find({user: photo.user, adate: {$lt: photo.adate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+								}
+							} else {
+								this.parallel()(null, []);
+							}
+						},
+						function (err, photosL, photosR) {
+							console.dir(photosL);
+							console.dir(photosR);
+							result({left: photosL || [], right: photosR || []});
 						}
-						if (limitR) {
-							Photo.find({user: photo.user, cid: {$lt: cid}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-						}
-					}
-
-
-					function finish(err, photosL, photosR) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({left: photosL || [], right: photosR || []});
-					}
+					);
 				});
 			});
 		}());
