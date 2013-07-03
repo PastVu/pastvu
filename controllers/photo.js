@@ -636,7 +636,6 @@ module.exports.loadController = function (app, db, io) {
 					if (hs.session.user && (user._id.equals(hs.session.user._id) || hs.session.user.role > 4)) {
 						step(
 							function () {
-								var _this = this;
 								user.pfcount = user.pfcount || 0;
 								if (user.pfcount > skip) {
 									//Если кол-во новых больше пропуска, значит они попадают на страницу
@@ -723,19 +722,8 @@ module.exports.loadController = function (app, db, io) {
 							}
 						);
 					} else {
-						step(
-							function () {
-								Photo.collection.find(query, compactFields, {sort: [
-									['adate', 'desc']
-								], skip: skip, limit: limit}, this);
-							},
-							Utils.cursorExtract,
-							function (err, photos) {
-								finish(err, photos);
-							}
-						);
+						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
 					}
-
 
 					function finish(err, photos) {
 						if (err) {
@@ -745,6 +733,48 @@ module.exports.loadController = function (app, db, io) {
 						photosFresh = skip = limit = null;
 					}
 				});
+			});
+		}());
+
+		//Берем массив до и после указанной фотографии пользователя указанной длины
+		(function () {
+			function result(data) {
+				socket.emit('takeUserPhotosAround', data);
+			}
+
+			socket.on('giveUserPhotosAround', function (data) {
+				var cid = Number(data && data.cid);
+				if (!cid || (!data.limitL && !data.limitR)) {
+					return result({message: 'Bad params', error: true});
+				}
+
+				step(
+					function findUserId() {
+						findPhoto({cid: cid}, {_id: 0, user: 1}, hs.session.user, true, this);
+					},
+					function findAroundPhotos(err, photo) {
+						if (err || !photo || !photo.user) {
+							return result({message: 'Requested photo does not exist', error: true});
+						}
+						if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
+
+						} else {
+							if (data.limitL) {
+								Photo.find({user: photo.user, cid: {$gt: cid}}, compactFields, {lean: true, sort: {adate: 1}, limit: data.limitL}, this.parallel());
+							}
+
+							if (data.limitR) {
+								Photo.find({user: photo.user, cid: {$lt: cid}}, compactFields, {lean: true, sort: {adate: -1}, limit: data.limitR}, this.parallel());
+							}
+						}
+					},
+					function (err, photosL, photosR) {
+						if (err) {
+							return result({message: err.message || '', error: true});
+						}
+						result({left: photosL, right: photosR});
+					}
+				);
 			});
 		}());
 
@@ -887,54 +917,6 @@ module.exports.loadController = function (app, db, io) {
 				}
 			});
 		}());
-
-		(function () {
-			/**
-			 * Берем массив до и после указанной фотографии указанной длины
-			 */
-			function result(data) {
-				socket.emit('takeUserPhotosAround', data);
-			}
-
-			socket.on('giveUserPhotosAround', function (data) {
-				if (!data.cid || (!data.limitL && !data.limitR)) {
-					result({message: 'Bad params', error: true});
-					return;
-				}
-
-				step(
-					function findUserId() {
-						Photo.findOne({cid: data.cid}, {_id: 0, user: 1}, this);
-					},
-					function findAroundPhotos(err, photo) {
-						if (err || !photo || !photo.user) {
-							result({message: 'No such photo', error: true});
-							return;
-						}
-						var filters = {user: photo.user, del: {$exists: false}};
-						if (!hs.session.user || !photo.user.equals(hs.session.user._id)) {
-							filters.fresh = {$exists: false};
-							filters.disabled = {$exists: false};
-						}
-						if (data.limitL > 0) {
-							Photo.find(filters).gt('cid', data.cid).sort('adate').limit(data.limitL).select('-_id cid file title year').exec(this.parallel());
-						}
-						if (data.limitR > 0) {
-							Photo.find(filters).lt('cid', data.cid).sort('-adate').limit(data.limitR).select('-_id cid file title year').exec(this.parallel());
-						}
-						filters = null;
-					},
-					function (err, photosL, photosR) {
-						if (err) {
-							result({message: err.message || '', error: true});
-							return;
-						}
-						result({left: photosL, right: photosR});
-					}
-				);
-			});
-		}());
-
 
 		//Сохраняем информацию о фотографии
 		(function () {

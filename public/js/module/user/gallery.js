@@ -84,7 +84,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error) {
 					return;
 				}
-				this.photos.concat(data.photos, false);
+				if (data.photos && data.photos.length) {
+					this.photos.concat(data.photos, false);
+				}
 				if (this.scrollActive && limit > data.photos.length) {
 					$window.off('scroll', this.scrollHandler);
 					this.scrollActive = false;
@@ -101,8 +103,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					var i = data.photos.length;
-					while (i--) {
+					for (var i = data.photos.length; i--;) {
 						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 					}
 				}
