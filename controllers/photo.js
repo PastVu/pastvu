@@ -7,7 +7,7 @@ var auth = require('./auth.js'),
 	PhotoFresh,
 	PhotoDis,
 	PhotoDel,
-	UsersPhotos,
+	PhotoSort,
 	Counter,
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
@@ -106,9 +106,17 @@ function createPhotos(socket, data, cb) {
 			if (err || !count) {
 				return cb({message: err && err.message || 'Increment photo counter error', error: true});
 			}
-			data.forEach(function (item, index) {
-				var photo = new PhotoFresh({
-					cid: count.next - index,
+			var photo,
+				photoSort,
+				future10y = new Date(Date.now() + ms('10y')),//Прибавляем 10 лет новым, чтобы они были всегда вначале сортировки
+				item,
+				i;
+
+			for (i = data.length; i--;) {
+				item = data[i];
+
+				photo = new PhotoFresh({
+					cid: count.next - i,
 					user: user._id,
 					file: item.fullfile,
 					type: item.type,
@@ -119,14 +127,17 @@ function createPhotos(socket, data, cb) {
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
 				});
+				photoSort = new PhotoSort({
+					photo: photo._id,
+					user: user._id,
+					stamp: future10y,
+					state: 1
+				});
 
 				result.push({cid: photo.cid});
-				if (data.length > 1) {
-					photo.save(this.parallel());
-				} else {
-					photo.save(this);
-				}
-			}.bind(this));
+				photo.save(this.parallel());
+				photoSort.save(this.parallel());
+			}
 		},
 		function (err) {
 			if (err) {
@@ -325,7 +336,7 @@ module.exports.loadController = function (app, db, io) {
 	PhotoFresh = db.model('PhotoFresh');
 	PhotoDis = db.model('PhotoDisabled');
 	PhotoDel = db.model('PhotoDel');
-	UsersPhotos = db.model('UsersPhotos');
+	PhotoSort = db.model('PhotoSort');
 	Counter = db.model('Counter');
 
 	PhotoCluster.loadController(app, db, io);
@@ -378,7 +389,7 @@ module.exports.loadController = function (app, db, io) {
 
 				step(
 					function () {
-						PhotoFresh.findOne({cid: cid}, {_id: 0}).populate('user', {_id: 1, login: 1}).exec(this);
+						PhotoFresh.findOne({cid: cid}, {}, {lean: true}, this);
 					},
 					function (err, photoFresh) {
 						if (err) {
@@ -387,26 +398,16 @@ module.exports.loadController = function (app, db, io) {
 						if (!photoFresh) {
 							return result({message: 'Requested photo does not exist', error: true});
 						}
+						var photo = new Photo(photoFresh);
 
-						var userPhoto = new UsersPhotos({
-								login: photoFresh.user.login,
-								cid: photoFresh.cid,
-								stamp: new Date()
-							}),
-							photo;
-
-						photoFresh = photoFresh.toObject();
-						photoFresh.user = photoFresh.user._id;
-
-						photo = new Photo(photoFresh);
-						photo.adate = userPhoto.stamp;
+						photo.adate = new Date();
 						photo.frags = undefined;
-						if (!photoFresh.geo) {
+						if (!photoFresh.geo || photoFresh.geo.length !== 2) {
 							photo.geo = undefined;
 						}
 
 						photo.save(this.parallel());
-						userPhoto.save(this.parallel());
+						PhotoSort.update({photo: photo._id}, {$set: {state: 5, stamp: photo.adate}}, {upsert: false}, this.parallel());
 					},
 					function (err, photoSaved) {
 						if (err) {
@@ -481,7 +482,8 @@ module.exports.loadController = function (app, db, io) {
 						}
 
 						photo = p;
-						newPhoto.save(this);
+						newPhoto.save(this.parallel());
+						PhotoSort.update({photo: photo._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
 					},
 					function removeFromOldModel(err, photoSaved) {
 						if (err) {
@@ -658,21 +660,21 @@ module.exports.loadController = function (app, db, io) {
 									photosFresh = pFresh;
 								}
 
-								UsersPhotos.collection.find({login: data.login}, {_id: 0, cid: 1}, {sort: [
+								PhotoSort.collection.find({login: data.login}, {_id: 0, cid: 1}, {sort: [
 									['stamp', 'desc']
 								], skip: skip, limit: limit}, this);
 
 							},
 							Utils.cursorExtract,
-							function (err, usersPhotos) {
+							function (err, photoSort) {
 								if (err) {
 									return finish(err);
 								}
 								var cids = [],
 									i;
 
-								for (i = usersPhotos.length; i--;) {
-									cids.push(usersPhotos[i].cid);
+								for (i = photoSort.length; i--;) {
+									cids.push(photoSort[i].cid);
 								}
 
 								Photo.collection.find({cid: {$in: cids}}, compactFields, {sort: [
@@ -743,38 +745,63 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('giveUserPhotosAround', function (data) {
-				var cid = Number(data && data.cid);
-				if (!cid || (!data.limitL && !data.limitR)) {
+				var cid = Number(data && data.cid),
+					limitL = Number(data.limitL),
+					limitR = Number(data.limitR);
+				if (!cid || (!limitL && !limitR)) {
 					return result({message: 'Bad params', error: true});
 				}
 
-				step(
-					function findUserId() {
-						findPhoto({cid: cid}, {_id: 0, user: 1}, hs.session.user, true, this);
-					},
-					function findAroundPhotos(err, photo) {
-						if (err || !photo || !photo.user) {
-							return result({message: 'Requested photo does not exist', error: true});
-						}
-						if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
-
-						} else {
-							if (data.limitL) {
-								Photo.find({user: photo.user, cid: {$gt: cid}}, compactFields, {lean: true, sort: {adate: 1}, limit: data.limitL}, this.parallel());
-							}
-
-							if (data.limitR) {
-								Photo.find({user: photo.user, cid: {$lt: cid}}, compactFields, {lean: true, sort: {adate: -1}, limit: data.limitR}, this.parallel());
-							}
-						}
-					},
-					function (err, photosL, photosR) {
-						if (err) {
-							return result({message: err.message || '', error: true});
-						}
-						result({left: photosL, right: photosR});
+				findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, hs.session.user, true, function (err, photo) {
+					if (err || !photo || !photo.user) {
+						return result({message: 'Requested photo does not exist', error: true});
 					}
-				);
+					if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
+						step(
+							function () {
+								photo.populate({path: 'user', select: {_id: 0, login: 1, pfcount: 1}});
+							},
+							function (err, user) {
+								if (err) {
+									return result({message: err && err.message, error: true});
+								}
+								if (limitL) {
+									PhotoFresh.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {ldate: 1}, limit: limitL}, this.parallel());
+									PhotoDis.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+								}
+								if (limitR) {
+									PhotoFresh.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {ldate: -1}, limit: limitR}, this.parallel());
+									PhotoDis.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+								}
+								if (hs.session.user.role > 9) {
+									if (limitL) {
+										PhotoDel.find({user: photo.user, ldate: {$gt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+									}
+									if (limitR) {
+										PhotoDel.find({user: photo.user, ldate: {$lt: photo.adate || photo.ldate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+									}
+								}
+							},
+							function (err) {
+							}
+						);
+					} else {
+						if (limitL) {
+							Photo.find({user: photo.user, cid: {$gt: cid}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+						}
+						if (limitR) {
+							Photo.find({user: photo.user, cid: {$lt: cid}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+						}
+					}
+
+
+					function finish(err, photosL, photosR) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result({left: photosL || [], right: photosR || []});
+					}
+				});
 			});
 		}());
 

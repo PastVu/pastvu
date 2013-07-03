@@ -55,13 +55,15 @@ var FragmentSchema = new Schema({
 	PhotoSchema_Del = new Schema(commonStructure, {collection: 'photos_del', strict: true}),
 	PhotoSchema = new Schema(commonStructure, {strict: true}),
 
-	//Коллекция для быстрого сортированного поиска фотографий юзера независимо от статуса фото
-	UsersPhotosSchema = new Schema({
-			login: {type: String, required: true, index: true},
-			cid: {type: Number, index: {unique: true}},
-			stamp: {type: Date, index: true}
+	//Коллекция сквозной сортировки фотографий независимо от статуса фото
+	PhotosSortSchema = new Schema({
+			photo: {type: Schema.Types.ObjectId, ref: 'Photo', index: true},
+			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
+			//cid: {type: Number, index: {unique: true}},
+			stamp: {type: Date, index: true},
+			state: {type: Number}
 		},
-		{collection: 'users_photos', strict: true}
+		{collection: 'photos_sort', strict: true}
 	),
 
 	PhotoConveyerSchema = new Schema(
@@ -173,7 +175,7 @@ module.exports.makeModel = function (db) {
 	db.model('PhotoFresh', PhotoSchema_Fresh);
 	db.model('PhotoDisabled', PhotoSchema_Disabled);
 	db.model('PhotoDel', PhotoSchema_Del);
-	db.model('UsersPhotos', UsersPhotosSchema);
+	db.model('PhotoSort', PhotosSortSchema);
 
 	db.model('PhotoConveyer', PhotoConveyerSchema);
 	db.model('PhotoConveyerError', PhotoConveyerErrorSchema);
