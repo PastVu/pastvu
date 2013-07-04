@@ -756,31 +756,46 @@ module.exports.loadController = function (app, db, io) {
 					if (err || !photo || !photo.user) {
 						return result({message: 'Requested photo does not exist', error: true});
 					}
+					var query = {user: photo.user},
+						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
+
+					//Не обладающие ролью админа не могут видеть удаленные фотографии
+					if (noPublic && hs.session.user.role < 9) {
+						query.state = {$ne: 9};
+					}
 					step(
 						function () {
 							if (limitL) {
-								if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
-									PhotoSort.find({user: photo.user, stamp: {$gt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
+								if (noPublic) {
+									query.stamp = {$gt: photo.adate || photo.ldate};
+									PhotoSort.find(query, {_id: 0, photo: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
 								} else {
-									Photo.find({user: photo.user, adate: {$gt: photo.adate}}, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+									query.adate = {$gt: photo.adate};
+									Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
 								}
 							} else {
 								this.parallel()(null, []);
 							}
 							if (limitR) {
-								if (hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id))) {
-									PhotoSort.find({user: photo.user, stamp: {$lt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
+								if (noPublic) {
+									query.stamp = {$lt: photo.adate || photo.ldate};
+									PhotoSort.find( {user: photo.user,stamp:{$lt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
 								} else {
-									Photo.find({user: photo.user, adate: {$lt: photo.adate}}, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+									query.adate = {$lt: photo.adate};
+									Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
 								}
 							} else {
 								this.parallel()(null, []);
 							}
 						},
 						function (err, photosL, photosR) {
-							console.dir(photosL);
-							console.dir(photosR);
-							result({left: photosL || [], right: photosR || []});
+							if (noPublic && photosL.length) {
+								photosL = _.pluck(photosL, 'photo');
+							}
+							if (noPublic && photosR.length) {
+								photosR = _.pluck(photosR, 'photo');
+							}
+							result({left: photosL, right: photosR});
 						}
 					);
 				});

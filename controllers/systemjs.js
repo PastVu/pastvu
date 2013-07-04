@@ -902,7 +902,7 @@ module.exports.loadController = function (app, db) {
 		db.photos_fresh.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
 
 		print('Start to fill ' + db.photos.count() + ' public photos');
-		stampName = 'ldate';
+		stampName = 'adate';
 		state = 5;
 		db.photos.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
 
