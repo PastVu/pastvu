@@ -297,6 +297,105 @@ function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
 	});
 }
 
+/**
+ * Находим фотографии по сквозной таблице, независимо от статуса
+ * @param query
+ * @param fieldSelect Выбор полей
+ * @param options
+ * @param user Пользователь сессии
+ * @param noPublicToo Искать ли в непубличных при наличии прав
+ * @param cb
+ */
+var findAllPhotos = (function () {
+	function findInCollection(model, arr, fieldSelect, cb) {
+		if (arr.length) {
+			model.find({_id: {$in: arr}}, fieldSelect, {lean: true}, cb);
+		} else {
+			cb(null, []);
+		}
+	}
+	function stateCheck(source, fresh, pub, dis, del) {
+		var item,
+			i;
+		for (i = source.length; i--;) {
+			item = source[i];
+			if (item.state === 1) {
+				fresh.push(item.photo);
+			} else if (item.state === 5) {
+				pub.push(item.photo);
+			} else if (item.state === 7) {
+				dis.push(item.photo);
+			} else if (item.state === 9) {
+				del.push(item.photo);
+			}
+		}
+	}
+
+	return function (query, fieldSelect, options, user, noPublicToo, cb) {
+		var photoSort;
+		step(
+			function () {
+				if (user.role < 9) {
+					query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
+				}
+				options = options || {};
+				options.lean = true;
+				PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, options, this.parallel());
+			},
+			function (err, pSort) {
+				if (err) {
+					cb(err);
+				}
+				var fresh = [],
+					pub = [],
+					dis = [],
+					del = [];
+
+				stateCheck(pSort, fresh, pub, dis, del);
+				findInCollection(PhotoFresh, fresh, fieldSelect, this.parallel());
+				findInCollection(Photo, pub, fieldSelect, this.parallel());
+				findInCollection(PhotoDis, dis, fieldSelect, this.parallel());
+				findInCollection(PhotoDel, del, fieldSelect, this.parallel());
+				photoSort = pSort;
+			},
+			function (err, fresh, pub, dis, del) {
+				if (err) {
+					cb(err);
+				}
+				var res = [],
+					photosHash = {},
+					item,
+					i;
+
+				for (i = fresh.length; i--;) {
+					item = fresh[i];
+					item.fresh = true;
+					photosHash[item._id] = item;
+				}
+				for (i = pub.length; i--;) {
+					item = pub[i];
+					photosHash[item._id] = item;
+				}
+				for (i = dis.length; i--;) {
+					item = dis[i];
+					item.disabled = true;
+					photosHash[item._id] = item;
+				}
+				for (i = del.length; i--;) {
+					item = del[i];
+					item.del = true;
+					photosHash[item._id] = item;
+				}
+
+				for (i = photoSort.length; i--;) {
+					res.unshift(photosHash[photoSort[i].photo]);
+				}
+				cb(err, res);
+			}
+		);
+	};
+}());
+
 //Обнуляет статистику просмотров за день и неделю
 var planResetDisplayStat = (function () {
 	function resetStat() {
@@ -632,13 +731,19 @@ module.exports.loadController = function (app, db, io) {
 						return result({message: err && err.message || 'Such user does not exist', error: true});
 					}
 					var query = {user: user._id},
+						noPublic = hs.session.user && (hs.session.user.role > 4 || user._id.equals(hs.session.user._id)),
 						photosFresh,
 						skip = data.skip || 0,
 						limit = Math.min(data.limit || 20, 100);
 
-					if (hs.session.user && (user._id.equals(hs.session.user._id) || hs.session.user.role > 4)) {
+					if (noPublic) {
 						step(
 							function () {
+								if (hs.session.user.role < 9) {
+									query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
+								}
+								PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: -1}, skip: skip, limit: limit}, this.parallel());
+
 								user.pfcount = user.pfcount || 0;
 								if (user.pfcount > skip) {
 									//Если кол-во новых больше пропуска, значит они попадают на страницу
@@ -650,7 +755,9 @@ module.exports.loadController = function (app, db, io) {
 									skip -= user.pfcount;
 									this();
 								}
+								PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}, this.parallel());
 							},
+
 							function (err, pFresh) {
 								if (err) {
 									return finish(err);
@@ -744,6 +851,7 @@ module.exports.loadController = function (app, db, io) {
 			function result(data) {
 				socket.emit('takeUserPhotosAround', data);
 			}
+
 			function collectionFind(model, arr, ctx) {
 				if (arr.length) {
 					model.find({_id: {$in: arr}}, compactFieldsId, {lean: true}, ctx.parallel());
@@ -751,10 +859,11 @@ module.exports.loadController = function (app, db, io) {
 					ctx.parallel()(null, []);
 				}
 			}
+
 			socket.on('giveUserPhotosAround', function (data) {
 				var cid = Number(data && data.cid),
-					limitL = Number(data.limitL),
-					limitR = Number(data.limitR);
+					limitL = Math.min(Number(data.limitL), 100),
+					limitR = Math.min(Number(data.limitR), 100);
 				if (!cid || (!limitL && !limitR)) {
 					return result({message: 'Bad params', error: true});
 				}
@@ -764,102 +873,26 @@ module.exports.loadController = function (app, db, io) {
 						return result({message: 'Requested photo does not exist', error: true});
 					}
 					var query = {user: photo.user},
-						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id)),
-						pL,
-						pR;
+						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
 
 					if (noPublic) {
-						if (hs.session.user.role < 9) {
-							query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
-						}
 						step(
 							function () {
 								if (limitL) {
 									query.stamp = {$gt: photo.adate || photo.ldate};
-									PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}, this.parallel());
+									findAllPhotos(query, compactFieldsId, {sort: {stamp: 1}, limit: limitL}, hs.session.user, true, this.parallel());
 								} else {
 									this.parallel()(null, []);
 								}
 								if (limitR) {
 									query.stamp = {$lt: photo.adate || photo.ldate};
-									PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}, this.parallel());
+									findAllPhotos(query, compactFieldsId, {sort: {stamp: -1}, limit: limitR}, hs.session.user, true, this.parallel());
 								} else {
 									this.parallel()(null, []);
 								}
 							},
 							function (err, photosL, photosR) {
-								if (err) {
-									finish(err);
-								}
-								var fresh = [],
-									pub = [],
-									dis = [],
-									del = [];
-
-								pL = photosL;
-								pR = photosR;
-
-								stateCheck(photosL);
-								stateCheck(photosR);
-								collectionFind(PhotoFresh, fresh, this);
-								collectionFind(Photo, pub, this);
-								collectionFind(PhotoDis, dis, this);
-								collectionFind(PhotoDel, del, this);
-
-								function stateCheck(arr) {
-									var item,
-										i;
-									for (i = arr.length; i--;) {
-										item = arr[i];
-										if (item.state === 1) {
-											fresh.push(item.photo);
-										} else if (item.state === 5) {
-											pub.push(item.photo);
-										} else if (item.state === 7) {
-											dis.push(item.photo);
-										} else if (item.state === 9) {
-											del.push(item.photo);
-										}
-									}
-								}
-							},
-							function (err, fresh, pub, dis, del) {
-								if (err) {
-									finish(err);
-								}
-								var resL = [],
-									resR = [],
-									photosHash = {},
-									item,
-									i;
-
-								for (i = fresh.length; i--;) {
-									item = fresh[i];
-									item.fresh = true;
-									photosHash[item._id] = item;
-								}
-								for (i = pub.length; i--;) {
-									item = pub[i];
-									photosHash[item._id] = item;
-								}
-								for (i = dis.length; i--;) {
-									item = dis[i];
-									item.disabled = true;
-									photosHash[item._id] = item;
-								}
-								for (i = del.length; i--;) {
-									item = del[i];
-									item.del = true;
-									photosHash[item._id] = item;
-								}
-
-								for (i = pL.length; i--;) {
-									resL.unshift(photosHash[pL[i].photo]);
-								}
-								for (i = pR.length; i--;) {
-									resR.unshift(photosHash[pR[i].photo]);
-								}
-								finish(err, resL, resR);
+								finish(err, photosL, photosR);
 							}
 						);
 					} else {
