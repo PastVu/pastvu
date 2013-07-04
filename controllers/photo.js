@@ -28,6 +28,7 @@ var auth = require('./auth.js'),
 	commentController = require('./comment.js');
 
 var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
+	compactFieldsId = {_id: 1, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
 			var can = {
@@ -743,7 +744,13 @@ module.exports.loadController = function (app, db, io) {
 			function result(data) {
 				socket.emit('takeUserPhotosAround', data);
 			}
-
+			function collectionFind(model, arr, ctx) {
+				if (arr.length) {
+					model.find({_id: {$in: arr}}, compactFieldsId, {lean: true}, ctx.parallel());
+				} else {
+					ctx.parallel()(null, []);
+				}
+			}
 			socket.on('giveUserPhotosAround', function (data) {
 				var cid = Number(data && data.cid),
 					limitL = Number(data.limitL),
@@ -757,47 +764,127 @@ module.exports.loadController = function (app, db, io) {
 						return result({message: 'Requested photo does not exist', error: true});
 					}
 					var query = {user: photo.user},
-						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
+						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id)),
+						pL,
+						pR;
 
-					//Не обладающие ролью админа не могут видеть удаленные фотографии
-					if (noPublic && hs.session.user.role < 9) {
-						query.state = {$ne: 9};
-					}
-					step(
-						function () {
-							if (limitL) {
-								if (noPublic) {
+					if (noPublic) {
+						if (hs.session.user.role < 9) {
+							query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
+						}
+						step(
+							function () {
+								if (limitL) {
 									query.stamp = {$gt: photo.adate || photo.ldate};
-									PhotoSort.find(query, {_id: 0, photo: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
+									PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: 1}, limit: limitL}, this.parallel());
 								} else {
+									this.parallel()(null, []);
+								}
+								if (limitR) {
+									query.stamp = {$lt: photo.adate || photo.ldate};
+									PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}, this.parallel());
+								} else {
+									this.parallel()(null, []);
+								}
+							},
+							function (err, photosL, photosR) {
+								var fresh = [],
+									pub = [],
+									dis = [],
+									del = [];
+
+								pL = photosL;
+								pR = photosR;
+
+								stateCheck(photosL);
+								stateCheck(photosR);
+								collectionFind(PhotoFresh, fresh, this);
+								collectionFind(Photo, pub, this);
+								collectionFind(PhotoDis, dis, this);
+								collectionFind(PhotoDel, del, this);
+
+								function stateCheck(arr) {
+									var item,
+										i;
+									for (i = arr.length; i--;) {
+										item = arr[i];
+										if (item.state === 1) {
+											fresh.push(item.photo);
+										} else if (item.state === 5) {
+											pub.push(item.photo);
+										} else if (item.state === 7) {
+											dis.push(item.photo);
+										} else if (item.state === 9) {
+											del.push(item.photo);
+										}
+									}
+								}
+							},
+							function (err, fresh, pub, dis, del) {
+								var resL = [],
+									resR = [],
+									photosHash = {},
+									item,
+									i;
+
+								for (i = fresh.length; i--;) {
+									item = fresh[i];
+									item.fresh = true;
+									photosHash[item._id] = item;
+								}
+								for (i = pub.length; i--;) {
+									item = pub[i];
+									photosHash[item._id] = item;
+								}
+								for (i = dis.length; i--;) {
+									item = dis[i];
+									item.disabled = true;
+									photosHash[item._id] = item;
+								}
+								for (i = del.length; i--;) {
+									item = del[i];
+									item.del = true;
+									photosHash[item._id] = item;
+								}
+
+								for (i = pL.length; i--;) {
+									resL.unshift(photosHash[pL[i].photo]);
+								}
+								for (i = pR.length; i--;) {
+									resR.unshift(photosHash[pR[i].photo]);
+								}
+								finish(err, resL, resR);
+							}
+						);
+					} else {
+						step(
+							function () {
+								if (limitL) {
 									query.adate = {$gt: photo.adate};
 									Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-								}
-							} else {
-								this.parallel()(null, []);
-							}
-							if (limitR) {
-								if (noPublic) {
-									query.stamp = {$lt: photo.adate || photo.ldate};
-									PhotoSort.find( {user: photo.user,stamp:{$lt: photo.adate || photo.ldate}}, {_id: 0, photo: 1}, {lean: true, sort: {stamp: -1}, limit: limitR}).populate({path: 'photo', select: compactFields}).exec(this.parallel());
 								} else {
+									this.parallel()(null, []);
+								}
+								if (limitR) {
 									query.adate = {$lt: photo.adate};
 									Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+								} else {
+									this.parallel()(null, []);
 								}
-							} else {
-								this.parallel()(null, []);
+							},
+							function (err, photosL, photosR) {
+								finish(err, photosL, photosR);
 							}
-						},
-						function (err, photosL, photosR) {
-							if (noPublic && photosL.length) {
-								photosL = _.pluck(photosL, 'photo');
-							}
-							if (noPublic && photosR.length) {
-								photosR = _.pluck(photosR, 'photo');
-							}
-							result({left: photosL, right: photosR});
+						);
+					}
+					function finish(err, photosL, photosR) {
+						if (err) {
+							return result({message: err && err.message, error: true});
 						}
-					);
+						//console.dir(photosL);
+						//console.dir(photosR);
+						result({left: photosL, right: photosR});
+					}
 				});
 			});
 		}());
