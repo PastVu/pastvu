@@ -28,7 +28,6 @@ var auth = require('./auth.js'),
 	commentController = require('./comment.js');
 
 var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
-	compactFieldsId = {_id: 1, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
 			var can = {
@@ -306,7 +305,7 @@ function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
  * @param noPublicToo Искать ли в непубличных при наличии прав
  * @param cb
  */
-var findAllPhotos = (function () {
+var findPhotosAll = (function () {
 	function findInCollection(model, arr, fieldSelect, cb) {
 		if (arr.length) {
 			model.find({_id: {$in: arr}}, fieldSelect, {lean: true}, cb);
@@ -314,6 +313,7 @@ var findAllPhotos = (function () {
 			cb(null, []);
 		}
 	}
+
 	function stateCheck(source, fresh, pub, dis, del) {
 		var item,
 			i;
@@ -350,6 +350,12 @@ var findAllPhotos = (function () {
 					pub = [],
 					dis = [],
 					del = [];
+
+				//Если в выборе нет _id, то еключаем его, т.к. он нужен для меппинга
+				if (!fieldSelect._id) {
+					fieldSelect = _.clone(fieldSelect);
+					fieldSelect._id = 1;
+				}
 
 				stateCheck(pSort, fresh, pub, dis, del);
 				findInCollection(PhotoFresh, fresh, fieldSelect, this.parallel());
@@ -715,14 +721,10 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
-		//Отдаем фотографии пользователя в компактном виде
+		//Отдаем галерею пользователя в компактном виде
 		(function () {
 			function result(data) {
 				socket.emit('takeUserPhotos', data);
-			}
-
-			function sortAdate(a, b) {
-				return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
 			}
 
 			socket.on('giveUserPhotos', function (data) {
@@ -737,7 +739,7 @@ module.exports.loadController = function (app, db, io) {
 						limit = Math.min(data.limit || 20, 100);
 
 					if (noPublic) {
-						findAllPhotos(query, compactFieldsId, {sort: {stamp: -1}, skip: skip, limit: limit}, hs.session.user, true, finish);
+						findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, hs.session.user, true, finish);
 					} else {
 						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
 					}
@@ -759,18 +761,11 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takeUserPhotosAround', data);
 			}
 
-			function collectionFind(model, arr, ctx) {
-				if (arr.length) {
-					model.find({_id: {$in: arr}}, compactFieldsId, {lean: true}, ctx.parallel());
-				} else {
-					ctx.parallel()(null, []);
-				}
-			}
-
 			socket.on('giveUserPhotosAround', function (data) {
 				var cid = Number(data && data.cid),
 					limitL = Math.min(Number(data.limitL), 100),
 					limitR = Math.min(Number(data.limitR), 100);
+
 				if (!cid || (!limitL && !limitR)) {
 					return result({message: 'Bad params', error: true});
 				}
@@ -779,58 +774,43 @@ module.exports.loadController = function (app, db, io) {
 					if (err || !photo || !photo.user) {
 						return result({message: 'Requested photo does not exist', error: true});
 					}
-					var query = {user: photo.user},
-						noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
 
-					if (noPublic) {
-						step(
-							function () {
-								if (limitL) {
+					step(
+						function () {
+							var query = {user: photo.user},
+								noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
+
+							if (limitL) {
+								if (noPublic) {
 									query.stamp = {$gt: photo.adate || photo.ldate};
-									findAllPhotos(query, compactFieldsId, {sort: {stamp: 1}, limit: limitL}, hs.session.user, true, this.parallel());
+									findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, hs.session.user, true, this.parallel());
 								} else {
-									this.parallel()(null, []);
-								}
-								if (limitR) {
-									query.stamp = {$lt: photo.adate || photo.ldate};
-									findAllPhotos(query, compactFieldsId, {sort: {stamp: -1}, limit: limitR}, hs.session.user, true, this.parallel());
-								} else {
-									this.parallel()(null, []);
-								}
-							},
-							function (err, photosL, photosR) {
-								finish(err, photosL, photosR);
-							}
-						);
-					} else {
-						step(
-							function () {
-								if (limitL) {
 									query.adate = {$gt: photo.adate};
 									Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-								} else {
-									this.parallel()(null, []);
 								}
-								if (limitR) {
+							} else {
+								this.parallel()(null, []);
+							}
+
+							if (limitR) {
+								if (noPublic) {
+									query.stamp = {$lt: photo.adate || photo.ldate};
+									findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, hs.session.user, true, this.parallel());
+								} else {
 									query.adate = {$lt: photo.adate};
 									Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-								} else {
-									this.parallel()(null, []);
 								}
-							},
-							function (err, photosL, photosR) {
-								finish(err, photosL, photosR);
+							} else {
+								this.parallel()(null, []);
 							}
-						);
-					}
-					function finish(err, photosL, photosR) {
-						if (err) {
-							return result({message: err && err.message, error: true});
+						},
+						function (err, photosL, photosR) {
+							if (err) {
+								return result({message: err && err.message, error: true});
+							}
+							result({left: photosL, right: photosR});
 						}
-						//console.dir(photosL);
-						//console.dir(photosR);
-						result({left: photosL, right: photosR});
-					}
+					);
 				});
 			});
 		}());
