@@ -32,7 +32,7 @@
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
 			.row-fluid.photoMap.mContainer.mHidden
-			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length > 0 ? '' : 'none'}")
+			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length ? '' : 'none'}")
 				.lineBehind
 					span(data-bind="html: 'Snippet <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'gallery</a> of user'")
 				//ko foreach: userRibbon

@@ -368,9 +368,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 			// Запрашиваем разрешенные действия для фото
 			storage.photoCan(this.p.cid(), function (data) {
-					if (!data.error) {
-						this.can = ko_mapping.fromJS(data.can, this.can);
-					}
+				if (!data.error) {
+					this.can = ko_mapping.fromJS(data.can, this.can);
+				}
 			}, this);
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
@@ -715,37 +715,28 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
-					console.error('While loading user ribbon: ' + data.message || 'Error occurred');
+					console.error('While loading user ribbon: ' + (data && data.message || 'Error occurred'));
 				} else {
 					var left = [],
-						right = [];
-					if (data.left && data.left.length > 0) {
-						data.left.reverse();
-						data.left.forEach(function (item) {
-							var existItem = _.find(this.userRibbonLeft, function (element) {
-								return element.cid === item.cid;
-							});
-							if (existItem) {
-								left.push(existItem);
-							} else {
-								Photo.factory(item, 'base', 'q');
-								left.push(item);
-							}
-						}, this);
+						right = [],
+						i,
+						item,
+						itemExist,
+						itemExistFunc = function (element) {
+							return element.cid === item.cid;
+						};
+
+					for (i = (data.left || []).length; i--;) {
+						item = data.left[i];
+						itemExist = _.find(this.userRibbonLeft, itemExistFunc);
+						left.push(itemExist || Photo.factory(item, 'base', 'q'));
 					}
 					this.userRibbonLeft = left;
-					if (data.right && data.right.length > 0) {
-						data.right.forEach(function (item) {
-							var existItem = _.find(this.userRibbonRight, function (element) {
-								return element.cid === item.cid;
-							});
-							if (existItem) {
-								right.push(existItem);
-							} else {
-								Photo.factory(item, 'base', 'q');
-								right.push(item);
-							}
-						}, this);
+
+					for (i = (data.right || []).length; i--;) {
+						item = data.right[i];
+						itemExist = _.find(this.userRibbonRight, itemExistFunc);
+						right.unshift(itemExist || Photo.factory(item, 'base', 'q'));
 					}
 					this.userRibbonRight = right;
 				}

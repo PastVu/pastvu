@@ -40,7 +40,7 @@ requirejs.config({
 
 		'm': 'module',
 
-		'jquery': 'lib/jquery/jquery-2.0.2',
+		'jquery': 'lib/jquery/jquery-2.0.3',
 		'jquery-ui': 'lib/jquery/ui',
 		'jquery-plugins': 'lib/jquery/plugins',
 		'bs': 'lib/bootstrap',

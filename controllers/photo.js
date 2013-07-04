@@ -788,6 +788,9 @@ module.exports.loadController = function (app, db, io) {
 								}
 							},
 							function (err, photosL, photosR) {
+								if (err) {
+									finish(err);
+								}
 								var fresh = [],
 									pub = [],
 									dis = [],
@@ -821,6 +824,9 @@ module.exports.loadController = function (app, db, io) {
 								}
 							},
 							function (err, fresh, pub, dis, del) {
+								if (err) {
+									finish(err);
+								}
 								var resL = [],
 									resR = [],
 									photosHash = {},
