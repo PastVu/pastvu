@@ -38,7 +38,7 @@
 
 	script(id="photosTpl", type="text/html")
 		.row-fluid.photosNew(data-bind="foreach: photos")
-			a.photoPreview.fringe(data-bind="attr: {href: $data.link}")
+			a.photoPreview.withTitle.fringe(data-bind="attr: {href: $data.link}")
 				.photoBox
 					img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 					.curtain

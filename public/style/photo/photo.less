@@ -270,87 +270,11 @@
 		overflow: hidden;
 
 		.photoPreview {
-			display: inline-block;
-			opacity: 0;
-
-			&.showPrv {
-				opacity: 1;
-			}
-
-			&:hover {
-				color: @MainLigthColor;
-				.curtain {
-					background-color: rgba(0, 0, 0, 0);
-				}
-			}
-
 			&:last-child {
 				margin-right: 0 !important;
 			}
-
-			.photoBox {
-				position: relative;
-				background-color: rgb(88, 109, 121);
-			}
-
-			.photoImg {
-				position: relative;
-				display: block;
-			}
-
-			.curtain {
-				position: absolute;
-				top: 0;
-				height: 100%;
-				width: 100%;
-				background-color: rgba(0, 0, 0, 0.1);
-				.transition(all .1s linear);
-			}
-
-			.imgFail {
-				position: absolute;
-				top: 40%;
-				width: 100%;
-				text-align: center;
-				line-height: 16px;
-			}
 			.status {
-				position: absolute;
-				display: block;
-				width: 17px;
-				height: 16px;
 				bottom: 2px;
-				left: 2px;
-
-				&.icon-asterisk {
-					width: 16px;
-					background-position: -455px -95px;
-				}
-				&.icon-lock {
-					background-position: -286px -23px;
-				}
-				&.icon-trash {
-					background-position: -455px 1px;
-				}
-			}
-
-			&.pFresh {
-				border-color: rgb(114, 193, 116);
-				.status {
-					background-color: rgb(3, 168, 28);
-				}
-			}
-			&.pDis {
-				border-color: rgb(232, 197, 88);
-				.status {
-					background-color: rgb(255, 155, 0);
-				}
-			}
-			&.pDel {
-				border-color: rgb(218, 99, 99);
-				.status {
-					background-color: rgb(198, 12, 26);
-				}
 			}
 		}
 	}
