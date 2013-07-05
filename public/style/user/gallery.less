@@ -72,7 +72,15 @@
 			background-color: rgba(0, 0, 0, 0.1);
 			.transition(all .1s linear);
 		}
-		.info {
+
+		.imgFail {
+			position: absolute;
+			top: 40%;
+			width: 100%;
+			text-align: center;
+			line-height: 16px;
+		}
+		.status {
 			position: absolute;
 			display: block;
 			width: 17px;
@@ -133,7 +141,7 @@
 				background: -ms-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(102, 173, 104, 0.8) 12%, rgba(150, 255, 150, 1) 50%, rgba(102, 173, 104, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* IE10+ */
 				background: linear-gradient(to right, rgba(40, 89, 145, 0.3) 0%, rgba(102, 173, 104, 0.8) 12%, rgba(150, 255, 150, 1) 50%, rgba(102, 173, 104, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* W3C */
 			}
-			.info {
+			.status {
 				background-color: rgb(3, 168, 28);
 			}
 		}
@@ -149,7 +157,7 @@
 				background: -ms-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(214, 187, 137, 0.8) 12%, rgb(255, 202, 0) 50%, rgba(214, 187, 137, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* IE10+ */
 				background: linear-gradient(to right, rgba(40, 89, 145, 0.3) 0%, rgba(214, 187, 137, 0.8) 12%, rgb(255, 202, 0) 50%, rgba(214, 187, 137, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* W3C */
 			}
-			.info {
+			.status {
 				background-color: rgb(255, 155, 0);
 			}
 		}
@@ -165,36 +173,8 @@
 				background: -ms-linear-gradient(left, rgba(40,89,145,0.3) 0%,rgba(221,144,144,0.8) 12%,rgba(255,0,0,1) 50%,rgba(221,144,144,0.8) 88%,rgba(40,89,145,0.3) 100%);
 				background: linear-gradient(to right, rgba(40,89,145,0.3) 0%,rgba(221,144,144,0.8) 12%,rgba(255,0,0,1) 50%,rgba(221,144,144,0.8) 88%,rgba(40,89,145,0.3) 100%);
 			}
-			.info {
+			.status {
 				background-color: rgb(198, 12, 26);
-			}
-		}
-		&.photoConvqueue {
-			.info.convqueue {
-				top: 40%;
-				width: 100%;
-				text-align: center;
-				line-height: 16px;
-			}
-		}
-		&.photoConv {
-			.info.conv {
-				top: 40%;
-				width: 100%;
-				padding-top: 20px;
-				text-align: center;
-				line-height: 16px;
-				background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;
-			}
-			.info.convqueue {
-			}
-		}
-		&.photoError {
-			.info.error {
-				top: 40%;
-				width: 100%;
-				text-align: center;
-				line-height: 16px;
 			}
 		}
 

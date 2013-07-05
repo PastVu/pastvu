@@ -4,7 +4,8 @@
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
 	'use strict';
-	var $window = $(window);
+	var $window = $(window),
+		imgFailTpl = _.template('<div class="imgFail" style="${ style }">${ txt }</div>');
 
 	return Cliche.extend({
 		jade: jade,
@@ -257,22 +258,28 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 
-		onThumbLoad: function (data, event) {
+		onPreviewLoad: function (data, event) {
 			$(event.target).parents('.photoThumb')[0].classList.add('showPT');
 			data = event = null;
 		},
-		onThumbError: function (data, event) {
-			var parent = $(event.target).parents('.photoThumb')[0];
+		onPreviewErr: function (data, event) {
+			var $photoBox = $(event.target.parentNode),
+				parent = $photoBox[0].parentNode,
+				content = '';
+
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
-				parent.classList.add('photoConv');
+				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConv');
 			} else if (data.convqueue) {
-				parent.classList.add('photoConvqueue');
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConvqueue');
 			} else {
-				parent.classList.add('photoError');
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i><br>изображение недоступно'});
+				parent.classList.add('pErr');
 			}
+			$photoBox.append(content);
 			parent.classList.add('showPT');
-			data = event = parent = null;
 		}
 	});
 });

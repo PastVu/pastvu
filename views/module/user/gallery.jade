@@ -6,24 +6,10 @@
 		//ko foreach: photos
 		a.photoThumb.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 			.photoBox
-				img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
+				img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
 				.curtain
-				//-.info.error
-					i.icon-ban-circle.icon-white
-					br
-					| изображение недоступно
-				//-.info.convqueue
-					i.icon-road.icon-white
-					br
-					| Превью скоро будет создано
-					br
-					| пожалуйста, обновите позже
-				//-.info.conv
-					| Превью уже создается
-					br
-					| пожалуйста, обновите позже
 				//ko if: $data.noPublic
-				i.icon-white.fringe.info(data-bind="css: {'icon-asterisk': $data.fresh, 'icon-lock': $data.disabled, 'icon-trash': $data.del}, attr: {title: $data.fresh ? 'Новая фотография' : ($data.disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+				i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': $data.fresh, 'icon-lock': $data.disabled, 'icon-trash': $data.del}, attr: {title: $data.fresh ? 'Новая фотография' : ($data.disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 				// /ko
 			.photoTitle(data-bind="text: title")
 		// /ko
