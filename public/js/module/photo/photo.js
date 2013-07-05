@@ -997,23 +997,31 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			event.target.setAttribute('src', '/img/caps/avatar.png');
 			data = event = null;
 		},
-		onThumbLoad: function (data, event) {
-			$(event.target).parents('.photoTile').css({visibility: 'visible'});
+
+		onPreviewLoad: function (data, event) {
+			$(event.target).parents('.photoPreview')[0].classList.add('showPrv');
 			data = event = null;
 		},
-		onThumbError: function (data, event) {
-			var $parent = $(event.target).parents('.photoTile');
+		onPreviewErr: function (data, event) {
+			var $photoBox = $(event.target.parentNode),
+				parent = $photoBox[0].parentNode,
+				content = '';
+
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
-				$parent.addClass('photoConv');
+				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConv');
 			} else if (data.convqueue) {
-				$parent.addClass('photoConvqueue');
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConvqueue');
 			} else {
-				$parent.addClass('photoError');
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i><br>Превью недоступно'});
+				parent.classList.add('pErr');
 			}
-			$parent.animate({opacity: 1});
-			data = event = $parent = null;
+			$photoBox.append(content);
+			parent.classList.add('showPrv');
 		},
+
 		setMessage: function (text, type) {
 			var css = '';
 			switch (type) {

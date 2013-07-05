@@ -43,7 +43,7 @@
 		opacity: 0;
 		.transition(opacity .4s linear);
 
-		&.showPT {
+		&.showPrv {
 			opacity: 1;
 		}
 
@@ -206,8 +206,12 @@
 			}
 
 			.desc {
+				position: absolute;
 				top: auto;
+				left: 14px;
+				right: 5px;
 				bottom: 20%;
+				text-align: center;
 				font-size: 22px;
 			}
 
@@ -219,15 +223,6 @@
 				}
 			}
 
-		}
-
-		.desc {
-			position: absolute;
-			top: 110px;
-			left: 14px;
-			right: 5px;
-			text-align: center;
-			font-size: 20px;
 		}
 
 		&.loadingPhoto {
