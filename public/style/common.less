@@ -273,6 +273,30 @@
 	}
 }
 
+//Cтили для "легкой" превью фотографии
+.photoPreviewLight {
+	position: relative;
+	display: inline-block;
+	opacity: 0;
+	background-color: rgb(88, 109, 121);
+
+	&.showPrv {
+		opacity: 1;
+	}
+	.photoImg {
+		position: relative;
+		display: block;
+	}
+	.imgFail {
+		position: absolute;
+		top: 40%;
+		width: 100%;
+		text-align: center;
+		line-height: 16px;
+		white-space: normal;
+	}
+}
+
 //Общие стили превью фотографии
 .photoPreview {
 	display: inline-block;
@@ -330,7 +354,7 @@
 			right: 0;
 			bottom: 0;
 			height: @PhotoToolHeight;
-			padding: 0 0 0 2px;
+			padding: 0 0 0 3px;
 			line-height: @PhotoToolHeight;
 			text-align: left;
 			.text-overflow();

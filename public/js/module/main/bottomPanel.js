@@ -225,7 +225,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		onPreviewLoad: function (data, event) {
-			$(event.target).parents('.photoPreview')[0].classList.add('showPrv');
+			event.target.parentNode.parentNode.classList.add('showPrv');
 			data = event = null;
 		},
 		onPreviewErr: function (data, event) {
@@ -236,13 +236,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
 				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
-				parent.classList.add('pConv');
 			} else if (data.convqueue) {
 				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
-				parent.classList.add('pConvqueue');
 			} else {
 				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i><br>Превью недоступно'});
-				parent.classList.add('pErr');
 			}
 			$photoBox.append(content);
 			parent.classList.add('showPrv');
