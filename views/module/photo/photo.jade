@@ -36,15 +36,13 @@
 				.lineBehind
 					span(data-bind="html: 'Отрезок <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'галереи</a> пользователя'")
 				//ko foreach: userRibbon
-				a.photoPreview(data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+				a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 					.photoBox
 						img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain
 						//ko if: $data.noPublic
 						i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': $data.fresh, 'icon-lock': $data.disabled, 'icon-trash': $data.del}, attr: {title: $data.fresh ? 'Новая фотография' : ($data.disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 						// /ko
-				//-a.photoTile(target='_self', data-bind="attr: {href: '/p/' + cid}, style: {marginRight: $parent.thumbM}")
-					img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 				// /ko
 		.row-fluid.photoComments
 			//ko if: !edit() && !p.fresh()

@@ -5,10 +5,11 @@
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, jade) {
 	'use strict';
 	var cats = [
-		{id: 'photos', name: 'Новые фото'},
-		{id: 'ratings', name: 'Рейтинги'},
-		{id: 'stats', name: 'Статистика'}
-	];
+			{id: 'photos', name: 'Новые фото'},
+			{id: 'ratings', name: 'Рейтинги'},
+			{id: 'stats', name: 'Статистика'}
+		],
+		imgFailTpl = _.template('<div class="imgFail" style="${ style }">${ txt }</div>');
 
 	return Cliche.extend({
 		jade: jade,
@@ -222,17 +223,29 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}.bind(this));
 			socket.emit('giveStats', {});
 		},
-		onThumbLoad: function (data, event) {
-			var photoThumb = event.target.parentNode.parentNode;
-			photoThumb.style.opacity = 1;
-			data = event = photoThumb = null;
+
+		onPreviewLoad: function (data, event) {
+			$(event.target).parents('.photoPreview')[0].classList.add('showPrv');
+			data = event = null;
 		},
-		onThumbError: function (data, event) {
-			var photoThumb = event.target.parentNode.parentNode;
+		onPreviewErr: function (data, event) {
+			var $photoBox = $(event.target.parentNode),
+				parent = $photoBox[0].parentNode,
+				content = '';
+
 			event.target.style.visibility = 'hidden';
-			photoThumb.classList.add('photoError');
-			photoThumb.style.opacity = 1;
-			data = event = photoThumb = null;
+			if (data.conv) {
+				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConv');
+			} else if (data.convqueue) {
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				parent.classList.add('pConvqueue');
+			} else {
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i><br>Превью недоступно'});
+				parent.classList.add('pErr');
+			}
+			$photoBox.append(content);
+			parent.classList.add('showPrv');
 		}
 	});
 });

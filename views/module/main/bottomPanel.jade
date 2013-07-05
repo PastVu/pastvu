@@ -38,15 +38,11 @@
 
 	script(id="photosTpl", type="text/html")
 		.row-fluid.photosNew(data-bind="foreach: photos")
-			.photoThumb.fringe.plain
+			a.photoPreview.fringe(data-bind="attr: {href: $data.link}")
 				.photoBox
-					img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}")
-					.info.error
-						i.icon-ban-circle.icon-white
-						br
-						| preview loading error
-					a.ahref(data-bind="attr: {href: $data.link}")
-				.photoTool(data-bind="text: $data.title")
+					img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+					.curtain
+				.photoTitle(data-bind="text: title")
 
 	script(id="ratingsTpl", type="text/html")
 		.row-fluid.ratings

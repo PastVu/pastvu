@@ -187,51 +187,61 @@
 		.photosNew {
 			text-align: center;
 
-			.photoThumb {
-				position: relative;
+			.photoPreview {
 				display: inline-block;
-				margin: 0 7px 10px 7px;
+				margin: 0 7px 17px 7px;
 				padding-bottom: @PhotoToolHeight;
 				font-size: 14px;
 				opacity: 0;
-				.transition(opacity .4s ease);
+				.transition(opacity .4s linear);
+
+				&.showPrv {
+					opacity: 1;
+				}
+
+				&:hover {
+					color: @MainLigthColor;
+					.curtain {
+						background-color: rgba(0, 0, 0, 0);
+					}
+				}
 
 				.photoBox {
 					position: relative;
+					background-color: rgb(88, 109, 121);
 				}
 
-				img {
+				.photoImg {
 					position: relative;
 					display: block;
 					width: 150px;
 					height: 100px;
 				}
 
-				.ahref {
+				.curtain {
 					position: absolute;
-					display: block;
 					top: 0;
 					height: 100%;
 					width: 100%;
-					cursor: pointer;
 					background-color: rgba(0, 0, 0, 0.1);
 					.transition(all .1s linear);
 				}
 
-				.info {
-					display: none;
+				.imgFail {
 					position: absolute;
-					line-height: 14px;
+					top: 40%;
+					width: 100%;
+					text-align: center;
+					line-height: 16px;
 				}
 
-				.photoTool {
+				.photoTitle {
 					position: absolute;
 					left: 0;
 					right: 0;
 					bottom: 0;
 					height: @PhotoToolHeight;
 					line-height: @PhotoToolHeight;
-					text-align: left;
 					padding: 0 0 0 5px;
 					.text-overflow();
 
@@ -250,16 +260,6 @@
 						background: -o-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* Opera 11.10+ */
 						background: -ms-linear-gradient(left, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* IE10+ */
 						background: linear-gradient(to right, rgba(40, 89, 145, 0.3) 0%, rgba(120, 162, 204, 0.8) 12%, rgb(255, 255, 255) 50%, rgba(120, 162, 204, 0.8) 88%, rgba(40, 89, 145, 0.3) 100%); /* W3C */
-					}
-				}
-
-				&.photoError {
-					.info.error {
-						display: block;
-						top: 40%;
-						width: 100%;
-						text-align: center;
-						line-height: 16px;
 					}
 				}
 			}

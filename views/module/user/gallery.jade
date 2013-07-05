@@ -1,10 +1,10 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		a.photoThumb.fringe.addPhoto(href="/photoUpload", data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
+		a.photoPreview.fringe.addPhoto(href="/photoUpload", data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
 			.plusPhoto
 			.desc Добавить фото..
 		//ko foreach: photos
-		a.photoThumb.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+		a.photoPreview.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 			.photoBox
 				img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
 				.curtain
@@ -13,7 +13,7 @@
 				// /ko
 			.photoTitle(data-bind="text: title")
 		// /ko
-		.photoThumb.loadingPhoto.centering_content(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}") Loading next
+		.photoPreview.loadingPhoto.centering_content(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}") Loading next
 
 	.photoUploadCurtain
 		.photoUploadModal.fringe(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
