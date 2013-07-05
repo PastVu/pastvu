@@ -1,33 +1,31 @@
 .user_photo(data-bind="with: repository[M!M]")
 	.photoThumbs
-		.photoThumb.fringe.addPhoto(data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
+		a.photoThumb.fringe.addPhoto(href="/photoUpload", data-bind="style: {display: canAdd() ? 'inline-block' : '', width: width, height: height}")
 			.plusPhoto
-			.desc Add photos..
-			a.ahref(href='/photoUpload')
+			.desc Добавить фото..
 		//ko foreach: photos
-		.photoThumb.fringe(data-bind="css: {'photoNoActive': !$data.fresh && $data.disabled, 'photoFresh': $data.fresh}")
+		a.photoThumb.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 			.photoBox
-				img(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
-				.info.error
+				img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onThumbLoad, error: $parent.onThumbError}, style: {width: $parent.width, height: $parent.height}")
+				.curtain
+				//-.info.error
 					i.icon-ban-circle.icon-white
 					br
-					| preview loading error
-				.info.convqueue
+					| изображение недоступно
+				//-.info.convqueue
 					i.icon-road.icon-white
 					br
-					| preview will be created soon
+					| Превью скоро будет создано
 					br
-					| please, refresh later
-				.info.conv
-					| preview is creating now
+					| пожалуйста, обновите позже
+				//-.info.conv
+					| Превью уже создается
 					br
-					| please, refresh later
-				.info.fringe.fresh
-					i.icon-asterisk.icon-white
-				.info.fringe.noActive
-					i.icon-lock.icon-white
-				a.ahref(target='_blank', data-bind="attr: {href: '/p/' + cid}")
-			.photoTool(data-bind="text: title")
+					| пожалуйста, обновите позже
+				//ko if: $data.noPublic
+				i.icon-white.fringe.info(data-bind="css: {'icon-asterisk': $data.fresh, 'icon-lock': $data.disabled, 'icon-trash': $data.del}, attr: {title: $data.fresh ? 'Новая фотография' : ($data.disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+				// /ko
+			.photoTitle(data-bind="text: title")
 		// /ko
 		.photoThumb.loadingPhoto.centering_content(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}") Loading next
 

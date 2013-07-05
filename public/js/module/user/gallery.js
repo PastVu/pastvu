@@ -161,23 +161,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}.bind(this));
 			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
 		},
-		onThumbLoad: function (data, event) {
-			$(event.target).parents('.photoThumb').animate({opacity: 1});
-			data = event = null;
-		},
-		onThumbError: function (data, event) {
-			var $parent = $(event.target).parents('.photoThumb');
-			event.target.style.visibility = 'hidden';
-			if (data.conv) {
-				$parent.addClass('photoConv');
-			} else if (data.convqueue) {
-				$parent.addClass('photoConvqueue');
-			} else {
-				$parent.addClass('photoError');
-			}
-			$parent.animate({opacity: 1});
-			data = event = $parent = null;
-		},
 		sizesCalc: function (v) {
 			var windowW = P.window.w(),
 				domW = this.$dom.width() - 1, //this.$container.width()
@@ -272,6 +255,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				delete this.waitUploadSince;
 				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
 			}
+		},
+
+		onThumbLoad: function (data, event) {
+			$(event.target).parents('.photoThumb')[0].classList.add('showPT');
+			data = event = null;
+		},
+		onThumbError: function (data, event) {
+			var parent = $(event.target).parents('.photoThumb')[0];
+			event.target.style.visibility = 'hidden';
+			if (data.conv) {
+				parent.classList.add('photoConv');
+			} else if (data.convqueue) {
+				parent.classList.add('photoConvqueue');
+			} else {
+				parent.classList.add('photoError');
+			}
+			parent.classList.add('showPT');
+			data = event = parent = null;
 		}
 	});
 });

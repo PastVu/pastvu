@@ -105,6 +105,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
 			User.factory(origin.user, 'base');
 		}
+		if (origin.fresh || origin.disabled || origin.del) {
+			origin.noPublic = true;
+		}
 
 		origin.sfile = P.preaddr + picFormats[picType] + origin.file;
 
