@@ -41,7 +41,7 @@
 						img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain
 						//ko if: $data.noPublic
-						i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': $data.fresh, 'icon-lock': $data.disabled, 'icon-trash': $data.del}, attr: {title: $data.fresh ? 'Новая фотография' : ($data.disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+						i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 						// /ko
 				// /ko
 		.row-fluid.photoComments
@@ -71,19 +71,19 @@
 		// /ko
 		div(style="display:inline-block")
 			//ko if: canBeApprove()
-			button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+			button.btn-strict.btn-strict-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
 				i.icon-ok.icon-white
-				span Approve
+				span Подтвердить
 			// /ko
 			//ko if: canBeDisable()
-			button.btn-strict.btnActive(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+			button.btn-strict(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
 				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-				span(data-bind="text: p.disabled() ? 'Activate' : 'Deactivate'")
+				span(data-bind="text: p.disabled() ? 'Активировать' : 'Деактивировать'")
 			// /ko
 			//ko if: can.remove()
-			button.btn-strict.btn-strict-danger.btnRemove(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-				i.icon-remove-circle.icon-white
-				span Remove
+			button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+				i.icon-trash.icon-white
+				span Удалить
 			// /ko
 
 	//-ACTIONS EDIT MODE
@@ -91,7 +91,7 @@
 		button.btn-strict.btn-strict-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 			i.icon-ok.icon-white
 			span Сохранить
-		button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
+		button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
 			i.icon-remove.icon-white
 			span Отмена редактирования
 

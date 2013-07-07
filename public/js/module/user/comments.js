@@ -168,14 +168,10 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		onPreviewLoad: function (data, event) {
 			event.target.parentNode.classList.add('showPrv');
-			data = event = null;
 		},
 		onPreviewErr: function (data, event) {
-			var $parent = $(event.target.parentNode);
-
-			event.target.style.visibility = 'hidden';
-			$parent.append('<div class="imgFail"><i class="icon-white icon-ban-circle"></i></div>');
-			$parent[0].classList.add('showPrv');
+			event.target.parentNode.classList.add('fail'); //Через запятую работает пока только в chrome
+			event.target.parentNode.classList.add('showPrv');
 		}
 	});
 });

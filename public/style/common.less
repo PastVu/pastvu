@@ -250,9 +250,9 @@
 	text-align: center;
 	z-index: 1;
 
-	&:before {
-		content: '';
+	&::before {
 		position: absolute;
+		content: '';
 		top: 50%; left: 0; right: 0; bottom: 0;
 		height: 1px;
 		width: 100%;
@@ -278,23 +278,27 @@
 	position: relative;
 	display: block;
 	opacity: 0;
-	background-color: rgb(88, 109, 121);
 
 	&.showPrv {
 		opacity: 1;
 	}
 	.img {
-		position: relative;
 		display: block;
 	}
-	.imgFail {
-		position: absolute;
-		top: 50%;
-		width: 100%;
-		margin-top: -7px;
-		line-height: 16px;
-		text-align: center;
-		white-space: normal;
+
+	&.fail {
+		.img {
+			visibility: hidden;
+		}
+		&::after {
+			position: absolute;
+			content: '';
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: #586D79 url(/img/misc/imgw.png) 50% 50% no-repeat;
+		}
 	}
 }
 
@@ -318,7 +322,7 @@
 
 	.photoBox {
 		position: relative;
-		background-color: rgb(88, 109, 121);
+		background-color: #587086;
 	}
 
 	.photoImg {
@@ -391,6 +395,10 @@
 			&.icon-asterisk {
 				width: 16px;
 				background-position: -455px -95px;
+			}
+			&.icon-flag {
+				width: 16px;
+				background-position: -311px -23px;
 			}
 			&.icon-lock {
 				background-position: -286px -23px;

@@ -27,7 +27,7 @@ var auth = require('./auth.js'),
 
 	commentController = require('./comment.js');
 
-var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1},
+var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
 			var can = {

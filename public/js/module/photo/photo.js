@@ -52,14 +52,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				if (this.edit()) {
-					this.setMessage('Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn');
+					this.setMessage('Фото в режиме редактирования. Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
 				} else if (this.p.fresh()) {
-					this.setMessage('Photo is new. Administrator must approve it', 'warn');
+					this.setMessage('Новая фотография. Модератор должен её подтвердить', 'warn'); //Photo is new. Administrator must approve it
 				} else if (this.p.disabled()) {
-					this.setMessage('Photo is disabled by Administrator. Only You and other Administrators can see and edit it', 'warn');
+					this.setMessage('Фотография деактивирована администрацией. Только вы и модераторы можете видеть ёё и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
 				} else if (this.p.del()) {
-					this.setMessage('Photo is deleted by Administrator', 'warn');
+					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
 				} else {
 					this.setMessage('', 'muted');
 				}
@@ -561,7 +561,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.exe(true);
 			window.noty(
 				{
-					text: 'The photo will be removed permanently.<br>Confirm the delete operation?',
+					text: 'Фотография будет удалена<br>Подтвердить операцию?',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -573,7 +573,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Ok', onClick: function ($noty) {
+						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -617,7 +617,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							socket.emit('removePhoto', that.p.cid());
 
 						}},
-						{addClass: 'btn-strict', text: 'Cancel', onClick: function ($noty) {
+						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							that.exe(false);
 						}}
