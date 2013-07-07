@@ -61,9 +61,14 @@
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
-		button.btn-strict.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+		button.btn-strict(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 			i.icon-pencil.icon-white
-			span Edit
+			span Редактировать
+		//ko if: p.ready && !p.ready()
+		button.btn-strict.btn-strict-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
+			i.icon-check.icon-white
+			span Готово
+		// /ko
 		div(style="display:inline-block")
 			//ko if: canBeApprove()
 			button.btn-strict.btn-strict-success.btnApprove(type="button", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
@@ -83,12 +88,12 @@
 
 	//-ACTIONS EDIT MODE
 	script(id="photoActionsEdit", type="text/html")
-		button.btn-strict.btn-strict-success.btnSave(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+		button.btn-strict.btn-strict-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 			i.icon-ok.icon-white
-			span Save edit
+			span Сохранить
 		button.btn-strict.btn-strict-danger.btnCancel(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
 			i.icon-remove.icon-white
-			span Cancel edit
+			span Отмена редактирования
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")

@@ -504,6 +504,8 @@ module.exports.loadController = function (app, db, io) {
 						if (!photoFresh) {
 							return result({message: 'Requested photo does not exist', error: true});
 						}
+						delete photoFresh.ready;
+
 						var photo = new Photo(photoFresh);
 
 						photo.adate = new Date();
@@ -963,12 +965,10 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('savePhoto', function (data) {
 				if (!hs.session.user) {
-					result({message: 'You do not have permission for this action', error: true});
-					return;
+					return result({message: 'You do not have permission for this action', error: true});
 				}
 				if (!Utils.isType('object', data) || !Number(data.cid)) {
-					result({message: 'Bad params', error: true});
-					return;
+					return result({message: 'Bad params', error: true});
 				}
 
 				var cid = Number(data.cid),
@@ -1062,6 +1062,43 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		//Говорим, что фото готово к подтверждению
+		(function () {
+			function result(data) {
+				socket.emit('readyPhotoResult', data);
+			}
+
+			socket.on('readyPhoto', function (cid) {
+				if (!hs.session.user) {
+					return result({message: 'You do not have permission for this action', error: true});
+				}
+				cid = Number(cid);
+				if (!cid) {
+					return result({message: 'Requested photo does not exist', error: true});
+				}
+				step(
+					function () {
+						PhotoFresh.findOne({cid: cid}, this);
+					},
+					function (err, photo) {
+						if (err && !photo) {
+							return result({message: err && err.message || 'Requested photo does not exist', error: true});
+						}
+						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
+							return result({message: 'You do not have permission for this action', error: true});
+						}
+						photo.ready = true;
+						photo.save(this);
+					},
+					function (err) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						result({message: 'Ok'});
+					}
+				);
+			});
+		}());
 
 		//Фотографии и кластеры по границам
 		(function () {

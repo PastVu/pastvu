@@ -694,6 +694,21 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			delete this.descEditingChanged;
 			delete this.sourceEditingOrigin;
 		},
+		setReady: function (data, event) {
+			if (this.p.fresh() && !this.p.ready()) {
+				this.exe(true);
+				socket.once('readyPhotoResult', function (data) {
+					if (data && !data.error) {
+						this.p.ready(true);
+						this.originData.ready = true;
+					} else {
+						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					}
+					this.exe(false);
+				}.bind(this));
+				socket.emit('readyPhoto', this.p.cid());
+			}
+		},
 
 		toConvert: function (data, event) {
 			if (!this.can.convert() || this.selectedOpt().length === 0) {

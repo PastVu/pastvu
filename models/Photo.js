@@ -103,9 +103,12 @@ var FragmentSchema = new Schema({
 	);
 
 
+PhotoSchema_Fresh.add({
+	ready: {type: Boolean, 'default': false, required: true} //Новое фото готово к просмотру модераторами
+});
+PhotoSchema.add(additionalStructure);
 PhotoSchema_Disabled.add(additionalStructure);
 PhotoSchema_Del.add(additionalStructure);
-PhotoSchema.add(additionalStructure);
 
 PhotoSchema_Fresh.virtual('fresh').get(function () {
 	return true;
