@@ -3,7 +3,7 @@
 		span Новые комментарии
 	.row-fluid(data-bind="foreach: comments")
 		.row-fluid.comment
-			a.photoPreviewLight(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
-				img.photoImg(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
+				img.img(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			a.photoName(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}, html: $parent.commentsPhotos[$data.obj].title")
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")

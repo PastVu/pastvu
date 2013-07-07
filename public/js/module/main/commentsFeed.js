@@ -4,7 +4,6 @@
  */
 define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
 	'use strict';
-	var imgFailTpl = _.template('<div class="imgFail" style="${ style }">${ txt }</div>');
 
 	return Cliche.extend({
 		jade: jade,
@@ -62,18 +61,10 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 			data = event = null;
 		},
 		onPreviewErr: function (data, event) {
-			var $parent = $(event.target.parentNode),
-				content = '';
+			var $parent = $(event.target.parentNode);
 
 			event.target.style.visibility = 'hidden';
-			if (data.conv) {
-				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: ''});
-			} else if (data.convqueue) {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i>'});
-			} else {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i>'});
-			}
-			$parent.append(content);
+			$parent.append('<div class="imgFail"><i class="icon-white icon-ban-circle"></i></div>');
 			$parent[0].classList.add('showPrv');
 		}
 	});

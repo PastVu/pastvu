@@ -166,22 +166,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 
-		onThumbLoad: function (data, event) {
-			$(event.target).parents('.photoThumb').animate({opacity: 1});
+		onPreviewLoad: function (data, event) {
+			event.target.parentNode.classList.add('showPrv');
 			data = event = null;
 		},
-		onThumbError: function (data, event) {
-			var $parent = $(event.target).parents('.photoThumb');
+		onPreviewErr: function (data, event) {
+			var $parent = $(event.target.parentNode);
+
 			event.target.style.visibility = 'hidden';
-			if (data.conv) {
-				$parent.addClass('photoConv');
-			} else if (data.convqueue) {
-				$parent.addClass('photoConvqueue');
-			} else {
-				$parent.addClass('photoError');
-			}
-			$parent.animate({opacity: 1});
-			data = event = $parent = null;
+			$parent.append('<div class="imgFail"><i class="icon-white icon-ban-circle"></i></div>');
+			$parent[0].classList.add('showPrv');
 		}
 	});
 });
