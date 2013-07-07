@@ -322,11 +322,9 @@
 
 	.photoBox {
 		position: relative;
-		background-color: #587086;
 	}
 
-	.photoImg {
-		position: relative;
+	.img {
 		display: block;
 	}
 
@@ -341,11 +339,19 @@
 
 	.imgFail {
 		position: absolute;
-		top: 40%;
-		width: 100%;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		text-align: center;
-		line-height: 16px;
-		white-space: normal;
+		background-color: #587086;
+		.centering_content();
+
+		.failContent {
+			display: inline-block;
+			line-height: 16px;
+			vertical-align: middle;
+		}
 	}
 
 	&.withTitle {

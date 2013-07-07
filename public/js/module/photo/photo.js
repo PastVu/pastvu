@@ -4,7 +4,7 @@
  */
 define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/scrollto', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
-	var imgFailTpl = _.template('<div class="imgFail" style="${ style }">${ txt }</div>');
+	var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
 	return Cliche.extend({
 		jade: jade,
@@ -1016,7 +1016,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		onPreviewLoad: function (data, event) {
 			event.target.parentNode.parentNode.classList.add('showPrv');
-			data = event = null;
 		},
 		onPreviewErr: function (data, event) {
 			var $photoBox = $(event.target.parentNode),
@@ -1025,11 +1024,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			event.target.style.visibility = 'hidden';
 			if (data.conv) {
-				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: ''});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i>'});
 			} else {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-ban-circle"></i><br>Превью недоступно'});
+				content = imgFailTpl({style: 'width:24px; height:20px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: ''});
 			}
 			$photoBox.append(content);
 			parent.classList.add('showPrv');

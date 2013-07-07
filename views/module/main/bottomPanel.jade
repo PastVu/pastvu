@@ -40,7 +40,7 @@
 		.row-fluid.photosNew(data-bind="foreach: photos")
 			a.photoPreview.withTitle.fringe(data-bind="attr: {href: $data.link}")
 				.photoBox
-					img.photoImg(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 					.curtain
 				.photoTitle(data-bind="text: title")
 
