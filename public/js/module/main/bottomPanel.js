@@ -195,7 +195,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			while (i) {
 				user = users[--i];
 				if (user.avatar) {
-					user.sfile = P.preaddr + '/_avatar/d/' + user.avatar;
+					user.sfile = P.preaddr + '/_a/d/' + user.avatar;
 				} else {
 					user.sfile = User.def.full.avatar;
 				}
@@ -242,6 +242,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 			$photoBox.append(content);
 			parent.classList.add('showPrv');
+		},
+
+		onImgLoad: function (data, event) {
+			event.target.parentNode.classList.add('showPrv');
+		},
+		onImgErr: function (data, event) {
+			event.target.parentNode.classList.add('fail'); //Через запятую работает пока только в chrome
+			event.target.parentNode.classList.add('showPrv');
 		}
 	});
 });

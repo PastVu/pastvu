@@ -101,9 +101,9 @@ function getCommentsObj(user, data, cb) {
 				user = users[--i];
 				if (user.avatar) {
 					if (subdl) {
-						avatar = preaddrs[i % subdl] + '/_avatar/h/' + user.avatar;
+						avatar = preaddrs[i % subdl] + '/_a/h/' + user.avatar;
 					} else {
-						avatar = '/_avatar/h/' + user.avatar;
+						avatar = '/_a/h/' + user.avatar;
 					}
 				} else {
 					avatar = '/img/caps/avatarth.png';

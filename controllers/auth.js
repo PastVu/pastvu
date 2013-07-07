@@ -357,9 +357,9 @@ function checkConfirm(session, data, cb) {
 		} else if (key.length === 8) { //Confirm pass change
 			if (user.avatar) {
 				if (subdl) {
-					avatar = preaddrs[0] + '/_avatar/h/' + user.avatar;
+					avatar = preaddrs[0] + '/_a/h/' + user.avatar;
 				} else {
-					avatar = '/_avatar/h/' + user.avatar;
+					avatar = '/_a/h/' + user.avatar;
 				}
 			} else {
 				avatar = '/img/caps/avatarth.png';

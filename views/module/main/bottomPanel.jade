@@ -87,7 +87,8 @@
 
 	script(id="ratingsColumnTpl", type="text/html")
 		a.row-fluid.ratElem(data-bind="attr: {href: $data.link}")
-			img.ratPreview(data-bind="attr: {src: $data.sfile}")
+			.imgLoad
+				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onImgLoad, error: $parent.onImgErr}")
 			.ratName(data-bind="text: $data.title")
 			.ratAmount(data-bind="text: $data.amount")
 

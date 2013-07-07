@@ -168,9 +168,9 @@ async.waterfall([
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
 			}
 			if (!noServeStore) {
-				app.use('/_avatar', express.static(storePath + 'public/avatars', {maxAge: ms('2d')}));
+				app.use('/_a', express.static(storePath + 'public/avatars', {maxAge: ms('2d')}));
 				app.use('/_p', express.static(storePath + 'public/photos', {maxAge: ms('7d')}));
-				app.get('/_avatar/*', static404);
+				app.get('/_a/*', static404);
 				app.get('/_p/*', static404);
 			}
 

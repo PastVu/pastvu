@@ -57,8 +57,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 		defType = defType || 'full';
 
 		if (origin.avatar) {
-			origin.avatarth = P.preaddr + '/_avatar/h/' + origin.avatar;
-			origin.avatar = P.preaddr + '/_avatar/d/' + origin.avatar;
+			origin.avatarth = P.preaddr + '/_a/h/' + origin.avatar;
+			origin.avatar = P.preaddr + '/_a/d/' + origin.avatar;
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
