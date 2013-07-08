@@ -410,10 +410,6 @@ define([
 					system.selected(true);
 					type.selected(true);
 					this.layerActiveDesc(system.desc + ': ' + type.desc);
-
-					/*if (!!window.localStorage) {
-					 window.localStorage['arguments.SelectLayer'] = Array.prototype.slice.call(arguments).join(',');
-					 }*/
 					this.layerActive({sys: system, type: type});
 
 					if (system.deps && !type.obj) {

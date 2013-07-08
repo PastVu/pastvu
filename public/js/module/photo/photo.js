@@ -562,7 +562,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		notifyReady: function () {
 			window.noty(
 				{
-					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку "Готово"',
+					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «Готово»',
 					type: 'information',
 					layout: 'topRight',
 					force: true,
@@ -574,6 +574,33 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						easing: 'swing',
 						speed: 500
 					}
+				}
+			);
+		},
+		askForGeo: function (cb, ctx) {
+			window.noty(
+				{
+					text: 'Вы не указали координаты снимка<br><br>Сделать это можно, два раза кликнув по карте справа и перемещая появившийся маркер<br><br>Без координаты фотография попадет в раздел «Где это?»',
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					animation: {
+						open: {height: 'toggle'},
+						close: {},
+						easing: 'swing',
+						speed: 500
+					},
+					buttons: [
+						{addClass: 'btn-strict', text: 'Продолжить', onClick: function ($noty) {
+							cb.call(this);
+							$noty.close();
+						}.bind(this)},
+						{addClass: 'btn-strict btn-strict-success', text: 'Указать координату', onClick: function ($noty) {
+							this.edit(true);
+							$noty.close();
+						}.bind(this)}
+					]
 				}
 			);
 		},
@@ -723,18 +750,25 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		setReady: function (data, event) {
 			if (this.p.fresh() && !this.p.ready()) {
-				this.exe(true);
-				socket.once('readyPhotoResult', function (data) {
-					if (data && !data.error) {
-						this.p.ready(true);
-						this.originData.ready = true;
-					} else {
-						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-					}
-					this.exe(false);
-				}.bind(this));
-				socket.emit('readyPhoto', this.p.cid());
+				if (_.isEmpty(this.p.geo)) {
+					this.askForGeo(this.sendReady, this);
+				} else {
+					this.sendReady();
+				}
 			}
+		},
+		sendReady: function (data, event) {
+			this.exe(true);
+			socket.once('readyPhotoResult', function (data) {
+				if (data && !data.error) {
+					this.p.ready(true);
+					this.originData.ready = true;
+				} else {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				}
+				this.exe(false);
+			}.bind(this));
+			socket.emit('readyPhoto', this.p.cid());
 		},
 
 		toConvert: function (data, event) {
