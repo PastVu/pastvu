@@ -27,7 +27,8 @@ var auth = require('./auth.js'),
 
 	commentController = require('./comment.js');
 
-var compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+var shift10y = ms('10y'),
+	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
 			var can = {
@@ -108,17 +109,20 @@ function createPhotos(socket, data, cb) {
 			}
 			var photo,
 				photoSort,
-				future10y = new Date(Date.now() + ms('10y')),//Прибавляем 10 лет новым, чтобы они были всегда вначале сортировки
+				now = Date.now(),
+				photoLoadTime,
 				item,
 				i;
 
-			for (i = data.length; i--;) {
+			for (i = 0; i < data.length; i++) {
 				item = data[i];
 
+				photoLoadTime = now + i * 10; //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
 				photo = new PhotoFresh({
-					cid: count.next - i,
+					cid: count.next + i,
 					user: user._id,
 					file: item.fullfile,
+					ldate: new Date(photoLoadTime),
 					type: item.type,
 					size: item.size,
 					geo: undefined,
@@ -130,7 +134,7 @@ function createPhotos(socket, data, cb) {
 				photoSort = new PhotoSort({
 					photo: photo._id,
 					user: user._id,
-					stamp: future10y,
+					stamp: new Date(photoLoadTime + shift10y), //Прибавляем 10 лет новым, чтобы они были всегда в начале сортировки
 					state: 1
 				});
 
@@ -179,7 +183,7 @@ function removePhoto(socket, data, cb) {
 
 	step(
 		function () {
-			Photo.findOneAndUpdate(query, { $set: { del: true }}, { new: true, upsert: false, select: {cid: 1, user: 1}}, this);
+			Photo.findOneAndUpdate(query, { $set: { del: true }}, {new: true, upsert: false, select: {cid: 1, user: 1}}, this);
 		},
 		function (err, photo) {
 			if (err || !photo) {
@@ -340,7 +344,7 @@ var findPhotosAll = (function () {
 				}
 				options = options || {};
 				options.lean = true;
-				PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, options, this.parallel());
+				PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, options, this);
 			},
 			function (err, pSort) {
 				if (err) {
@@ -394,7 +398,10 @@ var findPhotosAll = (function () {
 				}
 
 				for (i = photoSort.length; i--;) {
-					res.unshift(photosHash[photoSort[i].photo]);
+					item = photosHash[photoSort[i].photo];
+					if (item) {
+						res.unshift(item);
+					}
 				}
 				cb(err, res);
 			}
@@ -780,11 +787,12 @@ module.exports.loadController = function (app, db, io) {
 					step(
 						function () {
 							var query = {user: photo.user},
-								noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user._id.equals(hs.session.user._id));
+								noPublic = hs.session.user && (hs.session.user.role > 4  || photo.user._id.equals(hs.session.user._id));
 
 							if (limitL) {
 								if (noPublic) {
-									query.stamp = {$gt: photo.adate || photo.ldate};
+									//Если текущая фотография новая, то stamp должен быть увеличен на 10 лет
+									query.stamp = {$gt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
 									findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, hs.session.user, true, this.parallel());
 								} else {
 									query.adate = {$gt: photo.adate};
@@ -796,7 +804,7 @@ module.exports.loadController = function (app, db, io) {
 
 							if (limitR) {
 								if (noPublic) {
-									query.stamp = {$lt: photo.adate || photo.ldate};
+									query.stamp = {$lt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
 									findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, hs.session.user, true, this.parallel());
 								} else {
 									query.adate = {$lt: photo.adate};
