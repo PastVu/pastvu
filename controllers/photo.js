@@ -517,7 +517,7 @@ module.exports.loadController = function (app, db, io) {
 
 						photo.adate = new Date();
 						photo.frags = undefined;
-						if (!photoFresh.geo || photoFresh.geo.length !== 2) {
+						if (!Utils.geoCheck(photoFresh.geo)) {
 							photo.geo = undefined;
 						}
 
@@ -530,7 +530,7 @@ module.exports.loadController = function (app, db, io) {
 						}
 						result({message: 'Photo approved successfully'});
 
-						if (!_.isEmpty(photoSaved.geo)) {
+						if (Utils.geoCheck(photoSaved.geo)) {
 							console.log('Go cluster');
 							PhotoCluster.clusterPhoto(photoSaved);
 						}
@@ -596,6 +596,13 @@ module.exports.loadController = function (app, db, io) {
 							newPhoto = new Photo(p);
 						}
 
+						if (!Array.isArray(p.frags) || !p.frags.length) {
+							photo.frags = undefined;
+						}
+						if (!Utils.geoCheck(p.geo)) {
+							photo.geo = undefined;
+						}
+
 						photo = p;
 						newPhoto.save(this.parallel());
 						PhotoSort.update({photo: photo._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
@@ -625,7 +632,7 @@ module.exports.loadController = function (app, db, io) {
 						}
 
 						//Если у фото есть координаты, значит надо провести действие с кластером
-						if (!_.isEmpty(photo.geo)) {
+						if (Utils.geoCheck(photo.geo)) {
 							if (makeDisabled) {
 								PhotoCluster.declusterPhoto(photo, this.parallel());
 							} else {

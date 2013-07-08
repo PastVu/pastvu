@@ -133,7 +133,7 @@ Utils.cursorsExtract = function cursorsExtract(err) {
 
 //Проверка на валидность geo [lng, lat]
 Utils.geoCheck = function (geo) {
-	return Array.isArray(geo) && geo.length === 2 && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+	return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 };
 
 //Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
