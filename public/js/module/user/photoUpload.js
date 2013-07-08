@@ -263,9 +263,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				toSaveArr.push(file);
 			});
 			if (toSaveArr.length > 0) {
-				socket.once('createPhotoCallback', function (result) {
-					console.dir(result);
-					cb.call(ctx || window, result);
+				socket.once('createPhotoCallback', function (data) {
+					if (!data || data.error) {
+						window.noty({text: data && data.message || 'Ошибка создания фото', type: 'error', layout: 'center', timeout: 4000, force: true});
+						console.dir(data);
+					}
+					cb.call(ctx || window, data);
 				}.bind(this));
 				socket.emit('createPhoto', toSaveArr);
 			} else {

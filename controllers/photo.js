@@ -40,7 +40,7 @@ var shift10y = ms('10y'),
 			};
 
 			if (user) {
-				can.edit = user.role > 4 || photo.user && photo.user.login === user.login;
+				can.edit = user.role > 4 || photo.user && photo.user.equals(user._id);
 				if (user.role > 4) {
 					can.disable = true;
 					can.remove = true;
@@ -662,13 +662,13 @@ module.exports.loadController = function (app, db, io) {
 				if (!photo) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
+				var can;
+				if (checkCan) {
+					can = photoPermissions.getCan(photo, hs.session.user);
+				}
 				photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}, function (err, photo) {
 					if (err) {
 						return result({message: err && err.message, error: true});
-					}
-					var can;
-					if (checkCan) {
-						can = photoPermissions.getCan(photo, hs.session.user);
 					}
 					result({photo: photo.toObject({getters: true}), can: can});
 				});
@@ -953,7 +953,7 @@ module.exports.loadController = function (app, db, io) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
 				if (hs.session.user) {
-					Photo.findOne({cid: cid}, {_id: 1, user: 1}).populate('user', {_id: 0, login: 1}).exec(function (err, photo) {
+					Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}

@@ -55,7 +55,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					this.setMessage('Фото в режиме редактирования. Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
 				} else if (this.p.fresh()) {
-					this.setMessage('Новая фотография. Модератор должен её подтвердить', 'warn'); //Photo is new. Administrator must approve it
+					if (!this.p.ready()) {
+						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', 'warn'); //Photo is new. Administrator must approve it
+					} else {
+						this.setMessage('Новая фотография. Ожидает подтверждения модератором', 'warn'); //Photo is new. Administrator must approve it
+					}
 				} else if (this.p.disabled()) {
 					this.setMessage('Фотография деактивирована администрацией. Только вы и модераторы можете видеть ёё и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
 				} else if (this.p.del()) {
@@ -504,6 +508,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						if (!data.error) {
 							this.edit(false);
 							this.setMapPoint();
+
+							if (this.p.fresh() && !this.p.ready()) {
+								this.notifyReady();
+							}
 						} else {
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 						}
@@ -549,6 +557,25 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}.bind(this));
 				socket.emit('disablePhoto', {cid: this.p.cid(), disable: !this.p.disabled()});
 			}
+		},
+
+		notifyReady: function () {
+			window.noty(
+				{
+					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку "Готово"',
+					type: 'information',
+					layout: 'topRight',
+					force: true,
+					timeout: 6000,
+					closeWith: ['click'],
+					animation: {
+						open: {height: 'toggle'},
+						close: {height: 'toggle'},
+						easing: 'swing',
+						speed: 500
+					}
+				}
+			);
 		},
 
 		remove: function (data, event) {

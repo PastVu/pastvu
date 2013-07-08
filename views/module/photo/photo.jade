@@ -64,7 +64,7 @@
 		button.btn-strict(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
 			i.icon-pencil.icon-white
 			span Редактировать
-		//ko if: p.fresh() && !p.ready()
+		//ko if: IOwner() && p.fresh() && !p.ready()
 		button.btn-strict.btn-strict-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
 			i.icon-check.icon-white
 			span Готово
