@@ -31,7 +31,7 @@
 				a.avatar.fringe(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
-			.row-fluid.photoMap.mContainer.mHidden
+			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false")
 			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length ? '' : 'none'}")
 				.lineBehind
 					span(data-bind="html: 'Отрезок <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'галереи</a> пользователя'")
@@ -55,7 +55,7 @@
 			// /ko
 			.commentsLoad(data-bind="style: {display: commentsLoading() ? '' : 'none'}") &nbsp;
 			// /ko
-			.photoCommentsContainer.mContainer.mHidden
+			.photoCommentsContainer.mContainer.mHidden(data-bind="allowBindings: false")
 	.row-fluid.heightExpander
 
 

@@ -71,8 +71,8 @@ mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
 var logger = log4js.getLogger("app.js");
 
-logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] and Express[' + express.version + '] on process pid:' + process.pid);
-logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ', cpu cores: ' + os.cpus().length);
+logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
+logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ' with ' + os.cpus().length + ' cpu cores');
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");
@@ -89,7 +89,7 @@ async.waterfall([
 		function openHandler() {
 			var admin = new mongoose.mongo.Admin(db.db);
 			admin.buildInfo(function (err, info) {
-				logger.info('Mongoose[' + mongoose.version + '] connected to MongoDB[' + info.version + ', x' + info.bits + '] at: ' + moongoUri);
+				logger.info('MongoDB[' + info.version + ', x' + info.bits + '] connected through Mongoose[' + mongoose.version + '] at: ' + moongoUri);
 				cb(null);
 			});
 			db.removeListener('error', errFirstHandler);

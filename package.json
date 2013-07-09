@@ -1,6 +1,6 @@
 {
 	"name": "pastvu",
-	"version": "0.7.2-dev",
+	"version": "0.8.0-dev",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/pastvu",
 	"keywords": ["oldmos", "pastvu"],
@@ -22,7 +22,7 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"express": "~3.3.1",
+		"express": "~3.3.4",
 		"jade": "~0.32.0",
 		"mongoose": "~3.6.14",
 		"async": "~0.2.9",

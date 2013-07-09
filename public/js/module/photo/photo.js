@@ -9,12 +9,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			var _this = this,
-				mapModuleDeffered = new $.Deferred(),
-				mapReadyDeffered = new $.Deferred();
+			var _this = this;
 
 			this.auth = globalVM.repository['m/common/auth'];
 			this.p = Photo.vm(Photo.def.full);
+			this.binded = false;
 
 			this.photoSrc = ko.observable('');
 			this.photoLoading = ko.observable(true);
@@ -69,10 +68,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}
 			}, this);
 
+			var userInfoTpl = _.template('Added by <a href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times');
 			this.userInfo = this.co.userInfo = ko.computed(function () {
-				return _.template(
-					'Added by <a target="_self" href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times',
-					{ login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}
+				return userInfoTpl(
+					{login: this.p.user.login(), name: this.p.user.fullName(), stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}
 				);
 			}, this);
 
@@ -135,20 +134,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.fragArea = null;
 
 			this.mapVM = null;
-			this.mapModulePromise = mapModuleDeffered.promise();
+			this.mapModuleDeffered = new $.Deferred();
+			this.mapModulePromise = this.mapModuleDeffered.promise();
 			this.childs = [
-				{
-					module: 'm/map/map',
-					container: '.photoMap',
-					options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
-					ctx: this,
-					callback: function (vm) {
-						this.mapVM = this.childModules[vm.id] = vm;
-						$.when(mapReadyDeffered.promise()).done(function () {
-							mapModuleDeffered.resolve();
-						}.bind(this));
-					}
-				},
 				{
 					module: 'm/comment/comments',
 					container: '.photoCommentsContainer',
@@ -156,13 +144,11 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					ctx: this,
 					callback: function (vm) {
 						this.commentsVM = this.childModules[vm.id] = vm;
-						// Так как при первом заходе, когда модуль еще не зареквайрен, нужно вызвать самостоятельно, а последующие будут выстреливать сразу
 						this.routeHandler();
 					}
 				}
 			];
 
-			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
@@ -225,6 +211,120 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 			//globalVM.pb.publish('/top/message', ['', 'muted']);
+		},
+
+		makeBinding: function () {
+			var mapReadyDeffered;
+
+			if (!this.binded) {
+				ko.applyBindings(globalVM, this.$dom[0]);
+
+				mapReadyDeffered = new $.Deferred();
+				renderer(
+					[
+						{
+							module: 'm/map/map',
+							container: '.photoMap',
+							options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
+							ctx: this,
+							callback: function (vm) {
+								this.mapVM = this.childModules[vm.id] = vm;
+								$.when(mapReadyDeffered.promise()).done(function () {
+									this.mapModuleDeffered.resolve();
+								}.bind(this));
+							}
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2 //Чтобы не удалился модуль комментариев
+					}
+				);
+
+				this.binded = true;
+				this.show();
+			}
+		},
+
+		routeHandler: function () {
+			var cid = Number(globalVM.router.params().cid),
+				hl = globalVM.router.params().hl;
+
+			this.toComment = this.toFrag = undefined;
+			window.clearTimeout(this.scrollTimeout);
+
+			if (hl) {
+				if (hl.indexOf('comment-') === 0) {
+					this.toComment = parseInt(hl.substr(8), 10) || undefined;
+				} else if (hl.indexOf('frag-') === 0) {
+					this.toFrag = parseInt(hl.substr(5), 10) || undefined;
+				}
+			}
+
+			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
+				this.photoLoading(true);
+
+				this.commentsVM.clear();
+				this.commentsLoading(false);
+				this.commentsInViewport = false;
+
+				this.viewScrollOff();
+				window.clearTimeout(this.commentsRecieveTimeout);
+				window.clearTimeout(this.commentsViewportTimeout);
+				this.commentsRecieveTimeout = null;
+				this.commentsViewportTimeout = null;
+
+				storage.photo(cid, function (data) {
+					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
+					if (data) {
+						this.originData = data.origin;
+						this.p = Photo.vm(data.origin, this.p, true);
+						this.can = ko_mapping.fromJS(data.can, this.can);
+
+						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
+
+						Utils.title.setTitle({title: this.p.title()});
+
+						if (this.photoLoadContainer) {
+							this.photoLoadContainer.off('load').off('error');
+						}
+						this.photoLoadContainer = $(new Image())
+							.on('load', this.onPhotoLoad.bind(this))
+							.on('error', this.onPhotoError.bind(this))
+							.attr('src', this.p.sfile());
+
+						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+
+						this.commentsVM.setCid(cid);
+						//Если есть комментарии, пытаемся их активировать с необходимой задержкой
+						if (!editMode && this.p.ccount() > 0) {
+							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
+						}
+
+						this.changePhotoHandler(); // Вызываем обработчик изменения фото (this.p)
+						this.edit(editMode); //Первоначально должен быть перед show, чтобы уже был вставлен tpl
+
+						if (!this.binded) {
+							this.makeBinding();
+						}
+					}
+				}, this, this.p);
+			} else if (this.toFrag || this.toComment) {
+				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
+			}
+		},
+
+		loggedInHandler: function () {
+			// После логина перезапрашиваем ленту фотографий пользователя
+			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+			// Запрашиваем разрешенные действия для фото
+			storage.photoCan(this.p.cid(), function (data) {
+				if (!data.error) {
+					this.can = ko_mapping.fromJS(data.can, this.can);
+				}
+			}, this);
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
 		},
 
 		sizesCalc: function () {
@@ -304,82 +404,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 
-		routeHandler: function () {
-			var cid = Number(globalVM.router.params().cid),
-				hl = globalVM.router.params().hl;
-
-			this.toComment = this.toFrag = undefined;
-			window.clearTimeout(this.scrollTimeout);
-
-			if (hl) {
-				if (hl.indexOf('comment-') === 0) {
-					this.toComment = parseInt(hl.substr(8), 10) || undefined;
-				} else if (hl.indexOf('frag-') === 0) {
-					this.toFrag = parseInt(hl.substr(5), 10) || undefined;
-				}
-			}
-
-			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
-				this.photoLoading(true);
-
-				this.commentsVM.clear();
-				this.commentsLoading(false);
-				this.commentsInViewport = false;
-
-				this.viewScrollOff();
-				window.clearTimeout(this.commentsRecieveTimeout);
-				window.clearTimeout(this.commentsViewportTimeout);
-				this.commentsRecieveTimeout = null;
-				this.commentsViewportTimeout = null;
-
-				storage.photo(cid, function (data) {
-					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
-					if (data) {
-						this.originData = data.origin;
-						this.p = Photo.vm(data.origin, this.p, true);
-						this.can = ko_mapping.fromJS(data.can, this.can);
-
-						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
-
-						Utils.title.setTitle({title: this.p.title()});
-
-						if (this.photoLoadContainer) {
-							this.photoLoadContainer.off('load').off('error');
-						}
-						this.photoLoadContainer = $(new Image())
-							.on('load', this.onPhotoLoad.bind(this))
-							.on('error', this.onPhotoError.bind(this))
-							.attr('src', this.p.sfile());
-
-						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-
-						this.commentsVM.setCid(cid);
-						//Если есть комментарии, пытаемся их активировать с необходимой задержкой
-						if (!editMode && this.p.ccount() > 0) {
-							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
-						}
-
-						this.changePhotoHandler(); // Вызываем обработчик изменения фото (this.p)
-						this.edit(editMode); //Первоначально должен быть перед show, чтобы уже был вставлен tpl
-						this.show();
-					}
-				}, this, this.p);
-			} else if (this.toFrag || this.toComment) {
-				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
-			}
-		},
-		loggedInHandler: function () {
-			// После логина перезапрашиваем ленту фотографий пользователя
-			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
-			// Запрашиваем разрешенные действия для фото
-			storage.photoCan(this.p.cid(), function (data) {
-				if (!data.error) {
-					this.can = ko_mapping.fromJS(data.can, this.can);
-				}
-			}, this);
-			this.subscriptions.loggedIn.dispose();
-			delete this.subscriptions.loggedIn;
-		},
 		editHandler: function (v) {
 			if (v) {
 				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
