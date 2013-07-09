@@ -45,7 +45,7 @@
 	},
 	"devDependencies": {
 		"nodemon": "~0.7.8",
-		"requirejs": "~2.1.6",
+		"requirejs": "~2.1.8",
 		"less-middleware": "0.1.11",
 		"less": "~1.3.3",
 		"csso": "~1.3.7",
