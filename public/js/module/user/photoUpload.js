@@ -13,7 +13,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
 			// First get the latest data that we're bound to
 			var value = valueAccessor(), allBindings = allBindingsAccessor(),
-				valueUnwrapped = ko.utils.unwrapObservable(value),
+				valueUnwrapped = ko.unwrap(value),
 				$element = $(element);
 
 			// Now manipulate the DOM element

@@ -27,7 +27,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 	ko.bindingHandlers.allowBindings = {
 		init: function (elem, valueAccessor) {
 			// Let bindings proceed as normal *only if* my value is false
-			var shouldAllowBindings = ko.utils.unwrapObservable(valueAccessor());
+			var shouldAllowBindings = ko.unwrap(valueAccessor());
 			return { controlsDescendantBindings: !shouldAllowBindings };
 		}
 	};
@@ -59,7 +59,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 		init: function (element, valueAccessor, allBindingsAccessor) {
 		},
 		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
-			var obj = ko.utils.unwrapObservable(valueAccessor()),
+			var obj = ko.unwrap(valueAccessor()),
 				$element = $(element);
 
 			$element.text(ko.isWriteableObservable(obj.val) ? obj.val() : obj.val);
