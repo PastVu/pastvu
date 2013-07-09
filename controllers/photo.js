@@ -794,7 +794,7 @@ module.exports.loadController = function (app, db, io) {
 					step(
 						function () {
 							var query = {user: photo.user},
-								noPublic = hs.session.user && (hs.session.user.role > 4  || photo.user._id.equals(hs.session.user._id));
+								noPublic = hs.session.user && (hs.session.user.role > 4  || photo.user.equals(hs.session.user._id));
 
 							if (limitL) {
 								if (noPublic) {
