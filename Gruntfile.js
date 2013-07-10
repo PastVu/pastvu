@@ -25,7 +25,7 @@ module.exports = function (grunt) {
 			},
 			target: {
 				//Очищаем целевую директорию кроме вложенной папки node_modules
-				src: [targetDir + '/*', '!' + targetDir + '/node_modules']
+				src: [targetDir + '/*'/*, '!' + targetDir + '/node_modules'*/]
 			},
 			publicTpl: {
 				//Очищаем целевую директорию кроме вложенной папки node_modules
@@ -35,6 +35,12 @@ module.exports = function (grunt) {
 		exec: {
 			buildjs: {
 				command: 'node build.js',
+				stdout: true,
+				stderr: true
+			},
+			npm: {
+				command: 'npm --production install',
+				cwd: targetDir,
 				stdout: true,
 				stderr: true
 			}
@@ -102,11 +108,11 @@ module.exports = function (grunt) {
 		compress: {
 			main: {
 				options: {
-					archive: upperDir + 'app.tgz',
-					mode: 'tgz'
+					archive: upperDir + 'app.zip',
+					mode: 'zip'
 				},
 				files: [
-					{expand: true, cwd: targetDir, src: ['**/*', '!node_modules/**'], dest: 'app/'}
+					{expand: true, cwd: targetDir, src: ['**/*'/*, '!node_modules*//**//**'*/], dest: 'app'}
 				]
 			}
 		}
@@ -134,6 +140,7 @@ module.exports = function (grunt) {
 		'jade:compileMainJades',
 		'clean:publicTpl',
 		'writeBuildParams',
+		'exec:npm',
 		'compress'
 	]);
 
