@@ -109,7 +109,8 @@ module.exports = function (grunt) {
 			main: {
 				options: {
 					archive: upperDir + 'app.zip',
-					mode: 'zip'
+					mode: 'zip',
+					level: 9
 				},
 				files: [
 					{expand: true, cwd: targetDir, src: ['**/*'/*, '!node_modules*//**//**'*/], dest: 'app'}

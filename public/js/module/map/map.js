@@ -17,7 +17,8 @@ define([
 		options: {
 			embedded: undefined, // Режим встроенной карты
 			editing: undefined, // Режим редактирования
-			deferredWhenReady: undefined // Deffered witch will be resolved when map ready
+			deferredWhenReady: undefined, // Deffered witch will be resolved when map ready
+			center: undefined
 		},
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
@@ -194,7 +195,7 @@ define([
 				this.yearSliderCreate();
 			}
 
-			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.options.center || this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
             this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded()});
 			this.selectLayer('osm', 'osmosnimki');
 
@@ -221,7 +222,8 @@ define([
 				.whenReady(function () {
 					if (this.embedded()) {
 						this.map.addLayer(this.pointLayer);
-					} else {
+					}
+					if (!this.editing()) {
 						this.markerManager.enable();
 					}
 
@@ -243,6 +245,7 @@ define([
 			this.pointHighlightDestroy();
 			this.pointEditDestroy();
 			this.map.remove();
+			delete this.point;
 			delete this.map;
 			delete this.markerManager;
 			destroy.call(this);
@@ -277,8 +280,28 @@ define([
 			return this;
 		},
 
+		setPoint: function (photo) {
+			var geo = photo.geo();
+			this.point = photo;
+			if (this.editing() && this.pointMarkerEdit) {
+				this.pointMarkerEdit.setLatLng(geo);
+			}
+			if (!this.editing()) {
+				this.pointHighlightCreate();
+			}
+			if (geo[0] || geo[1]) {
+				this.map.panTo(geo);
+			}
+			return this;
+		},
+		getPointGeo: function () {
+			var latlng = Utils.geo.geoToPrecision(this.pointMarkerEdit.getLatLng());
+			return [latlng.lat, latlng.lng];
+		},
+
 		pointHighlightCreate: function () {
-			if (this.point && this.pointMarkerHL === undefined) {
+			this.pointHighlightDestroy();
+			if (this.point) {
 				var divIcon = L.divIcon(
 					{
 						className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
@@ -299,8 +322,9 @@ define([
 
 		// Создает маркер для редактирования установленной точки
 		pointEditCreate: function () {
-			if (this.point && this.pointMarkerEdit === undefined) {
-				this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Shooting point', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
+			this.pointEditDestroy();
+			if (this.point) {
+				this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
 				this.pointLayer.addLayer(this.pointMarkerEdit);
 				this.pointMarkerEdit.on('dragend', function () {
 					this.update();
@@ -322,26 +346,6 @@ define([
 				delete this.pointMarkerEdit;
 			}
 			return this;
-		},
-
-		setPoint: function (photo) {
-			var geo = photo.geo();
-			this.point = photo;
-			if (this.editing() && this.pointMarkerEdit) {
-				this.pointMarkerEdit.setLatLng(geo);
-			}
-			if (!this.editing() && this.pointMarkerHL) {
-				this.pointHighlightDestroy();
-				this.pointHighlightCreate();
-			}
-			if (geo[0] || geo[1]) {
-				this.map.panTo(geo);
-			}
-			return this;
-		},
-		getPointGeo: function () {
-			var latlng = Utils.geo.geoToPrecision(this.pointMarkerEdit.getLatLng());
-			return [latlng.lat, latlng.lng];
 		},
 
 		setMapDefCenter: function (forceMoveEvent) {

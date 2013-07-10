@@ -149,7 +149,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}
 			];
 
-
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
 
@@ -225,7 +224,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						{
 							module: 'm/map/map',
 							container: '.photoMap',
-							options: {embedded: true, editing: this.edit(), deferredWhenReady: mapReadyDeffered},
+							options: {embedded: true, editing: this.edit(), center: this.p.geo(), deferredWhenReady: mapReadyDeffered},
 							ctx: this,
 							callback: function (vm) {
 								this.mapVM = this.childModules[vm.id] = vm;
@@ -327,6 +326,40 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			delete this.subscriptions.loggedIn;
 		},
 
+		// Обработчик изменения фото
+		changePhotoHandler: function () {
+			$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
+		},
+
+		editHandler: function (v) {
+			if (v) {
+				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
+				this.commentsDeActivate();
+			} else {
+				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
+				this.commentsActivate();
+			}
+		},
+
+		//Вызывается после рендеринга шаблона информации фото
+		tplAfterRender: function (elements, vm) {
+			if (vm.edit()) {
+				vm.descSetEdit();
+			}
+		},
+
+		mapEditOn: function () {
+			this.mapVM.editPointOn();
+		},
+		mapEditOff: function () {
+			this.mapVM.editPointOff();
+		},
+
+		// Установить фото для точки на карте
+		setMapPoint: function () {
+			this.mapVM.setPoint(this.p);
+		},
+
 		sizesCalc: function () {
 			var rightPanelW = this.$dom.find('.rightPanel').width(),
 				thumbW,
@@ -397,36 +430,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.fragAreaCreate(fragSelection);
 			}
 		},
+
 		stateChange: function (data, event) {
 			var state = $(event.currentTarget).attr('data-state');
 			if (state && this[state]) {
 				this[state](!this[state]());
 			}
-		},
-
-		editHandler: function (v) {
-			if (v) {
-				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
-				this.descSetEdit();
-				this.commentsDeActivate();
-			} else {
-				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
-				this.commentsActivate();
-			}
-		},
-		mapEditOn: function () {
-			this.mapVM.editPointOn();
-		},
-		mapEditOff: function () {
-			this.mapVM.editPointOff();
-		},
-		// Обработчик изменения фото
-		changePhotoHandler: function () {
-			$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
-		},
-		// Установить точку на карту
-		setMapPoint: function () {
-			this.mapVM.setPoint(this.p);
 		},
 
 		descSetEdit: function () {
