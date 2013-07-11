@@ -88,6 +88,26 @@
 		white-space: nowrap;
 	}
 
+	.mapInfo {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 26px;
+		height: 26px;
+		line-height: 26px;
+		text-align: center;
+
+		&.warn {
+			background-color: #FFD62D;
+		}
+		&.info {
+			background-color: #A7C4F0;
+		}
+		.icon-map-marker, .icon-warning-sign {
+			margin: 3px 7px 0 0;
+		}
+	}
+
 	.mapYearSelector {
 		position: absolute;
 		left: 0;

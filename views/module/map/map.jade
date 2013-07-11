@@ -1,6 +1,11 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
 	.mapContainer(data-bind="css: {embedded: embedded}")
 		.map
+		//ko if: infoShow()
+		.mapInfo.warn
+			i.icon-warning-sign
+			| Координата фотографии не указана
+		// /ko
 		.mapYearSelector
 			.yearSlider
 				.ui-slider-handle.L

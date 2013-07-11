@@ -51,7 +51,7 @@ define([
 			this.yearRefreshMarkersBind = this.yearRefreshMarkers.bind(this);
 			this.yearRefreshMarkersTimeout = null;
 
-			this.auth = globalVM.repository['m/common/auth'];
+			this.infoShow = ko.observable(true);
 
 			if (P.settings.USE_OSM_API()) {
 				this.layers.push({
@@ -444,8 +444,9 @@ define([
 
 		yearSliderCreate: function () {
 			var _this = this,
+				yearsDelta = this.yearHigh - this.yearLow,
 				$slider = this.$dom.find('.yearSlider'),
-				sliderStep = $slider.width() / 174,
+				sliderStep = $slider.width() / yearsDelta,
 				slideOuterL =  this.$dom.find('.yearOuter.L')[0],
 				slideOuterR =  this.$dom.find('.yearOuter.R')[0],
 				handleL = $slider[0].querySelector('.ui-slider-handle.L'),
@@ -454,11 +455,11 @@ define([
 				currMax,
 				culcSlider = function (min, max) {
 					if (currMin !== min) {
-						slideOuterL.style.width = sliderStep * (min - 1826) + 'px';
+						slideOuterL.style.width = (sliderStep * (min - 1826) >> 0) + 'px';
 						handleL.innerHTML = currMin = min;
 					}
 					if (currMax !== max) {
-						slideOuterR.style.width = sliderStep * (2000 - max) + 'px';
+						slideOuterR.style.width = (sliderStep * (2000 - max) >> 0) + 'px';
 						handleR.innerHTML = currMax = max;
 					}
 				};
@@ -491,9 +492,9 @@ define([
 			this.subscriptions.sizeSlider = P.window.square.subscribe(function () {
 				var values = $slider.slider("values");
 
-				sliderStep = $slider.width() / 174;
-				slideOuterL.style.width = sliderStep * (values[0] - 1826) + 'px';
-				slideOuterR.style.width = sliderStep * (2000 - values[1]) + 'px';
+				sliderStep = $slider.width() / yearsDelta;
+				slideOuterL.style.width = (sliderStep * (values[0] - 1826) >> 0) + 'px';
+				slideOuterR.style.width = (sliderStep * (2000 - values[1]) >> 0) + 'px';
 			});
 		},
 		yearRefreshMarkers: function () {
