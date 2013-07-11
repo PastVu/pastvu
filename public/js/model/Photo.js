@@ -32,7 +32,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				stack: '',
 				stack_order: 0,
 
-				geo: [0, 0],
+				geo: undefined,
 				dir: undefined,
 
 				type: 'image/jpeg',
@@ -100,9 +100,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			origin.adate = new Date(origin.adate);
 		}
 		if (defType === 'full') {
-			origin.geo[0] = origin.geo[0] || defaults[defType].geo[0];
-			origin.geo[1] = origin.geo[1] || defaults[defType].geo[1];
-			origin.geo.reverse(); // Stores in mongo like [lng, lat], for leaflet need [lat, lng]
+			if (Utils.geoCheck(origin.geo)) {
+				origin.geo.reverse(); // Stores in mongo like [lng, lat], for api need [lat, lng]
+			} else {
+				origin.geo = defaults[defType].geo;
+			}
 			User.factory(origin.user, 'base');
 		}
 		if (origin.fresh || origin.disabled || origin.del) {

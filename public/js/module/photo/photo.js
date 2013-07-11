@@ -224,7 +224,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						{
 							module: 'm/map/map',
 							container: '.photoMap',
-							options: {embedded: true, editing: this.edit(), center: this.p.geo(), deferredWhenReady: mapReadyDeffered},
+							options: {embedded: true, editing: this.edit(), point: this.genMapPoint(), dfdWhenReady: mapReadyDeffered},
 							ctx: this,
 							callback: function (vm) {
 								this.mapVM = this.childModules[vm.id] = vm;
@@ -280,9 +280,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						this.p = Photo.vm(data.origin, this.p, true);
 						this.can = ko_mapping.fromJS(data.can, this.can);
 
-						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
-
 						Utils.title.setTitle({title: this.p.title()});
+
+						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
 
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
@@ -300,9 +300,12 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
 						}
 
-						this.changePhotoHandler(); // Вызываем обработчик изменения фото (this.p)
-						this.edit(editMode); //Первоначально должен быть перед show, чтобы уже был вставлен tpl
+						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
+						if (this.binded) {
+							$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
+						}
 
+						this.edit(editMode);
 						if (!this.binded) {
 							this.makeBinding();
 						}
@@ -324,11 +327,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}, this);
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
-		},
-
-		// Обработчик изменения фото
-		changePhotoHandler: function () {
-			$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
 		},
 
 		editHandler: function (v) {
@@ -357,7 +355,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		// Установить фото для точки на карте
 		setMapPoint: function () {
-			this.mapVM.setPoint(_.pick(ko_mapping.toJS(this.p), 'geo', 'year', 'dir', 'title'));
+			this.mapVM.setPoint(this.genMapPoint());
+		},
+		genMapPoint: function () {
+			return _.pick(ko_mapping.toJS(this.p), 'geo', 'year', 'dir', 'title');
 		},
 
 		sizesCalc: function () {

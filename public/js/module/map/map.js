@@ -17,16 +17,18 @@ define([
 		options: {
 			embedded: undefined, // Режим встроенной карты
 			editing: undefined, // Режим редактирования
-			deferredWhenReady: undefined, // Deffered witch will be resolved when map ready
-			center: undefined
+			point: undefined,
+			center: undefined,
+			dfdWhenReady: undefined // Deffered witch will be resolved when map ready
+
 		},
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 
 			// Modes
-			this.embedded = ko.observable(this.options.embedded);
+			this.embedded = this.options.embedded;
 			this.editing = ko.observable(this.options.editing);
-			this.openNewTab = ko.observable(!this.embedded());
+			this.openNewTab = ko.observable(!this.embedded);
 
 			// Map objects
 			this.map = null;
@@ -37,8 +39,12 @@ define([
 			this.layerActiveDesc = ko.observable('');
 
 			this.markerManager = null;
-			this.point = null; // Фотография для выделения
-			this.pointLayer = L.layerGroup();
+
+			//Если карта встроена, то создаем точку для выделения и слой, куда её добавить
+			if (this.embedded) {
+				this.point = this.options.point; // Точка для выделения
+				this.pointLayer = L.layerGroup();
+			}
 
 			this.yearLow = 1826;
 			this.yearHigh = 2000;
@@ -191,12 +197,14 @@ define([
 
 		show: function () {
 			//Если это карта на главной, то считаем размер контейнера и создаем слайдер лет
-			if (!this.embedded()) {
+			if (!this.embedded) {
 				this.yearSliderCreate();
 			}
 
-			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: this.options.center || this.mapDefCenter, zoom: this.embedded() ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
-            this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded()});
+			var center = this.point && this.point.geo || this.options.center || this.mapDefCenter;
+
+			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
 			this.selectLayer('osm', 'osmosnimki');
 
 			Locations.subscribe(function (val) {
@@ -206,7 +214,7 @@ define([
 
 			renderer(
 				[
-					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded()}, ctx: this, callback: function (vm) {
+					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded}, ctx: this, callback: function (vm) {
 						this.childModules[vm.id] = vm;
 						this.navSliderVM = vm;
 					}.bind(this)}
@@ -220,17 +228,15 @@ define([
 			this.map
 				.on('zoomend', this.zoomEndCheckLayer, this)
 				.whenReady(function () {
-					if (this.embedded()) {
+					if (this.embedded) {
 						this.map.addLayer(this.pointLayer);
 					}
-					if (!this.editing()) {
-						this.markerManager.enable();
-					}
+					this.editHandler(this.editing());
 
 					globalVM.func.showContainer(this.$container);
 
-					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
-						window.setTimeout(this.options.deferredWhenReady.resolve.bind(this.options.deferredWhenReady), 100);
+					if (this.options.dfdWhenReady && Utils.isType('function', this.options.dfdWhenReady.resolve)) {
+						window.setTimeout(this.options.dfdWhenReady.resolve.bind(this.options.dfdWhenReady), 100);
 					}
 				}, this);
 
@@ -251,7 +257,7 @@ define([
 			destroy.call(this);
 		},
 		sizesCalc: function () {
-			if (!this.embedded()) {
+			if (!this.embedded) {
 				this.yearSliderSize();
 			}
 			this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
@@ -319,31 +325,43 @@ define([
 			}
 		},
 
-		// Создает маркер для редактирования установленной точки
+		// Создает маркер если точка есть, а если нет, то создает по клику на карте
 		pointEditCreate: function () {
 			this.pointEditDestroy();
 			if (this.point) {
-				this.pointMarkerEdit = L.marker(this.point.geo, {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
-				this.pointLayer.addLayer(this.pointMarkerEdit);
-				this.pointMarkerEdit.on('dragend', function () {
-					this.update();
-					var latlng = this.getLatLng();
-					console.log(_.pick(latlng, 'lng', 'lat'));
-				});
+				if (this.point.geo) {
+					this.pointEditMarkerCreate();
+				}
 				this.map.on('click', function (e) {
-					this.pointMarkerEdit.setLatLng(Utils.geo.geoToPrecision(e.latlng));
+					var geo = Utils.geo.geoToPrecision(e.latlng);
+					if (this.pointMarkerEdit) {
+						this.pointMarkerEdit.setLatLng(geo);
+					} else {
+						this.point.geo = geo;
+						this.pointEditMarkerCreate();
+					}
 				}, this);
 			}
 			return this;
 		},
+		pointEditMarkerCreate: function () {
+			this.pointMarkerEdit = L.marker(this.point.geo, {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
+				.on('dragend', function () {
+					this.update();
+					var latlng = this.getLatLng();
+					console.log(_.pick(latlng, 'lng', 'lat'));
+				})
+				.addTo(this.pointLayer);
+		},
 		// Уничтожает маркер редактирования
 		pointEditDestroy: function () {
-			if (this.pointMarkerEdit !== undefined) {
-				this.map.off('click');
+			if (this.pointMarkerEdit) {
 				this.pointMarkerEdit.off('dragend');
 				this.pointLayer.removeLayer(this.pointMarkerEdit);
 				delete this.pointMarkerEdit;
 			}
+			this.map.off('click');
+
 			return this;
 		},
 

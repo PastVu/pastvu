@@ -126,7 +126,7 @@ function createPhotos(socket, data, cb) {
 					type: item.type,
 					size: item.size,
 					geo: undefined,
-					title: item.name || undefined,
+					title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
 					convqueue: true
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
