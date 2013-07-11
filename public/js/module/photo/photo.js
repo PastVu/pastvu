@@ -339,13 +339,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 
-		//Вызывается после рендеринга шаблона информации фото
-		tplAfterRender: function (elements, vm) {
-			if (vm.edit()) {
-				vm.descSetEdit();
-			}
-		},
-
 		mapEditOn: function () {
 			this.mapVM.editPointOn();
 		},
@@ -359,6 +352,13 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		genMapPoint: function () {
 			return _.pick(ko_mapping.toJS(this.p), 'geo', 'year', 'dir', 'title');
+		},
+
+		//Вызывается после рендеринга шаблона информации фото
+		tplAfterRender: function (elements, vm) {
+			if (vm.edit()) {
+				vm.descSetEdit();
+			}
 		},
 
 		sizesCalc: function () {

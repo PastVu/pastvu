@@ -90,15 +90,24 @@
 
 	.mapYearSelector {
 		position: absolute;
-		left: 0px;
-		right: 0px;
-		bottom: 0px;
+		left: 0;
+		right: 0;
+		bottom: 0;
 		height: 26px;
 		background-color: darken(@navbarLinkBackgroundActive, 5%);
 
-		.mapYearInner {
+		.ui-slider-range {
+			background: none;
+		}
+
+		.mapYearSlider {
+			position: absolute;
+			top: 8px;
+			left: 36px;
+			right: 36px;
+			bottom: 8px;
 			height: 8px;
-			margin: 8px 36px;
+
 			filter: none;
 			border: 1px solid #374F69;
 			background: #ab2f58;
@@ -114,7 +123,9 @@
 		.mapYearOuter {
 			position: absolute;
 			top: 8px;
+			width: 0;
 			height: 8px;
+
 			margin: 0;
 			border-color: #3E5772;
 			border-style: solid;
@@ -129,33 +140,29 @@
 				border-width: 1px 1px 1px 0;
 			}
 		}
-		.mapYearHandle {
-			position: absolute;
-			visibility: hidden;
-			top: 2px;
-			width: 34px;
-			height: 22px;
-			padding-top: 2px;
+		.ui-slider-handle {
+			height: 21px;
+			padding-top: 1px;
 			font-size: 14px;
-			cursor: move;
+			line-height: 21px;
 			color: darken(@MainLigthColor, 4%);
-			background-repeat: no-repeat;
-			background-position: 0 0;
-			.box-sizing(border-box);
+			border: none;
 
 			&:hover {
 				color: #fff;
 			}
 
 			&.L {
+				width: 31px;
 				margin-left: -32px;
 				padding-left: 3px;
-				background-image: url(/img/misc/slidel.png);
+				background: url(/img/misc/slidel.png) 0 0 no-repeat;
 			}
 			&.R {
+				width: 28px;
 				margin-left: -2px;
 				padding-left: 6px;
-				background-image: url(/img/misc/slider.png);
+				background: url(/img/misc/slider.png) 0 0 no-repeat;
 			}
 		}
 	}
@@ -662,7 +669,7 @@
 			right: 4px;
 		}
 		.mapYearSelector {
-			display: none;
+			//display: none;
 		}
 	}
 

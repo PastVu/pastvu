@@ -7,8 +7,8 @@ define([
 	'model/User', 'model/storage', 'Locations',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
 	'text!tpl/map/map.jade', 'css!style/map/map',
-	'jquery-ui/draggable', 'jquery-ui/effect-highlight',
-	'css!style/jquery/ui/core', 'css!style/jquery/ui/theme'
+	'jquery-ui/draggable', 'jquery-ui/slider', 'jquery-ui/effect-highlight',
+	'css!style/jquery/ui/core', 'css!style/jquery/ui/theme', 'css!style/jquery/ui/slider'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
 	'use strict';
 
@@ -197,9 +197,9 @@ define([
 
 		show: function () {
 			//Если это карта на главной, то считаем размер контейнера и создаем слайдер лет
-			if (!this.embedded) {
+			//if (!this.embedded) {
 				this.yearSliderCreate();
-			}
+			//}
 
 			var center = this.point && this.point.geo || this.options.center || this.mapDefCenter;
 
@@ -449,81 +449,61 @@ define([
 		},
 
 		yearSliderCreate: function () {
-			this.slideOuterL = this.$dom.find(".mapYearOuter.L")[0];
-			this.slideOuterR = this.$dom.find(".mapYearOuter.R")[0];
-			this.$slideHandleL = this.$dom.find(".mapYearHandle.L");
-			this.$slideHandleR = this.$dom.find(".mapYearHandle.R");
-
-			this.$slideHandleL.draggable({
-				axis: "x",
-				cursor: "move",
-				drag: function (event, ui) {
-					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
-					ui.helper[0].innerHTML = newYear;
-					this.slideOuterL.style.width = (ui.offset.left - this.slideOffset - 10) + 'px';
-				}.bind(this),
-				start: function (event, ui) {
-					window.clearTimeout(this.yearRefreshMarkersTimeout);
-				}.bind(this),
-				stop: function (event, ui) {
-					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
-					if (newYear !== this.yearLow) {
-						this.yearLow = newYear;
-						this.yearSliderPositions();
-						this.yearRefreshMarkersTimeout = window.setTimeout(this.yearRefreshMarkersBind, 400);
+			var _this = this,
+				$slider = this.$dom.find(".mapYearSlider"),
+				slideOuterL = this.$dom.find(".mapYearOuter.L")[0],
+				slideOuterR = this.$dom.find(".mapYearOuter.R")[0],
+				handleL,
+				handleR,
+				currMin,
+				currMax,
+				culcSlider = function (min, max) {
+					if (currMin !== min) {
+						slideOuterL.style.width = this.sliderStep * (min - 1826) + 'px';
+						handleL.innerHTML = currMin = min;
 					}
-				}.bind(this)
-			});
-			this.$slideHandleR.draggable({
-				axis: "x",
-				cursor: "move",
-				drag: function (event, ui) {
-					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
-					ui.helper[0].innerHTML = newYear;
-					this.slideOuterR.style.left = (ui.offset.left + this.slideOffset - 10) + 'px';
-				}.bind(this),
-				start: function (event, ui) {
-					window.clearTimeout(this.yearRefreshMarkersTimeout);
-				}.bind(this),
-				stop: function (event, ui) {
-					var newYear = 1826 + (ui.offset.left - this.slideOffset) / this.slideStep >> 0;
-					if (newYear !== this.yearHigh) {
-						this.yearHigh = newYear;
-						this.yearSliderPositions();
-						this.yearRefreshMarkersTimeout = window.setTimeout(this.yearRefreshMarkersBind, 400);
+					if (currMax !== max) {
+						slideOuterR.style.width = this.sliderStep * (2000 - max) + 'px';
+						handleR.innerHTML = currMax = max;
 					}
-				}.bind(this)
+				}.bind(this);
+
+			this.sliderStep = $slider.width() / 174;
+
+			$slider.slider({
+				range: true,
+				min: this.yearLow,
+				max: this.yearHigh,
+				step: 1,
+				values: [this.yearLow, this.yearHigh],
+				create: function(event, ui) {
+					var range = this.querySelector('.ui-slider-range'),
+						values = $slider.slider("values");
+
+					handleL = this.querySelector('.ui-slider-handle.L');
+					handleR = this.querySelector('.ui-slider-handle.R');
+
+					culcSlider(values[0], values[1]);
+				},
+				start: function(event, ui) {
+					console.log('start', ui.values[0], ui.values[1]);
+					window.clearTimeout(_this.yearRefreshMarkersTimeout);
+				},
+				slide: function(event, ui) {
+					console.log(ui.values[0], ui.values[1]);
+					culcSlider(ui.values[0], ui.values[1]);
+				},
+				change: function(event, ui) {
+					culcSlider(ui.values[0], ui.values[1]);
+					_this.yearLow = currMin;
+					_this.yearHigh = currMax;
+					_this.yearRefreshMarkersTimeout = window.setTimeout(_this.yearRefreshMarkersBind, 400);
+				}
 			});
+			this.$dom.find(".mapYearHandle").css({visibility: 'visible'});
 
-			this.yearSliderSize();
-		},
-		yearSliderSize: function () {
-			this.slideOffset = 36;
-			this.slideW = this.$dom.find('.mapYearSelector').width();
-			this.slideStep = (this.slideW - (this.slideOffset * 2)) / 174;
-			this.$dom.find(".mapYearHandle").css({ visibility: 'visible'});
-			this.$slideHandleL.draggable("option", "grid", [this.slideStep, 0]);
-			this.$slideHandleR.draggable("option", "grid", [this.slideStep, 0]);
-			this.yearSliderPositions();
-		},
-		yearSliderPositions: function () {
-			var low = this.slideOffset + this.slideStep * (this.yearLow - 1826),
-				high = this.slideOffset + this.slideStep * (this.yearHigh - 1826);
-
-			this.$slideHandleL
-				.css({left: low})
-				.text(this.yearLow)
-				.draggable("option", "containment", [this.slideOffset, 0, high + 0.1, 0]);
-			this.slideOuterL.style.width = (low - this.slideOffset - 10) + 'px';
-
-			this.$slideHandleR
-				.css({left: high})
-				.text(this.yearHigh)
-				.draggable("option", "containment", [low - 0.1, 0, this.slideW - this.slideOffset, 0]);
-			this.slideOuterR.style.left = (high + this.slideOffset - 10) + 'px';
 		},
 		yearRefreshMarkers: function () {
-			console.log('yearRefreshMarkers');
 			this.markerManager.setYearLimits(this.yearLow, this.yearHigh);
 		}
 	});
