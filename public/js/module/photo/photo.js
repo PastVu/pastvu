@@ -357,7 +357,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 		// Установить фото для точки на карте
 		setMapPoint: function () {
-			this.mapVM.setPoint(this.p);
+			this.mapVM.setPoint(_.pick(ko_mapping.toJS(this.p), 'geo', 'year', 'dir', 'title'));
 		},
 
 		sizesCalc: function () {

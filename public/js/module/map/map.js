@@ -280,17 +280,16 @@ define([
 			return this;
 		},
 
-		setPoint: function (photo) {
-			var geo = photo.geo();
-			this.point = photo;
+		setPoint: function (point) {
+			this.point = point;
 			if (this.editing() && this.pointMarkerEdit) {
-				this.pointMarkerEdit.setLatLng(geo);
+				this.pointMarkerEdit.setLatLng(point.geo);
 			}
 			if (!this.editing()) {
 				this.pointHighlightCreate();
 			}
-			if (geo[0] || geo[1]) {
-				this.map.panTo(geo);
+			if (point.geo[0] || point.geo[1]) {
+				this.map.panTo(point.geo);
 			}
 			return this;
 		},
@@ -304,11 +303,11 @@ define([
 			if (this.point) {
 				var divIcon = L.divIcon(
 					{
-						className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
+						className: 'photoIcon highlight ' + 'y' + this.point.year + ' ' + this.point.dir,
 						iconSize: new L.Point(8, 8)
 					}
 				);
-				this.pointMarkerHL = L.marker(this.point.geo(), {zIndexOffset: 10000, draggable: false, title: this.point.title(), icon: divIcon, riseOnHover: true});
+				this.pointMarkerHL = L.marker(this.point.geo, {zIndexOffset: 10000, draggable: false, title: this.point.title, icon: divIcon, riseOnHover: true});
 				this.pointLayer.addLayer(this.pointMarkerHL);
 			}
 			return this;
@@ -324,7 +323,7 @@ define([
 		pointEditCreate: function () {
 			this.pointEditDestroy();
 			if (this.point) {
-				this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
+				this.pointMarkerEdit = L.marker(this.point.geo, {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})});
 				this.pointLayer.addLayer(this.pointMarkerEdit);
 				this.pointMarkerEdit.on('dragend', function () {
 					this.update();
