@@ -196,11 +196,6 @@ define([
 		},
 
 		show: function () {
-			//Если это карта на главной, то считаем размер контейнера и создаем слайдер лет
-			//if (!this.embedded) {
-				this.yearSliderCreate();
-			//}
-
 			var center = this.point && this.point.geo || this.options.center || this.mapDefCenter;
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
@@ -233,6 +228,8 @@ define([
 					}
 					this.editHandler(this.editing());
 
+					this.yearSliderCreate();
+
 					globalVM.func.showContainer(this.$container);
 
 					if (this.options.dfdWhenReady && Utils.isType('function', this.options.dfdWhenReady.resolve)) {
@@ -257,9 +254,6 @@ define([
 			destroy.call(this);
 		},
 		sizesCalc: function () {
-			if (!this.embedded) {
-				this.yearSliderSize();
-			}
 			this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
 		},
 
@@ -450,25 +444,24 @@ define([
 
 		yearSliderCreate: function () {
 			var _this = this,
-				$slider = this.$dom.find(".mapYearSlider"),
-				slideOuterL = this.$dom.find(".mapYearOuter.L")[0],
-				slideOuterR = this.$dom.find(".mapYearOuter.R")[0],
-				handleL,
-				handleR,
+				$slider = this.$dom.find('.yearSlider'),
+				sliderStep = $slider.width() / 174,
+				slideOuterL =  this.$dom.find('.yearOuter.L')[0],
+				slideOuterR =  this.$dom.find('.yearOuter.R')[0],
+				handleL = $slider[0].querySelector('.ui-slider-handle.L'),
+				handleR = $slider[0].querySelector('.ui-slider-handle.R'),
 				currMin,
 				currMax,
 				culcSlider = function (min, max) {
 					if (currMin !== min) {
-						slideOuterL.style.width = this.sliderStep * (min - 1826) + 'px';
+						slideOuterL.style.width = sliderStep * (min - 1826) + 'px';
 						handleL.innerHTML = currMin = min;
 					}
 					if (currMax !== max) {
-						slideOuterR.style.width = this.sliderStep * (2000 - max) + 'px';
+						slideOuterR.style.width = sliderStep * (2000 - max) + 'px';
 						handleR.innerHTML = currMax = max;
 					}
-				}.bind(this);
-
-			this.sliderStep = $slider.width() / 174;
+				};
 
 			$slider.slider({
 				range: true,
@@ -476,21 +469,14 @@ define([
 				max: this.yearHigh,
 				step: 1,
 				values: [this.yearLow, this.yearHigh],
-				create: function(event, ui) {
-					var range = this.querySelector('.ui-slider-range'),
-						values = $slider.slider("values");
-
-					handleL = this.querySelector('.ui-slider-handle.L');
-					handleR = this.querySelector('.ui-slider-handle.R');
-
+				create: function() {
+					var values = $slider.slider("values");
 					culcSlider(values[0], values[1]);
 				},
-				start: function(event, ui) {
-					console.log('start', ui.values[0], ui.values[1]);
+				start: function() {
 					window.clearTimeout(_this.yearRefreshMarkersTimeout);
 				},
 				slide: function(event, ui) {
-					console.log(ui.values[0], ui.values[1]);
 					culcSlider(ui.values[0], ui.values[1]);
 				},
 				change: function(event, ui) {
@@ -500,8 +486,15 @@ define([
 					_this.yearRefreshMarkersTimeout = window.setTimeout(_this.yearRefreshMarkersBind, 400);
 				}
 			});
-			this.$dom.find(".mapYearHandle").css({visibility: 'visible'});
 
+			//Подписываемся на изменение размеров окна для пересчета шага и позиций покрывал
+			this.subscriptions.sizeSlider = P.window.square.subscribe(function () {
+				var values = $slider.slider("values");
+
+				sliderStep = $slider.width() / 174;
+				slideOuterL.style.width = sliderStep * (values[0] - 1826) + 'px';
+				slideOuterR.style.width = sliderStep * (2000 - values[1]) + 'px';
+			});
 		},
 		yearRefreshMarkers: function () {
 			this.markerManager.setYearLimits(this.yearLow, this.yearHigh);

@@ -100,7 +100,7 @@
 			background: none;
 		}
 
-		.mapYearSlider {
+		.yearSlider {
 			position: absolute;
 			top: 8px;
 			left: 36px;
@@ -120,7 +120,7 @@
 			background: linear-gradient(to right, #000066 0%,#0000ab 30%,#3900ab 36%,#7200ab 42%,#ab00ab 48%,#ab0072 53%,#ab0039 59%,#ab0000 65%,#ab3900 71%,#ab7200 76%,#abab00 82%,#72ab00 88%,#39ab00 94%,#00ab00 100%);
 			.box-shadow(~'0 2px 4px 0px rgba(0, 0, 0, .6) inset, 0 -1px 2px 0px rgba(0, 0, 0, .4) inset');
 		}
-		.mapYearOuter {
+		.yearOuter {
 			position: absolute;
 			top: 8px;
 			width: 0;
@@ -130,6 +130,7 @@
 			border-color: #3E5772;
 			border-style: solid;
 			background-color: fade(#aaa, 60%);
+			pointer-events: none; //Чтобы клик пробивал до yearSlider и менял год
 
 			&.L {
 				left: 36px;
@@ -667,9 +668,6 @@
 		.layersPanel {
 			top: 5px;
 			right: 4px;
-		}
-		.mapYearSelector {
-			//display: none;
 		}
 	}
 
