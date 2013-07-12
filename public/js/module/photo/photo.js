@@ -282,7 +282,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 						Utils.title.setTitle({title: this.p.title()});
 
-						editMode = this.can.edit() && this.p.fresh() && this.IOwner();
+						editMode = this.can.edit() && this.IOwner() && this.p.fresh() && !this.p.ready();
 
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
@@ -612,7 +612,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		askForGeo: function (cb, ctx) {
 			window.noty(
 				{
-					text: 'Вы не указали координаты снимка<br><br>Сделать это можно, два раза кликнув по карте справа и перемещая появившийся маркер<br><br>Без координаты фотография попадет в раздел «Где это?»',
+					text: 'Вы не указали координаты снимка<br><br>Сделать это можно, кликнув в режиме редактирования по карте справа и перемещая появившийся маркер<br><br>Без координаты фотография попадет в раздел «Где это?»',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,

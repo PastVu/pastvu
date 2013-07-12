@@ -99,7 +99,7 @@
 	script(id="photoView", type="text/html")
 		.row-fluid.photoInfoBlock
 			//ko if: p.title().length > 0
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
 			// /ko
 			//ko if: p.desc().length > 0
 			.row-fluid.photoInfo(data-bind="html: p.desc()")
@@ -107,28 +107,28 @@
 		.row-fluid.photoInfoBlock
 			//ko if: p.address().length > 0
 			.row-fluid.photoInfo
-				.infoName Adress:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+				.infoName Адрес снимка:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес снимка?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
 			// /ko
 			//ko if: p.source().length > 0
 			.row-fluid.photoInfo
-				.infoName Source:
+				.infoName Источник:
 				.editable(data-bind="html: p.source()")
 			// /ko
 			//ko if: p.author().length > 0
 			.row-fluid.photoInfo
-				.infoName Author:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+				.infoName Автор:
+				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
 			// /ko
 		.row-fluid.photoInfoBlock
 			.row-fluid.photoInfo
-				| We believe that the photo was taken
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'between' : 'in') + '&nbsp;'")
+				| Мы думаем, что снимок сделан
+				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
 				span(data-bind="html: p.year()")
 				span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'years' : 'year') + '&nbsp;'")
+				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
 				//ko if: p.dir && p.dir() && p.dir().length > 0
-				span &nbsp;(shooting direction &minus;&nbsp;
+				span &nbsp;(направление съемки &minus;&nbsp;
 				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )
 				// /ko
@@ -137,25 +137,25 @@
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
 		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Enter title of the photo'}")
+			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
 			.row-fluid.photoInfo.photoDesc
 				textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
-				label.descInputLabel(data-bind="click: descLabelClickBind") Describe the photo
+				label.descInputLabel(data-bind="click: descLabelClickBind") Опишите фотографию
 		.row-fluid.photoInfoBlock
 			.row-fluid.photoInfo
 				.infoName Adress:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'You know address?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
+				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес снимка?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
 			.row-fluid.photoInfo
 				.infoName Source:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Specify source of the photo, if you know'}")
+				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Если вам известен источник фотографии, укажите его здесь'}")
 			.row-fluid.photoInfo
 				.infoName Author:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Maybe you know photo author?'}")
+				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
 		.row-fluid.photoInfoBlock
 			.row-fluid.photoInfo
-				| The photo was taken between&nbsp;
+				| Я считаю, что снимок сделан между&nbsp;
 				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
-				| &nbsp;and&nbsp;
+				| &nbsp;и&nbsp;
 				span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
-				| &nbsp;&nbsp;Shooting direction&nbsp;
-				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Choose direction...'")
+				| &nbsp;&nbsp;Направление съемки&nbsp;
+				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
