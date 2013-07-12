@@ -782,7 +782,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		},
 		setReady: function (data, event) {
 			if (this.p.fresh() && !this.p.ready()) {
-				if (_.isEmpty(this.p.geo)) {
+				if (_.isEmpty(this.p.geo())) {
 					this.askForGeo(this.sendReady, this);
 				} else {
 					this.sendReady();

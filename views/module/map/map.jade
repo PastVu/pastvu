@@ -1,11 +1,28 @@
 .mapModuleWrapper(data-bind="with: repository[M!M]")
 	.mapContainer(data-bind="css: {embedded: embedded}")
 		.map
-		//ko if: infoShow()
+
+		//ko if: embedded
+		//ko if: editing()
+		.mapInfo.info
+			//ko if: point.geo()
+			button.btn-strict.btn-strict-small(type="button", data-bind="click: delPointGeo")
+				i.icon-remove-circle.icon-white
+				span Обнулить кооринаты
+			// /ko
+			//ko ifnot: point.geo()
+			i.icon-map-marker
+			| Для установки координаты кликните по карте
+			// /ko
+		// /ko
+
+		//ko if: !editing() && !point.geo()
 		.mapInfo.warn
 			i.icon-warning-sign
-			| Координата фотографии не указана
+			| Координаты фотографии не указаны
 		// /ko
+		// /ko
+
 		.mapYearSelector
 			.yearSlider
 				.ui-slider-handle.L

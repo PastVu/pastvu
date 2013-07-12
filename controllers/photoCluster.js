@@ -193,7 +193,7 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
  * @param cb Коллбэк
  */
 module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
-	if (!Utils.geoCheck(photo.geo) || !photo.year) {
+	if (!photo.year) {
 		if (Utils.isType('function', cb)) {
 			cb({message: 'Bad params to set photo cluster'});
 		}

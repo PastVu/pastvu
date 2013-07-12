@@ -244,9 +244,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
-			this.markerManager.destroy();
-			this.pointHighlightDestroy();
-			this.pointEditDestroy();
+			this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
 			this.map.remove();
 			delete this.point;
 			delete this.map;
@@ -260,13 +258,9 @@ define([
 		// Обработчик переключения режима редактирования
 		editHandler: function (edit) {
 			if (edit) {
-				this.markerManager.disable();
-				this.pointHighlightDestroy();
-				this.pointEditCreate();
+				this.pointHighlightDestroy().pointEditCreate().markerManager.disable();
 			} else {
-				this.markerManager.enable();
-				this.pointEditDestroy();
-				this.pointHighlightCreate();
+				this.pointEditDestroy().pointHighlightCreate().markerManager.enable();
 			}
 		},
 		// Включает режим редактирования
@@ -284,14 +278,17 @@ define([
 			var geo = point.geo();
 
 			this.point = point;
-			if (this.editing() && this.pointMarkerEdit) {
-				if (geo) {
-					this.pointMarkerEdit.setLatLng(geo);
-				} else {
-					this.pointEditMarkerDestroy();
+			if (this.editing()) {
+				if (this.pointMarkerEdit) {
+					if (geo) {
+						this.pointMarkerEdit.setLatLng(geo);
+					} else {
+						this.pointEditMarkerDestroy();
+					}
+				} else if (geo) {
+					this.pointEditMarkerCreate();
 				}
-			}
-			if (!this.editing()) {
+			} else {
 				this.pointHighlightCreate();
 			}
 			if (geo) {
@@ -299,33 +296,32 @@ define([
 			}
 			return this;
 		},
-		getPointGeo: function () {
-			var latlng = Utils.geo.geoToPrecision(this.pointMarkerEdit.getLatLng());
-			return [latlng.lat, latlng.lng];
+		delPointGeo: function () {
+			this.pointHighlightDestroy().pointEditMarkerDestroy().point.geo(null);
 		},
 
+		//Создает подсвечивающий маркер для point, если координаты точки есть
 		pointHighlightCreate: function () {
 			this.pointHighlightDestroy();
-			if (this.point) {
-				var divIcon = L.divIcon(
-					{
-						className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
-						iconSize: new L.Point(8, 8)
-					}
-				);
+			if (this.point && this.point.geo()) {
+				var divIcon = L.divIcon({
+					className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
+					iconSize: new L.Point(8, 8)
+				});
 				this.pointMarkerHL = L.marker(this.point.geo(), {zIndexOffset: 10000, draggable: false, title: this.point.title(), icon: divIcon, riseOnHover: true});
 				this.pointLayer.addLayer(this.pointMarkerHL);
 			}
 			return this;
 		},
 		pointHighlightDestroy: function () {
-			if (this.pointMarkerHL !== undefined) {
+			if (this.pointMarkerHL) {
 				this.pointLayer.removeLayer(this.pointMarkerHL);
 				delete this.pointMarkerHL;
 			}
+			return this;
 		},
 
-		// Создает маркер если точка есть, а если нет, то создает по клику на карте
+		// Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
 		pointEditCreate: function () {
 			this.pointEditDestroy();
 			if (this.point) {
@@ -346,28 +342,27 @@ define([
 			}
 			return this;
 		},
+		pointEditDestroy: function () {
+			this.pointEditMarkerDestroy();
+			this.map.off('click');
+			return this;
+		},
 		pointEditMarkerCreate: function () {
 			var _this = this;
 			this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragend', function () {
 					var latlng = Utils.geo.geoToPrecision(this.getLatLng());
-
 					_this.point.geo([latlng.lat, latlng.lng]);
 				})
 				.addTo(this.pointLayer);
+			return this;
 		},
 		pointEditMarkerDestroy: function () {
-			this.pointMarkerEdit.off('dragend');
-			this.pointLayer.removeLayer(this.pointMarkerEdit);
-			delete this.pointMarkerEdit;
-		},
-		// Уничтожает маркер редактирования
-		pointEditDestroy: function () {
 			if (this.pointMarkerEdit) {
-				this.pointEditMarkerDestroy();
+				this.pointMarkerEdit.off('dragend');
+				this.pointLayer.removeLayer(this.pointMarkerEdit);
+				delete this.pointMarkerEdit;
 			}
-			this.map.off('click');
-
 			return this;
 		},
 
@@ -459,8 +454,8 @@ define([
 				yearsDelta = this.yearHigh - this.yearLow,
 				$slider = this.$dom.find('.yearSlider'),
 				sliderStep = $slider.width() / yearsDelta,
-				slideOuterL =  this.$dom.find('.yearOuter.L')[0],
-				slideOuterR =  this.$dom.find('.yearOuter.R')[0],
+				slideOuterL = this.$dom.find('.yearOuter.L')[0],
+				slideOuterR = this.$dom.find('.yearOuter.R')[0],
 				handleL = $slider[0].querySelector('.ui-slider-handle.L'),
 				handleR = $slider[0].querySelector('.ui-slider-handle.R'),
 				currMin,
@@ -482,17 +477,17 @@ define([
 				max: this.yearHigh,
 				step: 1,
 				values: [this.yearLow, this.yearHigh],
-				create: function() {
+				create: function () {
 					var values = $slider.slider("values");
 					culcSlider(values[0], values[1]);
 				},
-				start: function() {
+				start: function () {
 					window.clearTimeout(_this.yearRefreshMarkersTimeout);
 				},
-				slide: function(event, ui) {
+				slide: function (event, ui) {
 					culcSlider(ui.values[0], ui.values[1]);
 				},
-				change: function(event, ui) {
+				change: function (event, ui) {
 					culcSlider(ui.values[0], ui.values[1]);
 					_this.yearLow = currMin;
 					_this.yearHigh = currMax;

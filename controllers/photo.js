@@ -1024,8 +1024,10 @@ module.exports.loadController = function (app, db, io) {
 							return result({message: 'Nothing to save'});
 						}
 
-						if (newValues.geo !== undefined) {
+						if (newValues.geo) {
 							Utils.geo.geoToPrecisionRound(newValues.geo);
+						} else if (newValues.geo === null) {
+							newValues.geo = undefined;
 						}
 						if (newValues.desc !== undefined) {
 							sendingBack.desc = newValues.desc;
@@ -1041,15 +1043,14 @@ module.exports.loadController = function (app, db, io) {
 						if (err) {
 							return result({message: err.message || 'Save error', error: true});
 						}
-						var oldValues = {}, //Старые значения изменяемых свойств
+						var newKeys = Object.keys(newValues),
+							oldValues = {}, //Старые значения изменяемых свойств
 							oldGeo,
 							newGeo,
 							i;
 
-						for (i in newValues) {
-							if (newValues[i] !== undefined) {
-								oldValues[i] = photoOldObj[i];
-							}
+						for (i = newKeys.length; i--;) {
+							oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
 						}
 
 						oldGeo = photoOldObj.geo;
