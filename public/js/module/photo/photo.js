@@ -351,7 +351,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.mapVM.setPoint(this.genMapPoint());
 		},
 		genMapPoint: function () {
-			return _.pick(ko_mapping.toJS(this.p), 'geo', 'year', 'dir', 'title');
+			return _.pick(this.p, 'geo', 'year', 'dir', 'title');
 		},
 
 		//Вызывается после рендеринга шаблона информации фото
@@ -537,11 +537,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					this.edit(true);
 				} else {
 					this.exe(true);
-					this.p.geo(this.mapVM.getPointGeo());
 					this.save(function (data) {
 						if (!data.error) {
 							this.edit(false);
-							this.setMapPoint();
 
 							if (this.p.fresh() && !this.p.ready()) {
 								this.notifyReady();

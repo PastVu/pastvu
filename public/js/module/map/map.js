@@ -196,7 +196,7 @@ define([
 		},
 
 		show: function () {
-			var center = this.point && this.point.geo || this.options.center || this.mapDefCenter;
+			var center = this.point && this.point.geo() || this.options.center || this.mapDefCenter;
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
@@ -281,15 +281,21 @@ define([
 		},
 
 		setPoint: function (point) {
+			var geo = point.geo();
+
 			this.point = point;
 			if (this.editing() && this.pointMarkerEdit) {
-				this.pointMarkerEdit.setLatLng(point.geo);
+				if (geo) {
+					this.pointMarkerEdit.setLatLng(geo);
+				} else {
+					this.pointEditMarkerDestroy();
+				}
 			}
 			if (!this.editing()) {
 				this.pointHighlightCreate();
 			}
-			if (point.geo[0] || point.geo[1]) {
-				this.map.panTo(point.geo);
+			if (geo) {
+				this.map.panTo(geo);
 			}
 			return this;
 		},
@@ -303,11 +309,11 @@ define([
 			if (this.point) {
 				var divIcon = L.divIcon(
 					{
-						className: 'photoIcon highlight ' + 'y' + this.point.year + ' ' + this.point.dir,
+						className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
 						iconSize: new L.Point(8, 8)
 					}
 				);
-				this.pointMarkerHL = L.marker(this.point.geo, {zIndexOffset: 10000, draggable: false, title: this.point.title, icon: divIcon, riseOnHover: true});
+				this.pointMarkerHL = L.marker(this.point.geo(), {zIndexOffset: 10000, draggable: false, title: this.point.title(), icon: divIcon, riseOnHover: true});
 				this.pointLayer.addLayer(this.pointMarkerHL);
 			}
 			return this;
@@ -323,15 +329,17 @@ define([
 		pointEditCreate: function () {
 			this.pointEditDestroy();
 			if (this.point) {
-				if (this.point.geo) {
+				if (this.point.geo()) {
 					this.pointEditMarkerCreate();
 				}
 				this.map.on('click', function (e) {
-					var geo = Utils.geo.geoToPrecision(e.latlng);
+					var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+
+					this.point.geo(geo);
+
 					if (this.pointMarkerEdit) {
 						this.pointMarkerEdit.setLatLng(geo);
 					} else {
-						this.point.geo = geo;
 						this.pointEditMarkerCreate();
 					}
 				}, this);
@@ -339,20 +347,24 @@ define([
 			return this;
 		},
 		pointEditMarkerCreate: function () {
-			this.pointMarkerEdit = L.marker(this.point.geo, {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
+			var _this = this;
+			this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragend', function () {
-					this.update();
-					var latlng = this.getLatLng();
-					console.log(_.pick(latlng, 'lng', 'lat'));
+					var latlng = Utils.geo.geoToPrecision(this.getLatLng());
+
+					_this.point.geo([latlng.lat, latlng.lng]);
 				})
 				.addTo(this.pointLayer);
+		},
+		pointEditMarkerDestroy: function () {
+			this.pointMarkerEdit.off('dragend');
+			this.pointLayer.removeLayer(this.pointMarkerEdit);
+			delete this.pointMarkerEdit;
 		},
 		// Уничтожает маркер редактирования
 		pointEditDestroy: function () {
 			if (this.pointMarkerEdit) {
-				this.pointMarkerEdit.off('dragend');
-				this.pointLayer.removeLayer(this.pointMarkerEdit);
-				delete this.pointMarkerEdit;
+				this.pointEditMarkerDestroy();
 			}
 			this.map.off('click');
 
