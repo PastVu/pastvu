@@ -79,6 +79,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.hs = ko.observable(Photo.def.full.hs);
 			this.hscalePossible = ko.observable(false);
 			this.hscaleTumbler = ko.observable(true);
+			this.mapH = ko.observable('500px');
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
@@ -361,6 +362,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 
+		//Пересчитывает все размеры, зависимые от размера окна
 		sizesCalc: function () {
 			var rightPanelW = this.$dom.find('.rightPanel').width(),
 				thumbW,
@@ -385,17 +387,16 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			thumbH = thumbW / 1.5 >> 0;
 			thumbMargin = (rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0;
 
+			this.mapH(Math.max(350, Math.min(700, P.window.h() - this.$dom.find('.photoMap').offset().top - 92)) + 'px');
 			this.thumbW(thumbW + 'px');
 			this.thumbH(thumbH + 'px');
 			this.thumbM(thumbMargin + 'px');
 			this.userThumbN(thumbNV1);
 
 			this.sizesCalcPhoto();
-
 			this.applyUserRibbon();
-
-			rightPanelW = thumbW = thumbH = null;
 		},
+		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
 			var maxWidth = this.$dom.find('.photoPanel').width() >> 0,
 				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0,
