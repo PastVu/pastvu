@@ -232,8 +232,11 @@
 	}
 
 	.rightPanel {
+		position: relative;
 		float: right;
 		zoom: 1;
+		z-index: 2; //Чтобы был "сверху" комментариев
+
 		.row-fluid {
 			margin-bottom: 7px;
 		}
@@ -366,7 +369,9 @@
 		}
 	}
 	.photoComments {
+		position: relative;
 		clear: left;
+		z-index: 1;
 
 		.commentsHead {
 			display: inline-block;
