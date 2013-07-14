@@ -65,7 +65,7 @@
 				top: auto;
 				left: 14px;
 				right: 5px;
-				bottom: 20%;
+				bottom: 19%;
 				text-align: center;
 				font-size: 22px;
 			}
@@ -285,6 +285,24 @@
 		.photoPreview {
 			margin-left: 5px;
 			margin-right: 5px;
+
+			&.addPhoto {
+				.plusPhoto {
+					margin-top: -19px;
+					margin-left: -26px;
+					width: 52px;
+					height: 14px;
+
+					&::after {
+						content: '';
+						position: absolute;
+						top: -19px;
+						left: 19px;
+						width: 14px;
+						height: 52px;
+					}
+				}
+			}
 		}
 	}
 }
