@@ -163,8 +163,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
 		},
 		sizesCalc: function (v) {
-			var windowW = P.window.w(),
-				domW = this.$dom.width() - 1, //this.$container.width()
+			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
+				domW = this.$dom.width(),
 				thumbW,
 				thumbH,
 				thumbN,
@@ -172,32 +172,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				thumbWMax = 246,
 				marginMin;
 
-			//Так как в @media firefox считает ширину с учетом ширины скролла,
-			//то прибавляем эту ширину и здесь для правильного подсчета маргинов
-			if (Browser.engine === 'GECKO') {
-				windowW += window.innerWidth - windowW;
-			}
-
 			if (windowW < 1000) {
 				thumbN = 4;
 				marginMin = 8;
-			} else if (windowW < 1366) {
+			} else if (windowW < 1441) {
 				thumbN = 5;
 				marginMin = 10;
 			} else {
 				thumbN = 6;
 				marginMin = 14;
 			}
-			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax));
+			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax)) >> 0;
 			thumbH = thumbW / 1.5 >> 0;
-			thumbW = thumbH * 1.5;
+			//thumbW = thumbH * 1.5;
 
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
 			this.width(thumbW + 'px');
 			this.height(thumbH + 'px');
-
-			windowW = domW = thumbW = thumbH = null;
 		},
 
 		showUpload: function () {

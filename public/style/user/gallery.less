@@ -217,12 +217,34 @@
 	}
 }
 
-@media (min-width: 1000px) and (max-width: 1365px) {
+//Chrome до 29 версии считает ширину для @media с вычитанием ширины скрола
+//Правильная ширина - вместе с шириной скролла
+
+//Задаем размеры шрифтов с перекрытием границ размеров изображений превью
+@media (min-width: 1281px) and (max-width: 1540px) {
 	.user_photo {
 		.photoPreview {
-			margin-left: 5px;
-			margin-right: 5px;
+			font-size: 15px;
+			padding-bottom: @PhotoTitleHeight - 3;
+
+			&.addPhoto {
+				.desc {
+					font-size: 18px;
+				}
+			}
+			.photoTitle {
+				height: @PhotoTitleHeight - 3;
+				line-height: @PhotoTitleHeight - 3;
+				padding: 0 0 0 2px;
+			}
+		}
+	}
+}
+@media (min-width: 900px) and (max-width: 1280px) {
+	.user_photo {
+		.photoPreview {
 			font-size: 14px;
+			padding-bottom: @PhotoTitleHeight - 4;
 
 			&.addPhoto {
 				.desc {
@@ -230,8 +252,39 @@
 				}
 			}
 			.photoTitle {
-				padding: 0 0 0 3px;
+				height: @PhotoTitleHeight - 4;
+				line-height: @PhotoTitleHeight - 4;
+				padding: 0 0 0 2px;
 			}
+		}
+	}
+}
+@media (max-width: 899px) {
+	.user_photo {
+		.photoPreview {
+			font-size: 13px;
+			padding-bottom: @PhotoTitleHeight - 5;
+
+			&.addPhoto {
+				.desc {
+					font-size: 16px;
+				}
+			}
+			.photoTitle {
+				height: @PhotoTitleHeight - 5;
+				line-height: @PhotoTitleHeight - 5;
+				padding: 0 0 0 1px;
+			}
+		}
+	}
+}
+
+//Задаем размеры отступов изображений превью
+@media (min-width: 1000px) and (max-width: 1440px) {
+	.user_photo {
+		.photoPreview {
+			margin-left: 5px;
+			margin-right: 5px;
 		}
 	}
 }
@@ -241,8 +294,6 @@
 		.photoPreview {
 			margin-left: 4px;
 			margin-right: 4px;
-			padding-bottom: @PhotoToolHeight - 3;
-			font-size: 13px;
 
 			&.addPhoto {
 				.plusPhoto {
@@ -260,14 +311,6 @@
 						height: 41px;
 					}
 				}
-				.desc {
-					font-size: 16px;
-				}
-			}
-			.photoTitle {
-				height: @PhotoToolHeight - 3;
-				line-height: @PhotoToolHeight - 3;
-				padding: 0 0 0 1px;
 			}
 		}
 	}
