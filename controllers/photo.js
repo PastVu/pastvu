@@ -84,10 +84,30 @@ function createPhotos(socket, data, cb) {
 		data = [data];
 	}
 
-	var result = [];
+	var result = [],
+		canCreate = 0;
+
+	if (user.pcount < 25) {
+		canCreate = Math.max(0, 3 - user.pfcount);
+	} else if (user.pcount < 50) {
+		canCreate = Math.max(0, 5 - user.pfcount);
+	} else if (user.pcount < 200) {
+		canCreate = Math.max(0, 10 - user.pfcount);
+	} else if (user.pcount < 1000) {
+		canCreate = Math.max(0, 50 - user.pfcount);
+	} else if (user.pcount >= 1000) {
+		canCreate = Math.max(0, 100 - user.pfcount);
+	}
+
+	if (!canCreate || !data.length) {
+		cb({message: 'Nothing to save', cids: result});
+	}
+	if (data.length > canCreate) {
+		data = data.slice(0, canCreate);
+	}
 
 	step(
-		function filesToPrivate() {
+		function filesToPrivateFolder() {
 			var item,
 				i = data.length;
 
@@ -794,7 +814,7 @@ module.exports.loadController = function (app, db, io) {
 					step(
 						function () {
 							var query = {user: photo.user},
-								noPublic = hs.session.user && (hs.session.user.role > 4  || photo.user.equals(hs.session.user._id));
+								noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user.equals(hs.session.user._id));
 
 							if (limitL) {
 								if (noPublic) {

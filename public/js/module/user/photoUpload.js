@@ -63,21 +63,21 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (data) {
 						this.u = data.vm;
 
-						if (this.u.pcount() < 50) {
+						if (this.u.pcount() < 25) {
 							this.canCountTotal = Math.max(0, 3 - this.u.pfcount());
-						} else if (this.u.pcount() < 100) {
+						} else if (this.u.pcount() < 50) {
 							this.canCountTotal = Math.max(0, 5 - this.u.pfcount());
 						} else if (this.u.pcount() < 200) {
 							this.canCountTotal = Math.max(0, 10 - this.u.pfcount());
 						} else if (this.u.pcount() < 1000) {
 							this.canCountTotal = Math.max(0, 50 - this.u.pfcount());
-						} else if (this.u.pcount() >= 200) {
+						} else if (this.u.pcount() >= 1000) {
 							this.canCountTotal = 100;
 						}
 
 						this.canCount(this.canCountTotal);
 						if (!this.canCount()) {
-							this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете максимально разрешенное количество неподтвержденных модератором фотографий');
+							this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество для вашего профиля.');
 						} else {
 							this.toptext('Выберите фотографию на вашем устройстве, нажав на кнопку добавления' + (this.filereader() ? ' или перетаскивая фотографии в пунктирную область' : ''));
 							this.canLoad(true);
