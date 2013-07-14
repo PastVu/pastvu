@@ -25,7 +25,10 @@ var auth = require('./auth.js'),
 	publicDir = global.appVar.storePath + 'public/photos/',
 	imageFolders = [publicDir + 'x/', publicDir + 's/', publicDir + 'q/', publicDir + 'm/', publicDir + 'h/', publicDir + 'd/', publicDir + 'a/'],
 
-	commentController = require('./comment.js');
+	commentController = require('./comment.js'),
+	msg = {
+		deny: 'You do not have permission for this action'
+	};
 
 var shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
@@ -74,7 +77,7 @@ var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
 function createPhotos(socket, data, cb) {
 	var user = socket.handshake.session.user;
 	if (!user) {
-		return cb({message: 'You do not have permission for this action', error: true});
+		return cb({message: msg.deny, error: true});
 	}
 	if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
 		return cb({message: 'Bad params', error: true});
@@ -178,6 +181,16 @@ function createPhotos(socket, data, cb) {
 			cb({message: data.length + ' photo successfully saved', cids: result});
 		}
 	);
+}
+
+//Удаляет из Incoming загруженное, но не созданное фото
+function removePhotoIncoming (socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	fs.unlink(incomeDir + data.file, cb);
 }
 
 /**
@@ -498,9 +511,14 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('removePhotoCallback', resultData);
 			});
 		});
+		socket.on('removePhotoInc', function (data) {
+			removePhotoIncoming(socket, data, function (err) {
+				socket.emit('removePhotoIncCallback', {error: !!err});
+			});
+		});
 		socket.on('dropPhotos', function (data) {
-			dropPhotos(function (msg) {
-				socket.emit('dropPhotosResult', {message: msg});
+			dropPhotos(function (message) {
+				socket.emit('dropPhotosResult', {message: message});
 			});
 		});
 
@@ -517,7 +535,7 @@ module.exports.loadController = function (app, db, io) {
 					return result({message: 'Requested photo does not exist', error: true});
 				}
 				if (!hs.session.user || hs.session.user.role < 5) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 
 				step(
@@ -579,7 +597,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('disablePhoto', function (data) {
 				if (!hs.session.user || hs.session.user.role < 5) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				if (!data || !Utils.isType('object', data)) {
 					return result({message: 'Bad params', error: true});
@@ -862,7 +880,7 @@ module.exports.loadController = function (app, db, io) {
 			socket.on('giveUserPhotosPrivate', function (data) {
 				if (!hs.session.user ||
 					(hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				User.getUserID(data.login, function (err, userid) {
 					if (err) {
@@ -925,7 +943,7 @@ module.exports.loadController = function (app, db, io) {
 				if (!hs.session.user ||
 					(!data.login && hs.session.user.role < 5) ||
 					(data.login && hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				if (!data || !Utils.isType('object', data)) {
 					return result({message: 'Bad params', error: true});
@@ -1000,7 +1018,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('savePhoto', function (data) {
 				if (!hs.session.user) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				if (!Utils.isType('object', data) || !Number(data.cid)) {
 					return result({message: 'Bad params', error: true});
@@ -1020,7 +1038,7 @@ module.exports.loadController = function (app, db, io) {
 							return result({message: 'Requested photo does not exist', error: true});
 						}
 						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
-							return result({message: 'You do not have permission for this action', error: true});
+							return result({message: msg.deny, error: true});
 						}
 						this(null, photo);
 					},
@@ -1106,7 +1124,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('readyPhoto', function (cid) {
 				if (!hs.session.user) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				cid = Number(cid);
 				if (!cid) {
@@ -1121,7 +1139,7 @@ module.exports.loadController = function (app, db, io) {
 							return result({message: err && err.message || 'Requested photo does not exist', error: true});
 						}
 						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
-							return result({message: 'You do not have permission for this action', error: true});
+							return result({message: msg.deny, error: true});
 						}
 						photo.ready = true;
 						photo.save(this);
@@ -1238,7 +1256,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('convertPhotos', function (data) {
 				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				if (!Array.isArray(data) || data.length === 0) {
 					return result({message: 'Bad params', error: true});
@@ -1296,7 +1314,7 @@ module.exports.loadController = function (app, db, io) {
 
 			socket.on('convertPhotosAll', function (data) {
 				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: 'You do not have permission for this action', error: true});
+					return result({message: msg.deny, error: true});
 				}
 				if (!Utils.isType('object', data)) {
 					return result({message: 'Bad params', error: true});
