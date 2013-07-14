@@ -3,15 +3,15 @@
 @import "../bootstrap/mixins.less";
 
 .user_photoUpload {
+	padding-top: 15px;
 	color: @MainDarkColor;
 
-	.head {
-		font-size: 18px;
+	.toptext, .canCount {
+		color: lighten(@MainDarkColor, 10%);
 		margin-bottom: 10px;
 	}
-
-	.txt {
-		color: lighten(@MainDarkColor, 10%);
+	form#fileupload {
+		margin-bottom: 11px;
 	}
 
 	#addFiles {
@@ -100,7 +100,7 @@
 				background: url(/img/caps/image_upload.png) 50% 50% no-repeat;
 				//.transition(all .5s linear);
 
-				&.noPreview {
+				&.tooBig {
 					height: 80px;
 					background: #2171CC url(/img/caps/preview.png) 50% 35% no-repeat;
 
@@ -113,6 +113,11 @@
 						text-align: center;
 						display: block;
 					}
+				}
+
+				&.noValid {
+					height: 40px;
+					background: #F84B4B url(/img/misc/imgw.png) 50% 50% no-repeat;
 				}
 			}
 		}

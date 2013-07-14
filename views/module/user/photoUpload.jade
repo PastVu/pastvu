@@ -1,32 +1,19 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
-	script(type="text/html", id="UploadListTemplate").
-		<div class='UploadList' data-bind="foreach: cams, style: {top: scrollTop2()+'px'}">
-			<div class='row' data-bind="click: $parent.clickRow">
-			</div>
-		</div>
-	h3 Upload new photo
-	.row-fluid.txt(data-bind="text: 'Choose photos from your computer by clicking on plus button' + (filereader() ? ' or dragging the files on dashed area' : '')")
+	.row-fluid.toptext(data-bind="html: toptext()")
 
+	//ko if: canLoad()
 	form(id="fileupload", method="POST", enctype="multipart/form-data")
 		.row-fluid#addFiles
-			span.btn-strict#fileinput-btn(data-loading-text="Loading...")
+			span.btn-strict#fileinput-btn
 				i.icon-plus.icon-white
-				span Add photos...
+				span Добавить...
 				input(id="fileupload2", type="file", name="files[]", multiple, data-bind="fileUploadInput: true")
 			.addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
-				#or.centering_content or
-				span Drop them here
+				#or.centering_content или
+				span Перетащите фотографи сюда
 				#dropzone
-		//-.row-fluid.fileupload-buttonbar#commonButtons(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
-			button.btn-strict.btn-strict-success.start(type="submit", data-bind="click: send, attr: {disabled: fileList().length < 1}")
-				i.icon-upload.icon-white
-				span Start upload all
-			button.btn-strict.btn-strict-warning.cancel(type="reset", data-bind="attr: {disabled: fileList().length < 1}")
-				i.icon-ban-circle.icon-white
-				span Cancel all
-			button.btn-strict.btn-strict-danger.delete(type="reset", data-bind="css: {disabled: false}")
-				i.icon-trash.icon-white
-				span Delete all
+
+	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
 
 	.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
@@ -34,100 +21,33 @@
 				.bar(data-bind="style: {width: fileProgressAll() + '%'}")
 			.extText(data-bind="text: fileProgressAllText()")
 		table.table.table-striped.table-hover.filesTable
-			caption Added photos
+			caption Добавленные фотографии
 			tbody
 				//ko foreach: fileList
 				tr
 					td.preview
-						div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noPreview: !ext.hasPreview()}")
-							//ko if: !ext.hasPreview()
-							.msg Too big for preview
+						div.forcanvas(data-bind="attr: {'data-fileuid': ext.uid}, css: {noValid: !ext.valid, tooBig: ext.tooBigPreview}")
+							//ko if: ext.tooBigPreview
+							.msg Слишком большая для превью
 							// /ko
 					td.desc
 						div(data-bind="text: name")
+						//ko if: ext.valid
 						div(data-bind="text: ext.humansize")
+						// /ko
 						div.fileMsg(data-bind="text: ext.msg(), css: ext.msgCss()")
+						//ko if: ext.valid
 						.progress.progress-striped.progress-success.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
 							.bar(data-bind="style: {width: ext.progress() + '%'}")
+						// /ko
 					td.fileButtons
-						//ko if: !$parent.options.auto && !ext.uploaded()
+						//ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
 						button.btn-strict.btn-strict-success(data-bind="click: function () {$parent.startFile($data)}, attr: {disabled: ext.uploading()}")
 							i.icon-upload.icon-white
-							span Upload this
+							span Загрузить
 						// /ko
 						button.btn-strict(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-strict-warning': !ext.uploaded(), 'btn-strict-danger': ext.uploaded()}")
 							i.icon-white(data-bind="css: {'icon-ban-circle': !ext.uploaded(), 'icon-remove-circle': ext.uploaded()}")
-							span(data-bind="text: ext.uploaded() ? 'Delete this' : 'Cancel this'")
-
+							span(data-bind="text: ext.uploaded() ? 'Удалить' : 'Отменить'")
 				// /ko
-	// The template to display files available for upload
-	script(id="template-upload", type="text/x-tmpl").
-		{% for (var i=0, file; file=o.files[i]; i++) { %}
-			<tr class="template-upload fade">
-				<td class="preview"><span class="forcanvas"></span></td>
-				<td class="name">
-					<span>{%=file.name%}</span>
-					<br/>
-					<span>{%=o.formatFileSize(file.size)%}</span>
-					{% if (file.error) { %}
-						<br/>
-						<span class="label label-important">{%=locale.fileupload.error%}</span> {%=locale.fileupload.errors[file.error] || file.error%}
-					{% } else if (o.files.valid && !i) { %}
-						<div class="progress progress-success progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-							<div class="bar" style="width:0%;"></div>
-						</div>
-						Please wait. Loading and converting photo...
-					{% } %}
-				</td>
-				{% if (!file.error && o.files.valid && !i) { %}
-					<td class="start">
-					{% if (!o.options.autoUpload) { %}
-						<button class="btn-strict btn-strict-success">
-							<i class="icon-upload icon-white"></i>
-							<span>{%=locale.fileupload.start%}</span>
-						</button>
-					{% } %}
-					</td>
-				{% } else { %}
-					<td colspan="1"></td>
-				{% } %}
-				<td class="cancel">
-				{% if (!i) { %}
-					<button class="btn-strict btn-strict-warning">
-						<i class="icon-ban-circle icon-white"></i>
-						<span>{%=locale.fileupload.cancel%}</span>
-					</button>
-				{% } %}</td>
-			</tr>
-		{% } %}
-	// The template to display files available for download
-	script(id="template-download", type="text/x-tmpl").
-		{% for (var i=0, file; file=o.files[i]; i++) { %}
-			<tr class="template-download fade">
-				{% if (file.error) { %}
-					<td></td>
-					<td class="name"><span>{%=file.name%}</span></td>
-					<td class="size"><span>{%=o.formatFileSize(file.size)%}</span></td>
-					<td class="error"><span class="label label-important">{%=locale.fileupload.error%}</span> {%=locale.fileupload.errors[file.error] || file.error%}</td>
-				{% } else { %}
-					<td class="preview">
-					{% if (file.thumb_url) { %}
-						<a href="{%=file.url%}" title="{%=file.name%}" rel="gallery" download="{%=file.name%}"><img src="{%=file.thumb_url%}"></a>
-					{% } %}
-					</td>
-					<td class="name">
-						<a href="{%=file.url%}" title="{%=file.name%}" rel="{%=file.thumb_url&&'gallery'%}" download="{%=file.name%}">{%=file.name%}</a>
-						<br>
-						Successfully loaded
-					</td>
-					<td class="size"><span>{%=o.formatFileSize(file.size)%}</span></td>
-				{% } %}
-				<td class="delete">
-					<button class="btn-strict btn-strict-danger" data-type="{%=file.delete_type%}" data-url="{%=file.delete_url%}">
-						<i class="icon-trash icon-white"></i>
-						<span>{%=locale.fileupload.destroy%}</span>
-					</button>
-					<input style="display:none" type="checkbox" name="delete" value="1">
-				</td>
-			</tr>
-		{% } %}
+	// /ko

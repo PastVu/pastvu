@@ -40,7 +40,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = null;
 
-			this.$fileupload = this.$dom.find('#fileupload');
+			this.canLoad = ko.observable(false);
+			this.canCountTotal = 0;
+			this.canCount = ko.observable(0);
+			this.toptext = ko.observable('');
+
 			this.filereader = ko.observable(Browser.support.filereader);
 			this.fileList = ko.observableArray([]);
 			this.fileUploaded = {};
@@ -53,69 +57,91 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.previewToGen = 0;
 			this.filesToSubmit = [];
 
-			this.fileOptions = {
-				auto: true,
-				maxFiles: 10,
-				maxSize: 52428800, //50Mb
-				minSize: 10240, //10kB
-				acceptTypes: /(\.|\/)(jpe?g|png)$/i,
-				previewTypes: /(\.|\/)(jpe?g|png)$/i,
-				previewAsCanvas: true,
-				previewMaxSize: 10485760, //10MB The maximum file size of images that are to be displayed as preview:
-				previewMaxWidth: 210, // The maximum width of the preview images:
-				//previewMaxHeight: 120, // The maximum height of the preview images:
-				prependFiles: false
-			};
-
-			$(document)
-				.on('dragenter', '#dropzone', function () {
-					this.parentNode.classList.add('dragover');
-				})
-				.on('dragleave', '#dropzone', function () {
-					this.parentNode.classList.remove('dragover');
-				});
-
 			var user = this.auth.iAm.login();
 			if (this.auth.loggedIn()) {
 				storage.user(user, function (data) {
 					if (data) {
 						this.u = data.vm;
 
+						if (this.u.pcount() < 50) {
+							this.canCountTotal = Math.max(0, 3 - this.u.pfcount());
+						} else if (this.u.pcount() < 100) {
+							this.canCountTotal = Math.max(0, 5 - this.u.pfcount());
+						} else if (this.u.pcount() < 200) {
+							this.canCountTotal = Math.max(0, 10 - this.u.pfcount());
+						} else if (this.u.pcount() < 1000) {
+							this.canCountTotal = Math.max(0, 50 - this.u.pfcount());
+						} else if (this.u.pcount() >= 200) {
+							this.canCountTotal = 100;
+						}
+
+						this.canCount(this.canCountTotal);
+						if (!this.canCount()) {
+							this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете максимально разрешенное количество неподтвержденных модератором фотографий');
+						} else {
+							this.toptext('Выберите фотографию на вашем устройстве, нажав на кнопку добавления' + (this.filereader() ? ' или перетаскивая фотографии в пунктирную область' : ''));
+							this.canLoad(true);
+
+							this.fileOptions = {
+								auto: true,
+								maxFiles: this.canCountTotal,
+								maxSize: 52428800, //50Mb
+								minSize: 10240, //10kB
+								acceptTypes: /(\.|\/)(jpe?g|png)$/i,
+								previewTypes: /(\.|\/)(jpe?g|png)$/i,
+								previewAsCanvas: true,
+								previewMaxSize: 10485760, //10MB The maximum file size of images that are to be displayed as preview:
+								previewMaxWidth: 210, // The maximum width of the preview images:
+								//previewMaxHeight: 120, // The maximum height of the preview images:
+								prependFiles: false
+							};
+						}
+
 						ko.applyBindings(globalVM, this.$dom[0]);
-
-						// Initialize the jQuery File Upload widget:
-						this.$dom.find('#fileupload').fileupload();
-						this.$dom.find('#fileupload').fileupload('option', {
-							url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/',
-							dropZone: $(document), //this.$dom.find('.addfiles_area'),
-							pasteZone: $(document),
-							singleFileUploads: true,
-							sequentialUploads: false,
-							limitConcurrentUploads: 3,
-
-							add: this.onFileAdd.bind(this),
-							submit: this.onFileSubmit.bind(this),
-							send: this.onFileSend.bind(this),
-							done: this.onFileDone.bind(this),
-							fail: this.onFileFail.bind(this),
-							start: this.onFilesStart.bind(this),
-							stop: this.onFilesStop.bind(this),
-							progress: this.onFileProgress.bind(this),
-							progressall: this.onFileProgressAll.bind(this)
-
-						});
 
 						this.show();
 					}
 
 				}, this);
 			} else {
+				this.toptext('Вы не авторизованы для загрузки фотографий');
 				this.show();
 			}
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container, function () {
-				this.$dom.find('#fileupload').fileupload('enable');
+				if (this.canLoad()) {
+					this.$fileupload = this.$dom.find('#fileupload');
+
+					// Initialize the jQuery File Upload widget:
+					this.$fileupload.fileupload();
+					this.$fileupload.fileupload('option', {
+						url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/',
+						dropZone: $(document), //this.$dom.find('.addfiles_area'),
+						pasteZone: $(document),
+						singleFileUploads: true,
+						sequentialUploads: false,
+						limitConcurrentUploads: 3,
+
+						add: this.onFileAdd.bind(this),
+						submit: this.onFileSubmit.bind(this),
+						send: this.onFileSend.bind(this),
+						done: this.onFileDone.bind(this),
+						fail: this.onFileFail.bind(this),
+						start: this.onFilesStart.bind(this),
+						stop: this.onFilesStop.bind(this),
+						progress: this.onFileProgress.bind(this),
+						progressall: this.onFileProgressAll.bind(this)
+					});
+
+					$(document)
+						.on('dragenter', '#dropzone', function () {
+							this.parentNode.classList.add('dragover');
+						})
+						.on('dragleave', '#dropzone', function () {
+							this.parentNode.classList.remove('dragover');
+						});
+				}
 			}, this);
 
 			this.showing = true;
@@ -134,7 +160,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 
 		startFile: function (file) {
-			file.ext.jqXHR = file.ext.data.submit();
+			if (file.ext.valid) {
+				file.ext.jqXHR = file.ext.data.submit();
+			}
 		},
 		cancelFile: function (file) {
 			//Если фото с этим файлом уже создалось, то вызываем его удаление из базы,
@@ -142,14 +170,14 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (this.fileUploaded.hasOwnProperty(file.ext.file) && this.fileUploaded[file.ext.file].cid) {
 				socket.emit('removePhoto', this.fileUploaded[file.ext.file].cid);
 				delete this.fileUploaded[file.ext.file];
-				this.destroyFile(file);
 			} else if (file.ext.jqXHR && file.ext.jqXHR.abort) {
 				file.ext.jqXHR.abort();
-				this.destroyFile(file);
 			}
+			this.destroyFile(file);
 		},
 		destroyFile: function (file) {
 			this.fileList.remove(file);
+			this.canCount(Math.max(0, this.canCountTotal - this.fileList().length));
 		},
 
 
@@ -159,6 +187,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				files = data.files;
 
 			this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
+
 			$.each(files, function (index, file) {
 				file.ext = {
 					uid: Utils.randomString(5),
@@ -169,27 +198,29 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					uploaded: ko.observable(false),
 					valid: true,
 					error: ko.observable(false),
-					hasPreview: ko.observable(options.previewMaxSize && file.size < options.previewMaxSize),
 					msg: ko.observable(''),
 					msgCss: ko.observable('')
 				};
 
 				this.validate(file, options);
+				if (file.ext.valid) {
+					this.canCount(Math.max(0, this.canCount() - 1));
 
-				if (options.auto) {
-					this.queueAfterPreview(file);
-				} else {
-					this.filePreview(file);
+					file.ext.tooBigPreview = options.previewMaxSize && file.size > options.previewMaxSize;
+
+					if (options.auto) {
+						this.queueAfterPreview(file);
+					} else {
+						this.filePreview(file);
+					}
 				}
 
 				this.fileList.push(file);
 			}.bind(this));
-
-
 		},
 		queueAfterPreview: function (file) {
 			this.filesToSubmit.push(file);
-			if (file.ext.hasPreview()) {
+			if (!file.ext.tooBigPreview) {
 				this.previewToGen += 1;
 				this.filePreview(file, this.submitQueue.bind(this));
 			} else {
@@ -224,7 +255,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			data.files.forEach(function (file, index) {
 				file.ext.uploading(true);
 				file.ext.uploaded(false);
-				this.setMessage(file, 'Please wait. Loading..', 'muted');
+				this.setMessage(file, 'Пожалуйста подождите. Загрузка..', 'muted'); //Please wait. Loading..
 			}, this);
 		},
 		onFileSend: function (e, data) {
@@ -232,7 +263,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				// Iframe Transport does not support progress events.
 				// In lack of an indeterminate progress bar, we set
 				// the progress to 100%, showing the full animated bar:
-				alert('iFrame send. Need to handle');
+				console.log('iFrame send. Need to handle');
 			}
 		},
 		onFileDone: function (e, data) {
@@ -250,7 +281,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							window.setTimeout(function () {
 								file.ext.uploading(false);
 								file.ext.uploaded(true);
-								this.setMessage(file, 'Successfully loaded', 'success');
+								this.setMessage(file, 'Успешно загружена', 'success');
 							}.bind(this), 500);
 						}
 					}, this);
@@ -265,7 +296,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (toSaveArr.length > 0) {
 				socket.once('createPhotoCallback', function (data) {
 					if (!data || data.error) {
-						window.noty({text: data && data.message || 'Ошибка создания фото', type: 'error', layout: 'center', timeout: 4000, force: true});
+						window.noty({text: data && data.message || 'Ошибка создания фотографий', type: 'error', layout: 'center', timeout: 4000, force: true});
 						console.dir(data);
 					}
 					cb.call(ctx || window, data);
@@ -304,34 +335,34 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				Utils.format.fileSize(data.total);
 		},
 		validate: function (file, options) {
-			if (this.fileList.length > options.maxFiles) {
+			if (!this.canCount()) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Maximum number of files exceeded', 'error');
+				this.setMessage(file, 'Превышенно разрешенное количество файлов', 'error'); //Maximum number of files exceeded
 			}
 			// Files are accepted if either the file type or the file name matches against the acceptFileTypes regular expression,
 			// as only browsers with support for the File API report the type:
 			if (!(options.acceptTypes.test(file.type) || options.acceptTypes.test(file.name))) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Filetype not allowed', 'error');
+				this.setMessage(file, 'Тип файла не соответствует правилам', 'error'); //Filetype not allowed
 			}
 			if (options.maxSize && file.size > options.maxSize) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'File is too big', 'error');
+				this.setMessage(file, 'Файл больше разрешенного размера', 'error');
 			}
 			if (typeof file.size === 'number' && file.size < options.minSize) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'File is too small', 'error');
+				this.setMessage(file, 'Файл слишком мал', 'error');
 			}
 		},
 		filePreview: function (file, cb) {
 			var that = this,
 				options = this.fileOptions;
 
-			this.setMessage(file, 'Preparing file..', 'muted');
+			this.setMessage(file, 'Подготовка файла..', 'muted');
 			loadImage(
 				file,
 				function (img) {
