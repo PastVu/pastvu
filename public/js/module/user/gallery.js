@@ -214,7 +214,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 								closeFunc: function (evt) {
 									this.uploadVM.createPhotos(function (data) {
 										if (data && !data.error) {
-											this.closeUpload();
+											this.closeUpload(data.cids.length);
 										}
 									}, this);
 									evt.stopPropagation();
@@ -232,25 +232,27 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				);
 			}
 		},
-		closeUpload: function () {
+		closeUpload: function (newCount) {
 			if (this.uploadVM) {
 				this.uploadVM.destroy();
 
-				socket.once('takePhotosFresh', function (data) {
-					if (!data || data.error) {
-						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-					} else {
-						if (data.photos.length > 0) {
-							var i = data.photos.length;
-							while (i--) {
-								Photo.factory(data.photos[i], 'compact', 'h');
+				if (newCount) {
+					socket.once('takePhotosFresh', function (data) {
+						if (!data || data.error) {
+							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+						} else {
+							if (data.photos.length > 0) {
+								var i = data.photos.length;
+								while (i--) {
+									Photo.factory(data.photos[i], 'compact', 'h');
+								}
+								this.photos.concat(data.photos, true);
 							}
-							this.photos.concat(data.photos, true);
 						}
-					}
-					this.loadingPhoto(false);
-				}.bind(this));
-				socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
+						this.loadingPhoto(false);
+					}.bind(this));
+					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
+				}
 
 				delete this.uploadVM;
 				delete this.waitUploadSince;

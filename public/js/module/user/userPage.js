@@ -115,7 +115,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		loggedInHandler: function () {
 			// После логина приверяем если мы находимся на своем юзере, тогда апдейтим и подписываемся
-			if (this.auth.iAm.login() === this.user.login()) {
+			if (this.user && this.auth.iAm.login() === this.user.login()) {
 				this.processStorageUser(this.user.login());
 			}
 			this.subscriptions.loggedIn.dispose();

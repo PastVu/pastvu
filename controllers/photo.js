@@ -194,7 +194,7 @@ function removePhotoIncoming (socket, data, cb) {
 }
 
 /**
- * Проставляет фотографии в базе флаг удаления и удаляет ее из конвейера конвертаций
+ * Удаление фотографии
  * @param socket Сокет пользователя
  * @param data
  * @param cb Коллбэк

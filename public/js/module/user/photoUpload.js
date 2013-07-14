@@ -303,7 +303,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}.bind(this));
 				socket.emit('createPhoto', toSaveArr);
 			} else {
-				cb.call(ctx || window, {});
+				cb.call(ctx || window, {cids: []});
 			}
 		},
 		onFileFail: function (e, data) {
