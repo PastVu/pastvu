@@ -15,8 +15,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			email: '',
 
 			//role
-			role_level: 0,
-			role_name: 'anonymous',
+			role: 0,
 
 			//profile
 			birthdate: '',

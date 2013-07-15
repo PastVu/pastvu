@@ -183,17 +183,6 @@ function createPhotos(socket, data, cb) {
 	);
 }
 
-//Удаляет из Incoming загруженное, но не созданное фото
-function removePhotoIncoming(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	fs.unlink(incomeDir + data.file, cb);
-}
-
-
 function changePublicPhotoExternality(socket, photo, user, makePublic, cb) {
 	var affectMe;
 	step(
@@ -233,6 +222,17 @@ function changePublicPhotoExternality(socket, photo, user, makePublic, cb) {
 		}
 	);
 }
+
+//Удаляет из Incoming загруженное, но не созданное фото
+function removePhotoIncoming(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	fs.unlink(incomeDir + data.file, cb);
+}
+
 /**
  * Удаление фотографии
  * @param socket Сокет пользователя
@@ -354,10 +354,11 @@ function findPhotoNotPublic(query, fieldSelect, user, cb) {
 						return cb(err);
 					}
 
-					if (photo && photoPermissions.checkType('dis', photo, user) || user.role < 10) {
+					//Если фото не найдено или юзер не админ, то ищем дальше в удаленных
+					if (photo && photoPermissions.checkType('dis', photo, user) || !user.role || user.role < 10) {
 						photo = {photo: photo};
 					} else {
-						photo = null; //Если фото не найдено и юзер админ, то ищем дальше в удаленных
+						photo = null;
 					}
 					callback(photo);
 				});
@@ -366,6 +367,9 @@ function findPhotoNotPublic(query, fieldSelect, user, cb) {
 				PhotoDel.findOne(query, fieldSelect, function (err, photo) {
 					if (err) {
 						return cb(err);
+					}
+					if (photo && !photoPermissions.checkType('del', photo, user)) {
+						photo = null;
 					}
 					callback({photo: photo});
 				});
@@ -632,7 +636,6 @@ module.exports.loadController = function (app, db, io) {
 						result({message: 'Photo approved successfully'});
 
 						if (Utils.geoCheck(photoSaved.geo)) {
-							console.log('Go cluster');
 							PhotoCluster.clusterPhoto(photoSaved);
 						}
 
@@ -1130,7 +1133,6 @@ module.exports.loadController = function (app, db, io) {
 						if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
 							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
 							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-							console.log('Go cluster save');
 							PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, this);
 						} else {
 							this(null);

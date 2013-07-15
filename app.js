@@ -201,7 +201,7 @@ async.waterfall([
 				cookieObj = cookie.parse(cookieString),
 				existsSid = cookieObj['pastvu.sid'];
 
-			logger.info(handshakeData);
+			//logger.info(handshakeData);
 
 			if (existsSid) {
 				Session.findOne({key: existsSid}).populate('user').exec(sessionProcess);

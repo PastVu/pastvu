@@ -62,11 +62,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
-			this.getPhotosPrivate(function (data) {
-				if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-					this.getNextPage();
-				}
-			}, this);
+			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
+				this.getPhotosPrivate(function (data) {
+					if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
+						this.getNextPage();
+					}
+				}, this);
+			}
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -74,7 +76,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.photos([]);
 			$window.off('scroll', this.scrollHandler);
 			this.scrollActive = false;
-			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login()) {
+			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
 				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
 				$window.on('scroll', this.scrollHandler);
 				this.scrollActive = true;

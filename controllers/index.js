@@ -254,12 +254,11 @@ var giveStats = (function () {
 	}
 
 	function calcStats(data, cb) {
-		var st = Date.now(),
+		var //st = Date.now(),
 			photoYear;
 
 		if (!Utils.isType('object', data)) {
-			cb({message: 'Bad params', error: true});
-			return;
+			return cb({message: 'Bad params', error: true});
 		}
 
 		step(
@@ -301,7 +300,7 @@ var giveStats = (function () {
 					cb({message: err && err.message, error: true});
 					return;
 				}
-				console.log(Date.now() - st);
+				//console.log(Date.now() - st);
 				cb({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);
