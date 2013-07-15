@@ -23,7 +23,7 @@ var auth = require('./auth.js'),
 	incomeDir = global.appVar.storePath + 'incoming/',
 	privateDir = global.appVar.storePath + 'private/photos/',
 	publicDir = global.appVar.storePath + 'public/photos/',
-	imageFolders = [publicDir + 'x/', publicDir + 's/', publicDir + 'q/', publicDir + 'm/', publicDir + 'h/', publicDir + 'd/', publicDir + 'a/'],
+	imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
 
 	commentController = require('./comment.js'),
 	msg = {
@@ -256,16 +256,39 @@ function removePhoto(socket, cid, cb) {
 		}
 
 		if (photo.fresh) {
-			photo.remove(function (err) {
-				if (err) {
-					return cb({message: err.message, error: true});
+			//Неподтвержденную фотографию удаляем безвозвратно
+			step(
+				function () {
+					photo.remove(this);
+				},
+				function (err) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					PhotoSort.remove({photo: photo._id}, this);
+				},
+				function (err) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					var unlinkCb = function () {
+					};
+
+					//Пересчитывам кол-во новых фото у владельца
+					User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
+
+					//Удаляем из конвейера если есть
+					PhotoConverter.removePhotos([photo.cid]);
+
+					//Удаляем файлы фотографии
+					fs.unlink(privateDir + photo.file);
+					imageFolders.forEach(function (folder) {
+						fs.unlink(publicDir + folder + photo.file, unlinkCb);
+					});
+
+					cb({message: 'ok'});
 				}
-				PhotoConverter.removePhotos([photo.cid]);
-				imageFolders.forEach(function (folder) {
-					fs.unlink(folder + photo.file);
-				});
-				cb({message: 'ok'});
-			});
+			);
 		} else {
 			var isPublic = !photo.disabled && !photo.del;
 
@@ -301,29 +324,6 @@ function removePhoto(socket, cid, cb) {
 				}
 			);
 		}
-	});
-}
-
-/**
- * Ококнчательно удаляет фотографии у которых проставлен флаг удаления из базы и с диска
- * @param cb Коллбэк
- */
-function dropPhotos(cb) {
-	Photo.where('del').equals(true).select('file -_id').find(function (err, photos) {
-		var files = _.pluck(photos, 'file');
-		if (files.length === 0) {
-			return;
-		}
-		files.forEach(function (file, index) {
-			imageFolders.forEach(function (folder) {
-				fs.unlink(folder + file);
-			});
-		});
-		Photo.where('file').in(files).remove(function (err, deleteQuantity) {
-			if (cb) {
-				cb('Removed ' + deleteQuantity + 'photos');
-			}
-		});
 	});
 }
 
@@ -556,10 +556,6 @@ module.exports.loadController = function (app, db, io) {
 	PhotoConverter.loadController(app, db, io);
 
 	planResetDisplayStat(); //Планируем очистку статистики
-
-	// Регулярно проводим чистку удаленных файлов
-	setInterval(dropPhotos, ms('5m'));
-	dropPhotos();
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
