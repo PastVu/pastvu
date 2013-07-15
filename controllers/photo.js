@@ -184,7 +184,7 @@ function createPhotos(socket, data, cb) {
 }
 
 //Удаляет из Incoming загруженное, но не созданное фото
-function removePhotoIncoming (socket, data, cb) {
+function removePhotoIncoming(socket, data, cb) {
 	var user = socket.handshake.session.user;
 	if (!user) {
 		return cb({message: msg.deny, error: true});
@@ -193,48 +193,115 @@ function removePhotoIncoming (socket, data, cb) {
 	fs.unlink(incomeDir + data.file, cb);
 }
 
+
+function changePublicPhotoExternality(socket, photo, user, makePublic, cb) {
+	var affectMe;
+	step(
+		function () {
+			//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+			commentController.hideObjComments(photo._id, !makePublic, user, this.parallel());
+
+			//Пересчитывам кол-во публичных фото у владельца
+			User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
+			if (photo.user.equals(user._id)) {
+				user.pcount = user.pcount + (makePublic ? 1 : -1);
+				affectMe = true;
+			}
+
+			//Если у фото есть координаты, значит надо провести действие с кластером
+			if (Utils.geoCheck(photo.geo)) {
+				if (makePublic) {
+					PhotoCluster.clusterPhoto(photo, null, null, this.parallel());
+				} else {
+					PhotoCluster.declusterPhoto(photo, this.parallel());
+				}
+			}
+		},
+		function (err, hideCommentsResult) {
+			if (err) {
+				return cb(err);
+			}
+			if (hideCommentsResult.myCount) {
+				user.ccount = user.ccount - hideCommentsResult.myCount;
+				affectMe = true;
+			}
+			// Если поменялись данные в своей сессии, отправляем их себе
+			if (affectMe) {
+				auth.sendMe(socket);
+			}
+			cb(null);
+		}
+	);
+}
 /**
  * Удаление фотографии
  * @param socket Сокет пользователя
- * @param data
+ * @param cid
  * @param cb Коллбэк
  */
-function removePhoto(socket, data, cb) {
-	var user = socket.handshake.session.user,
-		query;
-	if (!user || !user.login) {
-		cb({message: 'You are not authorized for this action.', error: true});
-		return;
+function removePhoto(socket, cid, cb) {
+	var user = socket.handshake.session.user;
+
+	cid = Number(cid);
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!cid) {
+		return cb({message: 'Bad params', error: true});
 	}
 
-	if (!data && (!Utils.isType('number', data))) {
-		cb({message: 'Bad params', error: true});
-		return;
-	}
-
-	query = {cid: data, del: {$exists: false}};
-
-	step(
-		function () {
-			Photo.findOneAndUpdate(query, { $set: { del: true }}, {new: true, upsert: false, select: {cid: 1, user: 1}}, this);
-		},
-		function (err, photo) {
-			if (err || !photo) {
-				cb({message: (err && err.message) || 'No such photo for this user', error: true});
-				return;
-			}
-			PhotoConverter.removePhotos([photo.cid]);
-
-			if (photo.user.equals(user._id)) {
-				user.pcount = user.pcount - 1;
-				user.save();
-				auth.sendMe(socket);
-			} else {
-				User.update({_id: photo.user}, {$inc: {pcount: -1}}).exec();
-			}
-			cb({message: 'Photo removed'});
+	findPhoto({cid: cid}, {}, user, true, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || 'No such photo', error: true});
 		}
-	);
+
+		if (photo.fresh) {
+			photo.remove(function (err) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				PhotoConverter.removePhotos([photo.cid]);
+				imageFolders.forEach(function (folder) {
+					fs.unlink(folder + photo.file);
+				});
+				cb({message: 'ok'});
+			});
+		} else {
+			var isPublic = !photo.disabled && !photo.del;
+
+			step(
+				function () {
+					var photoPlain = photo.toObject(),
+						photoNew = new PhotoDel(photoPlain);
+
+					if (!Array.isArray(photoPlain.frags) || !photoPlain.frags.length) {
+						photoNew.frags = undefined;
+					}
+					if (!Utils.geoCheck(photoPlain.geo)) {
+						photoNew.geo = undefined;
+					}
+
+					photoNew.save(this.parallel());
+				},
+				function removeFromOldModel(err, photoSaved) {
+					if (err) {
+						return cb({message: err && err.message, error: true});
+					}
+					photo.remove(this.parallel());
+					PhotoSort.update({photo: photoSaved._id}, {$set: {state: 9}}, {upsert: false}, this.parallel());
+					if (isPublic) {
+						changePublicPhotoExternality(socket, photoSaved, user, false, this.parallel());
+					}
+				},
+				function (err) {
+					if (err) {
+						return cb({message: err && err.message, error: true});
+					}
+					cb({message: 'ok'});
+				}
+			);
+		}
+	});
 }
 
 /**
@@ -603,9 +670,7 @@ module.exports.loadController = function (app, db, io) {
 					return result({message: 'Bad params', error: true});
 				}
 				var cid = Number(data.cid),
-					photo,
-					makeDisabled = !!data.disable,
-					affectMe;
+					makeDisabled = !!data.disable;
 
 				if (!cid) {
 					return result({message: 'Requested photo does not exist', error: true});
@@ -621,7 +686,7 @@ module.exports.loadController = function (app, db, io) {
 					},
 					function createInNewModel(err, p) {
 						if (err) {
-							return result({message: err && err.message, error: true});
+							return result({message: err.message, error: true});
 						}
 						if (!p) {
 							return result({message: 'Requested photo does not exist', error: true});
@@ -635,60 +700,29 @@ module.exports.loadController = function (app, db, io) {
 						}
 
 						if (!Array.isArray(p.frags) || !p.frags.length) {
-							photo.frags = undefined;
+							newPhoto.frags = undefined;
 						}
 						if (!Utils.geoCheck(p.geo)) {
-							photo.geo = undefined;
+							newPhoto.geo = undefined;
 						}
 
-						photo = p;
 						newPhoto.save(this.parallel());
-						PhotoSort.update({photo: photo._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
 					},
 					function removeFromOldModel(err, photoSaved) {
 						if (err) {
-							return result({message: err && err.message, error: true});
+							return result({message: err.message, error: true});
 						}
 						if (makeDisabled) {
-							Photo.remove({cid: cid}).exec(this);
+							Photo.remove({cid: cid}).exec(this.parallel());
 						} else {
-							PhotoDis.remove({cid: cid}).exec(this);
+							PhotoDis.remove({cid: cid}).exec(this.parallel());
 						}
+						PhotoSort.update({photo: photoSaved._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
+						changePublicPhotoExternality(socket, photoSaved, hs.session.user, !makeDisabled, this.parallel());
 					},
 					function (err) {
 						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-						commentController.hideObjComments(photo._id, makeDisabled, hs.session.user, this.parallel());
-
-						//Пересчитывам кол-во публичных фото у владельца
-						User.update({_id: photo.user}, {$inc: {pcount: makeDisabled ? -1 : 1}}, this.parallel());
-						if (photo.user.equals(hs.session.user._id)) {
-							hs.session.user.pcount = hs.session.user.pcount + (makeDisabled ? -1 : 1);
-							affectMe = true;
-						}
-
-						//Если у фото есть координаты, значит надо провести действие с кластером
-						if (Utils.geoCheck(photo.geo)) {
-							if (makeDisabled) {
-								PhotoCluster.declusterPhoto(photo, this.parallel());
-							} else {
-								PhotoCluster.clusterPhoto(photo, null, null, this.parallel());
-							}
-						}
-					},
-					function (err, hideCommentsResult) {
-						if (err) {
-							return result({message: err && err.message || 'Comments hide error', error: true});
-						}
-						if (hideCommentsResult.myCount) {
-							hs.session.user.ccount = hs.session.user.ccount + (makeDisabled ? -1 : 1) * hideCommentsResult.myCount;
-							affectMe = true;
-						}
-						// Если поменялись данные в своей сессии, отправляем их себе
-						if (affectMe) {
-							auth.sendMe(socket);
+							return result({message: err.message, error: true});
 						}
 						result({disabled: makeDisabled});
 					}
