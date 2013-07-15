@@ -83,7 +83,7 @@
 			//ko if: can.remove()
 			button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
 				i.icon-trash.icon-white
-				span(data-bind="text: p.fresh() ? 'Отклонить' : 'Удалить'")
+				span(data-bind="text: !IOwner() && p.fresh() ? 'Отклонить' : 'Удалить'")
 			// /ko
 
 	//-ACTIONS EDIT MODE

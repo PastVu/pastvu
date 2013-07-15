@@ -44,9 +44,9 @@ var shift10y = ms('10y'),
 
 			if (user) {
 				can.edit = user.role > 4 || photo.user && photo.user.equals(user._id);
+				can.remove = user.role > 4 || photo.fresh && photo.user && photo.user.equals(user._id); //Пока фото новое, её может удалить и владелец
 				if (user.role > 4) {
 					can.disable = true;
-					can.remove = true;
 					if (photo.fresh) {
 						can.approve = true;
 					}
