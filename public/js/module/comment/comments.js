@@ -143,7 +143,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				weekAgo = new Date() - 604800000,
 				hash = {},
 				comment,
-				parent,
 				results = [];
 
 			for (i = 0; i < len; i++) {
@@ -155,9 +154,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					comment.comments = ko.observableArray();
 				}
 				if (comment.level > 0) {
-					parent = hash[comment.parent];
-					parent.final = false;
-					parent.comments.push(comment);
+					//Если будут отвечать, то необходима ссылка на родитель
+					comment.parent = hash[comment.parent];
+					comment.parent.final = false;
+					comment.parent.comments.push(comment);
 				} else {
 					results.push(comment);
 				}
@@ -372,7 +372,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 
 			socket.once('createCommentResult', function (result) {
-				var comment;
+				var comment,
+					parentNeedReenter;
 				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
@@ -385,14 +386,28 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						}
 						comment.user = this.users[comment.user];
 						comment.stamp = moment(comment.stamp);
+						comment.parent = data;
 						comment.final = true;
 						comment.can.edit = true;
 						comment.can.del = true;
 
-						data.final = false;
-						data.can.del = false;
+						if (comment.level){
+							data.final = false;
+							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
+							//то удаляем этот комментарий, меняем свойство del, а затем опять вставляем.
+							//Это сделано потому что del - не observable(чтобы не делать оверхед) и сам не изменится
+							if (data.can.del && this.auth.iAm.role() < 5) {
+								data.parent.comments.remove(data);
+								data.can.del = false;
+								parentNeedReenter = true;
+							}
+						}
 
 						data.comments.push(result.comment);
+						if (parentNeedReenter) {
+							data.parent.comments.push(data);
+						}
+
 						this.parentModule.commentCountIncrement(1);
 						if (this.canFrag && Utils.isType('object', result.frag)) {
 							this.parentModule.fragAdd(result.frag);
