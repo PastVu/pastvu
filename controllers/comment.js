@@ -24,6 +24,9 @@ var auth = require('./auth.js'),
 	logger,
 
 	weekMS = ms('7d'),
+	msg = {
+		deny: 'You do not have permission for this action'
+	},
 
 	photoController = require('./photo.js');
 
@@ -309,7 +312,7 @@ function getCommentsFeed(data, cb) {
  */
 function createComment(socket, data, cb) {
 	if (!socket.handshake.session.user) {
-		return cb({message: 'You do not have permission for this action', error: true});
+		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !data.obj || !data.txt || data.level > 9) {
 		return cb({message: 'Bad params', error: true});
@@ -425,7 +428,7 @@ function createComment(socket, data, cb) {
  */
 function removeComment(socket, data, cb) {
 	if (!socket.handshake.session.user) {
-		return cb({message: 'You do not have permission for this action', error: true});
+		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
@@ -447,12 +450,18 @@ function removeComment(socket, data, cb) {
 
 	step(
 		function () {
-			commentModel.findOne({cid: cid}, {_id: 0, obj: 1}, this);
+			commentModel.findOne({cid: cid}, {_id: 0, obj: 1, user: 1, stamp: 1}, this);
 		},
 		function findObj(err, comment) {
 			if (err || !comment) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
+			//Проверяем есть ли роль, либо это владелец и комментарий моложе недели
+			var can = user.role > 4 || (comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS));
+			if (!can) {
+				return cb({message: msg.deny, error: true});
+			}
+
 			if (data.type === 'news') {
 				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 			} else {
@@ -479,7 +488,7 @@ function removeComment(socket, data, cb) {
 
 			while (++i < len) {
 				comment = comments[i];
-				if (comment.cid === cid || (comment.level > 0 && hashComments[comment.parent] !== undefined)) {
+				if (comment.cid === cid || (comment.level && hashComments[comment.parent] !== undefined)) {
 					hashComments[comment.cid] = comment;
 					//Если комментарий скрыт, то его уже не надо вычитать из статистики пользователя
 					if (!comment.hidden) {
@@ -488,6 +497,12 @@ function removeComment(socket, data, cb) {
 					arrComments.push(comment.cid);
 				}
 			}
+
+			//Если обычный пользователь удаляет свой комментарий, то убеждаемся, что у него нет потомков, т.е. он один
+			if (user.role < 5 && arrComments.length > 1) {
+				return cb({message: msg.deny, error: true});
+			}
+
 			commentModel.remove({cid: {$in: arrComments}}, this);
 		},
 		function (err, countRemoved) {
@@ -534,7 +549,7 @@ function removeComment(socket, data, cb) {
  */
 function updateComment(socket, data, cb) {
 	if (!socket.handshake.session.user) {
-		return cb({message: 'You do not have permission for this action', error: true});
+		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !data.obj || !Number(data.cid) || !data.txt) {
 		return cb({message: 'Bad params', error: true});
