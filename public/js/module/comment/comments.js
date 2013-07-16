@@ -120,6 +120,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			while (++i < len) {
 				comment = arr[i];
+				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
@@ -147,6 +148,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
+				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				comment.final = true;
 				if (comment.level < this.commentNestingMax) {
@@ -164,8 +166,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
-				comment.can.edit = myRole > 4 || (comment.user === myLogin && (comment.final || comment.stamp > weekAgo));
-				comment.can.del = myRole > 4 || (comment.user === myLogin && comment.final && comment.stamp > weekAgo);
+				comment.can.edit = myRole > 4 || (comment.user.login === myLogin && (comment.final || comment.stamp > weekAgo));
+				comment.can.del = myRole > 4 || (comment.user.login === myLogin && comment.final && comment.stamp > weekAgo);
 			}
 
 			return results;
@@ -381,6 +383,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						if (comment.level < this.commentNestingMax) {
 							comment.comments = ko.observableArray();
 						}
+						comment.user = this.users[comment.user];
 						comment.stamp = moment(comment.stamp);
 						comment.final = true;
 						comment.can.edit = true;

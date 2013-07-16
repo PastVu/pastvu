@@ -1,29 +1,56 @@
 .fullComments(data-bind="with: repository[M!M]")
 	ul.media-list(data-bind="css: {loggedIn: auth.loggedIn(), canFrag: canFrag}")
-		//ko template: { name: 'commentTpl', foreach: comments }
+		//ko template: {name: auth.loggedIn() ? 'commentTplReg' : 'commentTplPure', foreach: comments}
 		// /ko
 		//ko if: auth.loggedIn()
 		//ko template: {name: 'replyTpl', data: dataForZeroReply}
 		// /ko
 		// /ko
 
-		script(id="commentTpl", type="text/html")
-			li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid()}")
-				a.pull-left(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}")
-					img.media-object(data-bind="attr: {src: $parents[$data.level].users[$data.user].avatar}")
+		script(id="commentTplPure", type="text/html")
+			li.media(data-bind="attr: {'data-cid': $data.cid}")
+				a.pull-left(data-bind="attr: {href: '/u/' + $data.user.login}")
+					img.media-object(data-bind="attr: {src: $data.user.avatar}")
 				.media-body
-					//ko template: {name: $data.cid === $parents[$data.level].commentEditingCid() ? 'replyBodyTpl' : 'commentBodyTpl'}
+					//ko template: 'commentBodyTplPure'
 					// /ko
-					//ko template: {name: 'commentTpl', foreach: $data.comments }
+					//ko template: {name: 'commentTplPure', foreach: $data.comments }
+					// /ko
+		script(id="commentBodyTplPure", type="text/html")
+			.commentBody
+				.commentHead
+					a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.name")
+					//ko if: $data.frag
+					.dotDelimeter ·
+					a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
+						i.icon-picture
+						| Комментируемый фрагмент
+					// /ko
+					.dotDelimeter ·
+					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: $data.stamp.calendar()")
+					//ko if: $data.lastChanged
+					.dotDelimeter ·
+					.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].showHistory($data.cid)}")
+					// /ko
+				.commentText(data-bind="html: $data.txt")
+
+		script(id="commentTplReg", type="text/html")
+			li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid()}")
+				a.pull-left(data-bind="attr: {href: '/u/' + $data.user.login}")
+					img.media-object(data-bind="attr: {src: $data.user.avatar}")
+				.media-body
+					//ko template: {name: $data.cid === $parents[$data.level].commentEditingCid() ? 'replyBodyTpl' : 'commentBodyTplReg'}
+					// /ko
+					//ko template: {name: 'commentTplReg', foreach: $data.comments }
 					// /ko
 					//ko if: $data.cid === $parents[$data.level].commentReplyingToCid()
 					//ko template: 'replyTpl'
 					// /ko
 					// /ko
-		script(id="commentBodyTpl", type="text/html")
+		script(id="commentBodyTplReg", type="text/html")
 			.commentBody
 				.commentHead
-					a.author(data-bind="attr: {href: '/u/' + $parents[$data.level].users[$data.user].login}, text: $parents[$data.level].users[$data.user].name")
+					a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.name")
 					//ko if: $data.frag
 					.dotDelimeter ·
 					a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
