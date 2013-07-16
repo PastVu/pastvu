@@ -80,7 +80,7 @@
 				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
 				span(data-bind="text: p.disabled() ? 'Активировать' : 'Деактивировать'")
 			// /ko
-			//ko if: can.remove()
+			//ko if: !p.del() && can.remove()
 			button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
 				i.icon-trash.icon-white
 				span(data-bind="text: !IOwner() && p.fresh() ? 'Отклонить' : 'Удалить'")

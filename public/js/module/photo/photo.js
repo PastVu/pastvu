@@ -41,7 +41,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}, this);
 
 			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
-				return !this.p.fresh() && this.can.disable();
+				return !this.p.fresh() && !this.p.del() && this.can.disable();
 			}, this);
 
 			this.edit = ko.observable(undefined);

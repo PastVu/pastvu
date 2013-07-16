@@ -443,7 +443,7 @@ var findPhotosAll = (function () {
 		var photoSort;
 		step(
 			function () {
-				if (user.role < 9) {
+				if (!user.role || user.role < 10) {
 					query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
 				}
 				options = options || {};
@@ -469,7 +469,9 @@ var findPhotosAll = (function () {
 				findInCollection(PhotoFresh, fresh, fieldSelect, this.parallel());
 				findInCollection(Photo, pub, fieldSelect, this.parallel());
 				findInCollection(PhotoDis, dis, fieldSelect, this.parallel());
-				findInCollection(PhotoDel, del, fieldSelect, this.parallel());
+				if (user.role > 9) {
+					findInCollection(PhotoDel, del, fieldSelect, this.parallel());
+				}
 				photoSort = pSort;
 			},
 			function (err, fresh, pub, dis, del) {
@@ -495,10 +497,12 @@ var findPhotosAll = (function () {
 					item.disabled = true;
 					photosHash[item._id] = item;
 				}
-				for (i = del.length; i--;) {
-					item = del[i];
-					item.del = true;
-					photosHash[item._id] = item;
+				if (del && del.length) {
+					for (i = del.length; i--;) {
+						item = del[i];
+						item.del = true;
+						photosHash[item._id] = item;
+					}
 				}
 
 				for (i = photoSort.length; i--;) {
