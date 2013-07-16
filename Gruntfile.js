@@ -71,6 +71,11 @@ module.exports = function (grunt) {
 					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
 					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', './README'], dest: targetDir}
 				]
+			},
+			imagemagick: {
+				files: [
+					{expand: true, src: ['node_modules/imagemagick/**'], dest: targetDir}
+				]
 			}
 		},
 		rename: {
@@ -136,11 +141,12 @@ module.exports = function (grunt) {
 		'jade:compileTpls',
 		'exec:buildjs',
 		'concat',
-		'copy',
+		'copy:main',
 		'rename:movePublic',
 		'jade:compileMainJades',
 		'clean:publicTpl',
 		'writeBuildParams',
+		'copy:imagemagick',
 		'exec:npm',
 		'compress'
 	]);
