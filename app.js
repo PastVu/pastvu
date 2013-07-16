@@ -51,7 +51,9 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	port = argv.projectport || conf.projectport || 80, //Порт сервера для клиента
 	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий для клиента
 	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
-	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {return typeof item === 'string' && item.length > 0;}), //Поддомены для раздачи статики из store
+	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {
+		return typeof item === 'string' && item.length > 0;
+	}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo,
 	smtp = conf.smtp,
 
@@ -170,6 +172,12 @@ async.waterfall([
 			if (!noServeStore) {
 				app.use('/_a', express.static(storePath + 'public/avatars', {maxAge: ms('2d')}));
 				app.use('/_p', express.static(storePath + 'public/photos', {maxAge: ms('7d')}));
+				app.get('/_a/d/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatar.png');
+				});
+				app.get('/_a/h/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatarth.png');
+				});
 				app.get('/_a/*', static404);
 				app.get('/_p/*', static404);
 			}
@@ -279,7 +287,7 @@ async.waterfall([
 				logger.trace(err && (err.stack || err));
 			});
 
-			server.listen(listenport, listenhost, function() {
+			server.listen(listenport, listenhost, function () {
 				logger.info('Host for users: [%s]', host);
 				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
 			});
