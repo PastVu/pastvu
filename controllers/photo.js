@@ -131,21 +131,18 @@ function createPhotos(socket, data, cb) {
 				return cb({message: err && err.message || 'Increment photo counter error', error: true});
 			}
 			var photo,
-				photoSort,
 				now = Date.now(),
-				photoLoadTime,
 				item,
 				i;
 
 			for (i = 0; i < data.length; i++) {
 				item = data[i];
 
-				photoLoadTime = now + i * 10; //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
 				photo = new PhotoFresh({
 					cid: count.next + i,
 					user: user._id,
 					file: item.fullfile,
-					ldate: new Date(photoLoadTime),
+					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
 					type: item.type,
 					size: item.size,
 					geo: undefined,
@@ -154,15 +151,29 @@ function createPhotos(socket, data, cb) {
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
 				});
-				photoSort = new PhotoSort({
-					photo: photo._id,
-					user: user._id,
-					stamp: new Date(photoLoadTime + shift10y), //Прибавляем 10 лет новым, чтобы они были всегда в начале сортировки
-					state: 1
-				});
+				item.photoObj = photo;
 
 				result.push({cid: photo.cid});
 				photo.save(this.parallel());
+			}
+		},
+		function createInSort(err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			var photoSort,
+				item,
+				i;
+
+			for (i = 0; i < data.length; i++) {
+				item = data[i];
+
+				photoSort = new PhotoSort({
+					photo: item.photoObj._id,
+					user: user._id,
+					stamp: new Date(item.photoObj.ldate.getTime() + shift10y), //Прибавляем 10 лет новым, чтобы они были всегда в начале сортировки
+					state: 1
+				});
 				photoSort.save(this.parallel());
 			}
 		},
