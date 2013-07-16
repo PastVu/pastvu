@@ -521,7 +521,7 @@ function removeComment(socket, data, cb) {
 				user.ccount -= hashUsers[user._id];
 				auth.sendMe(socket);
 			}
-			cb({message: 'Removed ' + countCommentsRemoved + ' comments from ' + Object.keys(hashUsers).length + ' users', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved});
+			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, countUsers: Object.keys(hashUsers).length});
 		}
 	);
 }

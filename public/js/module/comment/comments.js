@@ -365,6 +365,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		sendCreate: function (data, dataSend, cb, ctx) {
+			if (!this.auth.loggedIn()) {
+				return;
+			}
 			//Если data.cid, значит создается дочерний комментарий
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
@@ -422,6 +425,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (data, dataSend, cb, ctx) {
+			if (!this.auth.loggedIn() || !data.can.edit) {
+				return;
+			}
 			var fragExists = this.canFrag && data.frag && this.parentModule.fragGetByCid(data.cid);
 
 			dataSend.cid = data.cid;
@@ -496,6 +502,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		remove: function (data, event) {
+			if (!this.auth.loggedIn() || !data.can.del) {
+				return;
+			}
+
 			var _this = this,
 				root = $(event.target).closest('.media'),
 				cid = Number(data.cid);
@@ -504,7 +514,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			window.noty(
 				{
-					text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами без возможности восстановления<br>Подтверждаете операцию удаления?',
+					text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Подтверждаете операцию удаления?',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -525,12 +535,18 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 							socket.once('removeCommentResult', function (result) {
 								$noty.$buttons.find('.btn-strict-danger').remove();
-								var okButton = $noty.$buttons.find('button')
+								var msg,
+									okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
 									.removeClass('disabled')
 									.off('click');
 
-								$noty.$message.children().html((result && result.message) || '');
+								if (result && !result.error) {
+									msg = 'Удалено комментариев: ' + result.countComments + ', от ' + result.countUsers + ' пользователя(ей)';
+								} else {
+									msg = result && result.message || '';
+								}
+								$noty.$message.children().html(msg);
 								okButton.text('Close').on('click', function () {
 									$noty.close();
 									if (!result.error) {
