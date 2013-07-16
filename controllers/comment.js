@@ -23,6 +23,8 @@ var auth = require('./auth.js'),
 	host,
 	logger,
 
+	weekMS = ms('7d'),
+
 	photoController = require('./photo.js');
 
 /**
@@ -90,7 +92,6 @@ function getCommentsObj(iAm, data, cb) {
 				return cb({message: err && err.message || 'Cursor users extract error', error: true});
 			}
 			var i,
-				hourAgo = new Date(Date.now() - 5184000),
 				comment,
 				user,
 				userFormatted,
@@ -122,10 +123,6 @@ function getCommentsObj(iAm, data, cb) {
 				comment = commentsArr[--i];
 				comment.user = usersHash[comment.user].login;
 				comment.can = {};
-				if (iAm) {
-					comment.can.edit = iAm.role > 4 || comment.user === iAm.login;
-					comment.can.del = iAm.role > 4 || (comment.user === iAm.login && comment.stamp > hourAgo);
-				}
 				if (comment.level === undefined) {
 					comment.level = 0;
 				}
@@ -410,6 +407,7 @@ function createComment(socket, data, cb) {
 			}
 			comment.user = user.login;
 			comment.obj = data.obj;
+			comment.can = {};
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}

@@ -66,6 +66,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 		loggedInHandler: function () {
 			// После логина добавляем себя в комментаторы
 			this.addMeToCommentsUsers();
+			this.recieve();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -93,7 +94,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
-					console.error('Noe comments data recieved');
+					console.error('No comments data recieved');
 				} else {
 					if (data.error) {
 						console.error('While loading comments: ', data.message || 'Error occurred');
@@ -101,7 +102,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
 					} else {
 						this.users = _.assign(data.users, this.users);
-						this.comments(this.treeBuild(data.comments));
+						this.comments(this[this.auth.loggedIn() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -119,6 +120,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			while (++i < len) {
 				comment = arr[i];
+				comment.stamp = moment(comment.stamp);
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
@@ -128,6 +130,42 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					results.push(comment);
 				}
 				hash[comment.cid] = comment;
+			}
+
+			return results;
+		},
+		treeBuildCanCheck: function (arr) {
+			var i,
+				len = arr.length,
+				myLogin = this.auth.iAm.login(),
+				myRole = this.auth.iAm.role(),
+				weekAgo = new Date() - 604800000,
+				hash = {},
+				comment,
+				parent,
+				results = [];
+
+			for (i = 0; i < len; i++) {
+				comment = arr[i];
+				comment.stamp = moment(comment.stamp);
+				comment.final = true;
+				if (comment.level < this.commentNestingMax) {
+					comment.comments = ko.observableArray();
+				}
+				if (comment.level > 0) {
+					parent = hash[comment.parent];
+					parent.final = false;
+					parent.comments.push(comment);
+				} else {
+					results.push(comment);
+				}
+				hash[comment.cid] = comment;
+			}
+
+			for (i = 0; i < len; i++) {
+				comment = arr[i];
+				comment.can.edit = myRole > 4 || (comment.user === myLogin && (comment.final || comment.stamp > weekAgo));
+				comment.can.del = myRole > 4 || (comment.user === myLogin && comment.final && comment.stamp > weekAgo);
 			}
 
 			return results;
@@ -332,15 +370,25 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 
 			socket.once('createCommentResult', function (result) {
+				var comment;
 				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
 					if (result.error || !result.comment) {
 						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
-						if (result.comment.level < this.commentNestingMax) {
-							result.comment.comments = ko.observableArray();
+						comment = result.comment;
+						if (comment.level < this.commentNestingMax) {
+							comment.comments = ko.observableArray();
 						}
+						comment.stamp = moment(comment.stamp);
+						comment.final = true;
+						comment.can.edit = true;
+						comment.can.del = true;
+
+						data.final = false;
+						data.can.del = false;
+
 						data.comments.push(result.comment);
 						this.parentModule.commentCountIncrement(1);
 						if (this.canFrag && Utils.isType('object', result.frag)) {

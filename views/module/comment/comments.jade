@@ -31,7 +31,7 @@
 						| Комментируемый фрагмент
 					// /ko
 					.dotDelimeter ·
-					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: moment($data.stamp).calendar()")
+					a.stamp(data-bind="attr: {href: '?hl=comment-' + $data.cid}, text: $data.stamp.calendar()")
 					//ko if: $data.lastChanged
 					.dotDelimeter ·
 					.changed(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parents[$data.level].showHistory($data.cid)}")
