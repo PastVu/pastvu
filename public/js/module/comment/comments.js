@@ -159,6 +159,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					comment.parent.final = false;
 					comment.parent.comments.push(comment);
 				} else {
+					comment.parent = this.dataForZeroReply;
 					results.push(comment);
 				}
 				hash[comment.cid] = comment;
@@ -376,7 +377,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			socket.once('createCommentResult', function (result) {
 				var comment,
-					parentNeedReenter;
+					parentLevelReenter;
 				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
@@ -397,18 +398,18 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						if (comment.level){
 							data.final = false;
 							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
-							//то удаляем этот комментарий, меняем свойство del, а затем опять вставляем.
+							//то удаляем всю ветку, меняем свойство del, а затем опять вставляем ветку. Ветку, чтобы сохранялась сортировка
 							//Это сделано потому что del - не observable(чтобы не делать оверхед) и сам не изменится
 							if (data.can.del && this.auth.iAm.role() < 5) {
-								data.parent.comments.remove(data);
 								data.can.del = false;
-								parentNeedReenter = true;
+								parentLevelReenter = data.parent.comments();
+								data.parent.comments([]);
 							}
 						}
 
 						data.comments.push(result.comment);
-						if (parentNeedReenter) {
-							data.parent.comments.push(data);
+						if (parentLevelReenter) {
+							data.parent.comments(parentLevelReenter);
 						}
 
 						this.parentModule.commentCountIncrement(1);
