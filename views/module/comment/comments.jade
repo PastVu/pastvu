@@ -39,10 +39,14 @@
 				.commentText(data-bind="html: $data.txt")
 				.commentActions
 					span.commentAction.reply(data-bind="click: $parents[$data.level].replyBind") Ответить
+					//ko if: $data.can.edit
 					.dotDelimeter ·
 					span.commentAction.edit(data-bind="click: $parents[$data.level].editBind") Редактировать
+					// /ko
+					//ko if: $data.can.del
 					.dotDelimeter ·
 					span.commentAction.remove(data-bind="click: $parents[$data.level].removeBind") Удалить
+					// /ko
 
 	script(id="replyTpl", type="text/html")
 		li.media.commentAdd

@@ -27,11 +27,11 @@ var auth = require('./auth.js'),
 
 /**
  * Выбирает комментарии для объекта
- * @param user
+ * @param iAm
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsObj(user, data, cb) {
+function getCommentsObj(iAm, data, cb) {
 	var //start = Date.now(),
 		cid,
 		commentsArr,
@@ -53,7 +53,7 @@ function getCommentsObj(user, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, {_id: 1}, user, true, this);
+				photoController.findPhoto({cid: cid}, {_id: 1}, iAm, true, this);
 			}
 		},
 		function createCursor(err, obj) {
@@ -90,6 +90,7 @@ function getCommentsObj(user, data, cb) {
 				return cb({message: err && err.message || 'Cursor users extract error', error: true});
 			}
 			var i,
+				hourAgo = new Date(Date.now() - 5184000),
 				comment,
 				user,
 				userFormatted,
@@ -120,6 +121,11 @@ function getCommentsObj(user, data, cb) {
 			while (i) {
 				comment = commentsArr[--i];
 				comment.user = usersHash[comment.user].login;
+				comment.can = {};
+				if (iAm) {
+					comment.can.edit = iAm.role > 4 || comment.user === iAm.login;
+					comment.can.del = iAm.role > 4 || (comment.user === iAm.login && comment.stamp > hourAgo);
+				}
 				if (comment.level === undefined) {
 					comment.level = 0;
 				}
@@ -134,7 +140,7 @@ function getCommentsObj(user, data, cb) {
 
 var commentsUserPerPage = 15;
 /**
- * Выбирает комментарии
+ * Выбирает комментарии для польщователя
  * @param data Объект
  * @param cb Коллбэк
  */
