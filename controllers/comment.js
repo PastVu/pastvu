@@ -509,14 +509,18 @@ function removeComment(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message || 'Comment remove error', error: true});
 			}
-			var frags = obj.frags.toObject(),
-				i = frags.length,
+			var frags = obj.frags && obj.frags.toObject(),
+				i,
 				u;
-			while (i--) {
-				if (hashComments[frags[i].cid] !== undefined) {
-					obj.frags.id(frags[i]._id).remove();
+
+			if (frags) {
+				for (i = frags.length; i--;) {
+					if (hashComments[frags[i].cid] !== undefined) {
+						obj.frags.id(frags[i]._id).remove();
+					}
 				}
 			}
+
 			obj.ccount -= countRemoved;
 			obj.save(this.parallel());
 
@@ -739,7 +743,7 @@ function giveCommentHist(data, cb) {
  * @param cb Коллбэк
  */
 function hideObjComments(oid, hide, user, cb) {
-	step (
+	step(
 		function () {
 			var command = {};
 			if (hide) {

@@ -565,7 +565,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 								}.bind(this));
 
 							}.bind(_this));
-							socket.emit('removeComment', {type: this.type, cid: cid});
+							socket.emit('removeComment', {type: _this.type, cid: cid});
 						}},
 						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
 							root.removeClass('hlRemove');
