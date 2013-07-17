@@ -566,18 +566,24 @@ function updateComment(socket, data, cb) {
 
 	step(
 		function () {
-			commentModel.findOne({cid: data.cid}, {user: 0}).populate('obj', {cid: 1, frags: 1}).exec(this);
+			commentModel.findOne({cid: data.cid}).populate('obj', {cid: 1, frags: 1}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.obj !== comment.obj.cid) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
 			var i,
+				can = user.role > 4 || (comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS)),
 				hist = {user: user},
-				content = Utils.inputIncomingParse(data.txt),
+				content,
 				fragExists,
 				fragChangedType,
 				txtChanged;
+
+			if (!can) {
+				return cb({message: msg.deny, error: true});
+			}
+			content = Utils.inputIncomingParse(data.txt);
 
 			if (comment.obj.frags) {
 				for (i = comment.obj.frags.length; i--;) {

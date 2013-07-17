@@ -2,8 +2,8 @@
 	ul.media-list
 		//ko foreach: hists
 		li.media.hist
-			a.pull-left.photoPreviewA(target="_blank", data-bind="attr: {href: '/u/' + $data.user.login}")
-				img.media-object.photoPreview(data-bind="attr: {src: $data.user.avatar}")
+			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $data.user.login}")
+				img.media-object(data-bind="attr: {src: $data.user.avatar}")
 			.media-body
 				.histHead
 					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.name")

@@ -28,13 +28,13 @@
 			// /ko
 		.span3-4.rightPanel
 			.row-fluid.photoUser
-				a.avatar.fringe(target='_self', data-bind="attr: {href: '/u/' + p.user.login()}")
+				a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
 			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length ? '' : 'none'}")
 				.lineBehind
-					span(data-bind="html: 'Отрезок <a target=\"_self\" href=\"/u/' + p.user.login() + '/photo\">' + 'галереи</a> пользователя'")
+					span(data-bind="html: 'Отрезок <a href=\"/u/' + p.user.login() + '/photo\">' + 'галереи</a> пользователя'")
 				//ko foreach: userRibbon
 				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 					.photoBox

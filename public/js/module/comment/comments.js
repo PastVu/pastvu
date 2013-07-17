@@ -167,7 +167,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
-				comment.can.edit = myRole > 4 || (comment.user.login === myLogin && (comment.final || comment.stamp > weekAgo));
+				comment.can.edit = myRole > 4 || (comment.user.login === myLogin && comment.stamp > weekAgo);
 				comment.can.del = myRole > 4 || (comment.user.login === myLogin && comment.final && comment.stamp > weekAgo);
 			}
 

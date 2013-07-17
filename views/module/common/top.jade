@@ -25,7 +25,7 @@
 			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: auth.loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.doLogout()}}")
 				.text(data-bind="text: $root.i18n.logout()")
 				.ico
-	a.fringe.indentLogo#logo(href='/', target='_self')
+	a.fringe.indentLogo#logo(href='/')
 	#appMsg.indentLogo(data-bind="css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 		//i.icon-warning-sign(style="margin-top: 3px; margin-right: 4px;")
 		span(data-bind="text: msg()")
