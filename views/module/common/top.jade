@@ -7,7 +7,12 @@
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
 				.ico
 				.text(data-bind="text: $root.i18n.image_upload()")
-			//ko if: $root.P.settings.appName() !== 'Admin'
+			//ko if: can.mod()
+			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank")
+				.ico
+				.text(data-bind="text: $root.i18n.mod()")
+			// /ko
+			//ko if: can.adm()
 			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank")
 				.ico
 				.text(data-bind="text: $root.i18n.admin()")

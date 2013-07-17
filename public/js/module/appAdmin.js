@@ -30,7 +30,7 @@ require([
 					level: 0,
 					callback: function (auth, top, menu, submenu) {
 						$.when(auth.loadMe()).done(function () {
-							if (!auth.loggedIn()) {
+							if (!auth.loggedIn() || auth.iAm.role() < 10) {
 								location.href = '/';
 								return;
 							}

@@ -16,6 +16,20 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 				},
 				owner: this
 			});
+			this.can = {
+				mod: this.co.canmod = ko.computed({
+					read: function () {
+						return this.auth.loggedIn() && this.auth.iAm.role() > 4 && this.auth.iAm.role() < 10;
+					},
+					owner: this
+				}).extend({ throttle: 50 }),
+				adm: this.co.canmod = ko.computed({
+					read: function () {
+						return this.auth.loggedIn() && this.auth.iAm.role() > 9;
+					},
+					owner: this
+				}).extend({ throttle: 50 })
+			};
 			this.profile = this.co.profile = ko.computed({
 				read: function () {
 					if (this.auth.loggedIn()) {
