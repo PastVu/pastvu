@@ -15,7 +15,10 @@
 
 	"logPath": "", /* Folder for logs. @Default "./logs" */
 
-	"mongo": "mongodb://localhost:27017/pastvu", /* DB connection string */
+	"mongo": {
+		"con": "mongodb://localhost:27017/pastvu", /* DB connection string */
+		"pool": 5 /* Number of concurrent connections to DB.  @Default 5*/
+	},
 
 	"smtp": {
 		"service": "Gmail",

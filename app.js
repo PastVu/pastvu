@@ -54,7 +54,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {
 		return typeof item === 'string' && item.length > 0;
 	}), //Поддомены для раздачи статики из store
-	moongoUri = argv.mongo || conf.mongo,
+	moongoUri = argv.mongo || conf.mongo.con,
+	moongoPool = argv.mongopool || conf.mongo.pool || 5,
 	smtp = conf.smtp,
 
 	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
@@ -86,7 +87,7 @@ async.waterfall([
 		db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
 			.once('open', openHandler)
 			.once('error', errFirstHandler);
-		db.open(moongoUri, {server: { auto_reconnect: true }, db: {safe: true}});
+		db.open(moongoUri, {server: {poolSize: moongoPool, auto_reconnect: true}, db: {safe: true}});
 
 		function openHandler() {
 			var admin = new mongoose.mongo.Admin(db.db);
