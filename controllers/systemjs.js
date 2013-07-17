@@ -308,7 +308,7 @@ module.exports.loadController = function (app, db) {
 	 * Функции импорта конвертации старой базы олдмос
 	 */
 	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'old_users';
+		sourceCollectionName = sourceCollectionName || 'users';
 		byNumPerPackage = byNumPerPackage || 1000;
 
 		if (dropExisting) {
@@ -316,7 +316,8 @@ module.exports.loadController = function (app, db) {
 			db.users.remove({login: {$nin: ['init', 'neo']}});
 		}
 
-		var startTime = Date.now(),
+		var db_old = db.getSiblingDB('old'),
+			startTime = Date.now(),
 			insertBy = byNumPerPackage, // Вставляем по N документов
 			insertArr = [],
 			newUser,
@@ -326,11 +327,11 @@ module.exports.loadController = function (app, db) {
 			okCounter = 0,
 			noactiveCounter = 0,
 			allCounter = 0,
-			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
+			allCount = db_old[sourceCollectionName].count(),
+			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
 
 		//Размазываем даты регистрации пользователей по периоду с 1 марта 2009 до текущей даты
-			expectingUsersCount = db.old_usersSpb.count({activated: 'yes'}),
+			expectingUsersCount = db_old[sourceCollectionName].count({activated: 'yes'}),
 			firstUserStamp = (spbMode ? new Date("Sat, 1 Aug 2009 12:00:00 GMT") : new Date("Sun, 1 Mar 2009 12:00:00 GMT")).getTime(),
 			stepUserStamp = (startTime - firstUserStamp) / expectingUsersCount >> 0,
 
@@ -464,7 +465,7 @@ module.exports.loadController = function (app, db) {
 	});
 
 	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'old_photos';
+		sourceCollectionName = sourceCollectionName || 'photos';
 		byNumPerPackage = byNumPerPackage || 2000;
 
 		if (dropExisting) {
@@ -473,7 +474,7 @@ module.exports.loadController = function (app, db) {
 		}
 
 		var startTime = Date.now(),
-
+			db_old = db.getSiblingDB('old'),
 		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
 			importedTimezoneOffset = -4,
 			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
@@ -491,8 +492,8 @@ module.exports.loadController = function (app, db) {
 			cidShift = 0,
 			okCounter = 0,
 			allCounter = 0,
-			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}),//.sort({id: 1}),
+			allCount = db_old[sourceCollectionName].count(),
+			cursor = db_old[sourceCollectionName].find({}, {_id: 0}),//.sort({id: 1}),
 			usersArr,
 			users = {},
 			userOid,
@@ -607,7 +608,7 @@ module.exports.loadController = function (app, db) {
 	});
 
 	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'old_comments';
+		sourceCollectionName = sourceCollectionName || 'comments';
 		byNumPerPackage = byNumPerPackage || 5000;
 
 		if (dropExisting) {
@@ -616,7 +617,8 @@ module.exports.loadController = function (app, db) {
 		}
 
 		print('Ensuring old index...');
-		db[sourceCollectionName].ensureIndex({date: 1});
+		var db_old = db.getSiblingDB('old');
+		db_old[sourceCollectionName].ensureIndex({date: 1});
 
 		var startTime = Date.now(),
 
@@ -638,8 +640,8 @@ module.exports.loadController = function (app, db) {
 			noPhotoCounter = 0,
 			noParentCounter = 0,
 			allCounter = 0,
-			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
+			allCount = db_old[sourceCollectionName].count(),
+			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
 			usersArr,
 			users = {},
 			userOid,
@@ -792,7 +794,7 @@ module.exports.loadController = function (app, db) {
 
 
 	saveSystemJSFunc(function oldConvertNews(sourceCollectionName, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'old_news';
+		sourceCollectionName = sourceCollectionName || 'news';
 		byNumPerPackage = byNumPerPackage || 10;
 
 		if (dropExisting) {
@@ -800,10 +802,9 @@ module.exports.loadController = function (app, db) {
 			db.news.remove();
 		}
 
-		print('Ensuring old index...');
-		db[sourceCollectionName].ensureIndex({date: 1});
-
 		var startTime = Date.now(),
+			db_old = db.getSiblingDB('old'),
+
 
 		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
 			importedTimezoneOffset = -4,
@@ -818,8 +819,8 @@ module.exports.loadController = function (app, db) {
 			okCounter = 0,
 			noUserCounter = 0,
 			allCounter = 0,
-			allCount = db[sourceCollectionName].count(),
-			cursor = db[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
+			allCount = db_old[sourceCollectionName].count(),
+			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
 			usersArr,
 			users = {},
 			userOid,
@@ -965,14 +966,14 @@ module.exports.loadController = function (app, db) {
 		printjson(oldConvertNews());
 		print('~~~~~~~');
 		spbPhotoShift = db.counters.findOne({_id: 'photo'}).next;
-		print("oldConvertUsers('old_usersSpb', true)");
-		printjson(oldConvertUsers('old_usersSpb', true));
+		print("oldConvertUsers('usersSpb', true)");
+		printjson(oldConvertUsers('usersSpb', true));
 		print('~~~~~~~');
-		print("oldConvertPhotos('old_photosSpb', true, " + spbPhotoShift + ")");
-		printjson(oldConvertPhotos('old_photosSpb', true, spbPhotoShift));
+		print("oldConvertPhotos('photosSpb', true, " + spbPhotoShift + ")");
+		printjson(oldConvertPhotos('photosSpb', true, spbPhotoShift));
 		print('~~~~~~~');
-		print("oldConvertComments('old_commentsSpb', true, " + spbPhotoShift + ")");
-		printjson(oldConvertComments('old_commentsSpb', true, spbPhotoShift));
+		print("oldConvertComments('commentsSpb', true, " + spbPhotoShift + ")");
+		printjson(oldConvertComments('commentsSpb', true, spbPhotoShift));
 		print('~~~~~~~');
 		print('fillPhotosSort()');
 		printjson(fillPhotosSort());
