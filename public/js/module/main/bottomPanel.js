@@ -1,13 +1,23 @@
 /*global define:true*/
 /**
- * Модель статистики пользователя
+ * Модель нижней панели на главной
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, jade) {
 	'use strict';
-	var cats = [
-			{id: 'photos', name: 'Новые фото'},
-			{id: 'ratings', name: 'Рейтинги'},
-			{id: 'stats', name: 'Статистика'}
+
+	var catsObj = {
+			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'photosTpl'},
+			photos: {name: 'Новые фото', tpl: 'photosTpl'},
+			ratings: {name: 'Рейтинги', tpl: 'ratingsTpl'},
+			stats: {name: 'Статистика', tpl: 'statsTpl'}
+		},
+		cats = [
+			'photos',
+			'ratings',
+			'stats'
+		],
+		catsMod = [
+			'photosToApprove'
 		],
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
@@ -16,6 +26,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.news = ko.observableArray();
+
+			if (this.auth.loggedIn() && this.auth.iAm.role() > 4) {
+				cats = catsMod.concat(cats);
+			}
+			this.catsObj = catsObj;
 			this.cats = ko.observableArray(cats);
 			this.catLoading = ko.observable('');
 			this.catActive = ko.observable('');
@@ -59,12 +74,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.catClickBind = this.catClick.bind(this);
 
+			this.getNews();
+			if (this.auth.iAm.role() > 4) {
+				this.catJump('photosToApprove');
+			} else {
+				this.catJump('photos');
+			}
+
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			this.getNews();
-			this.catJump('photos');
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
@@ -78,13 +98,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		loggedInHandler: function () {
-			// После логина приверяем если мы можем добавить категории
-			this.cats.unshift({id: 'photosToApprove', name: 'Ожидают подтверждения'});
+			// После логина проверяем если мы можем добавить категории
+			if (this.auth.iAm.role() > 4) {
+				this.cats.concat(catsMod, true);
+				this.catJump('photosToApprove');
+			}
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
 		catClick: function (data) {
-			this.catJump(data.id);
+			this.catJump(data);
 		},
 		catJump: function (id) {
 			this.catLoading(id);
@@ -120,6 +143,23 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		getPhotos: function (cb, ctx) {
 			socket.once('takePhotosPublic', function (data) {
 				if (this.catLoading() === 'photos') {
+					if (!data || data.error || !Array.isArray(data.photos)) {
+						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					} else {
+						this.processPhotos(data.photos, Photo.picFormats.m);
+						this.photos(data.photos);
+					}
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx, data);
+					}
+				}
+			}.bind(this));
+			socket.emit('givePhotosPublic', {skip: 0, limit: 24});
+		},
+		getPhotosToApprove: function (cb, ctx) {
+			socket.once('takePhotosPublic', function (data) {
+				if (this.catLoading() === 'photosToApprove') {
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {

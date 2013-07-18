@@ -25,15 +25,15 @@
 			.navbar-inner
 				ul.nav
 					//ko foreach: cats
-					li(data-bind="css: {loading: $data.id === $parent.catLoading(), active: $data.id === $parent.catActive()}, click: $parent.catClickBind")
-						a(data-bind="text: $data.name")
+					li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
+						a(data-bind="text: $parent.catsObj[$data].name")
 					// /ko
 					li
 						a(target="_blank", href="/news")
 							| Архив новостей
 							i.icon-share.icon-white
 		//ko if: catActive()
-		.catContent(data-bind="template: {name: catActive() + 'Tpl'}")
+		.catContent(data-bind="template: catsObj[catActive()].tpl")
 		// /ko
 
 	script(id="photosTpl", type="text/html")

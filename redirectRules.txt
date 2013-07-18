@@ -1,0 +1,17 @@
+Правила редиректов (302 redirec)
+
+Пользователи:
+oldmos.ru/user/member/[x*] -> pastvu.com/u/[x*]
+
+Галерея пользователя:
+oldmos.ru/photo/user/[x*] -> pastvu.com/u/[x*]/photo
+
+Фотографии:
+oldmos.ru/photo/view/[x*] -> pastvu.com/p/[x*]
+oldsp.ru/photo/view/[x*] -> pastvu.com/p/[N+x*]       Номера фотографий oldsp будут подняты на номер последней фотографии oldmos
+
+Файлы фотографий. 
+http://oldmos.ru/upload/photos/[x1]/[x2]/[x3]/yyyy_[x*] -> http://klimashkin.com:3000/_p/d/[x1]/[x2]/[x3]/[x*]
+
+Новости:
+http://oldmos.ru/news/view/[x*] -> pastvu.com/news/[x*]
