@@ -18,6 +18,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			this.auth = globalVM.repository['m/common/auth'];
 			this.news = null;
 
+			this.canEdit = ko.observable(this.auth.loggedIn() && this.auth.iAm.role() > 9);
+
 			this.commentsLoading = ko.observable(false);
 			this.commentsInViewport = false;
 
@@ -114,6 +116,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			}
 		},
 		loggedInHandler: function () {
+			// После логина проверяем если мы можем редактировать новости
+			this.canEdit(this.auth.iAm.role() > 9);
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
