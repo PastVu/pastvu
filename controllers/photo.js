@@ -744,6 +744,315 @@ function givePhotosFresh(socket, data, cb) {
 	);
 }
 
+//Отдаем разрешенные can для фото
+function giveCanPhoto(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		cid = Number(data.cid);
+
+	if (isNaN(cid)) {
+		return cb({message: 'Requested photo does not exist', error: true});
+	}
+	if (user) {
+		Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({can: photoPermissions.getCan(photo, user)});
+		});
+	} else {
+		cb({});
+	}
+}
+
+//Сохраняем информацию о фотографии
+function savePhoto(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		cid = Number(data.cid),
+		photoOldObj,
+		newValues,
+		sendingBack = {};
+
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			findPhoto({cid: cid}, {frags: 0}, user, true, this);
+		},
+		function checkPhoto(err, photo) {
+			if (!photo) {
+				return cb({message: 'Requested photo does not exist', error: true});
+			}
+			if (!photoPermissions.getCan(photo, user).edit) {
+				return cb({message: msg.deny, error: true});
+			}
+			this(null, photo);
+		},
+		function checkData(err, photo) {
+			photoOldObj = photo.toObject({getters: true});
+
+			//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
+			if (data.desc) {
+				data.desc = Utils.inputIncomingParse(data.desc);
+			}
+			if (data.source) {
+				data.source = Utils.inputIncomingParse(data.source);
+			}
+			if (data.geo && !Utils.geoCheck(data.geo)) {
+				delete data.geo;
+			}
+
+			//Новые значения действительно изменяемых свойств
+			newValues = Utils.diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
+			if (_.isEmpty(newValues)) {
+				return cb({message: 'Nothing to save'});
+			}
+
+			if (newValues.geo) {
+				Utils.geo.geoToPrecisionRound(newValues.geo);
+			} else if (newValues.geo === null) {
+				newValues.geo = undefined;
+			}
+			if (newValues.desc !== undefined) {
+				sendingBack.desc = newValues.desc;
+			}
+			if (newValues.source !== undefined) {
+				sendingBack.source = newValues.source;
+			}
+
+			_.assign(photo, newValues);
+			photo.save(this);
+		},
+		function save(err, photoSaved) {
+			if (err) {
+				return cb({message: err.message || 'Save error', error: true});
+			}
+			var newKeys = Object.keys(newValues),
+				oldValues = {}, //Старые значения изменяемых свойств
+				oldGeo,
+				newGeo,
+				i;
+
+			for (i = newKeys.length; i--;) {
+				oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
+			}
+
+			oldGeo = photoOldObj.geo;
+			newGeo = photoSaved.geo;
+
+			// Если фото - публичное, у него
+			// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
+			// то запускаем пересчет кластеров этой фотографии
+			if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
+				(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
+				(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+				PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, this);
+			} else {
+				this(null);
+			}
+		},
+		function (obj) {
+			if (obj && obj.error) {
+				return cb({message: obj.message || '', error: true});
+			}
+			cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
+		}
+	);
+}
+
+//Говорим, что фото готово к подтверждению
+function readyPhoto(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		cid = Number(data);
+
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!cid) {
+		return cb({message: 'Requested photo does not exist', error: true});
+	}
+	step(
+		function () {
+			PhotoFresh.findOne({cid: cid}, this);
+		},
+		function (err, photo) {
+			if (err && !photo) {
+				return cb({message: err && err.message || 'Requested photo does not exist', error: true});
+			}
+			if (!photoPermissions.getCan(photo, user).edit) {
+				return cb({message: msg.deny, error: true});
+			}
+			photo.ready = true;
+			photo.save(this);
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({message: 'Ok'});
+		}
+	);
+}
+
+//Фотографии и кластеры по границам
+function getBounds(data, cb) {
+	if (!Utils.isType('object', data) || !Array.isArray(data.bounds) || !data.z) {
+		cb({message: 'Bad params', error: true});
+		return;
+	}
+
+	var year = false,
+		i = data.bounds.length;
+
+	// Реверсируем geo границы баунда
+	while (i--) {
+		data.bounds[i][0].reverse();
+		data.bounds[i][1].reverse();
+	}
+
+	// Определяем, нужна ли выборка по границам лет
+	if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+		year = true;
+	}
+
+	if (data.z < 17) {
+		if (year) {
+			PhotoCluster.getBoundsByYear(data, res);
+		} else {
+			PhotoCluster.getBounds(data, res);
+		}
+	} else {
+		step(
+			function () {
+				var i = data.bounds.length,
+					criteria,
+					yearCriteria;
+
+				if (year) {
+					if (data.year === data.year2) {
+						yearCriteria = data.year;
+					} else {
+						yearCriteria = {$gte: data.year, $lte: data.year2};
+					}
+				}
+
+				while (i--) {
+					criteria = {geo: { "$within": {"$box": data.bounds[i]} }};
+					if (year) {
+						criteria.year = yearCriteria;
+					}
+					Photo.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
+				}
+			},
+			function cursors(err) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				var i = arguments.length;
+				while (i > 1) {
+					arguments[--i].toArray(this.parallel());
+				}
+			},
+			function (err, photos) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				var allPhotos = photos,
+					i = arguments.length;
+
+				while (i > 2) {
+					allPhotos.push.apply(allPhotos, arguments[--i]);
+				}
+				res(err, allPhotos);
+			}
+		);
+	}
+
+	function res(err, photos, clusters) {
+		if (err) {
+			return cb({message: err && err.message, error: true});
+		}
+
+		// Реверсируем geo
+		for (var i = photos.length; i--;) {
+			photos[i].geo.reverse();
+		}
+		cb({photos: photos, clusters: clusters, startAt: data.startAt});
+	}
+}
+
+//Отправляет выбранные фото на конвертацию
+function convertPhotos(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		cids = [],
+		i;
+
+	if (!user || user.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Array.isArray(data) || data.length === 0) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	for (i = data.length; i--;) {
+		data[i].cid = Number(data[i].cid);
+		if (data[i].cid) {
+			cids.push(data[i].cid);
+		}
+	}
+	if (!cids.length) {
+		return cb({message: 'Bad params', error: true});
+	}
+	step(
+		function () {
+			Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this);
+		},
+		function (err, count) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			//Если не все нашлись в публичных, пробуем обновить в остальных статусах
+			if (count !== cids.length) {
+				PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+				PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+				PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
+			} else {
+				this();
+			}
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			PhotoConverter.addPhotos(data, this);
+		},
+		function (err, addResult) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb(addResult);
+		}
+	);
+}
+
+//Отправляет все фото выбранных вариантов на конвертацию
+function convertPhotosAll(socket, data, cb) {
+	var user = socket.handshake.session.user;
+
+	if (!user || user.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	PhotoConverter.addPhotosAll(data, function (addResult) {
+		cb(addResult);
+	});
+}
 
 
 //Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
@@ -1061,344 +1370,41 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		//Отдаем разрешенные can для фото
-		(function () {
-			function result(data) {
-				socket.emit('takeCanPhoto', data);
-			}
-
-			socket.on('giveCanPhoto', function (data) {
-				var cid = Number(data.cid);
-
-				if (isNaN(cid)) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-				if (hs.session.user) {
-					Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({can: photoPermissions.getCan(photo, hs.session.user)});
-					});
-				} else {
-					result({});
-				}
+		socket.on('giveCanPhoto', function (data) {
+			giveCanPhoto(socket, data, function (resultData) {
+				socket.emit('takeCanPhoto', resultData);
 			});
-		}());
+		});
 
-		//Сохраняем информацию о фотографии
-		(function () {
-			function result(data) {
-				socket.emit('savePhotoResult', data);
-			}
-
-			socket.on('savePhoto', function (data) {
-				if (!hs.session.user) {
-					return result({message: msg.deny, error: true});
-				}
-				if (!Utils.isType('object', data) || !Number(data.cid)) {
-					return result({message: 'Bad params', error: true});
-				}
-
-				var cid = Number(data.cid),
-					photoOldObj,
-					newValues,
-					sendingBack = {};
-
-				step(
-					function () {
-						findPhoto({cid: cid}, {frags: 0}, hs.session.user, true, this);
-					},
-					function checkPhoto(err, photo) {
-						if (!photo) {
-							return result({message: 'Requested photo does not exist', error: true});
-						}
-						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
-							return result({message: msg.deny, error: true});
-						}
-						this(null, photo);
-					},
-					function checkData(err, photo) {
-						photoOldObj = photo.toObject({getters: true});
-
-						//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-						if (data.desc) {
-							data.desc = Utils.inputIncomingParse(data.desc);
-						}
-						if (data.source) {
-							data.source = Utils.inputIncomingParse(data.source);
-						}
-						if (data.geo && !Utils.geoCheck(data.geo)) {
-							delete data.geo;
-						}
-
-						//Новые значения действительно изменяемых свойств
-						newValues = Utils.diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
-						if (_.isEmpty(newValues)) {
-							return result({message: 'Nothing to save'});
-						}
-
-						if (newValues.geo) {
-							Utils.geo.geoToPrecisionRound(newValues.geo);
-						} else if (newValues.geo === null) {
-							newValues.geo = undefined;
-						}
-						if (newValues.desc !== undefined) {
-							sendingBack.desc = newValues.desc;
-						}
-						if (newValues.source !== undefined) {
-							sendingBack.source = newValues.source;
-						}
-
-						_.assign(photo, newValues);
-						photo.save(this);
-					},
-					function savePhoto(err, photoSaved) {
-						if (err) {
-							return result({message: err.message || 'Save error', error: true});
-						}
-						var newKeys = Object.keys(newValues),
-							oldValues = {}, //Старые значения изменяемых свойств
-							oldGeo,
-							newGeo,
-							i;
-
-						for (i = newKeys.length; i--;) {
-							oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
-						}
-
-						oldGeo = photoOldObj.geo;
-						newGeo = photoSaved.geo;
-
-						// Если фото - публичное, у него
-						// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
-						// то запускаем пересчет кластеров этой фотографии
-						if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
-							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
-							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-							PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, this);
-						} else {
-							this(null);
-						}
-					},
-					function (obj) {
-						if (obj && obj.error) {
-							return result({message: obj.message || '', error: true});
-						}
-						result({message: 'Photo saved successfully', saved: true, data: sendingBack});
-					}
-				);
+		socket.on('savePhoto', function (data) {
+			savePhoto(socket, data, function (resultData) {
+				socket.emit('savePhotoResult', resultData);
 			});
-		}());
+		});
 
-		//Говорим, что фото готово к подтверждению
-		(function () {
-			function result(data) {
-				socket.emit('readyPhotoResult', data);
-			}
-
-			socket.on('readyPhoto', function (cid) {
-				if (!hs.session.user) {
-					return result({message: msg.deny, error: true});
-				}
-				cid = Number(cid);
-				if (!cid) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-				step(
-					function () {
-						PhotoFresh.findOne({cid: cid}, this);
-					},
-					function (err, photo) {
-						if (err && !photo) {
-							return result({message: err && err.message || 'Requested photo does not exist', error: true});
-						}
-						if (!photoPermissions.getCan(photo, hs.session.user).edit) {
-							return result({message: msg.deny, error: true});
-						}
-						photo.ready = true;
-						photo.save(this);
-					},
-					function (err) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({message: 'Ok'});
-					}
-				);
+		socket.on('readyPhoto', function (data) {
+			readyPhoto(socket, data, function (resultData) {
+				socket.emit('readyPhotoResult', resultData);
 			});
-		}());
+		});
 
-		//Фотографии и кластеры по границам
-		(function () {
-			function result(data) {
-				socket.emit('getBoundsResult', data);
-			}
-
-			socket.on('getBounds', function (data) {
-				if (!Utils.isType('object', data) || !Array.isArray(data.bounds) || !data.z) {
-					result({message: 'Bad params', error: true});
-					return;
-				}
-
-				var year = false,
-					i = data.bounds.length;
-
-				// Реверсируем geo границы баунда
-				while (i--) {
-					data.bounds[i][0].reverse();
-					data.bounds[i][1].reverse();
-				}
-
-				// Определяем, нужна ли выборка по границам лет
-				if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
-					year = true;
-				}
-
-				if (data.z < 17) {
-					if (year) {
-						PhotoCluster.getBoundsByYear(data, res);
-					} else {
-						PhotoCluster.getBounds(data, res);
-					}
-				} else {
-					step(
-						function () {
-							var i = data.bounds.length,
-								criteria,
-								yearCriteria;
-
-							if (year) {
-								if (data.year === data.year2) {
-									yearCriteria = data.year;
-								} else {
-									yearCriteria = {$gte: data.year, $lte: data.year2};
-								}
-							}
-
-							while (i--) {
-								criteria = {geo: { "$within": {"$box": data.bounds[i]} }};
-								if (year) {
-									criteria.year = yearCriteria;
-								}
-								Photo.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
-							}
-						},
-						function cursors(err) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							var i = arguments.length;
-							while (i > 1) {
-								arguments[--i].toArray(this.parallel());
-							}
-						},
-						function (err, photos) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							var allPhotos = photos,
-								i = arguments.length;
-
-							while (i > 2) {
-								allPhotos.push.apply(allPhotos, arguments[--i]);
-							}
-							res(err, allPhotos);
-						}
-					);
-				}
-
-				function res(err, photos, clusters) {
-					if (err) {
-						return result({message: err && err.message, error: true});
-					}
-
-					// Реверсируем geo
-					for (var i = photos.length; i--;) {
-						photos[i].geo.reverse();
-					}
-					result({photos: photos, clusters: clusters, startAt: data.startAt});
-				}
+		socket.on('getBounds', function (data) {
+			getBounds(data, function (resultData) {
+				socket.emit('getBoundsResult', resultData);
 			});
-		}());
+		});
 
-
-		//Отправляет выбранные фото на конвертацию
-		(function () {
-			function result(data) {
-				socket.emit('convertPhotosResult', data);
-			}
-
-			socket.on('convertPhotos', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: msg.deny, error: true});
-				}
-				if (!Array.isArray(data) || data.length === 0) {
-					return result({message: 'Bad params', error: true});
-				}
-				var cids = [],
-					i = data.length;
-
-				while (i--) {
-					data[i].cid = Number(data[i].cid);
-					if (data[i].cid) {
-						cids.push(data[i].cid);
-					}
-				}
-				if (!cids.length) {
-					return result({message: 'Bad params', error: true});
-				}
-				step(
-					function () {
-						Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this);
-					},
-					function (err, count) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						//Если не все нашлись в публичных, пробуем обновить в остальных статусах
-						if (count !== cids.length) {
-							PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-							PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-							PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-						} else {
-							this();
-						}
-					},
-					function (err) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						PhotoConverter.addPhotos(data, this);
-					},
-					function (err, addResult) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result(addResult);
-					}
-				);
+		socket.on('convertPhotos', function (data) {
+			convertPhotos(socket, data, function (resultData) {
+				socket.emit('convertPhotosResult', resultData);
 			});
-		}());
+		});
 
-		//Отправляет все фото выбранных вариантов на конвертацию
-		(function () {
-			function result(data) {
-				socket.emit('convertPhotosAllResult', data);
-			}
-
-			socket.on('convertPhotosAll', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
-					return result({message: msg.deny, error: true});
-				}
-				if (!Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-				PhotoConverter.addPhotosAll(data, function (addResult) {
-					result(addResult);
-				});
+		socket.on('convertPhotosAll', function (data) {
+			convertPhotosAll(socket, data, function (resultData) {
+				socket.emit('convertPhotosAllResult', resultData);
 			});
-		}());
+		});
 	});
 };
 module.exports.findPhoto = findPhoto;
