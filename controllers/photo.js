@@ -823,6 +823,30 @@ module.exports.loadController = function (app, db, io) {
 			});
 		}());
 
+		//Отдаем последние фотографии, ождающие подтверждения
+		(function () {
+			function result(data) {
+				socket.emit('takePhotosForApprove', data);
+			}
+
+			socket.on('givePhotosForApprove', function (data) {
+				if (!Utils.isType('object', data)) {
+					return result({message: 'Bad params', error: true});
+				}
+				step(
+					function () {
+						PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
+					},
+					function (err, photos) {
+						if (err) {
+							return result({message: err.message, error: true});
+						}
+						result({photos: photos});
+					}
+				);
+			});
+		}());
+
 		//Отдаем галерею пользователя в компактном виде
 		(function () {
 			function result(data) {
