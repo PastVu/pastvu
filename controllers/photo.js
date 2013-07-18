@@ -132,6 +132,7 @@ function createPhotos(socket, data, cb) {
 			}
 			var photo,
 				now = Date.now(),
+				next = count.next - data.length + 1,
 				item,
 				i;
 
@@ -139,7 +140,7 @@ function createPhotos(socket, data, cb) {
 				item = data[i];
 
 				photo = new PhotoFresh({
-					cid: count.next + i,
+					cid: next + i,
 					user: user._id,
 					file: item.fullfile,
 					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
