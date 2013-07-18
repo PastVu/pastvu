@@ -339,6 +339,413 @@ function removePhoto(socket, cid, cb) {
 	});
 }
 
+//Подтверждаем новую фотографию
+function approvePhoto(socket, cid, cb) {
+	cid = Number(cid);
+	if (!cid) {
+		return cb({message: 'Requested photo does not exist', error: true});
+	}
+
+	var user = socket.handshake.session.user;
+	if (!user || user.role < 5) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	step(
+		function () {
+			PhotoFresh.findOne({cid: cid}, {}, {lean: true}, this);
+		},
+		function (err, photoFresh) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (!photoFresh) {
+				return cb({message: 'Requested photo does not exist', error: true});
+			}
+			delete photoFresh.ready;
+
+			var photo = new Photo(photoFresh);
+
+			photo.adate = new Date();
+			photo.frags = undefined;
+			if (!Utils.geoCheck(photoFresh.geo)) {
+				photo.geo = undefined;
+			}
+
+			photo.save(this.parallel());
+			PhotoSort.update({photo: photo._id}, {$set: {state: 5, stamp: photo.adate}}, {upsert: false}, this.parallel());
+		},
+		function (err, photoSaved) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({message: 'Photo approved successfully'});
+
+			if (Utils.geoCheck(photoSaved.geo)) {
+				PhotoCluster.clusterPhoto(photoSaved);
+			}
+
+			//Удаляем из коллекции новых
+			PhotoFresh.remove({cid: cid}).exec();
+			if (photoSaved.user.equals(user._id)) {
+				user.pcount = user.pcount + 1;
+				user.pfcount = user.pfcount - 1;
+				user.save();
+				auth.sendMe(socket);
+			} else {
+				User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
+			}
+		}
+	);
+}
+
+//Активация/деактивация фото
+function activateDeactivate(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user || user.role < 5) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!data || !Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	var cid = Number(data.cid),
+		makeDisabled = !!data.disable;
+
+	if (!cid) {
+		return cb({message: 'Requested photo does not exist', error: true});
+	}
+
+	step(
+		function () {
+			if (makeDisabled) {
+				Photo.collection.findOne({cid: cid}, {__v: 0}, this);
+			} else {
+				PhotoDis.collection.findOne({cid: cid}, {__v: 0}, this);
+			}
+		},
+		function createInNewModel(err, p) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (!p) {
+				return cb({message: 'Requested photo does not exist', error: true});
+			}
+			var newPhoto;
+
+			if (makeDisabled) {
+				newPhoto = new PhotoDis(p);
+			} else {
+				newPhoto = new Photo(p);
+			}
+
+			if (!Array.isArray(p.frags) || !p.frags.length) {
+				newPhoto.frags = undefined;
+			}
+			if (!Utils.geoCheck(p.geo)) {
+				newPhoto.geo = undefined;
+			}
+
+			newPhoto.save(this.parallel());
+		},
+		function removeFromOldModel(err, photoSaved) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (makeDisabled) {
+				Photo.remove({cid: cid}).exec(this.parallel());
+			} else {
+				PhotoDis.remove({cid: cid}).exec(this.parallel());
+			}
+			PhotoSort.update({photo: photoSaved._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
+			changePublicPhotoExternality(socket, photoSaved, user, !makeDisabled, this.parallel());
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({disabled: makeDisabled});
+		}
+	);
+}
+
+//Отдаем фотографию для её страницы
+function givePhoto(socket, data, cb) {
+	var cid = Number(data.cid),
+		user = socket.handshake.session.user,
+		fieldSelect = {_id: 0, 'frags._id': 0};
+
+	if (isNaN(cid)) {
+		return cb({message: 'Requested photo does not exist', error: true});
+	}
+	//Инкрементируем кол-во просмотров только у публичных фото
+	Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
+		if (err) {
+			return cb({message: err && err.message, error: true});
+		}
+
+		//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
+		if (!photo && user) {
+			findPhotoNotPublic({cid: cid}, fieldSelect, user, function (err, photo) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				process(photo, data.checkCan);
+			});
+		} else {
+			process(photo, data.checkCan);
+		}
+	});
+
+	function process(photo, checkCan) {
+		if (!photo) {
+			return cb({message: 'Requested photo does not exist', error: true});
+		}
+		var can;
+		if (checkCan) {
+			can = photoPermissions.getCan(photo, user);
+		}
+		photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}, function (err, photo) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({photo: photo.toObject({getters: true}), can: can});
+		});
+	}
+}
+
+//Отдаем последние публичные фотографии
+function givePhotosPublic(data, cb) {
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	step(
+		function () {
+			Photo.collection.find({}, compactFields, {sort: [
+				['adate', 'desc']
+			], skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
+		},
+		Utils.cursorExtract,
+		function (err, photos) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({photos: photos});
+		}
+	);
+}
+
+//Отдаем последние фотографии, ожидающие подтверждения
+function givePhotosForApprove(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user || user.role < 5) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
+		},
+		function (err, photos) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({photos: photos});
+		}
+	);
+}
+
+//Отдаем галерею пользователя в компактном виде
+function giveUserPhotos(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	User.collection.findOne({login: data.login}, {_id: 1, pfcount: 1}, function (err, user) {
+		if (err || !user) {
+			return cb({message: err && err.message || 'Such user does not exist', error: true});
+		}
+		var query = {user: user._id},
+			noPublic = user && (user.role > 4 || user._id.equals(user._id)),
+			photosFresh,
+			skip = data.skip || 0,
+			limit = Math.min(data.limit || 20, 100);
+
+		if (noPublic) {
+			findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, user, true, finish);
+		} else {
+			Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
+		}
+
+		function finish(err, photos) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({photos: photos});
+			photosFresh = skip = limit = null;
+		}
+	});
+}
+
+//Берем массив до и после указанной фотографии пользователя указанной длины
+function giveUserPhotosAround(socket, data, cb) {
+	var user = socket.handshake.session.user,
+		cid = Number(data && data.cid),
+		limitL = Math.min(Number(data.limitL), 100),
+		limitR = Math.min(Number(data.limitR), 100);
+
+	if (!cid || (!limitL && !limitR)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, user, true, function (err, photo) {
+		if (err || !photo || !photo.user) {
+			return cb({message: 'Requested photo does not exist', error: true});
+		}
+
+		step(
+			function () {
+				var query = {user: photo.user},
+					noPublic = user && (user.role > 4 || photo.user.equals(user._id));
+
+				if (limitL) {
+					if (noPublic) {
+						//Если текущая фотография новая, то stamp должен быть увеличен на 10 лет
+						query.stamp = {$gt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
+						findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, user, true, this.parallel());
+					} else {
+						query.adate = {$gt: photo.adate};
+						Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
+					}
+				} else {
+					this.parallel()(null, []);
+				}
+
+				if (limitR) {
+					if (noPublic) {
+						query.stamp = {$lt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
+						findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, user, true, this.parallel());
+					} else {
+						query.adate = {$lt: photo.adate};
+						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
+					}
+				} else {
+					this.parallel()(null, []);
+				}
+			},
+			function (err, photosL, photosR) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				cb({left: photosL, right: photosR});
+			}
+		);
+	});
+}
+
+//Отдаем непубличные фотографии
+function giveUserPhotosPrivate(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user || (user.role < 5 && user.login !== data.login)) {
+		return cb({message: msg.deny, error: true});
+	}
+	User.getUserID(data.login, function (err, userid) {
+		if (err) {
+			return cb({message: err && err.message, error: true});
+		}
+
+		step(
+			function () {
+				var query = {user: userid};
+				if (data.startTime || data.endTime) {
+					query.adate = {};
+					if (data.startTime) {
+						query.adate.$gte = new Date(data.startTime);
+					}
+					if (data.endTime) {
+						query.adate.$lte = new Date(data.endTime);
+					}
+				}
+
+				PhotoFresh.collection.find({user: userid}, compactFields, {sort: {ldate: -1}}, this.parallel());
+				PhotoDis.collection.find(query, compactFields, this.parallel());
+				if (user.role > 9) {
+					PhotoDel.collection.find(query, compactFields, this.parallel());
+				}
+			},
+			Utils.cursorsExtract,
+			function (err, fresh, disabled, del) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				var res = {fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length},
+					i;
+				for (i = res.fresh.length; i--;) {
+					res.fresh[i].fresh = true;
+				}
+				for (i = res.disabled.length; i--;) {
+					res.disabled[i].disabled = true;
+				}
+				if (user.role > 9) {
+					res.del = del || [];
+					res.len += res.del.length;
+					for (i = res.del.length; i--;) {
+						res.del[i].del = true;
+					}
+				}
+				cb(res);
+			}
+		);
+	});
+}
+
+//Отдаем новые фотографии
+function givePhotosFresh(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user ||
+		(!data.login && user.role < 5) ||
+		(data.login && user.role < 5 && user.login !== data.login)) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!data || !Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			if (data.login) {
+				User.getUserID(data.login, this);
+			} else {
+				this();
+			}
+		},
+		function (err, userid) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			var criteria = {};
+			if (userid) {
+				criteria.user = userid;
+			}
+			if (data.after) {
+				criteria.ldate = {$gt: new Date(data.after)};
+			}
+			PhotoFresh.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
+		},
+		Utils.cursorExtract,
+		function (err, photos) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			for (var i = photos.length; i--;) {
+				photos[i].fresh = true;
+			}
+			cb({photos: photos || []});
+		}
+	);
+}
+
+
+
 //Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
 function findPhotoNotPublic(query, fieldSelect, user, cb) {
 	if (!user) {
@@ -599,464 +1006,60 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('removePhotoIncCallback', {error: !!err});
 			});
 		});
-		socket.on('dropPhotos', function (data) {
-			dropPhotos(function (message) {
-				socket.emit('dropPhotosResult', {message: message});
+
+		socket.on('approvePhoto', function (data) {
+			approvePhoto(socket, data, function (resultData) {
+				socket.emit('approvePhotoResult', resultData);
 			});
 		});
 
-
-		//Подтверждаем новую фотографию
-		(function () {
-			function result(data) {
-				socket.emit('approvePhotoResult', data);
-			}
-
-			socket.on('approvePhoto', function (cid) {
-				cid = Number(cid);
-				if (!cid) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-				if (!hs.session.user || hs.session.user.role < 5) {
-					return result({message: msg.deny, error: true});
-				}
-
-				step(
-					function () {
-						PhotoFresh.findOne({cid: cid}, {}, {lean: true}, this);
-					},
-					function (err, photoFresh) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						if (!photoFresh) {
-							return result({message: 'Requested photo does not exist', error: true});
-						}
-						delete photoFresh.ready;
-
-						var photo = new Photo(photoFresh);
-
-						photo.adate = new Date();
-						photo.frags = undefined;
-						if (!Utils.geoCheck(photoFresh.geo)) {
-							photo.geo = undefined;
-						}
-
-						photo.save(this.parallel());
-						PhotoSort.update({photo: photo._id}, {$set: {state: 5, stamp: photo.adate}}, {upsert: false}, this.parallel());
-					},
-					function (err, photoSaved) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({message: 'Photo approved successfully'});
-
-						if (Utils.geoCheck(photoSaved.geo)) {
-							PhotoCluster.clusterPhoto(photoSaved);
-						}
-
-						//Удаляем из коллекции новых
-						PhotoFresh.remove({cid: cid}).exec();
-						if (photoSaved.user.equals(hs.session.user._id)) {
-							hs.session.user.pcount = hs.session.user.pcount + 1;
-							hs.session.user.pfcount = hs.session.user.pfcount - 1;
-							hs.session.user.save();
-							auth.sendMe(socket);
-						} else {
-							User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
-						}
-					}
-				);
+		socket.on('disablePhoto', function (data) {
+			activateDeactivate(socket, data, function (resultData) {
+				socket.emit('disablePhotoResult', resultData);
 			});
-		}());
+		});
 
-
-		//Активация/деактивация фото
-		(function () {
-			function result(data) {
-				socket.emit('disablePhotoResult', data);
-			}
-
-			socket.on('disablePhoto', function (data) {
-				if (!hs.session.user || hs.session.user.role < 5) {
-					return result({message: msg.deny, error: true});
-				}
-				if (!data || !Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-				var cid = Number(data.cid),
-					makeDisabled = !!data.disable;
-
-				if (!cid) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-
-				step(
-					function () {
-						if (makeDisabled) {
-							Photo.collection.findOne({cid: cid}, {__v: 0}, this);
-						} else {
-							PhotoDis.collection.findOne({cid: cid}, {__v: 0}, this);
-						}
-					},
-					function createInNewModel(err, p) {
-						if (err) {
-							return result({message: err.message, error: true});
-						}
-						if (!p) {
-							return result({message: 'Requested photo does not exist', error: true});
-						}
-						var newPhoto;
-
-						if (makeDisabled) {
-							newPhoto = new PhotoDis(p);
-						} else {
-							newPhoto = new Photo(p);
-						}
-
-						if (!Array.isArray(p.frags) || !p.frags.length) {
-							newPhoto.frags = undefined;
-						}
-						if (!Utils.geoCheck(p.geo)) {
-							newPhoto.geo = undefined;
-						}
-
-						newPhoto.save(this.parallel());
-					},
-					function removeFromOldModel(err, photoSaved) {
-						if (err) {
-							return result({message: err.message, error: true});
-						}
-						if (makeDisabled) {
-							Photo.remove({cid: cid}).exec(this.parallel());
-						} else {
-							PhotoDis.remove({cid: cid}).exec(this.parallel());
-						}
-						PhotoSort.update({photo: photoSaved._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
-						changePublicPhotoExternality(socket, photoSaved, hs.session.user, !makeDisabled, this.parallel());
-					},
-					function (err) {
-						if (err) {
-							return result({message: err.message, error: true});
-						}
-						result({disabled: makeDisabled});
-					}
-				);
+		socket.on('givePhoto', function (data) {
+			givePhoto(socket, data, function (resultData) {
+				socket.emit('takePhoto', resultData);
 			});
-		}());
+		});
 
-
-		//Отдаем фотографию для её страницы
-		(function () {
-			function result(data) {
-				socket.emit('takePhoto', data);
-			}
-
-			function process(photo, checkCan) {
-				if (!photo) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-				var can;
-				if (checkCan) {
-					can = photoPermissions.getCan(photo, hs.session.user);
-				}
-				photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}, function (err, photo) {
-					if (err) {
-						return result({message: err && err.message, error: true});
-					}
-					result({photo: photo.toObject({getters: true}), can: can});
-				});
-			}
-
-			socket.on('givePhoto', function (data) {
-				var cid = Number(data.cid),
-					fieldSelect = {_id: 0, 'frags._id': 0};
-
-				if (isNaN(cid)) {
-					return result({message: 'Requested photo does not exist', error: true});
-				}
-				//Инкрементируем кол-во просмотров только у публичных фото
-				Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
-					if (err) {
-						return result({message: err && err.message, error: true});
-					}
-
-					//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
-					if (!photo && hs.session.user) {
-						findPhotoNotPublic({cid: cid}, fieldSelect, hs.session.user, function (err, photo) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							process(photo, data.checkCan);
-						});
-					} else {
-						process(photo, data.checkCan);
-					}
-				});
+		socket.on('givePhotosPublic', function (data) {
+			givePhotosPublic(data, function (resultData) {
+				socket.emit('takePhotosPublic', resultData);
 			});
-		}());
+		});
 
-
-		//Отдаем последние публичные фотографии
-		(function () {
-			function result(data) {
-				socket.emit('takePhotosPublic', data);
-			}
-
-			socket.on('givePhotosPublic', function (data) {
-				if (!Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-				step(
-					function () {
-						Photo.collection.find({}, compactFields, {sort: [
-							['adate', 'desc']
-						], skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
-					},
-					Utils.cursorExtract,
-					function (err, photos) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({photos: photos});
-					}
-				);
+		socket.on('givePhotosForApprove', function (data) {
+			givePhotosForApprove(socket, data, function (resultData) {
+				socket.emit('takePhotosForApprove', resultData);
 			});
-		}());
+		});
 
-		//Отдаем последние фотографии, ождающие подтверждения
-		(function () {
-			function result(data) {
-				socket.emit('takePhotosForApprove', data);
-			}
-
-			socket.on('givePhotosForApprove', function (data) {
-				if (!Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-				step(
-					function () {
-						PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
-					},
-					function (err, photos) {
-						if (err) {
-							return result({message: err.message, error: true});
-						}
-						result({photos: photos});
-					}
-				);
+		socket.on('giveUserPhotos', function (data) {
+			giveUserPhotos(socket, data, function (resultData) {
+				socket.emit('takeUserPhotos', resultData);
 			});
-		}());
+		});
 
-		//Отдаем галерею пользователя в компактном виде
-		(function () {
-			function result(data) {
-				socket.emit('takeUserPhotos', data);
-			}
-
-			socket.on('giveUserPhotos', function (data) {
-				User.collection.findOne({login: data.login}, {_id: 1, pfcount: 1}, function (err, user) {
-					if (err || !user) {
-						return result({message: err && err.message || 'Such user does not exist', error: true});
-					}
-					var query = {user: user._id},
-						noPublic = hs.session.user && (hs.session.user.role > 4 || user._id.equals(hs.session.user._id)),
-						photosFresh,
-						skip = data.skip || 0,
-						limit = Math.min(data.limit || 20, 100);
-
-					if (noPublic) {
-						findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, hs.session.user, true, finish);
-					} else {
-						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
-					}
-
-					function finish(err, photos) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						result({photos: photos});
-						photosFresh = skip = limit = null;
-					}
-				});
+		socket.on('giveUserPhotosAround', function (data) {
+			giveUserPhotosAround(socket, data, function (resultData) {
+				socket.emit('takeUserPhotosAround', resultData);
 			});
-		}());
+		});
 
-		//Берем массив до и после указанной фотографии пользователя указанной длины
-		(function () {
-			function result(data) {
-				socket.emit('takeUserPhotosAround', data);
-			}
-
-			socket.on('giveUserPhotosAround', function (data) {
-				var cid = Number(data && data.cid),
-					limitL = Math.min(Number(data.limitL), 100),
-					limitR = Math.min(Number(data.limitR), 100);
-
-				if (!cid || (!limitL && !limitR)) {
-					return result({message: 'Bad params', error: true});
-				}
-
-				findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, hs.session.user, true, function (err, photo) {
-					if (err || !photo || !photo.user) {
-						return result({message: 'Requested photo does not exist', error: true});
-					}
-
-					step(
-						function () {
-							var query = {user: photo.user},
-								noPublic = hs.session.user && (hs.session.user.role > 4 || photo.user.equals(hs.session.user._id));
-
-							if (limitL) {
-								if (noPublic) {
-									//Если текущая фотография новая, то stamp должен быть увеличен на 10 лет
-									query.stamp = {$gt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-									findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, hs.session.user, true, this.parallel());
-								} else {
-									query.adate = {$gt: photo.adate};
-									Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-								}
-							} else {
-								this.parallel()(null, []);
-							}
-
-							if (limitR) {
-								if (noPublic) {
-									query.stamp = {$lt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-									findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, hs.session.user, true, this.parallel());
-								} else {
-									query.adate = {$lt: photo.adate};
-									Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-								}
-							} else {
-								this.parallel()(null, []);
-							}
-						},
-						function (err, photosL, photosR) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							result({left: photosL, right: photosR});
-						}
-					);
-				});
+		socket.on('giveUserPhotosPrivate', function (data) {
+			giveUserPhotosPrivate(socket, data, function (resultData) {
+				socket.emit('takeUserPhotosPrivate', resultData);
 			});
-		}());
+		});
 
-
-		//Отдаем непубличные фотографии
-		(function () {
-			function result(data) {
-				socket.emit('takeUserPhotosPrivate', data);
-			}
-
-			socket.on('giveUserPhotosPrivate', function (data) {
-				if (!hs.session.user ||
-					(hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
-					return result({message: msg.deny, error: true});
-				}
-				User.getUserID(data.login, function (err, userid) {
-					if (err) {
-						return result({message: err && err.message, error: true});
-					}
-
-					step(
-						function () {
-							var query = {user: userid};
-							if (data.startTime || data.endTime) {
-								query.adate = {};
-								if (data.startTime) {
-									query.adate.$gte = new Date(data.startTime);
-								}
-								if (data.endTime) {
-									query.adate.$lte = new Date(data.endTime);
-								}
-							}
-
-							PhotoFresh.collection.find({user: userid}, compactFields, {sort: {ldate: -1}}, this.parallel());
-							PhotoDis.collection.find(query, compactFields, this.parallel());
-							if (hs.session.user.role > 9) {
-								PhotoDel.collection.find(query, compactFields, this.parallel());
-							}
-						},
-						Utils.cursorsExtract,
-						function (err, fresh, disabled, del) {
-							if (err) {
-								return result({message: err && err.message, error: true});
-							}
-							var res = {fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length},
-								i;
-							for (i = res.fresh.length; i--;) {
-								res.fresh[i].fresh = true;
-							}
-							for (i = res.disabled.length; i--;) {
-								res.disabled[i].disabled = true;
-							}
-							if (hs.session.user.role > 9) {
-								res.del = del || [];
-								res.len += res.del.length;
-								for (i = res.del.length; i--;) {
-									res.del[i].del = true;
-								}
-							}
-							result(res);
-						}
-					);
-				});
+		socket.on('givePhotosFresh', function (data) {
+			givePhotosFresh(socket, data, function (resultData) {
+				socket.emit('takePhotosFresh', resultData);
 			});
-		}());
-
-		//Отдаем новые фотографии
-		(function () {
-			function result(data) {
-				socket.emit('takePhotosFresh', data);
-			}
-
-			socket.on('givePhotosFresh', function (data) {
-				if (!hs.session.user ||
-					(!data.login && hs.session.user.role < 5) ||
-					(data.login && hs.session.user.role < 5 && hs.session.user.login !== data.login)) {
-					return result({message: msg.deny, error: true});
-				}
-				if (!data || !Utils.isType('object', data)) {
-					return result({message: 'Bad params', error: true});
-				}
-
-				step(
-					function () {
-						if (data.login) {
-							User.getUserID(data.login, this);
-						} else {
-							this();
-						}
-					},
-					function (err, userid) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						var criteria = {};
-						if (userid) {
-							criteria.user = userid;
-						}
-						if (data.after) {
-							criteria.ldate = {$gt: new Date(data.after)};
-						}
-						PhotoFresh.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
-					},
-					Utils.cursorExtract,
-					function (err, photos) {
-						if (err) {
-							return result({message: err && err.message, error: true});
-						}
-						for (var i = photos.length; i--;) {
-							photos[i].fresh = true;
-						}
-						result({photos: photos || []});
-					}
-				);
-			});
-		}());
-
+		});
 
 		//Отдаем разрешенные can для фото
 		(function () {
