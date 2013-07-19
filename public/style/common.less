@@ -29,6 +29,25 @@
 	0% { opacity: 0; }
 	100% { opacity: 1; }
 }
+
+html, body {
+	height: 100%;
+}
+.page-wrap {
+	min-height: 100%;
+	margin-bottom: -32px; /* equal to footer height */
+
+	&::after {
+		content: "";
+		display: block;
+		height: 32px;
+	}
+}
+#footContainer, .page-wrap:after {
+	height: 22px;
+	padding-top: 10px;
+}
+
 .mContainer {
 	&.mFadeIn {
 		opacity: 0;

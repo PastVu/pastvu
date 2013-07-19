@@ -23,7 +23,8 @@ require([
 					{module: 'm/common/auth', container: '#auth', global: true},
 					{module: 'm/common/top', container: '#topContainer', global: true},
 					{module: 'm/admin/menu', container: '#menuContainer', global: true},
-					{module: 'm/admin/submenu', container: '#subMenuContainer', global: true}
+					{module: 'm/admin/submenu', container: '#subMenuContainer', global: true},
+					{module: 'm/common/foot', container: '#footContainer', global: true}
 				],
 				options: {
 					parent: globalVM,
