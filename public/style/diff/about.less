@@ -1,0 +1,65 @@
+@import "../_vars";
+@import "../bootstrap/variables";
+@import "../bootstrap/mixins";
+
+/**
+ * FOOTER
+ */
+.about {
+	position: relative;
+	height: 500px;
+	margin: 0;
+	padding: 15px 0;
+	background-color: #2D3E53;
+
+	.row-fluid {
+		margin: 10px 0;
+	}
+
+	.flip-container {
+		float: left;
+		margin: 0 10px;
+		-webkit-perspective: 1000; /* entire container, keeps perspective */
+		-moz-perspective: 1000;
+		perspective: 1000;
+	}
+	/* flip the pane when hovered */
+	.row-fluid:hover .flip-container .flipper, .row-fluid.hover .flip-container .flipper{
+		.transition-delay(0.2s);
+		.rotateY(180deg);
+	}
+
+	.flip-container, .front, .back {
+		width: 100px;
+		height: 100px;
+	}
+
+	/* flip speed goes here */
+	.flipper {
+		position: relative;
+		.transition-duration(0.6s);
+		-webkit-transform-style: preserve-3d;
+		-moz-transform-style: preserve-3d;
+		transform-style: preserve-3d;
+	}
+
+	/* hide back of pane during swap */
+	.front, .back {
+		-webkit-backface-visibility: hidden;
+		backface-visibility: hidden;
+
+		position: absolute;
+		top: 0;
+		left: 0;
+	}
+
+	/* front pane, placed above back */
+	.front {
+		z-index: 2;
+	}
+
+	/* back, initially hidden pane */
+	.back {
+		.rotateY(180deg);
+	}
+}
