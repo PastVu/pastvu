@@ -16,10 +16,33 @@
 	background-color: #204A6B;
 	.box-shadow(~'0 -1px 0 0 #000');
 
-	.copyright {
+	.rightSide {
 		position: absolute;
-		top: 1px;
+		top: 0;
 		right: 10px;
+		text-align: right;
+		white-space: nowrap;
+	}
+
+	.footElem {
+		position: relative;
+		display: inline-block;
+		height: 25px;
+		padding: 0 7px;
+		color: @MainLigthColor;
+		font: 16px/25px @baseFontFamily;
+		text-align: center;
+		vertical-align: middle;
+		white-space: nowrap;
+		cursor: pointer;
+
+		&:hover {
+			color: @white;
+		}
+
+		&.copyright {
+			cursor: default;
+		}
 
 		.icon-white {
 			margin: 2px 4px 0 5px;
