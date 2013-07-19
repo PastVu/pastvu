@@ -1,16 +1,30 @@
 .about(data-bind="with: repository[M!M]")
-	.row-fluid(ontouchstart="this.classList.toggle('hover');")
+	header.line
+		| PastVu - проект по сбору свидетельств прошлого в фотографиях. Взгляд на историю среды обитания человечества.
+	a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
 		.flip-container
 			.flipper
 				div.front(style="background-image: url(/img/misc/Ilya.jpg)")
 				div.back(style="background-image: url(/_a/d/Ilya.png)")
-	.row-fluid(ontouchstart="this.classList.toggle('hover');")
+					| Ilya
+		.lineBody
+			.humanName Илья Варламов
+			.humanAbout Автор оригинальной идеи
+	a.line.clearfix(target="_blank", href="/u/Duche", ontouchstart="this.classList.toggle('hover');")
 		.flip-container
 			.flipper
 				div.front(style="background-image: url(/img/misc/Duche.jpg)")
 				div.back(style="background-image: url(/_a/d/Duche.png)")
-	.row-fluid(ontouchstart="this.classList.toggle('hover');")
+					| Duche
+		.lineBody
+			.humanName Алексей Дук
+			.humanAbout Продюсер проекта
+	a.line.clearfix(target="_blank", href="/u/klimashkin", ontouchstart="this.classList.toggle('hover');")
 		.flip-container
 			.flipper
 				div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
 				div.back(style="background-image: url(/_a/d/klimashkin.png)")
+					| klimashkin
+		.lineBody
+			.humanName Павел Климашкин
+			.humanAbout Архитектор проекта, создатель платформы
