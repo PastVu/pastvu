@@ -36,6 +36,23 @@
 		.box-shadow(@shadow);
 		z-index: @zindexPopover;
 
+		.footnote {
+			width: 285px;
+			font-size: 14px;
+			margin: -16px 0 10px 0;
+
+			.lll {
+				border-color: #7696BC;
+				border-width: 0 0 1px 0;
+				border-style: dashed;
+				cursor: pointer;
+				&:hover {
+					color: #93A5BA;
+					border-color: #93A5BA;
+				}
+			}
+		}
+
 		&::after {
 			position: absolute;
 			display: none;
