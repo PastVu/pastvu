@@ -130,6 +130,11 @@ var Utils = require('./commons/Utils.js'),
 			.parse(req);
 	},
 	serve = function (req, res) {
+		if (req.url !== '/upload') {
+			res.statusCode = 403;
+			res.end();
+			return;
+		}
 		setAccessControlHeaders(res);
 
 		switch (req.method) {
