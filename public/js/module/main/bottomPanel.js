@@ -27,11 +27,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.auth = globalVM.repository['m/common/auth'];
 			this.news = ko.observableArray();
 
-			if (this.auth.loggedIn() && this.auth.iAm.role() > 4) {
-				cats = catsMod.concat(cats);
-			}
 			this.catsObj = catsObj;
 			this.cats = ko.observableArray(cats);
+			if (this.auth.loggedIn() && this.auth.iAm.role() > 4 && catsMod.length) {
+				this.cats.concat(catsMod, true);
+				catsMod = []; //FIXME: Конкат изменяет исходный массив
+			}
 			this.catLoading = ko.observable('');
 			this.catActive = ko.observable('');
 
@@ -99,8 +100,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		loggedInHandler: function () {
 			// После логина проверяем если мы можем добавить категории
-			if (this.auth.iAm.role() > 4) {
+			if (this.auth.iAm.role() > 4 && catsMod.length) {
 				this.cats.concat(catsMod, true);
+				catsMod = [];
 				this.catJump('photosToApprove');
 			}
 			this.subscriptions.loggedIn.dispose();
