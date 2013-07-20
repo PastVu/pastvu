@@ -48,7 +48,7 @@ function login(socket, data, cb) {
 			uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
 
 			session.user = user;
-			_session.regen(session, {remember: data.remember, ua: uaData},function (err, session) {
+			_session.regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
 				_session.emitCookie(socket);
 				cb(session, {message: "Success login", youAre: user});
 			});

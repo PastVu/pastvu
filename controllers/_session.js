@@ -25,10 +25,12 @@ function generate(data, cb) {
 	return session;
 }
 
-function regen(session, data, cb) {
+function regen(session, data, keyRegen, cb) {
 	'use strict';
 
-	session.key = Utils.randomString(12); // При каждом заходе регенерируем ключ
+	if (keyRegen) {
+		session.key = Utils.randomString(12); // При каждом заходе регенерируем ключ (пока только при логине)
+	}
 	session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
 	if (data) {
 		_.assign(session.data, data);
