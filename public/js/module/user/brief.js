@@ -15,8 +15,12 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.userInited = false;
 			this.auth = globalVM.repository['m/common/auth'];
 
+			this.rn = ko.observable('');
+			this.rc = ko.observable('');
+
 			if (this.options.userVM) {
 				this.user = this.options.userVM;
+				this.updateUserDepends();
 				this.makeBinding();
 			} else {
 				this.options.userLogin = this.options.userLogin || globalVM.router.params().user || (this.auth.loggedIn() && this.auth.iAm.login());
@@ -57,6 +61,11 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 		},
 		updateUserVM: function (login) {
 			this.user = User.vm(storage.userImmediate(login).origin, this.user, true);
+			this.updateUserDepends();
+		},
+		updateUserDepends: function () {
+			this.rc(this.user.role() > 9 ? 'adm' : (this.user.role() > 4 ? 'mod' : ''));
+			this.rn(this.user.role() > 9 ? '[Administrator]' : (this.user.role() > 4 ? '[Moderator]' : ''));
 		},
 		makeBinding: function () {
 			this.can_pm = this.co.can_pm = ko.computed({

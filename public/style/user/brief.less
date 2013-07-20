@@ -16,7 +16,7 @@
 
 	text-align: center;
 	> .row-fluid {
-		margin-bottom: 10px;
+		margin-top: 10px;
 	}
 	> .row-fluid > div {
 		position: relative;
@@ -65,6 +65,7 @@
 			color: rgb(5, 63, 126);
 		}
 		dl.dl-horizontal {
+			margin-top: 8px;
 			padding: 0 10px;
 
 			dt {
@@ -76,6 +77,23 @@
 			}
 		}
 	}
+
+	.userName, .roleName {
+		line-height: 18px;
+	}
+	.userName {
+		margin-top: 3px;
+	}
+	.roleName {
+		margin-top: 1px;
+		&.adm {
+			color: #7d0000;
+		}
+		&.mod {
+			color: #B87800;
+		}
+	}
+
 	#info_common {
 	}
 
