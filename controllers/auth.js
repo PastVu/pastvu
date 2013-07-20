@@ -140,7 +140,7 @@ function register(session, data, cb) {
 			expireOn.add(ms('2d'));
 
 			Mail.send({
-				from: 'PastVu ★<confirm@pastvu.com>',
+				from: 'PastVu ★<noreply@pastvu.com>',
 				to: data.login + ' <' + data.email + '>',
 				subject: 'Registration confirm', //
 				headers: {
@@ -216,7 +216,7 @@ function recall(session, data, cb) {
 			var expireOn = moment().lang('ru');
 			expireOn.add(ms('2d'));
 			Mail.send({
-				from: 'PastVu ★<confirm@pastvu.com>',
+				from: 'PastVu ★<noreply@pastvu.com>',
 				to: data.login + ' <' + data.email + '>',
 				subject: 'Запрос на восстановление пароля',
 				//subject: 'Request for password recovery',
