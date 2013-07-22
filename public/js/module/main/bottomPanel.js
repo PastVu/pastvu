@@ -122,10 +122,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		getNews: function (cb, ctx) {
 			socket.once('takeIndexNews', function (data) {
 				if (!data || data.error || !Array.isArray(data.news)) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					console.log('Index news error', data && data.message);
 				} else {
-					var i = data.news.length;
-					while (i--) {
+					for (var i = data.news.length; i--;) {
 						data.news.ccount = data.news.ccount || 0;
 						if (data.news[i].notice) {
 							data.news[i].expand = true;
@@ -140,7 +139,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveIndexNews', {limit: 24});
+			socket.emit('giveIndexNews');
 		},
 		getPhotos: function (cb, ctx) {
 			socket.once('takePhotosPublic', function (data) {

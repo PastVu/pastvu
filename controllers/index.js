@@ -310,52 +310,33 @@ var giveStats = (function () {
 }());
 
 /**
- * Новости
+ * Новости на главной
  */
-function giveIndexNews(hs, cb) {
-	step(
-		function () {
-			var now = new Date();
-			News.collection.find({pdate: {$lte: now}/*, tdate: {$gt: now}*/}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {limit: 3, sort: [
-				['pdate', 'desc']
-			]}, this);
-		},
-		Utils.cursorExtract,
-		function (err, news) {
-			if (err) {
-				cb({message: err && err.message, error: true});
-				return;
-			}
-			cb({news: news});
+function giveIndexNews(cb) {
+	var now = new Date();
+	News.find({pdate: {$lte: now}, tdate: {$gt: now}}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {lean: true, limit: 3, sort: {pdate: -1}}, function (err, news) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
-	);
+		cb({news: news});
+	});
 }
+
 /**
- * Новости
+ * Архив новостей
  */
-function giveAllNews(hs, cb) {
-	step(
-		function () {
-			var now = new Date();
-			News.collection.find({pdate: {$lte: now}}, {_id: 0, user: 0, cdate: 0}, {sort: [
-				['pdate', 'desc']
-			]}, this);
-		},
-		Utils.cursorExtract,
-		function (err, news) {
-			if (err) {
-				cb({message: err && err.message, error: true});
-				return;
-			}
-			cb({news: news});
+function giveAllNews(cb) {
+	News.find({pdate: {$lte: new Date()}}, {_id: 0, user: 0, cdate: 0}, {lean: true, sort: {pdate: -1}}, function (err, news) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
-	);
+		cb({news: news});
+	});
 }
 
 function giveNewsFull(data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 	step(
 		function () {
@@ -363,8 +344,7 @@ function giveNewsFull(data, cb) {
 		},
 		function (err, news) {
 			if (err) {
-				cb({message: err && err.message, error: true});
-				return;
+				return cb({message: err && err.message, error: true});
 			}
 			cb({news: news});
 		}
@@ -372,8 +352,7 @@ function giveNewsFull(data, cb) {
 }
 function giveNewsPublic(data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 	step(
 		function () {
@@ -381,8 +360,7 @@ function giveNewsPublic(data, cb) {
 		},
 		function (err, news) {
 			if (err) {
-				cb({message: err && err.message, error: true});
-				return;
+				return cb({message: err && err.message, error: true});
 			}
 			cb({news: news});
 		}
@@ -409,13 +387,13 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('giveIndexNews', function (data) {
-			giveIndexNews(hs, function (resultData) {
+		socket.on('giveIndexNews', function () {
+			giveIndexNews(function (resultData) {
 				socket.emit('takeIndexNews', resultData);
 			});
 		});
 		socket.on('giveAllNews', function (data) {
-			giveAllNews(hs, function (resultData) {
+			giveAllNews(function (resultData) {
 				socket.emit('takeAllNews', resultData);
 			});
 		});
