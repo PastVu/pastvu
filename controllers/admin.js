@@ -1,3 +1,5 @@
+'use strict';
+
 var auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	Settings,

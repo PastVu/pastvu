@@ -314,15 +314,42 @@ var giveStats = (function () {
  */
 var giveIndexNews = (function () {
 	var select = {_id: 0, user: 0, cdate: 0, tdate: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}};
+		options = {lean: true, limit: 3, sort: {pdate: -1}},
 
-	return function (cb) {
+		ttl = ms('1m'), //Время жизни кэша
+		cache,
+		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
+
+	function memoize(cb) {
+		if (cache !== undefined) {
+			cb.apply(null, cache);
+		} else {
+			if (!waitings.length) {
+				getIndexNews(memoizeGetter);
+			}
+			waitings.push(cb);
+		}
+	}
+	function memoizeGetter() {
+		cache = arguments;
+		for (var i = waitings.length; i--;) {
+			waitings[i].apply(null, arguments);
+		}
+		waitings = [];
+		setTimeout(function () {
+			cache = undefined;
+		}, ttl);
+	}
+
+	function getIndexNews(cb) {
 		var now = new Date();
 		News.find({pdate: {$lte: now}, $or: [
 			{tdate: {$gt: now}},
 			{tdate: {$exists: false}}
 		]}, select, options, cb);
-	};
+	}
+
+	return memoize;
 }());
 
 /**
