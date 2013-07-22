@@ -1,7 +1,7 @@
 /*global define:true*/
 
 /**
- * Модель карты
+ * Модель создания/редактирования новости
  */
 define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
@@ -75,7 +75,7 @@ define([
 				pickerP = this.$dom.find('#newsPdate').data('datetimepicker');
 
 			areaPrimary.setCode('<p></p>');
-			pickerP.setDate(new Date());
+			pickerP.setLocalDate(new Date());
 			this.noticeOff();
 			this.tDateOff();
 
@@ -93,7 +93,7 @@ define([
 			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
 				pickerP = this.$dom.find('#newsPdate').data('datetimepicker');
 
-			pickerP.setDate(new Date(this.news.pdate() || Date.now()));
+			pickerP.setLocalDate(new Date(this.news.pdate() || Date.now()));
 			areaPrimary.setCode(this.news.txt() || '<p></p>');
 			if (!!this.news.notice()) {
 				this.noticeOn();
@@ -138,7 +138,7 @@ define([
 		tDateOn: function () {
 			this.tDateExists(true);
 			var pickerT = this.$dom.find('#newsTdate').datetimepicker().data('datetimepicker');
-			pickerT.setDate(new Date(this.news.tdate() || (Date.now() + (3 * 24 * 60 * 60 * 1000))));
+			pickerT.setLocalDate(new Date(this.news.tdate() || (Date.now() + (5 * 24 * 60 * 60 * 1000))));
 		},
 		tDateOff: function () {
 			if (this.tDateExists()) {
@@ -167,7 +167,7 @@ define([
 			if (!this.tDateExists()) {
 				delete saveData.tdate;
 			} else {
-				saveData.tdate = this.$dom.find('#newsTdate').data('datetimepicker').getDate();
+				saveData.tdate = this.$dom.find('#newsTdate').data('datetimepicker').getLocalDate();
 			}
 
 			if (this.noticeExists()) {
@@ -176,7 +176,7 @@ define([
 				delete saveData.notice;
 			}
 
-			saveData.pdate = this.$dom.find('#newsPdate').data('datetimepicker').getDate();
+			saveData.pdate = this.$dom.find('#newsPdate').data('datetimepicker').getLocalDate();
 			saveData.txt = this.$dom.find('textarea#newsPrimary').getCode();
 
 			socket.once('saveNewsResult', function (data) {

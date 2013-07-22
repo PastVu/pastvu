@@ -10,8 +10,7 @@ var auth = require('./auth.js'),
 
 function createNews(session, data, cb) {
 	if (!Utils.isType('object', data)) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 	step(
 		function () {
@@ -19,8 +18,7 @@ function createNews(session, data, cb) {
 		},
 		function (err, count) {
 			if (err || !count) {
-				cb({message: (err && err.message) || 'Increment comment counter error', error: true});
-				return;
+				return cb({message: err && err.message || 'Increment comment counter error', error: true});
 			}
 
 			var novel = new News({
@@ -36,8 +34,7 @@ function createNews(session, data, cb) {
 		},
 		function (err, novel) {
 			if (err || !novel) {
-				cb({message: err && err.message || 'Save error', error: true});
-				return;
+				return cb({message: err && err.message || 'Save error', error: true});
 			}
 			cb({news: novel});
 		}
@@ -45,8 +42,7 @@ function createNews(session, data, cb) {
 }
 function saveNews(data, cb) {
 	if (!Utils.isType('object', data)) {
-		cb({message: 'Bad params', error: true});
-		return;
+		return cb({message: 'Bad params', error: true});
 	}
 	step(
 		function () {
@@ -54,8 +50,7 @@ function saveNews(data, cb) {
 		},
 		function (err, novel) {
 			if (err || !novel) {
-				cb({message: err && err.message || 'No such news', error: true});
-				return;
+				return cb({message: err && err.message || 'No such news', error: true});
 			}
 			novel.pdate = data.pdate;
 			novel.tdate = data.tdate;
@@ -66,8 +61,7 @@ function saveNews(data, cb) {
 		},
 		function (err, novel) {
 			if (err || !novel) {
-				cb({message: err && err.message || 'Save error', error: true});
-				return;
+				return cb({message: err && err.message || 'Save error', error: true});
 			}
 			cb({news: novel});
 		}

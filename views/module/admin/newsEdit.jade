@@ -13,8 +13,8 @@
 					input(data-format="dd.MM.yyyy hh:mm:ss", type="text")
 					span.add-on
 						i(data-time-icon="icon-time", data-date-icon="icon-calendar")
-				button.btn-strict.btn-strict-small.toggleTDate(type="button", data-bind="click: toggleTDate")
-					span(data-bind="text: tDateExists() ? 'Убрать окончание публикации' : 'Добавить окончание публикации'")
+				button.btn-strict.btn-strict-small.toggleTDate(type="button", title="Время, когда новость пропадет с главной. В общем списке она останется", data-bind="click: toggleTDate")
+					span(data-bind="text: tDateExists() ? 'Убрать время скрытия с главной' : 'Добавить время скрытия с главной'")
 				//ko if: tDateExists()
 				.input-append.date#newsTdate
 					input(data-format="dd.MM.yyyy hh:mm:ss", type="text")

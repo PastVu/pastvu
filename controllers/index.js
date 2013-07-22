@@ -312,15 +312,18 @@ var giveStats = (function () {
 /**
  * Новости на главной
  */
-function giveIndexNews(cb) {
-	var now = new Date();
-	News.find({pdate: {$lte: now}, tdate: {$gt: now}}, {_id: 0, user: 0, cdate: 0, tdate: 0}, {lean: true, limit: 3, sort: {pdate: -1}}, function (err, news) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		cb({news: news});
-	});
-}
+var giveIndexNews = (function () {
+	var select = {_id: 0, user: 0, cdate: 0, tdate: 0},
+		options = {lean: true, limit: 3, sort: {pdate: -1}};
+
+	return function (cb) {
+		var now = new Date();
+		News.find({pdate: {$lte: now}, $or: [
+			{tdate: {$gt: now}},
+			{tdate: {$exists: false}}
+		]}, select, options, cb);
+	};
+}());
 
 /**
  * Архив новостей
@@ -388,8 +391,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveIndexNews', function () {
-			giveIndexNews(function (resultData) {
-				socket.emit('takeIndexNews', resultData);
+			giveIndexNews(function (err, news) {
+				socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
 			});
 		});
 		socket.on('giveAllNews', function (data) {
