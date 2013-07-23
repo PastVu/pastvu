@@ -229,30 +229,31 @@ var giveRatings = (function () {
  * Статистика
  */
 var giveStats = (function () {
+	var aggregateParams = [
+		{$group: {_id: '$year', count: {$sum: 1}}},
+		{$sort: {count: -1}},
+		{$group: {
+			_id: null,
+			popYear: {$first: '$_id'},
+			popYearCount: {$first: '$count'},
+			unpopYear: {$last: '$_id'},
+			unpopYearCount: {$last: '$count'}
+		}},
+		{$project: {
+			_id: 0,
+			pop: {year: "$popYear", count: "$popYearCount" },
+			unpop: {year: "$unpopYear", count: "$unpopYearCount" }
+		}}
+	];
+
 	return Utils.memoizeAsync(function calcStats(handler) {
-		var //st = Date.now(),
+		var st = Date.now(),
 			photoYear;
 
 		step(
 			//Сначала запускаем агрегацию по всем показателем, требующим расчет
 			function aggregation() {
-				Photo.collection.aggregate([
-					{$match: {fresh: {$exists: false}, disabled: {$exists: false}, del: {$exists: false}}},
-					{$group: {_id: '$year', count: {$sum: 1}}},
-					{$sort: {count: -1}},
-					{$group: {
-						_id: null,
-						popYear: {$first: '$_id'},
-						popYearCount: {$first: '$count'},
-						unpopYear: {$last: '$_id'},
-						unpopYearCount: {$last: '$count'}
-					}},
-					{$project: {
-						_id: 0,
-						pop: {year: "$popYear", count: "$popYearCount" },
-						unpop: {year: "$unpopYear", count: "$unpopYearCount" }
-					}}
-				], this);
+				Photo.collection.aggregate(aggregateParams, this);
 			},
 			function getAggregationResultObjects(err, pMaxYear) {
 				if (err) {
@@ -260,17 +261,17 @@ var giveStats = (function () {
 				}
 				photoYear = pMaxYear[0];
 
-				Photo.count({fresh: {$exists: false}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
+				Photo.count(this.parallel());
 				User.count({active: true}, this.parallel());
 
-				Photo.count({adate: {$gt: dayStart}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
-				Photo.count({adate: {$gt: weekStart}, disabled: {$exists: false}, del: {$exists: false}}, this.parallel());
+				Photo.count({adate: {$gt: dayStart}}, this.parallel());
+				Photo.count({adate: {$gt: weekStart}}, this.parallel());
 			},
 			function (err, pallCount, userCount, pdayCount, pweekCount) {
 				if (err) {
 					return handler({message: err && err.message, error: true});
 				}
-				//console.log(Date.now() - st);
+				console.log(Date.now() - st);
 				handler({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);
