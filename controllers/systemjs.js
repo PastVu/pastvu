@@ -889,6 +889,7 @@ module.exports.loadController = function (app, db) {
 		db.photos_sort.remove();
 
 		var startTime = Date.now(),
+			shift10y = 315576000000,
 			insertArr = [],
 			okCounter = 0,
 			allCounter = 0,
@@ -900,7 +901,7 @@ module.exports.loadController = function (app, db) {
 		print('Start to fill ' + db.photos_fresh.count() + ' fresh photos');
 		stampName = 'ldate';
 		state = 1;
-		db.photos_fresh.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
+		db.photos_fresh.find({}, {_id: 1, user: 1, ldate: 1}).forEach(iterator);
 
 		print('Start to fill ' + db.photos.count() + ' public photos');
 		stampName = 'adate';
@@ -916,13 +917,18 @@ module.exports.loadController = function (app, db) {
 		db.photos_del.find({}, {_id: 0, user: 1, adate: 1}).forEach(iterator);
 
 		function iterator(photo) {
+			var stamp = photo[stampName];
 			allCounter++;
-
 			okCounter++;
+
+			if (stampName === 'ldate') {
+				stamp = new Date(stamp.getTime() + shift10y);
+			}
+
 			insertArr.push({
 				photo: photo._id,
 				user: photo.user,
-				stamp: photo[stampName],
+				stamp: stamp,
 				state: state
 			});
 			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
