@@ -513,26 +513,14 @@ function givePhoto(socket, data, cb) {
 	}
 }
 
-//Отдаем последние публичные фотографии
-function givePhotosPublic(data, cb) {
-	if (!Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
-	}
-	step(
-		function () {
-			Photo.collection.find({}, compactFields, {sort: [
-				['adate', 'desc']
-			], skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
-		},
-		Utils.cursorExtract,
-		function (err, photos) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({photos: photos});
-		}
-	);
-}
+//Отдаем последние публичные фотографии для главной
+var givePhotosPublic = (function () {
+	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 30};
+
+	return Utils.memoizeAsync(function (handler) {
+		Photo.find({}, compactFields, options, handler);
+	}, ms('30s'));
+}());
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(socket, data, cb) {
@@ -1335,8 +1323,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosPublic', function (data) {
-			givePhotosPublic(data, function (resultData) {
-				socket.emit('takePhotosPublic', resultData);
+			givePhotosPublic(function (err, photos) {
+				socket.emit('takePhotosPublic', err ? {message: err.message, error: true} : {photos: photos});
 			});
 		});
 

@@ -247,7 +247,7 @@ var giveStats = (function () {
 	];
 
 	return Utils.memoizeAsync(function calcStats(handler) {
-		var st = Date.now(),
+		var //st = Date.now(),
 			photoYear;
 
 		step(
@@ -271,7 +271,7 @@ var giveStats = (function () {
 				if (err) {
 					return handler({message: err && err.message, error: true});
 				}
-				console.log(Date.now() - st);
+				//console.log(Date.now() - st);
 				handler({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);

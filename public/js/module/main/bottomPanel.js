@@ -156,7 +156,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 			}.bind(this));
-			socket.emit('givePhotosPublic', {skip: 0, limit: 24});
+			socket.emit('givePhotosPublic');
 		},
 		getPhotosToApprove: function (cb, ctx) {
 			socket.once('takePhotosForApprove', function (data) {
