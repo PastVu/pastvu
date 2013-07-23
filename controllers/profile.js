@@ -1,12 +1,70 @@
+'use strict';
+
 var auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	Settings,
 	User,
+	Utils = require('../commons/Utils.js'),
 	step = require('step'),
-	log4js = require('log4js');
+	log4js = require('log4js'),
+	_ = require('lodash'),
+	logger,
+	msg = {
+		deny: 'You do not have permission for this action'
+	};
+
+//Сохраняем изменемя в профиле пользователя
+function saveUser(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe,
+		newValues;
+
+	if (!iAm) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login) {
+		return cb({message: 'Bad params', error: true});
+	}
+	itsMe = iAm.login === login;
+
+	step(
+		function () {
+			if (iAm.login === login) {
+				this(null, iAm);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, user) {
+			if (err && !user) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+			//Новые значения действительно изменяемых свойств
+			newValues = Utils.diff(_.pick(data, 'firstName', 'lastName', 'showName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'), user.toObject());
+			if (_.isEmpty(newValues)) {
+				return cb({message: 'Nothing to save'});
+			}
+
+			_.assign(user, newValues);
+			user.save(this);
+		},
+		function (err, user) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({message: 'ok', saved: 1});
+
+			if (itsMe) {
+				auth.sendMe(socket);
+			}
+			logger.info('Saved story line for ' + user.login);
+		}
+	);
+}
 
 module.exports.loadController = function (app, db, io) {
-	var logger = log4js.getLogger("profile.js");
+	logger = log4js.getLogger("profile.js");
 
 	Settings = db.model('Settings');
 	User = db.model('User');
@@ -21,40 +79,9 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('saveUser', function (data) {
-			var itsMe = hs.session.user && hs.session.user.login === data.login,
-				result = function (data) {
-					socket.emit('saveUserResult', data);
-				};
-			step(
-				function () {
-					if (itsMe) {
-						this(null, hs.session.user);
-					} else {
-						User.findOne({login: data.login}, this);
-					}
-				},
-				function (err, user) {
-					Object.keys(data).forEach(function (key) {
-						if (user[key] && data[key].length === 0) {
-							user[key] = undefined;
-						} else {
-							user[key] = data[key];
-						}
-					});
-					user.save(this);
-				},
-				function (err, user) {
-					if (err) {
-						result({message: err && err.message, error: true});
-						return;
-					}
-					result({ok: 1});
-					if (itsMe) {
-						auth.sendMe(socket);
-					}
-					logger.info('Saved story line for ' + user.login);
-				}
-			);
+			saveUser(socket, data, function (resultData) {
+				socket.emit('saveUserResult', resultData);
+			});
 		});
 	});
 

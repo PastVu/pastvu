@@ -532,17 +532,7 @@ function givePhotosForApprove(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	step(
-		function () {
-			PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, this);
-		},
-		function (err, photos) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			cb({photos: photos});
-		}
-	);
+	PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
 }
 
 //Отдаем галерею пользователя в компактном виде
@@ -1329,8 +1319,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosForApprove', function (data) {
-			givePhotosForApprove(socket, data, function (resultData) {
-				socket.emit('takePhotosForApprove', resultData);
+			givePhotosForApprove(socket, data, function (err, photos) {
+				socket.emit('takePhotosForApprove', err ? {message: err.message, error: true} : {photos: photos});
 			});
 		});
 

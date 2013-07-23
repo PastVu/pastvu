@@ -45,7 +45,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
 			}.bind(this));
-			socket.emit('giveCommentsFeed', {limit: 20});
+			socket.emit('giveCommentsFeed', {limit: 30});
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);

@@ -29,6 +29,7 @@ var UserScheme = new mongoose.Schema({
 	avatar: {type: String},
 	firstName: {type: String},
 	lastName: {type: String},
+	showName: {type: Boolean}, //Использовать ли имя на страницах портала
 	birthdate: {type: String},
 	sex: {type: String},
 	country: {type: String},

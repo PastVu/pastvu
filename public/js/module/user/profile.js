@@ -19,7 +19,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.edit = ko.observable(false);
 
 			this.canBeEdit = this.co.canBeEdit = ko.computed(function () {
-				return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() >= 50;
+				return this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() > 9;
 			}, this);
 
 			this.editMode = this.co.editMode = ko.computed(function () {
@@ -50,25 +50,28 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.showing = false;
 		},
 		saveUser: function () {
-			var targetUser = ko_mapping.toJS(this.u),
+			var target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'showName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'),
 				key;
 
-			for (key in targetUser) {
-				if (targetUser.hasOwnProperty(key) && key !== 'login') {
-					if (this.originUser[key] && (targetUser[key] === this.originUser[key])) {
-						delete targetUser[key];
-					} else if (!this.originUser[key] && (targetUser[key] === User.def.full[key])) {
-						delete targetUser[key];
+			for (key in target) {
+				if (target.hasOwnProperty(key)) {
+					if (!_.isUndefined(this.originUser[key]) && _.isEqual(target[key], this.originUser[key])) {
+						delete target[key];
+					} else if (_.isUndefined(this.originUser[key]) && _.isEqual(target[key], User.def.full[key])) {
+						delete target[key];
 					}
 				}
 			}
-			if (Utils.getObjectPropertyLength(targetUser) > 1) {
-				socket.emit('saveUser', targetUser);
-				this.originUser = targetUser;
+			if (Utils.getObjectPropertyLength(target) > 0) {
+				target.login = this.u.login();
+				socket.once('saveUserResult', function (result) {
+					if (result && !result.error && result.saved) {
+						_.assign(this.originUser, target);
+						this.edit(false);
+					}
+				}.bind(this));
+				socket.emit('saveUser', target);
 			}
-			this.edit(false);
-
-			targetUser = key = null;
 		},
 		cancelUser: function () {
 			_.forEach(this.originUser, function (item, key) {
