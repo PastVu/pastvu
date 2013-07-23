@@ -25,6 +25,9 @@
 			span.lll(data-bind="click: function () {mode('recallRequest')}") формой восстановления пароля
 		dl.dl-horizontal
 			dt.checked#remember(onclick="this.classList.toggle('checked')") Запомнить меня
+			dd.cantLoging
+				a(href="", target="_blank", onclick="$(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())")
+					| Не можете войти?
 		button.btn-strict.formAction(type="submit") Вход
 		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
