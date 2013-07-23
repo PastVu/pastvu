@@ -34,6 +34,45 @@ Utils.randomString = (function () {
 		return str;
 	};
 }());
+
+
+/**
+ * Асинхронный memoize с опциональным временем жизни
+ * @param memoizedFunc Функция, результат которой будет запомнен
+ * @param ttl Время жизни в ms
+ * @returns {Function}
+ */
+Utils.memoizeAsync = function (memoizedFunc, ttl) {
+	'use strict';
+
+	var cache,
+		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
+
+	function memoizeHandler() {
+		cache = arguments;
+		for (var i = waitings.length; i--;) {
+			waitings[i].apply(null, arguments);
+		}
+		waitings = [];
+		if (ttl) {
+			setTimeout(function () {
+				cache = undefined;
+			}, ttl);
+		}
+	}
+
+	return function (cb) {
+		if (cache !== undefined) {
+			cb.apply(null, cache);
+		} else {
+			if (!waitings.length) {
+				memoizedFunc(memoizeHandler);
+			}
+			waitings.push(cb);
+		}
+	};
+};
+
 Utils.linkifyUrlString = function (inputText, target, className) {
 	var replacedText, replacePattern1, replacePattern2;
 
@@ -54,7 +93,7 @@ Utils.inputIncomingParse = (function () {
 	var host = global.appVar && global.appVar.serverAddr && global.appVar.serverAddr.host || '',
 		reversedEscapeChars = {"<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39"};
 
-	function escape (txt) {
+	function escape(txt) {
 		//Паттерн из _s.escapeHTML(result); исключая амперсант
 		return txt.replace(/[<>"']/g, function (m) {
 			return '&' + reversedEscapeChars[m] + ';';

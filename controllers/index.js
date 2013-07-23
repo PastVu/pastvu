@@ -229,37 +229,9 @@ var giveRatings = (function () {
  * Статистика
  */
 var giveStats = (function () {
-	var ttl = ms('5m'), //Время жизни кэша
-		cache,
-		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
-
-	function memoize(data, cb) {
-		if (cache !== undefined) {
-			cb(cache);
-		} else {
-			if (waitings.length === 0) {
-				calcStats(data, function (data) {
-					cache = data;
-					for (var i = waitings.length; i--;) {
-						waitings[i](cache);
-					}
-					waitings = [];
-					setTimeout(function () {
-						cache = undefined;
-					}, ttl);
-				});
-			}
-			waitings.push(cb);
-		}
-	}
-
-	function calcStats(data, cb) {
+	return Utils.memoizeAsync(function calcStats(handler) {
 		var //st = Date.now(),
 			photoYear;
-
-		if (!Utils.isType('object', data)) {
-			return cb({message: 'Bad params', error: true});
-		}
 
 		step(
 			//Сначала запускаем агрегацию по всем показателем, требующим расчет
@@ -280,12 +252,11 @@ var giveStats = (function () {
 						pop: {year: "$popYear", count: "$popYearCount" },
 						unpop: {year: "$unpopYear", count: "$unpopYearCount" }
 					}}
-				], this.parallel());
+				], this);
 			},
 			function getAggregationResultObjects(err, pMaxYear) {
 				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
+					return handler({message: err && err.message, error: true});
 				}
 				photoYear = pMaxYear[0];
 
@@ -297,59 +268,29 @@ var giveStats = (function () {
 			},
 			function (err, pallCount, userCount, pdayCount, pweekCount) {
 				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
+					return handler({message: err && err.message, error: true});
 				}
 				//console.log(Date.now() - st);
-				cb({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
+				handler({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);
-	}
-
-	return memoize;
+	}, ms('5m'));
 }());
 
 /**
- * Новости на главной
+ * Новости на главной в memoize
  */
 var giveIndexNews = (function () {
 	var select = {_id: 0, user: 0, cdate: 0, tdate: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}},
+		options = {lean: true, limit: 3, sort: {pdate: -1}};
 
-		ttl = ms('1m'), //Время жизни кэша
-		cache,
-		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
-
-	function memoize(cb) {
-		if (cache !== undefined) {
-			cb.apply(null, cache);
-		} else {
-			if (!waitings.length) {
-				getIndexNews(memoizeGetter);
-			}
-			waitings.push(cb);
-		}
-	}
-	function memoizeGetter() {
-		cache = arguments;
-		for (var i = waitings.length; i--;) {
-			waitings[i].apply(null, arguments);
-		}
-		waitings = [];
-		setTimeout(function () {
-			cache = undefined;
-		}, ttl);
-	}
-
-	function getIndexNews(cb) {
+	return Utils.memoizeAsync(function (handler) {
 		var now = new Date();
 		News.find({pdate: {$lte: now}, $or: [
 			{tdate: {$gt: now}},
 			{tdate: {$exists: false}}
-		]}, select, options, cb);
-	}
-
-	return memoize;
+		]}, select, options, handler);
+	}, ms('1m'));
 }());
 
 /**
@@ -444,8 +385,8 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('giveStats', function (data) {
-			giveStats(data, function (resultData) {
+		socket.on('giveStats', function () {
+			giveStats(function (resultData) {
 				socket.emit('takeStats', resultData);
 			});
 		});
