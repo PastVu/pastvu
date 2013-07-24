@@ -1,34 +1,40 @@
 .user_profile(data-bind="with: repository[M!M]")
 	form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit(), edit_mode: editMode()}")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
-			label.control-label(for="inName") Name
+			label.control-label(for="inName") Псевдоним
+			.controls
+				i.icon-user
+				| &nbsp;
+				span.loginName(data-bind="text: u.login()")
+		.control-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
+			label.control-label(for="inName") Реальное имя
 			.controls
 				input.input-medium(type="text", id="inName", data-bind="attr: {size: u.firstName().length, disabled: !editMode()}, value: u.firstName, valueUpdate: 'afterkeydown'")
 				input(type="text", id="inLastName", data-bind="attr: {disabled: !editMode()}, value: u.lastName, valueUpdate: 'afterkeydown'")
 		.control-group
-			label.control-label(for="inBirthdate") Birthday
+			label.control-label(for="inBirthdate") Дата рождения
 			.controls
 				.input-append.date.birthPick(data-date-format="dd.mm.yyyy", data-bind="attr: {'data-date': (new Date().getDate())+'.'+(new Date().getMonth()+1)+'.'+(new Date().getFullYear())}")
 					input(type="text", id='inBirthdate', data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
 					span.add-on(data-bind="style: {display: (editMode() ? '' : 'none')}")
 						i.icon-calendar
 		.control-group
-			label.control-label(for="inSex2") Sex
+			label.control-label(for="inSex2") Пол
 			.controls
 				input(type="text", id="inSex2", disabled, data-bind="style: {display: (!canBeEdit() ? '' : 'none')}, value: u.sex()=='m' ? 'Male' : 'Female'")
 				label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 					input(type="radio", id='inSex', name="sex", value="m", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-					span &nbsp;Male
+					span &nbsp;Мужчина
 				label.radio.inline(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 					input(type="radio", id='inSex', name="sex", value="f", data-bind="checked: u.sex, attr: {disabled: !editMode()}")
-					span &nbsp;Female
+					span &nbsp;Женщина
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.country().length || u.city().length > 0 ? '' : 'none'}")
-			label.control-label(for="inResidence") Residence
+			label.control-label(for="inResidence") Место
 			.controls
 				input(type="text", id='inResidence', data-bind="attr: {disabled: !editMode()}, size: u.country().length, value: u.country, valueUpdate: 'afterkeydown'")
 				input(type="text", id="inResidence2", data-bind="attr: {disabled: !editMode()}, value: u.city, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.work().length > 0 ? '' : 'none'}")
-			label.control-label(for="inInterested") Interested in
+			label.control-label(for="inInterested") Деятельность
 			.controls
 				input(type="text", id='inInterested', data-bind="attr: {disabled: !editMode()}, value: u.work, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.www().length > 0 ? '' : 'none'}")
@@ -48,7 +54,7 @@
 			.controls
 				input(type="text", id='inaim', data-bind="attr: {disabled: !editMode()}, value: u.aim, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.lj().length > 0 ? '' : 'none'}")
-			label.control-label(for="inLJ") LJ
+			label.control-label(for="inLJ") ЖЖ
 			.controls
 				input(type="text", id='inLJ', data-bind="attr: {disabled: !editMode()}, value: u.lj, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.flickr().length > 0 ? '' : 'none'}")
@@ -60,14 +66,14 @@
 			.controls
 				input(type="text", id='inBlogger', data-bind="attr: {disabled: !editMode()}, value: u.blogger, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ||  u.aboutme().length > 0 ? '' : 'none'}")
-			label.control-label(for="inaboutme") About Me
+			label.control-label(for="inaboutme") Обо мне
 			.controls
 				textarea(rows="3", id='inaboutme', data-bind="attr: {disabled: !editMode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
 		.control-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
 			.controls
 				button.btn-strict(type="button", data-bind="css: {'btn-strict-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
 					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !editMode(), 'icon-ok': editMode()}")
-					span(data-bind="text: editMode() ? 'Save profile' : 'Edit profile'")
+					span(data-bind="text: editMode() ? 'Сохранить профиль' : 'Редактировать'")
 				button.btn-strict.btn-strict-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
 					i.icon-remove.icon-white
-					span Cancel
+					span Отмена
