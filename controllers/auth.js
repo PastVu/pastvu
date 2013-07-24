@@ -83,8 +83,7 @@ function register(session, data, cb) {
 	if (!data.pass) error += 'Fill in the password field. ';
 	if (data.pass !== data.pass2) error += 'Passwords do not match.';
 	if (error) {
-		cb({message: error, error: true});
-		return;
+		return cb({message: error, error: true});
 	}
 
 	Step(
@@ -102,19 +101,16 @@ function register(session, data, cb) {
 				if (user.email === data.email) {
 					error += 'User with such email already exists.';
 				}
-				cb({message: error, error: true});
-				return;
+				return cb({message: error, error: true});
 			}
 			Counter.increment('user', this.parallel());
 		},
 		function createUser(err, count) {
 			if (err) {
-				cb({message: err, error: true});
-				return;
+				return cb({message: err, error: true});
 			}
 			if (!count) {
-				cb({message: 'Increment user counter error', error: true});
-				return;
+				return cb({message: 'Increment user counter error', error: true});
 			}
 			confirmKey = Utils.randomString(7);
 
@@ -122,7 +118,8 @@ function register(session, data, cb) {
 				login: data.login,
 				cid: count.next,
 				email: data.email,
-				pass: data.pass
+				pass: data.pass,
+				disp: data.login
 			});
 
 			newUser.save(this.parallel());
@@ -130,8 +127,7 @@ function register(session, data, cb) {
 		},
 		function sendMail(err, user) {
 			if (err) {
-				cb({message: err.message, error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 
 			new UserConfirm({key: confirmKey, user: user._id}).save(this.parallel());
@@ -162,8 +158,7 @@ function register(session, data, cb) {
 
 		function finish(err) {
 			if (err) {
-				cb({message: err.message, error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 			cb({message: success});
 		}

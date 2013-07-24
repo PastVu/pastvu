@@ -58,7 +58,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 
 		showPassChangeRecall: function (data, key, callback, ctx) {
 			this.login(data.login);
-			this.name(data.name);
+			this.name(data.disp);
 			this.avatar(data.avatar);
 			this.key(key);
 			this.show('passChangeRecall', callback, ctx);

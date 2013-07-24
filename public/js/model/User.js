@@ -12,6 +12,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 		},
 		full: {
 			email: '',
+			firstName: '',
+			lastName: '',
 
 			//role
 			role: 0,
