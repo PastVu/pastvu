@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель содержимого основной страницы
  */
@@ -48,6 +48,7 @@ define(['underscore', 'Utils', 'Params', 'knockout', 'knockout.mapping', 'm/_mod
 			this.sizesCalc();
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
+			ga('send', 'pageview');
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);

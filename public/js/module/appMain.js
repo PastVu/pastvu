@@ -1,4 +1,4 @@
-/*global require:true*/
+/*global require:true, ga:true*/
 //require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require([
@@ -95,7 +95,6 @@ require([
 					);
 				},
 				news: function (cid, qparams) {
-					Utils.title.setTitle({title: 'Новости'});
 					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
 					var mName = Number(cid) ? 'm/diff/news' : 'm/diff/newsList';
 

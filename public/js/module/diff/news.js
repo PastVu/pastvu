@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель профиля пользователя
  */
@@ -109,8 +109,8 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					}.bind(this)});
 
 					this.makeBinding();
+					ga('send', 'pageview');
 				}, this);
-
 			} else if (this.toFrag || this.toComment) {
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
 			}

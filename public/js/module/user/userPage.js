@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель содержимого страницы пользователя
  */
@@ -171,6 +171,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			}
 
 			this.section(section);
+			ga('send', 'pageview');
 
 			if (!this.contentVM || this.contentVM.module !== module) {
 				moduleOptions.module = module;

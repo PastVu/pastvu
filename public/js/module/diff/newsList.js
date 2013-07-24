@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 
 /**
  * Модель Списка новостей
@@ -44,28 +44,10 @@ define([
 			delete this.subscriptions.loggedIn;
 		},
 		routeHandler: function () {
-			var cid = Number(globalVM.router.params().cid);
-			if (cid) {
-				this.getOneNews(cid);
-			} else {
-				this.getAllNews();
-			}
-		},
-		getOneNews: function (cid, cb, ctx) {
-			socket.once('takeNews', function (data) {
-				if (!data || data.error || !data.news) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					data.news.notice = data.news.txt;
-					this.news([data.news]);
-					$(window).scrollTo($('body'), {duration: 400});
-				}
-
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-			}.bind(this));
-			socket.emit('giveNews', {cid: cid});
+			this.getAllNews(function (data) {
+				Utils.title.setTitle({title: 'Новости'});
+				ga('send', 'pageview');
+			});
 		},
 		getAllNews: function (cb, ctx) {
 			socket.once('takeAllNews', function (data) {
@@ -88,7 +70,7 @@ define([
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveAllNews', {limit: 24});
+			socket.emit('giveAllNews', {});
 		}
 	});
 });

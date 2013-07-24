@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель страницы фотографии
  */
@@ -310,6 +310,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						if (!this.binded) {
 							this.makeBinding();
 						}
+						ga('send', 'pageview');
 					}
 				}, this, this.p);
 			} else if (this.toFrag || this.toComment) {

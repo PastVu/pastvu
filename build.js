@@ -68,7 +68,7 @@ var start = Date.now(),
 			{
 				name: "module/appMain",
 				include: [
-					'm/common/auth', 'm/common/top',
+					'm/common/auth', 'm/common/top', 'm/common/foot',
 					'm/main/commentsFeed', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
 					'm/photo/photo',
