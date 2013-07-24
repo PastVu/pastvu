@@ -30,6 +30,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.originUser = storage.userImmediate(this.u.login()).origin;
 			this.editEmail = ko.observable(false);
 
+			this.showName = this.co.showName = ko.computed(function () {
+				return this.u.disp() !== this.u.login();
+			}, this);
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
@@ -45,41 +49,21 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.showing = false;
 		},
 
+		toggleDisp: function () {
+			socket.once('changeDispNameResult', function (result) {
+				if (result && !result.error && result.saved) {
+					this.u.disp(result.disp);
+					this.originUser.disp = result.disp;
+				}
+			}.bind(this));
+			socket.emit('changeDispName', {login: this.u.login(), showName: !this.showName()});
+		},
+
 		saveEmail: function () {
 			if (this.editEmail() === true) {
 				socket.emit('saveUser', {login: this.u.login(), email: this.u.email()});
 			}
 			this.editEmail(!this.editEmail());
-		},
-
-		saveUser: function () {
-			var targetUser = ko_mapping.toJS(this.u),
-				key;
-
-			for (key in targetUser) {
-				if (targetUser.hasOwnProperty(key) && key !== 'login') {
-					if (this.originUser[key] && (targetUser[key] === this.originUser[key])) {
-						delete targetUser[key];
-					} else if (!this.originUser[key] && (targetUser[key] === User.def.full[key])) {
-						delete targetUser[key];
-					}
-				}
-			}
-			if (Utils.getObjectPropertyLength(targetUser) > 1) {
-				socket.emit('saveUser', targetUser);
-			}
-			this.edit(false);
-
-			targetUser = key = null;
-		},
-		cancelUser: function () {
-			_.forEach(this.originUser, function (item, key) {
-				if (Utils.isType('function', this.u[key]) && this.u[key]() !== item) {
-					this.u[key](item);
-				}
-			}.bind(this));
-
-			this.edit(false);
 		}
 	});
 });

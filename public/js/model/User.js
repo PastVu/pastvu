@@ -8,6 +8,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 
 			avatar: '/img/caps/avatar.png',
 			avatarth: '/img/caps/avatarth.png',
+			disp: '',
 			firstName: '',
 			lastName: ''
 		},
@@ -58,6 +59,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 		if (origin.avatar) {
 			origin.avatarth = P.preaddr + '/_a/h/' + origin.avatar;
 			origin.avatar = P.preaddr + '/_a/d/' + origin.avatar;
+		}
+		if (!origin.disp) {
+			origin.disp = origin.login;
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

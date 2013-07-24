@@ -50,7 +50,7 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 			this.showing = false;
 		},
 		saveUser: function () {
-			var target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'showName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'),
+			var target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'),
 				key;
 
 			for (key in target) {

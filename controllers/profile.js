@@ -28,6 +28,10 @@ function saveUser(socket, data, cb) {
 	}
 	itsMe = iAm.login === login;
 
+	if(!itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
 	step(
 		function () {
 			if (iAm.login === login) {
@@ -40,8 +44,9 @@ function saveUser(socket, data, cb) {
 			if (err && !user) {
 				return cb({message: err.message || 'Requested user does not exist', error: true});
 			}
+
 			//Новые значения действительно изменяемых свойств
-			newValues = Utils.diff(_.pick(data, 'firstName', 'lastName', 'showName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'), user.toObject());
+			newValues = Utils.diff(_.pick(data, 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'), user.toObject());
 			if (_.isEmpty(newValues)) {
 				return cb({message: 'Nothing to save'});
 			}
@@ -58,7 +63,48 @@ function saveUser(socket, data, cb) {
 			if (itsMe) {
 				auth.sendMe(socket);
 			}
-			logger.info('Saved story line for ' + user.login);
+		}
+	);
+}
+
+//Сохраняем изменемя в профиле пользователя
+function changeDispName(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = (iAm && iAm.login) === login;
+
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			if (iAm.login === login) {
+				this(null, iAm);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, user) {
+			if (err && !user) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+
+			if (!!data.showName) {
+				user.disp = ((user.firstName || '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName || '')) || user.login;
+			} else {
+				user.disp = user.login;
+			}
+
+			user.save(this);
+		},
+		function (err, user) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({message: 'ok', saved: 1, disp: user.disp});
 		}
 	);
 }
@@ -81,6 +127,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('saveUser', function (data) {
 			saveUser(socket, data, function (resultData) {
 				socket.emit('saveUserResult', resultData);
+			});
+		});
+
+		socket.on('changeDispName', function (data) {
+			changeDispName(socket, data, function (resultData) {
+				socket.emit('changeDispNameResult', resultData);
 			});
 		});
 	});
