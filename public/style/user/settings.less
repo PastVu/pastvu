@@ -4,6 +4,8 @@
 
 .user_settings {
 	.accordion-inner {
+		padding: 11px 10px 11px 25px;
+
 		input {
 			margin-bottom: 0;
 			padding-top: 2px;
@@ -14,12 +16,16 @@
 			padding: 1px 2px 0px 3px;
 			border: 1px solid #C3C7DD;
 			background-color: @MainBlueColor;
-			.box-shadow(~'0px -1px 0 0 #000, 1px 0px 0 0 #000, 0px 1px 0 0 #000');
 			cursor: pointer;
+			.box-shadow(~'0px -1px 0 0 #000, 1px 0px 0 0 #000, 0px 1px 0 0 #000');
 		}
 
 		dl.dl-horizontal {
-			padding: 0 10px;
+			margin: 10px 0 0 0;
+
+			&:first-child {
+				margin: 0;
+			}
 
 			dt {
 				width: 300px;
@@ -30,6 +36,10 @@
 			dd {
 				margin-left: 305px;
 				text-align: left;
+
+				.input-append {
+					margin-bottom: 0;
+				}
 			}
 		}
 	}

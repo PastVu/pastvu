@@ -42,13 +42,13 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				this.menuItems = this.co.menuItems = ko.computed(function () {
 					var login = this.user.login(),
 						result = [
-							{name: 'Profile', href: "/u/" + login, section: 'profile'},
-							{name: 'Photos', href: "/u/" + login + "/photo", section: 'photo'},
-							{name: 'Comments', href: "/u/" + login + "/comments", section: 'comments'}
+							{name: 'Профиль', href: "/u/" + login, section: 'profile'},
+							{name: 'Фотографии', href: "/u/" + login + "/photo", section: 'photo'},
+							{name: 'Комментарии', href: "/u/" + login + "/comments", section: 'comments'}
 						];
 
 					if (this.auth.loggedIn() && (this.auth.iAm.login() === login)) {
-						result.push({name: 'Settings', href: "/u/" + login + "/settings", section: 'settings'});
+						result.push({name: 'Настройки', href: "/u/" + login + "/settings", section: 'settings'});
 						result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
 					}
 					return result;

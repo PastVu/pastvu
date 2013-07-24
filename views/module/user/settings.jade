@@ -2,31 +2,31 @@
 	.accordion#accordion2
 		.accordion-group
 			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseOne") Privacy
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseOne") Конфиденциальность
 			.accordion-body.collapse.in#collapseOne
 				.accordion-inner
 					dl.dl-horizontal
-						dt My email adress
+						dt Мой email
 						dd
 							.input-append
 								input(type="text", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
 								span.add-on
 									i.icon-white(data-bind="css: {'icon-pencil': !editEmail(), 'icon-ok': editEmail()}, click: saveEmail")
 					dl.dl-horizontal
-						dt Show my email address to other registered users
-						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small(type="button") On
-								button.btn-strict.btn-strict-small.active(type="button") Off
-					dl.dl-horizontal
-						dt Account password
+						dt Мой пароль
 						dd
 							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
 								span Сменить
 							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('recallRequestForMe')}}")
 								span Восстановить
+					dl.dl-horizontal
+						dt Показывать в обсуждениях реальное имя
+						dd
+							.btn-group-toggle
+								button.btn-strict.btn-strict-small(type="button") Да
+								button.btn-strict.btn-strict-small.active(type="button") Нет
 		.accordion-group
 			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Map
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Карта
 			.accordion-body.collapse#collapseTwo
-				.accordion-inner Section is under construction...
+				.accordion-inner Раздел в процессе разработки...
