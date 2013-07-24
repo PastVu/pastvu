@@ -116,7 +116,7 @@ function getCommentsObj(iAm, data, cb) {
 				userFormatted = {
 					login: user.login,
 					avatar: avatar,
-					disp: user.disp
+					disp: user.disp || user.login
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}

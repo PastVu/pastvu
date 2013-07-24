@@ -83,7 +83,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				this.users[this.auth.iAm.login()] = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
-					name: this.auth.iAm.disp()
+					disp: this.auth.iAm.disp()
 				};
 			}
 		},
