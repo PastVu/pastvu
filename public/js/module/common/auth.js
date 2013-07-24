@@ -265,8 +265,6 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			storage.users[user.login] = {origin: user, vm: this.iAm};
 			this.loggedIn(true);
 
-			console.log(this.iAm.fullName());
-
 			//При изменении данных профиля на сервере, обновляем его на клиенте
 			socket
 				.removeAllListeners('youAre')
@@ -275,7 +273,6 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 						storage.users[user.login].origin = user;
 						this.iAm = User.vm(user, this.iAm);
 						this.iAm._v_(this.iAm._v_() + 1);
-						console.log(this.iAm.fullName());
 					}
 				}.bind(this));
 		},

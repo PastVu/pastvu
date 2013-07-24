@@ -164,13 +164,13 @@ var giveRatings = (function () {
 					ucommdayHash[ucday[i]._id] = ucday[i].ccount;
 					ucdayarr.push(ucday[i]._id);
 				}
-				User.collection.find({_id: {$in: ucdayarr}}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1, ccount: 1}, this.parallel());
+				User.collection.find({_id: {$in: ucdayarr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ccount: 1}, this.parallel());
 				for (i = ucweek.length; i--;) {
 					ucommweekHash[ucweek[i]._id] = ucweek[i].ccount;
 					ucweekarr.push(ucweek[i]._id);
 				}
-				User.collection.find({_id: {$in: ucweekarr}}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1, ccount: 1}, this.parallel());
-				User.collection.find({ccount: {$gt: 0}}, {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1, ccount: 1}, {limit: limit, sort: [
+				User.collection.find({_id: {$in: ucweekarr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ccount: 1}, this.parallel());
+				User.collection.find({ccount: {$gt: 0}}, {_id: 0, login: 1, avatar: 1, disp: 1, ccount: 1}, {limit: limit, sort: [
 					['ccount', 'desc']
 				]}, this.parallel());
 
@@ -179,13 +179,13 @@ var giveRatings = (function () {
 					updayHash[upday[i]._id] = upday[i].pcount;
 					updayarr.push(upday[i]._id);
 				}
-				User.collection.find({_id: {$in: updayarr}}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1, pcount: 1}, this.parallel());
+				User.collection.find({_id: {$in: updayarr}}, {_id: 1, login: 1, avatar: 1, disp: 1, pcount: 1}, this.parallel());
 				for (i = upweek.length; i--;) {
 					upweekHash[upweek[i]._id] = upweek[i].pcount;
 					upweekarr.push(upweek[i]._id);
 				}
-				User.collection.find({_id: {$in: upweekarr}}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1, pcount: 1}, this.parallel());
-				User.collection.find({pcount: {$gt: 0}}, {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1, pcount: 1}, {limit: limit, sort: [
+				User.collection.find({_id: {$in: upweekarr}}, {_id: 1, login: 1, avatar: 1, disp: 1, pcount: 1}, this.parallel());
+				User.collection.find({pcount: {$gt: 0}}, {_id: 0, login: 1, avatar: 1, disp: 1, pcount: 1}, {limit: limit, sort: [
 					['pcount', 'desc']
 				]}, this.parallel());
 			},
@@ -328,7 +328,7 @@ function giveNewsPublic(data, cb) {
 	}
 	step(
 		function () {
-			News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
+			News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(this);
 		},
 		function (err, news) {
 			if (err) {

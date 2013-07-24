@@ -364,7 +364,7 @@ function checkConfirm(session, data, cb) {
 			} else {
 				avatar = '/img/caps/avatarth.png';
 			}
-			cb({message: 'Pass change', type: 'authPassChange', login: user.login, name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || '', avatar: avatar});
+			cb({message: 'Pass change', type: 'authPassChange', login: user.login, disp: user.disp, avatar: avatar});
 		}
 
 	});

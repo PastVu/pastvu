@@ -9,7 +9,7 @@
 		button.btn-strict(type="button", data-bind="event: {}")
 			i.icon-envelope.icon-white
 			span Send message
-	.row-fluid.userName(data-bind="text: user.fullName()")
+	.row-fluid.userName(data-bind="text: user.disp()")
 	//ko if: rn()
 	.row-fluid.roleName(data-bind="text: rn(), css: rc()")
 	// /ko

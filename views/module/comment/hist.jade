@@ -6,7 +6,7 @@
 				img.media-object(data-bind="attr: {src: $data.user.avatar}")
 			.media-body
 				.histHead
-					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.name")
+					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.disp")
 					.dotDelimeter ·
 					.histStamp(data-bind="text: moment($data.stamp).calendar()")
 				//ko if: $data.frag

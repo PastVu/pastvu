@@ -8,9 +8,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 
 			avatar: '/img/caps/avatar.png',
 			avatarth: '/img/caps/avatarth.png',
-			disp: '',
-			firstName: '',
-			lastName: ''
+			disp: ''
 		},
 		full: {
 			email: '',
@@ -66,9 +64,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
 
-		if (defType === 'base' || defType === 'full') {
-			origin.fullname = origin.firstname + " " + origin.lastname;
-		}
 		if (defType === 'full') {
 			origin.regdate = new Date(origin.regdate);
 		}
@@ -89,13 +84,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 	 * @param vm ViewModel
 	 */
 	function vmAdditional(vm) {
-		vm.fullName = ko.computed(function () {
-			if (this.firstName() && this.lastName()) {
-				return this.firstName() + " " + this.lastName();
-			} else {
-				return this.login();
-			}
-		}, vm);
 	}
 
 	/**

@@ -148,7 +148,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 
 			if (section === 'profile') {
 				module = 'm/user/profile';
-				Utils.title.setTitle({title: this.user.fullName()});
+				Utils.title.setTitle({title: this.user.disp()});
 			} else if (section === 'photos' || section === 'photo') {
 				module = 'm/user/gallery';
 				moduleOptions.options.canAdd = true;
@@ -158,16 +158,16 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					} else {
 						moduleOptions.options.goUpload = true;
 					}
-					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.fullName()});
+					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.disp()});
 				} else {
-					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.fullName()});
+					Utils.title.setTitle({pre: 'Галерея - ', title: this.user.disp()});
 				}
 			} else if (section === 'comments') {
 				module = 'm/user/comments';
-				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.fullName()});
+				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.disp()});
 			} else if (section === 'settings') {
 				module = 'm/user/settings';
-				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.fullName()});
+				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.disp()});
 			}
 
 			this.section(section);

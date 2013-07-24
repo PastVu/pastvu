@@ -1,6 +1,6 @@
 .user_profile(data-bind="with: repository[M!M]")
 	form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit(), edit_mode: editMode()}")
-		.control-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
+		.control-group
 			label.control-label(for="inName") Псевдоним
 			.controls
 				i.icon-user

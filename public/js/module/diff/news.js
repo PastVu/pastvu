@@ -128,7 +128,6 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				} else {
 					_.defaults(data.news, newsDefault);
 					data.news.user.avatar = data.news.user.avatar ? P.preaddr + '/_a/h/' + data.news.user.avatar : '/img/caps/avatarth.png';
-					data.news.user.name = ((data.news.user.firstName && (data.news.user.firstName + ' ') || '') + (data.news.user.lastName || '')) || data.news.user.login;
 					if (this.news) {
 						this.news = ko_mapping.fromJS(data.news, this.news);
 					} else {

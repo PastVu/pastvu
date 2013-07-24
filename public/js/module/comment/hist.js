@@ -50,7 +50,6 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 						}
 						user = hist.user;
 						user.avatar = user.avatar ? P.preaddr + '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
-						user.name = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
 					}
 					this.hists(data.hists);
 				}

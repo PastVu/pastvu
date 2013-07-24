@@ -87,7 +87,7 @@ function getCommentsObj(iAm, data, cb) {
 			}
 
 			commentsArr = comments;
-			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, firstName: 1, lastName: 1}, this);
+			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, disp: 1}, this);
 		},
 		Utils.cursorExtract,
 		function (err, users) {
@@ -116,7 +116,7 @@ function getCommentsObj(iAm, data, cb) {
 				userFormatted = {
 					login: user.login,
 					avatar: avatar,
-					name: ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login
+					disp: user.disp
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}
@@ -690,7 +690,7 @@ function giveCommentHist(data, cb) {
 
 	step(
 		function counters() {
-			commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}).exec(this);
+			commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment) {

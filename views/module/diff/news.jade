@@ -6,7 +6,7 @@
 			a.avatar.pull-left.fringe(data-bind="attr: {href: '/u/' + news.user.login()}")
 				img(data-bind="attr: {src: news.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 			.authorInfo
-				a.authorName(data-bind="text: news.user.name(), attr: {href: '/u/' + news.user.login()}")
+				a.authorName(data-bind="text: news.user.disp(), attr: {href: '/u/' + news.user.login()}")
 				.newsDate(data-bind="text: moment(news.pdate()).format('D MMMM YYYY, HH:mm')")
 		.novel
 			//-.newsDate(data-bind="text: moment(news.pdate()).format('D MMM YYYY')")

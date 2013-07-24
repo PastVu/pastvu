@@ -33,7 +33,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 			this.profile = this.co.profile = ko.computed({
 				read: function () {
 					if (this.auth.loggedIn()) {
-						return this.auth.iAm.fullName();
+						return this.auth.iAm.disp();
 					} else {
 						return '';
 					}

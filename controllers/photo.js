@@ -504,7 +504,7 @@ function givePhoto(socket, data, cb) {
 		if (checkCan) {
 			can = photoPermissions.getCan(photo, user);
 		}
-		photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, firstName: 1, lastName: 1}}, function (err, photo) {
+		photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}

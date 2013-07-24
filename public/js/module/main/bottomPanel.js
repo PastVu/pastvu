@@ -241,7 +241,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					user.sfile = User.def.full.avatar;
 				}
 				user.link = '/u/' + user.login + (linkSection ? '/' + linkSection : '');
-				user.title = ((user.firstName && (user.firstName + ' ') || '') + (user.lastName || '')) || user.login;
+				user.title = user.disp;
 				if (numField && numFormat) {
 					user.amount = user[numField] + Utils.format.wordEndOfNum(user[numField], numFormat);
 				}

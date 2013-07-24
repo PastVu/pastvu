@@ -50,6 +50,12 @@ function saveUser(socket, data, cb) {
 			if (_.isEmpty(newValues)) {
 				return cb({message: 'Nothing to save'});
 			}
+			if (user.disp && user.disp !== user.login && (newValues.firstName || newValues.lastName)) {
+				var f = newValues.firstName || user.firstName || '',
+					l = newValues.lastName || user.lastName || '';
+
+				user.disp = f + (f && l ? ' ' : '') + l;
+			}
 
 			_.assign(user, newValues);
 			user.save(this);
@@ -68,8 +74,9 @@ function saveUser(socket, data, cb) {
 }
 
 //Сохраняем изменемя в профиле пользователя
-function changeDispName(iAm, data, cb) {
-	var login = data && data.login,
+function changeDispName(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login;
 
 	if (!iAm || !itsMe && iAm.role < 10) {
@@ -93,7 +100,9 @@ function changeDispName(iAm, data, cb) {
 			}
 
 			if (!!data.showName) {
-				user.disp = ((user.firstName || '') + (user.firstName && user.lastName ? ' ' : '') + (user.lastName || '')) || user.login;
+				var f = user.firstName || '',
+					l = user.lastName || '';
+				user.disp = (f + (f && l ? ' ' : '') + l) || user.login;
 			} else {
 				user.disp = user.login;
 			}
@@ -105,6 +114,10 @@ function changeDispName(iAm, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			cb({message: 'ok', saved: 1, disp: user.disp});
+
+			if (itsMe) {
+				auth.sendMe(socket);
+			}
 		}
 	);
 }
