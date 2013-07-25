@@ -33,17 +33,26 @@
 			}
 		}
 
-		.photoName {
+		.photoName, .authorName {
 			display: block;
-			padding-bottom: 2px;
 			cursor: pointer;
 			.text-overflow();
 		}
+		.photoName{
+			padding-bottom: 2px;
+		}
+		.authorName {
+			font-size: 13px;
+			line-height: 14px;
+		}
 		.commentText {
 			display: block;
-			height: 47px;
+			min-height: 15px;
+			max-height: 31px;
+			padding-bottom: 2px;
 			color: @textColor;
 			text-decoration: none;
+			overflow: hidden;
 		}
 	}
 }

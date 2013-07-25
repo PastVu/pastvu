@@ -140,7 +140,7 @@ function getCommentsObj(iAm, data, cb) {
 
 var commentsUserPerPage = 15;
 /**
- * Выбирает комментарии для польщователя
+ * Выбирает комментарии для пользователя
  * @param data Объект
  * @param cb Коллбэк
  */
@@ -236,9 +236,10 @@ function getCommentsUser(data, cb) {
  * @param cb Коллбэк
  */
 function getCommentsFeed(data, cb) {
-	var /*start = Date.now(),*/
+	var start = Date.now(),
 		commentsArr,
-		photosHash = {};
+		photosHash = {},
+		usersHash = {};
 
 	if (!data || !Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
@@ -246,44 +247,51 @@ function getCommentsFeed(data, cb) {
 
 	step(
 		function createCursor() {
-			Comment.collection.find({hidden: {$exists: false}}, {_id: 0, cid: 1, obj: 1, txt: 1}, {limit: Math.min(data.limit || 20, 100), sort: [
-				['stamp', 'desc']
-			]}, this);
+			Comment.find({hidden: {$exists: false}}, {_id: 0, cid: 1, obj: 1, user: 1, txt: 1}, {lean: true, limit: Math.min(data.limit || 20, 100), sort: {stamp: -1}}, this);
 		},
-		Utils.cursorExtract,
 		function (err, comments) {
 			if (err || !comments) {
 				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
 			var i = comments.length,
 				photoId,
-				photosArr = [];
+				photosArr = [],
+				userId,
+				usersArr = [];
 
-			while (i) {
-				photoId = comments[--i].obj;
+			while (i--) {
+				photoId = comments[i].obj;
 				if (photosHash[photoId] === undefined) {
 					photosHash[photoId] = true;
 					photosArr.push(photoId);
 				}
+				userId = comments[i].user;
+				if (usersHash[userId] === undefined) {
+					usersHash[userId] = true;
+					usersArr.push(userId);
+				}
 			}
 
 			commentsArr = comments;
-			Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this);
+			Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this.parallel());
+			User.collection.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, this.parallel());
 		},
-		Utils.cursorExtract,
-		function (err, photos) {
-			if (err || !photos) {
-				return cb({message: err && err.message || 'Cursor photos extract error', error: true});
+		Utils.cursorsExtract,
+		function (err, photos, users) {
+			if (err || !photos || !users) {
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
 			var i,
 				comment,
 				photo,
 				photoFormatted,
-				photoFormattedHash = {};
+				photoFormattedHash = {},
+				user,
+				userFormatted,
+				userFormattedHash = {};
 
-			i = photos.length;
-			while (i) {
-				photo = photos[--i];
+			for (i = photos.length; i--;) {
+				photo = photos[i];
 				photoFormatted = {
 					cid: photo.cid,
 					file: photo.file,
@@ -291,15 +299,23 @@ function getCommentsFeed(data, cb) {
 				};
 				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
 			}
-
-			i = commentsArr.length;
-			while (i) {
-				comment = commentsArr[--i];
-				comment.obj = photosHash[comment.obj].cid;
+			for (i = users.length; i--;) {
+				user = users[i];
+				userFormatted = {
+					login: user.login,
+					disp: user.disp
+				};
+				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}
 
-			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash});
+			for (i = commentsArr.length; i--;) {
+				comment = commentsArr[i];
+				comment.obj = photosHash[comment.obj].cid;
+				comment.user = usersHash[comment.user].login;
+			}
+
+			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
 		}
 	);
 }

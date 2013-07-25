@@ -13,6 +13,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 
 			socket.once('takeCommentsFeed', function (data) {
 				var photo,
+					user,
 					comment,
 					commentsToInsert = [],
 					i;
@@ -32,11 +33,22 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 					}
 					this.commentsPhotos = data.photos;
 
-					i = data.comments.length;
-					while (i) {
-						comment = data.comments[--i];
-						if (this.commentsPhotos[comment.obj] !== undefined) {
-							comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+					for (i in data.users) {
+						if (data.users[i] !== undefined) {
+							user = data.users[i];
+							user.link = '/u/' + user.login;
+						}
+					}
+					this.commentsUsers = data.users;
+
+					for (i = data.comments.length; i--;) {
+						comment = data.comments[i];
+						photo = this.commentsPhotos[comment.obj];
+						user = this.commentsUsers[comment.user];
+						if (photo && user) {
+							comment.obj = photo;
+							comment.user = user;
+							comment.link = photo.link + '?hl=comment-' + comment.cid;
 							commentsToInsert.unshift(comment);
 						}
 					}
