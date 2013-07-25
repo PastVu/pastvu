@@ -310,7 +310,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			try {
 				socket.once('logoutResult', function (json) {
 					if (json.error) {
-						console.log('Logout error' + json.message);
+						console.log('Logout error: ' + json.message);
 					} else {
 						Utils.cookie.removeItem('pastvu.sid', '/');
 						if (json.logoutPath) {

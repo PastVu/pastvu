@@ -47,7 +47,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 							{name: 'Комментарии', href: "/u/" + login + "/comments", section: 'comments'}
 						];
 
-					if (this.auth.loggedIn() && (this.auth.iAm.login() === login)) {
+					if (this.auth.loggedIn() && (this.auth.iAm.login() === login || this.auth.iAm.role() > 9)) {
 						result.push({name: 'Настройки', href: "/u/" + login + "/settings", section: 'settings'});
 						result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
 					}
@@ -64,15 +64,20 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 
 			// Если перешли на url загрузки, проверяем залогиненность.
 			// Если не залогинен выводим форму авторизации и по успешному коллбеку запускаем page заново
-			if (params.photoUpload && !this.auth.loggedIn()) {
-				this.auth.show('login', function (result) {
-					if (result.loggedIn) {
-						this.routeHandler();
-					} else {
-						globalVM.router.navigateToUrl('/');
-					}
-				}, this);
-				return;
+			if (!this.auth.loggedIn()) {
+				if (params.photoUpload) {
+					this.auth.show('login', function (result) {
+						if (result.loggedIn) {
+							this.routeHandler();
+						} else {
+							globalVM.router.navigateToUrl('/');
+						}
+					}, this);
+					return;
+				} else if (params.section === 'settings') {
+					globalVM.router.navigateToUrl('/u/' + login);
+					return;
+				}
 			}
 
 			if (this.user && this.user.login() === login) {

@@ -1,6 +1,6 @@
 /*global define:true*/
 /**
- * Модель профиля пользователя
+ * Модель настроек пользователя
  */
 define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
@@ -27,15 +27,20 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
-			this.originUser = storage.userImmediate(this.u.login()).origin;
-			this.editEmail = ko.observable(false);
 
-			this.showName = this.co.showName = ko.computed(function () {
-				return this.u.disp() !== this.u.login();
-			}, this);
+			if (this.auth.loggedIn() && (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() > 9)) {
+				this.originUser = storage.userImmediate(this.u.login()).origin;
+				this.editEmail = ko.observable(false);
 
-			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
+				this.showName = this.co.showName = ko.computed(function () {
+					return this.u.disp() !== this.u.login();
+				}, this);
+
+				ko.applyBindings(globalVM, this.$dom[0]);
+				this.show();
+			} else {
+				globalVM.router.navigateToUrl('/u/' + this.u.login());
+			}
 		},
 		show: function () {
 			this.$dom.find("#accordion2 .collapse").collapse({
