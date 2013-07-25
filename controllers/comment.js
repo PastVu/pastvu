@@ -235,90 +235,92 @@ function getCommentsUser(data, cb) {
  * @param data Объект
  * @param cb Коллбэк
  */
-function getCommentsFeed(data, cb) {
-	var start = Date.now(),
-		commentsArr,
-		photosHash = {},
-		usersHash = {};
+var getCommentsFeed = (function () {
+	var query = {hidden: {$exists: false}},
+		selector = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
+		options = {lean: true, limit: 30, sort: {stamp: -1}};
 
-	if (!data || !Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
-	}
+	return Utils.memoizeAsync(function calcStats(handler) {
+		var //start = Date.now(),
+			commentsArr,
+			photosHash = {},
+			usersHash = {};
 
-	step(
-		function createCursor() {
-			Comment.find({hidden: {$exists: false}}, {_id: 0, cid: 1, obj: 1, user: 1, txt: 1}, {lean: true, limit: Math.min(data.limit || 20, 100), sort: {stamp: -1}}, this);
-		},
-		function (err, comments) {
-			if (err || !comments) {
-				return cb({message: err && err.message || 'Cursor extract error', error: true});
-			}
-			var i = comments.length,
-				photoId,
-				photosArr = [],
-				userId,
-				usersArr = [];
-
-			while (i--) {
-				photoId = comments[i].obj;
-				if (photosHash[photoId] === undefined) {
-					photosHash[photoId] = true;
-					photosArr.push(photoId);
+		step(
+			function createCursor() {
+				Comment.find(query, selector, options, this);
+			},
+			function (err, comments) {
+				if (err || !comments) {
+					return handler({message: err && err.message || 'Comments get error', error: true});
 				}
-				userId = comments[i].user;
-				if (usersHash[userId] === undefined) {
-					usersHash[userId] = true;
-					usersArr.push(userId);
+				var i = comments.length,
+					photoId,
+					photosArr = [],
+					userId,
+					usersArr = [];
+
+				while (i--) {
+					photoId = comments[i].obj;
+					if (photosHash[photoId] === undefined) {
+						photosHash[photoId] = true;
+						photosArr.push(photoId);
+					}
+					userId = comments[i].user;
+					if (usersHash[userId] === undefined) {
+						usersHash[userId] = true;
+						usersArr.push(userId);
+					}
 				}
-			}
 
-			commentsArr = comments;
-			Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this.parallel());
-			User.collection.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, this.parallel());
-		},
-		Utils.cursorsExtract,
-		function (err, photos, users) {
-			if (err || !photos || !users) {
-				return cb({message: err && err.message || 'Cursor extract error', error: true});
-			}
-			var i,
-				comment,
-				photo,
-				photoFormatted,
-				photoFormattedHash = {},
-				user,
-				userFormatted,
-				userFormattedHash = {};
+				commentsArr = comments;
+				Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this.parallel());
+				User.collection.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, this.parallel());
+			},
+			Utils.cursorsExtract,
+			function (err, photos, users) {
+				if (err || !photos || !users) {
+					return handler({message: err && err.message || 'Cursor extract error', error: true});
+				}
+				var i,
+					comment,
+					photo,
+					photoFormatted,
+					photoFormattedHash = {},
+					user,
+					userFormatted,
+					userFormattedHash = {};
 
-			for (i = photos.length; i--;) {
-				photo = photos[i];
-				photoFormatted = {
-					cid: photo.cid,
-					file: photo.file,
-					title: photo.title
-				};
-				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
-			}
-			for (i = users.length; i--;) {
-				user = users[i];
-				userFormatted = {
-					login: user.login,
-					disp: user.disp
-				};
-				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
-			}
+				for (i = photos.length; i--;) {
+					photo = photos[i];
+					photoFormatted = {
+						cid: photo.cid,
+						file: photo.file,
+						title: photo.title
+					};
+					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+				}
+				for (i = users.length; i--;) {
+					user = users[i];
+					userFormatted = {
+						login: user.login,
+						disp: user.disp
+					};
+					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
+				}
 
-			for (i = commentsArr.length; i--;) {
-				comment = commentsArr[i];
-				comment.obj = photosHash[comment.obj].cid;
-				comment.user = usersHash[comment.user].login;
-			}
+				for (i = commentsArr.length; i--;) {
+					comment = commentsArr[i];
+					comment.obj = photosHash[comment.obj].cid;
+					comment.user = usersHash[comment.user].login;
+				}
 
-			console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
-		}
-	);
-}
+				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+				handler({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
+			}
+		);
+	}, ms('15s'));
+}());
 
 /**
  * Создает комментарий
@@ -853,7 +855,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveCommentsFeed', function (data) {
-			getCommentsFeed(data, function (result) {
+			getCommentsFeed(function (result) {
 				socket.emit('takeCommentsFeed', result);
 			});
 		});
