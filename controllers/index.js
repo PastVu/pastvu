@@ -66,8 +66,8 @@ var giveRatings = (function () {
 		return b.pcount - a.pcount;
 	}
 
-	return function (data, cb) {
-		var st = Date.now(),
+	return Utils.memoizeAsync(function (handler) {
+		var //st = Date.now(),
 			pcommdayHash = {},
 			pcommweekHash = {},
 			ucommdayHash = {},
@@ -75,23 +75,19 @@ var giveRatings = (function () {
 			updayHash = {},
 			upweekHash = {};
 
-		if (!Utils.isType('object', data)) {
-			cb({message: 'Bad params', error: true});
-			return;
-		}
 
 		step(
 			//Сначала запускаем агрегацию по всем показателем, требующим расчет
 			function aggregation() {
 				Comment.collection.aggregate([
 					{$match: {stamp: {$gt: dayStart}}},
-					{$group: {_id: '$photo', ccount: {$sum: 1}}},
+					{$group: {_id: '$obj', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Comment.collection.aggregate([
 					{$match: {stamp: {$gt: weekStart}}},
-					{$group: {_id: '$photo', ccount: {$sum: 1}}},
+					{$group: {_id: '$obj', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
 				], this.parallel());
@@ -122,8 +118,7 @@ var giveRatings = (function () {
 			},
 			function getAggregationResultObjects(err, pcday, pcweek, ucday, ucweek, upday, upweek) {
 				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
+					return handler({message: err && err.message, error: true});
 				}
 				var i,
 					pcdayarr = [],
@@ -192,8 +187,7 @@ var giveRatings = (function () {
 			Utils.cursorsExtract,
 			function (err, pday, pweek, pall, pcday, pcweek, pcall, ucday, ucweek, ucall, upday, upweek, upall) {
 				if (err) {
-					cb({message: err && err.message, error: true});
-					return;
+					return handler({message: err && err.message, error: true});
 				}
 				var i;
 
@@ -219,10 +213,10 @@ var giveRatings = (function () {
 				}
 
 				//console.log(Date.now() - st);
-				cb({pday: pday || [], pweek: pweek || [], pall: pall || [], pcday: pcday.sort(sortCcount), pcweek: pcweek.sort(sortCcount), pcall: pcall, ucday: ucday.sort(sortCcount), ucweek: ucweek.sort(sortCcount), ucall: ucall, upday: upday.sort(sortPcount), upweek: upweek.sort(sortPcount), upall: upall});
+				handler({pday: pday || [], pweek: pweek || [], pall: pall || [], pcday: pcday.sort(sortCcount), pcweek: pcweek.sort(sortCcount), pcall: pcall, ucday: ucday.sort(sortCcount), ucweek: ucweek.sort(sortCcount), ucall: ucall, upday: upday.sort(sortPcount), upweek: upweek.sort(sortPcount), upall: upall});
 			}
 		);
-	};
+	}, ms('1m'));
 }());
 
 /**
@@ -246,7 +240,7 @@ var giveStats = (function () {
 		}}
 	];
 
-	return Utils.memoizeAsync(function calcStats(handler) {
+	return Utils.memoizeAsync(function (handler) {
 		var //st = Date.now(),
 			photoYear;
 
@@ -381,7 +375,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveRatings', function (data) {
-			giveRatings(data, function (resultData) {
+			giveRatings(function (resultData) {
 				socket.emit('takeRatings', resultData);
 			});
 		});

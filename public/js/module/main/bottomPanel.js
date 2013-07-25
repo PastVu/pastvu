@@ -262,7 +262,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 			}.bind(this));
-			socket.emit('giveStats', {});
+			socket.emit('giveStats');
 		},
 
 		onPreviewLoad: function (data, event) {
