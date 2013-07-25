@@ -48,6 +48,7 @@ require([
 			handlers: {
 				index: function (qparams) {
 					this.params({_handler: 'index'});
+					ga('set', 'page', '/');
 
 					renderer(
 						[
@@ -62,6 +63,7 @@ require([
 					}
 
 					this.params(_.assign({cid: cid, _handler: 'photo'}, qparams));
+					ga('set', 'page', '/p' + (Number(cid) ? '/' + cid : ''));
 					renderer(
 						[
 							{module: 'm/photo/photo', container: '#bodyContainer'}
@@ -79,6 +81,7 @@ require([
 					}
 					this.params(_.assign({user: login, section: section, page: page, _handler: 'profile'}, qparams));
 
+					ga('set', 'page', '/u' + (login ? '/' + login + (section ? '/' + section : '') : ''));
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
@@ -88,6 +91,7 @@ require([
 				photoUpload: function () {
 					this.params({section: 'photo', photoUpload: true, _handler: 'profile'});
 
+					ga('set', 'page', '/photoUpload');
 					renderer(
 						[
 							{module: 'm/user/userPage', container: '#bodyContainer'}
@@ -98,6 +102,7 @@ require([
 					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
 					var mName = Number(cid) ? 'm/diff/news' : 'm/diff/newsList';
 
+					ga('set', 'page', '/news' + (Number(cid) ? '/' + cid : ''));
 					renderer(
 						[
 							{module: mName, container: '#bodyContainer'}
@@ -113,13 +118,14 @@ require([
 							console.log('checkConfirmResult', data.message);
 							globalVM.router.navigateToUrl('/');
 						} else {
-
 							renderer(
 								[
 									{module: 'm/main/mainPage', container: '#bodyContainer'}
 								]
 							);
 
+							ga('set', 'page', '/confirm');
+							ga('send', 'pageview', {title: 'Confirm'});
 							if (data.type === 'noty') {
 								window.noty(
 									{
