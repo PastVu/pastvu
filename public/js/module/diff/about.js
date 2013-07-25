@@ -14,7 +14,8 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'text
 		show: function () {
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
-			ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
+			ga('send', 'event', 'about', 'open');
+			//ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);

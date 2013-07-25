@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
 	'use strict';
 
@@ -146,11 +146,13 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formWorking(false);
 									this.formFocus();
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'login', 'error');
 							} else {
 								if (Utils.isType('function', this.callback)) {
 									this.callback.call(this.ctx, {loggedIn: true});
 								}
 								this.hide();
+								ga('send', 'event', 'auth', 'login', 'success');
 							}
 						}.bind(this)
 					);
@@ -164,12 +166,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'register', 'error');
 							} else {
 								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'register', 'success');
 							}
 						}.bind(this)
 					);
@@ -183,12 +187,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passRecall', 'error');
 							} else {
 								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passRecall', 'success');
 							}
 						}.bind(this)
 					);
@@ -202,12 +208,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passChangeRecall', 'error');
 							} else {
 								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passChangeRecall', 'success');
 							}
 						}.bind(this)
 					);
@@ -221,12 +229,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'recallRequestFor', 'error');
 							} else {
 								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'recallRequestFor', 'success');
 							}
 						}.bind(this)
 					);
@@ -240,12 +250,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 									this.formFocus();
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passChange', 'error');
 							} else {
 								this.finish(true);
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
 								}.bind(this), 420);
+								ga('send', 'event', 'auth', 'passChange', 'success');
 							}
 						}.bind(this)
 					);
@@ -307,6 +319,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			}
 		},
 		doLogout: function (callback) {
+			ga('send', 'event', 'auth', 'logout');
 			try {
 				socket.once('logoutResult', function (json) {
 					if (json.error) {
