@@ -88,10 +88,10 @@ function register(session, data, cb) {
 
 	Step(
 		function checkUserExists() {
-			User.findOne({ $or: [
-				{ login: new RegExp('^' + data.login + '$', 'i') },
-				{ email: data.email }
-			] }, this);
+			User.findOne({$or: [
+				{login: new RegExp('^' + data.login + '$', 'i')},
+				{email: data.email}
+			]}, this);
 		},
 		function incrementCounter(err, user) {
 			if (user) {

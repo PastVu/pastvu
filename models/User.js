@@ -3,10 +3,11 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
 	bcrypt = require('bcrypt'),
+	ms = require('ms'),
 	SALT_ROUNDS = 10,
 	SALT_SEED = 20,
 	MAX_LOGIN_ATTEMPTS = 10,
-	LOCK_TIME = 2 * 60 * 1000;
+	LOCK_TIME = ms('2m');
 
 var sexes = [
 	'm',
@@ -113,16 +114,13 @@ UserScheme.virtual('isLocked').get(function () {
 UserScheme.methods.incLoginAttempts = function (cb) {
 	// if we have a previous lock that has expired, restart at 1
 	if (this.lockUntil && this.lockUntil < Date.now()) {
-		return this.update({
-			$set: { loginAttempts: 1 },
-			$unset: { lockUntil: 1 }
-		}, cb);
+		return this.update({$set: {loginAttempts: 1}, $unset: {lockUntil: 1}}, cb);
 	}
 	// otherwise we're incrementing
-	var updates = { $inc: { loginAttempts: 1 } };
+	var updates = {$inc: {loginAttempts: 1}};
 	// lock the account if we've reached max attempts and it's not locked already
 	if (this.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
-		updates.$set = { lockUntil: Date.now() + LOCK_TIME };
+		updates.$set = {lockUntil: Date.now() + LOCK_TIME};
 	}
 	return this.update(updates, cb);
 };
@@ -137,7 +135,10 @@ var reasons = UserScheme.statics.failedLogin = {
 };
 
 UserScheme.statics.getAuthenticated = function (login, password, cb) {
-	this.findOne({ login: new RegExp('^' + login + '$', 'i'), active: true }, function (err, user) {
+	this.findOne({$or: [
+		{login: new RegExp('^' + login + '$', 'i')},
+		{email: login.toLowerCase()}
+	], active: true}, function (err, user) {
 		if (err) {
 			return cb(err);
 		}
@@ -154,7 +155,7 @@ UserScheme.statics.getAuthenticated = function (login, password, cb) {
 				if (err) {
 					return cb(err);
 				}
-				return cb(null, null, reasons.MAX_ATTEMPTS);
+				cb(null, null, reasons.MAX_ATTEMPTS);
 			});
 		}
 
@@ -164,32 +165,27 @@ UserScheme.statics.getAuthenticated = function (login, password, cb) {
 				return cb(err);
 			}
 
-			// check if the password was a match
 			if (isMatch) {
 				// if there's no lock or failed attempts, just return the user
 				if (!user.loginAttempts && !user.lockUntil) {
 					return cb(null, user);
 				}
 				// reset attempts and lock info
-				var updates = {
-					$set: { loginAttempts: 0 },
-					$unset: { lockUntil: 1 }
-				};
-				return user.update(updates, function (err) {
+				user.update({$set: {loginAttempts: 0}, $unset: {lockUntil: 1}}, function (err) {
 					if (err) {
 						return cb(err);
 					}
-					return cb(null, user);
+					cb(null, user);
+				});
+			} else {
+				// password is incorrect, so increment login attempts before responding
+				user.incLoginAttempts(function (err) {
+					if (err) {
+						return cb(err);
+					}
+					cb(null, null, reasons.PASSWORD_INCORRECT);
 				});
 			}
-
-			// password is incorrect, so increment login attempts before responding
-			user.incLoginAttempts(function (err) {
-				if (err) {
-					return cb(err);
-				}
-				return cb(null, null, reasons.PASSWORD_INCORRECT);
-			});
 		});
 	});
 };
