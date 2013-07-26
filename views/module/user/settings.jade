@@ -9,7 +9,7 @@
 						dt Мой email
 						dd
 							.input-append
-								input(type="text", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
+								input(type="email", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
 								span.add-on
 									i.icon-white(data-bind="css: {'icon-pencil': !editEmail(), 'icon-ok': editEmail()}, click: saveEmail")
 					dl.dl-horizontal

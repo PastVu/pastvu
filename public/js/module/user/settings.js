@@ -66,9 +66,23 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 
 		saveEmail: function () {
 			if (this.editEmail() === true) {
-				socket.emit('saveUser', {login: this.u.login(), email: this.u.email()});
+				if (this.u.email() !== this.originUser.email) {
+					socket.once('changeEmailResult', function (result) {
+						if (result && !result.error) {
+							this.u.email(result.email);
+							this.originUser.email = result.email;
+							this.editEmail(false);
+						} else {
+							window.noty({text: result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+						}
+					}.bind(this));
+					socket.emit('changeEmail', {login: this.u.login(), email: this.u.email()});
+				} else {
+					this.editEmail(false);
+				}
+			} else {
+				this.editEmail(true);
 			}
-			this.editEmail(!this.editEmail());
 		}
 	});
 });

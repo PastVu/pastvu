@@ -73,7 +73,7 @@ function saveUser(socket, data, cb) {
 	);
 }
 
-//Сохраняем изменемя в профиле пользователя
+//Меняем отображаемое имя
 function changeDispName(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
@@ -122,6 +122,59 @@ function changeDispName(socket, data, cb) {
 	);
 }
 
+//Меняем email
+function changeEmail(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login;
+
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || !data.email) {
+		return cb({message: 'Bad params', error: true});
+	}
+	data.email = data.email.toLowerCase();
+	if (!data.email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
+		return cb({message: 'Недействительный email. Проверьте корректность ввода.', error: true});
+	}
+
+	step(
+		function () {
+			if (iAm.login === login) {
+				this(null, iAm);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, u) {
+			if (err && !u) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+			user = u;
+			User.findOne({email: data.email}, {_id: 0, login: 1}, this);
+		},
+		function (err, u) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (u && u.login !== user.login) {
+				return cb({message: 'Такой email уже используется другим пользователем', error: true});
+			}
+
+			user.email = data.email;
+			user.save(this);
+		},
+		function (err, savedUser) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({message: 'ok', email: savedUser.email});
+		}
+	);
+}
+
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("profile.js");
 
@@ -146,6 +199,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('changeDispName', function (data) {
 			changeDispName(socket, data, function (resultData) {
 				socket.emit('changeDispNameResult', resultData);
+			});
+		});
+		socket.on('changeEmail', function (data) {
+			changeEmail(socket, data, function (resultData) {
+				socket.emit('changeEmailResult', resultData);
 			});
 		});
 	});
