@@ -546,8 +546,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 							if (this.p.fresh() && !this.p.ready()) {
 								this.notifyReady();
 							}
+							ga('send', 'event', 'photo', 'edit', 'photo edit success');
 						} else {
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+							ga('send', 'event', 'photo', 'edit', 'photo edit error');
 						}
 						this.exe(false);
 					}, this);
@@ -569,8 +571,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 						this.p.fresh(false);
 						this.originData.fresh = false;
 						this.commentsActivate(100);
+						ga('send', 'event', 'photo', 'approve', 'photo approve success');
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+						ga('send', 'event', 'photo', 'edit', 'photo approve error');
 					}
 					this.exe(false);
 				}.bind(this));
@@ -584,8 +588,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 					if (data && !data.error) {
 						this.p.disabled(data.disabled || false);
 						this.originData.disabled = data.disabled || false;
+						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' success');
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' error');
 					}
 					this.exe(false);
 				}.bind(this));
@@ -694,12 +700,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 											okButton.trigger('click');
 										}
 									);
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' success');
 								} else {
 									$noty.$message.children().html(data.message || 'Error occurred');
 									okButton.text('Close').on('click', function () {
 										$noty.close();
 										this.exe(false);
 									}.bind(this));
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' error');
 								}
 							}.bind(that));
 							socket.emit('removePhoto', that.p.cid());
@@ -797,8 +805,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				if (data && !data.error) {
 					this.p.ready(true);
 					this.originData.ready = true;
+					ga('send', 'event', 'photo', 'ready', 'photo ready success');
 				} else {
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					ga('send', 'event', 'photo', 'ready', 'photo ready error');
 				}
 				this.exe(false);
 			}.bind(this));

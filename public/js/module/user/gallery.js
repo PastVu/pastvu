@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель фотографий пользователя
  */
@@ -209,6 +209,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 									this.uploadVM.createPhotos(function (data) {
 										if (data && !data.error) {
 											this.closeUpload(data.cids.length);
+											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+										} else {
+											ga('send', 'event', 'photo', 'create', 'photo create error');
 										}
 									}, this);
 									evt.stopPropagation();

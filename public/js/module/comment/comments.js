@@ -362,9 +362,9 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				_this.exe(false);
 				if (result && !result.error && result.comment) {
 					_this.cancel(data, event);
-					ga('send', 'event', 'comment', create ? 'create' : 'update', 'success');
+					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
 				} else {
-					ga('send', 'event', 'comment', create ? 'create' : 'update', 'error');
+					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
 				}
 			}
 		},
@@ -547,10 +547,10 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 
 								if (result && !result.error) {
 									msg = 'Удалено комментариев: ' + result.countComments + ', от ' + result.countUsers + ' пользователя(ей)';
-									ga('send', 'event', 'comment', 'delete', 'success', result.countComments);
+									ga('send', 'event', 'comment', 'delete', 'comment delete success', result.countComments);
 								} else {
 									msg = result && result.message || '';
-									ga('send', 'event', 'comment', 'delete', 'error');
+									ga('send', 'event', 'comment', 'delete', 'comment delete error');
 								}
 								$noty.$message.children().html(msg);
 								okButton.text('Close').on('click', function () {
