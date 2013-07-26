@@ -154,6 +154,7 @@ module.exports.loadController = function (app, db) {
 			$set,
 			$unset,
 			pcount,
+			pfcount,
 		//bcount,
 			ccount;
 
@@ -163,11 +164,17 @@ module.exports.loadController = function (app, db) {
 			$set = {};
 			$unset = {};
 			pcount = db.photos.count({user: user._id});
-			ccount = db.comments.count({user: user._id});
+			pfcount = db.photos_fresh.count({user: user._id});
+			ccount = db.comments.count({user: user._id}) + db.commentsn.count({user: user._id});
 			if (pcount > 0) {
 				$set.pcount = pcount;
 			} else {
 				$unset.pcount = 1;
+			}
+			if (pfcount > 0) {
+				$set.pfcount = pfcount;
+			} else {
+				$unset.pfcount = 1;
 			}
 			if (ccount > 0) {
 				$set.ccount = ccount;

@@ -537,19 +537,19 @@ function givePhotosForApprove(socket, data, cb) {
 
 //Отдаем галерею пользователя в компактном виде
 function giveUserPhotos(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	User.collection.findOne({login: data.login}, {_id: 1, pfcount: 1}, function (err, user) {
+	var iAm = socket.handshake.session.user;
+	User.collection.findOne({login: data.login}, {_id: 1}, function (err, user) {
 		if (err || !user) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
 		var query = {user: user._id},
-			noPublic = user && (user.role > 4 || user._id.equals(user._id)),
+			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
 			photosFresh,
 			skip = data.skip || 0,
 			limit = Math.min(data.limit || 20, 100);
 
 		if (noPublic) {
-			findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, user, true, finish);
+			findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, true, finish);
 		} else {
 			Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
 		}
