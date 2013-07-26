@@ -73,15 +73,20 @@ function login(socket, data, cb) {
 function register(session, data, cb) {
 	'use strict';
 	var error = '',
-		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail',
-	//success = 'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
+		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 	data.email = data.email.toLowerCase();
 
-	if (!data.login) error += 'Fill in the login field. ';
+	if (!data.login) {
+		error += 'Заполните имя пользователя. '; //'Fill in the login field. '
+	} else {
+		if (!data.login.match(/^[\.\w-]{3,15}$/i) || !data.login.match(/^[A-za-z].*$/i) || !data.login.match(/^.*\w$/i)) {
+			error += 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. В состав слова могут входить цифры, точка, подчеркивание и тире. ';
+		}
+	}
 	if (!data.email) error += 'Fill in the e-mail field. ';
 	if (!data.pass) error += 'Fill in the password field. ';
-	if (data.pass !== data.pass2) error += 'Passwords do not match.';
+	if (data.pass !== data.pass2) error += 'Пароли не совпадают.';
 	if (error) {
 		return cb({message: error, error: true});
 	}
@@ -96,10 +101,10 @@ function register(session, data, cb) {
 		function incrementCounter(err, user) {
 			if (user) {
 				if (user.login.toLowerCase() === data.login.toLowerCase()) {
-					error += 'User with such login already exists. ';
+					error += 'Пользователь с таким именем уже зарегистрирован. '; //'User with such login already exists. '
 				}
 				if (user.email === data.email) {
-					error += 'User with such email already exists.';
+					error += 'Пользователь с таким email уже зарегистрирован.'; //'User with such email already exists.'
 				}
 				return cb({message: error, error: true});
 			}

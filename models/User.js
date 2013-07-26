@@ -138,7 +138,7 @@ UserScheme.statics.getAuthenticated = function (login, password, cb) {
 	this.findOne({$or: [
 		{login: new RegExp('^' + login + '$', 'i')},
 		{email: login.toLowerCase()}
-	], active: true}, function (err, user) {
+	], active: true, pass: {$ne: 'init'}}, function (err, user) {
 		if (err) {
 			return cb(err);
 		}
