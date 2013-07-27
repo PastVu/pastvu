@@ -19,9 +19,11 @@
 					dl.dl-horizontal
 						dt Мой пароль
 						dd
+							//ko if: itsMe()
 							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
 								span Сменить
-							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('recallRequestForMe')}}")
+							// /ko
+							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
 								span Восстановить
 					dl.dl-horizontal
 						dt Показывать в обсуждениях реальное имя

@@ -56,6 +56,10 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 			this.showing = false;
 		},
 
+		showRecallRequest: function (login, callback, ctx) {
+			this.login(login);
+			this.show('recallRequestForMe', callback, ctx);
+		},
 		showPassChangeRecall: function (data, key, callback, ctx) {
 			this.login(data.login);
 			this.name(data.disp);
@@ -225,7 +229,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallRequestForMe') {
 					this.doPassRecall(
-						$.extend($form.serializeObject(), {login: this.iAm.login()}),
+						$.extend($form.serializeObject(), {login: this.login() || this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');

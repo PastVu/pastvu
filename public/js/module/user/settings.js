@@ -18,6 +18,10 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 				this.originUser = storage.userImmediate(this.u.login()).origin;
 				this.editEmail = ko.observable(false);
 
+				this.itsMe = this.co.itsMe = ko.computed(function () {
+					return this.auth.iAm.login() === this.u.login();
+				}, this);
+
 				this.showName = this.co.showName = ko.computed(function () {
 					return this.u.disp() !== this.u.login();
 				}, this);

@@ -1,3 +1,5 @@
+'use strict';
+
 var _session = require('./_session.js'),
 	Session,
 	User,
@@ -17,13 +19,15 @@ var _session = require('./_session.js'),
 	}),
 	appEnv = {},
 	app,
-	io;
+	io,
+	msg = {
+		deny: 'You do not have permission for this action'
+	};
 
 var logger = log4js.getLogger("auth.js");
 moment.lang('ru');
 
 function login(socket, data, cb) {
-	'use strict';
 	var error = '',
 		session = socket.handshake.session;
 
@@ -71,7 +75,6 @@ function login(socket, data, cb) {
 }
 
 function register(session, data, cb) {
-	'use strict';
 	var error = '',
 		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
@@ -171,28 +174,29 @@ function register(session, data, cb) {
 }
 
 function recall(session, data, cb) {
-	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail',
-	//success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
+	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail', //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 
-	if (!data.login) {
-		cb({message: 'Введите логин или e-mail', error: true});
-		//cb({message: 'Fill in login or e-mail', error: true});
-		return;
+	if (!Utils.isType('object', data) || !data.login) {
+		return cb({message: 'Bad params', error: true});
 	}
 
 	Step(
 		function checkUserExists() {
-			User.findOne().or([
-				{login: new RegExp('^' + data.login + '$', 'i')},
-				{email: data.login.toLowerCase()}
-			]).where('active', true).exec(this);
+			User.findOne({$or: [
+				{ login: new RegExp('^' + data.login + '$', 'i') },
+				{ email: data.login.toLowerCase() }
+			], active: true}).exec(this);
 		},
 		function (err, user) {
 			if (err || !user) {
-				cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true});
-				//cb({message: err && err.message || 'User with such login or e-mail does not exist', error: true});
-				return;
+				return cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true}); //'User with such login or e-mail does not exist'
+			}
+			var iAm = session.user;
+
+			//Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
+			if (iAm && iAm.login !== data.login && (!iAm.role || iAm.role < 10)) {
+				return cb({message: msg.deny, error: true});
 			}
 
 			data._id = user._id;
@@ -203,23 +207,20 @@ function recall(session, data, cb) {
 		},
 		function (err) {
 			if (err) {
-				cb({message: (err && err.message) || '', error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 			new UserConfirm({key: confirmKey, user: data._id}).save(this);
 		},
 		function sendMail(err) {
 			if (err) {
-				cb({message: (err && err.message) || '', error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 			var expireOn = moment().lang('ru');
 			expireOn.add(ms('2d'));
 			Mail.send({
 				from: 'PastVu ★<noreply@pastvu.com>',
 				to: data.login + ' <' + data.email + '>',
-				subject: 'Запрос на восстановление пароля',
-				//subject: 'Request for password recovery',
+				subject: 'Запрос на восстановление пароля', //'Request for password recovery',
 				headers: {
 					'X-Laziness-level': 1000
 				},
@@ -233,8 +234,7 @@ function recall(session, data, cb) {
 		},
 		function finish(err) {
 			if (err) {
-				cb({message: err.message, error: true});
-				return;
+				return cb({message: err.message, error: true});
 			}
 			cb({message: success});
 		}
@@ -286,7 +286,6 @@ function passChangeRecall(session, data, cb) {
 }
 
 function passchange(session, data, cb) {
-	'use strict';
 	var error = '';
 
 	if (!session.user || !data || session.user.login !== data.login) {
