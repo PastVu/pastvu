@@ -164,7 +164,7 @@ function changeEmail(socket, data, cb) {
 			}
 
 			if (data.pass) {
-				user.checkPass(data.pass, function (err, isMatch) {
+				iAm.checkPass(data.pass, function (err, isMatch) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
