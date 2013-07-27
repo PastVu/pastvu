@@ -163,16 +163,32 @@ function changeEmail(socket, data, cb) {
 				return cb({message: 'Такой email уже используется другим пользователем', error: true});
 			}
 
-			user.email = data.email;
-			user.save(this);
-		},
-		function (err, savedUser) {
+			if (data.pass) {
+				user.checkPass(data.pass, function (err, isMatch) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					if (isMatch) {
+						saveEmail();
+					} else {
+						cb({message: 'Неверный пароль', error: true});
+					}
+				});
+			} else {
+				cb({confirm: 'pass'});
+			}
+		}
+	);
+
+	function saveEmail() {
+		user.email = data.email;
+		user.save(function (err, savedUser) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
 			cb({message: 'ok', email: savedUser.email});
-		}
-	);
+		});
+	}
 }
 
 module.exports.loadController = function (app, db, io) {

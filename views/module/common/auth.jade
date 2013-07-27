@@ -133,3 +133,17 @@
 			| Caps Lock активен
 		.mess
 			div(data-bind="text: msg()")
+
+	script(id="passInputTpl", type="text/html")
+		.head Верификация
+		dl.dl-horizontal
+			dt Введите свой пароль для подтверждения:
+		div.inputwrap.lock
+			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
+		button.btn-strict.formAction(type="submit") Отправить
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+			i.icon-warning-sign
+			| Caps Lock активен
+		.mess
+			div(data-bind="text: msg()")

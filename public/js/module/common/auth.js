@@ -95,7 +95,11 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		},
 		formClose: function () {
 			if (Utils.isType('function', this.callback)) {
-				this.callback.call(this.ctx, {loggedIn: false});
+				if (this.mode() === 'passInput') {
+					this.callback.call(this.ctx, null, true);
+				} else {
+					this.callback.call(this.ctx, {loggedIn: false});
+				}
 			}
 			this.hide();
 		},
@@ -261,6 +265,8 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 							}
 						}.bind(this)
 					);
+				} else if (this.mode() === 'passInput') {
+					this.callback.call(this.ctx, $form.serializeObject().pass);
 				}
 
 				this.formWorking(true);
@@ -394,6 +400,17 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 				if (Utils.isType('function', callback)) {
 					callback(e.message);
 				}
+			}
+		},
+		passInputSet: function (data) {
+			if (data.error) {
+				this.setMessage(data.message, 'error');
+				window.setTimeout(function () {
+					this.formWorking(false);
+					this.formFocus();
+				}.bind(this), 420);
+			} else {
+				this.hide();
 			}
 		}
 

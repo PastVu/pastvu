@@ -5,20 +5,6 @@
 define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
 
-	ko.bindingHandlers.executeOnEnter = {
-		init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-			var allBindings = allBindingsAccessor();
-			$(element).keypress(function (event) {
-				var keyCode = event.which || event.keyCode;
-				if (keyCode === 13) {
-					allBindings.executeOnEnter.call(viewModel);
-					return false;
-				}
-				return true;
-			});
-		}
-	};
-
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -65,23 +51,46 @@ define(['underscore', 'Utils', '../../socket', 'Params', 'knockout', 'knockout.m
 		},
 
 		saveEmail: function () {
-			if (this.editEmail() === true) {
+			if (this.editEmail()) {
 				if (this.u.email() !== this.originUser.email) {
-					socket.once('changeEmailResult', function (result) {
-						if (result && !result.error) {
-							this.u.email(result.email);
-							this.originUser.email = result.email;
-							this.editEmail(false);
-						} else {
-							window.noty({text: result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-						}
-					}.bind(this));
-					socket.emit('changeEmail', {login: this.u.login(), email: this.u.email()});
+					this.sendEmail();
 				} else {
 					this.editEmail(false);
 				}
 			} else {
 				this.editEmail(true);
+			}
+		},
+		sendEmail: function (pass) {
+			socket.once('changeEmailResult', function (result) {
+				if (result && !result.error) {
+					if (result.confirm === 'pass') {
+						this.auth.show('passInput', function (pass, cancel) {
+							if (!cancel) {
+								this.sendEmail(pass);
+							}
+						}, this);
+					} else if (result.email) {
+						this.u.email(result.email);
+						this.originUser.email = result.email;
+						this.editEmail(false);
+						this.auth.passInputSet(result);
+					}
+				} else {
+					if (pass) {
+						this.auth.passInputSet(result);
+					} else {
+						window.noty({text: result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					}
+				}
+			}.bind(this));
+			socket.emit('changeEmail', {login: this.u.login(), email: this.u.email(), pass: pass});
+
+		},
+		cancelEmail: function () {
+			if (this.editEmail()) {
+				this.u.email(this.originUser.email);
+				this.editEmail(false);
 			}
 		}
 	});
