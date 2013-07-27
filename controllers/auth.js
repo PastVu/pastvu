@@ -27,21 +27,24 @@ var _session = require('./_session.js'),
 var logger = log4js.getLogger("auth.js");
 moment.lang('ru');
 
+//Вход в систему
 function login(socket, data, cb) {
 	var error = '',
 		session = socket.handshake.session;
 
-	if (!data.login) error += 'Fill in the login field. ';
-	if (!data.pass) error += 'Fill in the password field.';
+	if (!data.login) {
+		error += 'Fill in the login field. ';
+	}
+	if (!data.pass) {
+		error += 'Fill in the password field.';
+	}
 	if (error) {
-		cb(null, {message: error, error: true});
-		return;
+		return cb(null, {message: error, error: true});
 	}
 
 	User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
 		if (err) {
-			cb(null, {message: err && err.message, error: true});
-			return;
+			return cb(null, {message: err && err.message, error: true});
 		}
 		var uaParsed,
 			uaData;
@@ -74,6 +77,7 @@ function login(socket, data, cb) {
 	});
 }
 
+//Регистрация
 function register(session, data, cb) {
 	var error = '',
 		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
@@ -87,9 +91,15 @@ function register(session, data, cb) {
 			error += 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. В состав слова могут входить цифры, точка, подчеркивание и тире. ';
 		}
 	}
-	if (!data.email) error += 'Fill in the e-mail field. ';
-	if (!data.pass) error += 'Fill in the password field. ';
-	if (data.pass !== data.pass2) error += 'Пароли не совпадают.';
+	if (!data.email) {
+		error += 'Fill in the e-mail field. ';
+	}
+	if (!data.pass) {
+		error += 'Fill in the password field. ';
+	}
+	if (data.pass !== data.pass2) {
+		error += 'Пароли не совпадают.';
+	}
 	if (error) {
 		return cb({message: error, error: true});
 	}
@@ -173,6 +183,7 @@ function register(session, data, cb) {
 	);
 }
 
+//Отправка на почту запроса на восстановление пароля
 function recall(session, data, cb) {
 	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail', //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
@@ -186,7 +197,7 @@ function recall(session, data, cb) {
 			User.findOne({$or: [
 				{ login: new RegExp('^' + data.login + '$', 'i') },
 				{ email: data.login.toLowerCase() }
-			], active: true}).exec(this);
+			]}).exec(this);
 		},
 		function (err, user) {
 			if (err || !user) {
@@ -241,9 +252,11 @@ function recall(session, data, cb) {
 	);
 }
 
+//Смена пароля по запросу восстановлния из почты
 function passChangeRecall(session, data, cb) {
 	var error = '',
 		key = data.key;
+
 	if (!data || !Utils.isType('string', key) || key.length !== 8) {
 		error = 'Bad params. ';
 	}
@@ -254,14 +267,12 @@ function passChangeRecall(session, data, cb) {
 		error += 'Passwords do not match.';
 	}
 	if (error) {
-		cb({message: error, error: true});
-		return;
+		return cb({message: error, error: true});
 	}
 
 	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
 		if (err || !confirm || !confirm.user) {
-			cb({message: err && err.message || 'Get confirm error', error: true});
-			return;
+			return cb({message: err && err.message || 'Get confirm error', error: true});
 		}
 		Step(
 			function () {
@@ -270,13 +281,19 @@ function passChangeRecall(session, data, cb) {
 				// (Это один и тот же пользователь, просто разные объекты)
 				var user = session.user && session.user.login === confirm.user.login ? session.user : confirm.user;
 				user.pass = data.pass;
+
+				//Если неактивный пользователь восстанавливает пароль - активируем его
+				if (!user.active) {
+					user.active = true;
+					user.activatedate = new Date();
+				}
+
 				user.save(this.parallel());
 				confirm.remove(this.parallel());
 			},
 			function (err) {
 				if (err) {
-					cb({message: err.message, error: true});
-					return;
+					return cb({message: err.message, error: true});
 				}
 
 				cb({message: 'Новый пароль сохранен успешно'});
@@ -285,32 +302,33 @@ function passChangeRecall(session, data, cb) {
 	});
 }
 
-function passchange(session, data, cb) {
+//Смена пароля в настройках пользователя с указанием текущего пароля
+function passChange(session, data, cb) {
 	var error = '';
 
 	if (!session.user || !data || session.user.login !== data.login) {
-		cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
-		return;
+		return cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
 	}
-	if (!data.pass || !data.passNew || !data.passNew2) error += 'Заполните все поля. '; //'Fill in all password fields. ';
-	if (data.passNew !== data.passNew2) error += 'Новые пароли не совпадают. '; //'New passwords do not match each other.';
+	if (!data.pass || !data.passNew || !data.passNew2) {
+		error += 'Заполните все поля. '; //'Fill in all password fields. ';
+	}
+	if (data.passNew !== data.passNew2) {
+		error += 'Новые пароли не совпадают. '; //'New passwords do not match each other.';
+	}
 	if (error) {
-		cb({message: error, error: true});
-		return;
+		return cb({message: error, error: true});
 	}
 
 	session.user.checkPass(data.pass, function (err, isMatch) {
 		if (err) {
-			cb({message: err.message, error: true});
-			return;
+			return cb({message: err.message, error: true});
 		}
 
 		if (isMatch) {
 			session.user.pass = data.passNew;
 			session.user.save(function (err) {
 				if (err) {
-					cb({message: err && err.message || 'Save error', error: true});
-					return;
+					return cb({message: err && err.message || 'Save error', error: true});
 				}
 				cb({message: 'Новый пароль установлен успешно'}); //'Password was changed successfully!'
 			});
@@ -320,6 +338,7 @@ function passchange(session, data, cb) {
 	});
 }
 
+//Проверка ключа confirm
 function checkConfirm(session, data, cb) {
 	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
 		cb({message: 'Bad params', error: true});
@@ -417,7 +436,7 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('passChangeRequest', function (data) {
-			passchange(hs.session, data, function (data) {
+			passChange(hs.session, data, function (data) {
 				socket.emit('passChangeResult', data);
 			});
 		});
