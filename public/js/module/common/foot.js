@@ -25,7 +25,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 					[
 						{
 							module: 'm/diff/about',
-							modal: {topic: 'О проекте', initWidth: '830px',closeTxt: 'Закрыть', closeFunc: function (evt) {
+							modal: {topic: 'О проекте', initWidth: '1000px',closeTxt: 'Закрыть', closeFunc: function (evt) {
 								this.aboutVM.destroy();
 								delete this.aboutVM;
 								evt.stopPropagation();

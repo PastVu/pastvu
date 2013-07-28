@@ -68,7 +68,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 				}
 			}, this);
 
-			var userInfoTpl = _.template('Added by <a href="/u/${ login }">${ name }</a> at ${ stamp }<br/>Viewed today ${ sd } times, week ${ sw } times, total ${ sa } times');
+			var userInfoTpl = _.template('Добавил <a href="/u/${ login }">${ name }</a>, ${ stamp }<br/>Смотрели сегодня ${ sd } раз, в неделю ${ sw } раз, всего ${ sa } раз');
 			this.userInfo = this.co.userInfo = ko.computed(function () {
 				return userInfoTpl(
 					{login: this.p.user.login(), name: this.p.user.disp(), stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}

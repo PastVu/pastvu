@@ -1,48 +1,56 @@
 .about(data-bind="with: repository[M!M]")
 	header.line
 		| PastVu - проект по сбору свидетельств прошлого в фотографиях. Взгляд на историю среды обитания человечества.
-	a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
-		.flip-container
-			.flipper
-				div.front(style="background-image: url(/img/misc/Ilya.jpg)")
-				div.back(style="background-image: url(/_a/d/Ilya.png)")
-					| Ilya
-		.lineBody
-			.humanName Илья Варламов
-			.humanAbout Автор оригинальной идеи
-	a.line.clearfix(target="_blank", href="/u/Duche", ontouchstart="this.classList.toggle('hover');")
-		.flip-container
-			.flipper
-				div.front(style="background-image: url(/img/misc/Duche.jpg)")
-				div.back(style="background-image: url(/_a/d/Duche.png)")
-					| Duche
-		.lineBody
-			.humanName Алексей Дук
-			.humanAbout Продюсер проекта
-	a.line.clearfix(target="_blank", href="/u/klimashkin", ontouchstart="this.classList.toggle('hover');")
-		.flip-container
-			.flipper
-				div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
-				div.back(style="background-image: url(/_a/d/klimashkin.png)")
-					| klimashkin
-		.lineBody
-			.humanName Павел Климашкин
-			.humanAbout Архитектор проекта, создатель платформы
-	a.line.clearfix(target="_blank", href="/u/dema501", ontouchstart="this.classList.toggle('hover');")
-		.flip-container
-			.flipper
-				div.front(style="background-image: url(/img/misc/dema501.png)")
-				div.back(style="background-image: url(/_a/d/dema501.png)")
-					| dema501
-		.lineBody
-			.humanName Дмитрий Башлов
-			.humanAbout Системное администрирование
-	a.line.clearfix(target="_blank", href="/u/abdulla_hasan", ontouchstart="this.classList.toggle('hover');")
-		.flip-container
-			.flipper
-				div.front(style="background-image: url(/img/misc/abdulla_hasan.png)")
-				div.back(style="background-image: url(/_a/d/abdulla_hasan.png)")
-					| abdulla_hasan
-		.lineBody
-			.humanName Anvar Paganini
-			.humanAbout Инфраструктура, CRM
+	.row-fluid.userrow
+		hr
+		.usercenter
+			.span6
+				a.line.clearfix(target="_blank", href="/u/Ilya", ontouchstart="this.classList.toggle('hover');")
+					.flip-container
+						.flipper
+							div.front(style="background-image: url(/img/misc/Ilya.jpg)")
+							div.back(style="background-image: url(/_a/d/Ilya.png)")
+								| Ilya
+					.lineBody
+						.humanName Илья Варламов
+						.humanAbout Автор оригинальной идеи
+				a.line.clearfix(target="_blank", href="/u/Duche", ontouchstart="this.classList.toggle('hover');")
+					.flip-container
+						.flipper
+							div.front(style="background-image: url(/img/misc/Duche.jpg)")
+							div.back(style="background-image: url(/_a/d/Duche.png)")
+								| Duche
+					.lineBody
+						.humanName Алексей Дук
+						.humanAbout Продюсер проекта
+			.span6
+				a.line.clearfix(target="_blank", href="/u/klimashkin", ontouchstart="this.classList.toggle('hover');")
+					.flip-container
+						.flipper
+							div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
+							div.back(style="background-image: url(/_a/d/klimashkin.png)")
+								| klimashkin
+					.lineBody
+						.humanName Павел Климашкин
+						.humanAbout Архитектор проекта, создатель платформы
+				a.line.clearfix(target="_blank", href="/u/dema501", ontouchstart="this.classList.toggle('hover');")
+					.flip-container
+						.flipper
+							div.front(style="background-image: url(/img/misc/dema501.png)")
+							div.back(style="background-image: url(/_a/d/dema501.png)")
+								| dema501
+					.lineBody
+						.humanName Дмитрий Башлов
+						.humanAbout Системное администрирование
+				a.line.clearfix(target="_blank", href="/u/abdulla_hasan", ontouchstart="this.classList.toggle('hover');")
+					.flip-container
+						.flipper
+							div.front(style="background-image: url(/img/misc/abdulla_hasan.png)")
+							div.back(style="background-image: url(/_a/d/abdulla_hasan.png)")
+								| abdulla_hasan
+					.lineBody
+						.humanName Anvar Paganini
+						.humanAbout Инфраструктура, CRM
+	.row-fluid.postrow
+		hr
+		img.poster(src="/img/loading/Loading1.jpg")
