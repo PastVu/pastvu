@@ -12,7 +12,7 @@
 			//-.newsDate(data-bind="text: moment(news.pdate()).format('D MMM YYYY')")
 			.newsBody
 				.newsHead
-					a.newsTitle(data-bind="text: news.title(), attr: {href: '/news/' + news.cid()}")
+					.newsTitle(data-bind="text: news.title()")
 					//ko if: canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + news.cid()}")

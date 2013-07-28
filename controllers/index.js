@@ -292,7 +292,7 @@ var giveIndexNews = (function () {
  * Архив новостей
  */
 function giveAllNews(cb) {
-	News.find({pdate: {$lte: new Date()}}, {_id: 0, cdate: 0}, {lean: true, sort: {pdate: -1}}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, news) {
+	News.find({pdate: {$lte: new Date()}}, {_id: 0, cdate: 0, tdate: 0}, {lean: true, sort: {pdate: -1}}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, news) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
@@ -320,17 +320,7 @@ function giveNewsPublic(data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	step(
-		function () {
-			News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(this);
-		},
-		function (err, news) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({news: news});
-		}
-	);
+	News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(cb);
 }
 
 module.exports.loadController = function (app, db, io) {
@@ -369,8 +359,8 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(data, function (resultData) {
-				socket.emit('takeNewsPublic', resultData);
+			giveNewsPublic(data, function (err, news) {
+				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : {news: news});
 			});
 		});
 
