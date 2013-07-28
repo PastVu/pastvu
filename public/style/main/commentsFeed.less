@@ -10,14 +10,18 @@
 		text-align: center;
 	}
 
-	.comment {
+	hr {
+		margin: 0;
+	}
+
+	.cPhoto {
 		position: relative;
 		display: block;
-		margin: 0 0 7px 0;
-		overflow: hidden;
+		padding: 3px 0 4px 2px;
+		font-size: 12px;
 		line-height: 15px;
-		font-size: 14px;
 		text-decoration: none;
+		overflow: hidden;
 
 		&:hover {
 			background-color: fade(@MainBlueColor, 10%);
@@ -25,7 +29,6 @@
 
 		.imgLoad {
 			float: left;
-			margin: 2px 5px 2px 2px;
 
 			.img {
 				width: 60px;
@@ -36,24 +39,32 @@
 		.photoName, .authorName {
 			display: block;
 			cursor: pointer;
+			text-decoration: none;
 			.text-overflow();
 		}
-		.photoName{
-			padding-bottom: 2px;
+		.photoName {
+			padding: 0 0 2px 0;
+			font-weight: bold;
+		}
+		.comments {
+			margin-left: 67px;
 		}
 		.authorName {
-			padding-top: 1px;
-			font-size: 13px;
+			padding-bottom: 2px;
+			font-size: @fontSizeSmall;
 			line-height: 14px;
 		}
 		.commentText {
 			display: block;
 			min-height: 15px;
-			max-height: 31px;
-			padding-bottom: 1px;
+			max-height: 46px;
 			color: @textColor;
 			text-decoration: none;
 			overflow: hidden;
+
+			&:not(:first-child) {
+				padding-top: 2px;
+			}
 		}
 	}
 }

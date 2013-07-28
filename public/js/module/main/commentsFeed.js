@@ -15,6 +15,7 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 				var photo,
 					user,
 					comment,
+					commentsPhoto,
 					commentsToInsert = [],
 					i;
 				if (!data || data.error || !Array.isArray(data.comments)) {
@@ -46,10 +47,17 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 						photo = this.commentsPhotos[comment.obj];
 						user = this.commentsUsers[comment.user];
 						if (photo && user) {
-							comment.obj = photo;
 							comment.user = user;
 							comment.link = photo.link + '?hl=comment-' + comment.cid;
-							commentsToInsert.unshift(comment);
+							if (commentsPhoto && photo.cid === commentsPhoto.obj.cid) {
+								commentsPhoto.comments.push(comment);
+							} else {
+								commentsPhoto = {
+									obj: photo,
+									comments: [comment]
+								};
+								commentsToInsert.unshift(commentsPhoto);
+							}
 						}
 					}
 					this.comments(commentsToInsert);
