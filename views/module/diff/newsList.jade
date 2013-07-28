@@ -10,6 +10,8 @@
 		hr
 		.novel.clearfix
 			.newsLeft
+				.newsAvatar.fringe(data-bind="attr: {href: '/u/' + $data.user.login}")
+					img(data-bind="attr: {src: $data.user.avatar}")
 				.newsDate(data-bind="text: moment($data.pdate).format('D MMM YYYY')")
 				//ko if: $data.ccount > 0
 				.newsComms(data-bind="text: $data.ccount")
@@ -17,6 +19,8 @@
 			.newsBody
 				.newsHead
 					a.newsTitle(data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")
+					.dotDelimeter ·
+					a.authorName(data-bind="text: $data.user.disp, attr: {href: '/u/' + $data.user.login}")
 					//ko if: $parent.canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")

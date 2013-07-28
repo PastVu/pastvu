@@ -51,16 +51,19 @@ define([
 		},
 		getAllNews: function (cb, ctx) {
 			socket.once('takeAllNews', function (data) {
+				var novel,
+					i;
 				if (!data || data.error || !Array.isArray(data.news)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					var i = data.news.length;
-					while (i--) {
-						data.news.ccount = data.news.ccount || 0;
-						if (data.news[i].notice) {
-							data.news[i].expand = true;
+					for (i = data.news.length; i--;) {
+						novel = data.news[i];
+						novel.user.avatar = novel.user.avatar ? P.preaddr + '/_a/h/' + novel.user.avatar : '/img/caps/avatarth.png';
+						novel.ccount = novel.ccount || 0;
+						if (novel.notice) {
+							novel.expand = true;
 						} else {
-							data.news[i].notice = data.news[i].txt;
+							novel.notice = novel.txt;
 						}
 					}
 					this.news(data.news);

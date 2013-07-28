@@ -292,7 +292,7 @@ var giveIndexNews = (function () {
  * Архив новостей
  */
 function giveAllNews(cb) {
-	News.find({pdate: {$lte: new Date()}}, {_id: 0, user: 0, cdate: 0}, {lean: true, sort: {pdate: -1}}, function (err, news) {
+	News.find({pdate: {$lte: new Date()}}, {_id: 0, cdate: 0}, {lean: true, sort: {pdate: -1}}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, news) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}

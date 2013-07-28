@@ -9,13 +9,12 @@
 	.newsHeader {
 		margin-top: 1px;
 		margin-bottom: 10px;
-		font-size: 22px;
-		font-weight: bold;
+		font-size: 20px;
 	}
 
 	.addNews {
 		display: inline-block;
-		margin: 4px 0 6px 61px;
+		margin: 4px 0 6px 91px;
 	}
 
 	.news {
@@ -25,25 +24,33 @@
 		}
 
 		.newsLeft {
-			width: 24px;
-			padding-top: 3px;
+			width: 60px;
+			padding-top: 1px;
 			float: left;
 		}
+		.newsAvatar {
+			margin: 2px 4px 10px 4px;
+
+			img {
+				width: 50px;
+				height: 50px;
+			}
+		}
 		.newsDate {
-			vertical-align: top;
 			color: #777;
-			font-size: 14px;
+			font-size: 12px;
 			line-height: 15px;
 			text-align: center;
+			vertical-align: top;
 		}
 		.newsComms {
 			position: relative;
-			margin: 5px 0 8px 0;
+			width: 28px;
+			margin: 5px 0 8px 16px;
 			padding-top: 1px;
-			font-size: 14px;
 			line-height: 17px;
 			color: #F2F2F2;
-			text-align: center;
+			text-align:center;
 			background-color: #999;
 
 			&::after {
@@ -58,24 +65,24 @@
 				border-right: 8px solid transparent;
 			}
 		}
+
 		.newsBody {
-			margin-left: 40px;
+			margin-left: 70px;
 			vertical-align: top;
 		}
 		.newsHead {
 			margin-bottom: 3px;
-			padding-bottom: 2px;
-			font-weight: bold;
-			font-size: 18px;
 
 			.newsEdit {
-				font-size: 15px;
-				font-weight: normal;
 			}
 		}
-		.newsNotice {
+		.newsTitle {
+			display: inline-block;
+			font-weight: bold;
 			font-size: 16px;
-			line-height: 20px;
+		}
+		.newsNotice {
+			line-height: 19px;
 
 			> p:last-child {
 				margin-bottom: 0;
@@ -83,8 +90,8 @@
 		}
 		.newsExpand {
 			display: inline-block;
-			margin-top: 3px;
-			font-size: 14px;
+			margin: 5px 0 4px 0;
+			font-size: 12px;
 		}
 
 		.novel {
