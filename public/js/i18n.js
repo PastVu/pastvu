@@ -18,9 +18,9 @@ define(['knockout', 'knockout.mapping', 'Utils'], function(ko, ko_mapping, Utils
 			logout : 'Выход',
 			register : 'Регистрация',
 			mod : 'Модерирование',
-			admin : 'Администрирование',
+			admin : 'Админ',
 			image_upload : 'Загрузить фото'
 		}
 	};
-	return ko_mapping.fromJS(i18n.en);
+	return ko_mapping.fromJS(i18n.ru);
 });
