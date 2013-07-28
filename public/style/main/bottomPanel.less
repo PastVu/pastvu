@@ -161,7 +161,6 @@
 				}
 
 				.icon-share {
-					margin-top: 3px;
 					margin-left: 3px;
 				}
 			}
@@ -173,18 +172,26 @@
 
 		.catHead {
 			margin-bottom: 6px;
-			font-size: 20px;
+			font-size: 18px;
 		}
 
 		.photosNew {
 			text-align: center;
 
 			.photoPreview {
-				font-size: 14px;
+				font-size: 12px;
+				padding-bottom: @PhotoTitleHeight - 4;
 
 				.img {
 					width: 150px;
 					height: 100px;
+				}
+
+				.photoTitle {
+					height: @PhotoTitleHeight - 4;
+					padding: 0 0 0 2px;
+					font-size: 14px;
+					line-height: @PhotoTitleHeight - 4;
 				}
 			}
 		}
@@ -202,7 +209,7 @@
 			.catGroupHead {
 				margin-bottom: 4px;
 				padding-left: 2px;
-				font-size: 16px;
+				font-size: 14px;
 			}
 
 			.btn-group {
@@ -212,7 +219,6 @@
 			.ratElem {
 				display: block;
 				margin: 6px 0 0 0;
-				font-size: 14px;
 				line-height: 15px;
 				cursor: pointer;
 				text-decoration: none;
@@ -232,12 +238,13 @@
 				}
 				.ratName {
 					display: block;
-					padding-bottom: 2px;
+					padding: 1px 0 2px 0;
 					max-height: 45px;
 					overflow: hidden;
 				}
 				.ratAmount {
 					display: block;
+					font-size: 12px;
 					color: @textColor;
 				}
 			}
@@ -247,7 +254,6 @@
 			max-width: 700px;
 			margin: 0 auto;
 			padding: 0 0 0 6px;
-			font-size: 15px;
 			.box-sizing(border-box);
 		}
 	}

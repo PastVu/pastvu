@@ -347,7 +347,7 @@ html, body {
 //Общие стили превью фотографии
 .photoPreview {
 	display: inline-block;
-	font-size: 16px;
+	font-size: 14px;
 	color: @MainLigthColor;
 	opacity: 0;
 
@@ -406,9 +406,10 @@ html, body {
 			left: 0;
 			right: 0;
 			bottom: 0;
-			font-family: @uconFontFamily;
 			height: @PhotoTitleHeight;
 			padding: 0 0 0 3px;
+			font-family: @uconFontFamily;
+			font-size: 16px;
 			line-height: @PhotoTitleHeight;
 			text-align: left;
 			.text-overflow();
@@ -594,7 +595,7 @@ a.disabled:hover {
 
 	&.btn-strict-small {
 		padding: 1px 6px;
-		font-size: @baseFontSize - 2px;
+		font-size: @fontSizeSmall;
 		line-height: @baseLineHeight - 3px;
 		.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
 
@@ -608,7 +609,7 @@ a.disabled:hover {
 	}
 	&.btn-strict-mini {
 		padding: 0 5px;
-		font-size: @baseFontSize - 3px;
+		font-size: @fontSizeMini;
 		line-height: @baseLineHeight - 4px;
 		.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
 

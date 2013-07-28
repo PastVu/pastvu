@@ -224,7 +224,7 @@
 @media (min-width: 1281px) and (max-width: 1540px) {
 	.user_photo {
 		.photoPreview {
-			font-size: 15px;
+			font-size: @baseFontSize;
 			padding-bottom: @PhotoTitleHeight - 3;
 
 			&.addPhoto {
@@ -234,8 +234,9 @@
 			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 3;
-				line-height: @PhotoTitleHeight - 3;
 				padding: 0 0 0 2px;
+				font-size: 15px;
+				line-height: @PhotoTitleHeight - 3;
 			}
 		}
 	}
@@ -243,7 +244,7 @@
 @media (min-width: 900px) and (max-width: 1280px) {
 	.user_photo {
 		.photoPreview {
-			font-size: 14px;
+			font-size: @fontSizeSmall;
 			padding-bottom: @PhotoTitleHeight - 4;
 
 			&.addPhoto {
@@ -253,8 +254,9 @@
 			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 4;
-				line-height: @PhotoTitleHeight - 4;
 				padding: 0 0 0 2px;
+				font-size: 14px;
+				line-height: @PhotoTitleHeight - 4;
 			}
 		}
 	}
@@ -262,7 +264,7 @@
 @media (max-width: 899px) {
 	.user_photo {
 		.photoPreview {
-			font-size: 13px;
+			font-size: @fontSizeMini;
 			padding-bottom: @PhotoTitleHeight - 5;
 
 			&.addPhoto {
@@ -272,8 +274,9 @@
 			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 5;
-				line-height: @PhotoTitleHeight - 5;
 				padding: 0 0 0 1px;
+				font-size: 13px;
+				line-height: @PhotoTitleHeight - 5;
 			}
 		}
 	}
