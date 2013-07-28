@@ -6,7 +6,7 @@
 			a.photoName(data-bind="attr: {href: $data.obj.link}, html: $data.obj.title")
 			a.imgLoad(data-bind="attr: {href: $data.obj.link}")
 				img.img(data-bind="attr: {src: $data.obj.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
-			.comments(data-bind="foreach: $data.comments")
+			div(data-bind="foreach: $data.comments")
 				a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
 				a.authorName(data-bind="attr: {href: $data.user.link}, html: $data.user.disp")
 		hr
