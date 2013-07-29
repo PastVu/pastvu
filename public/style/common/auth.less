@@ -2,7 +2,7 @@
 @import "../bootstrap/variables";
 @import "../bootstrap/mixins";
 
-@authFormWidth: 285px;
+@authFormWidth: 300px;
 
 #auth_curtain {
 	position: fixed;
@@ -37,8 +37,8 @@
 		z-index: @zindexPopover;
 
 		.footnote {
-			width: 285px;
-			font-size: 14px;
+			width: @authFormWidth;
+			font-size: @fontSizeSmall;
 			color: #7391B3;
 			margin: -16px 0 10px 0;
 
@@ -74,8 +74,8 @@
 			margin: 13px 0 16px;
 			white-space: nowrap;
 			font-weight: bold;
-			font-size: 22px;
-			line-height: 25px;
+			font-size: 20px;
+			line-height: 24px;
 			text-align: center;
 			text-shadow: 0 1px 0 white, 0 -1px 0 #BBB;
 
@@ -127,8 +127,8 @@
 		}
 
 		dl {
-			font-size: 15px;
 			margin: 0;
+			font-size: 12px;
 		}
 		dt {
 			width: auto;
@@ -195,7 +195,7 @@
 				content: '';
 				position: absolute;
 				display: block;
-				top: 9px;
+				top: 8px;
 				left: 6px;
 				height: 14px;
 				width: 13px;
@@ -219,8 +219,7 @@
 			outline: medium none !important;
 			border: 1px solid #8C8C8C;
 			color: #000;
-			font-size: 16px;
-			padding: 5px 5px 5px 21px;
+			padding: 5px 5px 4px 21px;
 			width: @authFormWidth - 5 - 21 - 2;
 			background-color: rgba(255, 255, 255, 0.6);
 			.box-shadow(~'inset 0 1px 4px 0 #A8A8A8');
@@ -253,7 +252,7 @@
 			}
 			/* The area containing the validation message&nbsp;*/
 			&::-webkit-validation-bubble-message {
-				font: 14px/16px @baseFontFamily;
+				font: 11px/14px @baseFontFamily;
 				color: @MainBlueColor;
 				border-radius: 0;
 				border: 1px solid @MainBlueColor;
@@ -268,7 +267,7 @@
 			bottom: 13px;
 			text-shadow: 0 1px 1px #000;
 			font-weight: bold;
-			font-size: 14px;
+			font-size: 13px;
 			width: 90px;
 
 			&[type='submit'] {
@@ -290,7 +289,7 @@
 			position: relative;
 			width: @authFormWidth;
 			font-weight: bold;
-			font-size: 14px;
+			font-size: 12px;
 			line-height: 15px;
 			height: 0;
 			white-space: normal;
@@ -303,7 +302,7 @@
 			line-height: 20px;
 
 			i {
-				margin: 1px 6px 0 2PX;
+				margin: 1px 6px 0 2px;
 			}
 		}
 
