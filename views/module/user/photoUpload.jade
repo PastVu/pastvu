@@ -1,4 +1,7 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
+	.row-fluid.text-error(style="margin-bottom: 5px;")
+		| Внимание! Временно принимаются только фотографии в пределах Московской и Ленинградской областей, остальные будут отклонены. Подробности&nbsp;
+		a(target="_blank", href="/news/85") здесь
 	.row-fluid.toptext(data-bind="html: toptext()")
 
 	//ko if: canLoad()
