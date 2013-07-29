@@ -19,7 +19,7 @@
 			style: function() {
 				$(this).css({
 					position: 'fixed',
-					width: '310px',
+					width: '360px',
 					height: 'auto',
 					margin: 0,
 					padding: 0,
@@ -56,7 +56,7 @@
 		},
 		css: {
 			display: 'none',
-			width: '310px'
+			width: '360px'
 		},
 		addClass: ''
 	};
@@ -71,10 +71,10 @@
 			selector: 'ul#noty_topRight_layout_container',
 			style: function() {
 				$(this).css({
-					top: 37,
+					top: 39,
 					right: 5,
 					position: 'fixed',
-					width: '320px',
+					width: '382px',
 					height: 'auto',
 					margin: 0,
 					padding: 0,
@@ -96,7 +96,7 @@
 		},
 		css: {
 			display: 'none',
-			width: '320px'
+			width: '382px'
 		},
 		addClass: ''
 	};
