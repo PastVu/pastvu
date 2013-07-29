@@ -1,7 +1,7 @@
 .comments(data-bind="with: repository[M!M]")
 	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: briefText")
 	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	.row-fluid.comments(data-bind="foreach: comments")
 		.row-fluid.comment
 			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
@@ -16,7 +16,7 @@
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
 	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template:{ name: 'pagerTpl'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	script(id="pagerTpl", type="text/html")
 		ul
 			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/'}") &laquo;&laquo;

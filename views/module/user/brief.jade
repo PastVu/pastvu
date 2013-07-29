@@ -15,24 +15,24 @@
 	// /ko
 	.row-fluid.statBlock
 		#info_common.block
-			.head Commons
+			.head Общее
 			.h_separator
 			dl.dl-horizontal
-				dt Registration:
+				dt Регистрация:
 				dd(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
-				dt Status:
-				dd Offline
+				dt Статус:
+				dd Оффлайн
 	.row-fluid.statBlock
 		#short_stat.block
-			.head Brief statistics
+			.head Краткая статистика
 			.h_separator
 			dl.dl-horizontal
-				dt Photos uploaded:
+				dt Фотографий:
 				dd(data-bind="text: user.pcount()")
 				//-dt Blogs created:
 				//-dd(data-bind="text: user.bcount()")
 				//-dt Favorite areas:
 				//-dd 0
-				dt Comments:
+				dt Комментариев:
 				dd(data-bind="text: user.ccount()")
 	//#leftSideDash
