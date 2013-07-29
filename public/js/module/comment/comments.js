@@ -432,14 +432,14 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			if (!this.auth.loggedIn() || !data.can.edit) {
 				return;
 			}
-			var fragExists = this.canFrag && data.frag && this.parentModule.fragGetByCid(data.cid);
+			var fragExists = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(data.cid));
 
 			dataSend.cid = data.cid;
 
 			//Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
 			//потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
 			if (fragExists && !this.commentEditingFragChanged) {
-				dataSend.fragObj = fragExists;
+				dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
 			}
 
 			socket.once('updateCommentResult', function (result) {
@@ -479,7 +479,7 @@ define(['underscore', 'underscore.string', 'Utils', '../../socket', 'Params', 'k
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
-				frag = this.canFrag && data.frag && this.parentModule.fragGetByCid(cid); //Выбор фрагмента из this.p.frags, если он есть у комментария
+				frag = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(cid)); //Выбор фрагмента из this.p.frags, если он есть у комментария
 
 			this.commentReplyingToCid(0);
 			this.commentEditingCid(cid);
