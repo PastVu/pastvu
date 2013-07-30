@@ -22,7 +22,7 @@
 				.photoTools(data-bind="style: {width: ws() + 'px'}")
 					span.toolsTxt
 						//ko if: ws() !== p.ws() && hs() !== p.hs()
-						span.sizeThis(data-bind="text: 'Текуший размер: ' + ws() + '×' + hs()")
+						span.sizeThis(data-bind="text: 'Текущий размер: ' + ws() + '×' + hs()")
 						span &nbsp;|&nbsp;
 						// /ko
 						a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: 'Стандарт: ' + p.ws() + '×' + p.hs()")

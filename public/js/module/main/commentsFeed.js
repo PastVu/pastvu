@@ -8,59 +8,42 @@ define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.comments = ko.observableArray();
-			this.commentsPhotos = {};
+			this.pComments = ko.observableArray();
 
 			socket.once('takeCommentsFeed', function (data) {
 				var photo,
 					user,
 					comment,
-					commentsPhoto,
-					commentsToInsert = [],
+					photoCommentsToInsert = [],
 					i;
+
 				if (!data || data.error || !Array.isArray(data.comments)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					for (i in data.photos) {
-						if (data.photos[i] !== undefined) {
-							photo = data.photos[i];
-							photo.link = '/p/' + photo.cid;
-							if (P.preaddrs.length) {
-								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
-							} else {
-								photo.sfile = Photo.picFormats.s + photo.file;
-							}
-						}
-					}
-					this.commentsPhotos = data.photos;
-
 					for (i in data.users) {
 						if (data.users[i] !== undefined) {
 							user = data.users[i];
 							user.link = '/u/' + user.login;
 						}
 					}
-					this.commentsUsers = data.users;
 
-					for (i = data.comments.length; i--;) {
+					for (i = 0; i < data.comments.length; i++) {
 						comment = data.comments[i];
-						photo = this.commentsPhotos[comment.obj];
-						user = this.commentsUsers[comment.user];
+						photo = data.photos[comment.obj];
+						user = data.users[comment.user];
 						if (photo && user) {
 							comment.user = user;
-							comment.link = photo.link + '?hl=comment-' + comment.cid;
-							if (commentsPhoto && photo.cid === commentsPhoto.obj.cid) {
-								commentsPhoto.comments.push(comment);
-							} else {
-								commentsPhoto = {
-									obj: photo,
-									comments: [comment]
-								};
-								commentsToInsert.unshift(commentsPhoto);
+							if (photo.comments === undefined) {
+								photo.link = '/p/' + photo.cid;
+								photo.sfile = (P.preaddrs.length ? P.preaddrs[i % P.preaddrs.length] : '') + Photo.picFormats.s + photo.file;
+								photo.comments = [];
+								photoCommentsToInsert.push(photo);
 							}
+							comment.link = photo.link + '?hl=comment-' + comment.cid;
+							photo.comments.unshift(comment);
 						}
 					}
-					this.comments(commentsToInsert);
+					this.pComments(photoCommentsToInsert);
 				}
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
