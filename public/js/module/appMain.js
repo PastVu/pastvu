@@ -39,7 +39,8 @@ require([
 			},
 			routes: [
 				{route: "", handler: "index"},
-				{route: "p/(:cid)(/)", handler: "photo"},
+				{route: "p(/)(:cid)(/)", handler: "photo"},
+				{route: "ps(/)(:page)", handler: "photos"},
 				{route: "u(/)(:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
 				{route: "news(/)(:cid)(/)", handler: "news"},
 				{route: "photoUpload(/)", handler: "photoUpload"},
@@ -57,24 +58,31 @@ require([
 					);
 				},
 				photo: function (cid, qparams) {
+					cid = Number(cid);
 					if (!cid) {
-						location.href = '/';
-						return;
+						return globalVM.router.navigateToUrl('/ps');
 					}
-
 					this.params(_.assign({cid: cid, _handler: 'photo'}, qparams));
-					ga('set', 'page', '/p' + (Number(cid) ? '/' + cid : ''));
+					ga('set', 'page', '/p' + (cid ? '/' + cid : ''));
 					renderer(
 						[
 							{module: 'm/photo/photo', container: '#bodyContainer'}
 						]
 					);
 				},
+				photos: function (page, qparams) {
+					this.params(_.assign({page: page, _handler: 'gallery'}, qparams));
+					ga('set', 'page', '/ps' + (page ? '/' + page : ''));
+					renderer(
+						[
+							{module: 'm/photo/gallery', container: '#bodyContainer'}
+						]
+					);
+				},
 				userPage: function (login, section, page, qparams) {
 					var auth = globalVM.repository['m/common/auth'];
 					if (!login && !auth.loggedIn()) {
-						location.href = '/';
-						return;
+						return globalVM.router.navigateToUrl('/');
 					}
 					if (!section) {
 						section = 'profile';
@@ -99,10 +107,11 @@ require([
 					);
 				},
 				news: function (cid, qparams) {
-					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
-					var mName = Number(cid) ? 'm/diff/news' : 'm/diff/newsList';
+					cid = Number(cid);
+					var mName = cid ? 'm/diff/news' : 'm/diff/newsList';
 
-					ga('set', 'page', '/news' + (Number(cid) ? '/' + cid : ''));
+					this.params(_.assign({cid: cid, _handler: 'news'}, qparams));
+					ga('set', 'page', '/news' + (cid ? '/' + cid : ''));
 					renderer(
 						[
 							{module: mName, container: '#bodyContainer'}

@@ -7,7 +7,7 @@ module.exports.loadController = function (app) {
 	});
 
 	// More complicated example: '/p/:cid?/*
-	['/', '/p/*', '/u*', '/photoUpload', '/news*', '/confirm/:key'].forEach(function (route) {
+	['/', '/p*', '/u*', '/photoUpload', '/news*', '/confirm/:key'].forEach(function (route) {
 		app.get(route, appMainHandler);
 	});
 	function appMainHandler(req, res) {
