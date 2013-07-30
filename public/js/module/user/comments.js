@@ -99,41 +99,40 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					comment,
 					commentsToInsert = [],
 					i;
-				if (data.page === page) {
-					if (!data || data.error || !Array.isArray(data.comments)) {
-						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-					} else if (data.page === page) {
-						for (i in data.photos) {
-							if (data.photos[i] !== undefined) {
-								photo = data.photos[i];
-								photo.sfile = Photo.picFormats.s + photo.file;
-								photo.link = '/p/' + photo.cid;
-								photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
-								photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';
-								if (P.preaddrs.length > 1) {
-									photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
-								} else {
-									photo.sfile = P.preaddr + Photo.picFormats.s + photo.file;
-								}
-							}
-						}
-						this.commentsPhotos = data.photos;
 
-						i = data.comments.length;
-						while (i) {
-							comment = data.comments[--i];
-							if (this.commentsPhotos[comment.obj] !== undefined) {
-								comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
-								commentsToInsert.push(comment);
+				if (!data || data.error || !Array.isArray(data.comments)) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else if (data.page === page) {
+					for (i in data.photos) {
+						if (data.photos[i] !== undefined) {
+							photo = data.photos[i];
+							photo.sfile = Photo.picFormats.s + photo.file;
+							photo.link = '/p/' + photo.cid;
+							photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
+							photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';
+							if (P.preaddrs.length > 1) {
+								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
+							} else {
+								photo.sfile = P.preaddr + Photo.picFormats.s + photo.file;
 							}
-						}
-						this.comments(commentsToInsert);
-						if (this.pageLast() > 1) {
-							this.paginationShow(true);
 						}
 					}
-					this.loadingComments(false);
+					this.commentsPhotos = data.photos;
+
+					i = data.comments.length;
+					while (i) {
+						comment = data.comments[--i];
+						if (this.commentsPhotos[comment.obj] !== undefined) {
+							comment.link = this.commentsPhotos[comment.obj].link + '?hl=comment-' + comment.cid;
+							commentsToInsert.push(comment);
+						}
+					}
+					this.comments(commentsToInsert);
+					if (this.pageLast() > 1) {
+						this.paginationShow(true);
+					}
 				}
+				this.loadingComments(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}

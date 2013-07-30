@@ -2,7 +2,7 @@
 /**
  * Модель фотографий пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/gallery.jade', 'css!style/user/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
 	'use strict';
 	var $window = $(window),
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -10,16 +10,18 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			userVM: null,
-			canAdd: false,
-			goUpload: false
+
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.u = this.options.userVM;
 			this.photos = ko.observableArray();
+			this.feed = ko.observableArray(false);
+
+
 			this.limit = 42; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
-			this.loadingPhoto = ko.observable(false);
+			this.count = ko.observable(0);
+			this.loading = ko.observable(false);
+
 			this.scrollActive = false;
 			this.scrollHandler = function () {
 				if ($window.scrollTop() >= $(document).height() - $window.height() - 50) {
@@ -29,20 +31,56 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.width = ko.observable('0px');
 			this.height = ko.observable('0px');
 
-			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
-			this.subscriptions.login = this.u.login.subscribe(this.getForUser, this); //Срабатывает при смене пользователя
-			if (!this.auth.loggedIn()) {
-				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
-			}
 
-			this.canAdd = this.co.canAdd = ko.computed(function () {
-				return this.options.canAdd && this.u.login() === this.auth.iAm.login();
+			this.page = ko.observable(1);
+			this.pageSize = ko.observable(this.limit);
+			this.pageSlide = ko.observable(2);
+			this.paginationShow = ko.observable(false);
+
+			this.pageLast = this.co.pageLast = ko.computed(function () {
+				return ((this.count() - 1) / this.pageSize() >> 0) + 1;
 			}, this);
-			ko.applyBindings(globalVM, this.$dom[0]);
+			this.pageHasNext = this.co.pageHasNext = ko.computed(function () {
+				return this.page() < this.pageLast();
+			}, this);
+			this.pageHasPrev = this.co.pageHasPrev = ko.computed(function () {
+				return this.page() > 1;
+			}, this);
+			this.pageFirstItem = this.co.pageFirstItem = ko.computed(function () {
+				return this.pageSize() * (this.page() - 1) + 1;
+			}, this);
+			this.pageLastItem = this.co.pageLastItem = ko.computed(function () {
+				return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.count());
+			}, this);
+			this.pages = this.co.pages = ko.computed(function () {
+				var pageCount = this.pageLast(),
+					pageFrom = Math.max(1, this.page() - this.pageSlide()),
+					pageTo = Math.min(pageCount, this.page() + this.pageSlide()),
+					result = [],
+					i;
 
-			this.routeHandler();
+				pageFrom = Math.max(1, Math.min(pageTo - 2 * this.pageSlide(), pageFrom));
+				pageTo = Math.min(pageCount, Math.max(pageFrom + 2 * this.pageSlide(), pageTo));
+
+				for (i = pageFrom; i <= pageTo; i++) {
+					result.push(i);
+				}
+				return result;
+			}, this);
+
+			this.briefText = this.co.briefText = ko.computed(function () {
+				return this.count() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count() : 'Пользователь пока не оставил ни одного комментария';
+			}, this);
+
+			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
+
+			// Subscriptions
+			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+
+			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
-			this.getForUser();
+			this.routeHandler();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -65,28 +103,68 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
 			if (page > this.pageLast()) {
 				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast());
+					globalVM.router.navigateToUrl('/ps/' + this.pageLast());
 				}.bind(this), 200);
 			} else {
 				this.page(page);
-				if (this.u.ccount() > 0) {
-					this.getPage(page);
-				}
+				this.getPage(page);
 			}
 		},
 
-		loggedInHandler: function () {
-			// После логина перезапрашиваем ленту фотографий пользователя
-			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				this.getPhotosPrivate(function (data) {
-					if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-						this.getNextPage();
+		getPage: function (page, cb, ctx) {
+			this.loading(true);
+			socket.once('takePhotosPublic', function (data) {
+				var i;
+
+				if (!data || data.error || !Array.isArray(data.photos)) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else if (data.page === page) {
+					for (i = data.photos.length; i--;) {
+						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 					}
-				}, this);
-			}
-			this.subscriptions.loggedIn.dispose();
-			delete this.subscriptions.loggedIn;
+					this.count(data.count);
+					if (this.pageLast() > 1) {
+						this.paginationShow(true);
+					}
+					this.photos(data.photos);
+				}
+				this.loading(false);
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}.bind(this));
+			socket.emit('givePhotosPublic', {page: page, limit: this.limit});
 		},
+		sizesCalc: function () {
+			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
+				domW = this.$dom.width(),
+				thumbW,
+				thumbH,
+				thumbN,
+				thumbWMin = 120,
+				thumbWMax = 246,
+				marginMin;
+
+			if (windowW < 1000) {
+				thumbN = 4;
+				marginMin = 8;
+			} else if (windowW < 1441) {
+				thumbN = 5;
+				marginMin = 10;
+			} else {
+				thumbN = 6;
+				marginMin = 14;
+			}
+			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax)) >> 0;
+			thumbH = thumbW / 1.5 >> 0;
+			//thumbW = thumbH * 1.5;
+
+			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
+
+			this.width(thumbW + 'px');
+			this.height(thumbH + 'px');
+		},
+		/*
 		getForUser: function () {
 			this.photos([]);
 			$window.off('scroll', this.scrollHandler);
@@ -112,7 +190,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 		},
 		getNextPage: function () {
-			if (!this.loadingPhoto()) {
+			if (!this.loading()) {
 				this.getPage(this.photos().length, this.limit);
 			}
 		},
@@ -128,13 +206,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-				this.loadingPhoto(false);
+				this.loading(false);
 			}.bind(this));
 			socket.emit('giveUserPhotos', {login: this.u.login(), skip: skip, limit: limit});
-			this.loadingPhoto(true);
+			this.loading(true);
 		},
 		getPhotosPrivate: function (cb, ctx) {
-			this.loadingPhoto(true);
+			this.loading(true);
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
@@ -172,43 +250,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 					currArray = i = null;
 				}
-				this.loadingPhoto(false);
+				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
 			}.bind(this));
 			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
 		},
-		sizesCalc: function (v) {
-			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
-				domW = this.$dom.width(),
-				thumbW,
-				thumbH,
-				thumbN,
-				thumbWMin = 120,
-				thumbWMax = 246,
-				marginMin;
-
-			if (windowW < 1000) {
-				thumbN = 4;
-				marginMin = 8;
-			} else if (windowW < 1441) {
-				thumbN = 5;
-				marginMin = 10;
-			} else {
-				thumbN = 6;
-				marginMin = 14;
-			}
-			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax)) >> 0;
-			thumbH = thumbW / 1.5 >> 0;
-			//thumbW = thumbH * 1.5;
-
-			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
-
-			this.width(thumbW + 'px');
-			this.height(thumbH + 'px');
-		},
-
 		showUpload: function () {
 			if (!this.uploadVM) {
 				this.waitUploadSince = new Date();
@@ -261,7 +309,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 								this.photos.concat(data.photos, true);
 							}
 						}
-						this.loadingPhoto(false);
+						this.loading(false);
 					}.bind(this));
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
@@ -270,7 +318,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				delete this.waitUploadSince;
 				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
 			}
-		},
+		},*/
 
 		onPreviewLoad: function (data, event) {
 			event.target.parentNode.parentNode.classList.add('showPrv');

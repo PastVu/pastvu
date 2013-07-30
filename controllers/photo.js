@@ -514,13 +514,34 @@ function givePhoto(socket, data, cb) {
 }
 
 //Отдаем последние публичные фотографии для главной
-var givePhotosPublic = (function () {
+var givePhotosPublicIndex = (function () {
 	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 30};
 
 	return Utils.memoizeAsync(function (handler) {
 		Photo.find({}, compactFields, options, handler);
 	}, ms('30s'));
 }());
+
+//Отдаем полную публичную галерею в компактном виде
+function givePhotosPublic(data, cb) {
+	var page = Math.abs(Number(data.page)) || 1,
+		limit = Math.min(data.limit || 40, 100),
+		skip = (page - 1) * limit;
+
+	step(
+		function () {
+			Photo.find({}, compactFields, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
+			Photo.count(this.parallel());
+		},
+		function (err, photos, count) {
+			if (err || !photos) {
+				return cb({message: err && err.message || 'Photos does not exist', error: true});
+			}
+			cb({photos: photos, count: count, page: page});
+		}
+	);
+}
+
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(socket, data, cb) {
@@ -1312,9 +1333,15 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+		socket.on('givePhotosPublicIndex', function (data) {
+			givePhotosPublicIndex(function (err, photos) {
+				socket.emit('takePhotosPublicIndex', err ? {message: err.message, error: true} : {photos: photos});
+			});
+		});
+
 		socket.on('givePhotosPublic', function (data) {
-			givePhotosPublic(function (err, photos) {
-				socket.emit('takePhotosPublic', err ? {message: err.message, error: true} : {photos: photos});
+			givePhotosPublic(data, function (resultData) {
+				socket.emit('takePhotosPublic', resultData);
 			});
 		});
 

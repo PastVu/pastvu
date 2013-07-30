@@ -1,30 +1,23 @@
 .user_photo(data-bind="with: repository[M!M]")
-	.photoThumbs
-		//ko if: canAdd()
-		a.photoPreview.withTitle.fringe.addPhoto(href="/photoUpload", data-bind="style: {width: width, height: height}")
-			.plusPhoto
-			.desc Добавить фото..
-		// /ko
-		//ko foreach: photos
-		a.photoPreview.withStatus.withTitle.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
-			.photoBox
-				img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
-				.curtain
-				//ko if: $data.noPublic
-				i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-				// /ko
-			.photoTitle(data-bind="text: title")
-		// /ko
-		.photoPreview.withTitle.loadingPhoto(data-bind="style: {visibility: loadingPhoto() ? 'visible' : 'hidden', width: width, height: height}")
-			.loadPhoto Loading next
-	.photoUploadCurtain
-		.photoUploadModal.fringe(data-bind="style: {maxWidth: 4 * $root.P.window.w() / 5 + 'px'}")
-			.modalTools.fringe
-				span.modalCaption Upload photo
-				a.off(data-bind="attr: {href: '/u/' + u.login() + '/photo'}")
-					i.icon-off.icon-white
-			.modalContainer(data-bind="style: {maxHeight: $root.P.window.h() - 120 + 'px'}")
-			.modalFoot
-				a.btn-strict.btn-strict-small(data-bind="attr: {href: '/u/' + u.login() + '/photo'}")
-					i.icon-ok.icon-white
-					span(data-bind="text: 'Ok'")
+	.commentsBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
+	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
+	.row-fluid
+		.photoThumbs
+			//ko foreach: photos
+			a.photoPreview.withStatus.withTitle.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}")
+				.photoBox
+					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
+					.curtain
+				.photoTitle(data-bind="text: title")
+			// /ko
+
+	script(id="pagerTpl", type="text/html")
+		ul
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/ps'}") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/ps/' + (page() - 1)}") &laquo;
+			//ko foreach: pages
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/ps/' + $data}, text: $data")
+			// /ko
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/ps/' + (page() + 1)}") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/ps/' + pageLast()}") &raquo;

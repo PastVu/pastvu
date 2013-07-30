@@ -142,7 +142,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			socket.emit('giveIndexNews');
 		},
 		getPhotos: function (cb, ctx) {
-			socket.once('takePhotosPublic', function (data) {
+			socket.once('takePhotosPublicIndex', function (data) {
 				if (this.catLoading() === 'photos') {
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -156,7 +156,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 			}.bind(this));
-			socket.emit('givePhotosPublic');
+			socket.emit('givePhotosPublicIndex');
 		},
 		getPhotosToApprove: function (cb, ctx) {
 			socket.once('takePhotosForApprove', function (data) {
