@@ -17,8 +17,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.photos = ko.observableArray();
 			this.feed = ko.observableArray(false);
 
-
-			this.limit = 42; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
+			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
+			this.perRow = ko.observable(6);
 			this.count = ko.observable(0);
 			this.loading = ko.observable(false);
 
@@ -69,7 +69,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				return this.count() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count() : 'Пользователь пока не оставил ни одного комментария';
+				return this.count() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count() : 'Пока нет ни одной фотографии';
 			}, this);
 
 			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
@@ -78,13 +78,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 
-			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
+			this.sizesCalc();
 			this.routeHandler();
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
-			this.sizesCalc(P.window.square());
 			if (this.options.goUpload) {
 				window.setTimeout(this.showUpload.bind(this), 500);
 			}
@@ -98,21 +96,58 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
-
-		routeHandler: function () {
-			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
-			if (page > this.pageLast()) {
-				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/ps/' + this.pageLast());
-				}.bind(this), 200);
-			} else {
-				this.page(page);
-				this.getPage(page);
+		makeBinding: function () {
+			if (!this.binded) {
+				ko.applyBindings(globalVM, this.$dom[0]);
+				this.binded = true;
+				this.show();
 			}
 		},
 
-		getPage: function (page, cb, ctx) {
+		routeHandler: function () {
+			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
+			this.page(page);
+			this.getPage(page, this.limit, function () {
+				this.makeBinding();
+			}, this);
+		},
+		//TODO: Переключатель на feed
+
+		getPage: function (start, limit, cb, ctx) {
 			this.loading(true);
+			this.getPhotos(start, limit, function (data) {
+				if (!data || data.error) {
+					return;
+				}
+				this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+
+				//Если вызванная страница больше максимальной, выходим и навигираемся на максимальную
+				if (this.page() > this.pageLast()) {
+					return window.setTimeout(function () {
+						globalVM.router.navigateToUrl('/ps/' + this.pageLast());
+					}.bind(this), 200);
+				}
+				//Если страниц больше одной - показываем пагинатор
+				if (this.pageLast() > 1) {
+					this.paginationShow(true);
+				}
+				if (data.photos && data.photos.length) {
+					this.photos(data.photos);
+					//this.photos.concat(data.photos, false);
+				}
+				if (this.scrollActive && limit > data.photos.length) {
+					$window.off('scroll', this.scrollHandler);
+					this.scrollActive = false;
+				}
+				this.loading(false);
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}, this);
+		},
+
+		getPhotos: function (page, limit, cb, ctx) {
 			socket.once('takePhotosPublic', function (data) {
 				var i;
 
@@ -122,21 +157,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					for (i = data.photos.length; i--;) {
 						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 					}
-					this.count(data.count);
-					if (this.pageLast() > 1) {
-						this.paginationShow(true);
-					}
-					this.photos(data.photos);
 				}
-				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('givePhotosPublic', {page: page, limit: this.limit});
+			socket.emit('givePhotosPublic', {page: page, limit: limit});
 		},
 		sizesCalc: function () {
+			console.log(this.$dom.width());
 			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
+				rows = 5,
 				domW = this.$dom.width(),
 				thumbW,
 				thumbH,
@@ -145,180 +176,184 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				thumbWMax = 246,
 				marginMin;
 
-			if (windowW < 1000) {
-				thumbN = 4;
+			if (windowW < 1100) {
+				rows = 6;
 				marginMin = 8;
 			} else if (windowW < 1441) {
-				thumbN = 5;
+				rows = 5;
 				marginMin = 10;
 			} else {
-				thumbN = 6;
+				rows = 4;
 				marginMin = 14;
 			}
+
+			thumbN = this.limit / rows >> 0;
+
 			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax)) >> 0;
 			thumbH = thumbW / 1.5 >> 0;
 			//thumbW = thumbH * 1.5;
 
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
+			this.perRow(thumbN);
 			this.width(thumbW + 'px');
 			this.height(thumbH + 'px');
 		},
 		/*
-		getForUser: function () {
-			this.photos([]);
-			$window.off('scroll', this.scrollHandler);
-			this.scrollActive = false;
-			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
-				$window.on('scroll', this.scrollHandler);
-				this.scrollActive = true;
-			}
-		},
-		getPage: function (start, limit) {
-			this.getPhotos(start, limit, function (data) {
-				if (!data || data.error) {
-					return;
-				}
-				if (data.photos && data.photos.length) {
-					this.photos.concat(data.photos, false);
-				}
-				if (this.scrollActive && limit > data.photos.length) {
-					$window.off('scroll', this.scrollHandler);
-					this.scrollActive = false;
-				}
-			}, this);
-		},
-		getNextPage: function () {
-			if (!this.loading()) {
-				this.getPage(this.photos().length, this.limit);
-			}
-		},
-		getPhotos: function (skip, limit, cb, ctx) {
-			socket.once('takeUserPhotos', function (data) {
-				if (!data || data.error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					for (var i = data.photos.length; i--;) {
-						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
-					}
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-				this.loading(false);
-			}.bind(this));
-			socket.emit('giveUserPhotos', {login: this.u.login(), skip: skip, limit: limit});
-			this.loading(true);
-		},
-		getPhotosPrivate: function (cb, ctx) {
-			this.loading(true);
-			socket.once('takeUserPhotosPrivate', function (data) {
-				if (data && !data.error && data.len > 0) {
-					var currArray = this.photos(),
-						needSort,
-						needReplacement,
-						i;
+		 getForUser: function () {
+		 this.photos([]);
+		 $window.off('scroll', this.scrollHandler);
+		 this.scrollActive = false;
+		 if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
+		 this.getPage(0, this.canAdd() ? this.limit - 1 : this.limit);
+		 $window.on('scroll', this.scrollHandler);
+		 this.scrollActive = true;
+		 }
+		 },
+		 getPage: function (start, limit) {
+		 this.getPhotos(start, limit, function (data) {
+		 if (!data || data.error) {
+		 return;
+		 }
+		 if (data.photos && data.photos.length) {
+		 this.photos.concat(data.photos, false);
+		 }
+		 if (this.scrollActive && limit > data.photos.length) {
+		 $window.off('scroll', this.scrollHandler);
+		 this.scrollActive = false;
+		 }
+		 }, this);
+		 },
+		 getNextPage: function () {
+		 if (!this.loading()) {
+		 this.getPage(this.photos().length, this.limit);
+		 }
+		 },
+		 getPhotos: function (skip, limit, cb, ctx) {
+		 socket.once('takeUserPhotos', function (data) {
+		 if (!data || data.error) {
+		 window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+		 } else {
+		 for (var i = data.photos.length; i--;) {
+		 Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
+		 }
+		 }
+		 if (Utils.isType('function', cb)) {
+		 cb.call(ctx, data);
+		 }
+		 this.loading(false);
+		 }.bind(this));
+		 socket.emit('giveUserPhotos', {login: this.u.login(), skip: skip, limit: limit});
+		 this.loading(true);
+		 },
+		 getPhotosPrivate: function (cb, ctx) {
+		 this.loading(true);
+		 socket.once('takeUserPhotosPrivate', function (data) {
+		 if (data && !data.error && data.len > 0) {
+		 var currArray = this.photos(),
+		 needSort,
+		 needReplacement,
+		 i;
 
-					if (data.disabled && data.disabled.length) {
-						for (i = data.disabled.length; i--;) {
-							currArray.push(Photo.factory(data.disabled[i], 'compact', 'h', {title: 'Без названия'}));
-						}
-						needReplacement = needSort = true;
-					}
-					if (data.del && data.del.length) {
-						for (i = data.del.length; i--;) {
-							currArray.push(Photo.factory(data.del[i], 'compact', 'h', {title: 'Без названия'}));
-						}
-						needReplacement = needSort = true;
-					}
-					if (needSort) {
-						currArray.sort(function (a, b) {
-							return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
-						});
-					}
+		 if (data.disabled && data.disabled.length) {
+		 for (i = data.disabled.length; i--;) {
+		 currArray.push(Photo.factory(data.disabled[i], 'compact', 'h', {title: 'Без названия'}));
+		 }
+		 needReplacement = needSort = true;
+		 }
+		 if (data.del && data.del.length) {
+		 for (i = data.del.length; i--;) {
+		 currArray.push(Photo.factory(data.del[i], 'compact', 'h', {title: 'Без названия'}));
+		 }
+		 needReplacement = needSort = true;
+		 }
+		 if (needSort) {
+		 currArray.sort(function (a, b) {
+		 return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
+		 });
+		 }
 
-					if (data.fresh && data.fresh.length) {
-						for (i = data.fresh.length; i--;) {
-							currArray.unshift(Photo.factory(data.fresh[i], 'compact', 'h', {title: 'Без названия'}));
-						}
-						needReplacement = true;
-					}
+		 if (data.fresh && data.fresh.length) {
+		 for (i = data.fresh.length; i--;) {
+		 currArray.unshift(Photo.factory(data.fresh[i], 'compact', 'h', {title: 'Без названия'}));
+		 }
+		 needReplacement = true;
+		 }
 
-					if (needReplacement) {
-						this.photos(currArray);
-					}
-					currArray = i = null;
-				}
-				this.loading(false);
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
-		},
-		showUpload: function () {
-			if (!this.uploadVM) {
-				this.waitUploadSince = new Date();
-				renderer(
-					[
-						{
-							module: 'm/user/photoUpload',
-							modal: {
-								initWidth: '1000px',
-								topic: 'Загрузка фотографий',
-								closeTxt: 'Завершить',
-								closeFunc: function (evt) {
-									this.uploadVM.createPhotos(function (data) {
-										if (data && !data.error) {
-											this.closeUpload(data.cids.length);
-											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
-										} else {
-											ga('send', 'event', 'photo', 'create', 'photo create error');
-										}
-									}, this);
-									evt.stopPropagation();
-								}.bind(this)},
-							callback: function (vm) {
-								this.uploadVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 1
-					}
-				);
-			}
-		},
-		closeUpload: function (newCount) {
-			if (this.uploadVM) {
-				this.uploadVM.destroy();
+		 if (needReplacement) {
+		 this.photos(currArray);
+		 }
+		 currArray = i = null;
+		 }
+		 this.loading(false);
+		 if (Utils.isType('function', cb)) {
+		 cb.call(ctx, data);
+		 }
+		 }.bind(this));
+		 socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
+		 },
+		 showUpload: function () {
+		 if (!this.uploadVM) {
+		 this.waitUploadSince = new Date();
+		 renderer(
+		 [
+		 {
+		 module: 'm/user/photoUpload',
+		 modal: {
+		 initWidth: '1000px',
+		 topic: 'Загрузка фотографий',
+		 closeTxt: 'Завершить',
+		 closeFunc: function (evt) {
+		 this.uploadVM.createPhotos(function (data) {
+		 if (data && !data.error) {
+		 this.closeUpload(data.cids.length);
+		 ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+		 } else {
+		 ga('send', 'event', 'photo', 'create', 'photo create error');
+		 }
+		 }, this);
+		 evt.stopPropagation();
+		 }.bind(this)},
+		 callback: function (vm) {
+		 this.uploadVM = vm;
+		 this.childModules[vm.id] = vm;
+		 }.bind(this)
+		 }
+		 ],
+		 {
+		 parent: this,
+		 level: this.level + 1
+		 }
+		 );
+		 }
+		 },
+		 closeUpload: function (newCount) {
+		 if (this.uploadVM) {
+		 this.uploadVM.destroy();
 
-				if (newCount) {
-					socket.once('takePhotosFresh', function (data) {
-						if (!data || data.error) {
-							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-						} else {
-							if (data.photos.length > 0) {
-								var i = data.photos.length;
-								while (i--) {
-									Photo.factory(data.photos[i], 'compact', 'h');
-								}
-								this.photos.concat(data.photos, true);
-							}
-						}
-						this.loading(false);
-					}.bind(this));
-					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
-				}
+		 if (newCount) {
+		 socket.once('takePhotosFresh', function (data) {
+		 if (!data || data.error) {
+		 window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+		 } else {
+		 if (data.photos.length > 0) {
+		 var i = data.photos.length;
+		 while (i--) {
+		 Photo.factory(data.photos[i], 'compact', 'h');
+		 }
+		 this.photos.concat(data.photos, true);
+		 }
+		 }
+		 this.loading(false);
+		 }.bind(this));
+		 socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
+		 }
 
-				delete this.uploadVM;
-				delete this.waitUploadSince;
-				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
-			}
-		},*/
+		 delete this.uploadVM;
+		 delete this.waitUploadSince;
+		 globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
+		 }
+		 },*/
 
 		onPreviewLoad: function (data, event) {
 			event.target.parentNode.parentNode.classList.add('showPrv');

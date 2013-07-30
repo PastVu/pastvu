@@ -1,18 +1,24 @@
 .user_photo(data-bind="with: repository[M!M]")
-	.commentsBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
-	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	.row-fluid
+	.indentLogo.pageHeader Все фотографии
+	.row-fluid.photosRow
 		.photoThumbs
+			.photoTop
+				.commentsBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
+				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
+					.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
 			//ko foreach: photos
-			a.photoPreview.withStatus.withTitle.fringe(target='_blank', data-bind="attr: {href: '/p/' + cid}")
+			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}")
 				.photoBox
 					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
 					.curtain
 				.photoTitle(data-bind="text: title")
+			//ko if: ($index() + 1) % $parent.perRow() === 0
+			br
 			// /ko
-
-	script(id="pagerTpl", type="text/html")
+			// /ko
+	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
+		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
+	script(id="photoPagerTpl", type="text/html")
 		ul
 			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/ps'}") &laquo;&laquo;
 			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/ps/' + (page() - 1)}") &laquo;
