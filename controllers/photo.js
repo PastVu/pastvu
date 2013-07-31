@@ -515,7 +515,7 @@ function givePhoto(socket, data, cb) {
 
 //Отдаем последние публичные фотографии для главной
 var givePhotosPublicIndex = (function () {
-	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 30};
+	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 29};
 
 	return Utils.memoizeAsync(function (handler) {
 		Photo.find({}, compactFields, options, handler);

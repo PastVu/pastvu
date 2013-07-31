@@ -396,6 +396,23 @@ html, body {
 		}
 	}
 
+	&.infoCap {
+		color: #B9B9B9;
+		opacity: 1;
+		text-align: center;
+		.centering_content();
+
+		.capTxt {
+			display: inline-block;
+			margin-top: 2 + @PhotoTitleHeight / 2;
+			vertical-align: middle;
+			font-size: 15px;
+		}
+		&:hover {
+			color: #fff;
+		}
+	}
+
 	&.withTitle {
 		margin: 0 7px 17px 7px;
 		padding-bottom: @PhotoTitleHeight;
