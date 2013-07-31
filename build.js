@@ -72,6 +72,7 @@ var start = Date.now(),
 					'm/main/commentsFeed', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
 					'm/photo/photo',
+					'm/photo/gallery',
 					'm/diff/newsList', 'm/diff/news',
 					'm/comment/comments', 'm/comment/hist',
 					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/profile', 'm/user/settings', 'm/user/userPage'

@@ -6,7 +6,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	'use strict';
 
 	var catsObj = {
-			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'photosTpl'},
+			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'approvePhotosTpl'},
 			photos: {name: 'Новые фото', tpl: 'photosTpl'},
 			ratings: {name: 'Рейтинги', tpl: 'ratingsTpl'},
 			stats: {name: 'Статистика', tpl: 'statsTpl'}

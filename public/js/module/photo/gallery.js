@@ -141,6 +141,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 
 			this.page(page);
+			ga('send', 'pageview');
 			if (needRecieve) {
 				this.getPhotos((page - 1) * this.limit, this.limit, function () {
 					this.makeBinding();
