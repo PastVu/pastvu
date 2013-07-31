@@ -524,9 +524,8 @@ var givePhotosPublicIndex = (function () {
 
 //Отдаем полную публичную галерею в компактном виде
 function givePhotosPublic(data, cb) {
-	var page = Math.abs(Number(data.page)) || 1,
-		limit = Math.min(data.limit || 40, 100),
-		skip = (page - 1) * limit;
+	var skip = Math.abs(Number(data.skip)) || 0,
+		limit = Math.min(data.limit || 40, 100);
 
 	step(
 		function () {
@@ -537,7 +536,7 @@ function givePhotosPublic(data, cb) {
 			if (err || !photos) {
 				return cb({message: err && err.message || 'Photos does not exist', error: true});
 			}
-			cb({photos: photos, count: count, page: page});
+			cb({photos: photos, count: count, skip: skip});
 		}
 	);
 }

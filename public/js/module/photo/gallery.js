@@ -24,7 +24,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.scrollActive = false;
 			this.scrollHandler = function () {
-				if ($window.scrollTop() >= $(document).height() - $window.height() - 50) {
+				if ($window.scrollTop() >= $(document).height() - $window.height() - 120) {
 					this.getNextPage();
 				}
 			}.bind(this);
@@ -72,7 +72,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				return this.count() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count() : 'Пока нет ни одной фотографии';
+				var txt = '';
+				if (this.count()) {
+					if (this.feed()) {
+						txt = 'Всего ' + this.count() + ' фотографий';
+					} else {
+						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count();
+					}
+				} else {
+					txt = 'Пока нет ни одной фотографии';
+				}
+				return txt;
 			}, this);
 
 			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
@@ -92,10 +102,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.showing = true;
 		},
 		hide: function () {
-			if (this.scrollActive) {
-				$window.off('scroll', this.scrollHandler);
-				this.scrollActive = false;
-			}
+			this.scrollDeActivate();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -109,23 +116,25 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 		routeHandler: function () {
 			var page = globalVM.router.params().page,
+				currPhotoLength = this.photos().length,
 				needRecieve = true;
 
 			if (page === 'feed') {
 				page = 1;
 				this.feed(true);
 				this.scrollActivate();
-				if (this.page() === 1 && this.photos().length <= this.limit) {
-					needRecieve = false;
+				if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
+					needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
 				} else {
 					this.photos([]);
 				}
 			} else {
 				page = Math.abs(Number(page)) || 1;
 				this.feed(false);
-				if (page === 1 && this.page() === 1 && this.photos().length) {
-					needRecieve = false;
-					if (this.photos().length > this.limit) {
+				this.scrollDeActivate();
+				if (page === 1 && this.page() === 1 && currPhotoLength) {
+					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
+					if (currPhotoLength > this.limit) {
 						this.photos.splice(this.limit);
 					}
 				}
@@ -133,7 +142,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.page(page);
 			if (needRecieve) {
-				this.getPage(page, this.limit, function () {
+				this.getPhotos((page - 1) * this.limit, this.limit, function () {
 					this.makeBinding();
 				}, this);
 			}
@@ -142,33 +151,46 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.router.navigateToUrl('/ps' + (feed ? '/feed' : ''));
 		},
 		scrollActivate: function () {
-			$window.on('scroll', this.scrollHandler);
-			this.scrollActive = true;
+			if (!this.scrollActive) {
+				$window.on('scroll', this.scrollHandler);
+				this.scrollActive = true;
+			}
 		},
-		getPage: function (start, limit, cb, ctx) {
+		scrollDeActivate: function () {
+			if (this.scrollActive) {
+				$window.off('scroll', this.scrollHandler);
+				this.scrollActive = false;
+			}
+		},
+
+		getNextPage: function () {
+			if (!this.loading()) {
+				this.getPhotos(this.photos().length, this.limit);
+			}
+		},
+		getPhotos: function (skip, limit, cb, ctx) {
 			this.loading(true);
-			this.getPhotos(start, limit, function (data) {
+			this.recievePhotos(skip, limit, function (data) {
 				if (!data || data.error) {
 					return;
 				}
-				var feedMode = this.feed();
-
 				this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
 
-				//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
-				if (!feedMode && this.page() > this.pageLast()) {
-					return window.setTimeout(function () {
-						globalVM.router.navigateToUrl('/ps/' + this.pageLast());
-					}.bind(this), 200);
-				}
-				if (feedMode && data.photos && data.photos.length) {
-					this.photos.concat(data.photos, false);
+				if (this.feed()) {
+					if (data.photos && data.photos.length) {
+						this.photos.concat(data.photos, false);
+					}
+					if (this.scrollActive && limit > data.photos.length) {
+						this.scrollDeActivate();
+					}
 				} else {
+					if (this.page() > this.pageLast()) {
+						//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
+						return window.setTimeout(function () {
+							globalVM.router.navigateToUrl('/ps/' + this.pageLast());
+						}.bind(this), 200);
+					}
 					this.photos(data.photos);
-				}
-				if (feedMode && this.scrollActive && limit > data.photos.length) {
-					$window.off('scroll', this.scrollHandler);
-					this.scrollActive = false;
 				}
 				this.loading(false);
 
@@ -177,14 +199,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}, this);
 		},
-
-		getPhotos: function (page, limit, cb, ctx) {
+		recievePhotos: function (skip, limit, cb, ctx) {
 			socket.once('takePhotosPublic', function (data) {
 				var i;
-
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else if (data.page === page) {
+				} else if (data.skip === skip) {
 					for (i = data.photos.length; i--;) {
 						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 					}
@@ -193,8 +213,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('givePhotosPublic', {page: page, limit: limit});
+			socket.emit('givePhotosPublic', {skip: skip, limit: limit});
 		},
+
 		sizesCalc: function () {
 			console.log(this.$dom.width());
 			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
