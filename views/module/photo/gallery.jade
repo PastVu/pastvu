@@ -3,9 +3,14 @@
 	.row-fluid.photosRow
 		.photoThumbs
 			.photoTop
-				.commentsBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
+				.pageBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
 				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
 					.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
+				.btn-group.feedSwitch
+					button.btn.btn-small(title="Лента", data-bind="click: function () {modeSelect(true)}, css: {active: feed()}")
+						i.icon-th-list
+					button.btn.btn-small(title="Постранично", data-bind="click: function () {modeSelect(false)}, css: {active: !feed()}")
+						i.icon-book
 			//ko foreach: photos
 			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}")
 				.photoBox

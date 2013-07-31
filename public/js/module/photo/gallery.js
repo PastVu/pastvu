@@ -15,7 +15,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.photos = ko.observableArray();
-			this.feed = ko.observableArray(false);
+			this.feed = ko.observable(false);
 
 			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
 			this.perRow = ko.observable(6);
@@ -28,6 +28,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					this.getNextPage();
 				}
 			}.bind(this);
+
 			this.width = ko.observable('0px');
 			this.height = ko.observable('0px');
 
@@ -35,7 +36,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.page = ko.observable(1);
 			this.pageSize = ko.observable(this.limit);
 			this.pageSlide = ko.observable(2);
-			this.paginationShow = ko.observable(false);
 
 			this.pageLast = this.co.pageLast = ko.computed(function () {
 				return ((this.count() - 1) / this.pageSize() >> 0) + 1;
@@ -66,6 +66,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					result.push(i);
 				}
 				return result;
+			}, this);
+			this.paginationShow = this.co.paginationShow = ko.computed(function () {
+				return !this.feed() && this.pageLast() > 1;
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
@@ -105,37 +108,65 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		routeHandler: function () {
-			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
-			this.page(page);
-			this.getPage(page, this.limit, function () {
-				this.makeBinding();
-			}, this);
-		},
-		//TODO: Переключатель на feed
+			var page = globalVM.router.params().page,
+				needRecieve = true;
 
+			if (page === 'feed') {
+				page = 1;
+				this.feed(true);
+				this.scrollActivate();
+				if (this.page() === 1 && this.photos().length <= this.limit) {
+					needRecieve = false;
+				} else {
+					this.photos([]);
+				}
+			} else {
+				page = Math.abs(Number(page)) || 1;
+				this.feed(false);
+				if (page === 1 && this.page() === 1 && this.photos().length) {
+					needRecieve = false;
+					if (this.photos().length > this.limit) {
+						this.photos.splice(this.limit);
+					}
+				}
+			}
+
+			this.page(page);
+			if (needRecieve) {
+				this.getPage(page, this.limit, function () {
+					this.makeBinding();
+				}, this);
+			}
+		},
+		modeSelect: function (feed) {
+			globalVM.router.navigateToUrl('/ps' + (feed ? '/feed' : ''));
+		},
+		scrollActivate: function () {
+			$window.on('scroll', this.scrollHandler);
+			this.scrollActive = true;
+		},
 		getPage: function (start, limit, cb, ctx) {
 			this.loading(true);
 			this.getPhotos(start, limit, function (data) {
 				if (!data || data.error) {
 					return;
 				}
+				var feedMode = this.feed();
+
 				this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
 
-				//Если вызванная страница больше максимальной, выходим и навигираемся на максимальную
-				if (this.page() > this.pageLast()) {
+				//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
+				if (!feedMode && this.page() > this.pageLast()) {
 					return window.setTimeout(function () {
 						globalVM.router.navigateToUrl('/ps/' + this.pageLast());
 					}.bind(this), 200);
 				}
-				//Если страниц больше одной - показываем пагинатор
-				if (this.pageLast() > 1) {
-					this.paginationShow(true);
-				}
-				if (data.photos && data.photos.length) {
+				if (feedMode && data.photos && data.photos.length) {
+					this.photos.concat(data.photos, false);
+				} else {
 					this.photos(data.photos);
-					//this.photos.concat(data.photos, false);
 				}
-				if (this.scrollActive && limit > data.photos.length) {
+				if (feedMode && this.scrollActive && limit > data.photos.length) {
 					$window.off('scroll', this.scrollHandler);
 					this.scrollActive = false;
 				}

@@ -14,18 +14,6 @@
 		font-size: 20px;
 	}
 
-	.commentsBrief {
-		position: absolute;
-		top: 5px;
-		left: 0px;
-		z-index: -1;
-
-		&.commentsLoading {
-			padding-right: 75px;
-			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
-		}
-	}
-
 	.pagination {
 		margin-top: 0;
 	}
@@ -37,6 +25,24 @@
 	.photoTop {
 		position: relative;
 		margin: 0 8px;
+	}
+
+	.pageBrief {
+		position: absolute;
+		top: 5px;
+		left: 0px;
+		z-index: -1;
+
+		&.commentsLoading {
+			padding-right: 75px;
+			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
+		}
+	}
+	.feedSwitch {
+		position: absolute;
+		top: 1px;
+		right: 0px;
+		z-index: 1;
 	}
 
 	.photoThumbs {
