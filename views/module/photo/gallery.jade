@@ -11,6 +11,11 @@
 						i.icon-th-list
 					button.btn.btn-small(title="Постранично", data-bind="click: function () {modeSelect(false)}, css: {active: !feed()}")
 						i.icon-book
+			//ko if: u && canAdd()
+			a.photoPreview.withTitle.fringe.addPhoto(href="/photoUpload", data-bind="style: {width: w, height: h}")
+				.plusPhoto
+				.desc Добавить фото..
+			// /ko
 			//ko foreach: photos
 			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}, css: {trans: $parent.feed()}")
 				.photoBox
@@ -25,10 +30,10 @@
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
 	script(id="photoPagerTpl", type="text/html")
 		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/ps'}") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/ps/' + (page() - 1)}") &laquo;
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl()}") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() - 1)}") &laquo;
 			//ko foreach: pages
-			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/ps/' + $data}, text: $data")
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + $data}, text: $data")
 			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/ps/' + (page() + 1)}") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/ps/' + pageLast()}") &raquo;
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + (page() + 1)}") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + pageLast()}") &raquo;

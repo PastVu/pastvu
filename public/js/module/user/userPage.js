@@ -155,8 +155,8 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				module = 'm/user/profile';
 				Utils.title.setTitle({title: this.user.disp()});
 			} else if (section === 'photos' || section === 'photo') {
-				module = 'm/user/gallery';
-				moduleOptions.options.canAdd = true;
+				module = 'm/photo/gallery';
+				moduleOptions.options.addPossible = true;
 				if (upload) {
 					if (this.contentVM && this.contentVM.module === module) {
 						this.contentVM.showUpload();

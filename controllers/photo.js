@@ -564,7 +564,6 @@ function giveUserPhotos(socket, data, cb) {
 		}
 		var query = {user: user._id},
 			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
-			photosFresh,
 			skip = data.skip || 0,
 			limit = Math.min(data.limit || 20, 100);
 
@@ -579,7 +578,6 @@ function giveUserPhotos(socket, data, cb) {
 				return cb({message: err && err.message, error: true});
 			}
 			cb({photos: photos});
-			photosFresh = skip = limit = null;
 		}
 	});
 }

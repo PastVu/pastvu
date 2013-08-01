@@ -10,16 +10,19 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	return Cliche.extend({
 		jade: jade,
 		options: {
-
+			addPossible: false,
+			userVM: null
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+			this.u = this.options.userVM;
+
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
 
+			this.count = ko.observable(0);
 			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
 			this.perRow = ko.observable(6);
-			this.count = ko.observable(0);
 			this.loading = ko.observable(false);
 
 			this.scrollActive = false;
@@ -31,7 +34,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.w = ko.observable('0px');
 			this.h = ko.observable('0px');
-
 
 			this.page = ko.observable(1);
 			this.pageSize = ko.observable(this.limit);
@@ -85,6 +87,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				return txt;
 			}, this);
 
+			if (this.u) {
+				this.userModeAdditions();
+				this.pageUrl = ko.observable('/u/' + this.u.login() + '/photo/');
+			} else {
+				this.pageUrl = ko.observable('/ps/');
+			}
+
 			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
 
 			// Subscriptions
@@ -96,7 +105,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
-			if (this.options.goUpload) {
+			if (this.u && this.options.goUpload) {
 				window.setTimeout(this.showUpload.bind(this), 500);
 			}
 			this.showing = true;
@@ -106,6 +115,36 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+		userModeAdditions: function () {
+			this.canAdd = this.co.canAdd = ko.computed(function () {
+				return this.options.addPossible && this.u.login() === this.auth.iAm.login() && (this.feed() || this.page() === 1);
+			}, this);
+
+			this.subscriptions.login = this.u.login.subscribe(this.changeUserHandler, this); //Срабатывает при смене пользователя
+			if (!this.auth.loggedIn()) {
+				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+			}
+		},
+		loggedInHandler: function () {
+			// После логина перезапрашиваем ленту фотографий пользователя
+			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
+				this.getPhotosPrivate(function (data) {
+					if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
+						this.getNextPage();
+					}
+				}, this);
+			}
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
+		},
+		changeUserHandler: function () {
+			this.photos([]);
+			this.count(this.u.pcount());
+			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
+				//this.getPage(0, this.limit);
+			}
+		},
+
 		makeBinding: function () {
 			if (!this.binded) {
 				ko.applyBindings(globalVM, this.$dom[0]);
@@ -113,7 +152,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.show();
 			}
 		},
-
 		routeHandler: function () {
 			var page = globalVM.router.params().page,
 				currPhotoLength = this.photos().length,
@@ -220,7 +258,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 
 		sizesCalc: function () {
-			console.log(this.$dom.width());
 			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
 				domW = this.$dom.width(),
 				thumbW,
