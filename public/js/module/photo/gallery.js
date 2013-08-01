@@ -1,6 +1,6 @@
 /*global define:true, ga:true*/
 /**
- * Модель фотографий пользователя
+ * Модель галереи фотографий
  */
 define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
 	'use strict';
@@ -29,8 +29,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}.bind(this);
 
-			this.width = ko.observable('0px');
-			this.height = ko.observable('0px');
+			this.w = ko.observable('0px');
+			this.h = ko.observable('0px');
 
 
 			this.page = ko.observable(1);
@@ -123,6 +123,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				page = 1;
 				this.feed(true);
 				this.scrollActivate();
+				Utils.title.setTitle({title: 'Лента всех фотографий'});
 				if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
 					needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
 				} else {
@@ -132,6 +133,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				page = Math.abs(Number(page)) || 1;
 				this.feed(false);
 				this.scrollDeActivate();
+				Utils.title.setTitle({title: page + ' - Все фотографии'});
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
 					if (currPhotoLength > this.limit) {
@@ -220,7 +222,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		sizesCalc: function () {
 			console.log(this.$dom.width());
 			var windowW = window.innerWidth, //В @media ширина считается с учетом ширины скролла (кроме chrome<29), поэтому мы тоже должны брать этот размер
-				rows = 5,
 				domW = this.$dom.width(),
 				thumbW,
 				thumbH,
@@ -229,28 +230,28 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				thumbWMax = 246,
 				marginMin;
 
-			if (windowW < 1100) {
-				rows = 6;
+			if (windowW < 1000) {
+				thumbN = 5;
 				marginMin = 8;
 			} else if (windowW < 1441) {
-				rows = 5;
+				thumbN = 6;
 				marginMin = 10;
 			} else {
-				rows = 4;
+				thumbN = 7;
 				marginMin = 14;
 			}
 
-			thumbN = this.limit / rows >> 0;
-
-			thumbW = Math.max(thumbWMin, Math.min(domW / thumbN - marginMin - 2, thumbWMax)) >> 0;
+			thumbW =  Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
+			if (thumbW < thumbWMin) {
+				thumbN = domW / (thumbWMin + marginMin) >> 0;
+				thumbW =  Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
+			}
 			thumbH = thumbW / 1.5 >> 0;
-			//thumbW = thumbH * 1.5;
-
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
 			this.perRow(thumbN);
-			this.width(thumbW + 'px');
-			this.height(thumbH + 'px');
+			this.w(thumbW + 'px');
+			this.h(thumbH + 'px');
 		},
 
 		onPreviewLoad: function (data, event) {

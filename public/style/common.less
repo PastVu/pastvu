@@ -352,6 +352,9 @@ html, body {
 	opacity: 0;
 
 	&.showPrv {
+		&.trans {
+			.transition(opacity .4s linear);
+		}
 		opacity: 1;
 	}
 
@@ -416,7 +419,6 @@ html, body {
 	&.withTitle {
 		margin: 0 7px 17px 7px;
 		padding-bottom: @PhotoTitleHeight;
-		.transition(opacity .4s linear);
 
 		.photoTitle {
 			position: absolute;

@@ -12,9 +12,9 @@
 					button.btn.btn-small(title="Постранично", data-bind="click: function () {modeSelect(false)}, css: {active: !feed()}")
 						i.icon-book
 			//ko foreach: photos
-			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}")
+			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}, css: {trans: $parent.feed()}")
 				.photoBox
-					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.width, height: $parent.height}")
+					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 					.curtain
 				.photoTitle(data-bind="text: title")
 			//ko if: ($index() + 1) % $parent.perRow() === 0
