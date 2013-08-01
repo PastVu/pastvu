@@ -1,7 +1,7 @@
 .gallery_photo(data-bind="with: repository[M!M]")
 	.indentLogo.pageHeader Все фотографии
 	.row-fluid.photosRow
-		.photoThumbs
+		.photoThumbs(data-bind="style: {maxWidth: panelMaxW()}")
 			.photoTop
 				.pageBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
 				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
@@ -22,9 +22,6 @@
 					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 					.curtain
 				.photoTitle(data-bind="text: title")
-			//ko if: ($index() + 1) % $parent.perRow() === 0
-			br
-			// /ko
 			// /ko
 	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")

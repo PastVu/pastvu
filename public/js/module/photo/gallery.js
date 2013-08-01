@@ -22,7 +22,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			this.count = ko.observable(0);
 			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
-			this.perRow = ko.observable(6);
 			this.loading = ko.observable(false);
 
 			this.scrollActive = false;
@@ -32,6 +31,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}.bind(this);
 
+			this.panelMaxW = ko.observable('0px');
 			this.w = ko.observable('0px');
 			this.h = ko.observable('0px');
 
@@ -286,7 +286,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			thumbH = thumbW / 1.5 >> 0;
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
-			this.perRow(thumbN);
+			//Максимальная ширина для сентрируемого холста с превьюшками. 2 прибавляем, чтобы учесть возможную погрешность
+			this.panelMaxW((thumbN * (thumbW + marginMin + 2) + 4 >> 0) + 'px');
 			this.w(thumbW + 'px');
 			this.h(thumbH + 'px');
 		},
