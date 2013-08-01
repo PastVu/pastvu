@@ -623,9 +623,9 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					titlePostfix = val || '';
 				},
 				setTitle: function (options) {
-					titlePre = options.pre || '';
-					titleVal = options.title || '';
-					titlePost = options.post || '';
+					titlePre = options.pre || titlePre;
+					titleVal = options.title || titleVal;
+					titlePost = options.post || titlePost;
 					if (options.postfix) {
 						titlePostfix = String(options.postfix);
 					}

@@ -577,7 +577,7 @@ function giveUserPhotos(socket, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			cb({photos: photos});
+			cb({photos: photos, skip: skip});
 		}
 	});
 }

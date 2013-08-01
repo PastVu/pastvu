@@ -7,9 +7,9 @@
 				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
 					.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
 				.btn-group.feedSwitch
-					button.btn.btn-small(title="Лента", data-bind="click: function () {modeSelect(true)}, css: {active: feed()}")
+					button.btn.btn-small(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
 						i.icon-th-list
-					button.btn.btn-small(title="Постранично", data-bind="click: function () {modeSelect(false)}, css: {active: !feed()}")
+					button.btn.btn-small(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
 						i.icon-book
 			//ko if: u && canAdd()
 			a.photoPreview.withTitle.fringe.addPhoto(href="/photoUpload", data-bind="style: {width: w, height: h}")

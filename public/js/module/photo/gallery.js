@@ -116,6 +116,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.showing = false;
 		},
 		userModeAdditions: function () {
+			this.count(this.u.pcount());
 			this.canAdd = this.co.canAdd = ko.computed(function () {
 				return this.options.addPossible && this.u.login() === this.auth.iAm.login() && (this.feed() || this.page() === 1);
 			}, this);
@@ -161,7 +162,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				page = 1;
 				this.feed(true);
 				this.scrollActivate();
-				Utils.title.setTitle({title: 'Лента всех фотографий'});
+				if (this.u) {
+					Utils.title.setTitle({pre: 'Лента фотографий - '});
+				} else {
+					Utils.title.setTitle({title: 'Лента всех фотографий'});
+				}
 				if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
 					needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
 				} else {
@@ -171,7 +176,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				page = Math.abs(Number(page)) || 1;
 				this.feed(false);
 				this.scrollDeActivate();
-				Utils.title.setTitle({title: page + ' - Все фотографии'});
+				if (this.u) {
+					Utils.title.setTitle({pre: page + ' - фотографии - '});
+				} else {
+					Utils.title.setTitle({title: page + ' - Все фотографии'});
+				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
 					if (currPhotoLength > this.limit) {
@@ -188,8 +197,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}, this);
 			}
 		},
-		modeSelect: function (feed) {
-			globalVM.router.navigateToUrl('/ps' + (feed ? '/feed' : ''));
+		feedSelect: function (feed) {
+			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? 'feed' : ''));
 		},
 		scrollActivate: function () {
 			if (!this.scrollActive) {
@@ -215,7 +224,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error) {
 					return;
 				}
-				this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+				if (!this.u) {
+					this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+				}
 
 				if (this.feed()) {
 					if (data.photos && data.photos.length) {
@@ -228,7 +239,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (this.page() > this.pageLast()) {
 						//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
 						return window.setTimeout(function () {
-							globalVM.router.navigateToUrl('/ps/' + this.pageLast());
+							globalVM.router.navigateToUrl(this.pageUrl + this.pageLast());
 						}.bind(this), 200);
 					}
 					this.photos(data.photos);
@@ -241,7 +252,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}, this);
 		},
 		recievePhotos: function (skip, limit, cb, ctx) {
-			socket.once('takePhotosPublic', function (data) {
+			var reqName = this.u ? 'giveUserPhotos' : 'givePhotosPublic',
+				resName = this.u ? 'takeUserPhotos' : 'takePhotosPublic',
+				params = {skip: skip, limit: limit};
+
+			if (this.u) {
+				params.login = this.u.login();
+			}
+
+			socket.once(resName, function (data) {
 				var i;
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -254,7 +273,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('givePhotosPublic', {skip: skip, limit: limit});
+			socket.emit(reqName, params);
 		},
 
 		sizesCalc: function () {
@@ -268,14 +287,20 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				marginMin;
 
 			if (windowW < 1000) {
-				thumbN = 5;
 				marginMin = 8;
 			} else if (windowW < 1441) {
-				thumbN = 6;
 				marginMin = 10;
 			} else {
-				thumbN = 7;
 				marginMin = 14;
+			}
+			if (domW < 900) {
+				thumbN = 4;
+			}  else if (domW < 1300) {
+				thumbN = 5;
+			}   else if (domW < 1441) {
+				thumbN = 6;
+			} else {
+				thumbN = 7;
 			}
 
 			thumbW =  Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
@@ -286,7 +311,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			thumbH = thumbW / 1.5 >> 0;
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
-			//Максимальная ширина для сентрируемого холста с превьюшками. 2 прибавляем, чтобы учесть возможную погрешность
+			//Максимальная ширина для сентрируемого холста с превьюшками. 4 прибавляем, чтобы учесть возможную погрешность
 			this.panelMaxW((thumbN * (thumbW + marginMin + 2) + 4 >> 0) + 'px');
 			this.w(thumbW + 'px');
 			this.h(thumbH + 'px');
