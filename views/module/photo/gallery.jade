@@ -1,5 +1,7 @@
 .gallery_photo(data-bind="with: repository[M!M]")
-	.indentLogo.pageHeader Все фотографии
+	//ko if: topTitle()
+	.indentLogo.pageHeader(data-bind="text: topTitle()")
+	// /ko
 	.row-fluid.photosRow
 		.photoThumbs(data-bind="style: {maxWidth: panelMaxW()}")
 			.photoTop
@@ -17,10 +19,13 @@
 				.desc Добавить фото..
 			// /ko
 			//ko foreach: photos
-			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}, css: {trans: $parent.feed()}")
+			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}, css: {trans: $parent.feed()}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 				.photoBox
 					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 					.curtain
+					//ko if: $data.noPublic
+					i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+					// /ko
 				.photoTitle(data-bind="text: title")
 			// /ko
 	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")

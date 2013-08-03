@@ -12,11 +12,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		options: {
 			addPossible: false,
 			userVM: null,
-			goUpload: false
+			goUpload: false,
+			topTitle: ''
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
+			this.topTitle = ko.observable(this.options.topTitle);
 
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
@@ -128,13 +130,19 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 		loggedInHandler: function () {
-			// После логина перезапрашиваем ленту фотографий пользователя
+			// После логина перезапрашиваем фотографии пользователя
 			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				this.getPhotosPrivate(function (data) {
-					if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-						this.getNextPage();
-					}
-				}, this);
+				if (this.feed()) {
+					//В режиме ленты запрашиваем приватные и подмешиваем в текущие
+					this.getPhotosPrivate(function (data) {
+						if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
+							this.getNextPage();
+						}
+					}, this);
+				} else {
+					//В постраничном режиме просто перезапрашиваем страницу
+					this.getPhotos((this.page() - 1) * this.limit, this.limit);
+				}
 			}
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
@@ -275,15 +283,60 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
-					for (i = data.photos.length; i--;) {
-						Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
-					}
+					this.processPhotos(data.photos);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
 			}.bind(this));
 			socket.emit(reqName, params);
+		},
+		getPhotosPrivate: function (cb, ctx) {
+			this.loading(true);
+			socket.once('takeUserPhotosPrivate', function (data) {
+				if (data && !data.error && data.len > 0) {
+					var currArray = this.photos(),
+						needSort,
+						needReplacement,
+						i;
+
+					if (data.disabled && data.disabled.length) {
+						this.processPhotos(data.disabled);
+						Array.prototype.push.apply(currArray, data.disabled);
+						needReplacement = needSort = true;
+					}
+					if (data.del && data.del.length) {
+						this.processPhotos(data.del);
+						Array.prototype.push.apply(currArray, data.del);
+						needReplacement = needSort = true;
+					}
+					if (needSort) {
+						currArray.sort(function (a, b) {
+							return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
+						});
+					}
+
+					if (data.fresh && data.fresh.length) {
+						this.processPhotos(data.fresh);
+						Array.prototype.unshift.apply(currArray, data.fresh);
+						needReplacement = true;
+					}
+
+					if (needReplacement) {
+						this.photos(currArray);
+					}
+				}
+				this.loading(false);
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}.bind(this));
+			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
+		},
+		processPhotos: function (arr) {
+			for (var i = arr.length; i--;) {
+				Photo.factory(arr[i], 'compact', 'h', {title: 'Без названия'});
+			}
 		},
 
 		sizesCalc: function () {
@@ -305,18 +358,18 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 			if (domW < 900) {
 				thumbN = 4;
-			}  else if (domW < 1300) {
+			} else if (domW < 1300) {
 				thumbN = 5;
-			}   else if (domW < 1441) {
+			} else if (domW < 1441) {
 				thumbN = 6;
 			} else {
 				thumbN = 7;
 			}
 
-			thumbW =  Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
+			thumbW = Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
 			if (thumbW < thumbWMin) {
 				thumbN = domW / (thumbWMin + marginMin) >> 0;
-				thumbW =  Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
+				thumbW = Math.min(domW / thumbN - marginMin - 4, thumbWMax) >> 0;
 			}
 			thumbH = thumbW / 1.5 >> 0;
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
@@ -372,10 +425,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 						} else {
 							if (data.photos.length > 0) {
-								var i = data.photos.length;
-								while (i--) {
-									Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
-								}
+								this.processPhotos(data.photos);
 								this.count(this.u.pcount());
 
 								if (this.page() > 1) {
@@ -416,7 +466,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			} else {
 				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Превью недоступно'});
 			}
-			$photoBox.append(content);
+			$photoBox.find('.curtain').after(content);
 			parent.classList.add('showPrv');
 		}
 	});

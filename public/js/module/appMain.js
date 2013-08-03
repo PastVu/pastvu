@@ -75,7 +75,7 @@ require([
 					ga('set', 'page', '/ps' + (page ? '/' + page : ''));
 					renderer(
 						[
-							{module: 'm/photo/gallery', container: '#bodyContainer'}
+							{module: 'm/photo/gallery', container: '#bodyContainer', options: {topTitle: 'Все фотографии'}}
 						]
 					);
 				},
