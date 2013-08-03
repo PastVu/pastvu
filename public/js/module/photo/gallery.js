@@ -34,7 +34,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}.bind(this);
 
-			this.panelMaxW = ko.observable('0px');
+			this.panelW = ko.observable('0px');
 			this.w = ko.observable('0px');
 			this.h = ko.observable('0px');
 
@@ -151,8 +151,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		changeUserHandler: function () {
 			this.photos([]);
 			/*if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				this.getPage(0, this.limit);
-			}*/
+			 this.getPage(0, this.limit);
+			 }*/
 		},
 
 		makeBinding: function () {
@@ -369,8 +369,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			thumbH = thumbW / 1.5 >> 0;
 			//margin = ((domW % thumbW) / (domW / thumbW >> 0)) / 2 >> 0;
 
-			//Максимальная ширина для сентрируемого холста с превьюшками. 4 прибавляем, чтобы учесть возможную погрешность
-			this.panelMaxW((thumbN * (thumbW + marginMin + 2) + 4 >> 0) + 'px');
+			//Ширина для центрируемого холста с превьюшками для переносов. 4 прибавляем, чтобы учесть возможную погрешность
+			this.panelW((thumbN * (thumbW + marginMin + 2) + 4 >> 0) + 'px');
 			this.w(thumbW + 'px');
 			this.h(thumbH + 'px');
 		},

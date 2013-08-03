@@ -39,9 +39,9 @@ require([
 			},
 			routes: [
 				{route: "", handler: "index"},
-				{route: "p(/)(:cid)(/)", handler: "photo"},
+				{route: "p(/:cid)(/)", handler: "photo"},
 				{route: "ps(/)(:page)", handler: "photos"},
-				{route: "u(/)(:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
+				{route: "u(/:user)(/)(:section)(/)(:page)(/)", handler: "userPage"},
 				{route: "news(/)(:cid)(/)", handler: "news"},
 				{route: "photoUpload(/)", handler: "photoUpload"},
 				{route: "confirm/:key", handler: "confirm"}

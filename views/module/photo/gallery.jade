@@ -3,16 +3,18 @@
 	.indentLogo.pageHeader(data-bind="text: topTitle()")
 	// /ko
 	.row-fluid.photosRow
-		.photoThumbs(data-bind="style: {maxWidth: panelMaxW()}")
+		.photoThumbs(data-bind="style: {width: panelW()}")
 			.photoTop
 				.pageBrief(data-bind="css: {commentsLoading: loading()}, text: briefText")
 				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
 					.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
+				//ko if: photos().length
 				.btn-group.feedSwitch
 					button.btn.btn-small(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
 						i.icon-th-list
 					button.btn.btn-small(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
 						i.icon-book
+				// /ko
 			//ko if: u && canAdd()
 			a.photoPreview.withTitle.fringe.addPhoto(href="/photoUpload", data-bind="style: {width: w, height: h}")
 				.plusPhoto
