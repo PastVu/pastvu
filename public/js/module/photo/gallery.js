@@ -119,7 +119,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.showing = false;
 		},
 		userModeAdditions: function () {
-			this.count(this.u.pcount());
 			this.canAdd = this.co.canAdd = ko.computed(function () {
 				return this.options.addPossible && this.u.login() === this.auth.iAm.login() && (this.feed() || this.page() === 1);
 			}, this);
@@ -134,7 +133,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
 				if (this.feed()) {
 					//В режиме ленты запрашиваем приватные и подмешиваем в текущие
-					this.getPhotosPrivate(function (data) {
+					this.loading(true);
+					this.recievePhotosPrivate(function (data) {
+						this.loading(false);
 						if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
 							this.getNextPage();
 						}
@@ -149,10 +150,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		changeUserHandler: function () {
 			this.photos([]);
-			this.count(this.u.pcount());
-			if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				//this.getPage(0, this.limit);
-			}
+			/*if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
+				this.getPage(0, this.limit);
+			}*/
 		},
 
 		makeBinding: function () {
@@ -242,8 +242,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				if (!data || data.error) {
 					return;
 				}
-				if (!this.u) {
-					this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+				this.count(data.count); //Вводим полное кол-во фотографий для пересчета пагинации
+				if (this.page() > this.pageLast()) {
+					//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
+					return window.setTimeout(function () {
+						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast());
+					}.bind(this), 200);
 				}
 
 				if (this.feed()) {
@@ -254,12 +258,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.scrollDeActivate();
 					}
 				} else {
-					if (this.page() > this.pageLast()) {
-						//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
-						return window.setTimeout(function () {
-							globalVM.router.navigateToUrl(this.pageUrl + '/' + this.pageLast());
-						}.bind(this), 200);
-					}
 					this.photos(data.photos);
 				}
 				this.loading(false);
@@ -291,14 +289,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}.bind(this));
 			socket.emit(reqName, params);
 		},
-		getPhotosPrivate: function (cb, ctx) {
-			this.loading(true);
+		recievePhotosPrivate: function (cb, ctx) {
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
 						needSort,
-						needReplacement,
-						i;
+						needReplacement;
 
 					if (data.disabled && data.disabled.length) {
 						this.processPhotos(data.disabled);
@@ -326,7 +322,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.photos(currArray);
 					}
 				}
-				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
@@ -426,11 +421,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						} else {
 							if (data.photos.length > 0) {
 								this.processPhotos(data.photos);
-								this.count(this.u.pcount());
+								this.count(this.count() + data.photos.length);
 
 								if (this.page() > 1) {
 									//Если в постраничном режиме, не на первой странице, то переходим на первую
-									globalVM.router.navigateToUrl(this.pageUrl);
+									globalVM.router.navigateToUrl(this.pageUrl());
 								} else {
 									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
 									if (!this.feed() && this.photos().length + data.photos.length > this.limit) {

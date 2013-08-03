@@ -558,7 +558,7 @@ function givePhotosForApprove(socket, data, cb) {
 //Отдаем галерею пользователя в компактном виде
 function giveUserPhotos(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
-	User.collection.findOne({login: data.login}, {_id: 1}, function (err, user) {
+	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
 		if (err || !user) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
@@ -568,16 +568,22 @@ function giveUserPhotos(socket, data, cb) {
 			limit = Math.min(data.limit || 20, 100);
 
 		if (noPublic) {
-			findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, true, finish);
+			step (
+				function () {
+					findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, this.parallel());
+					countPhotosAll({user: user._id}, iAm, this.parallel());
+				},
+				finish
+			);
 		} else {
 			Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
 		}
 
-		function finish(err, photos) {
+		function finish(err, photos, allCount) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			cb({photos: photos, skip: skip});
+			cb({photos: photos, skip: skip, count: allCount || user.pcount || 0});
 		}
 	});
 }
@@ -607,7 +613,7 @@ function giveUserPhotosAround(socket, data, cb) {
 					if (noPublic) {
 						//Если текущая фотография новая, то stamp должен быть увеличен на 10 лет
 						query.stamp = {$gt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-						findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, user, true, this.parallel());
+						findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, user, this.parallel());
 					} else {
 						query.adate = {$gt: photo.adate};
 						Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
@@ -619,7 +625,7 @@ function giveUserPhotosAround(socket, data, cb) {
 				if (limitR) {
 					if (noPublic) {
 						query.stamp = {$lt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-						findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, user, true, this.parallel());
+						findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, user, this.parallel());
 					} else {
 						query.adate = {$lt: photo.adate};
 						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
@@ -1134,7 +1140,6 @@ function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
  * @param fieldSelect Выбор полей
  * @param options
  * @param user Пользователь сессии
- * @param noPublicToo Искать ли в непубличных при наличии прав
  * @param cb
  */
 var findPhotosAll = (function () {
@@ -1163,7 +1168,7 @@ var findPhotosAll = (function () {
 		}
 	}
 
-	return function (query, fieldSelect, options, user, noPublicToo, cb) {
+	return function (query, fieldSelect, options, user, cb) {
 		var photoSort;
 		step(
 			function () {
@@ -1238,6 +1243,30 @@ var findPhotosAll = (function () {
 				cb(err, res);
 			}
 		);
+	};
+}());
+
+/**
+ * Считаем фотографии по сквозной таблице, независимо от статуса
+ * @param query
+ * @param user Пользователь сессии
+ * @param cb
+ */
+var countPhotosAll = (function () {
+	return function (query, user, cb) {
+		if (user.role > 4) {
+			var notin = [];
+
+			if (user.role < 10) {
+				notin.push(9); //Не обладающие ролью админа не могут видеть удаленные фотографии
+			}
+			if (notin.length) {
+				query.state = {$nin: notin};
+			}
+		} else {
+			query.state = 5;
+		}
+		PhotoSort.count(query, cb);
 	};
 }());
 
