@@ -90,9 +90,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 
 			if (this.u) {
 				this.userModeAdditions();
-				this.pageUrl = ko.observable('/u/' + this.u.login() + '/photo/');
+				this.pageUrl = ko.observable('/u/' + this.u.login() + '/photo');
 			} else {
-				this.pageUrl = ko.observable('/ps/');
+				this.pageUrl = ko.observable('/ps');
 			}
 
 			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
@@ -155,11 +155,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 		routeHandler: function () {
-			var page = globalVM.router.params().page,
+			var params = globalVM.router.params(),
+				page = params.page,
 				currPhotoLength = this.photos().length,
 				needRecieve = true;
 
-			//TODO: Не отслеживать здесь photoUpload при его активации когда уже загружена галерея
+			// Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
+			// Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
+			if (this.binded && params.photoUpload) {
+				return;
+			}
+
 			if (page === 'feed') {
 				page = 1;
 				this.feed(true);
@@ -179,9 +185,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.feed(false);
 				this.scrollDeActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: page + ' - фотографии - '});
+					Utils.title.setTitle({pre: 'Фотографии - '});
 				} else {
-					Utils.title.setTitle({title: page + ' - Все фотографии'});
+					Utils.title.setTitle({title: 'Все фотографии'});
 				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
@@ -190,9 +196,11 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 			}
-
 			this.page(page);
-			ga('send', 'pageview');
+
+			if (!this.u) {
+				ga('send', 'pageview'); //В галерее пользователя pageview отправляет userPage
+			}
 			if (needRecieve) {
 				this.getPhotos((page - 1) * this.limit, this.limit, function () {
 					this.makeBinding();
@@ -200,7 +208,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 		feedSelect: function (feed) {
-			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? 'feed' : ''));
+			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : ''));
 		},
 		scrollActivate: function () {
 			if (!this.scrollActive) {
@@ -241,7 +249,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					if (this.page() > this.pageLast()) {
 						//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
 						return window.setTimeout(function () {
-							globalVM.router.navigateToUrl(this.pageUrl + this.pageLast());
+							globalVM.router.navigateToUrl(this.pageUrl + '/' + this.pageLast());
 						}.bind(this), 200);
 					}
 					this.photos(data.photos);
@@ -369,10 +377,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 									Photo.factory(data.photos[i], 'compact', 'h', {title: 'Без названия'});
 								}
 								this.count(this.u.pcount());
-								if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
-									this.photos.splice(this.limit - data.photos.length);
+
+								if (this.page() > 1) {
+									//Если в постраничном режиме, не на первой странице, то переходим на первую
+									globalVM.router.navigateToUrl(this.pageUrl);
+								} else {
+									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
+									if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
+										this.photos.splice(this.limit - data.photos.length);
+									}
+									this.photos.concat(data.photos, true);
 								}
-								this.photos.concat(data.photos, true);
 							}
 						}
 					}.bind(this));
