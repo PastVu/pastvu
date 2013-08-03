@@ -21,7 +21,7 @@
 				.desc Добавить фото..
 			// /ko
 			//ko foreach: photos
-			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid}, css: {trans: $parent.feed()}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+			a.photoPreview.withStatus.withTitle.fringe(data-bind="attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}, css: {trans: $parent.feed()}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 				.photoBox
 					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 					.curtain

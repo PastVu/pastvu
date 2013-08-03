@@ -1188,7 +1188,7 @@ var findPhotosAll = (function () {
 					dis = [],
 					del = [];
 
-				//Если в выборе нет _id, то еключаем его, т.к. он нужен для меппинга
+				//Если в выборе нет _id, то включаем его, т.к. он нужен для меппинга
 				if (!fieldSelect._id) {
 					fieldSelect = _.clone(fieldSelect);
 					fieldSelect._id = 1;

@@ -917,11 +917,11 @@ module.exports.loadController = function (app, db) {
 
 		print('Start to fill ' + db.photos_disabled.count() + ' disabled photos');
 		state = 7;
-		db.photos_disabled.find({}, {_id: 0, user: 1, adate: 1}).forEach(iterator);
+		db.photos_disabled.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
 
 		print('Start to fill ' + db.photos_del.count() + ' del photos');
 		state = 9;
-		db.photos_del.find({}, {_id: 0, user: 1, adate: 1}).forEach(iterator);
+		db.photos_del.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
 
 		function iterator(photo) {
 			var stamp = photo[stampName];
