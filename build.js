@@ -71,11 +71,10 @@ var start = Date.now(),
 					'm/common/auth', 'm/common/top', 'm/common/foot',
 					'm/main/commentsFeed', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
-					'm/photo/photo',
-					'm/photo/gallery',
+					'm/photo/photo', 'm/photo/gallery',
 					'm/diff/newsList', 'm/diff/news',
 					'm/comment/comments', 'm/comment/hist',
-					'm/user/brief', 'm/user/comments', 'm/user/gallery', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
+					'm/user/brief', 'm/user/comments', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
 				]
 			}/*,
 			{
@@ -87,7 +86,7 @@ var start = Date.now(),
 				include: ['m/auth', 'm/top', 'm/user/brief']
 			},
 			{
-				name: "m/user/gallery",
+				name: "m/photo/gallery",
 				exclude: [
 					'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage',
 					'text', 'css'
