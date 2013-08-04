@@ -103,8 +103,8 @@
 		div.inputwrap.lock
 			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
 		button.btn-strict.formAction(type="submit") Сменить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Cancel
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Finish
+		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock активен

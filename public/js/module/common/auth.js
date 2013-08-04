@@ -140,13 +140,14 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 		},
 
 		submit: function (data, evt) {
-			var $form = $(evt.target);
+			var $form = $(evt.target),
+				formData = $form.serializeObject();
 			$form.find(':focus').blur();
 
 			try {
 				if (this.mode() === 'login') {
 					this.doLogin(
-						$.extend($form.serializeObject(), {'remember': $form[0].querySelector('#remember').classList.contains('checked')}),
+						$.extend(formData, {'remember': $form[0].querySelector('#remember').classList.contains('checked')}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -166,7 +167,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'reg') {
 					this.doRegister(
-						$.extend($form.serializeObject(), {}),
+						$.extend(formData, {}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -187,7 +188,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallRequest') {
 					this.doPassRecall(
-						$.extend($form.serializeObject(), {}),
+						$.extend(formData, {}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -208,7 +209,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'passChangeRecall') {
 					this.doPassRecallChange(
-						$.extend($form.serializeObject(), {key: this.key()}),
+						$.extend(formData, {key: this.key()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -222,6 +223,19 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 								this.setMessage(data.message, 'success');
 								window.setTimeout(function () {
 									this.formWorking(false);
+
+									//Если не залогинен, производим автоматический вход пользователем,
+									//для которого восстанавливали пароль
+									if (!this.loggedIn()) {
+										this.doLogin(
+											{login: this.login(), pass: formData.pass, remember: true},
+											function (data) {
+												if (!data.error) {
+													ga('send', 'event', 'auth', 'login', 'auth login success');
+												}
+											}.bind(this)
+										);
+									}
 								}.bind(this), 420);
 								ga('send', 'event', 'auth', 'passChangeRecall', 'auth passChangeRecall success');
 							}
@@ -229,7 +243,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'recallRequestForMe') {
 					this.doPassRecall(
-						$.extend($form.serializeObject(), {login: this.login() || this.iAm.login()}),
+						$.extend(formData, {login: this.login() || this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -250,7 +264,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 					);
 				} else if (this.mode() === 'passChange') {
 					this.doPassChange(
-						$.extend($form.serializeObject(), {login: this.iAm.login()}),
+						$.extend(formData, {login: this.iAm.login()}),
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -270,7 +284,7 @@ define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleClich
 						}.bind(this)
 					);
 				} else if (this.mode() === 'passInput') {
-					this.callback.call(this.ctx, $form.serializeObject().pass);
+					this.callback.call(this.ctx, formData.pass);
 				}
 
 				this.formWorking(true);
