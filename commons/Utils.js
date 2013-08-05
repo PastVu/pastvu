@@ -13,6 +13,15 @@ Utils.isType = function (type, obj) {
 	return Object.prototype.toString.call(obj).slice(8, -1).toUpperCase() === type.toUpperCase();
 };
 
+/**
+ * Проверяет что в объекте нет собственный свойств
+ * @param {Object} obj Проверяемый объект.
+ * @return {boolean}
+ */
+Utils.isObjectEmpty = function (obj) {
+	return Object.getObjectPropertyLength(obj) === 0;
+};
+
 Utils.randomString = (function () {
 	'use strict';
 	var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),

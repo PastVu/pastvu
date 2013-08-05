@@ -13,13 +13,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			addPossible: false,
 			userVM: null,
 			goUpload: false,
-			topTitle: ''
+			topTitle: '',
+			filter: {}
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.topTitle = ko.observable(this.options.topTitle);
 
+			this.filter = {};
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
 
@@ -164,14 +166,34 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
+				filterParams = params.f && params.f.split(';'),
+				newFilter = {},
+				filterChange = false,
 				page = params.page,
 				currPhotoLength = this.photos().length,
-				needRecieve = true;
+				needRecieve = true,
+				i;
 
 			// Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
 			// Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
 			if (this.binded && params.photoUpload) {
 				return;
+			}
+
+			//Параметры фильтров
+			if (filterParams) {
+				for (i = filterParams.length; i--;) {
+					newFilter[filterParams[i]] = true;
+					if (!this.filter[filterParams[i]]) {
+						filterChange = true; //Если нового параметра нет в текущих, говорим об изменении
+					}
+				}
+				for (i in this.filter) {
+					if (this.filter[i] !== undefined && !newFilter[i]) {
+						filterChange = true; //Если старого параметра нет в новых, говорим об изменении
+					}
+				}
+				this.filter = newFilter;
 			}
 
 			if (page === 'feed') {
@@ -209,7 +231,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (!this.u) {
 				ga('send', 'pageview'); //В галерее пользователя pageview отправляет userPage
 			}
-			if (needRecieve) {
+
+			if (needRecieve || filterChange) {
 				this.getPhotos((page - 1) * this.limit, this.limit, function () {
 					this.makeBinding();
 				}, this);
@@ -275,6 +298,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (this.u) {
 				params.login = this.u.login();
 			}
+			if (this.filter && !Utils.isObjectEmpty(this.filter)) {
+				params.filter = this.filter;
+			}
 
 			socket.once(resName, function (data) {
 				var i;
@@ -326,7 +352,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
+			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), filter: this.filter, startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
 		},
 		processPhotos: function (arr) {
 			for (var i = arr.length; i--;) {

@@ -525,12 +525,19 @@ var givePhotosPublicIndex = (function () {
 //Отдаем полную публичную галерею в компактном виде
 function givePhotosPublic(data, cb) {
 	var skip = Math.abs(Number(data.skip)) || 0,
-		limit = Math.min(data.limit || 40, 100);
+		limit = Math.min(data.limit || 40, 100),
+		filter = data.filter;
 
 	step(
 		function () {
-			Photo.find({}, compactFields, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
-			Photo.count(this.parallel());
+			var query = {};
+			if (filter/* && !Utils.isObjectEmpty(filter)*/) {
+				if (filter.nogeo) {
+					query.geo = {$exists: false};
+				}
+			}
+			Photo.find(query, compactFields, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
+			Photo.count(query, this.parallel());
 		},
 		function (err, photos, count) {
 			if (err || !photos) {
