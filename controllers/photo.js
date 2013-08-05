@@ -522,6 +522,15 @@ var givePhotosPublicIndex = (function () {
 	}, ms('30s'));
 }());
 
+//Отдаем последние публичные "Где это?" фотографии для главной
+var givePhotosPublicNoGeoIndex = (function () {
+	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 29};
+
+	return Utils.memoizeAsync(function (handler) {
+		Photo.find({geo: null}, compactFields, options, handler);
+	}, ms('30s'));
+}());
+
 //Отдаем полную публичную галерею в компактном виде
 function givePhotosPublic(data, cb) {
 	var skip = Math.abs(Number(data.skip)) || 0,
@@ -1384,6 +1393,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('givePhotosPublicIndex', function (data) {
 			givePhotosPublicIndex(function (err, photos) {
 				socket.emit('takePhotosPublicIndex', err ? {message: err.message, error: true} : {photos: photos});
+			});
+		});
+
+		socket.on('givePhotosPublicNoGeoIndex', function (data) {
+			givePhotosPublicNoGeoIndex(function (err, photos) {
+				socket.emit('takePhotosPublicNoGeoIndex', err ? {message: err.message, error: true} : {photos: photos});
 			});
 		});
 

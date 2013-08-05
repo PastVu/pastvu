@@ -6,13 +6,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 	'use strict';
 
 	var catsObj = {
-			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'approvePhotosTpl'},
+			photosToApprove: {name: 'Ожидают подтверждения', tpl: 'photosTpl'},
 			photos: {name: 'Новые фото', tpl: 'photosTpl'},
+			photosNoGeo: {name: 'Где это?', tpl: 'photosTpl'},
 			ratings: {name: 'Рейтинги', tpl: 'ratingsTpl'},
 			stats: {name: 'Статистика', tpl: 'statsTpl'}
 		},
 		cats = [
 			'photos',
+			'photosNoGeo',
 			'ratings',
 			'stats'
 		],
@@ -35,6 +37,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 			this.catLoading = ko.observable('');
 			this.catActive = ko.observable('');
+			this.moreLink = ko.observable('');
 
 			this.photos = ko.observableArray();
 			this.ratings = {
@@ -115,12 +118,15 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			this.catLoading(id);
 			this['get' + Utils.capitalizeFirst(id)](this.catActivate, this);
 		},
-		catActivate: function (data) {
-			this.catActive(this.catLoading());
+		catActivate: function (success) {
+			if (success) {
+				this.catActive(this.catLoading());
+			}
 			this.catLoading('');
 		},
 		getNews: function (cb, ctx) {
 			socket.once('takeIndexNews', function (data) {
+				var success = false;
 				if (!data || data.error || !Array.isArray(data.news)) {
 					console.log('Index news error', data && data.message);
 				} else {
@@ -133,49 +139,73 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						}
 					}
 					this.news(data.news);
+					success = true;
 				}
-
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+					cb.call(ctx, success);
 				}
 			}.bind(this));
 			socket.emit('giveIndexNews');
 		},
 		getPhotos: function (cb, ctx) {
 			socket.once('takePhotosPublicIndex', function (data) {
+				var success = false;
 				if (this.catLoading() === 'photos') {
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
+						this.moreLink('/ps');
+						success = true;
 					}
-
-					if (Utils.isType('function', cb)) {
-						cb.call(ctx, data);
-					}
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, success);
 				}
 			}.bind(this));
 			socket.emit('givePhotosPublicIndex');
 		},
+		getPhotosNoGeo: function (cb, ctx) {
+			socket.once('takePhotosPublicNoGeoIndex', function (data) {
+				var success = false;
+				if (this.catLoading() === 'photosNoGeo') {
+					if (!data || data.error || !Array.isArray(data.photos)) {
+						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					} else {
+						this.processPhotos(data.photos, Photo.picFormats.m);
+						this.photos(data.photos);
+						this.moreLink('/ps?f=nogeo');
+						success = true;
+					}
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, success);
+				}
+			}.bind(this));
+			socket.emit('givePhotosPublicNoGeoIndex');
+		},
 		getPhotosToApprove: function (cb, ctx) {
 			socket.once('takePhotosForApprove', function (data) {
+				var success = false;
 				if (this.catLoading() === 'photosToApprove') {
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
-					}
-
-					if (Utils.isType('function', cb)) {
-						cb.call(ctx, data);
+						this.moreLink('');
+						success = true;
 					}
 				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, success);
+				}
 			}.bind(this));
-			socket.emit('givePhotosForApprove', {skip: 0, limit: 24});
+			socket.emit('givePhotosForApprove', {skip: 0, limit: 30});
 		},
 		getRatings: function (cb, ctx) {
+			var success = false;
 			socket.once('takeRatings', function (data) {
 				if (this.catLoading() === 'ratings') {
 					if (!data || data.error) {
@@ -196,15 +226,33 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
 						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
 						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						success = true;
 					}
-
-					if (Utils.isType('function', cb)) {
-						cb.call(ctx, data);
-					}
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, success);
 				}
 			}.bind(this));
 			socket.emit('giveRatings', {limit: 24});
 		},
+		getStats: function (cb, ctx) {
+			var success = false;
+			socket.once('takeStats', function (data) {
+				if (this.catLoading() === 'stats') {
+					if (!data || data.error || !data.all) {
+						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					} else {
+						this.stats.all = data.all;
+					}
+					success = true;
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, success);
+				}
+			}.bind(this));
+			socket.emit('giveStats');
+		},
+
 		ratSelect: function (data, event) {
 			var group = $(event.target).parents('.btn-group').attr('id'),
 				id = $(event.target).attr('data-time');
@@ -247,22 +295,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				}
 			}
 			return users;
-		},
-		getStats: function (cb, ctx) {
-			socket.once('takeStats', function (data) {
-				if (this.catLoading() === 'stats') {
-					if (!data || data.error || !data.all) {
-						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-					} else {
-						this.stats.all = data.all;
-					}
-
-					if (Utils.isType('function', cb)) {
-						cb.call(ctx, data);
-					}
-				}
-			}.bind(this));
-			socket.emit('giveStats');
 		},
 
 		onPreviewLoad: function (data, event) {

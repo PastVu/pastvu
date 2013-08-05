@@ -171,6 +171,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				page = params.page,
 				currPhotoLength = this.photos().length,
 				needRecieve = true,
+				preTitle = '',
 				i;
 
 			// Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
@@ -193,6 +194,13 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 				this.filter = newFilter;
+
+				if (this.filter.nogeo) {
+					preTitle = 'Где это? - ';
+					if (this.options.topTitle) {
+						this.topTitle = ko.observable('Где это? ' + this.options.topTitle);
+					}
+				}
 			}
 
 			if (page === 'feed') {
@@ -200,9 +208,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.feed(true);
 				this.scrollActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: 'Лента фотографий - '});
+					Utils.title.setTitle({pre: preTitle + 'Лента фотографий - '});
 				} else {
-					Utils.title.setTitle({title: 'Лента всех фотографий'});
+					Utils.title.setTitle({title: preTitle + 'Лента всех фотографий'});
 				}
 				if (this.page() === 1 && currPhotoLength && currPhotoLength <= this.limit) {
 					needRecieve = false; //Если переключаемся на ленту с первой заполненной страницы, то оставляем её данные
@@ -214,9 +222,9 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 				this.feed(false);
 				this.scrollDeActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: 'Фотографии - '});
+					Utils.title.setTitle({pre: preTitle + 'Фотографии - '});
 				} else {
-					Utils.title.setTitle({title: 'Все фотографии'});
+					Utils.title.setTitle({title: preTitle + 'Все фотографии'});
 				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
