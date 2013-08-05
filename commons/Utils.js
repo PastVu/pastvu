@@ -19,7 +19,11 @@ Utils.isType = function (type, obj) {
  * @return {boolean}
  */
 Utils.isObjectEmpty = function (obj) {
-	return Object.getObjectPropertyLength(obj) === 0;
+	return this.getObjectPropertyLength(obj) === 0;
+};
+
+Utils.getObjectPropertyLength = function () {
+	return Object.keys(obj).length;
 };
 
 Utils.randomString = (function () {
@@ -89,7 +93,7 @@ Utils.linkifyUrlString = function (inputText, target, className) {
 	className = className ? ' class="' + className + '"' : '';
 
 	//URLs starting with http://, https://, or ftp://
-	replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+	replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9А-Я+&@#\/%?=~_|!:,.;]*[-A-Z0-9А-Я+&@#\/%=~_|])/gim;
 	replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
 
 	//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
@@ -113,6 +117,7 @@ Utils.inputIncomingParse = (function () {
 		var result = txt;
 
 		result = _s.trim(result); //Обрезаем концы
+		result = decodeURI(result); //Декодируем возможные закодированные ссылки, вставленные из строки адреса браузера, содержащие не аски символы
 		result = escape(result); //Эскейпим
 
 		//Заменяем ссылку на фото на диез-ссылку #xxx
