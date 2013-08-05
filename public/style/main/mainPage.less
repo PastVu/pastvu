@@ -5,3 +5,50 @@
 #mapContainer {
 	position: relative;
 }
+
+.mainTable {
+	display: table;
+	width: 100%;
+	max-width: 100%;
+}
+.mainRow {
+	display: table-row;
+}
+.mainL {
+	display: table-cell;
+}
+.mainR {
+	position: relative;
+	display: table-cell;
+	width: 17%;
+	box-shadow: -1px -5px 7px #333;
+}
+#commentsFeed {
+	position: absolute;
+	top: 0;
+	left: 4px;
+	right: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+@media (max-width: 1520px) {
+	.mainR {
+		width: 21%;
+	}
+}
+@media (max-width: 1200px) {
+	.mainR {
+		width: 25%;
+	}
+}
+@media (max-width: 950px) {
+	.mainR {
+		width: 27%;
+	}
+}
+@media (max-width: 767px) {
+	.mainTable, .mainRow, .mainL, .mainR {
+		display: block;
+	}
+}
