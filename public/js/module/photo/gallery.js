@@ -134,14 +134,16 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			// После логина перезапрашиваем фотографии пользователя
 			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
 				if (this.feed()) {
-					//В режиме ленты запрашиваем приватные и подмешиваем в текущие
-					this.loading(true);
-					this.recievePhotosPrivate(function (data) {
-						this.loading(false);
-						if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-							this.getNextPage();
-						}
-					}, this);
+					if (!this.filter.nogeo) {
+						//В режиме ленты запрашиваем приватные и подмешиваем в текущие
+						this.loading(true);
+						this.recievePhotosPrivate(function (data) {
+							this.loading(false);
+							if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
+								this.getNextPage();
+							}
+						}, this);
+					}
 				} else {
 					//В постраничном режиме просто перезапрашиваем страницу
 					this.getPhotos((this.page() - 1) * this.limit, this.limit);
@@ -152,9 +154,6 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		},
 		changeUserHandler: function () {
 			this.photos([]);
-			/*if (this.u.pcount() > 0 || this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-			 this.getPage(0, this.limit);
-			 }*/
 		},
 
 		makeBinding: function () {
@@ -316,6 +315,8 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			socket.emit(reqName, params);
 		},
 		recievePhotosPrivate: function (cb, ctx) {
+			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined};
+
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
 					var currArray = this.photos(),
@@ -352,7 +353,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', {login: this.u.login(), filter: this.filter, startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined});
+			socket.emit('giveUserPhotosPrivate', params);
 		},
 		processPhotos: function (arr) {
 			for (var i = arr.length; i--;) {

@@ -531,9 +531,9 @@ function givePhotosPublic(data, cb) {
 	step(
 		function () {
 			var query = {};
-			if (filter/* && !Utils.isObjectEmpty(filter)*/) {
+			if (filter) {
 				if (filter.nogeo) {
-					query.geo = {$exists: false};
+					query.geo = null;
 				}
 			}
 			Photo.find(query, compactFields, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
@@ -572,19 +572,34 @@ function giveUserPhotos(socket, data, cb) {
 		var query = {user: user._id},
 			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
 			skip = data.skip || 0,
-			limit = Math.min(data.limit || 20, 100);
+			limit = Math.min(data.limit || 20, 100),
+			filter = data.filter;
 
-		if (noPublic) {
-			step (
+		if (noPublic && !filter) {
+			//Не можем пользоваться фильтром по сквозной таблице
+			step(
 				function () {
 					findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, this.parallel());
-					countPhotosAll({user: user._id}, iAm, this.parallel());
+					countPhotosAll(query, iAm, this.parallel());
+				},
+				finish
+			);
+		} else if (filter) {
+			//Если есть фильтр, до запрашиваем по нему также count
+			if (filter.nogeo) {
+				query.geo = null;
+			}
+			step(
+				function () {
+					Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, this.parallel());
+					Photo.count(query, this.parallel());
 				},
 				finish
 			);
 		} else {
 			Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
 		}
+
 
 		function finish(err, photos, allCount) {
 			if (err) {
@@ -1254,7 +1269,7 @@ var findPhotosAll = (function () {
 }());
 
 /**
- * Считаем фотографии по сквозной таблице, независимо от статуса
+ * Считаем фотографии по сквозной таблице
  * @param query
  * @param user Пользователь сессии
  * @param cb
