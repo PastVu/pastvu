@@ -190,9 +190,10 @@ require([
 	$('body').append(jade);
 	ko.applyBindings(globalVM);
 
-	globalVM.router = new RouteManager(routerAnatomy);
-
-	$.when(loadParams(), routerDeferred.promise()).then(app);
+	$.when(loadParams()).done(function () {
+		globalVM.router = new RouteManager(routerAnatomy);
+		$.when(routerDeferred.promise()).then(app);
+	});
 
 	function loadParams() {
 		var dfd = $.Deferred();
