@@ -15,18 +15,8 @@
 		position: relative;
 		padding: 2px 0 0 0;
 		background-color: darken(@bodyBackground, 2%);
+		//box-shadow: 1px 0 7px #333 inset;
 		.box-sizing(border-box);
-
-		&::before {
-			position: absolute;
-			display: block;
-			top: 0;
-			left: 0;
-			width: 0px;
-			height: 100%;
-			.box-sizing(border-box);
-			.box-shadow(0px 0px 10px 2px #000);
-		}
 
 		hr {
 			margin: 0;
@@ -90,7 +80,7 @@
 
 		.novel {
 			margin: 0;
-			padding: 5px 0 6px 8px;
+			padding: 5px 10px 6px 8px;
 			cursor: default;
 			.box-sizing(border-box);
 
