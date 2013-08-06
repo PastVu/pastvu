@@ -10,7 +10,7 @@ require([
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'model/Photo', 'model/User',
 	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
-	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu'
+	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, Photo, User, jade) {
 	"use strict";
 

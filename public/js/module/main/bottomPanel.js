@@ -112,19 +112,40 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			delete this.subscriptions.loggedIn;
 		},
 		catClick: function (data) {
-			this.catJump(data);
+			this.catJump(data, true);
 		},
-		catJump: function (id) {
+		catJump: function (id, scroll) {
 			this.catLoading(id);
-			this['get' + Utils.capitalizeFirst(id)](this.catActivate, this);
+			this['get' + Utils.capitalizeFirst(id)](this.catActivate, this, scroll);
 		},
-		catActivate: function (success) {
+		catActivate: function (success, scroll) {
 			if (success) {
-				this.catActive(this.catLoading());
+				if (scroll) {
+					var $catMenu = this.$dom.find('.catMenu'),
+						catContentHeight = this.$dom.find('.catContent').height(),
+						cBottom = $catMenu.offset().top + $catMenu.height() + 60,
+						wTop = $(window).scrollTop(),
+						wFold = $(window).height() + wTop;
+
+					if (wFold < cBottom) {
+						$(window).scrollTo('+=' + (cBottom - wFold + catContentHeight / 2 >> 0) + 'px', {axis: 'y', duration: 200, onAfter: function () {
+							this.catSetLoading();
+						}.bind(this)});
+					} else {
+						this.catSetLoading();
+					}
+				} else {
+					this.catSetLoading();
+				}
+			} else {
+				this.catLoading('');
 			}
+		},
+		catSetLoading: function (success, scroll) {
+			this.catActive(this.catLoading());
 			this.catLoading('');
 		},
-		getNews: function (cb, ctx) {
+		getNews: function (cb, ctx, scroll) {
 			socket.once('takeIndexNews', function (data) {
 				var success = false;
 				if (!data || data.error || !Array.isArray(data.news)) {
@@ -142,12 +163,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					success = true;
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('giveIndexNews');
 		},
-		getPhotos: function (cb, ctx) {
+		getPhotos: function (cb, ctx, scroll) {
 			socket.once('takePhotosPublicIndex', function (data) {
 				var success = false;
 				if (this.catLoading() === 'photos') {
@@ -161,12 +182,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('givePhotosPublicIndex');
 		},
-		getPhotosNoGeo: function (cb, ctx) {
+		getPhotosNoGeo: function (cb, ctx, scroll) {
 			socket.once('takePhotosPublicNoGeoIndex', function (data) {
 				var success = false;
 				if (this.catLoading() === 'photosNoGeo') {
@@ -180,12 +201,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('givePhotosPublicNoGeoIndex');
 		},
-		getPhotosToApprove: function (cb, ctx) {
+		getPhotosToApprove: function (cb, ctx, scroll) {
 			socket.once('takePhotosForApprove', function (data) {
 				var success = false;
 				if (this.catLoading() === 'photosToApprove') {
@@ -199,12 +220,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('givePhotosForApprove', {skip: 0, limit: 30});
 		},
-		getRatings: function (cb, ctx) {
+		getRatings: function (cb, ctx, scroll) {
 			var success = false;
 			socket.once('takeRatings', function (data) {
 				if (this.catLoading() === 'ratings') {
@@ -230,12 +251,12 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					}
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('giveRatings', {limit: 24});
 		},
-		getStats: function (cb, ctx) {
+		getStats: function (cb, ctx, scroll) {
 			var success = false;
 			socket.once('takeStats', function (data) {
 				if (this.catLoading() === 'stats') {
@@ -247,7 +268,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 					success = true;
 				}
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, success);
+					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
 			socket.emit('giveStats');
