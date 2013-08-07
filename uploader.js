@@ -4,6 +4,8 @@
 var path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
+	gm = require('gm'),
+	step = require('step'),
 	_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
@@ -51,7 +53,7 @@ global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport
 
 var Utils = require('./commons/Utils.js'),
 	options = {
-		incomeDir: storePath + 'incoming',
+		incomeDir: path.normalize(storePath + 'incoming/'),
 		targetDir: storePath + 'private/photos/',
 		minFileSize: 10240, //10kB
 		maxFileSize: 52428800, //50Mb
@@ -104,7 +106,7 @@ var Utils = require('./commons/Utils.js'),
 					return;
 				}
 				//Переименовываем файл в сгенерированное нами имя
-				fs.renameSync(file.path, options.incomeDir + '/' + fileInfo.file);
+				fs.renameSync(file.path, options.incomeDir + fileInfo.file);
 			})
 			.on('aborted', function () {
 				tmpFiles.forEach(function (file) {
@@ -124,7 +126,29 @@ var Utils = require('./commons/Utils.js'),
 			.on('end', function () {
 				counter -= 1;
 				if (!counter) {
-					cb(req, res, {files: files});
+					step(
+						function () {
+							for (var i = files.length; i--;) {
+								gm(options.incomeDir + files[i].file).size(this.parallel());
+							}
+						},
+						function (err, size) {
+							if (err) {
+								console.log('~~~~');
+								console.log('GM size error');
+							}
+							var w, h, i;
+							console.dir(arguments);
+							for (i = 1; i < arguments.length; i++) {
+								w = arguments[i] && Number(arguments[i].width);
+								h = arguments[i] && Number(arguments[i].height);
+								if (!w || !h || (w < 700 && h < 700)) {
+									req.connection.destroy();
+								}
+							}
+							cb(req, res, {files: files});
+						}
+					);
 				}
 			})
 			.parse(req);
@@ -189,7 +213,7 @@ FileInfo.prototype.validate = function () {
 };
 
 
-require('http').createServer(serve).listen(listenuport, listenhost, function() {
+require('http').createServer(serve).listen(listenuport, listenhost, function () {
 	logger.info('Uploader host for users: [%s]', host);
 	logger.info('Uploader server listening [%s:%s]\n', listenhost ? listenhost : '*', listenuport);
 });

@@ -533,6 +533,10 @@ var givePhotosPublicNoGeoIndex = (function () {
 
 //Отдаем полную публичную галерею в компактном виде
 function givePhotosPublic(data, cb) {
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
 		filter = data.filter;

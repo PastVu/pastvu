@@ -38,10 +38,10 @@
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
 	script(id="photoPagerTpl", type="text/html")
 		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl()}") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')}") &laquo;
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl()}", title="Первая страница") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')}", title="Предыдущая страница") &laquo;
 			//ko foreach: pages
 			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data}, text: $data")
 			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1)}") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast()}") &raquo;
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1)}", title="Следующая страница") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast()}", title="Последняя страница") &raquo;&raquo;
