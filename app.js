@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+'use strict';
+
 var express = require('express'),
 	http = require('http'),
 	app, server, io, db,
@@ -200,7 +202,12 @@ async.waterfall([
 		callback(null);
 	},
 	function ioConfigure(callback) {
-		var _session = require('./controllers/_session.js');
+		global.us = {}; //Users. Хэш всех активных соединений подключенных пользователей по логинам
+		global.su = {}; //Sockets. Хэш всех активных сессий по ключам
+
+		var _session = require('./controllers/_session.js'),
+			us = global.us,
+			su = global.su;
 
 		io.set('log level', land === 'dev' ? 1 : 0);
 		io.set('browser client', false);
@@ -212,10 +219,34 @@ async.waterfall([
 
 			//logger.info(handshakeData);
 
-			if (existsSid) {
-				Session.findOne({key: existsSid}).populate('user').exec(sessionProcess);
-			} else {
+			if (existsSid === undefined) {
 				sessionProcess();
+			} else {
+				if (su[existsSid] === undefined) {
+					Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
+						if (err) {
+							return sessionProcess(err);
+						}
+						var user = session && session.user,
+							usObj;
+
+						if (user) {
+							su[existsSid] = session;
+
+							usObj = us[user.login];
+							if (usObj === undefined) {
+								usObj = {user: user, sessions: {}};
+								usObj.sessions[existsSid] = session;
+								us[user.login] = usObj;
+							} else {
+								session.user = usObj.user;
+							}
+						}
+						sessionProcess(null, session);
+					});
+				} else {
+					sessionProcess(null, su[existsSid]);
+				}
 			}
 
 			function sessionProcess(err, session) {
@@ -238,10 +269,28 @@ async.waterfall([
 				return callback(null, true);
 			}
 		});
+
 		//Сразу поcле установки соединения отправляем клиенту новый ключ сессии в куки
 		io.sockets.on('connection', function (socket) {
+			var user = socket.handshake.session.user;
+			if (user) {
+				if (!socket.handshake.session.sockets) {
+					socket.handshake.session.sockets = [];
+				}
+				socket.handshake.session.sockets.push(socket);
+			}
+
 			_session.emitCookie(socket);
+
+			socket.on('disconnect', function () {
+				var user = socket.handshake.session.user;
+				if (user) {
+					us[user.login].sessions
+					su[existsSid] = session;
+				}
+			});
 		});
+
 
 		_session.loadController(app, db, io);
 		callback(null);
