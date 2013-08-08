@@ -32,6 +32,17 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 		}
 	};
 
+	var mess = {
+		fsuccess: 'Фотография успешно загружена',
+		fcount: 'Превышено разрешенное количество файлов',
+
+		ftype: 'Тип файла не соответствует правилам',
+		fmax: 'Файл больше разрешенного размера',
+		fmin: 'Файл слишком мал',
+		fpx: 'Согласно правилам, размер изображения должен быть не менее 350px по каждой из сторон и не менее 700px по большей стороне',
+		finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
+	};
+
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
@@ -165,7 +176,7 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			}
 		},
 		cancelFile: function (file) {
-			//Если фото с этим файлом уже создалось, то вызываем его удаление из базы,
+			//Если фото с этим файлом уже создалось, то вызываем его удаление,
 			//если нет, значит оно загружается, и отменяем запрос на загрузку
 			if (this.fileUploaded.hasOwnProperty(file.ext.file)) {
 				socket.emit('removePhotoInc', {file: file.ext.file});
@@ -270,19 +281,26 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			var result = JSON.parse(data.result),
 				receivedFiles = result.files || [];
 
-			receivedFiles.forEach(function (receivedFile) {
-				if (receivedFile.name && receivedFile.file) {
+			receivedFiles.forEach(function (receivedFileInfo) {
+				if (receivedFileInfo.name && receivedFileInfo.file) {
 					data.files.forEach(function (file) {
-						if (file.name === receivedFile.name) {
-							file.ext.file = receivedFile.file;
+						if (file.name === receivedFileInfo.name) {
 							file.ext.jqXHR = null;
 							delete file.ext.jqXHR;
-							this.fileUploaded[receivedFile.file] = _.pick(receivedFile, 'file', 'name', 'type', 'size');
-							window.setTimeout(function () {
+
+							if (!receivedFileInfo.error) {
+								file.ext.file = receivedFileInfo.file;
+								this.fileUploaded[receivedFileInfo.file] = _.pick(receivedFileInfo, 'file', 'name', 'type', 'size');
+								window.setTimeout(function () {
+									file.ext.uploading(false);
+									file.ext.uploaded(true);
+									this.setMessage(file, mess.fsuccess, 'success');
+								}.bind(this), 500);
+							} else {
 								file.ext.uploading(false);
 								file.ext.uploaded(true);
-								this.setMessage(file, 'Успешно загружена', 'success');
-							}.bind(this), 500);
+								this.setMessage(file, mess[receivedFileInfo.error] || mess.finvalid, 'error');
+							}
 						}
 					}, this);
 				}
@@ -338,24 +356,24 @@ define(['underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knock
 			if (!this.canCount()) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Превышенно разрешенное количество файлов', 'error'); //Maximum number of files exceeded
+				this.setMessage(file, mess.fcount, 'error'); //Maximum number of files exceeded
 			}
 			// Files are accepted if either the file type or the file name matches against the acceptFileTypes regular expression,
 			// as only browsers with support for the File API report the type:
 			if (!(options.acceptTypes.test(file.type) || options.acceptTypes.test(file.name))) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Тип файла не соответствует правилам', 'error'); //Filetype not allowed
+				this.setMessage(file, mess.ftype, 'error'); //Filetype not allowed
 			}
 			if (options.maxSize && file.size > options.maxSize) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Файл больше разрешенного размера', 'error');
+				this.setMessage(file, mess.fmax, 'error');
 			}
 			if (typeof file.size === 'number' && file.size < options.minSize) {
 				file.ext.error(true);
 				file.ext.valid = false;
-				this.setMessage(file, 'Файл слишком мал', 'error');
+				this.setMessage(file, mess.fmin, 'error');
 			}
 		},
 		filePreview: function (file, cb) {

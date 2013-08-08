@@ -101,10 +101,7 @@ var Utils = require('./commons/Utils.js'),
 				var fileInfo = map[path.basename(file.path)];
 
 				fileInfo.size = file.size;
-				if (!fileInfo.validate()) {
-					fs.unlinkSync(file.path);
-					return;
-				}
+
 				//Переименовываем файл в сгенерированное нами имя
 				fs.renameSync(file.path, options.incomeDir + fileInfo.file);
 			})
@@ -118,8 +115,7 @@ var Utils = require('./commons/Utils.js'),
 			})
 			.on('progress', function (bytesReceived/*, bytesExpected*/) {
 				if (bytesReceived > options.maxPostSize) {
-					console.log('~~~~');
-					console.log('Too big, dropping');
+					console.log('~~~~', 'Too big, dropping');
 					req.connection.destroy();
 				}
 			})
@@ -129,23 +125,18 @@ var Utils = require('./commons/Utils.js'),
 					step(
 						function () {
 							for (var i = files.length; i--;) {
-								gm(options.incomeDir + files[i].file).size(this.parallel());
+								validateFile(files[i], this.parallel());
 							}
 						},
-						function (err, size) {
-							if (err) {
-								console.log('~~~~');
-								console.log('GM size error');
-							}
-							var w, h, i;
-							console.dir(arguments);
-							for (i = 1; i < arguments.length; i++) {
-								w = arguments[i] && Number(arguments[i].width);
-								h = arguments[i] && Number(arguments[i].height);
-								if (!w || !h || (w < 700 && h < 700)) {
-									req.connection.destroy();
+						function () {
+							for (var i = files.length; i--;) {
+								if (files[i].error) {
+									fs.unlink(options.incomeDir + files[i].file, this.parallel());
 								}
 							}
+							this.parallel()();
+						},
+						function () {
 							cb(req, res, {files: files});
 						}
 					);
@@ -201,17 +192,36 @@ FileInfo.prototype.createFileName = function () {
 		this.fileDir = fileNameDir(this.file);
 	}
 };
-FileInfo.prototype.validate = function () {
-	if (options.minFileSize && options.minFileSize > this.size) {
-		this.error = 'File is too small';
-	} else if (options.maxFileSize && options.maxFileSize < this.size) {
-		this.error = 'File is too big';
-	} else if (!options.acceptFileTypes.test(this.name)) {
-		this.error = 'Filetype not allowed';
-	}
-	return !this.error;
-};
 
+function validateFile(fileInfo, cb) {
+	if (!options.acceptFileTypes.test(fileInfo.name)) {
+		fileInfo.error = 'ftype';
+		return cb();
+	} else if (options.minFileSize && options.minFileSize > fileInfo.size) {
+		fileInfo.error = 'fmin';
+		return cb();
+	} else if (options.maxFileSize && options.maxFileSize < fileInfo.size) {
+		fileInfo.error = 'fmax';
+		return cb();
+	}
+
+	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
+		if (err) {
+			console.log('~~~~', 'GM size error');
+			fileInfo.error = 'fpx';
+			return cb();
+		}
+		var w = size && Number(size.width),
+			h = size && Number(size.height);
+
+		console.dir(arguments);
+		if (!w || !h || w < 350 || h < 350 || (w < 700 && h < 700)) {
+			fileInfo.error = 'fpx';
+			return cb();
+		}
+		cb();
+	});
+}
 
 require('http').createServer(serve).listen(listenuport, listenhost, function () {
 	logger.info('Uploader host for users: [%s]', host);
