@@ -22,7 +22,7 @@ Utils.isObjectEmpty = function (obj) {
 	return this.getObjectPropertyLength(obj) === 0;
 };
 
-Utils.getObjectPropertyLength = function () {
+Utils.getObjectPropertyLength = function (obj) {
 	return Object.keys(obj).length;
 };
 
@@ -302,7 +302,9 @@ Utils.tomorrowDateStart = function () {
  * @return {string}
  */
 Utils.addLeftZero = function (num) {
-	if (!num) num = 0;
+	if (!num) {
+		num = 0;
+	}
 	var str = '0' + num;
 	return str.substr(str.length - 2, 2);
 };

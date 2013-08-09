@@ -15,6 +15,7 @@ var express = require('express'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
+	Utils = require('./commons/Utils.js'),
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
 	ms = require('ms'); // Tiny milisecond conversion utility
@@ -289,7 +290,7 @@ async.waterfall([
 		});
 
 		io.sockets.on('connection', function (socket) {
-			console.log('connection');
+			console.log('CONnection');
 			var session = socket.handshake.session;
 
 			if (!session.sockets) {
@@ -301,15 +302,30 @@ async.waterfall([
 			_session.emitCookie(socket);
 
 			socket.on('disconnect', function () {
+				console.log('DISconnection');
 				var session = socket.handshake.session,
 					user = session.user,
 					usObj;
 
 				delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
-				if (user) {
-					//Если пользователь есть, нужно убрать сокет из сессии
-					usObj = us[user.login];
+				if (Utils.isObjectEmpty(session.sockets)) {
+					//Если для этой сессии не осталось соеднений, убираем сессию из хеша сессий
+					delete sess[session.key];
+					console.log(9, '1.Delete Sess');
+
+					if (user) {
+						console.log(9, '2.Delete session from User', user.login);
+						//Если в сессии есть пользователь, нужно убрать сессию из пользователя
+						usObj = us[user.login];
+						delete usObj.sessions[session.key];
+
+						if (Utils.isObjectEmpty(usObj.sessions)) {
+							console.log(9, '3.Delete User', user.login);
+							//Если сессий у пользователя не осталось, убираем его из хеша пользователей
+							delete us[user.login];
+						}
+					}
 				}
 			});
 		});
@@ -319,7 +335,7 @@ async.waterfall([
 		callback(null);
 	},
 	function loadingControllers(callback) {
-		require('./commons/Utils.js');
+		//require('./commons/Utils.js');
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);
