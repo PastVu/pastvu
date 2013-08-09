@@ -203,11 +203,11 @@ async.waterfall([
 	},
 	function ioConfigure(callback) {
 		global.us = {}; //Users. Хэш всех активных соединений подключенных пользователей по логинам
-		global.su = {}; //Sockets. Хэш всех активных сессий по ключам
+		global.sess = {}; //Sockets. Хэш всех активных сессий по ключам
 
 		var _session = require('./controllers/_session.js'),
 			us = global.us,
-			su = global.su;
+			sess = global.sess;
 
 		io.set('log level', land === 'dev' ? 1 : 0);
 		io.set('browser client', false);
@@ -220,9 +220,17 @@ async.waterfall([
 			//logger.info(handshakeData);
 
 			if (existsSid === undefined) {
+				console.log(1);
+				//Если ключа нет, переходим к созданию сессии
 				sessionProcess();
 			} else {
-				if (su[existsSid] === undefined) {
+				if (sess[existsSid] !== undefined) {
+					console.log(2, existsSid);
+					//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
+					sessionProcess(null, sess[existsSid]);
+				} else {
+					console.log(3, existsSid);
+					//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
 					Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
 						if (err) {
 							return sessionProcess(err);
@@ -230,22 +238,29 @@ async.waterfall([
 						var user = session && session.user,
 							usObj;
 
-						if (user) {
-							su[existsSid] = session;
+						if (session) {
+							//Если сессия найдена, добавляем её в хеш сессий
+							sess[existsSid] = session;
 
-							usObj = us[user.login];
-							if (usObj === undefined) {
-								usObj = {user: user, sessions: {}};
-								usObj.sessions[existsSid] = session;
-								us[user.login] = usObj;
-							} else {
-								session.user = usObj.user;
+							if (user) {
+								console.log(4, user.login);
+								usObj = us[user.login];
+
+								if (usObj === undefined) {
+									//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
+									us[user.login] = usObj = {user: user, sessions: {}};
+									console.log(5, usObj);
+								} else {
+									//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
+									session.user = usObj.user;
+								}
+
+								usObj.sessions[existsSid] = session; //Добавляем сессию в хеш сессий пользователя
 							}
 						}
+
 						sessionProcess(null, session);
 					});
-				} else {
-					sessionProcess(null, su[existsSid]);
 				}
 			}
 
@@ -257,7 +272,10 @@ async.waterfall([
 
 				//console.log(session && session.key);
 				if (!session) {
-					session = _session.create({ip: ip}); //console.log('Create session', session.key);
+					//Если сессии нет, создаем и добавляем её в хеш
+					session = _session.create({ip: ip});
+					sess[session.key] = session;
+					console.log('Create session', session.key);
 				} else {
 					_session.regen(session, {ip: ip}); //console.log('Regen session', session.key);
 					if (session.user) {
@@ -270,23 +288,28 @@ async.waterfall([
 			}
 		});
 
-		//Сразу поcле установки соединения отправляем клиенту новый ключ сессии в куки
 		io.sockets.on('connection', function (socket) {
-			var user = socket.handshake.session.user;
-			if (user) {
-				if (!socket.handshake.session.sockets) {
-					socket.handshake.session.sockets = [];
-				}
-				socket.handshake.session.sockets.push(socket);
-			}
+			console.log('connection');
+			var session = socket.handshake.session;
 
+			if (!session.sockets) {
+				session.sockets = {};
+			}
+			session.sockets[socket.id] = socket; //Кладем сокет в сессию
+
+			//Сразу поcле установки соединения отправляем клиенту обновления куки
 			_session.emitCookie(socket);
 
 			socket.on('disconnect', function () {
-				var user = socket.handshake.session.user;
+				var session = socket.handshake.session,
+					user = session.user,
+					usObj;
+
+				delete session.sockets[socket.id]; //Удаляем сокет из сесии
+
 				if (user) {
-					us[user.login].sessions
-					su[existsSid] = session;
+					//Если пользователь есть, нужно убрать сокет из сессии
+					usObj = us[user.login];
 				}
 			});
 		});

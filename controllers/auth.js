@@ -67,7 +67,7 @@ function login(socket, data, cb) {
 		case User.failedLogin.NOT_FOUND:
 		case User.failedLogin.PASSWORD_INCORRECT:
 			// note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-			cb(null, {message: 'Login or password incorrect', error: true});
+			cb(null, {message: 'Неправильная пара логин-пароль', error: true});
 			break;
 		case User.failedLogin.MAX_ATTEMPTS:
 			// send email or otherwise notify user that account is temporarily locked
