@@ -11,7 +11,6 @@ var express = require('express'),
 	path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
-	cookie = require('express/node_modules/cookie'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
@@ -203,139 +202,19 @@ async.waterfall([
 		callback(null);
 	},
 	function ioConfigure(callback) {
-		global.us = {}; //Users. Хэш всех активных соединений подключенных пользователей по логинам
-		global.sess = {}; //Sockets. Хэш всех активных сессий по ключам
-
-		var _session = require('./controllers/_session.js'),
-			us = global.us,
-			sess = global.sess;
+		var _session = require('./controllers/_session.js');
 
 		io.set('log level', land === 'dev' ? 1 : 0);
 		io.set('browser client', false);
 		io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
-		io.set('authorization', function (handshakeData, callback) {
-			var cookieString = handshakeData.headers.cookie || '',
-				cookieObj = cookie.parse(cookieString),
-				existsSid = cookieObj['pastvu.sid'];
 
-			//logger.info(handshakeData);
-
-			if (existsSid === undefined) {
-				console.log(1);
-				//Если ключа нет, переходим к созданию сессии
-				sessionProcess();
-			} else {
-				if (sess[existsSid] !== undefined) {
-					console.log(2, existsSid);
-					//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-					sessionProcess(null, sess[existsSid]);
-				} else {
-					console.log(3, existsSid);
-					//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-					Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-						if (err) {
-							return sessionProcess(err);
-						}
-						var user = session && session.user,
-							usObj;
-
-						if (session) {
-							//Если сессия найдена, добавляем её в хеш сессий
-							sess[existsSid] = session;
-
-							if (user) {
-								console.log(4, user.login);
-								usObj = us[user.login];
-
-								if (usObj === undefined) {
-									//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-									us[user.login] = usObj = {user: user, sessions: {}};
-									console.log(5, usObj);
-								} else {
-									//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
-									session.user = usObj.user;
-								}
-
-								usObj.sessions[existsSid] = session; //Добавляем сессию в хеш сессий пользователя
-							}
-						}
-
-						sessionProcess(null, session);
-					});
-				}
-			}
-
-			function sessionProcess(err, session) {
-				if (err) {
-					return callback('Error: ' + err, false);
-				}
-				var ip = handshakeData.address && handshakeData.address.address;
-
-				//console.log(session && session.key);
-				if (!session) {
-					//Если сессии нет, создаем и добавляем её в хеш
-					session = _session.create({ip: ip});
-					sess[session.key] = session;
-					console.log('Create session', session.key);
-				} else {
-					_session.regen(session, {ip: ip}); //console.log('Regen session', session.key);
-					if (session.user) {
-						console.info("%s entered", session.user.login);
-					}
-				}
-
-				handshakeData.session = session;
-				return callback(null, true);
-			}
-		});
-
-		io.sockets.on('connection', function (socket) {
-			console.log('CONnection');
-			var session = socket.handshake.session;
-
-			if (!session.sockets) {
-				session.sockets = {};
-			}
-			session.sockets[socket.id] = socket; //Кладем сокет в сессию
-
-			//Сразу поcле установки соединения отправляем клиенту обновления куки
-			_session.emitCookie(socket);
-
-			socket.on('disconnect', function () {
-				console.log('DISconnection');
-				var session = socket.handshake.session,
-					user = session.user,
-					usObj;
-
-				delete session.sockets[socket.id]; //Удаляем сокет из сесии
-
-				if (Utils.isObjectEmpty(session.sockets)) {
-					//Если для этой сессии не осталось соеднений, убираем сессию из хеша сессий
-					delete sess[session.key];
-					console.log(9, '1.Delete Sess');
-
-					if (user) {
-						console.log(9, '2.Delete session from User', user.login);
-						//Если в сессии есть пользователь, нужно убрать сессию из пользователя
-						usObj = us[user.login];
-						delete usObj.sessions[session.key];
-
-						if (Utils.isObjectEmpty(usObj.sessions)) {
-							console.log(9, '3.Delete User', user.login);
-							//Если сессий у пользователя не осталось, убираем его из хеша пользователей
-							delete us[user.login];
-						}
-					}
-				}
-			});
-		});
-
+		io.set('authorization', _session.authSocket);
+		io.sockets.on('connection', _session.firstConnection);
 
 		_session.loadController(app, db, io);
 		callback(null);
 	},
 	function loadingControllers(callback) {
-		//require('./commons/Utils.js');
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);

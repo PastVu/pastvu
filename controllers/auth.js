@@ -7,7 +7,6 @@ var _session = require('./_session.js'),
 	UserConfirm,
 	Step = require('step'),
 	Mail = require('./mail.js'),
-	uaParser = require('ua-parser'),
 	errS = require('./errors.js').err,
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
@@ -46,20 +45,13 @@ function login(socket, data, cb) {
 		if (err) {
 			return cb(null, {message: err && err.message, error: true});
 		}
-		var uaParsed,
-			uaData;
 
 		// login was successful if we have a user
 		if (user) {
-			uaParsed = uaParser.parse(socket.handshake.headers['user-agent']);
-			uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
-
 			session.user = user;
-			_session.regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
-				_session.emitCookie(socket);
+			_session.authUser(session, data, function (err, session) {
 				cb(session, {message: "Success login", youAre: user});
 			});
-
 			return;
 		}
 
