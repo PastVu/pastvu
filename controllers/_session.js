@@ -15,6 +15,26 @@ var Session,
 	us = {}, //Users. Хэш всех активных соединений подключенных пользователей по логинам
 	sess = {}; //Sockets. Хэш всех активных сессий по ключам
 
+
+//Добавляем сессию в хеш пользователей
+function addUserSession(session) {
+	var user = session.user,
+		usObj = us[user.login];
+
+	if (usObj === undefined) {
+		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
+		us[user.login] = usObj = {user: user, sessions: {}};
+		console.log(5);
+	} else {
+		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
+		session.user = usObj.user;
+		console.log(6, session.user === usObj.user);
+	}
+
+	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
+}
+
+//Обработчик установки соединения сокетом 'authorization'
 function authSocket(handshake, callback) {
 	var cookieString = handshake.headers.cookie || '',
 		cookieObj = cookie.parse(cookieString),
@@ -38,28 +58,14 @@ function authSocket(handshake, callback) {
 				if (err) {
 					return sessionProcess(err);
 				}
-				var user = session && session.user,
-					usObj;
 
 				if (session) {
 					//Если сессия найдена, добавляем её в хеш сессий
 					sess[existsSid] = session;
 
-					if (user) {
-						console.log(4, user.login);
-						usObj = us[user.login];
-
-						if (usObj === undefined) {
-							//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-							us[user.login] = usObj = {user: user, sessions: {}};
-							console.log(5);
-						} else {
-							//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
-							session.user = usObj.user;
-							console.log(6);
-						}
-
-						usObj.sessions[existsSid] = session; //Добавляем сессию в хеш сессий пользователя
+					if (session.user) {
+						console.log(4, session.user.login);
+						addUserSession(session);
 					}
 				}
 
@@ -92,6 +98,8 @@ function authSocket(handshake, callback) {
 	}
 }
 
+//Первый обработчик on.connection
+//Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
 	console.log('CONnection');
 	var session = socket.handshake.session;
@@ -117,7 +125,7 @@ function firstConnection(socket) {
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		if (Utils.isObjectEmpty(session.sockets)) {
-			//Если для этой сессии не осталось соеднений, убираем сессию из хеша сессий
+			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			delete sess[session.key];
 			console.log(9, '1.Delete Sess');
 
@@ -163,6 +171,9 @@ function regen(session, data, keyRegen, cb) {
 		session.markModified('data');
 	}
 	session.save(function (err, session) {
+		if (err) {
+			cb(err);
+		}
 		//FIXME: Fix when fix https://github.com/LearnBoost/mongoose/issues/1530
 		if (session.user) {
 			session.populate('user', function () {
@@ -188,26 +199,33 @@ function destroy(session, cb) {
 	}
 }
 
+//Присваивание пользователя сессии при логине, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
 	var session = socket.handshake.session,
 		uaParsed,
 		uaData;
 
 	session.user = user;
+	delete sess[session.key]; //Удаляем сессию из хеша, так как у неё изменится ключ
 
 	uaParsed = uaParser.parse(socket.handshake.headers['user-agent']);
 	uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
 
 	regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
+		var i;
+
+		sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
+		addUserSession(session);
+
 		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-		for (var i in session.sockets) {
+		for (i in session.sockets) {
 			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
 				session.sockets[i].emit('youAre',  user.toObject());
 			}
 		}
 
 		emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
-		cb();
+		cb(err, session);
 	});
 }
 

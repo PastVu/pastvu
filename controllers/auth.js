@@ -50,7 +50,7 @@ function login(socket, data, cb) {
 		if (user) {
 			//Передаем пользователя в сессию
 			_session.authUser(socket, user, data, function (err, session) {
-				cb(session, {message: "Success login", youAre: user});
+				cb(session, {message: "Success login", youAre: session.user.toObject()}); //Важно взять юзера из сессии, так как его объект мог взяться из существующего в хеше
 			});
 		} else {
 			switch (reason) {
