@@ -1,5 +1,5 @@
 /*global define:true, ga:true*/
-define(['jquery', 'Utils', '../../socket', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
+define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
 	'use strict';
 
 	return Cliche.extend({

@@ -1,24 +1,34 @@
 /*global define*/
-define(['socket.io', 'Utils'], function (io, Utils) {
+define(function () {
 	'use strict';
-	console.timeStamp('Socket defining');
 
-	var connectionType = '',
-		s = io.connect(location.host);
+	return {
+		load: function (name, req, onLoad, config) {
+			if (config.isBuild) {
+				onLoad(null); //avoid errors on the optimizer
+			} else {
+				req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
+					var connectionType = '',
+						s = io.connect(document.location.host);
 
-	s.on('connect', function () {
-		console.log('Connected with ' + connectionType);
-	});
-	s.on('connecting', function (type) {
-		connectionType = type;
-	});
-	s.on('disconnect', function () {
-		console.log('Disconnected');
-	});
+					s.on('connect', function () {
+						console.log('Connected with ' + connectionType);
 
-	s.on('newCookie', function (obj) {
-		Utils.cookie.setItem(obj.name, obj.key, obj['max-age'], '/', null);
-	});
+						s.on('newCookie', function (obj) {
+							Utils.cookie.setItem(obj.name, obj.key, obj['max-age'], '/', null);
+						});
+					});
 
-	return s;
+					s.on('connecting', function (type) {
+						connectionType = type;
+					});
+
+					s.on('disconnect', function () {
+						console.log('Disconnected');
+					});
+					onLoad(s);
+				});
+			}
+		}
+	};
 });

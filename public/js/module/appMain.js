@@ -5,7 +5,7 @@ require([
 	'domReady!',
 	'jquery',
 	'Browser', 'Utils',
-	'socket',
+	'socket!',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'model/Photo', 'model/User',

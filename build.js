@@ -24,7 +24,7 @@ var start = Date.now(),
 		baseUrl: 'js',
 		dir: "public-build",
 		keepBuildDir: false,
-		optimize: "uglify2",
+		optimize: "none",
 		uglify: {
 			toplevel: false,
 			ascii_only: false,
@@ -68,6 +68,7 @@ var start = Date.now(),
 			{
 				name: "module/appMain",
 				include: [
+					'socket.io',
 					'm/common/auth', 'm/common/top', 'm/common/foot',
 					'm/main/commentsFeed', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',
@@ -88,7 +89,7 @@ var start = Date.now(),
 			{
 				name: "m/photo/gallery",
 				exclude: [
-					'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage',
+					'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage',
 					'text', 'css'
 				]
 			},

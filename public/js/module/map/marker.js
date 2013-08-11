@@ -3,7 +3,7 @@
  * Класс управления маркерами
  */
 define([
-	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
+	'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
 	'use strict';
 

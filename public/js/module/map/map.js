@@ -3,7 +3,7 @@
  * Модель карты
  */
 define([
-	'underscore', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
+	'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'model/User', 'model/storage', 'Locations',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'm/map/marker',
 	'text!tpl/map/map.jade', 'css!style/map/map',

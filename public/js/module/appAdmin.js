@@ -4,7 +4,7 @@ require([
 	'domReady!',
 	'jquery',
 	'Browser', 'Utils',
-	'socket',
+	'socket!',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'text!tpl/appAdmin.jade', 'css!style/common', 'css!style/appAdmin',

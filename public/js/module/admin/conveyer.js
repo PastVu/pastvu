@@ -4,7 +4,7 @@
  * Модель карты
  */
 define([
-	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
+	'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'model/User', 'model/storage',
 	'highstock/highstock.src',
 	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'

@@ -4,7 +4,7 @@
  * Модель создания/редактирования новости
  */
 define([
-	'underscore', 'jquery', 'Browser', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
+	'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
 	'model/User', 'model/storage',
 	'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit',
 	'jquery-plugins/redactor/redactor', 'css!style/jquery/redactor/redactor',

@@ -2,7 +2,7 @@
 /**
  * Модель истории комментария
  */
-define(['underscore', 'Utils', 'socket', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 	var changeFragTexts = {
 		f1: '<b>[</b><i class="icon-plus"></i>Добавлен фрагмент<b>]</b>',
