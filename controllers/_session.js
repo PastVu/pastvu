@@ -187,22 +187,28 @@ function destroy(session, cb) {
 	}
 }
 
-function authUser(session, data, cb) {
-	var uaParsed,
-		uaData,
-		someSocket;
+function authUser(socket, user, data, cb) {
+	var session = socket.handshake.session,
+		uaParsed,
+		uaData;
 
-	for (var i in session.sockets) {
-		if (session.sockets[i] !== undefined) {
-			someSocket = session.sockets[i];
-		}
-	}
+	session.user = user;
 
-	uaParsed = uaParser.parse(someSocket.handshake.headers['user-agent']);
+	uaParsed = uaParser.parse(socket.handshake.headers['user-agent']);
 	uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
 
 	regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
-		emitCookie(someSocket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
+		var sessSocket,
+			i;
+
+		for (i in session.sockets) {
+			if (session.sockets[i] !== undefined && session.sockets[i] !== socket) {
+				sessSocket = session.sockets[i];
+			}
+		}
+
+		emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
+		cb();
 	});
 }
 

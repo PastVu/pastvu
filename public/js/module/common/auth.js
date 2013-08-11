@@ -5,13 +5,14 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
+			this.loggedIn = ko.observable(false);
+
 			if (P.iAm) {
 				this.processMeAuthed(P.iAm);
 				delete P.iAm;
 			} else {
 				this.iAm = User.vm();
 			}
-			this.loggedIn = ko.observable(false);
 
 			this.mode = ko.observable('');
 			this.working = ko.observable(false);

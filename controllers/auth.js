@@ -46,25 +46,24 @@ function login(socket, data, cb) {
 			return cb(null, {message: err && err.message, error: true});
 		}
 
-		// login was successful if we have a user
+		//Если есть пользователь, значит проверка успешна
 		if (user) {
-			session.user = user;
-			_session.authUser(session, data, function (err, session) {
+			//Передаем пользователя в сессию
+			_session.authUser(socket, user, data, function (err, session) {
 				cb(session, {message: "Success login", youAre: user});
 			});
-			return;
-		}
-
-		switch (reason) {
-		case User.failedLogin.NOT_FOUND:
-		case User.failedLogin.PASSWORD_INCORRECT:
-			// note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-			cb(null, {message: 'Неправильная пара логин-пароль', error: true});
-			break;
-		case User.failedLogin.MAX_ATTEMPTS:
-			// send email or otherwise notify user that account is temporarily locked
-			cb(null, {message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
-			break;
+		} else {
+			switch (reason) {
+			case User.failedLogin.NOT_FOUND:
+			case User.failedLogin.PASSWORD_INCORRECT:
+				// note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
+				cb(null, {message: 'Неправильная пара логин-пароль', error: true});
+				break;
+			case User.failedLogin.MAX_ATTEMPTS:
+				// send email or otherwise notify user that account is temporarily locked
+				cb(null, {message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
+				break;
+			}
 		}
 	});
 }
