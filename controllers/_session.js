@@ -13,7 +13,8 @@ var Session,
 
 	settings = require('./settings.js'),
 	us = {}, //Users. Хэш всех активных соединений подключенных пользователей по логинам
-	sess = {}; //Sockets. Хэш всех активных сессий по ключам
+	sess = {}, //Sockets. Хэш всех активных сессий по ключам
+	sessWaitings = {}; //Хэш ожидания выборки сессии по ключу из базы
 
 
 //Добавляем сессию в хеш пользователей
@@ -43,34 +44,51 @@ function authSocket(handshake, callback) {
 	//logger.info(handshake);
 
 	if (existsSid === undefined) {
-		console.log(1);
 		//Если ключа нет, переходим к созданию сессии
+		console.log(1);
 		sessionProcess();
 	} else {
 		if (sess[existsSid] !== undefined) {
-			console.log(2, existsSid);
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
+			console.log(2, existsSid);
 			sessionProcess(null, sess[existsSid]);
 		} else {
-			console.log(3, existsSid);
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-			Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-				if (err) {
-					return sessionProcess(err);
-				}
+			console.log(3, existsSid);
 
-				if (session) {
-					//Если сессия найдена, добавляем её в хеш сессий
-					sess[existsSid] = session;
+			if (sessWaitings[existsSid] !== undefined) {
+				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
+				sessWaitings[existsSid].push({cb: finishAuthConnection});
+			} else {
+				//Если запроса к базе еще нет, создаем его
+				sessWaitings[existsSid] = [
+					{cb: finishAuthConnection}
+				];
 
-					if (session.user) {
-						console.log(4, session.user.login);
-						addUserSession(session);
+				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
+					if (err) {
+						return sessionProcess(err);
 					}
-				}
 
-				sessionProcess(null, session);
-			});
+					if (session) {
+						sess[existsSid] = session; //Если сессия найдена, добавляем её в хеш сессий
+
+						if (session.user) {
+							console.log(4, session.user.login);
+							addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
+						}
+					}
+
+					sessionProcess(null, session);
+
+					if (sessWaitings[existsSid] !== undefined) {
+						sessWaitings[existsSid].forEach(function (item) {
+							item.cb.call(global, session);
+						});
+						delete sessWaitings[existsSid];
+					}
+				});
+			}
 		}
 	}
 
@@ -80,19 +98,22 @@ function authSocket(handshake, callback) {
 		}
 		var ip = handshake.address && handshake.address.address;
 
-		//console.log(session && session.key);
 		if (!session) {
 			//Если сессии нет, создаем и добавляем её в хеш
 			session = generate({ip: ip});
 			sess[session.key] = session;
 			console.log('Create session', session.key);
 		} else {
-			regen(session, {ip: ip}); //console.log('Regen session', session.key);
+			regen(session, {ip: ip});
 			if (session.user) {
 				console.info("%s entered", session.user.login);
 			}
 		}
 
+		finishAuthConnection(session);
+	}
+
+	function finishAuthConnection(session) {
 		handshake.session = session;
 		return callback(null, true);
 	}
@@ -220,7 +241,7 @@ function authUser(socket, user, data, cb) {
 		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
 		for (i in session.sockets) {
 			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-				session.sockets[i].emit('youAre',  user.toObject());
+				session.sockets[i].emit('youAre', user.toObject());
 			}
 		}
 
