@@ -52,10 +52,11 @@ function authSocket(handshake, callback) {
 						if (usObj === undefined) {
 							//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 							us[user.login] = usObj = {user: user, sessions: {}};
-							console.log(5, usObj);
+							console.log(5);
 						} else {
 							//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
 							session.user = usObj.user;
+							console.log(6);
 						}
 
 						usObj.sessions[existsSid] = session; //Добавляем сессию в хеш сессий пользователя
@@ -198,12 +199,10 @@ function authUser(socket, user, data, cb) {
 	uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
 
 	regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
-		var sessSocket,
-			i;
-
-		for (i in session.sockets) {
-			if (session.sockets[i] !== undefined && session.sockets[i] !== socket) {
-				sessSocket = session.sockets[i];
+		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
+		for (var i in session.sockets) {
+			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
+				session.sockets[i].emit('youAre',  user.toObject());
 			}
 		}
 

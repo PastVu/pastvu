@@ -8,7 +8,7 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			this.loggedIn = ko.observable(false);
 
 			if (P.iAm) {
-				this.processMeAuthed(P.iAm);
+				this.processMe(P.iAm);
 				delete P.iAm;
 			} else {
 				this.iAm = User.vm();
@@ -33,7 +33,7 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			}, this);
 
 			//При изменении данных профиля на сервере, обновляем его на клиенте
-			socket.on('youAre', this.updateMe.bind(this));
+			socket.on('youAre', this.processMe.bind(this));
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
@@ -305,26 +305,27 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			return false;
 		},
 
-		updateMe: function (user) {
-			if (this.iAm.login() === user.login) {
-				storage.users[user.login].origin = user;
+		processMe: function (user) {
+			if (user) {
 				this.iAm = User.vm(user, this.iAm);
-				this.iAm._v_(this.iAm._v_() + 1);
+
+				if (this.loggedIn()) {
+					storage.users[user.login].origin = user;
+					this.iAm._v_(this.iAm._v_() + 1);
+				} else {
+					storage.users[user.login] = {origin: user, vm: this.iAm};
+					this.loggedIn(true);
+				}
 			}
 		},
 		reloadMe: function () {
 			socket.emit('whoAmI');
 		},
-		processMeAuthed: function (user) {
-			this.iAm = User.vm(user, this.iAm);
-			storage.users[user.login] = {origin: user, vm: this.iAm};
-			this.loggedIn(true);
-		},
 		doLogin: function (data, callback) {
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error && json.youAre) {
-						this.processMeAuthed(json.youAre);
+						this.processMe(json.youAre);
 					}
 
 					if (Utils.isType('function', callback)) {
