@@ -5,7 +5,12 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.iAm = User.vm();
+			if (P.iAm) {
+				this.processMeAuthed(P.iAm);
+				delete P.iAm;
+			} else {
+				this.iAm = User.vm();
+			}
 			this.loggedIn = ko.observable(false);
 
 			this.mode = ko.observable('');
@@ -25,6 +30,9 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			this.subscriptions.mode = this.mode.subscribe(function () {
 				this.formFocus();
 			}, this);
+
+			//При изменении данных профиля на сервере, обновляем его на клиенте
+			socket.on('youAre', this.updateMe.bind(this));
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
@@ -296,39 +304,26 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			return false;
 		},
 
-		processMe: function (user) {
+		updateMe: function (user) {
+			if (this.iAm.login() === user.login) {
+				storage.users[user.login].origin = user;
+				this.iAm = User.vm(user, this.iAm);
+				this.iAm._v_(this.iAm._v_() + 1);
+			}
+		},
+		reloadMe: function () {
+			socket.emit('whoAmI');
+		},
+		processMeAuthed: function (user) {
 			this.iAm = User.vm(user, this.iAm);
 			storage.users[user.login] = {origin: user, vm: this.iAm};
 			this.loggedIn(true);
-
-			//При изменении данных профиля на сервере, обновляем его на клиенте
-			socket
-				.removeAllListeners('youAre')
-				.on('youAre', function (user) {
-					if (this.iAm.login() === user.login) {
-						storage.users[user.login].origin = user;
-						this.iAm = User.vm(user, this.iAm);
-						this.iAm._v_(this.iAm._v_() + 1);
-					}
-				}.bind(this));
-		},
-		loadMe: function () {
-			var dfd = $.Deferred();
-			socket.once('youAre', function (user) {
-				if (user) {
-					this.processMe(user);
-				}
-				// Резолвим асинхронно, чтобы пересчитались computed зависимости других модулей от auth
-				window.setTimeout(dfd.resolve.bind(dfd), 50);
-			}.bind(this));
-			socket.emit('whoAmI');
-			return dfd.promise();
 		},
 		doLogin: function (data, callback) {
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error && json.youAre) {
-						this.processMe(json.youAre);
+						this.processMeAuthed(json.youAre);
 					}
 
 					if (Utils.isType('function', callback)) {

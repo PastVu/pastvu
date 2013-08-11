@@ -30,10 +30,8 @@ require([
 					parent: globalVM,
 					level: 0,
 					callback: function (auth, top) {
-						$.when(auth.loadMe()).done(function () {
-							top.show();
-							routerDeferred.resolve();
-						});
+						top.show();
+						routerDeferred.resolve();
 					}
 				}
 			},

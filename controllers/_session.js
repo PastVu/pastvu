@@ -104,7 +104,7 @@ function firstConnection(socket) {
 	socket.emit('initData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
-		youAre: session.user
+		u: session.user && session.user.toObject ? session.user.toObject() : null
 	});
 
 	socket.on('disconnect', function () {

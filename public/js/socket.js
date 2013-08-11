@@ -33,6 +33,7 @@ define(function () {
 						return;
 					}
 
+					//Принимаем настройки и в случае наличия поддоменов формируем их массив
 					ko_mapping.fromJS({settings: data.p}, P);
 					if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
 						P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
@@ -45,6 +46,12 @@ define(function () {
 						P.preaddr = '';
 					}
 
+					//Принимаем своего пользователя
+					if (Utils.isType('object', data.u)) {
+						P.iAm = data.u;
+					}
+
+					//Устанавливаем куки
 					if (Utils.isType('object', data.cook)) {
 						updateCookie(data.cook);
 					}
