@@ -11,6 +11,7 @@ var Session,
 	cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
 	cookieMaxAgeAnonimouse = ms('14d') / 1000,
 
+	settings = require('./settings.js'),
 	us = {}, //Users. Хэш всех активных соединений подключенных пользователей по логинам
 	sess = {}; //Sockets. Хэш всех активных сессий по ключам
 
@@ -99,8 +100,12 @@ function firstConnection(socket) {
 	}
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
-	//Сразу поcле установки соединения отправляем клиенту обновления куки
-	emitCookie(socket);
+	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
+	socket.emit('initData', {
+		p: settings.getClientParams(),
+		cook: emitCookie(socket, true),
+		youAre: session.user
+	});
 
 	socket.on('disconnect', function () {
 		console.log('DISconnection');
@@ -201,7 +206,7 @@ function authUser(session, data, cb) {
 	});
 }
 
-function emitCookie(socket) {
+function emitCookie(socket, dontEmit) {
 	var newCoockie = {name: 'pastvu.sid', key: socket.handshake.session.key, path: '/'};
 
 	if (socket.handshake.session.user) {
@@ -212,7 +217,11 @@ function emitCookie(socket) {
 		newCoockie['max-age'] = cookieMaxAgeAnonimouse;
 	}
 
-	socket.emit('newCookie', newCoockie);
+	if (!dontEmit) {
+		socket.emit('updateCookie', newCoockie);
+	}
+
+	return newCoockie;
 }
 
 module.exports.authSocket = authSocket;

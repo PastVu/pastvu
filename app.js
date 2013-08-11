@@ -215,6 +215,7 @@ async.waterfall([
 		callback(null);
 	},
 	function loadingControllers(callback) {
+		require('./controllers/settings.js').loadController(app, db, io);
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);

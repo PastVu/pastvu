@@ -115,20 +115,8 @@ require([
 	$('body').append(jade);
 	ko.applyBindings(globalVM);
 
-	$.when(loadParams()).done(function () {
-		globalVM.router = new RouteManager(routerAnatomy);
-		$.when(routerDeferred.promise()).then(app);
-	});
-
-	function loadParams() {
-		var dfd = $.Deferred();
-		socket.once('takeGlobeParams', function (data) {
-			ko_mapping.fromJS({settings: data}, P);
-			dfd.resolve();
-		});
-		socket.emit('giveGlobeParams');
-		return dfd.promise();
-	}
+	globalVM.router = new RouteManager(routerAnatomy);
+	$.when(routerDeferred.promise()).then(app);
 
 	function app() {
 		var loadTime;

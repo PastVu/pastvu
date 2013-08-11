@@ -24,34 +24,6 @@ var auth = require('./auth.js'),
 	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
 }());
 
-/**
- * Параметры
- */
-var giveGlobeParams = (function () {
-
-	return function (hs, cb) {
-		var params = {
-			client: hs.address,
-			server: appEnv.serverAddr,
-			appHash: appEnv.hash,
-			appVersion: appEnv.version
-		};
-		step(
-			function () {
-				Settings.collection.find({}, {_id: 0, key: 1, val: 1}, this);
-			},
-			Utils.cursorExtract,
-			function (err, settings) {
-				var i = settings.length;
-				while (i--) {
-					params[settings[i].key] = settings[i].val;
-				}
-				cb(params);
-			}
-		);
-	};
-}());
-
 //Рейтинги
 var giveRatings = (function () {
 	var limit = 10; //Ограничиваем кол-во результатов по каждому показателю
@@ -336,12 +308,6 @@ module.exports.loadController = function (app, db, io) {
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
-
-		socket.on('giveGlobeParams', function () {
-			giveGlobeParams(hs, function (resultData) {
-				socket.emit('takeGlobeParams', resultData);
-			});
-		});
 
 		socket.on('giveIndexNews', function () {
 			giveIndexNews(function (err, news) {

@@ -190,30 +190,8 @@ require([
 	$('body').append(jade);
 	ko.applyBindings(globalVM);
 
-	$.when(loadParams()).done(function () {
-		globalVM.router = new RouteManager(routerAnatomy);
-		$.when(routerDeferred.promise()).then(app);
-	});
-
-	function loadParams() {
-		var dfd = $.Deferred();
-		socket.once('takeGlobeParams', function (data) {
-			ko_mapping.fromJS({settings: data}, P);
-			if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
-				P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
-				P.preaddrs = P.settings.server.subdomains().map(function (sub) {
-					return 'http://' + sub + '.' + location.host;
-				});
-				P.preaddr = P.preaddrs[0];
-			} else {
-				P.preaddrs = [];
-				P.preaddr = '';
-			}
-			dfd.resolve();
-		});
-		socket.emit('giveGlobeParams');
-		return dfd.promise();
-	}
+	globalVM.router = new RouteManager(routerAnatomy);
+	$.when(routerDeferred.promise()).then(app);
 
 	function app() {
 		var loadTime;
