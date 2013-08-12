@@ -214,7 +214,6 @@ function validateFile(fileInfo, cb) {
 		var w = size && Number(size.width),
 			h = size && Number(size.height);
 
-		console.dir(arguments);
 		if (!w || !h || w < 350 || h < 350 || (w < 700 && h < 700)) {
 			fileInfo.error = 'fpx';
 			return cb();

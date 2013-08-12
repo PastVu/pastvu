@@ -282,25 +282,24 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				receivedFiles = result.files || [];
 
 			receivedFiles.forEach(function (receivedFileInfo) {
-				if (receivedFileInfo.name && receivedFileInfo.file) {
+				if (receivedFileInfo.file) {
+					//Так как мы загружаем кадый файл отдельно в массивах всегда будет по одному элементу
 					data.files.forEach(function (file) {
-						if (file.name === receivedFileInfo.name) {
-							file.ext.jqXHR = null;
-							delete file.ext.jqXHR;
+						file.ext.jqXHR = null;
+						delete file.ext.jqXHR;
 
-							if (!receivedFileInfo.error) {
-								file.ext.file = receivedFileInfo.file;
-								this.fileUploaded[receivedFileInfo.file] = _.pick(receivedFileInfo, 'file', 'name', 'type', 'size');
-								window.setTimeout(function () {
-									file.ext.uploading(false);
-									file.ext.uploaded(true);
-									this.setMessage(file, mess.fsuccess, 'success');
-								}.bind(this), 500);
-							} else {
+						if (!receivedFileInfo.error) {
+							file.ext.file = receivedFileInfo.file;
+							this.fileUploaded[receivedFileInfo.file] = _.pick(receivedFileInfo, 'file', 'name', 'type', 'size');
+							window.setTimeout(function () {
 								file.ext.uploading(false);
 								file.ext.uploaded(true);
-								this.setMessage(file, mess[receivedFileInfo.error] || mess.finvalid, 'error');
-							}
+								this.setMessage(file, mess.fsuccess, 'success');
+							}.bind(this), 500);
+						} else {
+							file.ext.uploading(false);
+							file.ext.uploaded(true);
+							this.setMessage(file, mess[receivedFileInfo.error] || mess.finvalid, 'error');
 						}
 					}, this);
 				}
