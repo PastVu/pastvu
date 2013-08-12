@@ -1,6 +1,7 @@
 'use strict';
 
 var auth = require('./auth.js'),
+	_session = require('./_session.js'),
 	Settings,
 	User,
 	Photo,
@@ -432,7 +433,7 @@ function createComment(socket, data, cb) {
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
-			auth.sendMe(socket);
+			_session.emitUser(user.login, socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
 		}
 	);

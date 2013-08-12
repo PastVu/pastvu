@@ -7,7 +7,6 @@ var _session = require('./_session.js'),
 	UserConfirm,
 	Step = require('step'),
 	Mail = require('./mail.js'),
-	errS = require('./errors.js').err,
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	ms = require('ms'), // Tiny milisecond conversion utility

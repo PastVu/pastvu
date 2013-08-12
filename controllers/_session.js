@@ -250,6 +250,32 @@ function authUser(socket, user, data, cb) {
 	});
 }
 
+//Отправка текущего пользователя всем его подключеным клиентам
+function emitUser(login, excludeSocket) {
+	var usObj = us[login],
+		user,
+		sessions,
+		sockets,
+		i,
+		j;
+
+	if (usObj !== undefined) {
+		user = usObj.user.toObject();
+		sessions = usObj.sessions;
+
+		for (i in sessions) {
+			if (sessions[i] !== undefined) {
+				sockets = sessions[i].sockets;
+				for (j in sockets) {
+					if (sockets[j] !== undefined && sockets[j] !== excludeSocket && sockets[j].emit !== undefined) {
+						sockets[j].emit('youAre', user);
+					}
+				}
+			}
+		}
+	}
+}
+
 function emitCookie(socket, dontEmit) {
 	var newCoockie = {name: 'pastvu.sid', key: socket.handshake.session.key, path: '/'};
 
@@ -273,6 +299,7 @@ module.exports.firstConnection = firstConnection;
 module.exports.regen = regen;
 module.exports.destroy = destroy;
 module.exports.authUser = authUser;
+module.exports.emitUser = emitUser;
 module.exports.emitCookie = emitCookie;
 
 module.exports.loadController = function (a, db, io) {

@@ -415,6 +415,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							data.parent.comments(parentLevelReenter);
 						}
 
+						this.auth.iAm.ccount(this.auth.iAm.ccount() + 1);
 						this.parentModule.commentCountIncrement(1);
 						if (this.canFrag && Utils.isType('object', result.frag)) {
 							this.parentModule.fragAdd(result.frag);

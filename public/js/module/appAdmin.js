@@ -30,16 +30,14 @@ require([
 					parent: globalVM,
 					level: 0,
 					callback: function (auth, top, menu, submenu) {
-						$.when(auth.loadMe()).done(function () {
-							if (!auth.loggedIn() || auth.iAm.role() < 10) {
-								location.href = '/';
-								return;
-							}
-							top.show();
-							menu.show();
-							submenu.show();
-							routerDeferred.resolve();
-						});
+						if (!auth.loggedIn() || auth.iAm.role() < 10) {
+							location.href = '/';
+							return;
+						}
+						top.show();
+						menu.show();
+						submenu.show();
+						routerDeferred.resolve();
 					}
 				}
 			},

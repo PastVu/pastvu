@@ -11,7 +11,11 @@ define(function () {
 
 			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
 				var connectionType = '',
-					s = io.connect(location.host);
+					s = io.connect(location.host, {
+						'reconnection delay': 1000, //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
+						'reconnection limit': 15000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
+						'max reconnection attempts': 20 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
+					});
 
 				s.on('connect', function () {
 					console.log('Connected with ' + connectionType);
