@@ -968,7 +968,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		commentCountIncrement: function (delta) {
-			this.p.ccount(this.p.ccount() + delta);
+			this.originData.ccount = this.originData.ccount + delta;
+			this.p.ccount(this.originData.ccount);
 		},
 		commentAdd: function () {
 			this.commentsVM.replyZero();

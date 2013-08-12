@@ -305,6 +305,28 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 			return false;
 		},
 
+		//Обновляться значения свойств другими модулями в iAm должны через этот метод,
+		//чтобы обновлялись зависимости в страницах, зависимых от storage, например, userPage
+		setProps: function(props) {
+			if (this.loggedIn() && !Utils.isObjectEmpty(props)) {
+				var myLogin = this.iAm.login(),
+					reallyChanged,
+					p;
+
+				for (p in props) {
+					if (props[p] !== undefined && Utils.isType('function', this.iAm[p]) && props[p] !== this.iAm[p]()) {
+						this.iAm[p](props[p]);
+						storage.users[myLogin].origin[p] = props[p];
+						reallyChanged = true;
+					}
+				}
+				if (reallyChanged) {
+					this.iAm._v_(this.iAm._v_() + 1);
+				}
+			}
+		},
+
+		//Обновление модели залогиненного пользователя с сервера при логине или emitUser
 		processMe: function (user) {
 			if (user) {
 				this.iAm = User.vm(user, this.iAm);
