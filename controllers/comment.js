@@ -453,7 +453,7 @@ function removeComment(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),
-		user = socket.handshake.session.user,
+		iAm = socket.handshake.session.user,
 		obj,
 		hashComments = {},
 		hashUsers = {},
@@ -476,7 +476,7 @@ function removeComment(socket, data, cb) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
 			//Проверяем есть ли роль, либо это владелец и комментарий моложе недели
-			var can = user.role > 4 || (comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS));
+			var can = iAm.role > 4 || (comment.user.equals(iAm._id) && comment.stamp > (Date.now() - weekMS));
 			if (!can) {
 				return cb({message: msg.deny, error: true});
 			}
@@ -484,7 +484,7 @@ function removeComment(socket, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, user, true, this.parallel());
+				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, iAm, true, this.parallel());
 			}
 		},
 		function createCursor(err, o) {
@@ -518,7 +518,7 @@ function removeComment(socket, data, cb) {
 			}
 
 			//Если обычный пользователь удаляет свой комментарий, то убеждаемся, что у него нет потомков, т.е. он один
-			if (user.role < 5 && arrComments.length > 1) {
+			if (iAm.role < 5 && arrComments.length > 1) {
 				return cb({message: msg.deny, error: true});
 			}
 
@@ -529,6 +529,7 @@ function removeComment(socket, data, cb) {
 				return cb({message: err.message || 'Comment remove error', error: true});
 			}
 			var frags = obj.frags && obj.frags.toObject(),
+				user,
 				i,
 				u;
 
@@ -545,23 +546,24 @@ function removeComment(socket, data, cb) {
 
 			for (u in hashUsers) {
 				if (hashUsers[u] !== undefined) {
-					User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
+					user = _session.getOnline(null, u);
+					if (user !== undefined) {
+						user.ccount = user.ccount - hashUsers[u];
+						_session.saveEmitUser(user.login, null, null, this.parallel());
+					} else {
+						User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
+					}
 				}
 			}
+
 			countCommentsRemoved = countRemoved;
 		},
 		function (err) {
 			if (err) {
 				return cb({message: err.message || 'Object or user update error', error: true});
 			}
-			var myCountRemoved = 0;
+			var myCountRemoved = hashUsers[iAm._id] || 0; //Кол-во моих комментариев
 
-			// Если среди удаляемых комментариев есть мой, вычитаем их из сессии и отправляем "обновленного себя"
-			if (hashUsers[user._id] !== undefined) {
-				myCountRemoved = hashUsers[user._id];
-				user.ccount = user.ccount - myCountRemoved;
-				_session.emitUser(user.login, socket);
-			}
 			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length});
 		}
 	);
