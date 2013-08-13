@@ -380,13 +380,6 @@ function checkConfirm(session, data, cb) {
 	});
 }
 
-module.exports.sendMe = function (socket) {
-	var user = socket && socket.handshake && socket.handshake.session && socket.handshake.session.user;
-	if (user) {
-		socket.emit('youAre', user);
-	}
-};
-
 module.exports.loadController = function (a, db, io) {
 	app = a;
 	appEnv = app.get('appEnv');
