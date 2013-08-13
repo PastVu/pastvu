@@ -12,7 +12,8 @@ var Session,
 	cookieMaxAgeAnonimouse = ms('14d') / 1000,
 
 	settings = require('./settings.js'),
-	us = {}, //Users. Хэш всех активных соединений подключенных пользователей по логинам
+	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
+	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
 	sess = {}, //Sockets. Хэш всех активных сессий по ключам
 	sessWaitings = {}; //Хэш ожидания выборки сессии по ключу из базы
 
@@ -24,7 +25,7 @@ function addUserSession(session) {
 
 	if (usObj === undefined) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usObj = {user: user, sessions: {}};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
 		console.log(5, 'Create us hash');
 	} else {
 		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
@@ -159,6 +160,7 @@ function firstConnection(socket) {
 					console.log(9, '3.Delete User', user.login);
 					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
 					delete us[user.login];
+					delete usid[user._id];
 				}
 			}
 		}
@@ -287,6 +289,22 @@ function emitUser(login, excludeSocket) {
 	}
 }
 
+//Сохранение и последующая отправка
+function saveEmitUser(login, _id, excludeSocket) {
+	var usObj;
+	if (login) {
+		usObj = us[login];
+	} else if (_id) {
+		usObj = usid[_id];
+	}
+
+	if (usObj !== undefined && usObj.user !== undefined) {
+		usObj.user.save(function (err) {
+			emitUser(usObj.user.login, excludeSocket);
+		});
+	}
+}
+
 function emitCookie(socket, dontEmit) {
 	var newCoockie = {name: 'pastvu.sid', key: socket.handshake.session.key, path: '/'};
 
@@ -305,13 +323,38 @@ function emitCookie(socket, dontEmit) {
 	return newCoockie;
 }
 
+//Проверяем если пользователь онлайн
+function isOnline (login, _id) {
+	if (login) {
+		return !!us[login];
+	} else if (_id) {
+		return !!usid[_id];
+	}
+}
+
+//Берем онлайн-пользователя
+function getOnline (login, _id) {
+	var usObj;
+	if (login) {
+		usObj = us[login];
+	} else if (_id) {
+		usObj = usid[_id];
+	}
+	if (usObj !== undefined) {
+		return usObj.user;
+	}
+}
+
 module.exports.authSocket = authSocket;
 module.exports.firstConnection = firstConnection;
 module.exports.regen = regen;
 module.exports.destroy = destroy;
 module.exports.authUser = authUser;
 module.exports.emitUser = emitUser;
+module.exports.saveEmitUser = saveEmitUser;
 module.exports.emitCookie = emitCookie;
+module.exports.isOnline = isOnline;
+module.exports.getOnline = getOnline;
 
 module.exports.loadController = function (a, db, io) {
 	app = a;
