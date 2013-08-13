@@ -26,11 +26,11 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
-		console.log(5, 'Create us hash');
+		console.log('Create us hash:', user.login);
 	} else {
 		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
 		session.user = usObj.user;
-		console.log(6, 'Add session to us hash', session.user === usObj.user);
+		console.log('Add new session to us hash:', user.login, session.user === usObj.user);
 	}
 
 	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
@@ -46,16 +46,13 @@ function authSocket(handshake, callback) {
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
-		console.log(1);
 		finishAuthConnection(sessionProcess());
 	} else {
 		if (sess[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			console.log(2, existsSid);
 			finishAuthConnection(sessionProcess(null, sess[existsSid]));
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-			console.log(3, existsSid);
 
 			if (sessWaitings[existsSid] !== undefined) {
 				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
@@ -67,20 +64,13 @@ function authSocket(handshake, callback) {
 				];
 
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-					if (err) {
-						return sessionProcess(err);
+					session = sessionProcess(err, session); //Переприсваиваем, так как если не выбралась из базы, она создаться
+
+					sess[existsSid] = session; //Добавляем сессию в хеш сессий
+
+					if (session.user) {
+						addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
 					}
-
-					if (session) {
-						sess[existsSid] = session; //Если сессия найдена, добавляем её в хеш сессий
-
-						if (session.user) {
-							console.log(4, session.user.login);
-							addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
-						}
-					}
-
-					sessionProcess(null, session);
 
 					if (sessWaitings[existsSid] !== undefined) {
 						sessWaitings[existsSid].forEach(function (item) {
@@ -103,12 +93,8 @@ function authSocket(handshake, callback) {
 			//Если сессии нет, создаем и добавляем её в хеш
 			session = generate({ip: ip});
 			sess[session.key] = session;
-			console.log('Create session', session.key);
 		} else {
 			regen(session, {ip: ip});
-			if (session.user) {
-				console.info("%s entered", session.user.login);
-			}
 		}
 		return session;
 	}
@@ -122,7 +108,6 @@ function authSocket(handshake, callback) {
 //Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
-	console.log('CONnection');
 	var session = socket.handshake.session;
 
 	if (!session.sockets) {
@@ -138,26 +123,26 @@ function firstConnection(socket) {
 	});
 
 	socket.on('disconnect', function () {
-		console.log('DISconnection');
 		var session = socket.handshake.session,
 			user = session.user,
 			usObj;
 
+		//console.log('DISconnection');
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		if (Utils.isObjectEmpty(session.sockets)) {
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			delete sess[session.key];
-			console.log(9, '1.Delete Sess');
+			//console.log(9, '1.Delete Sess');
 
 			if (user) {
-				console.log(9, '2.Delete session from User', user.login);
+				//console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];
 				delete usObj.sessions[session.key];
 
 				if (Utils.isObjectEmpty(usObj.sessions)) {
-					console.log(9, '3.Delete User', user.login);
+					//console.log(9, '3.Delete User', user.login);
 					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
 					delete us[user.login];
 					delete usid[user._id];
