@@ -49,7 +49,9 @@ function login(socket, data, cb) {
 		if (user) {
 			//Передаем пользователя в сессию
 			_session.authUser(socket, user, data, function (err, session) {
-				cb(session, {message: "Success login", youAre: session.user.toObject()}); //Важно взять юзера из сессии, так как его объект мог взяться из существующего в хеше
+				//Важно взять юзера из сессии, так как, во-первых, в сессии он будет спопулирован при присвоении заново,
+				//а, во-вторых, его объект мог взяться из существующего в хеше, если пользователь уже залогинен в другом браузере
+				cb(session, {message: "Success login", youAre: session.user.toObject()});
 			});
 		} else {
 			switch (reason) {

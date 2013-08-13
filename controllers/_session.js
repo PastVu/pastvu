@@ -25,11 +25,11 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 		us[user.login] = usObj = {user: user, sessions: {}};
-		console.log(5);
+		console.log(5, 'Create us hash');
 	} else {
 		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
 		session.user = usObj.user;
-		console.log(6, session.user === usObj.user);
+		console.log(6, 'Add session to us hash', session.user === usObj.user);
 	}
 
 	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
@@ -46,12 +46,12 @@ function authSocket(handshake, callback) {
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
 		console.log(1);
-		sessionProcess();
+		finishAuthConnection(sessionProcess());
 	} else {
 		if (sess[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
 			console.log(2, existsSid);
-			sessionProcess(null, sess[existsSid]);
+			finishAuthConnection(sessionProcess(null, sess[existsSid]));
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
 			console.log(3, existsSid);
@@ -109,8 +109,7 @@ function authSocket(handshake, callback) {
 				console.info("%s entered", session.user.login);
 			}
 		}
-
-		finishAuthConnection(session);
+		return session;
 	}
 
 	function finishAuthConnection(session) {
@@ -182,7 +181,15 @@ function generate(data, cb) {
 	return session;
 }
 
-function regen(session, data, keyRegen, cb) {
+/**
+ * Добавляеи в сессию новые данные, продлевает действие и сохраняет в базу
+ * @param session Сессия
+ * @param data Свойства для вставки в data сессии
+ * @param keyRegen Менять ли ключ сессии
+ * @param userRePop Популировать ли пользователя сессии из базы
+ * @param cb Коллбек
+ */
+function regen(session, data, keyRegen, userRePop, cb) {
 	if (keyRegen) {
 		session.key = Utils.randomString(12); // При каждом заходе регенерируем ключ (пока только при логине)
 	}
@@ -193,19 +200,23 @@ function regen(session, data, keyRegen, cb) {
 	}
 	session.save(function (err, session) {
 		if (err) {
-			cb(err);
+			if (cb) {
+				cb(err);
+			}
+			return;
 		}
-		//FIXME: Fix when fix https://github.com/LearnBoost/mongoose/issues/1530
-		if (session.user) {
-			session.populate('user', function () {
+
+		//Присваивание объекта пользователя при логине еще пустому populated-полю сессии вставит туда только _id,
+		//поэтому затем после сохранения сессии нужно будет сделать populate на этом поле. (mongoose 3.6)
+		//https://github.com/LearnBoost/mongoose/issues/1530
+		if (userRePop && session.user) {
+			session.populate('user', function (err) {
 				if (cb) {
 					cb(err, session);
 				}
 			});
-		} else {
-			if (cb) {
-				cb(err, session);
-			}
+		} else if (cb) {
+			cb(err, session);
 		}
 	});
 
@@ -226,20 +237,20 @@ function authUser(socket, user, data, cb) {
 		uaParsed,
 		uaData;
 
-	session.user = user;
+	session.user = user; //Здесь присвоится только _id и далее он спопулируется в regen
 	delete sess[session.key]; //Удаляем сессию из хеша, так как у неё изменится ключ
 
 	uaParsed = uaParser.parse(socket.handshake.headers['user-agent']);
 	uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
 
-	regen(session, {remember: data.remember, ua: uaData}, true, function (err, session) {
-		var i;
+	regen(session, {remember: data.remember, ua: uaData}, true, true, function (err, session) {
+		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
 
 		sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
-		addUserSession(session);
+		addUserSession(session); //Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться, если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
 
 		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-		for (i in session.sockets) {
+		for (var i in session.sockets) {
 			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
 				session.sockets[i].emit('youAre', user.toObject());
 			}

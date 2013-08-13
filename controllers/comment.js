@@ -554,12 +554,15 @@ function removeComment(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message || 'Object or user update error', error: true});
 			}
+			var myCountRemoved = 0;
+
 			// Если среди удаляемых комментариев есть мой, вычитаем их из сессии и отправляем "обновленного себя"
 			if (hashUsers[user._id] !== undefined) {
-				user.ccount -= hashUsers[user._id];
-				auth.sendMe(socket);
+				myCountRemoved = hashUsers[user._id];
+				user.ccount = user.ccount - myCountRemoved;
+				_session.emitUser(user.login, socket);
 			}
-			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, countUsers: Object.keys(hashUsers).length});
+			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length});
 		}
 	);
 }
