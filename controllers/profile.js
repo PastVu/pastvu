@@ -13,11 +13,12 @@ var auth = require('./auth.js'),
 		deny: 'You do not have permission for this action'
 	};
 
-//Сохраняем изменемя в профиле пользователя
+//Сохраняем изменения в профиле пользователя
 function saveUser(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
 		itsMe,
+		itsOnline,
 		newValues;
 
 	if (!iAm) {
@@ -34,10 +35,13 @@ function saveUser(socket, data, cb) {
 
 	step(
 		function () {
-			if (iAm.login === login) {
-				this(null, iAm);
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
+
 			}
 		},
 		function (err, user) {
@@ -64,11 +68,11 @@ function saveUser(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			cb({message: 'ok', saved: 1});
-
-			if (itsMe) {
-				auth.sendMe(socket);
+			if (itsOnline) {
+				_session.emitUser(user.login);
 			}
+
+			cb({message: 'ok', saved: 1});
 		}
 	);
 }
@@ -77,7 +81,8 @@ function saveUser(socket, data, cb) {
 function changeDispName(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login;
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
 
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
@@ -88,10 +93,13 @@ function changeDispName(socket, data, cb) {
 
 	step(
 		function () {
-			if (iAm.login === login) {
-				this(null, iAm);
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
+
 			}
 		},
 		function (err, user) {
@@ -113,11 +121,10 @@ function changeDispName(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			cb({message: 'ok', saved: 1, disp: user.disp});
-
-			if (itsMe) {
-				auth.sendMe(socket);
+			if (itsOnline) {
+				_session.emitUser(user.login);
 			}
+			cb({message: 'ok', saved: 1, disp: user.disp});
 		}
 	);
 }
@@ -127,7 +134,8 @@ function changeEmail(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		user,
 		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login;
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
 
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
@@ -142,10 +150,13 @@ function changeEmail(socket, data, cb) {
 
 	step(
 		function () {
-			if (iAm.login === login) {
-				this(null, iAm);
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
+
 			}
 		},
 		function (err, u) {
@@ -185,6 +196,9 @@ function changeEmail(socket, data, cb) {
 		user.save(function (err, savedUser) {
 			if (err) {
 				return cb({message: err.message, error: true});
+			}
+			if (itsOnline) {
+				_session.emitUser(user.login);
 			}
 			cb({message: 'ok', email: savedUser.email});
 		});
