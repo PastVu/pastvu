@@ -761,10 +761,10 @@ function giveCommentHist(data, cb) {
  * Скрывает комментарии объекта (делает их не публичными)
  * @param oid _id объекта
  * @param hide Скрыть или наоборот
- * @param user Пользователь сессии, считаем сколько его комментариев затронуто
+ * @param iAm Пользователь сессии, считаем сколько его комментариев затронуто
  * @param cb Коллбэк
  */
-function hideObjComments(oid, hide, user, cb) {
+function hideObjComments(oid, hide, iAm, cb) {
 	step(
 		function () {
 			var command = {};
@@ -791,6 +791,8 @@ function hideObjComments(oid, hide, user, cb) {
 			}
 			var i,
 				len = comments.length,
+				cdelta,
+				user,
 				comment,
 				hashUsers = {};
 
@@ -800,10 +802,17 @@ function hideObjComments(oid, hide, user, cb) {
 			}
 			for (i in hashUsers) {
 				if (hashUsers[i] !== undefined) {
-					User.update({_id: i}, {$inc: {ccount: hide ? -hashUsers[i] : hashUsers[i]}}).exec();
+					cdelta = hide ? -hashUsers[i] : hashUsers[i];
+					user = _session.getOnline(null, i);
+					if (user !== undefined) {
+						user.ccount = user.ccount + cdelta;
+						_session.saveEmitUser(null, i);
+					} else {
+						User.update({_id: i}, {$inc: {ccount: cdelta}}).exec();
+					}
 				}
 			}
-			cb(null, {myCount: hashUsers[user._id] || 0});
+			cb(null, {myCount: hashUsers[iAm._id] || 0});
 		}
 	);
 }
@@ -858,7 +867,7 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takeCommentsUser', result);
 			});
 		});
-		socket.on('giveCommentsFeed', function (data) {
+		socket.on('giveCommentsFeed', function () {
 			getCommentsFeed(function (result) {
 				socket.emit('takeCommentsFeed', result);
 			});

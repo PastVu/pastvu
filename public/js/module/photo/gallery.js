@@ -457,6 +457,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 							if (data.photos.length > 0) {
 								this.processPhotos(data.photos);
 								this.count(this.count() + data.photos.length);
+								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
 
 								if (this.page() > 1) {
 									//Если в постраничном режиме, не на первой странице, то переходим на первую

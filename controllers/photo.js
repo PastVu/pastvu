@@ -1,6 +1,7 @@
 'use strict';
 
 var auth = require('./auth.js'),
+	_session = require('./_session.js'),
 	Settings,
 	User,
 	Photo,
@@ -28,6 +29,8 @@ var auth = require('./auth.js'),
 	commentController = require('./comment.js'),
 	msg = {
 		deny: 'You do not have permission for this action'
+	},
+	dummyFn = function () {
 	},
 
 	shift10y = ms('10y'),
@@ -184,29 +187,30 @@ function createPhotos(socket, data, cb) {
 			}
 			user.pfcount = user.pfcount + data.length;
 			user.save(this);
-			auth.sendMe(socket);
 		},
 		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
+			_session.emitUser(user.login, socket);
 			cb({message: data.length + ' photo successfully saved', cids: result});
 		}
 	);
 }
 
-function changePublicPhotoExternality(socket, photo, user, makePublic, cb) {
-	var affectMe;
+function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 	step(
 		function () {
 			//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-			commentController.hideObjComments(photo._id, !makePublic, user, this.parallel());
+			commentController.hideObjComments(photo._id, !makePublic, iAm, this.parallel());
 
-			//Пересчитывам кол-во публичных фото у владельца
-			User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
-			if (photo.user.equals(user._id)) {
+			//Пересчитывам кол-во публичных фото у владельца фотографии
+			var user = _session.getOnline(null, photo.user);
+			if (user) {
 				user.pcount = user.pcount + (makePublic ? 1 : -1);
-				affectMe = true;
+				_session.saveEmitUser(null, photo.user);
+			} else {
+				User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
 			}
 
 			//Если у фото есть координаты, значит надо провести действие с кластером
@@ -218,19 +222,8 @@ function changePublicPhotoExternality(socket, photo, user, makePublic, cb) {
 				}
 			}
 		},
-		function (err, hideCommentsResult) {
-			if (err) {
-				return cb(err);
-			}
-			if (hideCommentsResult.myCount) {
-				user.ccount = user.ccount - hideCommentsResult.myCount;
-				affectMe = true;
-			}
-			// Если поменялись данные в своей сессии, отправляем их себе
-			if (affectMe) {
-				auth.sendMe(socket);
-			}
-			cb(null);
+		function (err) {
+			cb(err);
 		}
 	);
 }
@@ -252,17 +245,17 @@ function removePhotoIncoming(socket, data, cb) {
  * @param cb Коллбэк
  */
 function removePhoto(socket, cid, cb) {
-	var user = socket.handshake.session.user;
+	var iAm = socket.handshake.session.user;
 
 	cid = Number(cid);
-	if (!user) {
+	if (!iAm) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!cid) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {}, user, true, function (err, photo) {
+	findPhoto({cid: cid}, {}, iAm, true, function (err, photo) {
 		if (err || !photo) {
 			return cb({message: err && err.message || 'No such photo', error: true});
 		}
@@ -283,11 +276,16 @@ function removePhoto(socket, cid, cb) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					var unlinkCb = function () {
-					};
+
+					var user = _session.getOnline(null, photo.user);
 
 					//Пересчитывам кол-во новых фото у владельца
-					User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
+					if (user) {
+						user.pfcount = user.pfcount - 1;
+						_session.saveEmitUser(user.login);
+					} else {
+						User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
+					}
 
 					//Удаляем из конвейера если есть
 					PhotoConverter.removePhotos([photo.cid]);
@@ -295,7 +293,7 @@ function removePhoto(socket, cid, cb) {
 					//Удаляем файлы фотографии
 					fs.unlink(privateDir + photo.file);
 					imageFolders.forEach(function (folder) {
-						fs.unlink(publicDir + folder + photo.file, unlinkCb);
+						fs.unlink(publicDir + folder + photo.file, dummyFn);
 					});
 
 					cb({message: 'ok'});
@@ -325,7 +323,7 @@ function removePhoto(socket, cid, cb) {
 					photo.remove(this.parallel());
 					PhotoSort.update({photo: photoSaved._id}, {$set: {state: 9}}, {upsert: false}, this.parallel());
 					if (isPublic) {
-						changePublicPhotoExternality(socket, photoSaved, user, false, this.parallel());
+						changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
 					}
 				},
 				function (err) {

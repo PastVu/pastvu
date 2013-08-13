@@ -564,7 +564,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 										//Если среди удаленных есть свои, декрементим их
 										if (result.myCountComments) {
 											this.auth.setProps({ccount: this.auth.iAm.ccount() - result.myCountComments});
-
 										}
 										if (Utils.isType('array', result.frags)) {
 											this.parentModule.fragReplace(result.frags);
