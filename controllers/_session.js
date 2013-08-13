@@ -290,7 +290,7 @@ function emitUser(login, excludeSocket) {
 }
 
 //Сохранение и последующая отправка
-function saveEmitUser(login, _id, excludeSocket) {
+function saveEmitUser(login, _id, excludeSocket, cb) {
 	var usObj;
 	if (login) {
 		usObj = us[login];
@@ -301,6 +301,9 @@ function saveEmitUser(login, _id, excludeSocket) {
 	if (usObj !== undefined && usObj.user !== undefined) {
 		usObj.user.save(function (err) {
 			emitUser(usObj.user.login, excludeSocket);
+			if (cb) {
+				cb();
+			}
 		});
 	}
 }

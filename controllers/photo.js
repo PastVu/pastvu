@@ -186,13 +186,12 @@ function createPhotos(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			user.pfcount = user.pfcount + data.length;
-			user.save(this);
+			_session.saveEmitUser(user.login, null, socket, this);
 		},
 		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			_session.emitUser(user.login, socket);
 			cb({message: data.length + ' photo successfully saved', cids: result});
 		}
 	);
@@ -344,8 +343,8 @@ function approvePhoto(socket, cid, cb) {
 		return cb({message: 'Requested photo does not exist', error: true});
 	}
 
-	var user = socket.handshake.session.user;
-	if (!user || user.role < 5) {
+	var iAm = socket.handshake.session.user;
+	if (!iAm || iAm.role < 5) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -385,11 +384,12 @@ function approvePhoto(socket, cid, cb) {
 
 			//Удаляем из коллекции новых
 			PhotoFresh.remove({cid: cid}).exec();
-			if (photoSaved.user.equals(user._id)) {
+
+			var user = _session.getOnline(null, photoSaved.user);
+			if (user) {
 				user.pcount = user.pcount + 1;
 				user.pfcount = user.pfcount - 1;
-				user.save();
-				auth.sendMe(socket);
+				_session.saveEmitUser(user.login);
 			} else {
 				User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
 			}
