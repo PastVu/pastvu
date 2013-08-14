@@ -86,21 +86,45 @@ Utils.memoizeAsync = function (memoizedFunc, ttl) {
 	};
 };
 
-Utils.linkifyUrlString = function (inputText, target, className) {
-	var replacedText, replacePattern1, replacePattern2;
+Utils.linkifyMailString = function (inputText, className) {
+	var replacedText, replacePattern;
+	className = className ? ' class="' + className + '"' : '';
+
+	//Change email addresses to mailto:: links.
+	replacePattern = /(\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6})/gim;
+	replacedText = replacedText.replace(replacePattern, '<a href="mailto:$1"' + className + '>$1</a>');
+
+	return replacedText;
+};
+
+Utils.linkifyUrlString = function (text, target, className) {
+	var replacePattern, matches, url, i;
 
 	target = target ? ' target="' + target + '"' : '';
 	className = className ? ' class="' + className + '"' : '';
 
-	//URLs starting with http://, https://, or ftp://
-	replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9А-Я+&@#\/%?=~_|!:,.;]*[-A-Z0-9А-Я+&@#\/%=~_|])/gim;
-	replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
+	//Используем match и вручную перебираем все совпадающие ссылки, чтобы декодировать их с decodeURI,
+	//на случай, если ссылка, содержащая не аски символы, вставлена из строки браузера, вида http://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BA%D1%81
+	//Массив совпадений делаем уникальными (uniq)
 
-	//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-	replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-	replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
+	//Starting with http://, https://, or ftp://
+	replacePattern = /(\b(https?|ftp):\/\/[-A-Z0-9А-Я+&@#\/%?=~_|!:,.;]*[-A-Z0-9А-Я+&@#\/%=~_|])/gim;
+	matches = _.uniq(text.match(replacePattern));
+	for (i = 0; i < matches.length; i++) {
+		url = decodeURI(matches[i]);
+		text = text.replace(matches[i], '<a href="' + url + '"' + target + className + '>' + url + '<\/a>');
+	}
 
-	return replacedText;
+	//Starting with "www." (without // before it, or it'd re-link the ones done above).
+	replacePattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+	matches = _.uniq(text.match(replacePattern));
+	for (i = 0; i < matches.length; i++) {
+		matches[i] = _s.trim(matches[i]); //Так как в результат match попадут и переносы и пробелы (^|[^\/]), то надо их удалить
+		url = decodeURI(matches[i]);
+		text = text.replace(matches[i], '<a href="http:\/\/' + url + '"' + target + className + '>' + url + '<\/a>');
+	}
+
+	return text;
 };
 Utils.inputIncomingParse = (function () {
 	var host = global.appVar && global.appVar.serverAddr && global.appVar.serverAddr.host || '',
@@ -117,7 +141,6 @@ Utils.inputIncomingParse = (function () {
 		var result = txt;
 
 		result = _s.trim(result); //Обрезаем концы
-		result = decodeURI(result); //Декодируем возможные закодированные ссылки, вставленные из строки адреса браузера, содержащие не аски символы
 		result = escape(result); //Эскейпим
 
 		//Заменяем ссылку на фото на диез-ссылку #xxx

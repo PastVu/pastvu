@@ -277,32 +277,6 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			};
 		}()),
 
-		linkifyUrlString: function (inputText, target, className) {
-			var replacedText, replacePattern1, replacePattern2;
-
-			target = target ? ' target="' + target + '"' : '';
-			className = className ? ' class="' + className + '"' : '';
-
-			//URLs starting with http://, https://, or ftp://
-			replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-			replacedText = inputText.replace(replacePattern1, '<a href="$1"' + target + className + '>$1</a>');
-
-			//URLs starting with "www." (without // before it, or it'd re-link the ones done above).
-			replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
-			replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2"' + target + className + '>$2</a>');
-
-			return replacedText;
-		},
-		linkifyMailString: function (inputText, className) {
-			var replacedText, replacePattern;
-			className = className ? ' class="' + className + '"' : '';
-
-			//Change email addresses to mailto:: links.
-			replacePattern = /(\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6})/gim;
-			replacedText = replacedText.replace(replacePattern, '<a href="mailto:$1"' + className + '>$1</a>');
-
-			return replacedText;
-		},
 		txtHtmlToInput: function (txt) {
 			var result = txt;
 
