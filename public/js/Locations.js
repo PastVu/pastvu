@@ -1,5 +1,7 @@
 /*global define:true*/
-define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin.net/javascript.gp'], function ($, Browser, ko_mapping, P) {
+define(['jquery', 'Browser', 'knockout.mapping', 'Params'/*, 'http://www.geoplugin.net/javascript.gp'*/], function ($, Browser, ko_mapping, P) {
+	'use strict';
+
 	var Locations = {
 		types: {'_def_': ko_mapping.toJS(P.settings.locDef)},
 		range: P.settings.locDefRange(),
@@ -11,13 +13,13 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin
 		set: function (obj) {
 			$.extend(this.types, obj);
 			this.subscribersNotify();
-		},
+		},/*
 		setRange: function (ran) {
 			this.range = ran;
 		},
 		setRangeTypePos: function (type, pos) {
 			this.range = ran;
-		},
+		},*/
 		subscribe: function (fn, context) {
 			this.subscribers.push({fn: fn, context: context});
 		},
@@ -40,13 +42,14 @@ define(['jquery', 'Browser', 'knockout.mapping', 'Params', 'http://www.geoplugin
 	/**
 	 * Определяем координаты по ip
 	 */
-	try {
-		if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
-			Locations.set({'gpsip': {lng: parseFloat(geoplugin_longitude(), 10), lat: parseFloat(geoplugin_latitude(), 10), z: 10}});
-		}
-	} catch (e) {
-		console.log('Locations geoplugin parse error');
-	}
+	Locations.set({'gpsip': {lng: 37.617778, lat: 55.751667, z: 10}}); //Временно устанавливаем в центр Москвы
+	/*	try {
+	 if (geoplugin_status && geoplugin_status() === '200' && geoplugin_latitude && parseFloat(geoplugin_latitude(), 10) && geoplugin_longitude && parseFloat(geoplugin_longitude(), 10)) {
+	 Locations.set({'gpsip': {lng: parseFloat(geoplugin_longitude(), 10), lat: parseFloat(geoplugin_latitude(), 10), z: 10}});
+	 }
+	 } catch (e) {
+	 console.log('Locations geoplugin parse error');
+	 }*/
 
 	/**
 	 * Определяем координаты по Geolocation API
