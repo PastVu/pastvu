@@ -14,7 +14,6 @@ var express = require('express'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 
-	Utils = require('./commons/Utils.js'),
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
 	ms = require('ms'); // Tiny milisecond conversion utility
@@ -192,6 +191,9 @@ async.waterfall([
 
 			app.use(app.router);
 		});
+
+
+		require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 		callback(null);
 	},
 
