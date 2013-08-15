@@ -1,5 +1,5 @@
 /*global define:true, ga:true*/
-define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function ($, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -34,6 +34,8 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 
 			//При изменении данных профиля на сервере, обновляем его на клиенте
 			socket.on('youAre', this.processMe.bind(this));
+
+			socket.on('command', this.commandHandler.bind(this));
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
@@ -146,6 +148,30 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 				.css({height: 5 + this.$dom.find('form:visible .mess > div').height()});
 
 			text = type = css = null;
+		},
+
+		commandHandler: function (data) {
+			if (!Array.isArray(data)) {
+				return;
+			}
+
+			try {
+				_.forEach(data, function (command) {
+					if (command.name === 'clearCookie') {
+						Utils.cookie.removeItem('pastvu.sid', '/');
+					} else if (command.name === 'location') {
+						if (command.path) {
+							document.location = command.path;
+						} else {
+							location.reload();
+						}
+					}
+				});
+			} catch (e) {
+				console.log(e.message);
+			}
+
+			socket.emit('commandResult', data);
 		},
 
 		submit: function (data, evt) {
@@ -307,7 +333,7 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 
 		//Обновляться значения свойств другими модулями в iAm должны через этот метод,
 		//чтобы обновлялись зависимости в страницах, зависимых от storage, например, userPage
-		setProps: function(props) {
+		setProps: function (props) {
 			if (this.loggedIn() && !Utils.isObjectEmpty(props)) {
 				var myLogin = this.iAm.login(),
 					reallyChanged,
@@ -364,19 +390,14 @@ define(['jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', '
 		doLogout: function (callback) {
 			ga('send', 'event', 'auth', 'logout');
 			try {
-				socket.once('logoutResult', function (json) {
+				socket.once('logoutCommand', function (json) {
 					if (json.error) {
 						console.log('Logout error: ' + json.message);
 					} else {
-						Utils.cookie.removeItem('pastvu.sid', '/');
-						if (json.logoutPath) {
-							document.location = json.logoutPath;
-						} else {
-							location.reload();
-						}
+						location.reload();
 					}
 				});
-				socket.emit('logoutRequest', {});
+				socket.emit('logoutRequest');
 			} catch (e) {
 				if (Utils.isType('function', callback)) {
 					callback(e.message);

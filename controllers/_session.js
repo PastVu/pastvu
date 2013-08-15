@@ -127,22 +127,22 @@ function firstConnection(socket) {
 			user = session.user,
 			usObj;
 
-		//console.log('DISconnection');
+		console.log('DISconnection');
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		if (Utils.isObjectEmpty(session.sockets)) {
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			delete sess[session.key];
-			//console.log(9, '1.Delete Sess');
+			console.log(9, '1.Delete Sess');
 
 			if (user) {
-				//console.log(9, '2.Delete session from User', user.login);
+				console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];
 				delete usObj.sessions[session.key];
 
 				if (Utils.isObjectEmpty(usObj.sessions)) {
-					//console.log(9, '3.Delete User', user.login);
+					console.log(9, '3.Delete User', user.login);
 					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
 					delete us[user.login];
 					delete usid[user._id];
@@ -166,6 +166,29 @@ function generate(data, cb) {
 	});
 
 	return session;
+}
+
+function destroy(socket, cb) {
+	var session = socket.handshake.session;
+
+	if (session) {
+		socket.once('commandResult', function () {
+			//Отправляем всем сокетам сессии кроме текущей команду на релоад
+			for (var i in session.sockets) {
+				if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
+					session.sockets[i].emit('command', [{name: 'location'}]);
+				}
+			}
+
+			//Удаляем сессию из базы
+			session.remove(cb);
+		});
+
+		//Отправляем автору запроса на логаут комманду на очистку кук, очистится у всех вкладок сессии
+		socket.emit('command', [{name: 'clearCookie'}]);
+	} else {
+		cb({message: 'No such session'});
+	}
 }
 
 /**
@@ -208,14 +231,6 @@ function regen(session, data, keyRegen, userRePop, cb) {
 	});
 
 	return session;
-}
-
-function destroy(session, cb) {
-	if (session) {
-		session.remove(cb);
-	} else {
-		cb();
-	}
 }
 
 //Присваивание пользователя сессии при логине, вызывается из auth-контроллера

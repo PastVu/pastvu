@@ -401,10 +401,8 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('logoutRequest', function () {
-			_session.destroy(hs.session, function (err) {
-				//TODO: Если находится в области, требующей логина, надо перенаправлять на '/'
-				var restrictedArea = false;
-				socket.emit('logoutResult', {message: (err && err.message) || '', error: !!err, logoutPath: restrictedArea ? '/' : null});
+			_session.destroy(socket, function (err) {
+				socket.emit('logoutCommand', {message: (err && err.message) || '', error: !!err});
 			});
 		});
 
