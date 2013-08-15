@@ -116,7 +116,7 @@ function firstConnection(socket) {
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
-	socket.emit('initData', {
+	socket.emit('connectData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
 		u: session.user && session.user.toObject ? session.user.toObject() : null
@@ -127,22 +127,22 @@ function firstConnection(socket) {
 			user = session.user,
 			usObj;
 
-		console.log('DISconnection');
+		//console.log('DISconnection');
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		if (Utils.isObjectEmpty(session.sockets)) {
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			delete sess[session.key];
-			console.log(9, '1.Delete Sess');
+			//console.log(9, '1.Delete Sess');
 
 			if (user) {
-				console.log(9, '2.Delete session from User', user.login);
+				//console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];
 				delete usObj.sessions[session.key];
 
 				if (Utils.isObjectEmpty(usObj.sessions)) {
-					console.log(9, '3.Delete User', user.login);
+					//console.log(9, '3.Delete User', user.login);
 					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
 					delete us[user.login];
 					delete usid[user._id];

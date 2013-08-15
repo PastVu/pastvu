@@ -36,7 +36,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			socket.on('youAre', this.processMe.bind(this));
 
 			socket.on('command', this.commandHandler.bind(this));
-
+			socket.on('connectData', this.reconnectHandler.bind(this));
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
 		show: function (mode, callback, ctx) {
@@ -352,6 +352,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			}
 		},
 
+		//Обновляет пользователя при реконнекте, на случай, если пока он был оффлайн, пользователь изменился
+		reconnectHandler: function (data) {
+			console.log('user reconnect');
+			if (Utils.isType('object', data.u)) {
+				this.processMe(data.u);
+			}
+		},
 		//Обновление модели залогиненного пользователя с сервера при логине или emitUser
 		processMe: function (user) {
 			if (user) {
