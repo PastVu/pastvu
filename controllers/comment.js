@@ -26,7 +26,8 @@ var auth = require('./auth.js'),
 
 	weekMS = ms('7d'),
 	msg = {
-		deny: 'You do not have permission for this action'
+		deny: 'You do not have permission for this action',
+		noComments: 'Операции с комментариями на этой странице запрещены'
 	},
 
 	photoController = require('./photo.js');
@@ -337,7 +338,7 @@ function createComment(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	var user = socket.handshake.session.user,
+	var iAm = socket.handshake.session.user,
 		obj,
 		commentModel,
 		content = data.txt,
@@ -354,9 +355,9 @@ function createComment(socket, data, cb) {
 	step(
 		function findObjectAndParent() {
 			if (data.type === 'news') {
-				News.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+				News.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1}, user, true, this.parallel());
+				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1, nocomments: 1}, iAm, true, this.parallel());
 			}
 
 			if (data.parent) {
@@ -366,6 +367,9 @@ function createComment(socket, data, cb) {
 		function counterUp(err, o, parent) {
 			if (err || !o) {
 				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			if (o.nocomments && (!iAm.role || iAm.role < 10)) {
+				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
 			}
 			if (data.type === 'photo' && o.fresh) {
 				return cb({message: 'Comments for new photo are not allowed', error: true});
@@ -385,7 +389,7 @@ function createComment(socket, data, cb) {
 			comment = {
 				cid: countC.next,
 				obj: obj,
-				user: user,
+				user: iAm,
 				txt: Utils.inputIncomingParse(content)
 			};
 			if (data.parent) {
@@ -419,21 +423,21 @@ function createComment(socket, data, cb) {
 			obj.save(this.parallel());
 
 			if (!savedComment.hidden) {
-				user.ccount += 1;
-				user.save(this.parallel());
+				iAm.ccount += 1;
+				iAm.save(this.parallel());
 			}
 		},
 		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			comment.user = user.login;
+			comment.user = iAm.login;
 			comment.obj = data.obj;
 			comment.can = {};
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
-			_session.emitUser(user.login, socket);
+			_session.emitUser(iAm.login, socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
 		}
 	);
@@ -482,14 +486,17 @@ function removeComment(socket, data, cb) {
 			}
 
 			if (data.type === 'news') {
-				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, this.parallel());
+				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1}, iAm, true, this.parallel());
+				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1, nocomments: 1}, iAm, true, this.parallel());
 			}
 		},
 		function createCursor(err, o) {
 			if (err || !o) {
 				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			if (o.nocomments && (!iAm.role || iAm.role < 10)) {
+				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
 			}
 			obj = o;
 			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, stamp: 0, txt: 0}, {sort: [
@@ -570,48 +577,6 @@ function removeComment(socket, data, cb) {
 }
 
 /**
- * Переключает возможность комментирования объекта
- * @param socket Сокет пользователя
- * @param data
- * @param cb Коллбэк
- */
-function setNoComments(socket, data, cb) {
-	var cid = data && Number(data.cid),
-		iAm = socket.handshake.session && socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	if (!Utils.isType('object', data) || !cid) {
-		return cb({message: 'Bad params', error: true});
-	}
-
-	step(
-		function () {
-			if (data.type === 'news') {
-				News.findOne({cid: cid}, this);
-			} else {
-				photoController.findPhoto({cid: cid}, null, iAm, true, this);
-			}
-		},
-		function createCursor(err, obj) {
-			if (err || !obj) {
-				return cb({message: err && err.message || 'No such object', error: true});
-			}
-			obj.nocomments = data.val ? true : undefined;
-			obj.save(this);
-		},
-		function (err, obj) {
-			if (err || !obj) {
-				return cb({message: err && err.message || 'Save error', error: true});
-			}
-			cb({message: 'Ok', nocomments: obj.nocomments});
-		}
-	);
-}
-
-/**
  * Редактирует комментарий
  * @param socket Сокет пользователя
  * @param data Объект
@@ -624,7 +589,7 @@ function updateComment(socket, data, cb) {
 	if (!Utils.isType('object', data) || !data.obj || !Number(data.cid) || !data.txt) {
 		return cb({message: 'Bad params', error: true});
 	}
-	var user = socket.handshake.session.user,
+	var iAm = socket.handshake.session.user,
 		fragRecieved,
 		commentModel;
 
@@ -636,15 +601,19 @@ function updateComment(socket, data, cb) {
 
 	step(
 		function () {
-			commentModel.findOne({cid: data.cid}).populate('obj', {cid: 1, frags: 1}).exec(this);
+			commentModel.findOne({cid: data.cid}).populate('obj', {cid: 1, frags: 1, nocomments: 1}).exec(this);
 		},
 		function (err, comment) {
 			if (err || !comment || data.obj !== comment.obj.cid) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
+			if (comment.obj.nocomments && (!iAm.role || iAm.role < 10)) {
+				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
+			}
+
 			var i,
-				can = user.role > 4 || (comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS)),
-				hist = {user: user},
+				can = iAm.role > 4 || (comment.user.equals(iAm._id) && comment.stamp > (Date.now() - weekMS)),
+				hist = {user: iAm},
 				content,
 				fragExists,
 				fragChangedType,
@@ -797,6 +766,48 @@ function giveCommentHist(data, cb) {
 				}
 			}
 			cb({hists: result});
+		}
+	);
+}
+
+/**
+ * Переключает возможность комментирования объекта
+ * @param socket Сокет пользователя
+ * @param data
+ * @param cb Коллбэк
+ */
+function setNoComments(socket, data, cb) {
+	var cid = data && Number(data.cid),
+		iAm = socket.handshake.session && socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data) || !cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			if (data.type === 'news') {
+				News.findOne({cid: cid}, this);
+			} else {
+				photoController.findPhoto({cid: cid}, null, iAm, true, this);
+			}
+		},
+		function createCursor(err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			obj.nocomments = data.val ? true : undefined;
+			obj.save(this);
+		},
+		function (err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || 'Save error', error: true});
+			}
+			cb({message: 'Ok', nocomments: obj.nocomments});
 		}
 	);
 }
