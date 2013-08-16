@@ -14,6 +14,7 @@ var NewsSchema = new Schema(
 			notice: {type: String}, // Анонс, краткий текст
 			txt: {type: String, required: true}, // Полный текст
 
+			nocomments: {type: Boolean}, //Запретить комментирование
 			ccount: {type: Number} //Кол-во комментариев
 		},
 		{

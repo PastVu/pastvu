@@ -570,6 +570,48 @@ function removeComment(socket, data, cb) {
 }
 
 /**
+ * Переключает возможность комментирования объекта
+ * @param socket Сокет пользователя
+ * @param data
+ * @param cb Коллбэк
+ */
+function setNoComments(socket, data, cb) {
+	var cid = data && Number(data.cid),
+		iAm = socket.handshake.session && socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data) || !cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			if (data.type === 'news') {
+				News.findOne({cid: cid}, this);
+			} else {
+				photoController.findPhoto({cid: cid}, null, iAm, true, this);
+			}
+		},
+		function createCursor(err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || 'No such object', error: true});
+			}
+			obj.nocomments = data.val ? true : undefined;
+			obj.save(this);
+		},
+		function (err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || 'Save error', error: true});
+			}
+			cb({message: 'Ok', nocomments: obj.nocomments});
+		}
+	);
+}
+
+/**
  * Редактирует комментарий
  * @param socket Сокет пользователя
  * @param data Объект
@@ -856,6 +898,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('removeComment', function (data) {
 			removeComment(socket, data, function (result) {
 				socket.emit('removeCommentResult', result);
+			});
+		});
+
+		socket.on('setNoComments', function (data) {
+			setNoComments(socket, data, function (result) {
+				socket.emit('setNoCommentsResult', result);
 			});
 		});
 

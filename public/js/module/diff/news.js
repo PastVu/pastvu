@@ -128,6 +128,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				} else {
 					_.defaults(data.news, newsDefault);
 					data.news.user.avatar = data.news.user.avatar ? P.preaddr + '/_a/d/' + data.news.user.avatar : '/img/caps/avatar.png';
+					data.news.canComment = !data.news.nocomments;
 					if (this.news) {
 						this.news = ko_mapping.fromJS(data.news, this.news);
 					} else {
@@ -230,6 +231,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		commentAdd: function () {
 			this.commentsVM.replyZero();
+		},
+		setNoComments: function () {
+			socket.once('setNoCommentsResult', function (data) {
+				if (!data || data.error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					this.news.canComment(!data.nocomments);
+				}
+			}.bind(this));
+			socket.emit('setNoComments', {cid: this.news.cid(), type: 'news', val: this.news.canComment()});
 		},
 
 		onImgLoad: function (data, event) {

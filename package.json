@@ -1,6 +1,6 @@
 {
 	"name": "pastvu",
-	"version": "0.9.0",
+	"version": "0.9.1-dev",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/pastvu",
 	"keywords": ["oldmos", "pastvu"],
@@ -34,7 +34,7 @@
 		"bcrypt": "~0.7.6",
 		"step": "",
 		"socket.io": "~0.9.16",
-		"nodemailer": "~0.5.0",
+		"nodemailer": "~0.5.2",
 		"ua-parser": "~0.3.3",
 		"sprintf": "",
 		"optimist": "~0.5.2",
