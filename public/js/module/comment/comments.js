@@ -8,14 +8,19 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 	return Cliche.extend({
 		jade: jade,
 		options: {
-			type: 'photo' //Тип объекта по умолчанию (фото, новость и т.д.)
+			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
+			active: true //Можно ли писать комментарии
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.type = this.options.type;
 			this.cid = null;
-			this.exe = ko.observable(false);
+			this.active = ko.observable(this.options.active);
+			this.canAction = this.co.canAction = ko.computed(function () {
+				return this.auth.loggedIn() && (this.active() || this.auth.iAm.role() > 9);
+			}, this);
 			this.canFrag = this.type === 'photo';
+			this.exe = ko.observable(false);
 
 			this.comments = ko.observableArray();
 			this.users = {};
@@ -79,7 +84,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.addMeToCommentsUsers();
 		},
 		addMeToCommentsUsers: function () {
-			if (this.auth.loggedIn() && this.users[this.auth.iAm.login()] === undefined) {
+			if (this.canAction() && this.users[this.auth.iAm.login()] === undefined) {
 				this.users[this.auth.iAm.login()] = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
@@ -102,7 +107,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
 					} else {
 						this.users = _.assign(data.users, this.users);
-						this.comments(this[this.auth.loggedIn() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
+						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -216,7 +221,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		inputActivate: function (root, scrollDuration, focus) {
-			if (this.auth.loggedIn() && (root instanceof jQuery) && root.length === 1) {
+			if (this.canAction() && (root instanceof jQuery) && root.length === 1) {
 				var input = root.find('.commentInput');
 
 				root.addClass('hasFocus');
@@ -330,6 +335,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			delete this.commentEditingFragChanged;
 		},
 		send: function (data, event) {
+			if (!this.canAction()) {
+				return;
+			}
 			var create = !this.commentEditingCid(),
 				_this = this,
 				$root = $(event.target).closest('.commentAdd'),
@@ -369,9 +377,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		sendCreate: function (data, dataSend, cb, ctx) {
-			if (!this.auth.loggedIn()) {
-				return;
-			}
 			//Если data.cid, значит создается дочерний комментарий
 			if (Utils.isType('number', data.cid)) {
 				dataSend.parent = data.cid;
@@ -430,7 +435,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (data, dataSend, cb, ctx) {
-			if (!this.auth.loggedIn() || !data.can.edit) {
+			if (!this.canAction() || !data.can.edit) {
 				return;
 			}
 			var fragExists = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(data.cid));
@@ -477,6 +482,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			socket.emit('updateComment', dataSend);
 		},
 		edit: function (data, event) {
+			if (!this.canAction()) {
+				return;
+			}
 			var $media = $(event.target).closest('.media'),
 				cid = Number(data.cid),
 				input,
@@ -507,7 +515,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		remove: function (data, event) {
-			if (!this.auth.loggedIn() || !data.can.del) {
+			if (!this.canAction() || !data.can.del) {
 				return;
 			}
 
@@ -581,6 +589,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					]
 				}
 			);
+		},
+
+		activate: function (val) {
+			this.active(!!val);
 		},
 
 		//Вызов модального окна с модулем просмотра истории комментария

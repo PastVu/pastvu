@@ -105,6 +105,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					Utils.title.setTitle({title: data.news.title});
 					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
 						this.commentsVM.setCid(cid);
+						this.commentsVM.activate(this.news.canComment());
 						this.commentsActivate(this.news.ccount() > 30 ? 600 : 410);
 					}.bind(this)});
 
@@ -238,6 +239,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					this.news.canComment(!data.nocomments);
+					this.commentsVM.activate(!data.nocomments);
 				}
 			}.bind(this));
 			socket.emit('setNoComments', {cid: this.news.cid(), type: 'news', val: this.news.canComment()});
