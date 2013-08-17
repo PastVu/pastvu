@@ -2,35 +2,58 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
+@headColor: #677A8F;
+@headColorHover: @MainBlueColor;
+
 .fullComments {
 	position: relative;
 
 	.commentsHead {
-		.title {
+		position: relative;
+
+		.headElem {
+			position: relative;
 			display: inline-block;
-			font-weight: bold;
-			font-size: 16px;
-		}
-		.count {
-			display: inline-block;
-			background-position: 0 50%;
-			background-repeat: no-repeat;
-		}
-		.addZero {
-			display: inline-block;
-			cursor: pointer;
-			&:hover {
-				color: @MainBlueColor;
+			margin: 0 1px 8px 0;
+			padding: 0 7px 1px 7px;
+			vertical-align: top;
+			font-size: 12px;
+			line-height: 18px;
+			color: #F5F5F5;
+			cursor: default;
+			white-space: nowrap;
+			background-color: @headColor;
+
+			&.interact {
+				cursor: pointer;
+
+				&:hover {
+					color: #fff;
+					background-color: @headColorHover;
+				}
 			}
 		}
-		.noComments {
-			display: inline-block;
-			cursor: pointer;
-			&:hover {
-				color: @MainBlueColor;
+
+		.count {
+			min-width: 15px;
+			padding: 0 4px 0 4px;
+			font-size: 13px;
+			line-height: 19px;
+
+			&::after {
+				position: absolute;
+				display: block;
+				content: '';
+				left: 20%;
+				bottom: -8px;
+				width: 0;
+				height: 0;
+				border-top: 8px solid @headColor;
+				border-right: 8px solid transparent;
 			}
 		}
 		.cantComment {
+			margin-left: 6px;
 			color: #f00;
 		}
 		.commentsLoad {
@@ -81,7 +104,7 @@
 		word-wrap: break-word; //Переносит разбиением длинные слова, например ссылки
 	}
 
-	.commentActions{
+	.commentActions {
 		display: none;
 		margin-top: 2px;
 		font-size: 12px;
@@ -98,7 +121,6 @@
 			}
 		}
 	}
-
 
 	.commentAdd {
 		position: relative;
@@ -139,7 +161,7 @@
 			.commentInputLabel {
 				display: none;
 			}
-			.btnCommentSend, .btnCommentCancel{
+			.btnCommentSend, .btnCommentCancel {
 				display: inline-block;
 			}
 		}
@@ -159,7 +181,7 @@
 			height: 50px;
 		}
 		.media {
-			&.hl > .media-body > .commentBody > .commentText{
+			&.hl > .media-body > .commentBody > .commentText {
 				background-color: fade(@MainBlueColor, 10%);
 				.transition(~'background-color .25s linear');
 			}

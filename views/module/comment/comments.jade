@@ -1,23 +1,19 @@
 .fullComments(data-bind="with: repository[M!M]")
 	.commentsHead
 		//ko if: canAction() || count()
-		.title Комментарии
-		.dotDelimeter ·
-		.count(data-bind="text: count()")
+		.count.headElem(data-bind="text: count()")
 		//ko if: auth.loggedIn() && canAction()
-		.dotDelimeter ·
-		.addZero(data-bind="click: replyZero") Добавить
+		.addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
+			i.icon-edit.icon-white
+			| &nbsp;Добавить
 		// /ko
 		//ko if: canManage()
+		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: nocomments() ? ' Разрешить дальнейшее комментирование' : ' Запретить дальнейшее комментирование'}")
+			i.icon-white(data-bind="css: nocomments() ? 'icon-ok-sign' : 'icon-minus-sign'")
+			span(data-bind="text: nocomments() ? ' Разрешить комментирование' : ' Запретить комментирование'")
 		//ko if: nocomments()
-		.dotDelimeter ·
 		span.cantComment Комментарии запрещены
 		// /ko
-		.dotDelimeter ·
-		.noComments(data-bind="click: setNoComments")
-			i(data-bind="css: nocomments() ? 'icon-ok-sign' : 'icon-minus-sign'")
-			| &nbsp;
-			span(data-bind="text: nocomments() ? 'Разрешить комментирование' : 'Запретить комментирование'")
 		// /ko
 		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 		// /ko

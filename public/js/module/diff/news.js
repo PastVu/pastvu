@@ -27,7 +27,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
-			this.$comments = this.$dom.find('.newsComments');
+			this.$comments = this.$dom.find('.commentsContainer');
 
 			this.commentsRecieveBind = this.commentsRecieve.bind(this);
 			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
@@ -37,7 +37,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.childs = [
 				{
 					module: 'm/comment/comments',
-					container: '.photoCommentsContainer',
+					container: '.commentsContainer',
 					options: {type: 'news', autoShowOff: true},
 					ctx: this,
 					callback: function (vm) {
@@ -238,10 +238,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
-			data = event = null;
-		},
-		onAvatarError: function (data, event) {
-			//event.target.setAttribute('src', '/img/caps/avatar.png');
 			data = event = null;
 		}
 	});
