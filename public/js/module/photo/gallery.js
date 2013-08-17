@@ -181,6 +181,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				return;
 			}
 
+			// Если показывается окно загрузки, но в параметрах его нет,
+			// значит мы вернулись из загрузки в галерею и должны загрузку закрыть
+			if (this.uploadVM && !params.photoUpload) {
+				this.closeUpload(0);
+				return;
+			}
+
 			//Параметры фильтров
 			if (filterParams) {
 				for (i = filterParams.length; i--;) {

@@ -159,9 +159,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				moduleOptions.options.addPossible = true;
 				if (upload) {
 					if (this.contentVM && this.contentVM.module === module) {
-						this.contentVM.showUpload();
+						this.contentVM.showUpload(); //Если галерея уже загружена, просто открываем окно загрузки
 					} else {
-						moduleOptions.options.goUpload = true;
+						moduleOptions.options.goUpload = true; //Если нет, говорим что надо открыть при загрузке галереи
 					}
 					Utils.title.setTitle({pre: 'Загрузка - ', title: this.user.disp()});
 				} else {
