@@ -173,9 +173,13 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			if (!href || href.length === 0 || _this.blockHrefs) {
 				evt.preventDefault();
 			} else if (target !== '_blank') {
+				evt.preventDefault();
 				if (href.indexOf('?') === 0 && href.indexOf('=') > 0) {
+					//Если весь href состоит только из параметров '?x=1&y=1'
 					paramsVals = Utils.getURLParameters(href);
 					paramsValsCurrent = Utils.getURLParameters(hrefCurrent);
+
+					delete paramsValsCurrent.hl; //Удаляем во время перехода hl текущей страницы
 
 					if (_.size(paramsValsCurrent) > 0) {
 						paramsStringNew = hrefCurrent.substr(hrefCurrent.indexOf('?')) + '&';
@@ -194,10 +198,8 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 						}
 					});
 
-					evt.preventDefault();
 					_this.navigateToUrl(pathname + paramsStringNew.substring(0, paramsStringNew.length-1));
 				} else if (_this.testUrl(href)) {
-					evt.preventDefault();
 					_this.navigateToUrl(href);
 				}
 			}

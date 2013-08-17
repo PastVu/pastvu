@@ -98,6 +98,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			} else {
 				this.pageUrl = ko.observable('/ps');
 			}
+			this.pageQuery = ko.observable('');
 
 			this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
 
@@ -201,6 +202,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						this.topTitle = ko.observable('Где это? ' + this.options.topTitle);
 					}
 				}
+				this.pageQuery(location.search);
 			}
 
 			if (page === 'feed') {
