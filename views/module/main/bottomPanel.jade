@@ -10,7 +10,7 @@
 			.newsLeft
 				.newsDate(data-bind="text: moment($data.pdate).format('D MMM')")
 				//ko if: $data.ccount > 0
-				.newsComms(data-bind="text: $data.ccount")
+				a.newsComms(data-bind="text: $data.ccount, attr: {href: '/news/' + $data.cid + '?hl=comments'}", title="Перейти к комментариям новости")
 				// /ko
 			.newsBody
 				a.newsTitle(target="_blank", data-bind="text: $data.title, attr: {href: '/news/' + $data.cid}")

@@ -188,8 +188,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			return results;
 		},
 		scrollTo: function (ccid) {
-			var $element = this.$dom.find('.media[data-cid="' + ccid + '"]');
+			var $element;
 
+			if (ccid === true) {
+				$element = this.$container;
+			} else {
+				$element = this.$dom.find('.media[data-cid="' + ccid + '"]');
+			}
 			if ($element && $element.length === 1) {
 				this.highlightOff();
 				$(window).scrollTo($element, {duration: 400, onAfter: function () {

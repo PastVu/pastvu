@@ -22,6 +22,7 @@
 			color: #F5F5F5;
 			cursor: default;
 			white-space: nowrap;
+			text-decoration: none;
 			background-color: @headColor;
 
 			&.interact {
@@ -50,6 +51,11 @@
 				height: 0;
 				border-top: 8px solid @headColor;
 				border-right: 8px solid transparent;
+			}
+			&:hover {
+				&::after {
+					border-top-color: @headColorHover;
+				}
 			}
 		}
 		.cantComment {

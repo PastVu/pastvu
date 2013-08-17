@@ -86,7 +86,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (hl) {
 				if (hl.indexOf('comment-') === 0) {
+					//Навигация к конкретному комментарию
 					this.toComment = parseInt(hl.substr(8), 10) || undefined;
+				} else if (hl.indexOf('comments') === 0) {
+					//Навигация к секции комментариев
+					this.toComment = true;
 				}
 			}
 
@@ -106,7 +110,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.news.ccount());
 						this.commentsVM.nocomments(this.news.nocomments());
-						this.commentsActivate(this.news.ccount() > 30 ? 600 : 410);
+						this.commentsActivate(this.toComment ? 100 : (this.news.ccount() > 30 ? 600 : 410));
 					}.bind(this)});
 
 					this.makeBinding();
@@ -183,7 +187,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		commentsGet: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.news.ccount() > 30 ? 750 : 400);
+			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 100 : (this.news.ccount() > 30 ? 750 : 400));
 		},
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.news.cid(), function () {
@@ -193,15 +197,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}, this);
 		},
 
-		scrollToPhoto: function (duration, cb, ctx) {
-			var $wrap = this.$dom.find('.photoImgWrap');
-
-			$(window).scrollTo($wrap, {duration: duration || 400, onAfter: function () {
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx);
-				}
-			}});
-		},
 		scrollTo: function () {
 			if (this.toFrag) {
 				this.commentsVM.highlightOff();
