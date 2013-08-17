@@ -5,6 +5,46 @@
 .fullComments {
 	position: relative;
 
+	.commentsHead {
+		.title {
+			display: inline-block;
+			font-weight: bold;
+			font-size: 16px;
+		}
+		.count {
+			display: inline-block;
+			background-position: 0 50%;
+			background-repeat: no-repeat;
+		}
+		.addZero {
+			display: inline-block;
+			cursor: pointer;
+			&:hover {
+				color: @MainBlueColor;
+			}
+		}
+		.noComments {
+			display: inline-block;
+			cursor: pointer;
+			&:hover {
+				color: @MainBlueColor;
+			}
+		}
+		.cantComment {
+			color: #f00;
+		}
+		.commentsLoad {
+			position: relative;
+			display: inline-block;
+			width: 70px;
+			height: 20px;
+			margin-left: 20px;
+			background-image: url(/img/misc/load.gif);
+			background-repeat: no-repeat;
+			background-position: 0 50%;
+		}
+	}
+
 	.commentBody {
 		min-height: 53px;
 	}

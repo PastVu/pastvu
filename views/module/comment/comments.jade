@@ -1,4 +1,27 @@
 .fullComments(data-bind="with: repository[M!M]")
+	.commentsHead
+		//ko if: canAction() || count()
+		.title Комментарии
+		.dotDelimeter ·
+		.count(data-bind="text: count()")
+		//ko if: auth.loggedIn() && canAction()
+		.dotDelimeter ·
+		.addZero(data-bind="click: replyZero") Добавить
+		// /ko
+		//ko if: canManage()
+		//ko if: nocomments()
+		.dotDelimeter ·
+		span.cantComment Комментарии запрещены
+		// /ko
+		.dotDelimeter ·
+		.noComments(data-bind="click: setNoComments")
+			i(data-bind="css: nocomments() ? 'icon-ok-sign' : 'icon-minus-sign'")
+			| &nbsp;
+			span(data-bind="text: nocomments() ? 'Разрешить комментирование' : 'Запретить комментирование'")
+		// /ko
+		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
+		// /ko
+
 	ul.media-list(data-bind="css: {loggedIn: canAction(), canFrag: canFrag}")
 		//ko template: {name: canAction() ? 'commentTplReg' : 'commentTplPure', foreach: comments}
 		// /ko

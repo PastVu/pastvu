@@ -47,7 +47,9 @@ var FragmentSchema = new Schema({
 		vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
 		vcount: {type: Number, index: true}, //Кол-во просмотров всего
 		ccount: {type: Number, index: true}, //Кол-во комментариев
-		frags: [FragmentSchema] //Фрагменты с комментариями
+		frags: [FragmentSchema], //Фрагменты с комментариями
+
+		nocomments: {type: Boolean} //Запретить комментирование
 	},
 
 	PhotoSchema_Fresh = new Schema(commonStructure, {collection: 'photos_fresh', strict: true}),

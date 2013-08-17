@@ -296,6 +296,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
 						this.commentsVM.setCid(cid);
+						//this.commentsVM.activate(this.p.canComment && this.p.canComment());
 						//Если есть комментарии, пытаемся их активировать с необходимой задержкой
 						if (!editMode && this.p.ccount() > 0) {
 							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);

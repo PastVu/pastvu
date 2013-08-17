@@ -52,7 +52,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 
 				vdcount: 0,
 				vwcount: 0,
-				vcount: 0
+				vcount: 0,
+
+				nocomments: false
 			}
 		},
 		canDef = {

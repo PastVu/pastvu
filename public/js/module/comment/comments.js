@@ -9,18 +9,26 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		jade: jade,
 		options: {
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
-			active: true //Можно ли писать комментарии
+			count: 0,
+			nocomments: false //Разрешены ли писать комментарии
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.type = this.options.type;
 			this.cid = null;
-			this.active = ko.observable(this.options.active);
+			this.count = ko.observable(this.options.count || 0);
+			this.nocomments = ko.observable(this.options.nocomments);
+
+			this.loading = ko.observable(false);
+			this.exe = ko.observable(false);
+
+			this.canManage = this.co.canAction = ko.computed(function () {
+				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
+			}, this);
 			this.canAction = this.co.canAction = ko.computed(function () {
-				return this.auth.loggedIn() && (this.active() || this.auth.iAm.role() > 9);
+				return this.auth.loggedIn() && (this.nocomments() || this.auth.iAm.role() > 9);
 			}, this);
 			this.canFrag = this.type === 'photo';
-			this.exe = ko.observable(false);
 
 			this.comments = ko.observableArray();
 			this.users = {};
@@ -82,6 +90,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.comments([]);
 			this.users = {};
 			this.addMeToCommentsUsers();
+			this.loading(false);
 		},
 		addMeToCommentsUsers: function () {
 			if (this.canAction() && this.users[this.auth.iAm.login()] === undefined) {
@@ -421,7 +430,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						}
 
 						this.auth.setProps({ccount: this.auth.iAm.ccount() + 1}); //Инкрементим комментарии пользователя
-						this.parentModule.commentCountIncrement(1); //Инкрементим комментарии фотографии
+						this.count(this.count() + 1);
+						this.parentModule.commentCountIncrement(1);
 						if (this.canFrag && Utils.isType('object', result.frag)) {
 							this.parentModule.fragAdd(result.frag); //Если добавили фрагмент вставляем его в фотографию
 						}
@@ -566,6 +576,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 									$noty.close();
 									if (!result.error) {
 										if (Utils.isType('number', result.countComments)) {
+											this.count(this.count() - result.countComments);
 											this.parentModule.commentCountIncrement(-result.countComments);
 										}
 
@@ -589,10 +600,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					]
 				}
 			);
-		},
-
-		activate: function (val) {
-			this.active(!!val);
 		},
 
 		//Вызов модального окна с модулем просмотра истории комментария
@@ -620,6 +627,18 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					}
 				);
 			}
+		},
+
+		setNoComments: function () {
+			socket.once('setNoCommentsResult', function (data) {
+				if (!data || data.error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					this.parentModule.setNoComments(data.nocomments);
+					this.commentsVM.nocomments(data.nocomments);
+				}
+			}.bind(this));
+			socket.emit('setNoComments', {cid: this.cid, type: this.type, val: !this.nocomments()});
 		},
 
 		onAvatarError: function (data, event) {

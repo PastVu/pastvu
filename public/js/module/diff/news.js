@@ -8,7 +8,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		pdate: new Date(),
 		title: 'Нет заголовка',
 		txt: '',
-		ccount: 0
+		ccount: 0,
+		nocomments: false
 	};
 
 	return Cliche.extend({
@@ -20,7 +21,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.canEdit = ko.observable(this.auth.loggedIn() && this.auth.iAm.role() > 9);
 
-			this.commentsLoading = ko.observable(false);
 			this.commentsInViewport = false;
 
 			this.scrollTimeout = null;
@@ -92,7 +92,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (!this.news || (this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid)) {
 				this.commentsVM.clear();
-				this.commentsLoading(false);
 				this.commentsInViewport = false;
 
 				this.viewScrollOff();
@@ -105,7 +104,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					Utils.title.setTitle({title: data.news.title});
 					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
 						this.commentsVM.setCid(cid);
-						this.commentsVM.activate(this.news.canComment());
+						this.commentsVM.count(this.news.ccount());
+						this.commentsVM.nocomments(this.news.nocomments());
 						this.commentsActivate(this.news.ccount() > 30 ? 600 : 410);
 					}.bind(this)});
 
@@ -129,11 +129,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				} else {
 					_.defaults(data.news, newsDefault);
 					data.news.user.avatar = data.news.user.avatar ? P.preaddr + '/_a/d/' + data.news.user.avatar : '/img/caps/avatar.png';
-					data.news.canComment = !data.news.nocomments;
 					if (this.news) {
 						this.news = ko_mapping.fromJS(data.news, this.news);
 					} else {
 						this.news = ko_mapping.fromJS(data.news);
+						this.canComment = this.co.canComment = ko.computed(function () {
+							return !this.news.nocomments() || this.canEdit();
+						}, this);
 					}
 				}
 
@@ -160,8 +162,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		commentsActivate: function (checkTimeout) {
 			if (!this.commentsViewportTimeout) {
-				this.commentsLoading(true);
 				this.viewScrollOn();
+				this.commentsVM.loading(true);
 				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
 			}
 		},
@@ -185,7 +187,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.news.cid(), function () {
-				this.commentsLoading(false);
+				this.commentsVM.loading(false);
 				this.commentsVM.show();
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
@@ -230,19 +232,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		commentCountIncrement: function (delta) {
 			this.news.ccount(this.news.ccount() + delta);
 		},
-		commentAdd: function () {
-			this.commentsVM.replyZero();
-		},
-		setNoComments: function () {
-			socket.once('setNoCommentsResult', function (data) {
-				if (!data || data.error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				} else {
-					this.news.canComment(!data.nocomments);
-					this.commentsVM.activate(!data.nocomments);
-				}
-			}.bind(this));
-			socket.emit('setNoComments', {cid: this.news.cid(), type: 'news', val: this.news.canComment()});
+		setNoComments: function (val) {
+			this.news.nocomments(val);
 		},
 
 		onImgLoad: function (data, event) {

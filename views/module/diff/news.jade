@@ -22,23 +22,4 @@
 				.newsTxt(data-bind="html: news.txt()")
 	hr
 	.newsComments.clearfix
-		.commentsHead Комментарии
-		.dotDelimeter ·
-		.commentsCount(data-bind="text: news.ccount()")
-		//ko if: auth.loggedIn()
-		.dotDelimeter ·
-		.commentsAdd(data-bind="click: commentAdd") Добавить
-		// /ko
-		//ko if: canEdit()
-		//ko if: !news.canComment()
-		.dotDelimeter ·
-		span.cantComment Комментарии запрещены
-		// /ko
-		.dotDelimeter ·
-		.noComments(data-bind="click: setNoComments")
-			i(data-bind="css: news.canComment() ? 'icon-minus-sign' : 'icon-ok-sign'")
-			| &nbsp;
-			span(data-bind="text: news.canComment() ? 'Запретить комментирование' : 'Разрешить комментирование'")
-		// /ko
-		.commentsLoad(data-bind="style: {display: commentsLoading() ? '' : 'none'}") &nbsp;
 		.photoCommentsContainer.mContainer.mHidden(data-bind="allowBindings: false")
