@@ -4,6 +4,7 @@
 var path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
+	util = require('util'),
 	gm = require('gm'),
 	step = require('step'),
 	_existsSync = fs.existsSync || path.existsSync, // Since Node 0.8, .existsSync() moved from path to fs
@@ -92,12 +93,14 @@ var Utils = require('./commons/Utils.js'),
 		form.uploadDir = options.incomeDir;
 		form
 			.on('fileBegin', function (name, file) {
+				console.log(arguments);
 				tmpFiles.push(file.path);
 				var fileInfo = new FileInfo(file, req, true);
 				map[path.basename(file.path)] = fileInfo;
 				files.push(fileInfo);
 			})
 			.on('file', function (name, file) {
+				console.log(arguments);
 				var fileInfo = map[path.basename(file.path)];
 
 				fileInfo.size = file.size;
@@ -120,6 +123,7 @@ var Utils = require('./commons/Utils.js'),
 				}
 			})
 			.on('end', function () {
+				console.log(99);
 				counter -= 1;
 				if (!counter) {
 					step(
@@ -142,7 +146,9 @@ var Utils = require('./commons/Utils.js'),
 					);
 				}
 			})
-			.parse(req);
+			.parse(req, function (err, fields, files) {
+				console.dir(util.inspect({fields: fields, files: files}));
+			});
 	},
 	serve = function (req, res) {
 		if (req.url !== '/upload') {

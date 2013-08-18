@@ -94,6 +94,13 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.userInited = true;
 			this.show();
 		},
+
+		avaChange: function (data, event) {
+			var $form = $(event.target.parentNode);
+			$.post('http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload', $form.serialize(), function(json) {
+				alert(json);
+			}, 'json');
+		},
 		onAvatarLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
 			data = event = null;
