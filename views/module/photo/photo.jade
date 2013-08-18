@@ -53,17 +53,7 @@
 						// /ko
 				// /ko
 		.row-fluid.photoComments
-			//ko if: !edit() && !p.fresh()
-			.commentsHead Комментарии
-			.dotDelimeter ·
-			.commentsCount(data-bind="text: p.ccount()")
-			//ko if: auth.loggedIn()
-			.dotDelimeter ·
-			.commentsAdd(data-bind="click: commentAdd") Добавить
-			// /ko
-			.commentsLoad(data-bind="style: {display: commentsLoading() ? '' : 'none'}") &nbsp;
-			// /ko
-			.photoCommentsContainer.mContainer.mHidden(data-bind="allowBindings: false")
+			.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
 	.row-fluid.heightExpander
 
 

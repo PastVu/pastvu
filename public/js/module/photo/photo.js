@@ -115,7 +115,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			});
 
-			this.commentsLoading = ko.observable(false);
 			this.commentsInViewport = false;
 
 			this.scrollTimeout = null;
@@ -140,7 +139,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.childs = [
 				{
 					module: 'm/comment/comments',
-					container: '.photoCommentsContainer',
+					container: '.commentsContainer',
 					options: {type: 'photo', autoShowOff: true},
 					ctx: this,
 					callback: function (vm) {
@@ -255,9 +254,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (hl) {
 				if (hl.indexOf('comment-') === 0) {
-					this.toComment = parseInt(hl.substr(8), 10) || undefined;
+					this.toComment = parseInt(hl.substr(8), 10) || undefined; //Навигация к конкретному комментарию
+				} else if (hl.indexOf('comments') === 0) {
+					this.toComment = true; //Навигация к секции комментариев
 				} else if (hl.indexOf('frag-') === 0) {
-					this.toFrag = parseInt(hl.substr(5), 10) || undefined;
+					this.toFrag = parseInt(hl.substr(5), 10) || undefined; //Навигация к фрагменту
 				}
 			}
 
@@ -265,7 +266,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.photoLoading(true);
 
 				this.commentsVM.clear();
-				this.commentsLoading(false);
 				this.commentsInViewport = false;
 
 				this.viewScrollOff();
@@ -296,11 +296,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
 
 						this.commentsVM.setCid(cid);
-						//this.commentsVM.activate(this.p.canComment && this.p.canComment());
-						//Если есть комментарии, пытаемся их активировать с необходимой задержкой
-						if (!editMode && this.p.ccount() > 0) {
-							this.commentsActivate(this.p.ccount() > 30 ? 500 : 300);
-						}
+						this.commentsVM.count(this.p.ccount());
+						this.commentsVM.nocomments(this.p.nocomments());
+						this.commentsActivate(this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300));
 
 						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
 						if (this.binded) {
@@ -893,18 +891,21 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		commentsActivate: function (checkTimeout) {
-			//Активируем, если фото не новое, не редактируется и еще не проверяется на активацию
-			if (!this.edit() && !this.p.fresh() && !this.commentsViewportTimeout) {
-				this.commentsLoading(true);
-				this.viewScrollOn();
-				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
+			//Активируем, если фото не новое и не редактируется
+			if (!this.edit() && !this.p.fresh()) {
+				//Если есть комментарии и еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
+				if (!this.commentsViewportTimeout) {
+					this.viewScrollOn();
+					this.commentsVM.loading(true);
+					this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
+				}
+				this.commentsVM.show();
 			}
 		},
 		commentsDeActivate: function () {
-			this.commentsInViewport = false;
-			this.commentsLoading(true);
 			this.viewScrollOff();
 			this.commentsVM.hide();
+			this.commentsInViewport = false;
 		},
 		commentsCheckInViewport: function () {
 			window.clearTimeout(this.commentsViewportTimeout);
@@ -922,12 +923,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		commentsGet: function () {
 			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.p.ccount() > 30 ? 750 : 400);
+			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
 		},
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.p.cid(), function () {
-				this.commentsLoading(false);
-				this.commentsVM.show();
+				this.commentsVM.loading(false);
+				this.commentsVM.showTree(true);
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
 		},
@@ -972,8 +973,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.originData.ccount = this.originData.ccount + delta;
 			this.p.ccount(this.originData.ccount);
 		},
-		commentAdd: function () {
-			this.commentsVM.replyZero();
+		setNoComments: function (val) {
+			this.p.nocomments(val);
 		},
 
 

@@ -117,7 +117,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					this.makeBinding();
 					ga('send', 'pageview');
 				}, this);
-			} else if (this.toFrag || this.toComment) {
+			} else if (this.toComment) {
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
 			}
 		},
@@ -199,30 +199,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		scrollTo: function () {
-			if (this.toFrag) {
-				this.commentsVM.highlightOff();
-				this.scrollToFrag(this.toFrag);
-			} else if (this.toComment) {
-				this.highlightFragOff();
+			if (this.toComment) {
 				this.commentsVM.scrollTo(this.toComment);
 			}
-		},
-		scrollToFrag: function (frag) {
-			var $element = $('.photoFrag[data-cid="' + frag + '"]');
-
-			if ($element && $element.length === 1) {
-				this.highlightFragOff();
-				$(window).scrollTo($element, {duration: 400, onAfter: function () {
-					this.highlightFrag(frag);
-				}.bind(this)});
-			}
-			return $element;
-		},
-		highlightFrag: function (frag) {
-			this.$dom.find('.photoFrag[data-cid="' + frag + '"]').addClass('hl');
-		},
-		highlightFragOff: function () {
-			this.$dom.find('.photoFrag.hl').removeClass('hl');
 		},
 
 		commentCountIncrement: function (delta) {
