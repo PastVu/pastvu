@@ -9,8 +9,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		jade: jade,
 		options: {
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
-			count: 0,
-			nocomments: false //Разрешены ли писать комментарии
+			count: 0, //Начальное кол-во комментариев
+			autoShowOff: false, //Выключить автоматический show после создания
+			nocomments: false //Запрещено ли писать комментарии
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
@@ -20,13 +21,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.nocomments = ko.observable(this.options.nocomments);
 
 			this.loading = ko.observable(false);
+			this.showTree = ko.observable(false);
 			this.exe = ko.observable(false);
 
 			this.canManage = this.co.canAction = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
 			}, this);
 			this.canAction = this.co.canAction = ko.computed(function () {
-				return this.auth.loggedIn() && (this.nocomments() || this.auth.iAm.role() > 9);
+				return this.auth.loggedIn() && (!this.nocomments() || this.auth.iAm.role() > 9);
 			}, this);
 			this.canFrag = this.type === 'photo';
 
@@ -58,6 +60,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 
 			if (!this.options.autoShowOff) {
+				this.showTree(true);
 				this.show();
 			}
 		},
@@ -73,6 +76,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				return;
 			}
 			globalVM.func.hideContainer(this.$container);
+			this.showTree(false);
 			this.showing = false;
 		},
 

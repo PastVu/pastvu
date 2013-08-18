@@ -110,6 +110,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.news.ccount());
 						this.commentsVM.nocomments(this.news.nocomments());
+						this.commentsVM.show();
 						this.commentsActivate(this.toComment ? 100 : (this.news.ccount() > 30 ? 600 : 410));
 					}.bind(this)});
 
@@ -192,7 +193,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		commentsRecieve: function () {
 			this.commentsVM.recieve(this.news.cid(), function () {
 				this.commentsVM.loading(false);
-				this.commentsVM.show();
+				this.commentsVM.showTree(true);
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
 			}, this);
 		},

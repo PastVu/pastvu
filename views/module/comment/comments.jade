@@ -18,6 +18,7 @@
 		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 		// /ko
 
+	//ko if: showTree()
 	ul.media-list(data-bind="css: {loggedIn: canAction(), canFrag: canFrag}")
 		//ko template: {name: canAction() ? 'commentTplReg' : 'commentTplPure', foreach: comments}
 		// /ko
@@ -25,6 +26,7 @@
 		//ko template: {name: 'replyTpl', data: dataForZeroReply}
 		// /ko
 		// /ko
+	// /ko
 
 	script(id="commentTplPure", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}")

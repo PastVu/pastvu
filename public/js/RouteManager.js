@@ -173,7 +173,6 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			if (!href || href.length === 0 || _this.blockHrefs) {
 				evt.preventDefault();
 			} else if (target !== '_blank') {
-				evt.preventDefault();
 				if (href.indexOf('?') === 0 && href.indexOf('=') > 0) {
 					//Если весь href состоит только из параметров '?x=1&y=1'
 					paramsVals = Utils.getURLParameters(href);
@@ -198,8 +197,10 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 						}
 					});
 
+					evt.preventDefault(); //Должен быть внутри этих if, т.к. если они не подходят должен продолжиться стандартный переход по ссылке
 					_this.navigateToUrl(pathname + paramsStringNew.substring(0, paramsStringNew.length-1));
 				} else if (_this.testUrl(href)) {
+					evt.preventDefault();
 					_this.navigateToUrl(href);
 				}
 			}
