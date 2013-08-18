@@ -22,6 +22,10 @@
 						i(data-time-icon="icon-time", data-date-icon="icon-calendar")
 				// /ko
 		.control-group
+			label.control-label Без комментариев
+			.controls
+				input(type="checkbox", data-bind="checked: news.nocomments")
+		.control-group
 			.textName
 				button.btn-strict.btn-strict-small.toggleNotice(type="button", data-bind="click: toggleNotice")
 					span(data-bind="text: noticeExists() ? 'Убрать краткую версию' : 'Добавить краткую версию'")

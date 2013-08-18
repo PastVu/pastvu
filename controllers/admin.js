@@ -59,6 +59,7 @@ function saveNews(data, cb) {
 			novel.title = data.title;
 			novel.notice = data.notice;
 			novel.txt = data.txt;
+			novel.nocomments = data.nocomments ? true : undefined;
 			novel.save(this);
 		},
 		function (err, novel) {

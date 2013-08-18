@@ -121,7 +121,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.commentsRecieveTimeout = null;
 			this.commentsViewportTimeout = null;
 
-			this.$comments = this.$dom.find('.photoComments');
+			this.$comments = this.$dom.find('.commentsContainer');
 
 			this.descFocusBind = this.inputFocus.bind(this);
 			this.descLabelClickBind = this.inputLabelClick.bind(this);

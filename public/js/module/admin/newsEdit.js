@@ -28,7 +28,8 @@ define([
 				tdate: '',
 				title: '',
 				notice: '',
-				txt: ''
+				txt: '',
+				nocomments: false
 			});
 
 			this.$dom.find('textarea#newsPrimary').redactor();
