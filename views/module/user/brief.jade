@@ -2,9 +2,14 @@
 	.row-fluid
 		.avatar.fringe
 			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
-			//-button.btn-strict.btn-strict-small#avatar_edit(type="button", data-bind="event: {}, style: {display: can_avatar() ? '' : 'none'}")
+			//ko if:can_avatar()
+			form.avaForm(method="POST", enctype="multipart/form-data", action="/upload")
+				input.avatarLogin(type="hidden", name="login", readonly="1", data-bind="")
+				input.avatarInput(type="file", name="avafile")
+			button.btn-strict.btn-strict-small.avaSelect(onclick="$('.avatarInput').trigger('click');")
 				i.icon-picture.icon-white
-				span Change avatar
+				span Сменить
+			// /ko
 	//-.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
 		button.btn-strict(type="button", data-bind="event: {}")
 			i.icon-envelope.icon-white

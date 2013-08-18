@@ -32,7 +32,26 @@
 			opacity: 0;
 		}
 
-		#avatar_edit {
+		.avaForm {
+			position: absolute;
+			width: 0;
+			height: 0;
+			border: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		.avatarInput {
+			position: absolute;
+			display: block;
+			width: 0;
+			height: 0;
+			border: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		.avaSelect {
 			display: none;
 			position: absolute;
 			width: 100%;
@@ -48,10 +67,10 @@
 			.box-shadow(~'0 -1px 0 0 #000');
 		}
 
-		&:hover #avatar_edit {
+		&:hover .avaSelect {
 			display: block;
 		}
-		&:hover #avatar_edit:hover {
+		&:hover .avaSelect:hover {
 			background-color: #285991;
 		}
 
