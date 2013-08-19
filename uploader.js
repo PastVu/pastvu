@@ -98,8 +98,6 @@ var Utils = require('./commons/Utils.js'),
 			map = {},
 			counter = 1;
 
-	   console.dir(arguments);
-
 		form.uploadDir = options.incomeDir;
 		form
 			.on('fileBegin', function (name, file) {
@@ -251,13 +249,33 @@ function validateAvatar(fileInfo, cb) {
 			return cb();
 		}
 		var w = size && Number(size.width),
-			h = size && Number(size.height);
+			h = size && Number(size.height),
+			min = Math.min(w, h);
 
 		if (!w || !h || w < 100 || h < 100) {
 			fileInfo.error = 'fpx';
 			return cb();
 		}
-		cb();
+
+		if (w > 100 || h > 100) {
+			//Обрезаем из центра по минимальному размеру и ресайзим до 100px
+			gm(options.incomeDir + fileInfo.file)
+				.gravity('Center')
+				.quality(90)
+				.filter('Sinc')
+				.noProfile() //Убираем EXIF
+				.crop(min, min)
+				.resize(100, 100)
+				.write(options.incomeDir + fileInfo.file, function (err) {
+					if (err) {
+						console.log('~~~~', 'GM avatar resize error');
+						fileInfo.error = 'fpx';
+					}
+					cb();
+				});
+		} else {
+			cb();
+		}
 	});
 }
 
