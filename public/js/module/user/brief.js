@@ -39,7 +39,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.showing = true;
 		},
 		hide: function () {
-			$(document).off('click', this.avaActionToggleBind);
+			this.avaUploadDestroy(false);
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -79,9 +79,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 				},
 				owner: this
 			});
-			this.can_avatar = this.co.can_avatar = ko.computed({
+			this.canAva = this.co.canAva = ko.computed({
 				read: function () {
-					return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login());
+					return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login() || this.auth.iAm.role > 9);
 				},
 				owner: this
 			});
@@ -98,45 +98,17 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			}
 			this.userInited = true;
 			this.show();
-
-			this.subscriptions.canAvatarSubscr = this.can_avatar.subscribe(this.avaUploadSwitch, this);
-			this.avaUploadSwitch(this.can_avatar());
 		},
 
 		avaActionToggle: function (vm, e) {
-			var event = e || vm; //Среагировав на клик vm будет событием
+			var currentStatus = this.avaction(),
+				event = e || vm; //Среагировав на клик vm будет событием
 
-			this.avaction(!this.avaction());
-			if (this.avaction()) {
-				$(document).on('click', this.avaActionToggleBind);
+			if (currentStatus) {
+				this.avaUploadDestroy();
+				this.avaction(false);
 			} else {
-				$(document).off('click', this.avaActionToggleBind);
-			}
-			if (event.stopPropagation) {
-				event.stopPropagation();
-			}
-			return false;
-		},
-		avaSelect: function (vm, e) {
-			if (e.stopPropagation) {
-				e.stopPropagation();
-			}
-			//Генерируем клик по инпуту, выключив перед этим клики по документу,
-			//а потом опять его включив, чтобы не сработал его хендлер и не закрыл кнопки
-			$(document).off('click', this.avaActionToggleBind);
-			this.$dom.find('.avaInput').trigger('click');
-			$(document).on('click', this.avaActionToggleBind);
-			return false;
-		},
-		avaDel: function (vm, e) {
-			if (e.stopPropagation) {
-				e.stopPropagation();
-			}
-			return false;
-		},
-
-		avaUploadSwitch: function (val) {
-			if (val && !this.$fileupload) {
+				this.avaction(true);
 				require(['jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function () {
 					this.$fileupload = this.$dom.find('.avaInput');
 					this.$fileupload.fileupload();
@@ -151,15 +123,39 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 						done: this.avaDone.bind(this),
 						fail: this.avaFail.bind(this)
 					});
+					$(document).on('click', this.avaActionToggleBind);
 				}.bind(this));
-
 			}
-			if (!val && this.$fileupload) {
-				this.$fileupload.fileupload('disable');
-				this.$fileupload.fileupload('destroy');
-				delete this.$fileupload;
+			if (event.stopPropagation) {
+				event.stopPropagation();
 			}
+			return false;
 		},
+		avaUploadDestroy: function () {
+			if (this.$fileupload && this.$fileupload.fileupload) {
+				this.$dom.find('.avaInput').fileupload('destroy');
+			}
+			delete this.$fileupload;
+			$(document).off('click', this.avaActionToggleBind);
+		},
+		avaSelect: function (vm, e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			//Генерируем клик по инпуту, выключив перед этим клик по документу,
+			//а потом опять его включив, чтобы не сработал его хендлер и не закрыл кнопки
+			$(document).off('click', this.avaActionToggleBind);
+			this.$dom.find('.avaInput').trigger('click');
+			$(document).on('click', this.avaActionToggleBind);
+			return false;
+		},
+		avaDel: function (vm, e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			return false;
+		},
+
 		avaSubmit: function (e, data) {
 			this.avaexe(true);
 		},

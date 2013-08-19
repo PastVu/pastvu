@@ -2,7 +2,10 @@
 	.row-fluid
 		.avatar.fringe
 			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvaLoad, error: onAvaError}")
-			//ko if: can_avatar()
+			//ko if: avaexe()
+			.avaLoadCurtain
+			// /ko
+			//ko if: canAva()
 			button.btn-strict.btn-strict-small.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
 				i.icon-pencil.icon-white
 			//ko if: avaction()
