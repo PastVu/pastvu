@@ -24,58 +24,47 @@
 	}
 
 	.avatar {
-		overflow: hidden;
+		position: relative;
 
 		img {
 			width: 100px;
 			height: 100px;
 			opacity: 0;
 		}
-
-		.avaForm {
+		.avaEdit {
 			position: absolute;
-			width: 0;
-			height: 0;
-			border: 0;
-			padding: 0;
-			overflow: hidden;
+			top: -1px;
+			left: 101px;
+			height: 23px;
+			width: 27px;
 		}
-
-		.avatarInput {
+		.avaAction {
 			position: absolute;
-			display: block;
-			width: 0;
-			height: 0;
-			border: 0;
-			padding: 0;
-			opacity: 0;
-			overflow: hidden;
-		}
+			left: 101px;
+			top: 23px;
+			width: 92px;
 
-		.avaSelect {
-			display: none;
-			position: absolute;
-			width: 100%;
-			left: 0;
-			bottom: 0;
-			margin: 0;
-			border-bottom-width: 0;
-			border-left-width: 0;
-			border-right-width: 0;
-			padding-left: 0;
-			padding-right: 0;
-			background-color: fade(#285991, 70%);
-			.box-shadow(~'0 -1px 0 0 #000');
+			.avaInput {
+				position: absolute;
+				display: block;
+				width: 0;
+				height: 0;
+				border: 0;
+				padding: 0;
+				opacity: 0;
+				overflow: hidden;
+			}
+			.btn-strict {
+				display: block;
+				width: 100%;
+				margin-bottom: 1px;
+				padding: 0 2px 0 6px;
+				text-align: left;
+			}
 		}
-
-		&:hover .avaSelect {
-			display: block;
-		}
-		&:hover .avaSelect:hover {
-			background-color: #285991;
-		}
-
 	}
+
+
 
 	> .row-fluid > .block {
 		display: block;
@@ -112,12 +101,6 @@
 		&.mod {
 			color: #B87800;
 		}
-	}
-
-	#info_common {
-	}
-
-	#short_stat {
 	}
 
 	#leftSideDash {

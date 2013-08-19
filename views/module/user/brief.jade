@@ -1,21 +1,31 @@
 .user_brief(data-bind="with: repository[M!M]")
 	.row-fluid
 		.avatar.fringe
-			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvatarLoad, error: onAvatarError}")
-			//ko if:can_avatar()
-			input.avatarInput(type="file", name="files[]")
-			button.btn-strict.btn-strict-small.avaSelect(onclick="$('.avatarInput').trigger('click');")
-				i.icon-picture.icon-white
-				span Сменить
+			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvaLoad, error: onAvaError}")
+			//ko if: can_avatar()
+			button.btn-strict.btn-strict-small.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
+				i.icon-pencil.icon-white
+			//ko if: avaction()
+			.avaAction
+				input.avaInput(type="file", name="files[]")
+				button.btn-strict.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
+					i.icon-picture.icon-white
+					span Сменить
+				button.btn-strict.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
+					i.icon-remove.icon-white
+					span Удалить
 			// /ko
-	//-.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
-		button.btn-strict(type="button", data-bind="event: {}")
-			i.icon-envelope.icon-white
-			span Send message
+			// /ko
+
 	.row-fluid.userName(data-bind="text: user.disp()")
 	//ko if: rn()
 	.row-fluid.roleName(data-bind="text: rn(), css: rc()")
 	// /ko
+
+	//-.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
+		button.btn-strict(type="button", data-bind="event: {}")
+			i.icon-envelope.icon-white
+			span Send message
 	.row-fluid.statBlock
 		#info_common.block
 			.head Общее

@@ -18,6 +18,10 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.rn = ko.observable('');
 			this.rc = ko.observable('');
 
+			this.avaexe = ko.observable(false);
+			this.avaction = ko.observable(false);
+			this.avaActionToggleBind = this.avaActionToggle.bind(this);
+
 			if (this.options.userVM) {
 				this.user = this.options.userVM;
 				this.updateUserDepends();
@@ -35,6 +39,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.showing = true;
 		},
 		hide: function () {
+			$(document).off('click', this.avaActionToggleBind);
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -97,10 +102,43 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.subscriptions.canAvatarSubscr = this.can_avatar.subscribe(this.avaUploadSwitch, this);
 			this.avaUploadSwitch(this.can_avatar());
 		},
+
+		avaActionToggle: function (vm, e) {
+			var event = e || vm; //Среагировав на клик vm будет событием
+
+			this.avaction(!this.avaction());
+			if (this.avaction()) {
+				$(document).on('click', this.avaActionToggleBind);
+			} else {
+				$(document).off('click', this.avaActionToggleBind);
+			}
+			if (event.stopPropagation) {
+				event.stopPropagation();
+			}
+			return false;
+		},
+		avaSelect: function (vm, e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			//Генерируем клик по инпуту, выключив перед этим клики по документу,
+			//а потом опять его включив, чтобы не сработал его хендлер и не закрыл кнопки
+			$(document).off('click', this.avaActionToggleBind);
+			this.$dom.find('.avaInput').trigger('click');
+			$(document).on('click', this.avaActionToggleBind);
+			return false;
+		},
+		avaDel: function (vm, e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			return false;
+		},
+
 		avaUploadSwitch: function (val) {
 			if (val && !this.$fileupload) {
 				require(['jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function () {
-					this.$fileupload = this.$dom.find('.avatarInput');
+					this.$fileupload = this.$dom.find('.avaInput');
 					this.$fileupload.fileupload();
 					this.$fileupload.fileupload('option', {
 						url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/uploadava',
@@ -109,9 +147,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 						pasteZone: null,
 
 						//add: this.avaAdd.bind(this),
-						//submit: this.avaSubmit.bind(this),
+						submit: this.avaSubmit.bind(this),
 						done: this.avaDone.bind(this),
-						//fail: this.avaFail.bind(this)
+						fail: this.avaFail.bind(this)
 					});
 				}.bind(this));
 
@@ -122,41 +160,27 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 				delete this.$fileupload;
 			}
 		},
-		avaAdd: function (e, data) {
-			$.each(data.result.files, function (index, file) {
-				console.dir(file);
-			});
-		},
 		avaSubmit: function (e, data) {
-			data.files.forEach(function (file, index) {
-				file.ext.uploading(true);
-				file.ext.uploaded(false);
-			}, this);
+			this.avaexe(true);
 		},
 		avaDone: function (e, data) {
 			$.each(data.result.files, function (index, file) {
 				console.dir(file);
 			});
+			this.avaexe(false);
 		},
 		avaFail: function (e, data) {
 			$.each(data.result.files, function (index, file) {
 				console.dir(file);
 			});
+			this.avaexe(false);
 		},
 
-		avaChange: function (data, event) {
-			var $form = $(event.target.parentNode);
-			$.post('http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload', $form.serialize(), function (json) {
-				alert(json);
-			}, 'json');
-		},
-		onAvatarLoad: function (data, event) {
+		onAvaLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
-			data = event = null;
 		},
-		onAvatarError: function (data, event) {
+		onAvaError: function (data, event) {
 			$(event.target).attr('src', '/img/caps/avatar.png');
-			data = event = null;
 		}
 	});
 });
