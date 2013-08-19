@@ -56,9 +56,13 @@ var Utils = require('./commons/Utils.js'),
 	options = {
 		incomeDir: path.normalize(storePath + 'incoming/'),
 		targetDir: storePath + 'private/photos/',
-		minFileSize: 10240, //10kB
-		maxFileSize: 52428800, //50Mb
-		maxPostSize: 53477376, //51Mb,
+		targetDirAva: storePath + 'private/avatar/',
+		minPhotoSize: 10240, //10kB
+		maxPhotoSize: 52428800, //50Mb
+		maxPhotoPostSize: 53477376, //51Mb,
+		minAvaSize: 1024, //1kB
+		maxAvaSize: 5242880, //5Mb
+		maxAvaPostSize: 6291456, //6Mb,
 		acceptFileTypes: /\.(jpe?g|png)$/i,
 		accessControl: {
 			allowOrigin: '*',
@@ -83,30 +87,33 @@ var Utils = require('./commons/Utils.js'),
 		});
 		res.end(JSON.stringify(result));
 	},
-	postHandler = function (req, res, cb) {
+	postHandler = function (req, res, isAvatar, cb) {
 		var form = new formidable.IncomingForm(),
+			maxPostSize = isAvatar ? options.maxPhotoPostSize : options.maxAvaPostSize,
+			targetDir = isAvatar ? options.targetDirAva : options.targetDir,
+			validateFunc = isAvatar ? validateAvatar : validatePhoto,
+
 			tmpFiles = [],
 			files = [],
 			map = {},
 			counter = 1;
 
+	   console.dir(arguments);
+
 		form.uploadDir = options.incomeDir;
 		form
 			.on('fileBegin', function (name, file) {
-				console.log(arguments);
 				tmpFiles.push(file.path);
-				var fileInfo = new FileInfo(file, req, true);
+				var fileInfo = new FileInfo(file, targetDir, isAvatar ? 10 : 18, isAvatar ? 2 : 3);
+
 				map[path.basename(file.path)] = fileInfo;
 				files.push(fileInfo);
 			})
 			.on('file', function (name, file) {
-				console.log(arguments);
 				var fileInfo = map[path.basename(file.path)];
 
 				fileInfo.size = file.size;
-
-				//Переименовываем файл в сгенерированное нами имя
-				fs.renameSync(file.path, options.incomeDir + fileInfo.file);
+				fs.renameSync(file.path, options.incomeDir + fileInfo.file); //Переименовываем файл в сгенерированное нами имя
 			})
 			.on('aborted', function () {
 				tmpFiles.forEach(function (file) {
@@ -117,19 +124,18 @@ var Utils = require('./commons/Utils.js'),
 				console.dir(e);
 			})
 			.on('progress', function (bytesReceived/*, bytesExpected*/) {
-				if (bytesReceived > options.maxPostSize) {
+				if (bytesReceived > maxPostSize) {
 					console.log('~~~~', 'Too big, dropping');
 					req.connection.destroy();
 				}
 			})
 			.on('end', function () {
-				console.log(99);
 				counter -= 1;
 				if (!counter) {
 					step(
 						function () {
 							for (var i = files.length; i--;) {
-								validateFile(files[i], this.parallel());
+								validateFunc(files[i], this.parallel());
 							}
 						},
 						function () {
@@ -146,12 +152,10 @@ var Utils = require('./commons/Utils.js'),
 					);
 				}
 			})
-			.parse(req, function (err, fields, files) {
-				console.dir(util.inspect({fields: fields, files: files}));
-			});
+			.parse(req);
 	},
 	serve = function (req, res) {
-		if (req.url !== '/upload') {
+		if (req.url !== '/upload' && req.url !== '/uploadava') {
 			res.statusCode = 403;
 			res.end();
 			return;
@@ -164,7 +168,7 @@ var Utils = require('./commons/Utils.js'),
 			break;
 		case 'POST':
 			setNoCacheHeaders(res);
-			postHandler(req, res, postHandlerResponse);
+			postHandler(req, res, req.url === '/uploadava', postHandlerResponse);
 			break;
 		default:
 			console.log(405);
@@ -173,40 +177,40 @@ var Utils = require('./commons/Utils.js'),
 		}
 	},
 
-	fileNameGen = function (name) {
-		return Utils.randomString(18, true) + name.substr(name.lastIndexOf('.'));
+	fileNameGen = function (name, len) {
+		return Utils.randomString(len || 10, true) + name.substr(name.lastIndexOf('.'));
 	},
-	fileNameDir = function (fileName) {
-		var result = fileName.substr(0, 3).replace(/(.)/gi, '$1/');
-		mkdirp.sync(options.targetDir + result);
+	fileNameDir = function (dir, fileName, depth) {
+		var result = fileName.substr(0, depth || 1).replace(/(.)/gi, '$1/');
+		mkdirp.sync(dir + result); //Создание папки
 		return result;
 	},
-	FileInfo = function (file) {
+	FileInfo = function (file, targetDir, nameLen, dirDepth) {
 		this.name = file.name;
 		this.size = file.size;
 		this.type = file.type;
-		this.createFileName();
+		this.createFileName(targetDir, nameLen, dirDepth);
 	};
 
-FileInfo.prototype.createFileName = function () {
-	this.file = fileNameGen(this.name);
-	this.fileDir = fileNameDir(this.file);
+FileInfo.prototype.createFileName = function (targetDir, nameLen, dirDepth) {
+	this.file = fileNameGen(this.name, nameLen);
+	this.fileDir = fileNameDir(targetDir, this.file, dirDepth);
 
 	//Циклично проверяем на существование файла с таким имемнем, пока не найдем уникальное
-	while (_existsSync(options.targetDir + this.fileDir + this.file)) {
-		this.file = fileNameGen(this.file);
-		this.fileDir = fileNameDir(this.file);
+	while (_existsSync(targetDir + this.fileDir + this.file)) {
+		this.file = fileNameGen(this.name, nameLen);
+		this.fileDir = fileNameDir(targetDir, this.file, dirDepth);
 	}
 };
 
-function validateFile(fileInfo, cb) {
+function validatePhoto(fileInfo, cb) {
 	if (!options.acceptFileTypes.test(fileInfo.name)) {
 		fileInfo.error = 'ftype';
 		return cb();
-	} else if (options.minFileSize && options.minFileSize > fileInfo.size) {
+	} else if (options.minPhotoSize && options.minPhotoSize > fileInfo.size) {
 		fileInfo.error = 'fmin';
 		return cb();
-	} else if (options.maxFileSize && options.maxFileSize < fileInfo.size) {
+	} else if (options.maxPhotoSize && options.maxPhotoSize < fileInfo.size) {
 		fileInfo.error = 'fmax';
 		return cb();
 	}
@@ -221,6 +225,35 @@ function validateFile(fileInfo, cb) {
 			h = size && Number(size.height);
 
 		if (!w || !h || w < 400 || h < 400 || (w < 800 && h < 800)) {
+			fileInfo.error = 'fpx';
+			return cb();
+		}
+		cb();
+	});
+}
+
+function validateAvatar(fileInfo, cb) {
+	if (!options.acceptFileTypes.test(fileInfo.name)) {
+		fileInfo.error = 'ftype';
+		return cb();
+	} else if (options.minAvaSize && options.minAvaSize > fileInfo.size) {
+		fileInfo.error = 'fmin';
+		return cb();
+	} else if (options.maxAvaSize && options.maxAvaSize < fileInfo.size) {
+		fileInfo.error = 'fmax';
+		return cb();
+	}
+
+	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
+		if (err) {
+			console.log('~~~~', 'GM size error');
+			fileInfo.error = 'fpx';
+			return cb();
+		}
+		var w = size && Number(size.width),
+			h = size && Number(size.height);
+
+		if (!w || !h || w < 100 || h < 100) {
 			fileInfo.error = 'fpx';
 			return cb();
 		}

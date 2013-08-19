@@ -103,7 +103,7 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 					this.$fileupload = this.$dom.find('.avatarInput');
 					this.$fileupload.fileupload();
 					this.$fileupload.fileupload('option', {
-						url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload',
+						url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/uploadava',
 						dataType: 'json',
 						dropZone: null,
 						pasteZone: null,
