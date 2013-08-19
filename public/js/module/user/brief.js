@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix' ], function (_, P, ko, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix'], function (_, P, ko, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -93,11 +93,60 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			}
 			this.userInited = true;
 			this.show();
+
+			this.subscriptions.canAvatarSubscr = this.can_avatar.subscribe(this.avaUploadSwitch, this);
+			this.avaUploadSwitch(this.can_avatar());
+		},
+		avaUploadSwitch: function (val) {
+			if (val && !this.$fileupload) {
+				require(['jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function () {
+					this.$fileupload = this.$dom.find('.avatarInput');
+					this.$fileupload.fileupload();
+					this.$fileupload.fileupload('option', {
+						url: 'http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload',
+						dataType: 'json',
+						dropZone: null,
+						pasteZone: null,
+
+						//add: this.avaAdd.bind(this),
+						//submit: this.avaSubmit.bind(this),
+						done: this.avaDone.bind(this),
+						//fail: this.avaFail.bind(this)
+					});
+				}.bind(this));
+
+			}
+			if (!val && this.$fileupload) {
+				this.$fileupload.fileupload('disable');
+				this.$fileupload.fileupload('destroy');
+				delete this.$fileupload;
+			}
+		},
+		avaAdd: function (e, data) {
+			$.each(data.result.files, function (index, file) {
+				console.dir(file);
+			});
+		},
+		avaSubmit: function (e, data) {
+			data.files.forEach(function (file, index) {
+				file.ext.uploading(true);
+				file.ext.uploaded(false);
+			}, this);
+		},
+		avaDone: function (e, data) {
+			$.each(data.result.files, function (index, file) {
+				console.dir(file);
+			});
+		},
+		avaFail: function (e, data) {
+			$.each(data.result.files, function (index, file) {
+				console.dir(file);
+			});
 		},
 
 		avaChange: function (data, event) {
 			var $form = $(event.target.parentNode);
-			$.post('http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload', $form.serialize(), function(json) {
+			$.post('http://' + P.settings.server.domain() + ':' + P.settings.server.uport() + '/upload', $form.serialize(), function (json) {
 				alert(json);
 			}, 'json');
 		},
