@@ -2,8 +2,16 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix'], function (_, P, ko, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix'], function (_, P, ko, socket, Cliche, globalVM, storage, User, jade) {
 	'use strict';
+
+	var mess = {
+		ftype: 'Тип файла не соответствует правилам',
+		fmax: 'Файл больше разрешенного размера',
+		fmin: 'Файл слишком мал',
+		fpx: 'Согласно правилам, размер изображения должен быть не менее 100px по каждой из сторон',
+		finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
+	};
 
 	return Cliche.extend({
 		jade: jade,
@@ -160,15 +168,26 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'mode
 			this.avaexe(true);
 		},
 		avaDone: function (e, data) {
-			$.each(data.result.files, function (index, file) {
-				console.dir(file);
-			});
-			this.avaexe(false);
+			var result = JSON.parse(data.result),
+				receivedFile = (result.files || [])[0];
+
+			if (receivedFile && receivedFile.file) {
+				if (receivedFile.error) {
+					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Ошибка создания фотографий', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					socket.once('changeAvatarResult', function (result) {
+						if (!result || result.error) {
+							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+							console.dir(result);
+						}
+						this.avaexe(false);
+					}.bind(this));
+					socket.emit('changeAvatar', {login: this.user.login(), file: receivedFile.file});
+				}
+			}
 		},
 		avaFail: function (e, data) {
-			$.each(data.result.files, function (index, file) {
-				console.dir(file);
-			});
+			window.noty({text: data && data.message || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
 			this.avaexe(false);
 		},
 

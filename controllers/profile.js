@@ -2,6 +2,7 @@
 
 var auth = require('./auth.js'),
 	_session = require('./_session.js'),
+	fs = require('fs'),
 	Settings,
 	User,
 	Utils = require('../commons/Utils.js'),
@@ -9,6 +10,9 @@ var auth = require('./auth.js'),
 	log4js = require('log4js'),
 	_ = require('lodash'),
 	logger,
+	incomeDir = global.appVar.storePath + 'incoming/',
+	privateDir = global.appVar.storePath + 'private/avatar/',
+	publicDir = global.appVar.storePath + 'public/avatar/',
 	msg = {
 		deny: 'You do not have permission for this action'
 	};
@@ -29,7 +33,7 @@ function saveUser(socket, data, cb) {
 	}
 	itsMe = iAm.login === login;
 
-	if(!itsMe && iAm.role < 10) {
+	if (!itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -41,7 +45,6 @@ function saveUser(socket, data, cb) {
 				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
-
 			}
 		},
 		function (err, user) {
@@ -99,7 +102,6 @@ function changeDispName(socket, data, cb) {
 				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
-
 			}
 		},
 		function (err, user) {
@@ -156,7 +158,6 @@ function changeEmail(socket, data, cb) {
 				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
-
 			}
 		},
 		function (err, u) {
@@ -205,6 +206,89 @@ function changeEmail(socket, data, cb) {
 	}
 }
 
+//Меняем аватар
+function changeAvatar(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline,
+		file,
+		fullfile;
+
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || data.file) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	file = data.file;
+	fullfile = file.replace(/((.)(.))/, "$2/$3/$1");
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, u) {
+			if (err && !u) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+			user = u;
+			fs.rename(incomeDir + file, privateDir + fullfile, this); //Из incoming в private
+		},
+		function filesToPiblicFolder(err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			copyFile(privateDir + fullfile, publicDir + fullfile, this.parallel());
+			//TODO: Конвертация в 50х50
+		},
+		function (err, user) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (itsOnline) {
+				_session.emitUser(user.login);
+			}
+			cb({message: 'ok', saved: 1, disp: user.disp});
+		}
+	);
+}
+
+function copyFile(source, target, cb) {
+	var cbCalled = false;
+
+	var rd = fs.createReadStream(source);
+	rd.on("error", function (err) {
+		done(err);
+	});
+
+	var wr = fs.createWriteStream(target);
+	wr.on("error", function (err) {
+		done(err);
+	});
+	wr.on("close", function (ex) {
+		done();
+	});
+
+	rd.pipe(wr);
+
+	function done(err) {
+		if (!cbCalled) {
+			cb(err);
+			cbCalled = true;
+		}
+	}
+}
+
+
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("profile.js");
 
@@ -234,6 +318,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('changeEmail', function (data) {
 			changeEmail(socket, data, function (resultData) {
 				socket.emit('changeEmailResult', resultData);
+			});
+		});
+
+		socket.on('changeAvatar', function (data) {
+			changeAvatar(socket, data, function (resultData) {
+				socket.emit('changeAvatarResult', resultData);
 			});
 		});
 	});
