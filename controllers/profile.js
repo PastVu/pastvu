@@ -1,8 +1,11 @@
 'use strict';
 
-var auth = require('./auth.js'),
+var fs = require('fs'),
+	path = require('path'),
+	mkdirp = require('mkdirp'),
+	gm = require('gm'),
+	auth = require('./auth.js'),
 	_session = require('./_session.js'),
-	fs = require('fs'),
 	Settings,
 	User,
 	Utils = require('../commons/Utils.js'),
@@ -11,8 +14,8 @@ var auth = require('./auth.js'),
 	_ = require('lodash'),
 	logger,
 	incomeDir = global.appVar.storePath + 'incoming/',
-	privateDir = global.appVar.storePath + 'private/avatar/',
-	publicDir = global.appVar.storePath + 'public/avatar/',
+	privateDir = global.appVar.storePath + 'private/avatars/',
+	publicDir = global.appVar.storePath + 'public/avatars/',
 	msg = {
 		deny: 'You do not have permission for this action'
 	};
@@ -219,7 +222,7 @@ function changeAvatar(socket, data, cb) {
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || data.file) {
+	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp( "^[a-z0-9]{10}\\.[a-z]{3}$", "").test(data.file)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -240,24 +243,45 @@ function changeAvatar(socket, data, cb) {
 			if (err && !u) {
 				return cb({message: err.message || 'Requested user does not exist', error: true});
 			}
+			var dirPrefix = fullfile.substr(0, 4);
 			user = u;
-			fs.rename(incomeDir + file, privateDir + fullfile, this); //Из incoming в private
+
+			//Переносим файл из incoming в private
+			fs.rename(incomeDir + file, path.normalize(privateDir + fullfile), this.parallel());
+
+			//Создаем папки в public
+			mkdirp(path.normalize(publicDir + 'd/' + dirPrefix), null, this.parallel());
+			mkdirp(path.normalize(publicDir + 'h/' + dirPrefix), null, this.parallel());
 		},
-		function filesToPiblicFolder(err) {
+		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			copyFile(privateDir + fullfile, publicDir + fullfile, this.parallel());
-			//TODO: Конвертация в 50х50
+			//Копирование 100px из private в public/d/
+			copyFile(privateDir + fullfile, publicDir + 'd/' + fullfile, this.parallel());
+
+			//Конвертация в 50px из private в public/h/
+			gm(privateDir + fullfile)
+				.quality(90)
+				.filter('Sinc')
+				.resize(50, 50)
+				.write(publicDir + 'h/' + fullfile, this.parallel());
 		},
-		function (err, user) {
+		function (err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			user.avatar = fullfile;
+			user.save(this);
+		},
+		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
 			if (itsOnline) {
-				_session.emitUser(user.login);
+				_session.emitUser(user.login, socket);
 			}
-			cb({message: 'ok', saved: 1, disp: user.disp});
+			cb({message: 'ok', avatar: user.avatar});
 		}
 	);
 }

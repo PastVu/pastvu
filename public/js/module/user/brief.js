@@ -168,17 +168,19 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			this.avaexe(true);
 		},
 		avaDone: function (e, data) {
-			var result = JSON.parse(data.result),
-				receivedFile = (result.files || [])[0];
+			var receivedFile = (data && data.result && data.result.files || [])[0];
 
 			if (receivedFile && receivedFile.file) {
 				if (receivedFile.error) {
-					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Ошибка создания фотографий', type: 'error', layout: 'center', timeout: 4000, force: true});
+					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+					this.avaexe(false);
 				} else {
 					socket.once('changeAvatarResult', function (result) {
-						if (!result || result.error) {
+						console.dir(result);
+						if (!result || result.error || !result.avatar) {
 							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
-							console.dir(result);
+						} else {
+							this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
 						}
 						this.avaexe(false);
 					}.bind(this));

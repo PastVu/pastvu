@@ -56,7 +56,7 @@ var Utils = require('./commons/Utils.js'),
 	options = {
 		incomeDir: path.normalize(storePath + 'incoming/'),
 		targetDir: storePath + 'private/photos/',
-		targetDirAva: storePath + 'private/avatar/',
+		targetDirAva: storePath + 'private/avatars/',
 		minPhotoSize: 10240, //10kB
 		maxPhotoSize: 52428800, //50Mb
 		maxPhotoPostSize: 53477376, //51Mb,
@@ -176,7 +176,7 @@ var Utils = require('./commons/Utils.js'),
 	},
 
 	fileNameGen = function (name, len) {
-		return Utils.randomString(len || 10, true) + name.substr(name.lastIndexOf('.'));
+		return Utils.randomString(len || 10, true) + name.substr(name.lastIndexOf('.')).toLowerCase();
 	},
 	fileNameDir = function (dir, fileName, depth) {
 		var result = fileName.substr(0, depth || 1).replace(/(.)/gi, '$1/');
