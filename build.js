@@ -77,11 +77,13 @@ var start = Date.now(),
 					'm/comment/comments', 'm/comment/hist',
 					'm/user/brief', 'm/user/comments', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
 				]
-			}/*,
-			{
-				name: "appMap",
-				include: ['m/auth', 'm/top', 'm/map/map']
 			},
+			{
+				name: "m/diff/about",
+				exclude: [
+					'underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM'
+				]
+			}/*,
 			{
 				name: "appUser",
 				include: ['m/auth', 'm/top', 'm/user/brief']
