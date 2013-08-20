@@ -1,4 +1,4 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель статистики пользователя
  */
@@ -166,17 +166,22 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 				if (receivedFile.error) {
 					window.noty({text: mess[receivedFile.error] || mess.finvalid || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
 					this.avaexe(false);
+					ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
 				} else {
 					socket.once('changeAvatarResult', function (result) {
 						if (!result || result.error || !result.avatar) {
 							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
-						} else if (this.user.login() !== this.auth.iAm.login()){
-							//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
-							var origin = storage.userImmediate(this.user.login()).origin;
-							origin.avatar = P.preaddr + '/_a/d/' + result.avatar;
-							origin.avatarth = P.preaddr + '/_a/h/' + result.avatar;
-							this.user.avatar(origin.avatar);
-							this.user.avatarth(origin.avatarth);
+							ga('send', 'event', 'avatar', 'upload', 'avatar upload error');
+						} else {
+							if (this.user.login() !== this.auth.iAm.login()) {
+								//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
+								var origin = storage.userImmediate(this.user.login()).origin;
+								origin.avatar = P.preaddr + '/_a/d/' + result.avatar;
+								origin.avatarth = P.preaddr + '/_a/h/' + result.avatar;
+								this.user.avatar(origin.avatar);
+								this.user.avatarth(origin.avatarth);
+							}
+							ga('send', 'event', 'avatar', 'upload', 'avatar upload success');
 						}
 						this.avaexe(false);
 					}.bind(this));
@@ -194,13 +199,16 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			socket.once('delAvatarResult', function (result) {
 				if (!result || result.error) {
 					window.noty({text: result && result.message || 'Ошибка удаления аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else if (this.user.login() !== this.auth.iAm.login()){
-					//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
-					var origin = storage.userImmediate(this.user.login()).origin;
-					origin.avatar = User.def.full.avatar;
-					origin.avatarth = User.def.full.avatarth;
-					this.user.avatar(origin.avatar);
-					this.user.avatarth(origin.avatarth);
+				} else {
+					if (this.user.login() !== this.auth.iAm.login()) {
+						//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
+						var origin = storage.userImmediate(this.user.login()).origin;
+						origin.avatar = User.def.full.avatar;
+						origin.avatarth = User.def.full.avatarth;
+						this.user.avatar(origin.avatar);
+						this.user.avatarth(origin.avatarth);
+					}
+					ga('send', 'event', 'avatar', 'delete', 'avatar delete');
 				}
 				this.avaexe(false);
 			}.bind(this));

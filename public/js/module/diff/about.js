@@ -18,7 +18,7 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
 				globalVM.func.showContainer(this.$container);
 				this.showing = true;
 
-				ga('send', 'event', 'about', 'open');
+				ga('send', 'event', 'about', 'open', 'about open');
 				//ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
 			}.bind(this));
 			socket.emit('giveAbout');
