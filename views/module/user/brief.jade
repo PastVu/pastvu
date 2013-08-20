@@ -14,9 +14,11 @@
 				button.btn-strict.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
 					i.icon-picture.icon-white
 					span Сменить
+				//ko if: avaExists()
 				button.btn-strict.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
 					i.icon-remove.icon-white
 					span Удалить
+				// /ko
 			// /ko
 			// /ko
 

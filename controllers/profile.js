@@ -334,21 +334,22 @@ function delAvatar(socket, data, cb) {
 				fs.unlink(path.normalize(privateDir + currentAvatar), dummyFn);
 				fs.unlink(path.normalize(publicDir + 'd/' + currentAvatar), dummyFn);
 				fs.unlink(path.normalize(publicDir + 'h/' + currentAvatar), dummyFn);
-			}
 
-			//Присваиваем и сохраняем новый аватар
-			user.avatar = undefined;
-			user.save(this);
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
+				user.avatar = undefined;
+				user.save(function (err) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					if (itsOnline) {
+						_session.emitUser(login);
+					}
+					cb({message: 'ok'});
+				});
+			} else {
+				cb({message: 'ok'});
 			}
-			if (itsOnline) {
-				_session.emitUser(login);
-			}
-			cb({message: 'ok'});
 		}
+
 	);
 }
 

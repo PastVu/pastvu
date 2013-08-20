@@ -81,18 +81,16 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			this.rn(this.user.role() > 9 ? '[Administrator]' : (this.user.role() > 4 ? '[Moderator]' : ''));
 		},
 		makeBinding: function () {
-			this.can_pm = this.co.can_pm = ko.computed({
-				read: function () {
-					return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());
-				},
-				owner: this
-			});
-			this.canAva = this.co.canAva = ko.computed({
-				read: function () {
-					return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login() || this.auth.iAm.role > 9);
-				},
-				owner: this
-			});
+			this.can_pm = this.co.can_pm = ko.computed(function () {
+				return this.auth.loggedIn() && (this.auth.iAm.login() !== this.user.login());
+			}, this);
+
+			this.avaExists = this.co.avaExists = ko.computed(function () {
+				return this.user.avatar() !== User.def.full.avatar;
+			}, this);
+			this.canAva = this.co.canAva = ko.computed(function () {
+				return this.auth.loggedIn() && (this.auth.iAm.login() === this.user.login() || this.auth.iAm.role() > 9);
+			}, this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -172,8 +170,13 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 					socket.once('changeAvatarResult', function (result) {
 						if (!result || result.error || !result.avatar) {
 							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
-						} else {
-							//this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
+						} else if (this.user.login() !== this.auth.iAm.login()){
+							//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
+							var origin = storage.userImmediate(this.user.login()).origin;
+							origin.avatar = P.preaddr + '/_a/d/' + result.avatar;
+							origin.avatarth = P.preaddr + '/_a/h/' + result.avatar;
+							this.user.avatar(origin.avatar);
+							this.user.avatarth(origin.avatarth);
 						}
 						this.avaexe(false);
 					}.bind(this));
@@ -191,8 +194,13 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			socket.once('delAvatarResult', function (result) {
 				if (!result || result.error) {
 					window.noty({text: result && result.message || 'Ошибка удаления аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else {
-					//this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
+				} else if (this.user.login() !== this.auth.iAm.login()){
+					//Если меняем не себе, обновляем модель вручную. Себе обновления пришлет _session
+					var origin = storage.userImmediate(this.user.login()).origin;
+					origin.avatar = User.def.full.avatar;
+					origin.avatarth = User.def.full.avatarth;
+					this.user.avatar(origin.avatar);
+					this.user.avatarth(origin.avatarth);
 				}
 				this.avaexe(false);
 			}.bind(this));
