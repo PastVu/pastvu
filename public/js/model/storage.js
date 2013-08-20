@@ -16,13 +16,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 					{cb: callback, ctx: context}
 				];
 				socket.once('takeUser', function (data) {
-					if (!data.error && data.login === login) {
-						User.factory(data, 'full');
-						storage.users[login] = {origin: data, vm: User.vm(data, undefined, true)};
+					if (data && !data.error && data.user && data.user.login === login) {
+						User.factory(data.user, 'full');
+						storage.users[login] = {origin: data.user, vm: User.vm(data.user, undefined, true)};
 					}
 					if (storage.waitings['u' + login]) {
 						storage.waitings['u' + login].forEach(function (item) {
-							item.cb.call(item.ctx, !data.error && data.login === login && storage.users[login]);
+							item.cb.call(item.ctx, !data.user.error && data.user.login === login && storage.users[login]);
 						});
 						delete storage.waitings['u' + login];
 					}

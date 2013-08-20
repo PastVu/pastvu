@@ -22,6 +22,38 @@ var fs = require('fs'),
 		deny: 'You do not have permission for this action'
 	};
 
+//Отдаем пользователя
+function giveUser(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline = false;
+
+	if (!Utils.isType('object', data) || !login) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user.toObject());
+			} else {
+				User.findOne({login: new RegExp('^' + login + '$', 'i'), active: true}, {_id: 0, pass: 0, activatedate: 0 }, {lean: true}, cb);
+			}
+		},
+		function (err, user) {
+			if (err && !user) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+			user.online = itsOnline;
+			cb({message: 'ok', user: user});
+		}
+	);
+}
+
 //Сохраняем изменения в профиле пользователя
 function saveUser(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
@@ -364,8 +396,8 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveUser', function (data) {
-			User.getUserPublic(data.login, function (err, user) {
-				socket.emit('takeUser', (user && user.toObject()) || {error: true, message: err && err.messagee});
+			giveUser(socket, data, function (result) {
+				socket.emit('takeUser', result);
 			});
 		});
 
