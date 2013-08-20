@@ -9,7 +9,7 @@
 					.flip-container
 						.flipper
 							div.front(style="background-image: url(/img/misc/Ilya.jpg)")
-							div.back(style="background-image: url(/_a/d/Ilya.png)")
+							div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Ilya'] + ')'}")
 								| Ilya
 					.lineBody
 						.humanName Илья Варламов
@@ -18,7 +18,7 @@
 					.flip-container
 						.flipper
 							div.front(style="background-image: url(/img/misc/Duche.jpg)")
-							div.back(style="background-image: url(/_a/d/Duche.png)")
+							div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['Duche'] + ')'}")
 								| Duche
 					.lineBody
 						.humanName Алексей Дук
@@ -28,7 +28,7 @@
 					.flip-container
 						.flipper
 							div.front(style="background-image: url(/img/misc/klimashkin.jpg)")
-							div.back(style="background-image: url(/_a/d/klimashkin.png)")
+							div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['klimashkin'] + ')'}")
 								| klimashkin
 					.lineBody
 						.humanName Павел Климашкин
@@ -37,7 +37,7 @@
 					.flip-container
 						.flipper
 							div.front(style="background-image: url(/img/misc/dema501.png)")
-							div.back(style="background-image: url(/_a/d/dema501.png)")
+							div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['dema501'] + ')'}")
 								| dema501
 					.lineBody
 						.humanName Дмитрий Башлов
@@ -46,7 +46,7 @@
 					.flip-container
 						.flipper
 							div.front(style="background-image: url(/img/misc/abdulla_hasan.png)")
-							div.back(style="background-image: url(/_a/d/abdulla_hasan.png)")
+							div.back(data-bind="style: {backgroundImage: 'url(/_a/d/' + avatars['abdulla_hasan'] + ')'}")
 								| abdulla_hasan
 					.lineBody
 						.humanName Anvar Paganini

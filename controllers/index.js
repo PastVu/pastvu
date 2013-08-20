@@ -295,6 +295,28 @@ function giveNewsPublic(data, cb) {
 	News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(cb);
 }
 
+/**
+ * Аватары для About
+ */
+var giveAbout = (function () {
+	var select = {_id: 0, login: 1, avatar: 1},
+		options = {lean: true};
+
+	return Utils.memoizeAsync(function (handler) {
+		User.find({login: {$in: ['Ilya', 'Duche', 'klimashkin', 'dema501', 'abdulla_hasan']}}, select, options, function (err, users) {
+			if (err || !users) {
+				users = [];
+			}
+			var result = {}, i;
+			for (i = users.length; i--;) {
+				result[users[i].login] = users[i].avatar || '/img/caps/avatar.png';
+			}
+			handler(result);
+		});
+	}, ms('1m'));
+}());
+
+
 module.exports.loadController = function (app, db, io) {
 	var logger = log4js.getLogger("index.js");
 	appvar = app;
@@ -339,6 +361,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveStats', function () {
 			giveStats(function (resultData) {
 				socket.emit('takeStats', resultData);
+			});
+		});
+
+		socket.on('giveAbout', function () {
+			giveAbout(function (resultData) {
+				socket.emit('takeAbout', resultData);
 			});
 		});
 	});
