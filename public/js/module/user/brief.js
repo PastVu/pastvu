@@ -157,12 +157,6 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			$(document).on('click', this.avaActionToggleBind);
 			return false;
 		},
-		avaDel: function (vm, e) {
-			if (e.stopPropagation) {
-				e.stopPropagation();
-			}
-			return false;
-		},
 
 		avaSubmit: function (e, data) {
 			this.avaexe(true);
@@ -176,11 +170,10 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 					this.avaexe(false);
 				} else {
 					socket.once('changeAvatarResult', function (result) {
-						console.dir(result);
 						if (!result || result.error || !result.avatar) {
 							window.noty({text: result && result.message || 'Ошибка создания аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
 						} else {
-							this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
+							//this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
 						}
 						this.avaexe(false);
 					}.bind(this));
@@ -191,6 +184,24 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 		avaFail: function (e, data) {
 			window.noty({text: data && data.message || 'Ошибка загрузки аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
 			this.avaexe(false);
+		},
+
+		avaDel: function (vm, e) {
+			this.avaexe(true);
+			socket.once('delAvatarResult', function (result) {
+				if (!result || result.error) {
+					window.noty({text: result && result.message || 'Ошибка удаления аватары', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					//this.user.avatar(P.preaddr + '/_a/d/' + result.avatar);
+				}
+				this.avaexe(false);
+			}.bind(this));
+			socket.emit('delAvatar', {login: this.user.login()});
+
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			return false;
 		},
 
 		onAvaLoad: function (data, event) {

@@ -61,8 +61,8 @@ var Utils = require('./commons/Utils.js'),
 		maxPhotoSize: 52428800, //50Mb
 		maxPhotoPostSize: 53477376, //51Mb,
 		minAvaSize: 1024, //1kB
-		maxAvaSize: 5242880, //5Mb
-		maxAvaPostSize: 6291456, //6Mb,
+		maxAvaSize: 7340032, //7Mb
+		maxAvaPostSize: 8388608, //8Mb,
 		acceptFileTypes: /\.(jpe?g|png)$/i,
 		accessControl: {
 			allowOrigin: '*',

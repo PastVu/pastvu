@@ -16,6 +16,8 @@ var fs = require('fs'),
 	incomeDir = global.appVar.storePath + 'incoming/',
 	privateDir = global.appVar.storePath + 'private/avatars/',
 	publicDir = global.appVar.storePath + 'public/avatars/',
+	dummyFn = function () {
+	},
 	msg = {
 		deny: 'You do not have permission for this action'
 	};
@@ -222,7 +224,7 @@ function changeAvatar(socket, data, cb) {
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp( "^[a-z0-9]{10}\\.[a-z]{3}$", "").test(data.file)) {
+	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp( "^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -258,7 +260,7 @@ function changeAvatar(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			//Копирование 100px из private в public/d/
-			copyFile(privateDir + fullfile, publicDir + 'd/' + fullfile, this.parallel());
+			Utils.copyFile(privateDir + fullfile, publicDir + 'd/' + fullfile, this.parallel());
 
 			//Конвертация в 50px из private в public/h/
 			gm(privateDir + fullfile)
@@ -271,6 +273,16 @@ function changeAvatar(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
+
+			//Удаляем текущий аватар, если он был
+			var currentAvatar = user.avatar;
+			if (currentAvatar) {
+				fs.unlink(path.normalize(privateDir + currentAvatar), dummyFn);
+				fs.unlink(path.normalize(publicDir + 'd/' + currentAvatar), dummyFn);
+				fs.unlink(path.normalize(publicDir + 'h/' + currentAvatar), dummyFn);
+			}
+
+			//Присваиваем и сохраняем новый аватар
 			user.avatar = fullfile;
 			user.save(this);
 		},
@@ -279,37 +291,65 @@ function changeAvatar(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			if (itsOnline) {
-				_session.emitUser(user.login, socket);
+				_session.emitUser(user.login);
 			}
 			cb({message: 'ok', avatar: user.avatar});
 		}
 	);
 }
 
-function copyFile(source, target, cb) {
-	var cbCalled = false;
+//Удаляем аватар
+function delAvatar(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
 
-	var rd = fs.createReadStream(source);
-	rd.on("error", function (err) {
-		done(err);
-	});
-
-	var wr = fs.createWriteStream(target);
-	wr.on("error", function (err) {
-		done(err);
-	});
-	wr.on("close", function (ex) {
-		done();
-	});
-
-	rd.pipe(wr);
-
-	function done(err) {
-		if (!cbCalled) {
-			cb(err);
-			cbCalled = true;
-		}
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
 	}
+	if (!Utils.isType('object', data) || !login) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, user) {
+			if (err && !user) {
+				return cb({message: err.message || 'Requested user does not exist', error: true});
+			}
+
+			//Удаляем текущий аватар, если он был
+			var currentAvatar = user.avatar;
+			if (currentAvatar) {
+				fs.unlink(path.normalize(privateDir + currentAvatar), dummyFn);
+				fs.unlink(path.normalize(publicDir + 'd/' + currentAvatar), dummyFn);
+				fs.unlink(path.normalize(publicDir + 'h/' + currentAvatar), dummyFn);
+			}
+
+			//Присваиваем и сохраняем новый аватар
+			user.avatar = undefined;
+			user.save(this);
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (itsOnline) {
+				_session.emitUser(login);
+			}
+			cb({message: 'ok'});
+		}
+	);
 }
 
 
@@ -348,6 +388,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('changeAvatar', function (data) {
 			changeAvatar(socket, data, function (resultData) {
 				socket.emit('changeAvatarResult', resultData);
+			});
+		});
+		socket.on('delAvatar', function (data) {
+			delAvatar(socket, data, function (resultData) {
+				socket.emit('delAvatarResult', resultData);
 			});
 		});
 	});
