@@ -507,7 +507,7 @@ function givePhoto(socket, data, cb) {
 		if (user) {
 			photo = photo.toObject({getters: true});
 			photo.user = {
-				login: user.user, avatar: user.avatar, disp: user.disp, online: true
+				login: user.login, avatar: user.avatar, disp: user.disp, online: true
 			};
 			cb({photo: photo, can: can});
 		} else {

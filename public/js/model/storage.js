@@ -6,6 +6,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 		users: {},
 		photos: {},
 		waitings: {},
+		timeouts: {},
 		user: function (login, callback, context) {
 			if (storage.users[login]) {
 				callback.call(context, storage.users[login]);
@@ -46,8 +47,12 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 					if (!data.error && data.photo.cid === cid) {
 						Photo.factory(data.photo, 'full', 'd');
 						storage.photos[cid] = {vm: Photo.vm(data.photo, undefined, true), origin: data.photo, can: data.can || Photo.canDef};
+						storage.timeouts[cid] = window.setTimeout(function () {
+							delete storage.photos[cid];
+							delete storage.timeouts[cid];
+						}, 60 * 1000); //Через минуту отбрасываем из storage, чтобы запросить при необходимости заново
 					}
-					if (storage.waitings['p' + cid]) {
+					if (Array.isArray(storage.waitings['p' + cid])) {
 						storage.waitings['p' + cid].forEach(function (item) {
 							item.cb.call(item.ctx, !data.error && storage.photos[cid]);
 						});
@@ -58,8 +63,11 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 			}
 		},
 		photoCan: function (cid, callback, context) {
-			if (!storage.photos[cid]) {
-				return false;
+			if (storage.photos[cid] === undefined) {
+				storage.photo(cid, function (data) {
+					storage.photoCan(cid, callback, context);
+				});
+				return;
 			}
 			socket.once('takeCanPhoto', function (data) {
 				if (!data.error) {
