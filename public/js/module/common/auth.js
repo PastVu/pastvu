@@ -362,6 +362,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		//Обновление модели залогиненного пользователя с сервера при логине или emitUser
 		processMe: function (user) {
 			if (user) {
+				user.online = true; //Залогиненный пользователь всегда онлайн
 				this.iAm = User.vm(user, this.iAm);
 
 				if (this.loggedIn()) {

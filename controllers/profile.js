@@ -19,8 +19,18 @@ var fs = require('fs'),
 	dummyFn = function () {
 	},
 	msg = {
-		deny: 'You do not have permission for this action'
+		deny: 'You do not have permission for this action',
+		nouser: 'Requested user does not exist'
 	};
+
+function userToPublicObject(doc, ret, options) {
+	delete ret._id;
+	delete ret.cid;
+	delete ret.pass;
+	delete ret.activatedate;
+	delete ret.loginAttempts;
+	delete ret.active;
+}
 
 //Отдаем пользователя
 function giveUser(socket, data, cb) {
@@ -39,14 +49,14 @@ function giveUser(socket, data, cb) {
 			var user = _session.getOnline(login);
 			if (user) {
 				itsOnline = true;
-				this(null, user.toObject());
+				this(null, user.toObject({transform: userToPublicObject}));
 			} else {
-				User.findOne({login: new RegExp('^' + login + '$', 'i'), active: true}, {_id: 0, pass: 0, activatedate: 0 }, {lean: true}, cb);
+				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true}, this);
 			}
 		},
 		function (err, user) {
 			if (err && !user) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+				return cb({message: err.message || msg.nouser, error: true});
 			}
 			user.online = itsOnline;
 			cb({message: 'ok', user: user});
@@ -256,7 +266,7 @@ function changeAvatar(socket, data, cb) {
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp( "^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
+	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp("^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
 		return cb({message: 'Bad params', error: true});
 	}
 

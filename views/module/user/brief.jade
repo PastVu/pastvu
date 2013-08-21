@@ -39,7 +39,7 @@
 				dt Регистрация:
 				dd(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
 				dt Статус:
-				dd Оффлайн
+				dd(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {green : user.online()}")
 	.row-fluid.statBlock
 		#short_stat.block
 			.head Краткая статистика

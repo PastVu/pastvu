@@ -38,6 +38,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			bcount: 0,
 			ccount: 0,
 			dateFormat: 'dd.mm.yyyy',
+			online: false,
 
 			_v_: 0
 		}
