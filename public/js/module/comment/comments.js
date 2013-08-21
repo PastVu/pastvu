@@ -101,7 +101,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.users[this.auth.iAm.login()] = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
-					disp: this.auth.iAm.disp()
+					disp: this.auth.iAm.disp(),
+					online: true
 				};
 			}
 		},

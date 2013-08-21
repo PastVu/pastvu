@@ -68,10 +68,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}, this);
 
-			var userInfoTpl = _.template('Добавил <a href="/u/${ login }">${ name }</a>, ${ stamp }<br/>Смотрели сегодня ${ sd } раз, в неделю ${ sw } раз, всего ${ sa } раз');
+			var userInfoTpl = _.template('Добавил <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }<br/>Смотрели сегодня ${ sd } раз, в неделю ${ sw } раз, всего ${ sa } раз');
 			this.userInfo = this.co.userInfo = ko.computed(function () {
 				return userInfoTpl(
-					{login: this.p.user.login(), name: this.p.user.disp(), stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}
+					{login: this.p.user.login(), name: this.p.user.disp(), css: this.p.user.online() ? 'class="online"' : '', stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}
 				);
 			}, this);
 

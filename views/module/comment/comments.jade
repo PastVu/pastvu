@@ -40,7 +40,7 @@
 	script(id="commentBodyTplPure", type="text/html")
 		.commentBody
 			.commentHead
-				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp")
+				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp, css: {online: $data.user.online}")
 				//ko if: $data.frag
 				.dotDelimeter ·
 				a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
@@ -71,7 +71,7 @@
 	script(id="commentBodyTplReg", type="text/html")
 		.commentBody
 			.commentHead
-				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp")
+				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp, css: {online: $data.user.online}")
 				//ko if: $data.frag
 				.dotDelimeter ·
 				a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")

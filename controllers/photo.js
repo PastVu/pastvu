@@ -469,7 +469,7 @@ function activateDeactivate(socket, data, cb) {
 //Отдаем фотографию для её страницы
 function givePhoto(socket, data, cb) {
 	var cid = Number(data.cid),
-		user = socket.handshake.session.user,
+		iAm = socket.handshake.session.user,
 		fieldSelect = {_id: 0, 'frags._id': 0};
 
 	if (isNaN(cid)) {
@@ -482,8 +482,8 @@ function givePhoto(socket, data, cb) {
 		}
 
 		//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
-		if (!photo && user) {
-			findPhotoNotPublic({cid: cid}, fieldSelect, user, function (err, photo) {
+		if (!photo && iAm) {
+			findPhotoNotPublic({cid: cid}, fieldSelect, iAm, function (err, photo) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
@@ -498,16 +498,26 @@ function givePhoto(socket, data, cb) {
 		if (!photo) {
 			return cb({message: 'Requested photo does not exist', error: true});
 		}
-		var can;
+		var can,
+			user = _session.getOnline(null, photo.user);
+
 		if (checkCan) {
-			can = photoPermissions.getCan(photo, user);
+			can = photoPermissions.getCan(photo, iAm);
 		}
-		photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({photo: photo.toObject({getters: true}), can: can});
-		});
+		if (user) {
+			photo = photo.toObject({getters: true});
+			photo.user = {
+				login: user.user, avatar: user.avatar, disp: user.disp, online: true
+			};
+			cb({photo: photo, can: can});
+		} else {
+			photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				cb({photo: photo.toObject({getters: true}), can: can});
+			});
+		}
 	}
 }
 

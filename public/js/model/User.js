@@ -8,7 +8,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 
 			avatar: '/img/caps/avatar.png',
 			avatarth: '/img/caps/avatarth.png',
-			disp: ''
+			disp: '',
+			online: false
 		},
 		full: {
 			email: '',
@@ -38,7 +39,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			bcount: 0,
 			ccount: 0,
 			dateFormat: 'dd.mm.yyyy',
-			online: false,
 
 			_v_: 0
 		}
