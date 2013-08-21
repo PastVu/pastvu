@@ -21,7 +21,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		catsMod = [
 			'photosToApprove'
 		],
-		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
+		declension = {
+			user: [' пользователь', ' пользователя', ' пользователей'],
+			reg: [' зарегистрирован', ' зарегистрированы', ' зарегистрированы'],
+			photo: [' фотография', ' фотографии', ' фотографий'],
+			comment: [' комментарий', ' комментария', ' комментариев'],
+			view: [' просмотр', ' просмотра', ' просмотров']
+		};
 
 	return Cliche.extend({
 		jade: jade,
@@ -73,6 +80,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					photoYear: {},
 					pdayCount: 0,
 					pweekCount: 0
+				},
+				common: {
+					onall: 0,
+					onreg: 0
 				}
 			};
 
@@ -232,21 +243,21 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!data || data.error) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.s, 'vdcount', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.s, 'vwcount', [' просмотр', ' просмотра', ' просмотров']));
-						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.s, 'vcount', [' просмотр', ' просмотра', ' просмотров']));
+						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.s, 'vdcount', declension.view));
+						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.s, 'vwcount', declension.view));
+						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.s, 'vcount', declension.view));
 
-						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.s, 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.s, 'ccount', declension.comment));
+						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.s, 'ccount', declension.comment));
+						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.s, 'ccount', declension.comment));
 
-						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
-						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'comments', 'ccount', [' комментарий', ' комментария', ' комментариев']));
+						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'comments', 'ccount', declension.comment));
+						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'comments', 'ccount', declension.comment));
+						this.ratings.ubycomm.all(this.processUsers(data.ucall, 'comments', 'ccount', declension.comment));
 
-						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
-						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
-						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'photo', 'pcount', [' фотография', ' фотографии', ' фотографий']));
+						this.ratings.ubyphoto.day(this.processUsers(data.upday, 'photo', 'pcount', declension.photo));
+						this.ratings.ubyphoto.week(this.processUsers(data.upweek, 'photo', 'pcount', declension.photo));
+						this.ratings.ubyphoto.all(this.processUsers(data.upall, 'photo', 'pcount', declension.photo));
 						success = true;
 					}
 				}
@@ -264,6 +275,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
 						this.stats.all = data.all;
+						this.stats.common = data.common;
+						this.stats.common.onlineTxt = 'Сейчас на сайте ' + data.common.onall + Utils.format.wordEndOfNum(data.common.onall, declension.user) + ', из них ' + data.common.onreg + Utils.format.wordEndOfNum(data.common.onall, declension.reg);
 					}
 					success = true;
 				}

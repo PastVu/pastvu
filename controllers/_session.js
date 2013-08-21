@@ -131,11 +131,11 @@ function firstConnection(socket) {
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		if (Utils.isObjectEmpty(session.sockets)) {
+			//console.log(9, '1.Delete Sess');
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			delete sess[session.key];
-			//console.log(9, '1.Delete Sess');
 
-			if (user) {
+			if (user !== undefined) {
 				//console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];
@@ -362,6 +362,7 @@ module.exports.getOnline = getOnline;
 //Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
 module.exports.us = us;
 module.exports.usid = usid;
+module.exports.sess = sess;
 
 module.exports.loadController = function (a, db, io) {
 	app = a;

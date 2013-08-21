@@ -234,7 +234,7 @@ var giveStats = (function () {
 			},
 			function getAggregationResultObjects(err, pMaxYear) {
 				if (err) {
-					return handler({message: err && err.message, error: true});
+					return handler(err);
 				}
 				photoYear = pMaxYear[0];
 
@@ -246,13 +246,26 @@ var giveStats = (function () {
 			},
 			function (err, pallCount, userCount, pdayCount, pweekCount) {
 				if (err) {
-					return handler({message: err && err.message, error: true});
+					return handler(err);
 				}
 				//console.log(Date.now() - st);
-				handler({all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
+				handler(null, {all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
 			}
 		);
 	}, ms('5m'));
+}());
+
+/**
+ * Быстрая статистика
+ */
+var giveFastStats = (function () {
+
+	return Utils.memoizeAsync(function (handler) {
+		handler(null, {
+			onall: Utils.getObjectPropertyLength(_session.sess),
+			onreg: Utils.getObjectPropertyLength(_session.us)
+		});
+	}, ms('15s'));
 }());
 
 /**
@@ -370,9 +383,24 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveStats', function () {
-			giveStats(function (resultData) {
-				socket.emit('takeStats', resultData);
-			});
+			step(
+				function () {
+					giveStats(this.parallel());
+					giveFastStats(this.parallel());
+				},
+				function (err, stat, statFast) {
+					if (err) {
+						return socket.emit('takeStats', {message: err && err.message, error: true});
+					}
+					stat.common = {};
+					for (var i in statFast) {
+						if (statFast[i] !== undefined){
+							stat.common[i] = statFast[i];
+						}
+					}
+					socket.emit('takeStats', stat);
+				}
+			);
 		});
 
 		socket.on('giveAbout', function () {

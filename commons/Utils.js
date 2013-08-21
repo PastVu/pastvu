@@ -78,10 +78,10 @@ Utils.memoizeAsync = function (memoizedFunc, ttl) {
 		if (cache !== undefined) {
 			cb.apply(null, cache);
 		} else {
-			if (!waitings.length) {
+			waitings.push(cb); //Сначала кладем, а потом проверяем на то что положили первый, чтобы корректно вызвалось, когда memoizedFunc выполнится мгновенно
+			if (waitings.length === 1) {
 				memoizedFunc(memoizeHandler);
 			}
-			waitings.push(cb);
 		}
 	};
 };
