@@ -8,5 +8,5 @@
 				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			div(data-bind="foreach: $data.comments")
 				a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-				a.authorName(data-bind="attr: {href: $data.user.link}, html: $data.user.disp")
+				a.authorName(data-bind="attr: {href: $data.user.link}, html: $data.user.disp, css: {online: $data.user.online}")
 		hr

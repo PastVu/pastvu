@@ -97,7 +97,7 @@
 		a.row-fluid.ratElem(data-bind="attr: {href: $data.link}")
 			.imgLoad
 				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onImgLoad, error: $parent.onImgErr}")
-			.ratName(data-bind="text: $data.title")
+			.ratName(data-bind="text: $data.title, css: {online: $data.online}")
 			.ratAmount(data-bind="text: $data.amount")
 
 	script(id="statsTpl", type="text/html")

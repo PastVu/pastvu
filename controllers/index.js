@@ -1,6 +1,7 @@
 'use strict';
 
 var auth = require('./auth.js'),
+	_session = require('./_session.js'),
 	Settings,
 	User,
 	Photo,
@@ -172,16 +173,26 @@ var giveRatings = (function () {
 
 				for (i = ucday.length; i--;) {
 					ucday[i].ccount = ucommdayHash[ucday[i]._id];
+					ucday[i].online = _session.us[ucday[i].login] !== undefined;
 				}
 				for (i = ucweek.length; i--;) {
 					ucweek[i].ccount = ucommweekHash[ucweek[i]._id];
+					ucweek[i].online = _session.us[ucweek[i].login] !== undefined;
+				}
+				for (i = ucall.length; i--;) {
+					ucall[i].online = _session.us[ucall[i].login] !== undefined;
 				}
 
 				for (i = upday.length; i--;) {
 					upday[i].pcount = updayHash[upday[i]._id];
+					upday[i].online = _session.us[upday[i].login] !== undefined;
 				}
 				for (i = upweek.length; i--;) {
 					upweek[i].pcount = upweekHash[upweek[i]._id];
+					upweek[i].online = _session.us[upweek[i].login] !== undefined;
+				}
+				for (i = upall.length; i--;) {
+					upall[i].online = _session.us[upall[i].login] !== undefined;
 				}
 
 				//console.log(Date.now() - st);

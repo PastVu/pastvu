@@ -329,9 +329,9 @@ function emitCookie(socket, dontEmit) {
 //Проверяем если пользователь онлайн
 function isOnline (login, _id) {
 	if (login) {
-		return !!us[login];
+		return us[login] !== undefined;
 	} else if (_id) {
-		return !!usid[_id];
+		return usid[_id] !== undefined;
 	}
 }
 
@@ -358,6 +358,10 @@ module.exports.saveEmitUser = saveEmitUser;
 module.exports.emitCookie = emitCookie;
 module.exports.isOnline = isOnline;
 module.exports.getOnline = getOnline;
+
+//Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
+module.exports.us = us;
+module.exports.usid = usid;
 
 module.exports.loadController = function (a, db, io) {
 	app = a;

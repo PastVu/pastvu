@@ -119,7 +119,7 @@ function getCommentsObj(iAm, data, cb) {
 					login: user.login,
 					avatar: avatar,
 					disp: user.disp || user.login,
-					online: _session.isOnline(user.login)
+					online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}
@@ -308,7 +308,8 @@ var getCommentsFeed = (function () {
 					user = users[i];
 					userFormatted = {
 						login: user.login,
-						disp: user.disp
+						disp: user.disp,
+						online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
 					};
 					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 				}
