@@ -7,13 +7,23 @@ var auth = require('./auth.js'),
 	Counter,
 	News,
 	step = require('step'),
-	Utils = require('../commons/Utils.js');
+	Utils = require('../commons/Utils.js'),
+	msg = {
+		deny: 'You do not have permission for this action'
+	};
 
 
-function createNews(session, data, cb) {
+function createNews(socket, data, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
+
 	step(
 		function () {
 			Counter.increment('news', this);
@@ -25,7 +35,7 @@ function createNews(session, data, cb) {
 
 			var novel = new News({
 				cid: count.next,
-				user: session.user,
+				user: iAm,
 				pdate: data.pdate,
 				tdate: data.tdate,
 				title: data.title,
@@ -42,10 +52,17 @@ function createNews(session, data, cb) {
 		}
 	);
 }
-function saveNews(data, cb) {
+function saveNews(socket, data, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
+
 	step(
 		function () {
 			News.findOne({cid: data.cid}, this);
@@ -71,6 +88,47 @@ function saveNews(data, cb) {
 	);
 }
 
+function getOnlineStat(socket, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	var usersCount = Utils.getObjectPropertyLength(_session.us),
+		sessions = _session.sess,
+		sessUserCount = 0,
+		sessAnonymCount = 0,
+		socketUserCount = 0,
+		socketAnonymCount = 0,
+		sockets,
+		isReg,
+		i,
+		j;
+
+	for (i in sessions) {
+		if (sessions[i] !== undefined) {
+			isReg = sessions[i].user !== undefined;
+			if (isReg) {
+				sessUserCount++;
+			} else {
+				sessAnonymCount++;
+			}
+			sockets = sessions[i].sockets;
+			for (j in sockets) {
+				if (sockets[j] !== undefined) {
+					if (isReg) {
+						socketUserCount++;
+					} else {
+						socketAnonymCount++;
+					}
+				}
+			}
+		}
+	}
+	cb(null, {all: usersCount + sessAnonymCount, users: usersCount, sessUC: sessUserCount, sessAC: sessAnonymCount, sockUC: socketUserCount, sockAC: socketAnonymCount});
+}
+
 
 module.exports.loadController = function (app, db, io) {
 
@@ -82,22 +140,22 @@ module.exports.loadController = function (app, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		socket.on('giveUsers', function () {
-			User.getAllPublicUsers(function (err, users) {
-				socket.emit('takeUsers', users);
-			});
-		});
-
 		socket.on('saveNews', function (data) {
 			if (data.cid) {
-				saveNews(data, function (resultData) {
+				saveNews(socket, data, function (resultData) {
 					socket.emit('saveNewsResult', resultData);
 				});
 			} else {
-				createNews(hs.session, data, function (resultData) {
+				createNews(socket, data, function (resultData) {
 					socket.emit('saveNewsResult', resultData);
 				});
 			}
+		});
+
+		socket.on('getOnlineStat', function () {
+			getOnlineStat(socket, function (err, resultData) {
+				socket.emit('takeOnlineStat', resultData);
+			});
 		});
 	});
 

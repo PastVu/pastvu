@@ -1,0 +1,44 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.mainAdmin {
+	position: relative;
+	width: 100%;
+
+	h3, h4, h5, h6 {
+		margin-top: 1px;
+	}
+
+	.stateRate {
+		color: @MainBlueColor;
+		display: inline-block;
+		text-align: center;
+		white-space: nowrap;
+
+		.rate {
+			display: inline-block;
+			min-width: 30px;
+			color: #003a18;
+		}
+	}
+	.stateRate, .stateDesc {
+		line-height: 20px;
+		font-size: 13px;
+	}
+	.stateDesc {
+		margin-left: 5px;
+	}
+
+	.desc {
+		margin: 10px 0 0 0px;
+		padding-left: 5px;
+		font-size: 12px;
+		color: #666;
+		border-style: solid;
+		border-color: #CCC;
+		border-width: 0 0 0 1px;
+	}
+}
+
+

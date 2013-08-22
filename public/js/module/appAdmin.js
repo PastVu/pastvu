@@ -51,15 +51,19 @@ require([
 					var auth = globalVM.repository['m/common/auth'],
 						params,
 						modules = [];
+
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
 					if (!section) {
-						section = 'news';
+						section = 'main';
 					}
 
-					if (section === 'news') {
+					if (section === 'main') {
+						params = {section: section};
+						modules.push({module: 'm/admin/main', container: '#bodyContainer'});
+					} else if (section === 'news') {
 						if (param1 === 'create' || param1 === 'edit') {
 							params = {section: section, cid: param2};
 							modules.push({module: 'm/admin/newsEdit', container: '#bodyContainer'});
@@ -74,6 +78,7 @@ require([
 				map: function (section, qparams) {
 					var auth = globalVM.repository['m/common/auth'],
 						modules = [];
+
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
@@ -91,6 +96,7 @@ require([
 				photo: function (section, qparams) {
 					var auth = globalVM.repository['m/common/auth'],
 						modules = [];
+
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;

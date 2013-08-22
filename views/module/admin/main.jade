@@ -1,0 +1,36 @@
+.mainAdmin(data-bind="with: repository[M!M]")
+	h6 Текущие соединения
+	.row-fluid
+		div
+			span.stateRate
+				.rate(data-bind="text: onlines.users()")
+				| /
+				.rate(data-bind="text: (onlines.all() - onlines.users())")
+				| /
+				.rate(data-bind="text: onlines.all()")
+			span.stateDesc Посетителей авторизованных/анонимных/всего
+		div
+			span.stateRate
+				.rate(data-bind="text: onlines.sessUC()")
+				| /
+				.rate(data-bind="text: onlines.sessAC()")
+				| /
+				.rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
+			span.stateDesc Активных сессий авторизованных/анонимных/всего посетителей
+		div
+			span.stateRate
+				.rate(data-bind="text: onlines.sockUC()")
+				| /
+				.rate(data-bind="text: onlines.sockAC()")
+				| /
+				.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
+			span.stateDesc Активных соединений авторизованных/анонимных/всего посетителей
+		.desc
+			| Активная сессия - один браузер клиента с открытым pastvu хотябы на одной вкладке
+			br
+			| Активное соединение - каждая открытая на pastvu вкладка клиента
+			br
+			br
+			| В каждой сессии (браузере) клиента может быть несколько открытых соединений (вкладок)
+			br
+			| Пользователь, авторизованный (залогиненный) в нескольких браузерах одновременно, считается как один, но имеет несколько сессий, по количеству открытых браузеров. Поэтому "активных сессий авторизованных" может быть больше числа авторизованных.

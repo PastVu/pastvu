@@ -12,7 +12,8 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 
 			this.submenus = {
 				index: [
-					{name: 'News', href: "/admin/news", section: 'news'}
+					{name: 'Главная', href: "/admin", section: 'main'},
+					{name: 'Новости', href: "/admin/news", section: 'news'}
 				],
 				map: [
 					{name: 'Clusters', href: "/admin/map/cluster", section: 'cluster'}
