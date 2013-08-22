@@ -40,20 +40,22 @@ function addUserSession(session) {
 function authSocket(handshake, callback) {
 	var cookieString = handshake.headers.cookie || '',
 		cookieObj = cookie.parse(cookieString),
-		existsSid = cookieObj['pastvu.sid'];
+		existsSid = cookieObj['pastvu.sid'],
+		session;
 
 	//logger.info(handshake);
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
-		finishAuthConnection(sessionProcess());
+		session = sessionProcess();
+		sess[session.key] = session;
+		finishAuthConnection(session);
 	} else {
 		if (sess[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
 			finishAuthConnection(sessionProcess(null, sess[existsSid]));
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-
 			if (sessWaitings[existsSid] !== undefined) {
 				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
 				sessWaitings[existsSid].push({cb: finishAuthConnection});
@@ -66,13 +68,13 @@ function authSocket(handshake, callback) {
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
 					session = sessionProcess(err, session); //Переприсваиваем, так как если не выбралась из базы, она создаться
 
-					sess[existsSid] = session; //Добавляем сессию в хеш сессий
+					sess[session.key] = session; //Добавляем сессию в хеш сессий
 
-					if (session.user) {
+					if (session.user !== undefined) {
 						addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
 					}
 
-					if (sessWaitings[existsSid] !== undefined) {
+					if (Array.isArray(sessWaitings[existsSid])) {
 						sessWaitings[existsSid].forEach(function (item) {
 							item.cb.call(global, session);
 						});
@@ -90,9 +92,7 @@ function authSocket(handshake, callback) {
 		var ip = handshake.address && handshake.address.address;
 
 		if (!session) {
-			//Если сессии нет, создаем и добавляем её в хеш
-			session = generate({ip: ip});
-			sess[session.key] = session;
+			session = generate({ip: ip}); //Если сессии нет, создаем и добавляем её в хеш
 		} else {
 			regen(session, {ip: ip});
 		}
