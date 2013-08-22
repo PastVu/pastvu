@@ -123,7 +123,6 @@ function getCommentsObj(iAm, data, cb) {
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}
-			console.dir(userFormattedHash);
 
 			i = commentsArr.length;
 			while (i) {

@@ -261,9 +261,22 @@ var giveStats = (function () {
 var giveFastStats = (function () {
 
 	return Utils.memoizeAsync(function (handler) {
+		var usersCount = Utils.getObjectPropertyLength(_session.us),
+			sessions = _session.sess,
+			anonymCount = 0,
+			i;
+
+		//Общее кол-во "на сайте" считаем по анонимным сессиям плюс кол-во вошедших пользователей,
+		//чтобы вычесть пользователей, залогиненных в нескольких сессиях
+		for (i in sessions) {
+			if (sessions[i] !== undefined && sessions[i].user === undefined) {
+				anonymCount++;
+			}
+		}
+
 		handler(null, {
-			onall: Utils.getObjectPropertyLength(_session.sess),
-			onreg: Utils.getObjectPropertyLength(_session.us)
+			onall: anonymCount + usersCount,
+			onreg: usersCount
 		});
 	}, ms('15s'));
 }());

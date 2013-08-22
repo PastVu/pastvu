@@ -24,7 +24,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
 		declension = {
 			user: [' пользователь', ' пользователя', ' пользователей'],
-			reg: [' зарегистрирован', ' зарегистрированы', ' зарегистрированы'],
+			reg: [' зарегистрирован', ' зарегистрированых', ' зарегистрированых'],
 			photo: [' фотография', ' фотографии', ' фотографий'],
 			comment: [' комментарий', ' комментария', ' комментариев'],
 			view: [' просмотр', ' просмотра', ' просмотров']
