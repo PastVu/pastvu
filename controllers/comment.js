@@ -26,7 +26,8 @@ var auth = require('./auth.js'),
 
 	weekMS = ms('7d'),
 	msg = {
-		deny: 'You do not have permission for this action',
+		deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
+		noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
 		noComments: 'Операции с комментариями на этой странице запрещены'
 	},
 
@@ -60,12 +61,12 @@ function getCommentsObj(iAm, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, {_id: 1}, iAm, true, this);
+				photoController.findPhoto({cid: cid}, {_id: 1, user: 1}, iAm, true, this);
 			}
 		},
 		function createCursor(err, obj) {
 			if (err || !obj) {
-				return cb({message: err && err.message || 'No such object', error: true});
+				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {sort: [
 				['stamp', 'asc']
@@ -359,7 +360,7 @@ function createComment(socket, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1, nocomments: 1}, iAm, true, this.parallel());
+				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, true, this.parallel());
 			}
 
 			if (data.parent) {
@@ -368,7 +369,7 @@ function createComment(socket, data, cb) {
 		},
 		function counterUp(err, o, parent) {
 			if (err || !o) {
-				return cb({message: err && err.message || 'No such object', error: true});
+				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (o.nocomments && (!iAm.role || iAm.role < 10)) {
 				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
@@ -379,6 +380,8 @@ function createComment(socket, data, cb) {
 			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
 				return cb({message: 'Something wrong with parent comment', error: true});
 			}
+			delete o.user; //Был нужен только для проверки прав
+
 			obj = o;
 
 			Counter.increment('comment', this);
@@ -490,16 +493,17 @@ function removeComment(socket, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1, nocomments: 1}, iAm, true, this.parallel());
+				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, true, this.parallel());
 			}
 		},
 		function createCursor(err, o) {
 			if (err || !o) {
-				return cb({message: err && err.message || 'No such object', error: true});
+				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (o.nocomments && (!iAm.role || iAm.role < 10)) {
 				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
 			}
+
 			obj = o;
 			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, stamp: 0, txt: 0}, {sort: [
 				['stamp', 'asc']
@@ -800,7 +804,7 @@ function setNoComments(socket, data, cb) {
 		},
 		function createCursor(err, obj) {
 			if (err || !obj) {
-				return cb({message: err && err.message || 'No such object', error: true});
+				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			obj.nocomments = data.val ? true : undefined;
 			obj.save(this);

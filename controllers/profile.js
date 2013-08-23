@@ -55,8 +55,8 @@ function giveUser(socket, data, cb) {
 			}
 		},
 		function (err, user) {
-			if (err && !user) {
-				return cb({message: err.message || msg.nouser, error: true});
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 			user.online = itsOnline;
 			cb({message: 'ok', user: user});
@@ -95,8 +95,8 @@ function saveUser(socket, data, cb) {
 			}
 		},
 		function (err, user) {
-			if (err && !user) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 
 			//Новые значения действительно изменяемых свойств
@@ -152,8 +152,8 @@ function changeDispName(socket, data, cb) {
 			}
 		},
 		function (err, user) {
-			if (err && !user) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 
 			if (!!data.showName) {
@@ -208,8 +208,8 @@ function changeEmail(socket, data, cb) {
 			}
 		},
 		function (err, u) {
-			if (err && !u) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+			if (err || !u) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 			user = u;
 			User.findOne({email: data.email}, {_id: 0, login: 1}, this);
@@ -284,8 +284,8 @@ function changeAvatar(socket, data, cb) {
 			}
 		},
 		function (err, u) {
-			if (err && !u) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+			if (err || !u) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 			var dirPrefix = fullfile.substr(0, 4);
 			user = u;
@@ -366,8 +366,8 @@ function delAvatar(socket, data, cb) {
 			}
 		},
 		function (err, user) {
-			if (err && !user) {
-				return cb({message: err.message || 'Requested user does not exist', error: true});
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
 			}
 
 			//Удаляем текущий аватар, если он был

@@ -62,7 +62,7 @@ var auth = require('./auth.js'),
 		},
 		checkType: function (type, photo, user) {
 			if (type === 'fresh' || type === 'dis') {
-				return user.role > 4 || photo.user.equals(user._id);
+				return user.role > 4 || photo.user && photo.user.equals(user._id);
 			} else if (type === 'del') {
 				return user.role > 9;
 			}
@@ -925,7 +925,7 @@ function readyPhoto(socket, data, cb) {
 			PhotoFresh.findOne({cid: cid}, this);
 		},
 		function (err, photo) {
-			if (err && !photo) {
+			if (err || !photo) {
 				return cb({message: err && err.message || 'Requested photo does not exist', error: true});
 			}
 			if (!photoPermissions.getCan(photo, user).edit) {
@@ -1105,6 +1105,7 @@ function findPhotoNotPublic(query, fieldSelect, user, cb) {
 	if (!user) {
 		cb({message: 'No such photo for this user'});
 	}
+
 	async.series(
 		[
 			function (callback) {
@@ -1127,11 +1128,11 @@ function findPhotoNotPublic(query, fieldSelect, user, cb) {
 						return cb(err);
 					}
 
-					//Если фото не найдено или юзер не админ, то ищем дальше в удаленных
-					if (photo && photoPermissions.checkType('dis', photo, user) || !user.role || user.role < 10) {
-						photo = {photo: photo};
+					if (photo || !user.role || user.role < 10) {
+						//Для не админов этот шаг последний, нашлось фото или нет
+						photo = {photo: photo && photoPermissions.checkType('dis', photo, user) ? photo : null};
 					} else {
-						photo = null;
+						photo = null; //Если фото не найденно и юзер админ - ищем в удаленных
 					}
 					callback(photo);
 				});
