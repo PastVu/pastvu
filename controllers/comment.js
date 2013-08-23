@@ -595,25 +595,25 @@ function updateComment(socket, data, cb) {
 	if (!Utils.isType('object', data) || !data.obj || !Number(data.cid) || !data.txt) {
 		return cb({message: 'Bad params', error: true});
 	}
-	var iAm = socket.handshake.session.user,
-		fragRecieved,
-		commentModel;
-
-	if (data.type === 'news') {
-		commentModel = CommentN;
-	} else {
-		commentModel = Comment;
-	}
+	var cid = Number(data.cid),
+		iAm = socket.handshake.session.user,
+		fragRecieved;
 
 	step(
 		function () {
-			commentModel.findOne({cid: data.cid}).populate('obj', {cid: 1, frags: 1, nocomments: 1}).exec(this);
+			if (data.type === 'news') {
+				CommentN.findOne({cid: cid}, this.parallel());
+				News.findOne({cid: data.obj}, {cid: 1, frags: 1, nocomments: 1}, this.parallel());
+			} else {
+				Comment.findOne({cid: cid}, this.parallel());
+				photoController.findPhoto({cid: data.obj}, {cid: 1, frags: 1, nocomments: 1, user: 1}, iAm, true, this.parallel());
+			}
 		},
-		function (err, comment) {
-			if (err || !comment || data.obj !== comment.obj.cid) {
+		function (err, comment, obj) {
+			if (err || !comment || !obj || data.obj !== obj.cid) {
 				return cb({message: err && err.message || 'No such comment', error: true});
 			}
-			if (comment.obj.nocomments && (!iAm.role || iAm.role < 10)) {
+			if (obj.nocomments && (!iAm.role || iAm.role < 10)) {
 				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
 			}
 
@@ -630,10 +630,10 @@ function updateComment(socket, data, cb) {
 			}
 			content = Utils.inputIncomingParse(data.txt);
 
-			if (comment.obj.frags) {
-				for (i = comment.obj.frags.length; i--;) {
-					if (comment.obj.frags[i].cid === comment.cid) {
-						fragExists = comment.obj.frags[i];
+			if (obj.frags) {
+				for (i = obj.frags.length; i--;) {
+					if (obj.frags[i].cid === comment.cid) {
+						fragExists = obj.frags[i];
 						break;
 					}
 				}
@@ -652,18 +652,18 @@ function updateComment(socket, data, cb) {
 					//Если фрагмент получен и его небыло раньше, просто вставляем полученный
 					fragChangedType = 1;
 					comment.frag = true;
-					comment.obj.frags.push(fragRecieved);
+					obj.frags.push(fragRecieved);
 				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
 					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
 					fragChangedType = 2;
-					comment.obj.frags.pull(fragExists._id);
-					comment.obj.frags.push(fragRecieved);
+					obj.frags.pull(fragExists._id);
+					obj.frags.push(fragRecieved);
 				}
 			} else if (fragExists) {
 				//Если фрагмент не получен, но раньше он был, то просто удаляем старый
 				fragChangedType = 3;
 				comment.frag = undefined;
-				comment.obj.frags.pull(fragExists._id);
+				obj.frags.pull(fragExists._id);
 			}
 
 			if (content !== comment.txt) {
@@ -679,7 +679,7 @@ function updateComment(socket, data, cb) {
 				comment.txt = content;
 				comment.save(this.parallel());
 				if (fragChangedType) {
-					comment.obj.save(this.parallel());
+					obj.save(this.parallel());
 				}
 			} else {
 				this(null, comment);

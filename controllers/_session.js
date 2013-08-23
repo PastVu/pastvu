@@ -220,7 +220,7 @@ function regen(session, data, keyRegen, userRePop, cb) {
 		//поэтому затем после сохранения сессии нужно будет сделать populate на этом поле. (mongoose 3.6)
 		//https://github.com/LearnBoost/mongoose/issues/1530
 		if (userRePop && session.user) {
-			session.populate('user', function (err) {
+			session.populate('user', function (err, session) {
 				if (cb) {
 					cb(err, session);
 				}
