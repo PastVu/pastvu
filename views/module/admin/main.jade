@@ -16,7 +16,7 @@
 				.rate(data-bind="text: onlines.sessAC()")
 				| /
 				.rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
-			span.stateDesc Активных сессий авторизованных/анонимных/всего посетителей
+			span.stateDesc(data-bind="text: 'Cессий авторизованных/анонимных/всего. С нулем соединений: [' + onlines.sessUZC() + '/' + onlines.sessAZC() + ']. Без соединений: [' + onlines.sessUNC() + '/' + onlines.sessANC() + ']'")
 		div
 			span.stateRate
 				.rate(data-bind="text: onlines.sockUC()")
@@ -24,7 +24,7 @@
 				.rate(data-bind="text: onlines.sockAC()")
 				| /
 				.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
-			span.stateDesc Активных соединений авторизованных/анонимных/всего посетителей
+			span.stateDesc Cоединений авторизованных/анонимных/всего посетителей
 		.desc
 			| Активная сессия - один браузер клиента с открытым pastvu хотябы на одной вкладке
 			br

@@ -97,12 +97,19 @@ function getOnlineStat(socket, cb) {
 
 	var usersCount = Utils.getObjectPropertyLength(_session.us),
 		sessions = _session.sess,
+
 		sessUserCount = 0,
+		sessUserZeroSockCount = 0,
+		sessUserNoSockCount = 0,
 		sessAnonymCount = 0,
+		sessAnonymZeroSockCount = 0,
+		sessAnonymNoSockCount = 0,
+
 		socketUserCount = 0,
 		socketAnonymCount = 0,
 		sockets,
 		isReg,
+		count,
 		i,
 		j;
 
@@ -115,18 +122,31 @@ function getOnlineStat(socket, cb) {
 				sessAnonymCount++;
 			}
 			sockets = sessions[i].sockets;
-			for (j in sockets) {
-				if (sockets[j] !== undefined) {
-					if (isReg) {
-						socketUserCount++;
+			if (sockets) {
+				count = Object.keys(sockets).length || 0;
+				if (isReg) {
+					if (count) {
+						socketUserCount += count;
 					} else {
-						socketAnonymCount++;
+						sessUserZeroSockCount++;
 					}
+				} else {
+					if (count) {
+						socketAnonymCount += count;
+					} else {
+						sessAnonymZeroSockCount++;
+					}
+				}
+			} else {
+				if (isReg) {
+					sessUserNoSockCount++;
+				} else {
+					sessAnonymNoSockCount++;
 				}
 			}
 		}
 	}
-	cb(null, {all: usersCount + sessAnonymCount, users: usersCount, sessUC: sessUserCount, sessAC: sessAnonymCount, sockUC: socketUserCount, sockAC: socketAnonymCount});
+	cb(null, {all: usersCount + sessAnonymCount, users: usersCount, sessUC: sessUserCount, sessUZC: sessUserZeroSockCount, sessUNC: sessUserNoSockCount, sessAC: sessAnonymCount, sessAZC: sessAnonymZeroSockCount, sessANC: sessAnonymNoSockCount, sockUC: socketUserCount, sockAC: socketAnonymCount});
 }
 
 
