@@ -17,7 +17,12 @@ define([
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/common/auth'];
-			this.onlines = ko_mapping.fromJS({all: 0, users: 0, sessUC: 0, sessUZC: 0, sessUNC: 0, sessAC: 0, sessAZC: 0, sessANC: 0, sockUC: 0, sockAC: 0, sessNCHeaders: []});
+			this.onlines = ko_mapping.fromJS({
+				all: 0, users: 0,
+				sessUC: 0, sessUZC: 0, sessUNC: 0, sessAC: 0, sessAZC: 0, sessANC: 0,
+				sessWCUC: 0, sessWCAC: 0,
+				sockUC: 0, sockAC: 0
+			});
 			this.headers = ko.observableArray();
 
 			this.giveOnlives(function () {

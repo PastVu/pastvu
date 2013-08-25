@@ -104,11 +104,15 @@ function getOnlineStat(socket, cb) {
 		sessAnonymCount = 0,
 		sessAnonymZeroSockCount = 0,
 		sessAnonymNoSockCount = 0,
-
 		sessNoSockHeaders = [],
+
+		sessionsWaitingConnect = _session.sessWaitingConnect,
+		sessWCUserCount = 0,
+		sessWCAnonymCount = 0,
 
 		socketUserCount = 0,
 		socketAnonymCount = 0,
+
 		sockets,
 		isReg,
 		count,
@@ -117,7 +121,7 @@ function getOnlineStat(socket, cb) {
 
 	for (i in sessions) {
 		if (sessions[i] !== undefined) {
-			isReg = sessions[i].user !== undefined;
+			isReg = !!sessions[i].user;
 			if (isReg) {
 				sessUserCount++;
 			} else {
@@ -147,8 +151,17 @@ function getOnlineStat(socket, cb) {
 				}
 				sessNoSockHeaders.push({stamp: sessions[i].stamp, header: (sessions[i].data && sessions[i].data.headers) || {}});
 			}
-			//sessNoSockHeaders.push({stamp: sessions[i].stamp, header: (sessions[i].data && sessions[i].data.headers) || {}});
-			//console.log(sessNoSockHeaders[sessNoSockHeaders.length - 1]);
+		}
+	}
+
+	for (i in sessionsWaitingConnect) {
+		if (sessionsWaitingConnect[i] !== undefined) {
+			isReg = !!sessions[i].user;
+			if (isReg) {
+				sessWCUserCount++;
+			} else {
+				sessWCAnonymCount++;
+			}
 		}
 	}
 	cb(null, {
@@ -162,6 +175,9 @@ function getOnlineStat(socket, cb) {
 		sessAZC: sessAnonymZeroSockCount,
 		sessANC: sessAnonymNoSockCount,
 		sessNCHeaders: sessNoSockHeaders,
+
+		sessWCUC: sessWCUserCount,
+		sessWCAC: sessWCAnonymCount,
 
 		sockUC: socketUserCount,
 		sockAC: socketAnonymCount
