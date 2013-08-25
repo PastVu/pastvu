@@ -29,8 +29,9 @@ var Session,
 	settings = require('./settings.js'),
 	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
 	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
-	sess = {}, //Sessions. Хэш всех активных сессий по ключам
-	sessWaitings = {}; //Хэш ожидания выборки сессии по ключу из базы
+	sess = {},//Sessions. Хэш всех активных сессий, с установленными соединениями
+	sessWaitingConnect = {},//Хэш сессий, которые ожидают первого соединения
+	sessWaitingSelect = {}; //Хэш сессий, ожидающих выборки по ключу из базы
 
 
 //Добавляем сессию в хеш пользователей
@@ -56,14 +57,12 @@ function authSocket(handshake, callback) {
 	if (!handshake.headers || !handshake.headers['user-agent']) {
 		return callback(msg.browserNoHeaders, false); //Если нет хедера или юзер-агента - отказываем
 	}
+	//console.log(handshake);
 
 	var uaParsed = uaParser.parse(handshake.headers['user-agent']),
 		cookieObj,
 		existsSid,
 		session;
-
-	//console.log('auth');
-	//console.log(handshake);
 
 	if (!uaParsed.family || !uaParsed.major || uaParsed.major < browserSuportFrom[uaParsed.family]) {
 		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
@@ -75,37 +74,37 @@ function authSocket(handshake, callback) {
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
 		session = sessionProcess();
-		sess[session.key] = session;
+		sessWaitingConnect[session.key] = session;
 		finishAuthConnection(session);
 	} else {
-		if (sess[existsSid] !== undefined) {
+		if (sess[existsSid] !== undefined || sessWaitingConnect[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			finishAuthConnection(sessionProcess(null, sess[existsSid]));
+			finishAuthConnection(sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid]));
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-			if (sessWaitings[existsSid] !== undefined) {
+			if (sessWaitingSelect[existsSid] !== undefined) {
 				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
-				sessWaitings[existsSid].push({cb: finishAuthConnection});
+				sessWaitingSelect[existsSid].push({cb: finishAuthConnection});
 			} else {
 				//Если запроса к базе еще нет, создаем его
-				sessWaitings[existsSid] = [
+				sessWaitingSelect[existsSid] = [
 					{cb: finishAuthConnection}
 				];
 
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
 					session = sessionProcess(err, session); //Переприсваиваем, так как если не выбралась из базы, она создаться
 
-					sess[session.key] = session; //Добавляем сессию в хеш сессий
+					sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
 
-					if (session.user !== undefined) {
+					if (session.user) {
 						addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
 					}
 
-					if (Array.isArray(sessWaitings[existsSid])) {
-						sessWaitings[existsSid].forEach(function (item) {
+					if (Array.isArray(sessWaitingSelect[existsSid])) {
+						sessWaitingSelect[existsSid].forEach(function (item) {
 							item.cb.call(global, session);
 						});
-						delete sessWaitings[existsSid];
+						delete sessWaitingSelect[existsSid];
 					}
 				});
 			}
@@ -138,6 +137,12 @@ function authSocket(handshake, callback) {
 function firstConnection(socket) {
 	var session = socket.handshake.session;
 	//console.log('firstConnection');
+
+	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
+	if (sess[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
+		sess[session.key] = session;
+		delete sessWaitingConnect[session.key];
+	}
 
 	if (!session.sockets) {
 		session.sockets = {};
@@ -282,14 +287,15 @@ function regen(session, data, keyRegen, userRePop, cb) {
 
 //Присваивание пользователя сессии при логине, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
-	var session = socket.handshake.session;
+	var session = socket.handshake.session,
+		oldKey = session.key;
 
 	session.user = user; //Здесь присвоится только _id и далее он спопулируется в regen
-	delete sess[session.key]; //Удаляем сессию из хеша, так как у неё изменится ключ
 
 	regen(session, {remember: data.remember}, true, true, function (err, session) {
 		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
 
+		delete sess[oldKey]; //Удаляем сессию из хеша по старому ключу, так как он изменился после регена
 		sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
 		addUserSession(session); //Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться, если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
 
@@ -405,6 +411,7 @@ module.exports.getOnline = getOnline;
 module.exports.us = us;
 module.exports.usid = usid;
 module.exports.sess = sess;
+module.exports.sessWaitingConnect = sessWaitingConnect;
 
 module.exports.loadController = function (a, db, io) {
 	app = a;
