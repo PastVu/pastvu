@@ -105,6 +105,8 @@ function getOnlineStat(socket, cb) {
 		sessAnonymZeroSockCount = 0,
 		sessAnonymNoSockCount = 0,
 
+		sessNoSockHeaders = [],
+
 		socketUserCount = 0,
 		socketAnonymCount = 0,
 		sockets,
@@ -143,10 +145,27 @@ function getOnlineStat(socket, cb) {
 				} else {
 					sessAnonymNoSockCount++;
 				}
+				sessNoSockHeaders.push({stamp: sessions[i].stamp, header: (sessions[i].data && sessions[i].data.headers) || {}});
 			}
+			//sessNoSockHeaders.push({stamp: sessions[i].stamp, header: (sessions[i].data && sessions[i].data.headers) || {}});
+			//console.log(sessNoSockHeaders[sessNoSockHeaders.length - 1]);
 		}
 	}
-	cb(null, {all: usersCount + sessAnonymCount, users: usersCount, sessUC: sessUserCount, sessUZC: sessUserZeroSockCount, sessUNC: sessUserNoSockCount, sessAC: sessAnonymCount, sessAZC: sessAnonymZeroSockCount, sessANC: sessAnonymNoSockCount, sockUC: socketUserCount, sockAC: socketAnonymCount});
+	cb(null, {
+		all: usersCount + sessAnonymCount,
+		users: usersCount,
+
+		sessUC: sessUserCount,
+		sessUZC: sessUserZeroSockCount,
+		sessUNC: sessUserNoSockCount,
+		sessAC: sessAnonymCount,
+		sessAZC: sessAnonymZeroSockCount,
+		sessANC: sessAnonymNoSockCount,
+		sessNCHeaders: sessNoSockHeaders,
+
+		sockUC: socketUserCount,
+		sockAC: socketAnonymCount
+	});
 }
 
 

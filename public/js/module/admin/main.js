@@ -17,7 +17,8 @@ define([
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/common/auth'];
-			this.onlines = ko_mapping.fromJS({all: 0, users: 0, sessUC: 0, sessUZC: 0, sessUNC: 0, sessAC: 0, sessAZC: 0, sessANC: 0, sockUC: 0, sockAC: 0});
+			this.onlines = ko_mapping.fromJS({all: 0, users: 0, sessUC: 0, sessUZC: 0, sessUNC: 0, sessAC: 0, sessAZC: 0, sessANC: 0, sockUC: 0, sockAC: 0, sessNCHeaders: []});
+			this.headers = ko.observableArray();
 
 			this.giveOnlives(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
@@ -49,7 +50,22 @@ define([
 				if (!data || data.error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
+					var headers = [],
+						i;
+					data.sessNCHeaders.sort(function (a, b) {
+						var result = 0;
+						if (a.stamp > b.stamp) {
+							result = -1;
+						} else if (a.stamp < b.stamp) {
+							result = 1;
+						}
+						return result;
+					});
+					for (i = data.sessNCHeaders.length; i--;) {
+						headers.unshift(JSON.stringify(data.sessNCHeaders[i], null, ' '));
+					}
 					ko_mapping.fromJS(data, this.onlines);
+					this.headers(headers);
 				}
 
 				if (Utils.isType('function', cb)) {
