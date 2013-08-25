@@ -17,6 +17,9 @@ define(function () {
 						'max reconnection attempts': 20 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 					});
 
+				s.on('error', function (reason){
+					console.log('Unable to connect socket: ', reason);
+				});
 				s.on('connect', function () {
 					console.log('Connected with ' + connectionType);
 

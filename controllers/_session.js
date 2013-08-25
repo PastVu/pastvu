@@ -11,6 +11,21 @@ var Session,
 	cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
 	cookieMaxAgeAnonimouse = ms('14d') / 1000,
 
+	msg = {
+		browserNoHeaders: 'Client came without header or user-agent',
+		browserNotSupport: 'Browser version not supported'
+	},
+
+	browserSuportFrom = {
+		'IE': 9,
+		'Firefox': 7,
+		'Opera': 12,
+		'Chrome': 13,
+		'Android': 3,
+		'Safari': 5,
+		'Mobile Safari': 5
+	},
+
 	settings = require('./settings.js'),
 	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
 	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
@@ -38,12 +53,24 @@ function addUserSession(session) {
 
 //Обработчик установки соединения сокетом 'authorization'
 function authSocket(handshake, callback) {
-	var cookieString = handshake.headers.cookie || '',
-		cookieObj = cookie.parse(cookieString),
-		existsSid = cookieObj['pastvu.sid'],
+	if (!handshake.headers || !handshake.headers['user-agent']) {
+		return callback(msg.browserNoHeaders, false); //Если нет хедера или юзер-агента - отказываем
+	}
+
+	var uaParsed = uaParser.parse(handshake.headers['user-agent']),
+		cookieObj,
+		existsSid,
 		session;
 
-	//logger.info(handshake);
+	//console.log('auth');
+	//console.log(handshake);
+
+	if (!uaParsed.family || !uaParsed.major || uaParsed.major < browserSuportFrom[uaParsed.family]) {
+		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
+	}
+
+	cookieObj = cookie.parse(handshake.headers.cookie || '');
+	existsSid = cookieObj['pastvu.sid'];
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
@@ -89,12 +116,13 @@ function authSocket(handshake, callback) {
 		if (err) {
 			return callback('Error: ' + err, false);
 		}
-		var ip = handshake.address && handshake.address.address;
+		var ip = handshake.headers['x-real-ip'] || handshake.headers['X-Real-IP'] || (handshake.address && handshake.address.address),
+			data = {ip: ip, headers: handshake.headers, ua: {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family}};
 
 		if (!session) {
-			session = generate({ip: ip}); //Если сессии нет, создаем и добавляем её в хеш
+			session = generate(data); //Если сессии нет, создаем и добавляем её в хеш
 		} else {
-			regen(session, {ip: ip});
+			regen(session, data);
 		}
 		return session;
 	}
@@ -109,6 +137,7 @@ function authSocket(handshake, callback) {
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
 	var session = socket.handshake.session;
+	//console.log('firstConnection');
 
 	if (!session.sockets) {
 		session.sockets = {};
@@ -124,22 +153,36 @@ function firstConnection(socket) {
 
 	socket.on('disconnect', function () {
 		var session = socket.handshake.session,
+			someCount = Object.keys(session.sockets).length,
 			user = session.user,
 			usObj;
 
 		//console.log('DISconnection');
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
-		if (Utils.isObjectEmpty(session.sockets)) {
+		if (Object.keys(session.sockets).length !== (someCount - 1)) {
+			console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
+		}
+
+		if (Object.keys(session.sockets).length === 0) {
 			//console.log(9, '1.Delete Sess');
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
+			someCount = Object.keys(sess).length;
 			delete sess[session.key];
+			if (Object.keys(sess).length !== (someCount - 1)) {
+				console.log('WARN-Session not removed (' + session.key + ')', user && user.login);
+			}
 
 			if (user !== undefined) {
 				//console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];
+
+				someCount = Object.keys(usObj.sessions).length;
 				delete usObj.sessions[session.key];
+				if (Object.keys(usObj.sessions).length !== (someCount - 1)) {
+					console.log('WARN-Session from user not removed (' + session.key + ')', user && user.login);
+				}
 
 				if (Utils.isObjectEmpty(usObj.sessions)) {
 					//console.log(9, '3.Delete User', user.login);
@@ -176,7 +219,9 @@ function destroy(socket, cb) {
 			//Отправляем всем сокетам сессии кроме текущей команду на релоад
 			for (var i in session.sockets) {
 				if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-					session.sockets[i].emit('command', [{name: 'location'}]);
+					session.sockets[i].emit('command', [
+						{name: 'location'}
+					]);
 				}
 			}
 
@@ -185,7 +230,9 @@ function destroy(socket, cb) {
 		});
 
 		//Отправляем автору запроса на логаут комманду на очистку кук, очистится у всех вкладок сессии
-		socket.emit('command', [{name: 'clearCookie'}]);
+		socket.emit('command', [
+			{name: 'clearCookie'}
+		]);
 	} else {
 		cb({message: 'No such session'});
 	}
@@ -235,17 +282,12 @@ function regen(session, data, keyRegen, userRePop, cb) {
 
 //Присваивание пользователя сессии при логине, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
-	var session = socket.handshake.session,
-		uaParsed,
-		uaData;
+	var session = socket.handshake.session;
 
 	session.user = user; //Здесь присвоится только _id и далее он спопулируется в regen
 	delete sess[session.key]; //Удаляем сессию из хеша, так как у неё изменится ключ
 
-	uaParsed = uaParser.parse(socket.handshake.headers['user-agent']);
-	uaData = {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family};
-
-	regen(session, {remember: data.remember, ua: uaData}, true, true, function (err, session) {
+	regen(session, {remember: data.remember}, true, true, function (err, session) {
 		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
 
 		sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
@@ -327,7 +369,7 @@ function emitCookie(socket, dontEmit) {
 }
 
 //Проверяем если пользователь онлайн
-function isOnline (login, _id) {
+function isOnline(login, _id) {
 	if (login) {
 		return us[login] !== undefined;
 	} else if (_id) {
@@ -336,7 +378,7 @@ function isOnline (login, _id) {
 }
 
 //Берем онлайн-пользователя
-function getOnline (login, _id) {
+function getOnline(login, _id) {
 	var usObj;
 	if (login) {
 		usObj = us[login];
