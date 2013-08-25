@@ -178,7 +178,7 @@ function firstConnection(socket) {
 				console.log('WARN-Session not removed (' + session.key + ')', user && user.login);
 			}
 
-			if (user !== undefined) {
+			if (user) {
 				//console.log(9, '2.Delete session from User', user.login);
 				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
 				usObj = us[user.login];

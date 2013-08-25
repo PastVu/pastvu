@@ -24,6 +24,7 @@ define([
 				sockUC: 0, sockAC: 0
 			});
 			this.headers = ko.observableArray();
+			this.headersWC = ko.observableArray();
 
 			this.giveOnlives(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
@@ -56,27 +57,37 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					var headers = [],
+						headersWC = [],
 						i;
-					data.sessNCHeaders.sort(function (a, b) {
-						var result = 0;
-						if (a.stamp > b.stamp) {
-							result = -1;
-						} else if (a.stamp < b.stamp) {
-							result = 1;
-						}
-						return result;
-					});
+
+					data.sessNCHeaders.sort(headersSort);
 					for (i = data.sessNCHeaders.length; i--;) {
 						headers.unshift(JSON.stringify(data.sessNCHeaders[i], null, ' '));
 					}
+					data.sessWCNCHeaders.sort(headersSort);
+					for (i = data.sessWCNCHeaders.length; i--;) {
+						headersWC.unshift(JSON.stringify(data.sessWCNCHeaders[i], null, ' '));
+					}
+
 					ko_mapping.fromJS(data, this.onlines);
 					this.headers(headers);
+					this.headersWC(headersWC);
 				}
 
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx);
 				}
 				this.timeoutUpdate = window.setTimeout(this.giveOnlives.bind(this), 5000);
+
+				function headersSort(a, b) {
+					var result = 0;
+					if (a.stamp > b.stamp) {
+						result = -1;
+					} else if (a.stamp < b.stamp) {
+						result = 1;
+					}
+					return result;
+				}
 			}.bind(this));
 			socket.emit('getOnlineStat');
 		}
