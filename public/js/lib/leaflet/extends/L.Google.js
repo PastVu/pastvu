@@ -2,7 +2,7 @@
 /*
  * Google layer using Google Maps API
  */
-define(['leaflet', 'async!http://maps.googleapis.com/maps/api/js?v=3.11&sensor=false&region=RU'], function (L) {
+define(['leaflet', 'async!' + (location.protocol || 'http:') + '//maps.googleapis.com/maps/api/js?v=3.11&sensor=false&region=RU'], function (L) {
     (function (google, L) {
 
         L.Google = L.Class.extend({

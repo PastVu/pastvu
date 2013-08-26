@@ -2,7 +2,7 @@
 /*
  * L.TileLayer is used for standard xyz-numbered tile layers.
  */
-define(['leaflet', 'http://api-maps.yandex.ru/2.0/?load=package.map&mode=release&lang=ru-RU'], function (L) {
+define(['leaflet', (location.protocol || 'http:') + '//api-maps.yandex.ru/2.0/?load=package.map&mode=release&lang=ru-RU'], function (L) {
 
     (function (ymaps, L) {
 

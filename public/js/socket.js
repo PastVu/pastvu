@@ -82,7 +82,7 @@ define(function () {
 					if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
 						P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
 						P.preaddrs = P.settings.server.subdomains().map(function (sub) {
-							return 'http://' + sub + '.' + location.host;
+							return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
 						});
 						P.preaddr = P.preaddrs[0];
 					} else {
