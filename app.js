@@ -208,6 +208,7 @@ async.waterfall([
 
 		io.set('log level', land === 'dev' ? 1 : 0);
 		io.set('browser client', false);
+		io.set('match origin protocol', true);
 		io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
 
 		io.set('authorization', _session.authSocket);

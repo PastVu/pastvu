@@ -204,7 +204,7 @@ function firstConnection(socket) {
 	});
 }
 
-//Каждую минуту уничтожает одидающие сессии, если они не перешли в статус активных в течении 5 минут
+//Каждую минуту уничтожает ожидающие сессии, если они не перешли в статус активных в течении 5 минут
 var checkWaitingSess = (function () {
 	function clearWaitingSess() {
 		var fiveMinutesAgo = new Date(Date.now() - ms('5m')),
@@ -216,11 +216,10 @@ var checkWaitingSess = (function () {
 		for (i = keys.length; i--;) {
 			session = sessWaitingConnect[keys[i]];
 
-			delete sessWaitingConnect[session.key];
+			if (session && session.stamp <= fiveMinutesAgo) {
+				delete sessWaitingConnect[session.key];
 
-			if (session.stamp <= fiveMinutesAgo) {
 				if (session.user) {
-
 					usObj = us[session.user.login];
 
 					if (usObj) {
