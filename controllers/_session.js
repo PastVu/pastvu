@@ -144,6 +144,10 @@ function firstConnection(socket) {
 		delete sessWaitingConnect[session.key];
 	}
 
+	if (!sess[session.key]) {
+		return; //Если сессии уже нет, выходим
+	}
+
 	if (!session.sockets) {
 		session.sockets = {};
 	}
@@ -169,7 +173,7 @@ function firstConnection(socket) {
 			console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
 		}
 
-		if (Object.keys(session.sockets).length === 0) {
+		if (!Object.keys(session.sockets).length) {
 			//console.log(9, '1.Delete Sess');
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			someCount = Object.keys(sess).length;
@@ -189,7 +193,7 @@ function firstConnection(socket) {
 					console.log('WARN-Session from user not removed (' + session.key + ')', user && user.login);
 				}
 
-				if (Utils.isObjectEmpty(usObj.sessions)) {
+				if (!Object.keys(usObj.sessions).length) {
 					//console.log(9, '3.Delete User', user.login);
 					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
 					delete us[user.login];
@@ -294,7 +298,7 @@ function destroy(socket, cb) {
  */
 function regen(session, data, keyRegen, userRePop, cb) {
 	if (keyRegen) {
-		session.key = Utils.randomString(12); // При каждом заходе регенерируем ключ (пока только при логине)
+		session.key = typeof keyRegen === 'string' ? keyRegen : Utils.randomString(12); // При каждом заходе регенерируем ключ (пока только при логине)
 	}
 	session.stamp = new Date(); // При каждом заходе продлеваем действие ключа
 	if (data) {
@@ -328,17 +332,22 @@ function regen(session, data, keyRegen, userRePop, cb) {
 
 //Присваивание пользователя сессии при логине, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
-	var session = socket.handshake.session,
-		oldKey = session.key;
+	var session = socket.handshake.session;
 
 	session.user = user; //Здесь присвоится только _id и далее он спопулируется в regen
 
-	regen(session, {remember: data.remember}, true, true, function (err, session) {
+	//Вручную меняем ключ сессии и сразу переставляем его в хеше сессий,
+	//чтобы не возникло ситуации задержки смены в хеше, пока сессия сохраняется
+	delete sess[session.key];
+	session.key = Utils.randomString(12);
+	sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
+
+	regen(session, {remember: data.remember}, false, true, function (err, session) {
 		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
 
-		delete sess[oldKey]; //Удаляем сессию из хеша по старому ключу, так как он изменился после регена
-		sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
-		addUserSession(session); //Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться, если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
+		//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
+		//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
+		addUserSession(session);
 
 		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
 		for (var i in session.sockets) {
