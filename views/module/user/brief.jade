@@ -1,7 +1,7 @@
 .user_brief(data-bind="with: repository[M!M]")
 	.row-fluid
 		.avatar.fringe
-			img(data-bind="attr: {src: user.avatar()}, event: {load: onAvaLoad, error: onAvaError}")
+			img(data-bind="attr: {src: user.avatar(), alt: user.disp()}, event: {load: onAvaLoad, error: onAvaError}")
 			//ko if: avaexe()
 			.avaLoadCurtain
 			// /ko

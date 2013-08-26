@@ -1,13 +1,9 @@
-Sitemap: http://www.example.com/sitemap.xml
+Sitemap: http://pastvu.com/sitemap.xml
 
 # Google Image
-User-agent: Googlebot-Image
-Disallow:
-Allow: /*
-
-# Google AdSense
-User-agent: Mediapartners-Google
-Disallow:
+#User-agent: Googlebot-Image
+#Allow: /p/*
+#Disallow: /
 
 # global
 User-agent: *

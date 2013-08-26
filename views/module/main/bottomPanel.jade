@@ -39,9 +39,9 @@
 	script(id="photosTpl", type="text/html")
 		.row-fluid.photosNew
 			//ko foreach: photos
-			a.photoPreview.withTitle.fringe(data-bind="attr: {href: $data.link}")
+			a.photoPreview.withTitle.fringe(data-bind="attr: {href: $data.link, title: title}")
 				.photoBox
-					img.img(data-bind="attr: {src: sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+					img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 					.curtain
 				.photoTitle(data-bind="text: title")
 			// /ko
