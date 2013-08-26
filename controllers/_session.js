@@ -200,6 +200,47 @@ function firstConnection(socket) {
 	});
 }
 
+//Каждую минуту уничтожает одидающие сессии, если они не перешли в статус активных в течении 5 минут
+var checkWaitingSess = (function () {
+	function clearWaitingSess() {
+		var fiveMinutesAgo = new Date(Date.now() - ms('5m')),
+			keys = Object.keys(sessWaitingConnect),
+			session,
+			usObj,
+			i;
+
+		for (i = keys.length; i--;) {
+			session = sessWaitingConnect[keys[i]];
+
+			delete sessWaitingConnect[session.key];
+
+			if (session.stamp <= fiveMinutesAgo) {
+				if (session.user) {
+
+					usObj = us[session.user.login];
+
+					if (usObj) {
+						delete usObj.sessions[session.key];
+
+						if (!Object.keys(usObj.sessions).length) {
+							//Если сессий у пользователя не осталось, убираем его из хеша пользователей
+							delete us[session.user.login];
+							delete usid[session.user._id];
+						}
+					}
+				}
+
+			}
+		}
+
+		checkWaitingSess();
+	}
+
+	return function () {
+		setTimeout(clearWaitingSess, ms('1m'));
+	};
+}());
+
 function generate(data, cb) {
 	var session = new Session({
 		key: Utils.randomString(12),
@@ -417,6 +458,8 @@ module.exports.loadController = function (a, db, io) {
 	app = a;
 	Session = db.model('Session');
 	User = db.model('User');
+
+	checkWaitingSess();
 
 	//io.sockets.on('connection', function (socket) {});
 };
