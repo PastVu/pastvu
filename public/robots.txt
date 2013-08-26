@@ -1,4 +1,4 @@
-Sitemap: http://pastvu.com/sitemap.xml
+Sitemap: https://pastvu.com/sitemap.xml
 
 # Google Image
 #User-agent: Googlebot-Image
