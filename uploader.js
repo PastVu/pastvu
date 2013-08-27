@@ -36,10 +36,11 @@ var conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/con
 	listenuport = argv.uport || conf.uport || 3001, //Порт прослушки сервера загрузки фотографий
 	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
 
+	protocol = argv.protocol || conf.protocol || 'http', //Протокол сервера для клинетов
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.projectport || conf.projectport || 3000, //Порт сервера
-	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий
-	host = domain + (uport === 80 ? '' : ':' + uport), //Имя хоста (адрес+порт)
+	port = argv.projectport || conf.projectport || '', //Порт сервера
+	uport = argv.projectuport || conf.projectuport || '', //Порт сервера загрузки фотографий
+	host = domain + uport, //Имя хоста (адрес+порт)
 
 	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке логов
 
@@ -50,7 +51,7 @@ log4js.configure('./log4js.json', {cwd: logPath});
 var logger = log4js.getLogger("uploader.js");
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
-global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport};
+global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport};
 
 var Utils = require('./commons/Utils.js'),
 	options = {

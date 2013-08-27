@@ -48,10 +48,11 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	listenport = argv.port || conf.port || 3000, //Порт прослушки сервера
 	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
 
+	protocol = argv.protocol || conf.protocol || 'http', //Протокол сервера для клинетов
 	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.projectport || conf.projectport || 80, //Порт сервера для клиента
-	uport = argv.projectuport || conf.projectuport || 3001, //Порт сервера загрузки фотографий для клиента
-	host = domain + (port === 80 ? '' : ':' + port), //Имя хоста (адрес+порт)
+	port = argv.projectport || conf.projectport || '', //Порт сервера для клиента
+	uport = argv.projectuport || conf.projectuport || '', //Порт сервера загрузки фотографий для клиента
+	host = domain + port, //Имя хоста (адрес+порт)
 	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {
 		return typeof item === 'string' && item.length > 0;
 	}), //Поддомены для раздачи статики из store
@@ -143,7 +144,7 @@ async.waterfall([
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.smtp = smtp;
-			global.appVar.serverAddr = {domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
+			global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
 			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
 
 			app.set('views', __dirname + '/views');
@@ -261,7 +262,7 @@ async.waterfall([
 			});
 
 			server.listen(listenport, listenhost, function () {
-				logger.info('Host for users: [%s]', host);
+				logger.info('Host for users: [%s]', protocol + '://' + host);
 				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
 			});
 
