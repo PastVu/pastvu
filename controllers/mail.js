@@ -23,7 +23,7 @@ module.exports.loadController = function (a) {
     app = a;
 	var options = {};
 
-	if (mailConf.type === 'smtp') {
+	if (mailConf.type === 'SMTP') {
 		options.auth = mailConf.auth;
 
 		if (options.secureConnection) {
@@ -44,7 +44,7 @@ module.exports.loadController = function (a) {
 
     // Create a SMTP transport object
 	if (!Utils.isObjectEmpty(options)) {
-        transport = nodemailer.createTransport("SMTP", options);
+        transport = nodemailer.createTransport(mailConf.type, options);
         logger.info('SMTP Configured');
 	} else {
 		logger.warn('SMTP not configured. Options is empty');

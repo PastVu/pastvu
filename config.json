@@ -22,7 +22,7 @@
 	},
 
 	"mail": {
-		"type": "smtp",
+		"type": "SMTP",
 		"service": "Gmail",
 		"host": "",
 		"port": 0,
