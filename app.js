@@ -58,7 +58,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo.con,
 	moongoPool = argv.mongopool || conf.mongo.pool || 5,
-	smtp = conf.smtp,
+	mail = conf.mail || {},
 
 	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
 	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
@@ -143,7 +143,7 @@ async.waterfall([
 		app.configure(function () {
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
-			global.appVar.smtp = smtp;
+			global.appVar.mail = mail;
 			global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
 			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
 

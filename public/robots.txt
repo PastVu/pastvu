@@ -8,8 +8,9 @@ Sitemap: https://pastvu.com/sitemap.xml
 # global
 User-agent: *
 Disallow: /admin
+Disallow: /confirm
 Disallow: /ps/feed
 Disallow: /photoUpload
-Crawl-delay: 10 # задает таймаут в 10 секунд для переходов роботом между страницами
+Crawl-delay: 10
 
-Clean-param: hl / # Не различать страницы с этими параметрами. Директива является межсекционной. Ситнаксис Clean-param: p0[&p1&p2&..&pn] [path]
+Clean-param: hl

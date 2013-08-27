@@ -21,7 +21,8 @@
 		"pool": 5 /* Number of concurrent connections to DB.  @Default 5*/
 	},
 
-	"smtp": {
+	"mail": {
+		"type": "smtp",
 		"service": "Gmail",
 		"host": "",
 		"port": 0,
