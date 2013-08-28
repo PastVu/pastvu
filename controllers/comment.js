@@ -4,6 +4,7 @@ var auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	Settings,
 	User,
+	UserCommentsView,
 	Photo,
 	News,
 	Comment,
@@ -44,7 +45,8 @@ function getCommentsObj(iAm, data, cb) {
 		cid,
 		commentsArr,
 		commentModel,
-		usersHash = {};
+		usersHash = {},
+		lastView;
 
 	if (!Utils.isType('object', data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
@@ -68,12 +70,13 @@ function getCommentsObj(iAm, data, cb) {
 			if (err || !obj) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
-			commentModel.collection.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {sort: [
-				['stamp', 'asc']
-			]}, this);
+			commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+
+			if (iAm) {
+				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+			}
 		},
-		Utils.cursorExtract,
-		function (err, comments) {
+		function (err, comments, userView) {
 			if (err || !comments) {
 				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
@@ -87,6 +90,10 @@ function getCommentsObj(iAm, data, cb) {
 					usersHash[userId] = true;
 					usersArr.push(userId);
 				}
+			}
+
+			if (userView) {
+				lastView = userView.stamp;
 			}
 
 			commentsArr = comments;
@@ -136,7 +143,7 @@ function getCommentsObj(iAm, data, cb) {
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash});
+			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash, lastView: lastView});
 		}
 	);
 }
@@ -891,7 +898,7 @@ module.exports.loadController = function (app, db, io) {
 	Comment = db.model('Comment');
 	CommentN = db.model('CommentN');
 	Counter = db.model('Counter');
-
+	UserCommentsView = db.model('UserCommentsView');
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
