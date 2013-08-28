@@ -4,11 +4,13 @@ var auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	Settings,
 	User,
+	UserCommentsView,
 	Photo,
 	PhotoFresh,
 	PhotoDis,
 	PhotoDel,
 	PhotoSort,
+	Comment,
 	Counter,
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
@@ -36,6 +38,7 @@ var auth = require('./auth.js'),
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+	compactFieldsId = {_id: 1, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	photoPermissions = {
 		getCan: function (photo, user) {
 			var can = {
@@ -541,7 +544,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 }());
 
 //Отдаем полную публичную галерею в компактном виде
-function givePhotosPublic(data, cb) {
+function givePhotosPublic(iAm, data, cb) {
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
@@ -552,22 +555,103 @@ function givePhotosPublic(data, cb) {
 
 	step(
 		function () {
-			var query = {};
+			var query = {},
+				fieldsSelect = iAm ? compactFieldsId : compactFields;
+
 			if (filter) {
 				if (filter.nogeo) {
 					query.geo = null;
 				}
 			}
-			Photo.find(query, compactFields, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
+			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
 			Photo.count(query, this.parallel());
 		},
-		function (err, photos, count) {
-			if (err || !photos) {
-				return cb({message: err && err.message || 'Photos does not exist', error: true});
-			}
-			cb({photos: photos, count: count, skip: skip});
-		}
+		finishOrNewCommentsCount
 	);
+
+	function finishOrNewCommentsCount(err, photos, count) {
+		if (err || !photos) {
+			return cb({message: err && err.message || 'Photos does not exist', error: true});
+		}
+
+		if (!iAm || !photos.length) {
+			//Если аноним или фотографий нет, сразу возвращаем
+			cb({photos: photos, count: count, skip: skip});
+
+		} else {
+			//Если пользователь залогинен, выбираем кол-во новых комментариев для каждой фотографии
+			var photosIdsWithCounts = [],
+				photo,
+				i = photos.length;
+
+			//Составляем массив id фотографий, у которых есть комментарии
+			while (i) {
+				photo = photos[--i];
+				if (photo.ccount) {
+					photosIdsWithCounts.push(photo._id);
+				}
+			}
+
+			if (!photosIdsWithCounts.length) {
+				//Если все фотографии не имеют никаких комментариев, то не имеет смысла проверять на новые, сразу возвращаем
+				cb({photos: photos, count: count, skip: skip});
+
+			} else {
+				step(
+					function () {
+						UserCommentsView.find({obj: {$in: photosIdsWithCounts}, user: iAm._id}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
+					},
+					function (err, views) {
+						if (err || !views) {
+							return cb({message: err && err.message || 'Photos views does not exist', error: true});
+						}
+						var i,
+							photoId,
+							stamp,
+							stampsHash = {};
+
+						//Собираем хеш {idPhoto: stamp}
+						for (i = views.length; i--;) {
+							stampsHash[views[i].obj] = views[i].stamp;
+						}
+
+						//Заново запоняем массив id фотографий, теперь теми у которых действительно
+						//есть последние посещения, и по каждому считаем кол-во комментариев с этого посещения
+						photosIdsWithCounts = [];
+						for (i = photos.length; i--;) {
+							photoId = photos[i]._id;
+							stamp = stampsHash[photoId];
+							if (stamp !== undefined) {
+								photosIdsWithCounts.push(photoId);
+								Comment.count({obj: photoId, stamp: {$gt: stamp}}, this.parallel());
+							}
+						}
+						this.parallel()();
+					},
+					function (err, counts) {
+						if (err) {
+							return cb({message: err && err.message, error: true});
+						}
+						var i,
+							photo,
+							countsHash = {};
+
+						//Собираем хеш {idPhoto: commentsNewCount}
+						for (i = 0; i < photosIdsWithCounts.length; i++) {
+							countsHash[photosIdsWithCounts[i]] = arguments[i + 1] || 0;
+						}
+
+						//Присваиваем каждой фотографии количество новых комментариев, если они есть
+						for (i = photos.length; i--;) {
+							photo = photos[i];
+							photo.ccount_new = countsHash[photo._id];
+						}
+						cb({photos: photos, count: count, skip: skip});
+					}
+				);
+			}
+		}
+	}
 }
 
 
@@ -1357,6 +1441,9 @@ module.exports.loadController = function (app, db, io) {
 	PhotoDel = db.model('PhotoDel');
 	PhotoSort = db.model('PhotoSort');
 	Counter = db.model('Counter');
+	Comment = db.model('Comment');
+
+	UserCommentsView = db.model('UserCommentsView');
 
 	PhotoCluster.loadController(app, db, io);
 	PhotoConverter.loadController(app, db, io);
@@ -1417,7 +1504,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosPublic', function (data) {
-			givePhotosPublic(data, function (resultData) {
+			givePhotosPublic(socket.handshake.session.user, data, function (resultData) {
 				socket.emit('takePhotosPublic', resultData);
 			});
 		});
