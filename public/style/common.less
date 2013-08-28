@@ -348,7 +348,6 @@ html, body {
 .photoPreview {
 	display: inline-block;
 	font-size: 14px;
-	color: @MainLigthColor;
 	opacity: 0;
 
 	&.showPrv {
@@ -360,17 +359,32 @@ html, body {
 
 	&:hover {
 		color: @MainLigthColor;
+
 		.curtain {
 			background-color: rgba(0, 0, 0, 0);
+		}
+
+		.comm{
+			background-color: rgba(255, 255, 255, .9);
+			color: #000;
+			border-color: #fff;
+
+			&::after {
+				border-top-color: #fff;
+			}
 		}
 	}
 
 	.photoBox {
 		position: relative;
+		display: block;
+		color: @MainLigthColor;
+		text-decoration: none;
 	}
 
 	.img {
-		display: block;
+		display: inline-block; //Должно быть inline-block c hidden, чтобы alt в firefox не первращался в блочный текст
+		overflow: hidden;
 	}
 
 	.curtain {
@@ -416,12 +430,53 @@ html, body {
 		}
 	}
 
+	.comm {
+		position: absolute;
+		display: block;
+		right: 3px;
+		bottom: 4px;
+		min-width: 14px;
+		padding: 0 2px 0 2px;
+		font-size: 12px;
+		line-height: 15px;
+		color: #111;
+		text-align: center;
+		text-decoration: none;
+		text-shadow: 1px 1px 0 #F0F0F0, -1px 1px 0 #F0F0F0, 1px -1px 0 #F0F0F0, -1px -1px 0 #F0F0F0;
+		border: 1px solid #F0F0F0;
+		background-color: rgba(255, 255, 255, .7);
+		box-shadow: 0 1px 5px 1px #444;
+
+		&::after {
+			position: absolute;
+			display: block;
+			content: '';
+			left: 20%;
+			bottom: -4px;
+			width: 0;
+			height: 0;
+			border-top: 4px solid #F0F0F0;
+			border-right: 7px solid transparent;
+		}
+
+		&:hover {
+			font-weight: bold;
+			background-color: #fff;
+			text-shadow: none;
+		}
+	}
+
 	&.withTitle {
 		margin: 0 7px 17px 7px;
 		padding-bottom: @PhotoTitleHeight;
 
+		.comm {
+			bottom: @PhotoTitleHeight + 4;
+		}
+
 		.photoTitle {
 			position: absolute;
+			display: block;
 			left: 0;
 			right: 0;
 			bottom: 0;
@@ -430,7 +485,9 @@ html, body {
 			font-family: @uconFontFamily;
 			font-size: 16px;
 			line-height: @PhotoTitleHeight;
+			color: @MainLigthColor;
 			text-align: left;
+			text-decoration: none;
 			.text-overflow();
 
 			&::after {

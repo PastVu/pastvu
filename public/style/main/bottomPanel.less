@@ -177,8 +177,9 @@
 					height: 100px;
 					width: 150px;
 					opacity: 1;
-					text-align: center;
 					color: #555E85;
+					text-align: center;
+					vertical-align: top;
 					border: 1px solid rgba(0, 0, 0, 0);
 
 					&:hover {
@@ -201,6 +202,11 @@
 					height: 100px;
 				}
 
+				.comm {
+					bottom: @PhotoTitleHeight + 4 - 4;
+					font-size: @fontSizeSmall;
+					line-height: 14px;
+				}
 				.photoTitle {
 					height: @PhotoTitleHeight - 4;
 					padding: 0 0 0 2px;

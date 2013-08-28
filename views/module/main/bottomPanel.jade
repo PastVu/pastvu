@@ -39,11 +39,14 @@
 	script(id="photosTpl", type="text/html")
 		.row-fluid.photosNew
 			//ko foreach: photos
-			a.photoPreview.withTitle.fringe(data-bind="attr: {href: $data.link, title: title}")
-				.photoBox
+			.photoPreview.withTitle.fringe(data-bind="attr: {title: title}")
+				a.photoBox(data-bind="attr: {href: $data.link}")
 					img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 					.curtain
-				.photoTitle(data-bind="text: title")
+				a.photoTitle(data-bind="text: title, attr: {href: $data.link}")
+				//ko if: $data.ccount
+				a.comm(data-bind="text: $data.ccount, attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+				// /ko
 			// /ko
 			//ko if: moreLink()
 			a.photoPreview.withTitle.nextPhoto(target="_blank", data-bind="attr: {href: moreLink()}")

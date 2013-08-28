@@ -100,8 +100,9 @@
 			position: relative;
 			visibility: visible;
 			opacity: 1;
-			text-align: center;
 			color: #555E85;
+			text-align: center;
+			vertical-align: top;
 
 			.loadPhoto {
 				position: absolute;
@@ -116,50 +117,6 @@
 				background-position: 50% 0;
 				background-repeat: no-repeat;
 			}
-		}
-	}
-
-	.count {
-		position: absolute;
-		display: block;
-		right: 3px;
-		bottom: 4px;
-		min-width: 14px;
-		padding: 0 2px 0 2px;
-		font-size: 11px;
-		line-height: 14px;
-		color: #111;
-		text-align: center;
-		text-shadow: 1px 1px 0 #F0F0F0, -1px 1px 0 #F0F0F0, 1px -1px 0 #F0F0F0, -1px -1px 0 #F0F0F0;
-		border: 1px solid #F0F0F0;
-		background-color: rgba(255, 255, 255, .7);
-		box-shadow: 0 1px 5px 1px #444;
-
-		&::after {
-			position: absolute;
-			display: block;
-			content: '';
-			left: 20%;
-			bottom: -4px;
-			width: 0;
-			height: 0;
-			border-top: 4px solid #F0F0F0;
-			border-right: 7px solid transparent;
-		}
-
-		&:hover {
-			font-weight: bold;
-			background-color: #fff;
-			text-shadow: none;
-		}
-	}
-	.photoPreview:hover .count{
-		background-color: rgba(255, 255, 255, .9);
-		color: #000;
-		border-color: #fff;
-
-		&::after {
-			border-top-color: #fff;
 		}
 	}
 }
@@ -178,6 +135,11 @@
 				.desc {
 					font-size: 15px;
 				}
+			}
+			.comm {
+				bottom: @PhotoTitleHeight + 4 - 3;
+				font-size: @fontSizeSmall;
+				line-height: 14px;
 			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 3;
@@ -199,6 +161,11 @@
 					font-size: 13px;
 				}
 			}
+			.comm {
+				bottom: @PhotoTitleHeight + 4 - 4;
+				font-size: @fontSizeSmall;
+				line-height: 14px;
+			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 4;
 				padding: 0 0 0 2px;
@@ -218,6 +185,12 @@
 				.desc {
 					font-size: 12px;
 				}
+			}
+			.comm {
+				min-width: 12px;
+				bottom: @PhotoTitleHeight + 4 - 5;
+				font-size: @fontSizeMini;
+				line-height: 13px;
 			}
 			.photoTitle {
 				height: @PhotoTitleHeight - 5;
