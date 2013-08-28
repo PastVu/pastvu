@@ -118,6 +118,50 @@
 			}
 		}
 	}
+
+	.count {
+		position: absolute;
+		display: block;
+		right: 3px;
+		bottom: 4px;
+		min-width: 14px;
+		padding: 0 2px 0 2px;
+		font-size: 11px;
+		line-height: 14px;
+		color: #111;
+		text-align: center;
+		text-shadow: 1px 1px 0 #F0F0F0, -1px 1px 0 #F0F0F0, 1px -1px 0 #F0F0F0, -1px -1px 0 #F0F0F0;
+		border: 1px solid #F0F0F0;
+		background-color: rgba(255, 255, 255, .7);
+		box-shadow: 0 1px 5px 1px #444;
+
+		&::after {
+			position: absolute;
+			display: block;
+			content: '';
+			left: 20%;
+			bottom: -4px;
+			width: 0;
+			height: 0;
+			border-top: 4px solid #F0F0F0;
+			border-right: 7px solid transparent;
+		}
+
+		&:hover {
+			font-weight: bold;
+			background-color: #fff;
+			text-shadow: none;
+		}
+	}
+	.photoPreview:hover .count{
+		background-color: rgba(255, 255, 255, .9);
+		color: #000;
+		border-color: #fff;
+
+		&::after {
+			border-top-color: #fff;
+		}
+	}
 }
 
 //Chrome до 29 версии считает ширину для @media с вычитанием ширины скрола

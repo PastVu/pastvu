@@ -28,7 +28,8 @@ var auth = require('./auth.js'),
 
 	commentController = require('./comment.js'),
 	msg = {
-		deny: 'You do not have permission for this action'
+		deny: 'You do not have permission for this action',
+		notExists: 'Requested photo does not exist'
 	},
 	dummyFn = function () {
 	},
@@ -340,7 +341,7 @@ function removePhoto(socket, cid, cb) {
 function approvePhoto(socket, cid, cb) {
 	cid = Number(cid);
 	if (!cid) {
-		return cb({message: 'Requested photo does not exist', error: true});
+		return cb({message: msg.notExists, error: true});
 	}
 
 	var iAm = socket.handshake.session.user;
@@ -357,7 +358,7 @@ function approvePhoto(socket, cid, cb) {
 				return cb({message: err.message, error: true});
 			}
 			if (!photoFresh) {
-				return cb({message: 'Requested photo does not exist', error: true});
+				return cb({message: msg.notExists, error: true});
 			}
 			delete photoFresh.ready;
 
@@ -410,7 +411,7 @@ function activateDeactivate(socket, data, cb) {
 		makeDisabled = !!data.disable;
 
 	if (!cid) {
-		return cb({message: 'Requested photo does not exist', error: true});
+		return cb({message: msg.notExists, error: true});
 	}
 
 	step(
@@ -426,7 +427,7 @@ function activateDeactivate(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			if (!p) {
-				return cb({message: 'Requested photo does not exist', error: true});
+				return cb({message: msg.notExists, error: true});
 			}
 			var newPhoto;
 
@@ -473,7 +474,7 @@ function givePhoto(socket, data, cb) {
 		fieldSelect = {_id: 0, 'frags._id': 0};
 
 	if (isNaN(cid)) {
-		return cb({message: 'Requested photo does not exist', error: true});
+		return cb({message: msg.notExists, error: true});
 	}
 	//Инкрементируем кол-во просмотров только у публичных фото
 	Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
@@ -496,7 +497,7 @@ function givePhoto(socket, data, cb) {
 
 	function process(photo, checkCan) {
 		if (!photo) {
-			return cb({message: 'Requested photo does not exist', error: true});
+			return cb({message: msg.notExists, error: true});
 		}
 		var can,
 			user = _session.getOnline(null, photo.user);
@@ -644,7 +645,7 @@ function giveUserPhotosAround(socket, data, cb) {
 
 	findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, user, true, function (err, photo) {
 		if (err || !photo || !photo.user) {
-			return cb({message: 'Requested photo does not exist', error: true});
+			return cb({message: msg.notExists, error: true});
 		}
 
 		step(
@@ -795,7 +796,7 @@ function giveCanPhoto(socket, data, cb) {
 		cid = Number(data.cid);
 
 	if (isNaN(cid)) {
-		return cb({message: 'Requested photo does not exist', error: true});
+		return cb({message: msg.notExists, error: true});
 	}
 	if (user) {
 		Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
@@ -830,7 +831,7 @@ function savePhoto(socket, data, cb) {
 		},
 		function checkPhoto(err, photo) {
 			if (!photo) {
-				return cb({message: 'Requested photo does not exist', error: true});
+				return cb({message: msg.notExists, error: true});
 			}
 			if (!photoPermissions.getCan(photo, user).edit) {
 				return cb({message: msg.deny, error: true});
@@ -918,7 +919,7 @@ function readyPhoto(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!cid) {
-		return cb({message: 'Requested photo does not exist', error: true});
+		return cb({message: msg.notExists, error: true});
 	}
 	step(
 		function () {
@@ -926,7 +927,7 @@ function readyPhoto(socket, data, cb) {
 		},
 		function (err, photo) {
 			if (err || !photo) {
-				return cb({message: err && err.message || 'Requested photo does not exist', error: true});
+				return cb({message: err && err.message || msg.notExists, error: true});
 			}
 			if (!photoPermissions.getCan(photo, user).edit) {
 				return cb({message: msg.deny, error: true});

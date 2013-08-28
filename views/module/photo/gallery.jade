@@ -28,6 +28,9 @@
 					//ko if: $data.noPublic
 					i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 					// /ko
+					//ko if: ccount
+					.count(data-bind="text: ccount", title="Комментарии")
+					// /ko
 				.photoTitle(data-bind="text: title")
 			// /ko
 			//ko if: feed()
