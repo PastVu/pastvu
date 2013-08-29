@@ -54,6 +54,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				vwcount: 0,
 				vcount: 0,
 
+				ccount_new: 0,
 				nocomments: false
 			}
 		},

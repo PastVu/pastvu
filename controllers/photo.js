@@ -474,7 +474,7 @@ function activateDeactivate(socket, data, cb) {
 function givePhoto(socket, data, cb) {
 	var cid = Number(data.cid),
 		iAm = socket.handshake.session.user,
-		fieldSelect = {_id: 0, 'frags._id': 0};
+		fieldSelect = {'frags._id': 0};
 
 	if (isNaN(cid)) {
 		return cb({message: msg.notExists, error: true});
@@ -513,14 +513,32 @@ function givePhoto(socket, data, cb) {
 			photo.user = {
 				login: user.login, avatar: user.avatar, disp: user.disp, online: true
 			};
-			cb({photo: photo, can: can});
+			finish(photo);
 		} else {
 			photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				cb({photo: photo.toObject({getters: true}), can: can});
+				finish(photo.toObject({getters: true}));
 			});
+		}
+
+		function finish(photo) {
+			if (!iAm || !photo.ccount) {
+				delete photo._id;
+				cb({photo: photo, can: can});
+			} else {
+				getNewCommentsCount([photo._id], iAm._id, function (err, countsHash) {
+					if (err) {
+						return cb({message: err && err.message, error: true});
+					}
+					if (countsHash[photo._id])  {
+						photo.ccount_new = countsHash[photo._id];
+					}
+					delete photo._id;
+					cb({photo: photo, can: can});
+				});
+			}
 		}
 	}
 }

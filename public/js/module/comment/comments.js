@@ -10,6 +10,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		options: {
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
 			count: 0, //Начальное кол-во комментариев
+			count_new: 0, //Начальное кол-во новых комментариев
 			autoShowOff: false, //Выключить автоматический show после создания
 			nocomments: false //Запрещено ли писать комментарии
 		},
@@ -18,6 +19,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.type = this.options.type;
 			this.cid = null;
 			this.count = ko.observable(this.options.count || 0);
+			this.count_new = ko.observable(this.options.count_new || 0);
 			this.nocomments = ko.observable(this.options.nocomments);
 
 			this.loading = ko.observable(false);

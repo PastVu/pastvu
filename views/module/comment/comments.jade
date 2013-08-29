@@ -1,7 +1,7 @@
 .fullComments(data-bind="with: repository[M!M]")
 	.commentsHead
 		//ko if: canAction() || count()
-		a.count.headElem.interact(href="?hl=comments", data-bind="text: count()", title="Ссылка на область комментариев")
+		a.count.headElem.interact(href="?hl=comments", data-bind="html: count() + (count_new() ? '<span class=\"cnew\"> +' + count_new() + '</span>' : '')", title="Ссылка на область комментариев")
 		//ko if: auth.loggedIn() && canAction()
 		.addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
 			i.icon-edit.icon-white
