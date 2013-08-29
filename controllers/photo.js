@@ -576,7 +576,7 @@ function givePhotosPublic(iAm, data, cb) {
 
 		if (!iAm || !photos.length) {
 			//Если аноним или фотографий нет, сразу возвращаем
-			cb({photos: photos, count: count, skip: skip});
+			finish(photos, count);
 
 		} else {
 			//Если пользователь залогинен, выбираем кол-во новых комментариев для каждой фотографии
@@ -594,7 +594,7 @@ function givePhotosPublic(iAm, data, cb) {
 
 			if (!photosIdsWithCounts.length) {
 				//Если все фотографии не имеют никаких комментариев, то не имеет смысла проверять на новые, сразу возвращаем
-				cb({photos: photos, count: count, skip: skip});
+				finish(photos, count);
 
 			} else {
 				getNewCommentsCount(photosIdsWithCounts, iAm._id, function (err, countsHash) {
@@ -609,10 +609,19 @@ function givePhotosPublic(iAm, data, cb) {
 							photo.ccount_new = countsHash[photo._id];
 						}
 					}
-					cb({photos: photos, count: count, skip: skip});
+					finish(photos, count);
 				});
 			}
 		}
+	}
+
+	function finish(photos, count) {
+		if (iAm) {
+			for (var i = photos.length; i--;) {
+				delete photos[i]._id ;
+			}
+		}
+		cb({photos: photos, count: count, skip: skip});
 	}
 }
 
@@ -633,6 +642,7 @@ function givePhotosForApprove(socket, data, cb) {
 //Отдаем галерею пользователя в компактном виде
 function giveUserPhotos(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
+
 	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
 		if (err || !user) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
@@ -641,39 +651,87 @@ function giveUserPhotos(socket, data, cb) {
 			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
 			skip = data.skip || 0,
 			limit = Math.min(data.limit || 20, 100),
-			filter = data.filter;
+			filter = data.filter,
+			fieldsSelect = iAm ? compactFieldsId : compactFields;
 
 		if (noPublic && !filter) {
 			//Не можем пользоваться фильтром по сквозной таблице
 			step(
 				function () {
-					findPhotosAll(query, compactFields, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, this.parallel());
+					findPhotosAll(query, fieldsSelect, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, this.parallel());
 					countPhotosAll(query, iAm, this.parallel());
 				},
-				finish
+				finishOrNewCommentsCount
 			);
 		} else if (filter) {
-			//Если есть фильтр, до запрашиваем по нему также count
+			//Если есть фильтр, то запрашиваем по нему также count
 			if (filter.nogeo) {
 				query.geo = null;
 			}
 			step(
 				function () {
-					Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, this.parallel());
+					Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, this.parallel());
 					Photo.count(query, this.parallel());
 				},
-				finish
+				finishOrNewCommentsCount
 			);
 		} else {
-			Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finish);
+			Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finishOrNewCommentsCount);
 		}
 
-
-		function finish(err, photos, allCount) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
+		function finishOrNewCommentsCount(err, photos, count) {
+			if (err || !photos) {
+				return cb({message: err && err.message || 'Photos does not exist', error: true});
 			}
-			cb({photos: photos, skip: skip, count: allCount || user.pcount || 0});
+
+			if (!iAm || !photos.length) {
+				//Если аноним или фотографий нет, сразу возвращаем
+				finish(photos, count);
+
+			} else {
+				//Если пользователь залогинен, выбираем кол-во новых комментариев для каждой фотографии
+				var photosIdsWithCounts = [],
+					photo,
+					i = photos.length;
+
+				//Составляем массив id фотографий, у которых есть комментарии
+				while (i) {
+					photo = photos[--i];
+					if (photo.ccount) {
+						photosIdsWithCounts.push(photo._id);
+					}
+				}
+
+				if (!photosIdsWithCounts.length) {
+					//Если все фотографии не имеют никаких комментариев, то не имеет смысла проверять на новые, сразу возвращаем
+					finish(photos, count);
+
+				} else {
+					getNewCommentsCount(photosIdsWithCounts, iAm._id, function (err, countsHash) {
+						if (err) {
+							return cb({message: err.message, error: true});
+						}
+
+						//Присваиваем каждой фотографии количество новых комментариев, если они есть
+						for (i = photos.length; i--;) {
+							photo = photos[i];
+							if (countsHash[photo._id]) {
+								photo.ccount_new = countsHash[photo._id];
+							}
+						}
+						finish(photos, count);
+					});
+				}
+			}
+		}
+
+		function finish(photos, count) {
+			if (iAm) {
+				for (var i = photos.length; i--;) {
+					delete photos[i]._id ;
+				}
+			}
+			cb({photos: photos, count: count || user.pcount || 0, skip: skip});
 		}
 	});
 }
@@ -1362,7 +1420,7 @@ var countPhotosAll = (function () {
 }());
 
 //Находим количество новых комментариев для списка фотографий для пользователя
-function getNewCommentsCount (photosIds, userId, cb) {
+function getNewCommentsCount(photosIds, userId, cb) {
 	var photosIdsWithCounts = [];
 
 	step(
