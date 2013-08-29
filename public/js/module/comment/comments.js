@@ -123,7 +123,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
 					} else {
 						this.users = _.assign(data.users, this.users);
-						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
+						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -156,7 +156,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			return results;
 		},
-		treeBuildCanCheck: function (arr) {
+		treeBuildCanCheck: function (arr, lastView) {
 			var i,
 				len = arr.length,
 				myLogin = this.auth.iAm.login(),
@@ -166,11 +166,18 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				comment,
 				results = [];
 
+			if (lastView) {
+				lastView = new Date(lastView);
+			}
+
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				comment.final = true;
+				if (lastView && comment.stamp > lastView) {
+					comment.isnew = true;
+				}
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}

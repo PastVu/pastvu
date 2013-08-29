@@ -29,7 +29,7 @@
 	// /ko
 
 	script(id="commentTplPure", type="text/html")
-		li.media(data-bind="attr: {'data-cid': $data.cid}")
+		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {isnew: !$parent.isnew && $data.isnew}")
 			a.pull-left(data-bind="attr: {href: '/u/' + $data.user.login}")
 				img.media-object(data-bind="attr: {src: $data.user.avatar}")
 			.media-body
@@ -56,7 +56,7 @@
 			.commentText(data-bind="html: $data.txt")
 
 	script(id="commentTplReg", type="text/html")
-		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid()}")
+		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {commentAdd: $data.cid === $parents[$data.level].commentEditingCid(), isnew: !$parent.isnew && $data.isnew}")
 			a.pull-left(data-bind="attr: {href: '/u/' + $data.user.login}")
 				img.media-object(data-bind="attr: {src: $data.user.avatar}")
 			.media-body
