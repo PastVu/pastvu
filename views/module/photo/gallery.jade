@@ -30,8 +30,8 @@
 					i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 					// /ko
 				a.photoTitle(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
-				//ko if: ccount
-				a.comm(data-bind="text: ccount, attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self'}", title="Комментарии")
+				//ko if: $data.ccount
+				a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: '/p/' + cid + '?hl=comments', target: $parent.feed() ? '_blank' : '_self'}", title="Комментарии")
 				// /ko
 			// /ko
 			//ko if: feed()

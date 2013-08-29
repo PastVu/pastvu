@@ -45,7 +45,7 @@
 					.curtain
 				a.photoTitle(data-bind="text: title, attr: {href: $data.link}")
 				//ko if: $data.ccount
-				a.comm(data-bind="text: $data.ccount, attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+				a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
 				// /ko
 			// /ko
 			//ko if: moreLink()
