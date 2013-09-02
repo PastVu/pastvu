@@ -14,6 +14,7 @@ var auth = require('./auth.js'),
 	log4js = require('log4js'),
 	appvar,
 	appEnv = {},
+	commentController = require('./comment.js'),
 
 	dayStart, //Время начала дня
 	weekStart; //Время начала недели
@@ -325,11 +326,35 @@ function giveNewsFull(data, cb) {
 		}
 	);
 }
-function giveNewsPublic(data, cb) {
+function giveNewsPublic(iAm, data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: 'Bad params'});
 	}
-	News.findOne({cid: data.cid}, {_id: 0, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(cb);
+
+	News.findOne({cid: data.cid}, {_id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1})
+		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
+		.exec(function (err, news) {
+			if (err) {
+				return cb(err);
+			}
+			news = news.toObject(); //Чтобы можно было присвоить ccount_new и удалить _id
+
+			if (!iAm || !news.ccount) {
+				delete news._id;
+				cb(null, {news: news});
+			} else {
+				commentController.getNewCommentsCount([news._id], iAm._id, 'news', function (err, countsHash) {
+					if (err) {
+						return cb(err);
+					}
+					if (countsHash[news._id])  {
+						news.ccount_new = countsHash[news._id];
+					}
+					delete news._id;
+					cb(null, {news: news});
+				});
+			}
+		});
 }
 
 /**
@@ -384,8 +409,8 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(data, function (err, news) {
-				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : {news: news});
+			giveNewsPublic(socket.handshake.session.user, data, function (err, result) {
+				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : result);
 			});
 		});
 
@@ -407,7 +432,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 					stat.common = {};
 					for (var i in statFast) {
-						if (statFast[i] !== undefined){
+						if (statFast[i] !== undefined) {
 							stat.common[i] = statFast[i];
 						}
 					}

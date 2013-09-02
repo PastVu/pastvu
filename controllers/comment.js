@@ -885,6 +885,70 @@ function hideObjComments(oid, hide, iAm, cb) {
 	);
 }
 
+/**
+ * Находим количество новых комментариев для списка объектов для пользователя
+ * @param objIds Массив _id объектов
+ * @param type Тип объекта
+ * @param userId _id пользователя
+ * @param cb
+ */
+function getNewCommentsCount(objIds, userId, type, cb) {
+	var objIdsWithCounts = [];
+
+	step(
+		function () {
+			UserCommentsView.find({obj: {$in: objIds}, user: userId}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
+		},
+		function (err, views) {
+			if (err) {
+				return cb(err);
+			}
+			var i,
+				commentModel,
+				objId,
+				stamp,
+				stampsHash = {};
+
+			if (type === 'news') {
+				commentModel = CommentN;
+			} else {
+				commentModel = Comment;
+			}
+
+			//Собираем хеш {idPhoto: stamp}
+			for (i = views.length; i--;) {
+				stampsHash[views[i].obj] = views[i].stamp;
+			}
+
+			//Запоняем массив id фотографий теми у которых действительно
+			//есть последние посещения, и по каждому считаем кол-во комментариев с этого посещения
+			for (i = objIds.length; i--;) {
+				objId = objIds[i];
+				stamp = stampsHash[objId];
+				if (stamp !== undefined) {
+					objIdsWithCounts.push(objId);
+					commentModel.count({obj: objId, stamp: {$gt: stamp}}, this.parallel());
+				}
+			}
+			this.parallel()();
+		},
+		function (err, counts) {
+			if (err) {
+				return cb(err);
+			}
+			var i,
+				countsHash = {};
+
+			//Собираем хеш {idPhoto: commentsNewCount}
+			for (i = 0; i < objIdsWithCounts.length; i++) {
+				countsHash[objIdsWithCounts[i]] = arguments[i + 1] || 0;
+			}
+
+			cb(null, countsHash);
+		}
+	);
+}
+
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
@@ -950,3 +1014,4 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.hideObjComments = hideObjComments;
+module.exports.getNewCommentsCount = getNewCommentsCount;

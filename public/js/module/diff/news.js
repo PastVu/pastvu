@@ -9,6 +9,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		title: 'Нет заголовка',
 		txt: '',
 		ccount: 0,
+		ccount_new: 0,
 		nocomments: false
 	};
 
@@ -109,6 +110,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.news.ccount());
+						this.commentsVM.count_new(this.news.ccount_new());
 						this.commentsVM.nocomments(this.news.nocomments());
 						this.commentsVM.show();
 						this.commentsActivate(this.toComment ? 100 : (this.news.ccount() > 30 ? 600 : 410));

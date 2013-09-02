@@ -528,7 +528,7 @@ function givePhoto(socket, data, cb) {
 				delete photo._id;
 				cb({photo: photo, can: can});
 			} else {
-				getNewCommentsCount([photo._id], iAm._id, function (err, countsHash) {
+				commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
 					if (err) {
 						return cb({message: err && err.message, error: true});
 					}
@@ -615,7 +615,7 @@ function givePhotosPublic(iAm, data, cb) {
 				finish(photos, count);
 
 			} else {
-				getNewCommentsCount(photosIdsWithCounts, iAm._id, function (err, countsHash) {
+				commentController.getNewCommentsCount(photosIdsWithCounts, iAm._id, null, function (err, countsHash) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
@@ -725,7 +725,7 @@ function giveUserPhotos(socket, data, cb) {
 					finish(photos, count);
 
 				} else {
-					getNewCommentsCount(photosIdsWithCounts, iAm._id, function (err, countsHash) {
+					commentController.getNewCommentsCount(photosIdsWithCounts, iAm._id, null, function (err, countsHash) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
@@ -1437,56 +1437,6 @@ var countPhotosAll = (function () {
 	};
 }());
 
-//Находим количество новых комментариев для списка фотографий для пользователя
-function getNewCommentsCount(photosIds, userId, cb) {
-	var photosIdsWithCounts = [];
-
-	step(
-		function () {
-			UserCommentsView.find({obj: {$in: photosIds}, user: userId}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
-		},
-		function (err, views) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				photoId,
-				stamp,
-				stampsHash = {};
-
-			//Собираем хеш {idPhoto: stamp}
-			for (i = views.length; i--;) {
-				stampsHash[views[i].obj] = views[i].stamp;
-			}
-
-			//Запоняем массив id фотографий теми у которых действительно
-			//есть последние посещения, и по каждому считаем кол-во комментариев с этого посещения
-			for (i = photosIds.length; i--;) {
-				photoId = photosIds[i];
-				stamp = stampsHash[photoId];
-				if (stamp !== undefined) {
-					photosIdsWithCounts.push(photoId);
-					Comment.count({obj: photoId, stamp: {$gt: stamp}}, this.parallel());
-				}
-			}
-			this.parallel()();
-		},
-		function (err, counts) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				countsHash = {};
-
-			//Собираем хеш {idPhoto: commentsNewCount}
-			for (i = 0; i < photosIdsWithCounts.length; i++) {
-				countsHash[photosIdsWithCounts[i]] = arguments[i + 1] || 0;
-			}
-
-			cb(null, countsHash);
-		}
-	);
-}
 
 //Обнуляет статистику просмотров за день и неделю
 var planResetDisplayStat = (function () {
