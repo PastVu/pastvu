@@ -3,7 +3,7 @@
 		//ko if: auth.loggedIn() && can.adm()
 		a.appV(target="_blank", href="/history.txt", data-bind="text: 'v' + $root.P.settings.appVersion()")
 		// /ko
-		img#appName.indentLogo(src="/img/misc/name.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x", title="PastVu - ретроспектива среды обитания человечества")
+		img#appName.indentLogo(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x", title="PastVu - ретроспектива среды обитания человечества")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")

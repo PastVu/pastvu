@@ -927,7 +927,7 @@ function getNewCommentsCount(objIds, userId, type, cb) {
 				stamp = stampsHash[objId];
 				if (stamp !== undefined) {
 					objIdsWithCounts.push(objId);
-					commentModel.count({obj: objId, stamp: {$gt: stamp}}, this.parallel());
+					commentModel.count({obj: objId, stamp: {$gt: stamp}, user: {$ne: userId}}, this.parallel());
 				}
 			}
 			this.parallel()();

@@ -175,7 +175,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				comment.final = true;
-				if (lastView && comment.stamp > lastView) {
+				if (lastView && comment.stamp > lastView && comment.user.login !== myLogin) {
 					comment.isnew = true;
 				}
 				if (comment.level < this.commentNestingMax) {
