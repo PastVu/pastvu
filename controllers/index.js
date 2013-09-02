@@ -301,13 +301,59 @@ var giveIndexNews = (function () {
 /**
  * Архив новостей
  */
-function giveAllNews(cb) {
-	News.find({pdate: {$lte: new Date()}}, {_id: 0, cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}}).populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, news) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		cb({news: news});
-	});
+function giveAllNews(iAm, cb) {
+	News.find({pdate: {$lte: new Date()}}, {cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}})
+		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
+		.exec(function (err, news) {
+			if (err) {
+				return cb(err);
+			}
+
+			if (!iAm || !news.length) {
+				finish(news);
+
+			} else {
+				//Если пользователь залогинен, выбираем кол-во новых комментариев для каждого объекта
+				var objIdsWithCounts = [],
+					obj,
+					i = news.length;
+
+				//Составляем массив id объектов, у которых есть комментарии
+				while (i) {
+					obj = news[--i];
+					if (obj.ccount) {
+						objIdsWithCounts.push(obj._id);
+					}
+				}
+
+				if (!objIdsWithCounts.length) {
+					finish(news);
+
+				} else {
+					commentController.getNewCommentsCount(objIdsWithCounts, iAm._id, 'news', function (err, countsHash) {
+						if (err) {
+							return cb(err);
+						}
+
+						//Присваиваем каждой фотографии количество новых комментариев, если они есть
+						for (i = news.length; i--;) {
+							obj = news[i];
+							if (countsHash[obj._id]) {
+								obj.ccount_new = countsHash[obj._id];
+							}
+						}
+						finish(news);
+					});
+				}
+			}
+
+			function finish(news) {
+				for (var i = news.length; i--;) {
+					delete news[i]._id;
+				}
+				cb(null, {news: news});
+			}
+		});
 }
 
 function giveNewsFull(data, cb) {
@@ -331,13 +377,12 @@ function giveNewsPublic(iAm, data, cb) {
 		return cb({message: 'Bad params'});
 	}
 
-	News.findOne({cid: data.cid}, {_id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1})
+	News.findOne({cid: data.cid}, {_id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1}, {lean: true})
 		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
 		.exec(function (err, news) {
 			if (err) {
 				return cb(err);
 			}
-			news = news.toObject(); //Чтобы можно было присвоить ccount_new и удалить _id
 
 			if (!iAm || !news.ccount) {
 				delete news._id;
@@ -347,7 +392,7 @@ function giveNewsPublic(iAm, data, cb) {
 					if (err) {
 						return cb(err);
 					}
-					if (countsHash[news._id])  {
+					if (countsHash[news._id]) {
 						news.ccount_new = countsHash[news._id];
 					}
 					delete news._id;
@@ -399,8 +444,8 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveAllNews', function (data) {
-			giveAllNews(function (resultData) {
-				socket.emit('takeAllNews', resultData);
+			giveAllNews(socket.handshake.session.user, function (err, result) {
+				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);
 			});
 		});
 		socket.on('giveNews', function (data) {
