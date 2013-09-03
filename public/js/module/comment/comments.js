@@ -161,7 +161,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				len = arr.length,
 				myLogin = this.auth.iAm.login(),
 				myRole = this.auth.iAm.role(),
-				weekAgo = new Date() - 604800000,
+				weekAgo = Date.now() - 604800000,
 				hash = {},
 				comment,
 				results = [];

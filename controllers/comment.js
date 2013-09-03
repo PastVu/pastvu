@@ -949,6 +949,48 @@ function getNewCommentsCount(objIds, userId, type, cb) {
 	);
 }
 
+/**
+ * Заполняет для каждого из массива переданных объектов кол-во новых комментариев - поле ccount_new
+ * Т.е. модифицирует исходные объекты
+ * @param objs Массив объектов
+ * @param type Тип объекта
+ * @param userId _id пользователя
+ * @param cb
+ */
+function fillNewCommentsCount(objs, userId, type, cb) {
+	var objIdsWithCounts = [],
+		obj,
+		i = objs.length;
+
+	//Составляем массив id объектов, у которых есть комментарии
+	while (i) {
+		obj = objs[--i];
+		if (obj.ccount) {
+			objIdsWithCounts.push(obj._id);
+		}
+	}
+
+	if (!objIdsWithCounts.length) {
+		cb(null, objs);
+
+	} else {
+		getNewCommentsCount(objIdsWithCounts, userId, type, function (err, countsHash) {
+			if (err) {
+				return cb(err);
+			}
+
+			//Присваиваем каждому объекту количество новых комментариев, если они есть
+			for (i = objs.length; i--;) {
+				obj = objs[i];
+				if (countsHash[obj._id]) {
+					obj.ccount_new = countsHash[obj._id];
+				}
+			}
+			cb(null, objs);
+		});
+	}
+}
+
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
@@ -1015,3 +1057,4 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.hideObjComments = hideObjComments;
 module.exports.getNewCommentsCount = getNewCommentsCount;
+module.exports.fillNewCommentsCount = fillNewCommentsCount;

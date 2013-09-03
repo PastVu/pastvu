@@ -286,16 +286,42 @@ var giveFastStats = (function () {
  * Новости на главной в memoize
  */
 var giveIndexNews = (function () {
-	var select = {_id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}};
+	var select = {user: 0, cdate: 0, tdate: 0, nocomments: 0},
+		options = {lean: true, limit: 3, sort: {pdate: -1}},
+		memoized = Utils.memoizeAsync(function (handler) {
+			var now = new Date();
+			News.find({pdate: {$lte: now}, $or: [
+				{tdate: {$gt: now}},
+				{tdate: {$exists: false}}
+			]}, select, options, handler);
+		}, ms('1m'));
 
-	return Utils.memoizeAsync(function (handler) {
-		var now = new Date();
-		News.find({pdate: {$lte: now}, $or: [
-			{tdate: {$gt: now}},
-			{tdate: {$exists: false}}
-		]}, select, options, handler);
-	}, ms('1m'));
+	return function (iAm, cb) {
+		memoized(function (err, news) {
+			if (err) {
+				return cb(err);
+			}
+
+			if (!iAm || !news.length) {
+				finish(null, news);
+			} else {
+				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
+			}
+
+			function finish(err, news) {
+				if (err) {
+					return cb(err);
+				}
+
+				for (var i = news.length; i--;) {
+					delete news[i]._id;
+				}
+				cb(null, {news: news});
+			}
+		});
+
+	};
 }());
 
 /**
@@ -310,44 +336,17 @@ function giveAllNews(iAm, cb) {
 			}
 
 			if (!iAm || !news.length) {
-				finish(news);
-
+				finish(null, news);
 			} else {
-				//Если пользователь залогинен, выбираем кол-во новых комментариев для каждого объекта
-				var objIdsWithCounts = [],
-					obj,
-					i = news.length;
-
-				//Составляем массив id объектов, у которых есть комментарии
-				while (i) {
-					obj = news[--i];
-					if (obj.ccount) {
-						objIdsWithCounts.push(obj._id);
-					}
-				}
-
-				if (!objIdsWithCounts.length) {
-					finish(news);
-
-				} else {
-					commentController.getNewCommentsCount(objIdsWithCounts, iAm._id, 'news', function (err, countsHash) {
-						if (err) {
-							return cb(err);
-						}
-
-						//Присваиваем каждой фотографии количество новых комментариев, если они есть
-						for (i = news.length; i--;) {
-							obj = news[i];
-							if (countsHash[obj._id]) {
-								obj.ccount_new = countsHash[obj._id];
-							}
-						}
-						finish(news);
-					});
-				}
+				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
 			}
 
-			function finish(news) {
+			function finish(err, news) {
+				if (err) {
+					return cb(err);
+				}
+
 				for (var i = news.length; i--;) {
 					delete news[i]._id;
 				}
@@ -426,6 +425,7 @@ var giveAbout = (function () {
 
 module.exports.loadController = function (app, db, io) {
 	var logger = log4js.getLogger("index.js");
+
 	appvar = app;
 	appEnv = app.get('appEnv');
 
@@ -439,12 +439,12 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveIndexNews', function () {
-			giveIndexNews(function (err, news) {
+			giveIndexNews(hs.session.user, function (err, news) {
 				socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
 			});
 		});
 		socket.on('giveAllNews', function (data) {
-			giveAllNews(socket.handshake.session.user, function (err, result) {
+			giveAllNews(hs.session.user, function (err, result) {
 				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);
 			});
 		});
@@ -454,7 +454,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(socket.handshake.session.user, data, function (err, result) {
+			giveNewsPublic(hs.session.user, data, function (err, result) {
 				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : result);
 			});
 		});

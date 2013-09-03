@@ -594,53 +594,26 @@ function givePhotosPublic(iAm, data, cb) {
 
 		if (!iAm || !photos.length) {
 			//Если аноним или фотографий нет, сразу возвращаем
-			finish(photos, count);
-
+			finish(null, photos);
 		} else {
-			//Если пользователь залогинен, выбираем кол-во новых комментариев для каждой фотографии
-			var photosIdsWithCounts = [],
-				photo,
-				i = photos.length;
+			//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+			commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
+		}
 
-			//Составляем массив id фотографий, у которых есть комментарии
-			while (i) {
-				photo = photos[--i];
-				if (photo.ccount) {
-					photosIdsWithCounts.push(photo._id);
+		function finish(err, photos) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (iAm) {
+				for (var i = photos.length; i--;) {
+					delete photos[i]._id ;
 				}
 			}
-
-			if (!photosIdsWithCounts.length) {
-				//Если все фотографии не имеют никаких комментариев, то не имеет смысла проверять на новые, сразу возвращаем
-				finish(photos, count);
-
-			} else {
-				commentController.getNewCommentsCount(photosIdsWithCounts, iAm._id, null, function (err, countsHash) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-
-					//Присваиваем каждой фотографии количество новых комментариев, если они есть
-					for (i = photos.length; i--;) {
-						photo = photos[i];
-						if (countsHash[photo._id]) {
-							photo.ccount_new = countsHash[photo._id];
-						}
-					}
-					finish(photos, count);
-				});
-			}
+			cb({photos: photos, count: count, skip: skip});
 		}
 	}
 
-	function finish(photos, count) {
-		if (iAm) {
-			for (var i = photos.length; i--;) {
-				delete photos[i]._id ;
-			}
-		}
-		cb({photos: photos, count: count, skip: skip});
-	}
+
 }
 
 
@@ -658,9 +631,7 @@ function givePhotosForApprove(socket, data, cb) {
 }
 
 //Отдаем галерею пользователя в компактном виде
-function giveUserPhotos(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
+function giveUserPhotos(iAm, data, cb) {
 	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
 		if (err || !user) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
@@ -704,52 +675,23 @@ function giveUserPhotos(socket, data, cb) {
 
 			if (!iAm || !photos.length) {
 				//Если аноним или фотографий нет, сразу возвращаем
-				finish(photos, count);
-
+				finish(null, photos);
 			} else {
-				//Если пользователь залогинен, выбираем кол-во новых комментариев для каждой фотографии
-				var photosIdsWithCounts = [],
-					photo,
-					i = photos.length;
+				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+				commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
+			}
 
-				//Составляем массив id фотографий, у которых есть комментарии
-				while (i) {
-					photo = photos[--i];
-					if (photo.ccount) {
-						photosIdsWithCounts.push(photo._id);
+			function finish(err, photos) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				if (iAm) {
+					for (var i = photos.length; i--;) {
+						delete photos[i]._id ;
 					}
 				}
-
-				if (!photosIdsWithCounts.length) {
-					//Если все фотографии не имеют никаких комментариев, то не имеет смысла проверять на новые, сразу возвращаем
-					finish(photos, count);
-
-				} else {
-					commentController.getNewCommentsCount(photosIdsWithCounts, iAm._id, null, function (err, countsHash) {
-						if (err) {
-							return cb({message: err.message, error: true});
-						}
-
-						//Присваиваем каждой фотографии количество новых комментариев, если они есть
-						for (i = photos.length; i--;) {
-							photo = photos[i];
-							if (countsHash[photo._id]) {
-								photo.ccount_new = countsHash[photo._id];
-							}
-						}
-						finish(photos, count);
-					});
-				}
+				cb({photos: photos, count: count, skip: skip});
 			}
-		}
-
-		function finish(photos, count) {
-			if (iAm) {
-				for (var i = photos.length; i--;) {
-					delete photos[i]._id ;
-				}
-			}
-			cb({photos: photos, count: count || user.pcount || 0, skip: skip});
 		}
 	});
 }
@@ -1555,7 +1497,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveUserPhotos', function (data) {
-			giveUserPhotos(socket, data, function (resultData) {
+			giveUserPhotos(hs.session.user, data, function (resultData) {
 				socket.emit('takeUserPhotos', resultData);
 			});
 		});
