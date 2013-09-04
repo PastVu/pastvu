@@ -115,11 +115,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 
 		loggedInHandler: function () {
-			// После логина проверяем если мы можем добавить категории
 			if (this.auth.iAm.role() > 4 && catsMod.length) {
+				//Если пользователь модератор, добавляем галерею на подтверждение и переключаемся на нее
 				this.cats.concat(catsMod, true);
 				catsMod = [];
 				this.catJump('photosToApprove');
+			} else if (this.catActive() === 'photos' || this.catActive() === 'photosNoGeo') {
+				//Если перезагружаем текущую категорию
+				this.catJump(this.catActive());
 			}
 
 			//Перезапрашиваем новости на главной, чтобы увидеть новые комментарии или убрать скрытые пользователем новости

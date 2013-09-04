@@ -543,7 +543,7 @@ function givePhoto(socket, data, cb) {
 	}
 }
 
-//Отдаем последние публичные фотографии для главной
+//Отдаем последние публичные фотографии на главной для анонимов в memoized
 var givePhotosPublicIndex = (function () {
 	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 29};
 
@@ -612,8 +612,6 @@ function givePhotosPublic(iAm, data, cb) {
 			cb({photos: photos, count: count, skip: skip});
 		}
 	}
-
-
 }
 
 
@@ -1472,20 +1470,32 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('givePhotosPublicIndex', function (data) {
-			givePhotosPublicIndex(function (err, photos) {
-				socket.emit('takePhotosPublicIndex', err ? {message: err.message, error: true} : {photos: photos});
-			});
+		socket.on('givePhotosPublicIndex', function () {
+			if (hs.session.user) {
+				givePhotosPublic(hs.session.user, {skip: 0, limit: 29}, function (resultData) {
+					socket.emit('takePhotosPublicIndex', resultData);
+				});
+			} else {
+				givePhotosPublicIndex(function (err, photos) {
+					socket.emit('takePhotosPublicIndex', err ? {message: err.message, error: true} : {photos: photos});
+				});
+			}
 		});
 
-		socket.on('givePhotosPublicNoGeoIndex', function (data) {
-			givePhotosPublicNoGeoIndex(function (err, photos) {
-				socket.emit('takePhotosPublicNoGeoIndex', err ? {message: err.message, error: true} : {photos: photos});
-			});
+		socket.on('givePhotosPublicNoGeoIndex', function () {
+			if (hs.session.user) {
+				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: {nogeo: true}}, function (resultData) {
+					socket.emit('takePhotosPublicNoGeoIndex', resultData);
+				});
+			} else {
+				givePhotosPublicNoGeoIndex(function (err, photos) {
+					socket.emit('takePhotosPublicNoGeoIndex', err ? {message: err.message, error: true} : {photos: photos});
+				});
+			}
 		});
 
 		socket.on('givePhotosPublic', function (data) {
-			givePhotosPublic(socket.handshake.session.user, data, function (resultData) {
+			givePhotosPublic(hs.session.user, data, function (resultData) {
 				socket.emit('takePhotosPublic', resultData);
 			});
 		});
