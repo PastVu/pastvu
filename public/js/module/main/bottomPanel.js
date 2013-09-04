@@ -99,7 +99,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			//Байндимся и показываемся только после запроса новостей
+			//Байндимся и показываемся только после запроса новостей, чтобы избежать "прыжка" после их загрузки
 			this.getNews(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
