@@ -7,6 +7,7 @@ var auth = require('./auth.js'),
 	Photo,
 	Comment,
 	News,
+	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	Utils = require('../commons/Utils.js'),
@@ -283,29 +284,42 @@ var giveFastStats = (function () {
 }());
 
 /**
- * Новости на главной в memoize
+ * Новости на главной для анонимных в memoize
+ */
+var giveIndexNewsAnonym = (function () {
+	var select = {_id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0},
+		options = {lean: true, limit: 3, sort: {pdate: -1}};
+
+	return Utils.memoizeAsync(function (handler) {
+		var now = new Date();
+		News.find({pdate: {$lte: now}, $or: [
+			{tdate: {$gt: now}},
+			{tdate: {$exists: false}}
+		]}, select, options, handler);
+	}, ms('1m'));
+}());
+
+/**
+ * Новости на главной для авторизованного пользователя
  */
 var giveIndexNews = (function () {
 	var select = {user: 0, cdate: 0, tdate: 0, nocomments: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}},
-		memoized = Utils.memoizeAsync(function (handler) {
-			var now = new Date();
-			News.find({pdate: {$lte: now}, $or: [
-				{tdate: {$gt: now}},
-				{tdate: {$exists: false}}
-			]}, select, options, handler);
-		}, ms('1m'));
+		options = {lean: true, limit: 3, sort: {pdate: -1}};
 
 	return function (iAm, cb) {
-		memoized(function (err, news) {
+		var now = new Date();
+
+		News.find({pdate: {$lte: now}, $or: [
+			{tdate: {$gt: now}},
+			{tdate: {$exists: false}}
+		]}, select, options, function (err, news) {
 			if (err) {
 				return cb(err);
 			}
 
-			if (!iAm || !news.length) {
+			if (!news.length) {
 				finish(null, news);
 			} else {
-				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
 				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
 			}
 
@@ -317,7 +331,7 @@ var giveIndexNews = (function () {
 				for (var i = news.length; i--;) {
 					delete news[i]._id;
 				}
-				cb(null, {news: news});
+				cb(null, news);
 			}
 		});
 
@@ -439,10 +453,16 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveIndexNews', function () {
-			giveIndexNews(hs.session.user, function (err, news) {
-				socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
-			});
+			if (hs.session.user) {
+				giveIndexNews(hs.session.user, returnIndexNews);
+			} else {
+				giveIndexNewsAnonym(returnIndexNews);
+			}
 		});
+		function returnIndexNews (err, news) {
+			socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
+		}
+
 		socket.on('giveAllNews', function (data) {
 			giveAllNews(hs.session.user, function (err, result) {
 				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);

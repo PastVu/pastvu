@@ -164,6 +164,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				} else {
 					for (var i = data.news.length; i--;) {
 						data.news.ccount = data.news.ccount || 0;
+						data.news.ccount_new = data.news.ccount_new || 0;
 						if (data.news[i].notice) {
 							data.news[i].expand = true;
 						} else {
