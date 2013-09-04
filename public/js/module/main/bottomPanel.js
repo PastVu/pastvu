@@ -89,7 +89,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			this.catClickBind = this.catClick.bind(this);
 
-			this.getNews();
 			if (this.auth.iAm.role() > 4) {
 				this.catJump('photosToApprove');
 			} else {
@@ -100,8 +99,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
 
-			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
+			//Байндимся и показываемся только после запроса новостей
+			this.getNews(function () {
+				ko.applyBindings(globalVM, this.$dom[0]);
+				this.show();
+			}, this);
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -119,6 +121,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				catsMod = [];
 				this.catJump('photosToApprove');
 			}
+
+			//Перезапрашиваем новости на главной, чтобы увидеть новые комментарии или убрать скрытые пользователем новости
+			this.getNews();
+
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
