@@ -12,6 +12,7 @@ var auth = require('./auth.js'),
 	PhotoSort,
 	Comment,
 	Counter,
+	UserSubscr,
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
 	_ = require('lodash'),
@@ -476,9 +477,10 @@ function givePhoto(socket, data, cb) {
 		iAm = socket.handshake.session.user,
 		fieldSelect = {'frags._id': 0};
 
-	if (isNaN(cid)) {
+	if (!cid) {
 		return cb({message: msg.notExists, error: true});
 	}
+
 	//Инкрементируем кол-во просмотров только у публичных фото
 	Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
 		if (err) {
@@ -502,44 +504,58 @@ function givePhoto(socket, data, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		var can,
-			user = _session.getOnline(null, photo.user);
+		step (
+			function () {
+				var user = _session.getOnline(null, photo.user),
+					paralellUser = this.parallel();
 
-		if (checkCan) {
-			can = photoPermissions.getCan(photo, iAm);
-		}
-		if (user) {
-			photo = photo.toObject({getters: true});
-			photo.user = {
-				login: user.login, avatar: user.avatar, disp: user.disp, online: true
-			};
-			finish(photo);
-		} else {
-			photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
+				if (user) {
+					photo = photo.toObject({getters: true});
+					photo.user = {
+						login: user.login, avatar: user.avatar, disp: user.disp, online: true
+					};
+					paralellUser(null, photo);
+				} else {
+					photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
+						paralellUser(err, photo && photo.toObject({getters: true}));
+					});
+				}
+
+				if (iAm) {
+					UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
+				}
+			},
+			function (err, photo, subscr) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				finish(photo.toObject({getters: true}));
-			});
-		}
+				var can;
 
-		function finish(photo) {
-			if (!iAm || !photo.ccount) {
-				delete photo._id;
-				cb({photo: photo, can: can});
-			} else {
-				commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
-					if (err) {
-						return cb({message: err && err.message, error: true});
-					}
-					if (countsHash[photo._id])  {
-						photo.ccount_new = countsHash[photo._id];
-					}
+				if (checkCan) {
+					can = photoPermissions.getCan(photo, iAm);
+				}
+
+				if (subscr) {
+					photo.subscr = true;
+				}
+
+				if (!iAm || !photo.ccount) {
 					delete photo._id;
 					cb({photo: photo, can: can});
-				});
+				} else {
+					commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
+						if (err) {
+							return cb({message: err && err.message, error: true});
+						}
+						if (countsHash[photo._id])  {
+							photo.ccount_new = countsHash[photo._id];
+						}
+						delete photo._id;
+						cb({photo: photo, can: can});
+					});
+				}
 			}
-		}
+		);
 	}
 }
 
@@ -1421,6 +1437,7 @@ module.exports.loadController = function (app, db, io) {
 	PhotoSort = db.model('PhotoSort');
 	Counter = db.model('Counter');
 	Comment = db.model('Comment');
+	UserSubscr = db.model('UserSubscr');
 
 	UserCommentsView = db.model('UserCommentsView');
 

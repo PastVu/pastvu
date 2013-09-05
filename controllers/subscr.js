@@ -51,7 +51,7 @@ function subscribeUser(user, data, cb) {
 				UserSubscr.remove({obj: obj._id, user: user._id}, this);
 			}
 		},
-		function (err, userSubscr) {
+		function (err) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}

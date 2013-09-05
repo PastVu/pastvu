@@ -976,9 +976,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.p.ccount(this.originData.ccount);
 		},
 		setNoComments: function (val) {
+			this.originData.nocomments = val;
 			this.p.nocomments(val);
 		},
 		setSubscr: function (val) {
+			this.originData.subscr = val;
 			this.p.subscr(val);
 		},
 
