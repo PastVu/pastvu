@@ -7,8 +7,13 @@
 			i.icon-edit.icon-white
 			| &nbsp;Добавить
 		// /ko
+		//ko if: auth.loggedIn()
+		.commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, attr: {title: subscr() ? 'Вы подписаны на новые комментарии. Нажмите, чтобы отписаться' : 'Подписаться на новые комментарии'}")
+			i.icon-white(data-bind="css: subscr() ? 'icon-envelope' : 'icon-envelope'")
+			span(data-bind="text: subscr() ? ' Отписаться' : ' Подписаться'")
+		// /ko
 		//ko if: canManage()
-		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: nocomments() ? ' Разрешить дальнейшее комментирование' : ' Запретить дальнейшее комментирование'}")
+		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: nocomments() ? 'Разрешить дальнейшее комментирование' : 'Запретить дальнейшее комментирование'}")
 			i.icon-white(data-bind="css: nocomments() ? 'icon-ok-sign' : 'icon-minus-sign'")
 			span(data-bind="text: nocomments() ? ' Разрешить комментирование' : ' Запретить комментирование'")
 		//ko if: nocomments()

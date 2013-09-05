@@ -298,6 +298,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.p.ccount());
 						this.commentsVM.count_new(this.p.ccount_new());
+						this.commentsVM.subscr(this.p.subscr());
 						this.commentsVM.nocomments(this.p.nocomments());
 						this.commentsActivate(this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300));
 
@@ -976,6 +977,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		setNoComments: function (val) {
 			this.p.nocomments(val);
+		},
+		setSubscr: function (val) {
+			this.p.subscr(val);
 		},
 
 

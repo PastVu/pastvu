@@ -11,6 +11,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
 			count: 0, //Начальное кол-во комментариев
 			count_new: 0, //Начальное кол-во новых комментариев
+			subscr: false, //Подписан ли пользователь на комментарии
 			autoShowOff: false, //Выключить автоматический show после создания
 			nocomments: false //Запрещено ли писать комментарии
 		},
@@ -20,6 +21,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.cid = null;
 			this.count = ko.observable(this.options.count || 0);
 			this.count_new = ko.observable(this.options.count_new || 0);
+			this.subscr = ko.observable(this.options.subscr || false);
 			this.nocomments = ko.observable(this.options.nocomments);
 
 			this.loading = ko.observable(false);
@@ -224,6 +226,19 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.$dom.find('.media.hl').removeClass('hl');
 		},
 
+		//Подписывается-отписывается от комментариев
+		subscribe: function () {
+			socket.once('subscrResult', function (result) {
+				if (!result || result.error) {
+					window.noty({text: result && result.message || 'Ошибка подписки', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					this.parentModule.setSubscr(!!result.subscr);
+					this.subscr(!!result.subscr);
+				}
+			}.bind(this));
+			socket.emit('subscr', {cid: this.cid, type: this.type, do: !this.subscr()});
+		},
+
 		//Активирует написание комментария нулевого уровня
 		replyZero: function () {
 			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600, true);
@@ -328,7 +343,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		fragClick: function (data, event) {
-			if (!this.canFrag){
+			if (!this.canFrag) {
 				return;
 			}
 			var $root = $(event.target).closest('.commentAdd');
@@ -343,7 +358,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}, this);
 		},
 		fragDelete: function () {
-			if (!this.canFrag){
+			if (!this.canFrag) {
 				return;
 			}
 			this.parentModule.fragAreaDelete();
@@ -431,7 +446,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						comment.can.edit = true;
 						comment.can.del = true;
 
-						if (comment.level){
+						if (comment.level) {
 							data.final = false;
 							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
 							//то удаляем всю ветку, меняем свойство del, а затем опять вставляем ветку. Ветку, чтобы сохранялась сортировка
@@ -579,9 +594,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								$noty.$buttons.find('.btn-strict-danger').remove();
 								var msg,
 									okButton = $noty.$buttons.find('button')
-									.attr('disabled', false)
-									.removeClass('disabled')
-									.off('click');
+										.attr('disabled', false)
+										.removeClass('disabled')
+										.off('click');
 
 								if (result && !result.error) {
 									msg = 'Удалено комментариев: ' + result.countComments + ', от ' + result.countUsers + ' пользователя(ей)';

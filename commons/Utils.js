@@ -26,6 +26,8 @@ Utils.getObjectPropertyLength = function (obj) {
 	return Object.keys(obj).length;
 };
 
+Utils.dummyFn = function () {};
+
 Utils.randomString = (function () {
 	'use strict';
 	var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
