@@ -37,7 +37,8 @@ UserSubscrSchema.index({obj: 1, user: 1}); //Составной индекс д�
 var UserSubscrNotySchema = new mongoose.Schema(
 	{
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-		lastnoty: {type: Date}
+		lastnoty: {type: Date},
+		nextnoty: {type: Date}
 	},
 	{
 		strict: true,

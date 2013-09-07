@@ -14,6 +14,8 @@ var fs = require('fs'),
 	step = require('step'),
 	logger = require('log4js').getLogger("subscr.js"),
 	_ = require('lodash'),
+	ms = require('ms'), // Tiny milisecond conversion utility
+	mailController = require('./mail.js'),
 	photoController = require('./photo.js'),
 
 	msg = {
@@ -86,6 +88,71 @@ function commentAdded(obj, user) {
 	});
 }
 
+var userWaitings = {},
+	throttle = ms('1m'),
+	sendFreq = 2000, //Частота шага конвейера отправки в ms
+	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
+
+function notifyUsers(users) {
+	//Находим время последнего и следующего уведомления каждого пользователя,
+	//чтобы определить, нужно ли вычислять следующее
+	UserSubscrNoty.find({user: {$in: users}}, {_id: 0}, {lean: true}, function (err, usersNoty) {
+		var userId,
+			now = Date.now(),
+			usersNotyHash = {},
+			nearestNoticeTimeStamp = now + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
+			lastNoty,
+			nextNoty,
+			i;
+
+		for (i = usersNoty.length; i--;) {
+			//Если у пользователя еще не установленно время следующего уведомления, расчитываем его
+
+			if (usersNoty[i].nextnoty) {
+				//Значит у этого пользователя уже запланированно уведомление и ничего делать не надо
+				usersNotyHash[usersNoty[i].user] = false;
+			} else {
+				lastNoty = usersNoty[i].lastnoty;
+
+				//Если прошлого уведомления еще не было или с его момента прошло больше времени,
+				//чем throttle или осталось менее 10сек, ставим ближайший
+				if (lastNoty) {
+					nextNoty = usersNoty[i].lastnoty.getTime() + throttle - now;
+
+					if (nextNoty < 10000) {
+						nextNoty = nearestNoticeTimeStamp;
+					}
+				} else {
+					nextNoty = nearestNoticeTimeStamp;
+				}
+				usersNotyHash[usersNoty[i].user] = nextNoty;
+			}
+		}
+
+		for (i = users.length; i--;) {
+			userId = users[i];
+			if (usersNotyHash[userId] !== false) {
+				UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
+			}
+		}
+	});
+}
+
+//Каждые sendFreq ms отправляем sendPerStep уведомлений
+var notifierConveyer = (function () {
+
+	function conveyerStep() {
+		UserSubscrNoty.find({}, {_id: 0}, {lean: true, limit: sendPerStep}, function () {
+
+		});
+
+		notifierConveyer();
+	}
+
+	return function () {
+		setTimeout(conveyerStep, sendFreq);
+	};
+}());
 
 /**
  * Формируем письмо для пользователя из готовых уведомлений и отправляем его
@@ -127,7 +194,7 @@ function sendUserNotice(userId) {
 				return;
 			}
 
-			step (
+			step(
 				function () {
 					if (objsIdNews.length) {
 						News.find({_id: {$in: objsIdNews}}, {_id: 0, cid: 1, title: 1}, {lean: true}, this.parallel());
@@ -141,22 +208,11 @@ function sendUserNotice(userId) {
 						return logger.error(err.message);
 					}
 
-					noticeTpl({news: news, photos: photos});
+					//noticeTpl({news: news, photos: photos});
 				}
 			);
 		});
 	});
-}
-
-var userWaitings = {};
-function notifyUsers(users) {
-	for (var i = users.length; i--;) {
-		if (!userWaitings[users[i]]) {
-			userWaitings[users[i]] = setTimeout(function () {
-
-			});
-		}
-	}
 }
 
 module.exports.loadController = function (app, db, io) {
