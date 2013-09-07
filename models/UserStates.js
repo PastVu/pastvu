@@ -38,7 +38,7 @@ var UserSubscrNotySchema = new mongoose.Schema(
 	{
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 		lastnoty: {type: Date},
-		nextnoty: {type: Date}
+		nextnoty: {type: Date, index: true} //Индексирование для сортировки
 	},
 	{
 		strict: true,
