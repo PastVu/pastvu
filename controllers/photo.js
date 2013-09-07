@@ -295,7 +295,7 @@ function removePhoto(socket, cid, cb) {
 					PhotoConverter.removePhotos([photo.cid]);
 
 					//Удаляем файлы фотографии
-					fs.unlink(privateDir + photo.file);
+					fs.unlink(privateDir + photo.file, dummyFn);
 					imageFolders.forEach(function (folder) {
 						fs.unlink(publicDir + folder + photo.file, dummyFn);
 					});

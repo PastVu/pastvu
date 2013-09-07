@@ -280,6 +280,15 @@ function validateAvatar(fileInfo, cb) {
 	});
 }
 
+/**
+ * Handling uncaught exceptions
+ */
+process.on('uncaughtException', function (err) {
+	// Add here storage for saving and resuming
+	logger.fatal("PROCESS uncaughtException: " + (err && (err.message || err)));
+	logger.trace(err && (err.stack || err));
+});
+
 require('http').createServer(serve).listen(listenuport, listenhost, function () {
 	logger.info('Uploader host for users: [%s]', host);
 	logger.info('Uploader server listening [%s:%s]\n', listenhost ? listenhost : '*', listenuport);

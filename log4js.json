@@ -28,9 +28,17 @@
 			"type": "file",
 			"filename": "uploader.log",
 			"maxLogSize": 524288,
-			"backups": 2,
+			"backups": 0,
 			"pollInterval": 15,
 			"category": ["uploader.js"]
+		},
+		{
+			"type": "file",
+			"filename": "subscriber.log",
+			"maxLogSize": 524288,
+			"backups": 1,
+			"pollInterval": 15,
+			"category": ["subscr.js"]
 		},
 		{
 			"type": "console",

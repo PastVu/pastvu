@@ -32,7 +32,8 @@ var auth = require('./auth.js'),
 		noComments: 'Операции с комментариями на этой странице запрещены'
 	},
 
-	photoController = require('./photo.js');
+	photoController = require('./photo.js'),
+	subscrController = require('./subscr.js');
 
 /**
  * Выбирает комментарии для объекта
@@ -451,6 +452,8 @@ function createComment(socket, data, cb) {
 			}
 			_session.emitUser(iAm.login, socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
+
+			subscrController.commentAdded(obj._id, iAm);
 		}
 	);
 }

@@ -23,6 +23,7 @@ var UserSubscrSchema = new mongoose.Schema(
 	{
 		obj: {type: Schema.Types.ObjectId, index: true},
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
+		type: {type: String},
 		noty: {type: Boolean}
 	},
 	{
