@@ -263,6 +263,10 @@ async.waterfall([
 				logger.trace(err && (err.stack || err));
 			});
 
+			process.on('exit', function () {
+				console.log("--SHUTDOWN--");
+			});
+
 			server.listen(listenport, listenhost, function () {
 				logger.info('Host for users: [%s]', protocol + '://' + host);
 				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());

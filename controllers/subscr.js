@@ -54,7 +54,7 @@ function subscribeUser(user, data, cb) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (data.do) {
-				UserSubscr.update({obj: obj._id}, {$set: {user: user._id, type: data.type}}, {upsert: true, multi: false}, this);
+				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type}}, {upsert: true, multi: false}, this);
 			} else {
 				UserSubscr.remove({obj: obj._id, user: user._id}, this);
 			}
@@ -243,7 +243,6 @@ function sendUserNotice(userId, cb) {
 					}
 
 					//Отправляем письмо с уведомлением
-					console.dir(noticeTpl({user: user, news: news, photos: photos}));
 					mailController.send(
 						{
 							sender: 'noreply',

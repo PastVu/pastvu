@@ -11,6 +11,4 @@ if photos.length
 	each val in photos
 		li= val.title
 p
-	| Вы можете просмотреть ваши подписки на странице
-	a(href=addr.protocol + '://' + addr.host + '/u/' + user.login + '/subscriptions', target='_blank')
-		= ' ' + addr.host + '/u/' + user.login + '/subscriptions'
+	| Вы можете просмотреть ваши подписки на странице <a href='#{addr.protocol + '://' + addr.host + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{addr.host + '/u/' + user.login + '/subscriptions'}</a>
