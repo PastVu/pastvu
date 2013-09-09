@@ -1,15 +1,16 @@
-p.greeting Здравствуйте, #{user.disp}!
-p Вы просили уведомлять вас о добавлении комментариев
+include head
+p На момент отправки данного письма вашего внимания заслуживают следующие события:
 if news.length
-	p
+	p(style="margin-bottom: 0px;")
 		strong Новости:
-		ul
-			each val in news
-				li= val.title
+	each val in news
+		li= val.title
 if photos.length
-	p
+	p(style="margin-bottom: 0px;")
 		strong Фотографии:
-		ul
-			each val in photos
-				li= val.title
-p Вы можете просмотреть ваши подписки на странице https://pastvu.com/u/#{user.login}/subscriptions
+	each val in photos
+		li= val.title
+p
+	| Вы можете просмотреть ваши подписки на странице
+	a(href=addr.protocol + '://' + addr.host + '/u/' + user.login + '/subscriptions', target='_blank')
+		= ' ' + addr.host + '/u/' + user.login + '/subscriptions'

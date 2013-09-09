@@ -6,5 +6,6 @@ table(style="width: 100%; margin-top: 0px; background-color: #214A78; color: #F2
 			td(style="line-height: 1.4em;")
 				span(style="vertical-align: middle;")
 					| Здравствуйте, #{username}!
-					br
-					= greeting
+					if greeting
+						br
+						= greeting

@@ -1,5 +1,5 @@
 include head
-p(style="clear: both; padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
+p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
 	| Вы указали следующие реквизиты:
 	br
 	| Логин: <strong>#{data.login}</strong>
@@ -9,7 +9,7 @@ p
 	| Мы требуем от всех пользователей подтверждения регистрации, для проверки того, что введённый e-mail адрес реальный.
 	br
 	| Это требуется для защиты от спамеров и многократной регистрации.
-p(style="clear: both; padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
+p(style="padding-left: 3px; border-style: solid; border-width: 0px 0px 0px 3px; border-color: #5D88B6;")
 	| Для активации Вашего аккаунта, пройдите по следующей ссылке:
 	br
 	a(href=addr.protocol + '://' + addr.host + '/confirm/' + confirmKey, target='_blank')

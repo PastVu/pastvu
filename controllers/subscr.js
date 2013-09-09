@@ -244,12 +244,20 @@ function sendUserNotice(userId, cb) {
 
 					//Отправляем письмо с уведомлением
 					console.dir(noticeTpl({user: user, news: news, photos: photos}));
-					mailController.send2(
+					mailController.send(
 						{
 							sender: 'noreply',
 							receiver: {alias: user.disp, email: user.email},
 							subject: 'Новое уведомление',
-							body: noticeTpl({user: user, news: news, photos: photos})
+							head: true,
+							body: noticeTpl({
+								username: user.disp,
+								greeting: 'Уведомление о событиях на PastVu',
+								addr: global.appVar.serverAddr,
+								user: user,
+								news: news,
+								photos: photos
+							})
 						},
 						this
 					);
@@ -278,7 +286,7 @@ module.exports.loadController = function (app, db, io) {
 		if (err) {
 			return logger.error('Notice jade read error: ' + err.message);
 		}
-		noticeTpl = jade.compile(data, {pretty: false});
+		noticeTpl = jade.compile(data, {filename: path.normalize('./views/mail/notice.jade'), pretty: false});
 		notifierConveyer();
 	});
 
