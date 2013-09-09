@@ -25,18 +25,21 @@ module.exports.send = function send(mess, callback) {
 };
 module.exports.send2 = function send(options, callback) {
 	logger.info('Sending Mail');
-	transport.sendMail(
-		{
-			from: sender[options.sender] || sender.noreply,
-			to: (options.receiver.alias ? options.receiver.alias + ' ' : '') + '<' + options.receiver.email + '>',
-			subject: options.subject,
-			headers: {
-				'X-Laziness-level': 1000
-			},
-			generateTextFromHTML: true,
-			html: options.body
+	var smtpobject = {
+		from: sender[options.sender] || sender.noreply,
+		to: (options.receiver.alias ? options.receiver.alias + ' ' : '') + '<' + options.receiver.email + '>',
+		subject: options.subject,
+		headers: {
+			'X-Laziness-level': 1000
 		},
-		function (err) {
+		generateTextFromHTML: true,
+		html: options.body
+	};
+	if (options.attachments && options.attachments.length) {
+		smtpobject.attachments = options.attachments;
+	}
+
+	transport.sendMail(smtpobject, function (err) {
 			if (callback) {
 				callback(err);
 			}

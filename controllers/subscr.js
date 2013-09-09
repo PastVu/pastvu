@@ -188,7 +188,14 @@ var notifierConveyer = (function () {
  * @param cb
  */
 function sendUserNotice(userId, cb) {
-	User.findOne({_id: userId}, {_id: 0, login: 1, disp: 1, email: 1}, {lean: true}, function (err, user) {
+	var u = _session.getOnline(null, userId);
+	if (u) {
+		userProcess(null, u);
+	} else {
+		User.findOne({_id: userId}, {_id: 0, login: 1, disp: 1, email: 1}, {lean: true}, userProcess);
+	}
+
+	function userProcess(err, user) {
 		if (err || !user) {
 			return cb(err);
 		}
@@ -256,7 +263,7 @@ function sendUserNotice(userId, cb) {
 				}
 			);
 		});
-	});
+	}
 }
 
 module.exports.loadController = function (app, db, io) {

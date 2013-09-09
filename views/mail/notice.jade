@@ -4,12 +4,12 @@ if news.length
 	p
 		strong Новости:
 		ul
-		each val in news
-			li= val.title
+			each val in news
+				li= val.title
 if photos.length
 	p
 		strong Фотографии:
 		ul
-		each val in photos
-			li= val.title
-p Вы можете просмотреть ваши подписки на странице https://pastvu.com/#{user.login}/subscriptions
+			each val in photos
+				li= val.title
+p Вы можете просмотреть ваши подписки на странице https://pastvu.com/u/#{user.login}/subscriptions
