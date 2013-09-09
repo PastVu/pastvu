@@ -1,6 +1,10 @@
-p(style="margin-top: 0px; height: 49px; padding-left: 2px; background-color: #214A78; color: #F2F2F2;")
-	img(src='cid:pastvulogo', style="width: 47px; height: 49px; float: left; margin-right: 5px; border-image-width: 0; border-width: 0px;")
-	span(style="vertical-align: middle;")
-		| Здравствуйте, #{username}!
-		br
-		= greeting
+table(style="width: 100%; margin-top: 0px; background-color: #214A78; color: #F2F2F2; border-width: 0px;", border="0", cellspacing="0", cellpadding="0")
+	tbody
+		tr
+			td(style="width: 47px; padding-left: 2px; padding-right: 5px;")
+				img(src='cid:pastvulogo', style="width: 47px; height: 49px; vertical-align: middle; border-image-width: 0; border-width: 0px;")
+			td(style="line-height: 1.4em;")
+				span(style="vertical-align: middle;")
+					| Здравствуйте, #{username}!
+					br
+					= greeting
