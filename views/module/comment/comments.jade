@@ -123,3 +123,11 @@
 			i.icon-remove.icon-white
 			span Очистить фрагмент
 		// /ko
+		.replySubscr
+			// ko if: $parents[$data.level].subscr()
+			| Вы подписаны на новые комментарии в данной теме
+			// /ko
+			// ko ifnot: $parents[$data.level].subscr()
+			input.chkSubscr(type="checkbox", checked="checked", data-bind="event: {click: $parents[$data.level].chkSubscrClickBind}")
+			| &nbsp;Подписаться на тему
+			// /ko

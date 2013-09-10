@@ -50,6 +50,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.sendBind = this.send.bind(this);
 			this.cancelBind = this.cancel.bind(this);
 			this.inputFocusBind = this.inputFocus.bind(this);
+			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
 			this.inputLabelClickBind = this.inputLabelClick.bind(this);
 
 			this.fraging = ko.observable(false);
@@ -265,13 +266,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		inputActivate: function (root, scrollDuration, focus) {
 			if (this.canAction() && (root instanceof jQuery) && root.length === 1) {
+				window.clearTimeout(this.blurTimeout);
 				var input = root.find('.commentInput');
 
 				root.addClass('hasFocus');
 				input
 					.off('keyup').off('blur')
 					.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
-					.on('blur', _.debounce(this.inputBlur.bind(this), 200));
+					.on('blur', this.inputBlur.bind(this));
 				this.checkInViewport(root, scrollDuration, function () {
 					if (focus) {
 						input.focus();
@@ -296,20 +298,28 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			$root[content ? 'addClass' : 'removeClass']('hasContent');
 			this.inputCheckHeight($root, $input);
 		},
+		chkSubscrClick: function (data, event) {
+			//После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
+			this.inputActivate($(event.target).closest('.commentAdd'), null, true);
+			return true; //Нужно чтобы значение поменялось
+		},
 		inputBlur: function (evt) {
 			var $input = $(evt.target),
 				$root = $input.closest('.commentAdd'),
 				content = $.trim($input.val());
 
 			$input.off('keyup').off('blur');
-			if (!content && !this.fraging()) {
-				$root.removeClass('hasContent');
-				$input.height('auto');
-			}
-			if (!content) {
-				$input.val('');
-			}
-			$root.removeClass('hasFocus');
+
+			this.blurTimeout = window.setTimeout(function () {
+				if (!content && !this.fraging()) {
+					$root.removeClass('hasContent');
+					$input.height('auto');
+				}
+				if (!content) {
+					$input.val('');
+				}
+				$root.removeClass('hasFocus');
+			}.bind(this), 500);
 		},
 		inputCheckHeight: function (root, input) {
 			var content = $.trim(input.val()),
@@ -412,7 +422,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			function cb(result) {
 				_this.exe(false);
 				if (result && !result.error && result.comment) {
+					//Если установлен checkbox подписки, то подписываемся
+					if (!_this.subscr() && $root.find('input.chkSubscr').prop('checked')) {
+						_this.subscribe();
+					}
+					//Закрываем ввод коммента
 					_this.cancel(data, event);
+
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
 				} else {
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
