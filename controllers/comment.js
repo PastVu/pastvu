@@ -923,7 +923,7 @@ function getNewCommentsCount(objIds, userId, type, cb) {
 				stampsHash[views[i].obj] = views[i].stamp;
 			}
 
-			//Запоняем массив id фотографий теми у которых действительно
+			//Запоняем массив id объектов теми у которых действительно
 			//есть последние посещения, и по каждому считаем кол-во комментариев с этого посещения
 			for (i = objIds.length; i--;) {
 				objId = objIds[i];

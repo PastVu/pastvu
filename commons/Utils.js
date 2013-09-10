@@ -361,6 +361,71 @@ Utils.addLeftZero = function (num) {
 	return str.substr(str.length - 2, 2);
 };
 
+Utils.format = (function () {
+	'use strict';
+
+	function formatFileSize(bytes) {
+		if (typeof bytes !== 'number') {
+			return '';
+		}
+		if (bytes >= 1000000000) {
+			return (bytes / 1000000000).toFixed(2) + ' GB';
+		}
+		if (bytes >= 1000000) {
+			return (bytes / 1000000).toFixed(2) + ' MB';
+		}
+		return (bytes / 1000).toFixed(2) + ' KB';
+	}
+
+	function formatBitrate(bits) {
+		if (typeof bits !== 'number') {
+			return '';
+		}
+		if (bits >= 1000000000) {
+			return (bits / 1000000000).toFixed(2) + ' Gbit/s';
+		}
+		if (bits >= 1000000) {
+			return (bits / 1000000).toFixed(2) + ' Mbit/s';
+		}
+		if (bits >= 1000) {
+			return (bits / 1000).toFixed(2) + ' kbit/s';
+		}
+		return bits.toFixed(2) + ' bit/s';
+	}
+
+	function secondsToTime(secs) {
+		if (secs < 60) {
+			return '0:' + (secs > 9 ? secs : '0' + secs);
+		}
+
+		var hours = (secs / (60 * 60)) >> 0,
+			divisor_for_minutes = secs % (60 * 60),
+			minutes = (divisor_for_minutes / 60) >> 0,
+			divisor_for_seconds = divisor_for_minutes % 60,
+			seconds = Math.ceil(divisor_for_seconds);
+
+		return (hours > 0 ? hours + ':' + (minutes > 9 ? minutes : '0' + minutes) : minutes) + ':' + (seconds > 9 ? seconds : '0' + seconds);
+	}
+
+	function formatPercentage(floatValue) {
+		return (floatValue * 100).toFixed(2) + ' %';
+	}
+
+	var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
+
+	function declOfNum(number, titles) {
+		return titles[ (number % 100 > 4 && number % 100 < 20) ? 2 : wordEndOfNumCases[(number % 10 < 5) ? number % 10 : 5] ];
+	}
+
+	return {
+		fileSize: formatFileSize,
+		bitrate: formatBitrate,
+		secondsToTime: secondsToTime,
+		percentage: formatPercentage,
+		wordEndOfNum: declOfNum
+	};
+}());
+
 /**
  * List on files in folder recursive (in parallel mode)
  * @param dir Folder to search files

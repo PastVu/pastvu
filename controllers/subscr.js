@@ -18,6 +18,7 @@ var fs = require('fs'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	mailController = require('./mail.js'),
 	photoController = require('./photo.js'),
+	commentController = require('./comment.js'),
 
 	msg = {
 		deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
@@ -26,6 +27,10 @@ var fs = require('fs'),
 	},
 
 	noticeTpl,
+
+	declension = {
+		comment: [' новый комментарий', ' новых комментария', ' новых комментариев']
+	},
 
 	throttle = ms('1m'),
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
@@ -143,13 +148,16 @@ function notifyUsers(users) {
 	});
 }
 
+//Конвейер отправки уведомлений
 //Каждые sendFreq ms отправляем sendPerStep уведомлений
 var notifierConveyer = (function () {
 
 	function conveyerStep() {
+		//Находим уведомления, у которых прошло время nextnoty
 		UserSubscrNoty.find({nextnoty: {$lte: new Date()}}, {_id: 0}, {lean: true, limit: sendPerStep, sort: {nextnoty: 1}}, function (err, usersNoty) {
 			if (err) {
-				return this(err);
+				logger.error(err.message);
+				return notifierConveyer();
 			}
 			if (!usersNoty || !usersNoty.length) {
 				return notifierConveyer();
@@ -159,19 +167,18 @@ var notifierConveyer = (function () {
 
 			step(
 				function () {
-					var i = usersNoty.length;
-
-					while (i--) {
+					for (var i = usersNoty.length; i--;) {
 						userIds.push(usersNoty[i].user);
 						sendUserNotice(usersNoty[i].user, this.parallel());
 					}
 				},
 				function (err) {
-					if (err) {
-						return logger.error(err.message);
-					}
 					UserSubscrNoty.update({user: {$in: userIds}}, {$set: {lastnoty: nowDate}, $unset: {nextnoty: 1}}, {milti: true}).exec();
 					notifierConveyer();
+
+					if (err) {
+						logger.error(err.message);
+					}
 				}
 			);
 		});
@@ -183,7 +190,7 @@ var notifierConveyer = (function () {
 }());
 
 /**
- * Формируем письмо для пользователя из готовых уведомлений и отправляем его
+ * Формируем письмо для пользователя из готовых уведомлений (noty: true) и отправляем его
  * @param userId
  * @param cb
  */
@@ -221,56 +228,102 @@ function sendUserNotice(userId, cb) {
 			}
 
 			if (!objsIdNews.length && !objsIdPhotos.length) {
-				return cb();
+				return finish();
+			}
+
+			function finish(err) {
+				//Сбрасываем флаг готовности к уведомлению (noty) у всех отправленных объектов
+				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}}, {milti: true}).exec();
+				cb(err);
 			}
 
 			step(
 				function () {
 					if (objsIdNews.length) {
-						News.find({_id: {$in: objsIdNews}}, {_id: 0, cid: 1, title: 1}, {lean: true}, this.parallel());
+						News.find({_id: {$in: objsIdNews}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
 					if (objsIdPhotos.length) {
-						Photo.find({_id: {$in: objsIdPhotos}}, {_id: 0, cid: 1, title: 1}, {lean: true}, this.parallel());
+						Photo.find({_id: {$in: objsIdPhotos}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
 				},
 				function (err, news, photos) {
 					if (err || ((!news || !news.length) && (!news || !photos.length))) {
-						return cb(err);
+						return finish(err);
 					}
 
-					//Отправляем письмо с уведомлением
-					mailController.send(
-						{
-							sender: 'noreply',
-							receiver: {alias: user.disp, email: user.email},
-							subject: 'Новое уведомление',
-							head: true,
-							body: noticeTpl({
-								username: user.disp,
-								greeting: 'Уведомление о событиях на PastVu',
-								addr: global.appVar.serverAddr,
-								user: user,
-								news: news,
-								photos: photos
-							})
-						},
-						this
-					);
-				},
-				function (err) {
-					if (err) {
-						return cb(err);
+					//Ищем кол-во новых комментариев для каждого объекта
+					if (news.length) {
+						commentController.fillNewCommentsCount(news, user._id, 'news', this.parallel());
+					} else {
+						this.parallel()(null, []);
 					}
-					//Сбрасываем флаг готовности к уведомлению (noty) у всех отправленных объектов
-					UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}}, {milti: true}, cb);
+					if (photos.length) {
+						commentController.fillNewCommentsCount(photos, user._id, null, this.parallel());
+					} else {
+						this.parallel()(null, []);
+					}
+				},
+				function (err, news, photos) {
+					if (err || (!news.length && !photos.length)) {
+						return finish(err);
+					}
+					var newsResult = [],
+						photosResult = [],
+						i;
+
+					//Оставляем только те объекты, у который кол-во новых действительно есть.
+					//Если пользователь успел зайти в объект, например, в период выполнения этого шага коневйера,
+					//то новые обнулятся и уведомлять об этом объекте уже не нужно
+					for (i = news.length; i--;) {
+						if (news[i].ccount_new) {
+							news[i].ccount_new_format = news[i].ccount_new + Utils.format.wordEndOfNum(news[i].ccount_new, declension);
+							newsResult.push(news[i]);
+						}
+					}
+					for (i = photos.length; i--;) {
+						if (photos[i].ccount_new) {
+							photos[i].ccount_new_format = photos[i].ccount_new + Utils.format.wordEndOfNum(photos[i].ccount_new, declension.comment);
+							photosResult.push(photos[i]);
+						}
+					}
+
+					//Сортируем по количеству новых комментариев
+					newsResult.sort(sortNotice);
+					photosResult.sort(sortNotice);
+
+					if (newsResult.length || photosResult.length) {
+						//Отправляем письмо с уведомлением, только если есть новые комментарии
+						mailController.send(
+							{
+								sender: 'noreply',
+								receiver: {alias: user.disp, email: user.email},
+								subject: 'Новое уведомление',
+								head: true,
+								body: noticeTpl({
+									username: user.disp,
+									greeting: 'Уведомление о событиях на PastVu',
+									addr: global.appVar.serverAddr,
+									user: user,
+									news: newsResult,
+									photos: photosResult
+								})
+							},
+							finish
+						);
+					} else {
+						finish();
+					}
 				}
 			);
 		});
 	}
+}
+function sortNotice(a, b) {
+	return a.ccount_new < b.ccount_new ? 1 : (a.ccount_new > b.ccount_new ? -1 : 0);
 }
 
 module.exports.loadController = function (app, db, io) {

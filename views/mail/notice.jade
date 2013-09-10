@@ -1,14 +1,17 @@
 include head
-p На момент отправки данного письма вашего внимания заслуживают следующие события:
+- var hosturl = addr.protocol + '://' + addr.host
+p На момент отправки данного уведомления в подписанных вами материалах было добавленно следующее количество комментариев:
 if news.length
-	p(style="margin-bottom: 0px;")
+	p(style="margin-bottom: 2px;")
 		strong Новости:
 	each val in news
-		li= val.title
+		li <a href='#{hosturl + '/news/' + val.cid}' target='_blank'>#{val.title}</a>: #{val.ccount_new_format}
 if photos.length
-	p(style="margin-bottom: 0px;")
+	p(style="margin-bottom: 2px;")
 		strong Фотографии:
 	each val in photos
-		li= val.title
+		li <a href='#{hosturl + '/p/' + val.cid}' target='_blank'>#{val.title}</a>: #{val.ccount_new_format}
 p
-	| Вы можете просмотреть ваши подписки на странице <a href='#{addr.protocol + '://' + addr.host + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{addr.host + '/u/' + user.login + '/subscriptions'}</a>
+	| Управлять подписанными материалами вы можете на странице подписок: <a href='#{hosturl + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{addr.host + '/u/' + user.login + '/subscriptions'}</a>
+	br
+	| Задать интервал уведомления вы можете на странице настроек: <a href='#{hosturl + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{addr.host + '/u/' + user.login + '/subscriptions'}</a>
