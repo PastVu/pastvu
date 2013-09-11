@@ -75,6 +75,7 @@ function getCommentsObj(iAm, data, cb) {
 
 			if (iAm) {
 				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+				subscrController.commentViewed(obj._id, iAm);
 			}
 		},
 		function (err, comments, userView) {

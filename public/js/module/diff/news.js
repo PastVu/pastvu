@@ -10,7 +10,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		txt: '',
 		ccount: 0,
 		ccount_new: 0,
-		nocomments: false
+		nocomments: false,
+		subscr: false
 	};
 
 	return Cliche.extend({
@@ -112,6 +113,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.commentsVM.count(this.news.ccount());
 						this.commentsVM.count_new(this.news.ccount_new());
 						this.commentsVM.nocomments(this.news.nocomments());
+						this.commentsVM.subscr(this.news.subscr());
 						this.commentsVM.show();
 						this.commentsActivate(this.toComment ? 100 : (this.news.ccount() > 30 ? 600 : 410));
 					}.bind(this)});
@@ -211,6 +213,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		setNoComments: function (val) {
 			this.news.nocomments(val);
+		},
+		setSubscr: function (val) {
+			this.news.subscr(val);
 		},
 
 		onImgLoad: function (data, event) {

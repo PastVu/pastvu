@@ -32,7 +32,7 @@ var fs = require('fs'),
 		comment: [' новый комментарий', ' новых комментария', ' новых комментариев']
 	},
 
-	throttle = ms('1m'),
+	throttle = ms('2m'),
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
 	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
 
@@ -73,13 +73,18 @@ function subscribeUser(user, data, cb) {
 	);
 }
 
+/**
+ * Устанавливает готовность уведомления для объекта по событию добавления комментария
+ * @param objId
+ * @param user
+ */
 function commentAdded(objId, user) {
 	UserSubscr.find({obj: objId, user: {$ne: user._id}, noty: {$exists: false}}, {_id: 1, user: 1}, {lean: true}, function (err, objs) {
 		if (err) {
 			return logger.error(err.message);
 		}
 		if (!objs || !objs.length) {
-			return;
+			return; //Если никто на этот объект не подписан - выходим
 		}
 
 		var ids = [],
@@ -91,16 +96,45 @@ function commentAdded(objId, user) {
 			users.push(objs[i].user);
 		}
 
+		//Устанавливает флаг готовности уведомления по объекту, для подписанных пользователей
 		UserSubscr.update({_id: {$in: ids}}, {$set: {noty: true}}, {multi: true}, function (err) {
 			if (err) {
 				return logger.error(err.message);
 			}
-			notifyUsers(users);
+			//Вызываем планировщик отправки уведомлений для подписанных пользователей
+			scheduleUserNotice(users);
 		});
 	});
 }
 
-function notifyUsers(users) {
+/**
+ * Устанавливает объект комментариев как просмотренный, т.е. ненужный для уведомления
+ * @param objId
+ * @param user
+ */
+function commentViewed(objId, user) {
+	UserSubscr.update({obj: objId, user: user._id}, {$unset: {noty: 1}}, {upsert: false, multi: false}, function (err, numberAffected) {
+		if (err) {
+			return logger.error(err.message);
+		}
+		if (!numberAffected) {
+			return;
+		}
+
+		//Считаем кол-во оставшихся готовых к отправке уведомлений для пользователя
+		UserSubscr.count({user: user._id, noty: true}, function (err, count) {
+			if (err) {
+				return logger.error(err.message);
+			}
+			if (!count) {
+				//Если уведомлений, готовых к отправке больше нет, то сбрасываем запланированное уведомление для пользователя
+				UserSubscrNoty.update({user: user._id}, {$unset: {nextnoty: 1}}).exec();
+			}
+		});
+	});
+}
+
+function scheduleUserNotice(users) {
 	//Находим время последнего и следующего уведомления каждого пользователя,
 	//чтобы определить, нужно ли вычислять следующее
 	UserSubscrNoty.find({user: {$in: users}}, {_id: 0}, {lean: true}, function (err, usersNoty) {
@@ -353,3 +387,4 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.commentAdded = commentAdded;
+module.exports.commentViewed = commentViewed;
