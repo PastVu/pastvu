@@ -32,7 +32,7 @@ var fs = require('fs'),
 		comment: [' новый комментарий', ' новых комментария', ' новых комментариев']
 	},
 
-	throttle = ms('2m'),
+	throttle = ms('1m'),
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
 	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
 
@@ -135,49 +135,35 @@ function commentViewed(objId, user) {
 }
 
 function scheduleUserNotice(users) {
-	//Находим время последнего и следующего уведомления каждого пользователя,
-	//чтобы определить, нужно ли вычислять следующее
-	UserSubscrNoty.find({user: {$in: users}}, {_id: 0}, {lean: true}, function (err, usersNoty) {
+	//Находим пользователей, у которых еще не запланированна отправка уведомлений и
+	//иcходя из времени предыдущей отправки рассчитываем следующую
+	UserSubscrNoty.find({user: {$in: users}, nextnoty: {$exists: false}}, {_id: 0}, {lean: true}, function (err, usersNoty) {
 		if (err) {
 			return logger.error(err.message);
 		}
 		var userId,
-			now = Date.now(),
 			usersNotyHash = {},
-			nearestNoticeTimeStamp = now + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
+			nearestNoticeTimeStamp = Date.now() + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
 			lastNoty,
 			nextNoty,
 			i;
 
 		for (i = usersNoty.length; i--;) {
-			//Если у пользователя еще не установленно время следующего уведомления, расчитываем его
+			lastNoty = usersNoty[i].lastnoty;
 
-			if (usersNoty[i].nextnoty) {
-				//Значит у этого пользователя уже запланированно уведомление и ничего делать не надо
-				usersNotyHash[usersNoty[i].user] = false;
+			//Если прошлого уведомления еще не было или с его момента прошло больше времени,
+			//чем throttle или осталось менее 10сек, ставим ближайший
+			if (lastNoty && lastNoty.getTime) {
+				nextNoty = Math.max(lastNoty.getTime() + throttle, nearestNoticeTimeStamp);
 			} else {
-				lastNoty = usersNoty[i].lastnoty;
-
-				//Если прошлого уведомления еще не было или с его момента прошло больше времени,
-				//чем throttle или осталось менее 10сек, ставим ближайший
-				if (lastNoty) {
-					nextNoty = usersNoty[i].lastnoty.getTime() + throttle - now;
-
-					if (nextNoty < 10000) {
-						nextNoty = nearestNoticeTimeStamp;
-					}
-				} else {
-					nextNoty = nearestNoticeTimeStamp;
-				}
-				usersNotyHash[usersNoty[i].user] = nextNoty;
+				nextNoty = nearestNoticeTimeStamp;
 			}
+			usersNotyHash[usersNoty[i].user] = nextNoty;
 		}
 
 		for (i = users.length; i--;) {
 			userId = users[i];
-			if (usersNotyHash[userId] !== false) {
-				UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
-			}
+			UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
 		}
 	});
 }
@@ -185,7 +171,6 @@ function scheduleUserNotice(users) {
 //Конвейер отправки уведомлений
 //Каждые sendFreq ms отправляем sendPerStep уведомлений
 var notifierConveyer = (function () {
-
 	function conveyerStep() {
 		//Находим уведомления, у которых прошло время nextnoty
 		UserSubscrNoty.find({nextnoty: {$lte: new Date()}}, {_id: 0}, {lean: true, limit: sendPerStep, sort: {nextnoty: 1}}, function (err, usersNoty) {
@@ -233,7 +218,7 @@ function sendUserNotice(userId, cb) {
 	if (u) {
 		userProcess(null, u);
 	} else {
-		User.findOne({_id: userId}, {_id: 0, login: 1, disp: 1, email: 1}, {lean: true}, userProcess);
+		User.findOne({_id: userId}, {_id: 1, login: 1, disp: 1, email: 1}, {lean: true}, userProcess);
 	}
 
 	function userProcess(err, user) {
@@ -254,7 +239,7 @@ function sendUserNotice(userId, cb) {
 
 			while (i--) {
 				notysId.push(objs[i]._id);
-				if (objs.type === 'news') {
+				if (objs[i].type === 'news') {
 					objsIdNews.push(objs[i].obj);
 				} else {
 					objsIdPhotos.push(objs[i].obj);
@@ -314,7 +299,7 @@ function sendUserNotice(userId, cb) {
 					//то новые обнулятся и уведомлять об этом объекте уже не нужно
 					for (i = news.length; i--;) {
 						if (news[i].ccount_new) {
-							news[i].ccount_new_format = news[i].ccount_new + Utils.format.wordEndOfNum(news[i].ccount_new, declension);
+							news[i].ccount_new_format = news[i].ccount_new + Utils.format.wordEndOfNum(news[i].ccount_new, declension.comment);
 							newsResult.push(news[i]);
 						}
 					}
@@ -325,12 +310,13 @@ function sendUserNotice(userId, cb) {
 						}
 					}
 
-					//Сортируем по количеству новых комментариев
-					newsResult.sort(sortNotice);
-					photosResult.sort(sortNotice);
-
 					if (newsResult.length || photosResult.length) {
 						//Отправляем письмо с уведомлением, только если есть новые комментарии
+
+						//Сортируем по количеству новых комментариев
+						newsResult.sort(sortNotice);
+						photosResult.sort(sortNotice);
+
 						mailController.send(
 							{
 								sender: 'noreply',
