@@ -8,7 +8,7 @@ var log4js = require('log4js'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	//Присваиваем всем пользователям, у которых запонен аватар, его заного
+	//Присваиваем всем пользователям, у которых заполнен аватар, его заного
 	saveSystemJSFunc(function pastvuPatch(byNumPerPackage) {
 		byNumPerPackage = byNumPerPackage || 2000;
 
