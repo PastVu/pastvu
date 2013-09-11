@@ -192,7 +192,7 @@ var notifierConveyer = (function () {
 					}
 				},
 				function (err) {
-					UserSubscrNoty.update({user: {$in: userIds}}, {$set: {lastnoty: nowDate}, $unset: {nextnoty: 1}}, {milti: true}).exec();
+					UserSubscrNoty.update({user: {$in: userIds}}, {$set: {lastnoty: nowDate}, $unset: {nextnoty: 1}}, {multi: true}).exec();
 					notifierConveyer();
 
 					if (err) {
@@ -252,7 +252,7 @@ function sendUserNotice(userId, cb) {
 
 			function finish(err) {
 				//Сбрасываем флаг готовности к уведомлению (noty) у всех отправленных объектов
-				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}}, {milti: true}).exec();
+				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}}, {multi: true}).exec();
 				cb(err);
 			}
 
