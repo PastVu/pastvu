@@ -33,6 +33,23 @@
 								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
 		.accordion-group
 			.accordion-heading
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Подписка и уведомления
+			.accordion-body.collapse.in#notice
+				.accordion-inner
+					dl.dl-horizontal
+						dt Автоподписка при комментировании темы
+						dd
+							.btn-group-toggle
+								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
+								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
+						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+					dl.dl-horizontal
+						dt Минимальный интервал между отправками
+						dd
+						i.icon-info-sign.helpico(title="Минимальный количество времени, которое должно пройти между отправками писем с уведомлением")
+
+		.accordion-group
+			.accordion-heading
 				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Карта
 			.accordion-body.collapse#collapseTwo
 				.accordion-inner Раздел в процессе разработки...

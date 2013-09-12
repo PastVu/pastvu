@@ -26,8 +26,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					return this.u.disp() !== this.u.login();
 				}, this);
 
-				ko.applyBindings(globalVM, this.$dom[0]);
-				this.show();
+				this.getSettingsVars(function () {
+					ko.applyBindings(globalVM, this.$dom[0]);
+					this.show();
+				}, this);
 			} else {
 				globalVM.router.navigateToUrl('/u/' + this.u.login());
 			}
@@ -39,12 +41,39 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
-		getSettingsVars: function () {
-
+		getSettingsVars: function (cb, ctx) {
+			socket.once('takeUserSettingsVars', function (result) {
+				if (result && !result.error) {
+					this.vars = result;
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, result);
+				}
+			}.bind(this));
+			socket.emit('giveUserSettingsVars');
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+
+		autoReply: function (data, evt) {
+			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'));
+		},
+		changeSetting: function (key, val, cb, ctx) {
+			if (!this.u.settings[key] || val === this.u.settings[key]()) {
+				return;
+			}
+			socket.once('changeUserSettingResult', function (result) {
+				if (result && !result.error && result.saved) {
+					this.u.settings[result.key](result.val);
+					this.originUser.settings[result.key] = result.val;
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, result);
+				}
+			}.bind(this));
+			socket.emit('changeUserSetting', {login: this.u.login(), key: key, val: val});
 		},
 
 		toggleDisp: function () {

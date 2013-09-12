@@ -20,8 +20,10 @@ var fs = require('fs'),
 	dummyFn = function () {
 	},
 	msg = {
+		badParams: 'Bad params',
 		deny: 'You do not have permission for this action',
-		nouser: 'Requested user does not exist'
+		nouser: 'Requested user does not exist',
+		nosetting: 'Such setting does not exists'
 	};
 
 function userToPublicObject(doc, ret, options) {
@@ -41,7 +43,7 @@ function giveUser(socket, data, cb) {
 		itsOnline = false;
 
 	if (!Utils.isType('object', data) || !login) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
@@ -79,7 +81,7 @@ function saveUser(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 	itsMe = iAm.login === login;
 
@@ -130,6 +132,62 @@ function saveUser(socket, data, cb) {
 	);
 }
 
+//Меняем значение настройки
+function changeSetting(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
+
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || !data.key) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			var defSetting = settings.getUserSettingsDef()[data.key],
+				vars = settings.getUserSettingsVars()[data.key];
+
+			//Если такой настройки не существует или её значение недопустимо - выходим
+			if (defSetting === undefined || vars === undefined || vars.indexOf(data.val) < 0) {
+				return cb({message: msg.nosetting, error: true});
+			}
+
+			if (!user.settings) {
+				user.settings = {};
+			}
+
+			user.settings[data.key] = data.val;
+			user.markModified('settings');
+			user.save(this);
+		},
+		function (err, user) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (itsOnline) {
+				_session.emitUser(user.login, socket);
+			}
+			cb({message: 'ok', saved: 1, key: data.key, val: user.settings[data.key]});
+		}
+	);
+}
+
 //Меняем отображаемое имя
 function changeDispName(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
@@ -141,7 +199,7 @@ function changeDispName(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
@@ -193,7 +251,7 @@ function changeEmail(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login || !data.email) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 	data.email = data.email.toLowerCase();
 	if (!data.email.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)) {
@@ -270,7 +328,7 @@ function changeAvatar(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp("^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	file = data.file;
@@ -355,7 +413,7 @@ function delAvatar(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
@@ -417,6 +475,13 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('saveUser', function (data) {
 			saveUser(socket, data, function (resultData) {
 				socket.emit('saveUserResult', resultData);
+			});
+		});
+
+
+		socket.on('changeUserSetting', function (data) {
+			changeSetting(socket, data, function (resultData) {
+				socket.emit('changeUserSettingResult', resultData);
 			});
 		});
 
