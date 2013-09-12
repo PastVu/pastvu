@@ -24,7 +24,8 @@ var fs = require('fs'),
 		deny: 'You do not have permission for this action',
 		nouser: 'Requested user does not exist',
 		nosetting: 'Such setting does not exists'
-	};
+	},
+	subscrController = require('./subscr.js');
 
 function userToPublicObject(doc, ret, options) {
 	delete ret._id;
@@ -180,6 +181,11 @@ function changeSetting(socket, data, cb) {
 				user.settings[data.key] = data.val;
 				user.markModified('settings');
 				user.save(this);
+
+				if (data.key === 'subscr_throttle') {
+					//Если поменялся throttle, попытаемся пересчитать время запланированного уведомления
+					subscrController.userThrottleChange(user._id, data.val);
+				}
 			}
 		},
 		function (err, user) {

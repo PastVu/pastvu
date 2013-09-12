@@ -135,6 +135,35 @@ function commentViewed(objId, user) {
 }
 
 /**
+ * При изменении пользователем своего throttle, надо поменять время заплонированной отправки, если оно есть
+ * @param userId
+ * @param newThrottle
+ */
+function userThrottleChange(userId, newThrottle) {
+	if (!newThrottle) {
+		return;
+	}
+	UserSubscrNoty.findOne({user: userId, nextnoty: {$exists: true}}, {_id: 0}, {lean: true}, function (err, userNoty) {
+		if (err) {
+			return logger.error(err.message);
+		}
+		if (!userNoty) {
+			return;
+		}
+		var newNextNoty,
+			nearestNoticeTimeStamp = Date.now() + 10000;
+
+		if (userNoty.lastnoty && userNoty.lastnoty.getTime) {
+			newNextNoty = Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp);
+		} else {
+			newNextNoty = nearestNoticeTimeStamp;
+		}
+
+		UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(newNextNoty)}}).exec();
+	});
+}
+
+/**
  * Планируем отправку уведомлений для пользователей
  * @param users Массив _id пользователй
  */
@@ -155,8 +184,8 @@ function scheduleUserNotice(users) {
 				usersNotyHash = {},
 				defThrottle = settings.getUserSettingsDef().subscr_throttle,
 				nearestNoticeTimeStamp = Date.now() + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
-				lastNoty,
-				nextNoty,
+				lastnoty,
+				nextnoty,
 				i;
 
 			for (i = usersThrottle.length; i--;) {
@@ -164,16 +193,16 @@ function scheduleUserNotice(users) {
 			}
 
 			for (i = usersNoty.length; i--;) {
-				lastNoty = usersNoty[i].lastnoty;
+				lastnoty = usersNoty[i].lastnoty;
 
 				//Если прошлого уведомления еще не было или с его момента прошло больше времени,
 				//чем throttle пользователя или осталось менее 10сек, ставим ближайший
-				if (lastNoty && lastNoty.getTime) {
-					nextNoty = Math.max(lastNoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
+				if (lastnoty && lastnoty.getTime) {
+					nextnoty = Math.max(lastnoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
 				} else {
-					nextNoty = nearestNoticeTimeStamp;
+					nextnoty = nearestNoticeTimeStamp;
 				}
-				usersNotyHash[usersNoty[i].user] = nextNoty;
+				usersNotyHash[usersNoty[i].user] = nextnoty;
 			}
 
 			for (i = users.length; i--;) {
@@ -390,3 +419,4 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.commentAdded = commentAdded;
 module.exports.commentViewed = commentViewed;
+module.exports.userThrottleChange = userThrottleChange;
