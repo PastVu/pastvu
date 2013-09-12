@@ -5,6 +5,7 @@ var fs = require('fs'),
 	auth = require('./auth.js'),
 	jade = require('jade'),
 	_session = require('./_session.js'),
+	settings = require('./settings.js'),
 	Settings,
 	User,
 	UserSubscr,
@@ -32,7 +33,6 @@ var fs = require('fs'),
 		comment: [' новый комментарий', ' новых комментария', ' новых комментариев']
 	},
 
-	throttle = ms('1m'),
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
 	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
 
@@ -134,38 +134,54 @@ function commentViewed(objId, user) {
 	});
 }
 
+/**
+ * Планируем отправку уведомлений для пользователей
+ * @param users Массив _id пользователй
+ */
 function scheduleUserNotice(users) {
-	//Находим пользователей, у которых еще не запланированна отправка уведомлений и
-	//иcходя из времени предыдущей отправки рассчитываем следующую
-	UserSubscrNoty.find({user: {$in: users}, nextnoty: {$exists: false}}, {_id: 0}, {lean: true}, function (err, usersNoty) {
-		if (err) {
-			return logger.error(err.message);
-		}
-		var userId,
-			usersNotyHash = {},
-			nearestNoticeTimeStamp = Date.now() + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
-			lastNoty,
-			nextNoty,
-			i;
-
-		for (i = usersNoty.length; i--;) {
-			lastNoty = usersNoty[i].lastnoty;
-
-			//Если прошлого уведомления еще не было или с его момента прошло больше времени,
-			//чем throttle или осталось менее 10сек, ставим ближайший
-			if (lastNoty && lastNoty.getTime) {
-				nextNoty = Math.max(lastNoty.getTime() + throttle, nearestNoticeTimeStamp);
-			} else {
-				nextNoty = nearestNoticeTimeStamp;
+	step(
+		function () {
+			//Находим для каждого пользователя параметр throttle
+			User.find({_id: {$in: users}}, {_id: 1, 'settings.subscr_throttle': 1}, {lean: true}, this.parallel());
+			//Находим пользователей, у которых еще не запланирована отправка уведомлений и иcходя из времени предыдущей отправки рассчитываем следующую
+			UserSubscrNoty.find({user: {$in: users}, nextnoty: {$exists: false}}, {_id: 0}, {lean: true}, this.parallel());
+		},
+		function (err, usersThrottle, usersNoty) {
+			if (err) {
+				return logger.error(err.message);
 			}
-			usersNotyHash[usersNoty[i].user] = nextNoty;
-		}
+			var userId,
+				usersTrottleHash = {},
+				usersNotyHash = {},
+				defThrottle = settings.getUserSettingsDef().subscr_throttle,
+				nearestNoticeTimeStamp = Date.now() + 10000, //Ближайшее уведомление для пользователей, у которых не было предыдущих
+				lastNoty,
+				nextNoty,
+				i;
 
-		for (i = users.length; i--;) {
-			userId = users[i];
-			UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
+			for (i = usersThrottle.length; i--;) {
+				usersTrottleHash[usersThrottle[i]._id] = usersThrottle[i].settings && usersThrottle[i].settings.subscr_throttle;
+			}
+
+			for (i = usersNoty.length; i--;) {
+				lastNoty = usersNoty[i].lastnoty;
+
+				//Если прошлого уведомления еще не было или с его момента прошло больше времени,
+				//чем throttle пользователя или осталось менее 10сек, ставим ближайший
+				if (lastNoty && lastNoty.getTime) {
+					nextNoty = Math.max(lastNoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
+				} else {
+					nextNoty = nearestNoticeTimeStamp;
+				}
+				usersNotyHash[usersNoty[i].user] = nextNoty;
+			}
+
+			for (i = users.length; i--;) {
+				userId = users[i];
+				UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
+			}
 		}
-	});
+	);
 }
 
 //Конвейер отправки уведомлений

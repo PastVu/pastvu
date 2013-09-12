@@ -172,9 +172,15 @@ function changeSetting(socket, data, cb) {
 				user.settings = {};
 			}
 
-			user.settings[data.key] = data.val;
-			user.markModified('settings');
-			user.save(this);
+			if (user.settings[data.key] === data.val) {
+				//Если значение настройки не изменилось, просто возвращаемся
+				this(null, user);
+			} else {
+				//Сохраняем значение настройки и помечаем объект настройки изменившимся, т.к. он Mixed
+				user.settings[data.key] = data.val;
+				user.markModified('settings');
+				user.save(this);
+			}
 		},
 		function (err, user) {
 			if (err) {
