@@ -45,7 +45,11 @@
 						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
 					dl.dl-horizontal
 						dt Минимальный интервал между отправками
-						dd
+						dd.throttle(data-bind="foreach: vars.subscr_throttle")
+							label.checkbox
+								input.thr(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
+								| &nbsp;
+								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
 						i.icon-info-sign.helpico(title="Минимальный количество времени, которое должно пройти между отправками писем с уведомлением")
 
 		.accordion-group

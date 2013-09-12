@@ -42,7 +42,7 @@ module.exports.loadController = function (app, db) {
 
 		//Добавляем настройки
 		db.user_settings.save({key: 'subscr_auto_reply', val: true, vars: [true, false], desc: 'Автоподписка при комментировании темы'});
-		db.user_settings.save({key: 'subscr_throttle', val: 30000, vars: [5*60*1000, 30*60*1000, 60*60*1000, 6*60*60*1000, 24*60*60*1000], desc: 'Минимальный интервал между отправками письма с уведомлением'});
+		db.user_settings.save({key: 'subscr_throttle', val: 5*60*1000, vars: [5*60*1000, 30*60*1000, 60*60*1000, 6*60*60*1000, 24*60*60*1000], desc: 'Минимальный интервал между отправками письма с уведомлением'});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});

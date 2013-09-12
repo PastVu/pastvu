@@ -27,6 +27,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				}, this);
 
 				this.getSettingsVars(function () {
+					this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
+
 					ko.applyBindings(globalVM, this.$dom[0]);
 					this.show();
 				}, this);
@@ -58,10 +60,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		autoReply: function (data, evt) {
-			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'));
+			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);
 		},
-		changeSetting: function (key, val, cb, ctx) {
-			if (!this.u.settings[key] || val === this.u.settings[key]()) {
+		subscr_throttleHandler: function (val) {
+			//Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
+			//Соответственно нам нужно отправлять на изменение только когда строка
+			//Если число, значит установилось в callback после отправки серверу
+			if (typeof val === 'string') {
+				this.changeSetting('subscr_throttle', Number(val));
+			}
+		},
+		changeSetting: function (key, val, checkValChange, cb, ctx) {
+			if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
 				return;
 			}
 			socket.once('changeUserSettingResult', function (result) {
