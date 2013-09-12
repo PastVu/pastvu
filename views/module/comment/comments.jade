@@ -128,6 +128,7 @@
 			| Вы подписаны на новые комментарии в данной теме
 			// /ko
 			// ko ifnot: $parents[$data.level].subscr()
-			input.chkSubscr(type="checkbox", checked="checked", data-bind="event: {click: $parents[$data.level].chkSubscrClickBind}")
+			//- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
+			input.chkSubscr(type="checkbox", data-bind="attr:{checked: $parents[$data.level].auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: $parents[$data.level].chkSubscrClickBind}")
 			| &nbsp;Подписаться на тему
 			// /ko

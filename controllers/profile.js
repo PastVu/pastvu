@@ -193,7 +193,7 @@ function changeSetting(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 			if (itsOnline) {
-				_session.emitUser(user.login, socket);
+				_session.emitUser(user.login); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
 			}
 			cb({message: 'ok', saved: 1, key: data.key, val: user.settings[data.key]});
 		}
