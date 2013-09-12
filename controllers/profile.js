@@ -6,6 +6,7 @@ var fs = require('fs'),
 	gm = require('gm'),
 	auth = require('./auth.js'),
 	_session = require('./_session.js'),
+	settings = require('./settings.js'),
 	Settings,
 	User,
 	Utils = require('../commons/Utils.js'),
@@ -35,7 +36,6 @@ function userToPublicObject(doc, ret, options) {
 //Отдаем пользователя
 function giveUser(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
-		user,
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
 		itsOnline = false;
@@ -57,6 +57,9 @@ function giveUser(socket, data, cb) {
 		function (err, user) {
 			if (err || !user) {
 				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			if (itsMe || (iAm && iAm.role > 9)) {
+				user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
 			}
 			user.online = itsOnline;
 			cb({message: 'ok', user: user});

@@ -39,6 +39,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
+		getSettingsVars: function () {
+
+		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;

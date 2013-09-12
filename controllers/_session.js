@@ -135,7 +135,8 @@ function authSocket(handshake, callback) {
 //Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
-	var session = socket.handshake.session;
+	var session = socket.handshake.session,
+		user;
 	//console.log('firstConnection');
 
 	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
@@ -154,10 +155,14 @@ function firstConnection(socket) {
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
+	user = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null;
+	if (user) {
+		user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
+	}
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
-		u: session.user && session.user.toObject ? session.user.toObject() : null
+		u: user
 	});
 
 	socket.on('disconnect', function () {
@@ -443,6 +448,14 @@ function getOnline(login, _id) {
 	if (usObj !== undefined) {
 		return usObj.user;
 	}
+}
+function userToPublicObject(doc, ret, options) {
+	delete ret._id;
+	delete ret.cid;
+	delete ret.pass;
+	delete ret.activatedate;
+	delete ret.loginAttempts;
+	delete ret.active;
 }
 
 module.exports.authSocket = authSocket;

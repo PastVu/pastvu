@@ -19,6 +19,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			//role
 			role: 0,
 
+			settings: {},
+
 			//profile
 			birthdate: '',
 			sex: 'm',

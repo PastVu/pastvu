@@ -26,6 +26,8 @@ var UserScheme = new mongoose.Schema({
 	// 11 - owner, 10 - admin, 5 - moderator, undefined - regular
 	role: {type: Number},
 
+	settings: {type: Schema.Types.Mixed},
+
 	//Profile
 	avatar: {type: String},
 	firstName: {type: String},
