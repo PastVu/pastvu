@@ -504,7 +504,7 @@ function givePhoto(socket, data, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		step (
+		step(
 			function () {
 				var user = _session.getOnline(null, photo.user),
 					paralellUser = this.parallel();
@@ -547,7 +547,7 @@ function givePhoto(socket, data, cb) {
 						if (err) {
 							return cb({message: err && err.message, error: true});
 						}
-						if (countsHash[photo._id])  {
+						if (countsHash[photo._id]) {
 							photo.ccount_new = countsHash[photo._id];
 						}
 						delete photo._id;
@@ -622,7 +622,7 @@ function givePhotosPublic(iAm, data, cb) {
 			}
 			if (iAm) {
 				for (var i = photos.length; i--;) {
-					delete photos[i]._id ;
+					delete photos[i]._id;
 				}
 			}
 			cb({photos: photos, count: count, skip: skip});
@@ -666,10 +666,11 @@ function giveUserPhotos(iAm, data, cb) {
 				},
 				finishOrNewCommentsCount
 			);
-		} else if (filter) {
-			//Если есть фильтр, то запрашиваем по нему также count
-			if (filter.nogeo) {
-				query.geo = null;
+		} else {
+			if (filter) {
+				if (filter.nogeo) {
+					query.geo = null;
+				}
 			}
 			step(
 				function () {
@@ -678,8 +679,6 @@ function giveUserPhotos(iAm, data, cb) {
 				},
 				finishOrNewCommentsCount
 			);
-		} else {
-			Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, finishOrNewCommentsCount);
 		}
 
 		function finishOrNewCommentsCount(err, photos, count) {
@@ -701,7 +700,7 @@ function giveUserPhotos(iAm, data, cb) {
 				}
 				if (iAm) {
 					for (var i = photos.length; i--;) {
-						delete photos[i]._id ;
+						delete photos[i]._id;
 					}
 				}
 				cb({photos: photos, count: count, skip: skip});

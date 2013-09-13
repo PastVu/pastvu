@@ -1,7 +1,7 @@
 /*global requirejs:true, require:true*/
 requirejs.config({
 	baseUrl: '/js',
-	waitSeconds: 15,
+	waitSeconds: 20,
 	//deps: ['lib/JSExtensions'],
 	//Shim позволит нам настроить зависимоти для скриптов, которые не содержат define, чтобы объявить себя модулем
 	shim: {
