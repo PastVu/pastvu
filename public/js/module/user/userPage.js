@@ -48,8 +48,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 						];
 
 					if (this.auth.loggedIn() && (this.auth.iAm.login() === login || this.auth.iAm.role() > 9)) {
+						result.push({name: 'Подписки', href: "/u/" + login + "/subscriptions", section: 'subscriptions'});
 						result.push({name: 'Настройки', href: "/u/" + login + "/settings", section: 'settings'});
-						result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
+						//result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
 					}
 					return result;
 				}, this);
@@ -170,6 +171,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			} else if (section === 'comments') {
 				module = 'm/user/comments';
 				Utils.title.setTitle({pre: 'Комментарии - ', title: this.user.disp()});
+			} else if (section === 'subscriptions') {
+				module = 'm/user/subscr';
+				Utils.title.setTitle({pre: 'Подписки - ', title: this.user.disp()});
 			} else if (section === 'settings') {
 				module = 'm/user/settings';
 				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.disp()});
