@@ -6,6 +6,12 @@ module.exports.loadController = function (app) {
 		next();
 	});
 
+	//ping-pong для проверки работы сервера
+	app.get('/ping', function (req, res) {
+		res.statusCode = 200;
+		res.send('pong');
+	});
+
 	// More complicated example: '/p/:cid?/*
 	['/', '/p*', '/u*', '/photoUpload', '/news*', '/confirm/:key'].forEach(function (route) {
 		app.get(route, appMainHandler);
