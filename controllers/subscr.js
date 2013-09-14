@@ -391,6 +391,65 @@ function sortNotice(a, b) {
 	return a.ccount_new < b.ccount_new ? 1 : (a.ccount_new > b.ccount_new ? -1 : 0);
 }
 
+//Отдача постраничного списка подписанных объектов пользователя
+function getUserSubscr(iAm, data, cb) {
+	if (!data || !Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
+		return cb({message: msg.deny, error: true});
+	}
+	User.findOne(data.login, {_id: 1}, function (err, user) {
+		if (err || !user) {
+			return cb({message: err && err.message || msg.nouser, error: true});
+		}
+
+		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1}, {lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, function (err, subscrs) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (!subscrs || !subscrs.length) {
+				return cb({subscr: []});
+			}
+
+			var objIds = [],
+				i = subscrs.length;
+
+			while (i--) {
+				objIds.push(subscrs[i].obj);
+			}
+
+			step (
+				function () {
+					if (data.type === 'news') {
+						News.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this);
+					} else {
+						photoController.findPhotosAll({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, iAm, this);
+					}
+				},
+				function (err, objs) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					if (!objs || !objs.length) {
+						return cb({subscr: []});
+					}
+
+					//Ищем кол-во новых комментариев для каждого объекта
+					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
+				},
+				function (err, objs) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					cb({subscr: objs});
+				}
+			);
+		});
+	});
+}
+
+
 module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	User = db.model('User');
@@ -413,6 +472,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('subscr', function (data) {
 			subscribeUser(hs.session.user, data, function (createData) {
 				socket.emit('subscrResult', createData);
+			});
+		});
+		socket.on('giveUserSubscr', function (data) {
+			getUserSubscr(hs.session.user, data, function (createData) {
+				socket.emit('takeUserSubscr', createData);
 			});
 		});
 	});
