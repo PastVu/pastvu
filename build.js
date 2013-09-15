@@ -83,6 +83,12 @@ var start = Date.now(),
 				exclude: [
 					'underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM'
 				]
+			},
+			{
+				name: "m/user/subscr",
+				exclude: [
+					'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment'
+				]
 			}/*,
 			{
 				name: "appUser",
