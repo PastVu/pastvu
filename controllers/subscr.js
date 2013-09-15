@@ -172,8 +172,8 @@ function scheduleUserNotice(users) {
 		function () {
 			//Находим для каждого пользователя параметр throttle
 			User.find({_id: {$in: users}}, {_id: 1, 'settings.subscr_throttle': 1}, {lean: true}, this.parallel());
-			//Находим пользователей, у которых еще не запланирована отправка уведомлений и иcходя из времени предыдущей отправки рассчитываем следующую
-			UserSubscrNoty.find({user: {$in: users}, nextnoty: {$exists: false}}, {_id: 0}, {lean: true}, this.parallel());
+			//Находим noty пользователей из списка, и берем даже запланированных, если их не возьмем, то не сможем понять, кто уже запланирован, а кто первый раз планируется
+			UserSubscrNoty.find({user: {$in: users}}, {_id: 0}, {lean: true}, this.parallel());
 		},
 		function (err, usersThrottle, usersNoty) {
 			if (err) {
@@ -193,21 +193,29 @@ function scheduleUserNotice(users) {
 			}
 
 			for (i = usersNoty.length; i--;) {
-				lastnoty = usersNoty[i].lastnoty;
-
-				//Если прошлого уведомления еще не было или с его момента прошло больше времени,
-				//чем throttle пользователя или осталось менее 10сек, ставим ближайший
-				if (lastnoty && lastnoty.getTime) {
-					nextnoty = Math.max(lastnoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
+				if (usersNoty[i].nextnoty) {
+					//Значит у этого пользователя уже запланированно уведомление и ничего делать не надо
+					usersNotyHash[usersNoty[i].user] = false;
 				} else {
-					nextnoty = nearestNoticeTimeStamp;
+					//Если у пользователя еще не установленно время следующего уведомления, расчитываем его
+					lastnoty = usersNoty[i].lastnoty;
+
+					//Если прошлого уведомления еще не было или с его момента прошло больше времени,
+					//чем throttle пользователя или осталось менее 10сек, ставим ближайший
+					if (lastnoty && lastnoty.getTime) {
+						nextnoty = Math.max(lastnoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
+					} else {
+						nextnoty = nearestNoticeTimeStamp;
+					}
+					usersNotyHash[usersNoty[i].user] = nextnoty;
 				}
-				usersNotyHash[usersNoty[i].user] = nextnoty;
 			}
 
 			for (i = users.length; i--;) {
 				userId = users[i];
-				UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
+				if (usersNotyHash[userId] !== false) {
+					UserSubscrNoty.update({user: userId}, {$set: {nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp)}}, {upsert: true}).exec();
+				}
 			}
 		}
 	);
@@ -427,7 +435,7 @@ function getUserSubscr(iAm, data, cb) {
 				objIds.push(subscrs[i].obj);
 			}
 
-			step (
+			step(
 				function () {
 					if (data.type === 'news') {
 						News.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this);
@@ -447,7 +455,7 @@ function getUserSubscr(iAm, data, cb) {
 					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
 					UserSubscr.count({user: user._id, type: 'photo'}, this.parallel());
 					UserSubscr.count({user: user._id, type: 'news'}, this.parallel());
-					UserSubscrNoty.findOne({user: user._id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1} , {lean: true}, this.parallel());
+					UserSubscrNoty.findOne({user: user._id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1}, {lean: true}, this.parallel());
 				},
 				function (err, objs, countPhoto, countNews, nextNoty) {
 					if (err) {
