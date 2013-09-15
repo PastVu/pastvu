@@ -151,6 +151,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		unSubsc: function (pass) {
+		},
+
+		onPreviewLoad: function (data, event) {
+			event.target.parentNode.classList.add('showPrv');
+		},
+		onPreviewErr: function (data, event) {
+			event.target.parentNode.classList.add('fail'); //Через запятую работает пока только в chrome
+			event.target.parentNode.classList.add('showPrv');
 		}
 	});
 });

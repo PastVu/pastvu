@@ -391,7 +391,7 @@ function sortNotice(a, b) {
 	return a.ccount_new < b.ccount_new ? 1 : (a.ccount_new > b.ccount_new ? -1 : 0);
 }
 
-var subscrPerPage = 40;
+var subscrPerPage = 24;
 //Отдача постраничного списка подписанных объектов пользователя
 function getUserSubscr(iAm, data, cb) {
 	if (!data || !Utils.isType('object', data)) {
@@ -400,7 +400,7 @@ function getUserSubscr(iAm, data, cb) {
 	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
 		return cb({message: msg.deny, error: true});
 	}
-	User.findOne(data.login, {_id: 1}, function (err, user) {
+	User.findOne({login: data.login}, {_id: 1}, function (err, user) {
 		if (err || !user) {
 			return cb({message: err && err.message || msg.nouser, error: true});
 		}
@@ -435,7 +435,7 @@ function getUserSubscr(iAm, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 					if (!objs || !objs.length) {
-						return cb({subscr: []});
+						return this(null, []);
 					}
 
 					//Ищем кол-во новых комментариев для каждого объекта
