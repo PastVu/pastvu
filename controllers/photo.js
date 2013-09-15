@@ -1585,3 +1585,4 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.findPhoto = findPhoto;
 module.exports.findPhotoNotPublic = findPhotoNotPublic;
+module.exports.findPhotosAll = findPhotosAll;

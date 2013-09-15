@@ -391,6 +391,7 @@ function sortNotice(a, b) {
 	return a.ccount_new < b.ccount_new ? 1 : (a.ccount_new > b.ccount_new ? -1 : 0);
 }
 
+var subscrPerPage = 40;
 //Отдача постраничного списка подписанных объектов пользователя
 function getUserSubscr(iAm, data, cb) {
 	if (!data || !Utils.isType('object', data)) {
@@ -403,8 +404,10 @@ function getUserSubscr(iAm, data, cb) {
 		if (err || !user) {
 			return cb({message: err && err.message || msg.nouser, error: true});
 		}
+		var page = (Math.abs(Number(data.page)) || 1) - 1,
+			skip = page * subscrPerPage;
 
-		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1}, {lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, function (err, subscrs) {
+		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1}, {lean: true, skip: skip, limit: subscrPerPage}, function (err, subscrs) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -424,7 +427,7 @@ function getUserSubscr(iAm, data, cb) {
 					if (data.type === 'news') {
 						News.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this);
 					} else {
-						photoController.findPhotosAll({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, iAm, this);
+						photoController.findPhotosAll({photo: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, iAm, this);
 					}
 				},
 				function (err, objs) {
@@ -437,12 +440,13 @@ function getUserSubscr(iAm, data, cb) {
 
 					//Ищем кол-во новых комментариев для каждого объекта
 					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
+					UserSubscr.count({user: user._id, type: data.type}, this.parallel());
 				},
-				function (err, objs) {
+				function (err, objs, count) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					cb({subscr: objs});
+					cb({subscr: objs, count: count || 0, page: page + 1, type: data.type});
 				}
 			);
 		});

@@ -1,8 +1,16 @@
-.subscriptions(data-bind="with: repository[M!M]")
-	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: briefText")
-	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
+.subscr(data-bind="with: repository[M!M]")
+	.row-fluid.pagTop
+		.pills
+			ul.nav.nav-pills
+				li(data-bind="css: {active: type() === 'photo'}")
+					a(href="") Фотографии
+				li(data-bind="css: {active: type() === 'news'}")
+					a(href="?type=news") Новости
+		.pagesBrief(data-bind="css: {loading: loading()}, text: briefText")
+		//ko if: paginationShow()
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	.row-fluid.comments(data-bind="foreach: comments")
+		// /ko
+	//-.row-fluid.comments(data-bind="foreach: objects")
 		.row-fluid.comment
 			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
 				img.img(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
@@ -15,15 +23,15 @@
 				.commentChanged(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parent.commentHist($data.cid)}")
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
+	//-.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	script(id="pagerTpl", type="text/html")
 		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/'}", title="Первая страница") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() - 1)}", title="Предыдущая страница") &laquo;
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/'}", title="Первая страница") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + (page() - 1)}", title="Предыдущая страница") &laquo;
 			//ko foreach: pages
-			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/comments/' + $data}, text: $data")
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/subscriptions/' + $data}, text: $data")
 			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() + 1)}", title="Следующая страница") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + pageLast()}", title="Последняя страница") &raquo;&raquo;
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + (page() + 1)}", title="Следующая страница") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + pageLast()}", title="Последняя страница") &raquo;&raquo;
 
