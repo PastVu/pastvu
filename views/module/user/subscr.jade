@@ -1,4 +1,10 @@
 .subscr(data-bind="with: repository[M!M]")
+	//ko if: nextNoty() !== null
+	.row-fluid.pagOverTop
+		.nextNoty
+			i.icon-bullhorn.icon-white
+		span(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
+	// /ko
 	.row-fluid.pagTop
 		.pills
 			ul.nav.nav-pills

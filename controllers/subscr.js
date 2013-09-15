@@ -444,8 +444,9 @@ function getUserSubscr(iAm, data, cb) {
 					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
 					UserSubscr.count({user: user._id, type: 'photo'}, this.parallel());
 					UserSubscr.count({user: user._id, type: 'news'}, this.parallel());
+					UserSubscrNoty.findOne({user: user._id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1} , {lean: true}, this.parallel());
 				},
-				function (err, objs, countPhoto, countNews) {
+				function (err, objs, countPhoto, countNews, nextNoty) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
@@ -456,7 +457,7 @@ function getUserSubscr(iAm, data, cb) {
 						delete objs[i]._id;
 					}
 
-					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, page: page + 1, type: data.type});
+					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, nextNoty: nextNoty && nextNoty.nextnoty, page: page + 1, type: data.type});
 				}
 			);
 		});

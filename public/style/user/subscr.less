@@ -8,6 +8,10 @@
 .subscr {
 	position: relative;
 
+	.pagOverTop {
+		margin-bottom: 7px;
+	}
+
 	.pagTop {
 		position: relative;
 		margin-bottom: 15px;
@@ -57,15 +61,21 @@
 		}
 	}
 
-	.count, .planed {
+	.count, .planed, .nextNoty {
 		display: inline-block;
 	}
-	.planed {
+	.planed, .nextNoty {
 		width: 24px;
 		height: 19px;
 		text-align: center;
-		cursor: help;
 		background-color: @countColor;
+	}
+	.nextNoty {
+		margin-left: 2px;
+		margin-right: 5px;
+	}
+	.planed {
+		cursor: help;
 
 		&:hover {
 			background-color: #6A71A3;

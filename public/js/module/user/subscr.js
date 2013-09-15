@@ -19,6 +19,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			if (this.auth.loggedIn() && (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() > 9)) {
 				this.type = ko.observable(this.options.type);
 				this.objects = ko.observableArray();
+				this.nextNoty = ko.observable(null);
 				this.loading = ko.observable(false);
 
 				this.types = {
@@ -141,6 +142,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					this.pageSize(data.subscr.length);
 					this.types.photo(data.countPhoto || 0);
 					this.types.news(data.countNews || 0);
+					this.nextNoty(data.nextNoty && moment(data.nextNoty) || null);
 				}
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
