@@ -2,6 +2,9 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
+@countColor: #677A8F;
+@countColorHover: @MainBlueColor;
+
 .subscr {
 	position: relative;
 
@@ -38,6 +41,12 @@
 		vertical-align: top;
 	}
 
+	.newsObjs {
+		.object {
+	   	    height: 60px;
+		}
+	}
+
 	.imgLoad {
 		float: left;
 		margin: 2px 8px 3px 3px;
@@ -47,7 +56,61 @@
 			height: 100px;
 		}
 	}
+
+	.count, .planed {
+		display: inline-block;
+	}
+	.planed {
+		width: 24px;
+		height: 19px;
+		text-align: center;
+		cursor: help;
+		background-color: @countColor;
+
+		&:hover {
+			background-color: #6A71A3;
+		}
+	}
+	.count {
+		position: relative;
+		display: inline-block;
+		min-width: 15px;
+		margin: 0 1px 8px 0;
+		padding: 0 5px 0 5px;
+		font-size: 13px;
+		line-height: 19px;
+		color: #F5F5F5;
+		text-align: center;
+		text-decoration: none;
+		background-color: @countColor;
+
+		&::after {
+			position: absolute;
+			display: block;
+			content: '';
+			left: 20%;
+			bottom: -8px;
+			width: 0;
+			height: 0;
+			border-top: 8px solid @countColor;
+			border-right: 8px solid transparent;
+		}
+		&:hover {
+			color: #fff;
+			background-color: @countColorHover;
+
+			&::after {
+				border-top-color: @countColorHover;
+			}
+		}
+
+		.cnew {
+			color: #88FF91;
+			font-weight: bold;
+		}
+	}
 }
+
 @media (min-width: 1000px) {
 	.subscr {
 		.pagTop .pagination {

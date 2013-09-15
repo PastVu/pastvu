@@ -80,13 +80,13 @@ var giveRatings = (function () {
 					{$limit: limit}
 				], this.parallel());
 				Photo.collection.aggregate([
-					{$match: {adate: {$gt: dayStart}, disabled: {$exists: false}, del: {$exists: false}}},
+					{$match: {adate: {$gt: dayStart}}},
 					{$group: {_id: '$user', pcount: {$sum: 1}}},
 					{$sort: {pcount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Photo.collection.aggregate([
-					{$match: {adate: {$gt: weekStart}, disabled: {$exists: false}, del: {$exists: false}}},
+					{$match: {adate: {$gt: weekStart}}},
 					{$group: {_id: '$user', pcount: {$sum: 1}}},
 					{$sort: {pcount: -1}},
 					{$limit: limit}

@@ -10,7 +10,7 @@
 		//ko if: paginationShow()
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 		// /ko
-	.row-fluid.objects(data-bind="template: {name: type() + 'SubscrTpl', foreach: objects}")
+	.row-fluid.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
 	//ko if: paginationShow()
 	.row-fluid.pagBottoms
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
@@ -20,12 +20,25 @@
 			a.imgLoad(data-bind="attr: {href: $data.link}")
 				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
+			//ko if: $data.ccount
+			br
+			a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+			//ko if: $data.noty
+			.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+				i.icon-bullhorn.icon-white
+			// /ko
+			// /ko
 	script(id="newsSubscrTpl", type="text/html")
-		.row-fluid.object
-			a.imgLoad(data-bind="attr: {href: $data.link}")
-				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
-			.commentHead
-				a.name(data-bind="attr: {href: $data.link}, text: $data.title")
+		.object
+			a.objTitle(data-bind="attr: {href: $data.link}, text: $data.cid + '. ' + $data.title")
+			//ko if: $data.ccount
+			br
+			a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+			//ko if: $data.noty
+			.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
+				i.icon-bullhorn.icon-white
+			// /ko
+			// /ko
 	script(id="pagerTpl", type="text/html")
 		ul
 			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageBase + (type() !== 'photo' ? location.search : '')}", title="Первая страница") &laquo;&laquo;

@@ -407,7 +407,7 @@ function getUserSubscr(iAm, data, cb) {
 		var page = (Math.abs(Number(data.page)) || 1) - 1,
 			skip = page * subscrPerPage;
 
-		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1}, {lean: true, skip: skip, limit: subscrPerPage}, function (err, subscrs) {
+		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage}, function (err, subscrs) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -416,9 +416,11 @@ function getUserSubscr(iAm, data, cb) {
 			}
 
 			var objIds = [],
+				subscrHash = {},
 				i = subscrs.length;
 
 			while (i--) {
+				subscrHash[subscrs[i].obj] = subscrs[i].noty;
 				objIds.push(subscrs[i].obj);
 			}
 
@@ -447,6 +449,13 @@ function getUserSubscr(iAm, data, cb) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
+					for (var i = objs.length; i--;) {
+						if (subscrHash[objs[i]._id]) {
+							objs[i].noty = true;
+						}
+						delete objs[i]._id;
+					}
+
 					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, page: page + 1, type: data.type});
 				}
 			);
