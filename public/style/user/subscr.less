@@ -7,8 +7,37 @@
 
 	.pagTop {
 		position: relative;
+		margin-bottom: 10px;
 	}
 	.pills, .pagesBrief {
 		display: inline-block;
+		vertical-align: top;
+	}
+	.pills {
+		margin-right: 10px;
+		padding-left: 2px;
+		background-color: rgba(97, 104, 195, 0.1);
+	}
+	.nav-pills {
+		margin-bottom: 0;
+	}
+	.pagesBrief {
+		min-width: 150px;
+		font-style: italic;
+		font-size: 12px;
+		line-height: 29px;
+		text-align: center;
+	}
+	.pagination {
+		margin: 10px 0 0 0;
+	}
+}
+@media (min-width: 1000px) {
+	.subscr {
+		.pagination {
+			display: inline-block;
+			vertical-align: top;
+			margin: 2px 0 0 15px;
+		}
 	}
 }

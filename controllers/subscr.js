@@ -440,13 +440,14 @@ function getUserSubscr(iAm, data, cb) {
 
 					//Ищем кол-во новых комментариев для каждого объекта
 					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
-					UserSubscr.count({user: user._id, type: data.type}, this.parallel());
+					UserSubscr.count({user: user._id, type: 'photo'}, this.parallel());
+					UserSubscr.count({user: user._id, type: 'news'}, this.parallel());
 				},
-				function (err, objs, count) {
+				function (err, objs, countPhoto, countNews) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					cb({subscr: objs, count: count || 0, page: page + 1, type: data.type});
+					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, page: page + 1, type: data.type});
 				}
 			);
 		});

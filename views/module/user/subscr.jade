@@ -3,9 +3,9 @@
 		.pills
 			ul.nav.nav-pills
 				li(data-bind="css: {active: type() === 'photo'}")
-					a(href="") Фотографии
+					a(data-bind="attr: {href: location.pathname}, text: 'Фотографии [' + types['photo']() + ']'")
 				li(data-bind="css: {active: type() === 'news'}")
-					a(href="?type=news") Новости
+					a(href="?type=news", data-bind="text: 'Новости [' + types['news']() + ']'")
 		.pagesBrief(data-bind="css: {loading: loading()}, text: briefText")
 		//ko if: paginationShow()
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
@@ -27,11 +27,11 @@
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	script(id="pagerTpl", type="text/html")
 		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/'}", title="Первая страница") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + (page() - 1)}", title="Предыдущая страница") &laquo;
+			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageBase + (type() !== 'photo' ? location.search : '')}", title="Первая страница") &laquo;&laquo;
+			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageBase + (page() - 1) + (type() !== 'photo' ? location.search : '')}", title="Предыдущая страница") &laquo;
 			//ko foreach: pages
-			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/subscriptions/' + $data}, text: $data")
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageBase + $data + ($parent.type() !== 'photo' ? location.search : '')}, text: $data")
 			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + (page() + 1)}", title="Следующая страница") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/subscriptions/' + pageLast()}", title="Последняя страница") &raquo;&raquo;
+			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageBase + (page() + 1) + (type() !== 'photo' ? location.search : '')}", title="Следующая страница") &raquo;
+			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageBase + pageLast() + (type() !== 'photo' ? location.search : '')}", title="Последняя страница") &raquo;&raquo;
 

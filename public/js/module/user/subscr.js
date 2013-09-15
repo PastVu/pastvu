@@ -5,11 +5,6 @@
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'text!tpl/user/subscr.jade', 'css!style/user/subscr'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, storage, jade) {
 	'use strict';
 
-	var types = {
-		photo: 1,
-		news: 1
-	};
-
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -22,18 +17,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.binded = false;
 
 			if (this.auth.loggedIn() && (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role() > 9)) {
-				this.type = ko.observable('');
+				this.type = ko.observable(this.options.type);
 				this.objects = ko.observableArray();
 				this.loading = ko.observable(false);
 
-				this.typeCount = ko.observable(0);
+				this.types = {
+					photo: ko.observable(0),
+					news: ko.observable(0)
+				};
 
 				this.page = ko.observable(0);
 				this.pageSize = ko.observable(0);
 				this.pageSlide = ko.observable(2);
+				this.pageBase = '/u/' + this.u.login() + '/subscriptions/';
 
 				this.pageLast = this.co.pageLast = ko.computed(function () {
-					return ((this.typeCount() - 1) / this.pageSize() >> 0) + 1;
+					return ((this.types[this.type()]() - 1) / this.pageSize() >> 0) + 1;
 				}, this);
 				this.pageHasNext = this.co.pageHasNext = ko.computed(function () {
 					return this.page() < this.pageLast();
@@ -45,7 +44,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					return this.pageSize() * (this.page() - 1) + 1;
 				}, this);
 				this.pageLastItem = this.co.pageLastItem = ko.computed(function () {
-					return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.typeCount());
+					return Math.min(this.pageFirstItem() + this.pageSize() - 1, this.types[this.type()]());
 				}, this);
 				this.pages = this.co.pages = ko.computed(function () {
 					var pageCount = this.pageLast(),
@@ -64,7 +63,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				}, this);
 
 				this.briefText = this.co.briefText = ko.computed(function () {
-					return this.typeCount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.typeCount() : 'Пока нет подписок этого типа';
+					return this.types[this.type()]() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' +this.types[this.type()]() : 'Пока нет подписок этого типа';
 				}, this);
 
 				this.paginationShow = this.co.paginationShow = ko.computed(function () {
@@ -101,7 +100,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				page = Math.abs(Number(params.page)) || 1,
 				type = params.type || this.options.type;
 
-			if (!types[type]) {
+			if (!this.types[type]) {
 				window.setTimeout(function () {
 					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + page);
 				}.bind(this), 200);
@@ -140,7 +139,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					}
 					this.objects(data.subscr);
 					this.pageSize(data.subscr.length);
-					this.typeCount(data.count || 0);
+					this.types.photo(data.countPhoto || 0);
+					this.types.news(data.countNews || 0);
 				}
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
