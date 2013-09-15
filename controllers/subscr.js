@@ -59,7 +59,7 @@ function subscribeUser(user, data, cb) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (data.do) {
-				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type}}, {upsert: true, multi: false}, this);
+				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type, cdate: new Date()}}, {upsert: true, multi: false}, this);
 			} else {
 				UserSubscr.remove({obj: obj._id, user: user._id}, this);
 			}
@@ -97,7 +97,7 @@ function commentAdded(objId, user) {
 		}
 
 		//Устанавливает флаг готовности уведомления по объекту, для подписанных пользователей
-		UserSubscr.update({_id: {$in: ids}}, {$set: {noty: true}}, {multi: true}, function (err) {
+		UserSubscr.update({_id: {$in: ids}}, {$set: {noty: true, ndate: new Date()}}, {multi: true}, function (err) {
 			if (err) {
 				return logger.error(err.message);
 			}
@@ -113,7 +113,7 @@ function commentAdded(objId, user) {
  * @param user
  */
 function commentViewed(objId, user) {
-	UserSubscr.update({obj: objId, user: user._id}, {$unset: {noty: 1}}, {upsert: false, multi: false}, function (err, numberAffected) {
+	UserSubscr.update({obj: objId, user: user._id}, {$unset: {noty: 1}, $set: {ndate: new Date()}}, {upsert: false, multi: false}, function (err, numberAffected) {
 		if (err) {
 			return logger.error(err.message);
 		}
@@ -297,7 +297,7 @@ function sendUserNotice(userId, cb) {
 
 			function finish(err) {
 				//Сбрасываем флаг готовности к уведомлению (noty) у всех отправленных объектов
-				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}}, {multi: true}).exec();
+				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}, $set: {ndate: new Date()}}, {multi: true}).exec();
 				cb(err);
 			}
 
@@ -392,6 +392,9 @@ function sortNotice(a, b) {
 }
 
 var subscrPerPage = 24;
+function sortSubscr(a, b) {
+	return a.cdate < b.cdate ? 1 : (a.cdate > b.cdate ? -1 : 0);
+}
 //Отдача постраничного списка подписанных объектов пользователя
 function getUserSubscr(iAm, data, cb) {
 	if (!data || !Utils.isType('object', data)) {
@@ -407,7 +410,7 @@ function getUserSubscr(iAm, data, cb) {
 		var page = (Math.abs(Number(data.page)) || 1) - 1,
 			skip = page * subscrPerPage;
 
-		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage}, function (err, subscrs) {
+		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1, cdate: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage, sort: {cdate: -1}}, function (err, subscrs) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -420,7 +423,7 @@ function getUserSubscr(iAm, data, cb) {
 				i = subscrs.length;
 
 			while (i--) {
-				subscrHash[subscrs[i].obj] = subscrs[i].noty;
+				subscrHash[subscrs[i].obj] = subscrs[i];
 				objIds.push(subscrs[i].obj);
 			}
 
@@ -451,11 +454,13 @@ function getUserSubscr(iAm, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 					for (var i = objs.length; i--;) {
-						if (subscrHash[objs[i]._id]) {
+						objs[i].cdate = subscrHash[objs[i]._id].cdate;
+						if (subscrHash[objs[i]._id].noty) {
 							objs[i].noty = true;
 						}
 						delete objs[i]._id;
 					}
+					objs.sort(sortSubscr);
 
 					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, nextNoty: nextNoty && nextNoty.nextnoty, page: page + 1, type: data.type});
 				}

@@ -24,6 +24,8 @@ var UserSubscrSchema = new mongoose.Schema(
 		obj: {type: Schema.Types.ObjectId, index: true},
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 		type: {type: String},
+		cdate: {type: Date}, //Время создания подписки
+		ndate: {type: Date}, //Время изменнения значения noty
 		noty: {type: Boolean}
 	},
 	{
