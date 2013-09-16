@@ -58,7 +58,7 @@ function login(socket, data, cb) {
 			_session.authUser(socket, user, data, function (err, session) {
 				//Важно взять юзера из сессии, так как, во-первых, в сессии он будет спопулирован при присвоении заново,
 				//а, во-вторых, его объект мог взяться из существующего в хеше, если пользователь уже залогинен в другом браузере
-				cb(session, {message: "Success login", youAre: session.user.toObject()});
+				cb(session, {message: "Success login", youAre: session.user.toObject({transform: _session.userToPublicObject})});
 			});
 		} else {
 			switch (reason) {
@@ -134,7 +134,8 @@ function register(session, data, cb) {
 					cid: count.next,
 					email: data.email,
 					pass: data.pass,
-					disp: data.login
+					disp: data.login,
+					settings: {}
 				}).save(this);
 			},
 			function (err, user) {

@@ -42,6 +42,8 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
+		//При первом заходе пользователя присваиваем ему настройки по умолчанию
+		_.defaults(user.settings || {}, settings.getUserSettingsDef());
 		console.log('Create us hash:', user.login);
 	} else {
 		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
@@ -50,6 +52,8 @@ function addUserSession(session) {
 	}
 
 	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
+
+	return usObj === undefined; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
 }
 
 //Обработчик установки соединения сокетом 'authorization'
@@ -135,8 +139,7 @@ function authSocket(handshake, callback) {
 //Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
-	var session = socket.handshake.session,
-		user;
+	var session = socket.handshake.session;
 	//console.log('firstConnection');
 
 	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
@@ -155,14 +158,10 @@ function firstConnection(socket) {
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
-	user = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null;
-	if (user) {
-		user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
-	}
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
-		u: user
+		u: session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null
 	});
 
 	socket.on('disconnect', function () {
@@ -352,11 +351,12 @@ function authUser(socket, user, data, cb) {
 		//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
 		//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
 		addUserSession(session);
+		var user = session.user.toObject({transform: userToPublicObject});
 
 		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
 		for (var i in session.sockets) {
 			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-				session.sockets[i].emit('youAre', user.toObject());
+				session.sockets[i].emit('youAre', user);
 			}
 		}
 
@@ -474,6 +474,7 @@ module.exports.us = us;
 module.exports.usid = usid;
 module.exports.sess = sess;
 module.exports.sessWaitingConnect = sessWaitingConnect;
+module.exports.userToPublicObject = userToPublicObject;
 
 module.exports.loadController = function (a, db, io) {
 	app = a;

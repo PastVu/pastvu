@@ -52,7 +52,7 @@ function giveUser(socket, data, cb) {
 			var user = _session.getOnline(login);
 			if (user) {
 				itsOnline = true;
-				this(null, user.toObject({transform: userToPublicObject}));
+				this(null, user.toObject({transform: _session.userToPublicObject}));
 			} else {
 				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true}, this);
 			}

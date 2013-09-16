@@ -13,7 +13,6 @@ var nodemailer = require('nodemailer'),
 var logger = log4js.getLogger("mail.js");
 
 module.exports.send = function send(options, callback) {
-	logger.info('Sending Mail');
 	var smtpobject = {
 		from: sender[options.sender] || sender.noreply,
 		to: (options.receiver.alias ? options.receiver.alias + ' ' : '') + '<' + options.receiver.email + '>',
