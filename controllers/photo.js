@@ -504,6 +504,13 @@ function givePhoto(socket, data, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
+		var can;
+
+		if (checkCan) {
+			//Права надо проверять до популяции пользователя
+			can = photoPermissions.getCan(photo, iAm);
+		}
+
 		step(
 			function () {
 				var user = _session.getOnline(null, photo.user),
@@ -528,11 +535,6 @@ function givePhoto(socket, data, cb) {
 			function (err, photo, subscr) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
-				}
-				var can;
-
-				if (checkCan) {
-					can = photoPermissions.getCan(photo, iAm);
 				}
 
 				if (subscr) {
