@@ -10,6 +10,7 @@ var fs = require('fs'),
 	UserConfirm,
 	step = require('step'),
 	mailController = require('./mail.js'),
+	settings = require('./settings.js'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	ms = require('ms'), // Tiny milisecond conversion utility
@@ -135,7 +136,10 @@ function register(session, data, cb) {
 					email: data.email,
 					pass: data.pass,
 					disp: data.login,
-					settings: {}
+					settings: {
+						//Пустой объект settings не сохранится, заполняем его одной из настроек
+						subscr_auto_reply: settings.getUserSettingsDef().subscr_auto_reply || true
+					}
 				}).save(this);
 			},
 			function (err, user) {

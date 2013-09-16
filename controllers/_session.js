@@ -43,7 +43,10 @@ function addUserSession(session) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
-		_.defaults(user.settings || {}, settings.getUserSettingsDef());
+		if (!user.settings) {
+			user.settings = {};
+		}
+		_.defaults(user.settings, settings.getUserSettingsDef());
 		console.log('Create us hash:', user.login);
 	} else {
 		//Если пользователь уже есть в хеше, значит он уже выбран другой сессией и используем уже выбранный объект пользователя
