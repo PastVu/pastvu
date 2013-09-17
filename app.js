@@ -176,13 +176,21 @@ async.waterfall([
 			}
 			if (!noServePublic) {
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
+			}
+			if (!noServeStore) {
+				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
+				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
+			}
+			app.use(app.router);
+
+			//app.get должен быть всегда после app.use, в противном случае следующие app.use не будет использованы
+			//Сначала "законцовываем" пути к статике
+			if (!noServePublic) {
 				app.get('/img/*', static404);
 				app.get('/js/*', static404);
 				app.get('/style/*', static404);
 			}
 			if (!noServeStore) {
-				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
-				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
 				app.get('/_a/d/*', function (req, res) {
 					res.redirect(302, '/img/caps/avatar.png');
 				});
@@ -192,15 +200,7 @@ async.waterfall([
 				app.get('/_a/*', static404);
 				app.get('/_p/*', static404);
 			}
-
-			app.use(express.bodyParser());
-			app.use(express.cookieParser());
-			app.use(express.session({ cookie: {maxAge: ms('12h')}, secret: 'PastvuSess', key: 'pastvu.exp' })); //app.use(express.session({ cookie: {maxAge: ms('12h')}, store: mongo_store, secret: 'PastVuSess', key: 'pastvu.exp' }));
-			app.use(express.methodOverride());
-
-			app.use(app.router);
 		});
-
 
 		require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 		callback(null);
