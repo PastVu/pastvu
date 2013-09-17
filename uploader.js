@@ -90,14 +90,21 @@ var Utils = require('./commons/Utils.js'),
 	},
 	postHandler = function (req, res, isAvatar, cb) {
 		var form = new formidable.IncomingForm(),
-			maxPostSize = isAvatar ? options.maxPhotoPostSize : options.maxAvaPostSize,
+			maxPostSize = isAvatar ? options.maxAvaPostSize : options.maxPhotoPostSize,
 			targetDir = isAvatar ? options.targetDirAva : options.targetDir,
 			validateFunc = isAvatar ? validateAvatar : validatePhoto,
+
+			contentLength = req.headers && req.headers['content-length'] && Number(req.headers['content-length']),
 
 			tmpFiles = [],
 			files = [],
 			map = {},
 			counter = 1;
+
+		//Современные браузеры сразу присылают размер запроса в байтах, можно сразу отклонить при превышении максимального размера
+		if (contentLength && contentLength > maxPostSize) {
+			tooBigPostDestroy(req, isAvatar, 0, contentLength);
+		}
 
 		form.uploadDir = options.incomeDir;
 		form
@@ -120,12 +127,11 @@ var Utils = require('./commons/Utils.js'),
 				});
 			})
 			.on('error', function (e) {
-				console.dir(e);
+				logger.warn(e && e.message || e);
 			})
-			.on('progress', function (bytesReceived/*, bytesExpected*/) {
+			.on('progress', function (bytesReceived, bytesExpected) {
 				if (bytesReceived > maxPostSize) {
-					console.log('~~~~', 'Too big, dropping');
-					req.connection.destroy();
+					tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected);
 				}
 			})
 			.on('end', function () {
@@ -170,7 +176,7 @@ var Utils = require('./commons/Utils.js'),
 			postHandler(req, res, req.url === '/uploadava', postHandlerResponse);
 			break;
 		default:
-			console.log(405);
+			logger.warn(405);
 			res.statusCode = 405;
 			res.end();
 		}
@@ -202,6 +208,11 @@ FileInfo.prototype.createFileName = function (targetDir, nameLen, dirDepth) {
 	}
 };
 
+function tooBigPostDestroy(req, isAvatar, bytesReceived, bytesExpected) {
+	logger.warn('~~~~', 'Too big ' + (isAvatar ? 'avatar' : 'photo') + ', dropping', bytesReceived, bytesExpected);
+	req.connection.destroy();
+}
+
 function validatePhoto(fileInfo, cb) {
 	if (!options.acceptFileTypes.test(fileInfo.name)) {
 		fileInfo.error = 'ftype';
@@ -216,7 +227,7 @@ function validatePhoto(fileInfo, cb) {
 
 	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
 		if (err) {
-			console.log('~~~~', 'GM size error');
+			logger.error('~~~~', 'GM size error');
 			fileInfo.error = 'fpx';
 			return cb();
 		}
@@ -245,7 +256,7 @@ function validateAvatar(fileInfo, cb) {
 
 	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
 		if (err) {
-			console.log('~~~~', 'GM size error');
+			logger.error('~~~~', 'GM size error');
 			fileInfo.error = 'fpx';
 			return cb();
 		}
@@ -269,7 +280,7 @@ function validateAvatar(fileInfo, cb) {
 				.resize(100, 100)
 				.write(options.incomeDir + fileInfo.file, function (err) {
 					if (err) {
-						console.log('~~~~', 'GM avatar resize error');
+						logger.warn('~~~~', 'GM avatar resize error');
 						fileInfo.error = 'fpx';
 					}
 					cb();

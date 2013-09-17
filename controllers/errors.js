@@ -1,6 +1,7 @@
 'use strict';
 
 var logger = require('log4js').getLogger("error.js"),
+	logger404 = require('log4js').getLogger("404.js"),
 	neoError = {
 		e404: function e404(msgs) {
 			this.message = msgs;
@@ -17,7 +18,7 @@ neoError.e404.prototype = Object.create(Error.prototype);
 neoError.e500.prototype = Object.create(Error.prototype);
 
 function send404(req, res, err) {
-	logger.error('404 for:\n\t' + JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent']}));
+	logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent']}));
 	if (req.xhr) {
 		res.send(404, {error: 'Not found'});
 	} else {

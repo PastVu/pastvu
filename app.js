@@ -74,7 +74,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
-var logger = log4js.getLogger("app.js");
+var logger = log4js.getLogger("app.js"),
+	logger404 = require('log4js').getLogger("404.js");
 
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
 logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ' with ' + os.cpus().length + ' cpu cores');
@@ -137,7 +138,9 @@ async.waterfall([
 		app.hash = land === 'dev' ? app.version : buildJson.appHash;
 		logger.info('Application Hash: ' + app.hash);
 
+
 		function static404(req, res) {
+			logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent']}));
 			res.send(404);
 		}
 
@@ -173,6 +176,9 @@ async.waterfall([
 			}
 			if (!noServePublic) {
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
+				app.get('/img/*', static404);
+				app.get('/js/*', static404);
+				app.get('/style/*', static404);
 			}
 			if (!noServeStore) {
 				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
@@ -236,7 +242,7 @@ async.waterfall([
 		require('./controllers/registerRoutes.js').loadController(app);
 		require('./controllers/systemjs.js').loadController(app, db);
 		require('./controllers/errors.js').registerErrorHandling(app);
-		require('./basepatch/v0.9.3.js').loadController(app, db);
+		//require('./basepatch/v0.9.3.js').loadController(app, db);
 
 		callback(null);
 	}
