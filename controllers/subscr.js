@@ -36,6 +36,12 @@ var fs = require('fs'),
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
 	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
 
+/**
+ * Подписка объекта (внешняя, для текущего пользователя по cid объекта)
+ * @param user
+ * @param data
+ * @param cb
+ */
 function subscribeUser(user, data, cb) {
 	if (!user) {
 		return cb({message: msg.deny, error: true});
@@ -71,6 +77,24 @@ function subscribeUser(user, data, cb) {
 			cb({subscr: data.do});
 		}
 	);
+}
+
+/**
+ * Подписка объекта по id пользователя и объекта (внутренняя, например, после подтверждения фотоы)
+ * @param userId
+ * @param objId
+ * @param type
+ * @param cb
+ */
+function subscribeUserByIds(userId, objId, type, cb) {
+	UserSubscr.update({obj: objId, user: userId}, {$set: {type: type, cdate: new Date()}}, {upsert: true, multi: false}, function (err) {
+		if (err) {
+			logger.error(err.message);
+		}
+		if (cb) {
+			cb(err);
+		}
+	});
 }
 
 /**
@@ -509,6 +533,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 	});
 };
+module.exports.subscribeUserByIds = subscribeUserByIds;
 module.exports.commentAdded = commentAdded;
 module.exports.commentViewed = commentViewed;
 module.exports.userThrottleChange = userThrottleChange;

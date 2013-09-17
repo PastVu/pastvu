@@ -29,6 +29,7 @@ var auth = require('./auth.js'),
 	publicDir = global.appVar.storePath + 'public/photos/',
 	imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
 
+	subscrController = require('./subscr.js'),
 	commentController = require('./comment.js'),
 	msg = {
 		deny: 'You do not have permission for this action',
@@ -390,6 +391,7 @@ function approvePhoto(socket, cid, cb) {
 			//Удаляем из коллекции новых
 			PhotoFresh.remove({cid: cid}).exec();
 
+			//Обновляем количество у автора фотографии
 			var user = _session.getOnline(null, photoSaved.user);
 			if (user) {
 				user.pcount = user.pcount + 1;
@@ -398,6 +400,9 @@ function approvePhoto(socket, cid, cb) {
 			} else {
 				User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
 			}
+
+			//Подписываем автора фотографии на неё
+			subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
 		}
 	);
 }

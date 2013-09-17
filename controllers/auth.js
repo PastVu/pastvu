@@ -152,6 +152,7 @@ function register(session, data, cb) {
 
 			function finish(err) {
 				if (err) {
+					User.remove({login: data.login});
 					return cb({message: err.message, error: true});
 				}
 				cb({message: success});
