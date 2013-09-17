@@ -139,7 +139,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						}
 					}
 					this.objects(data.subscr);
-					this.pageSize(data.subscr.length);
+					this.pageSize(data.perPage || 24);
 					this.types.photo(data.countPhoto || 0);
 					this.types.news(data.countNews || 0);
 					this.nextNoty(data.nextNoty && moment(data.nextNoty) || null);

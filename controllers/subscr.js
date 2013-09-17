@@ -494,7 +494,7 @@ function getUserSubscr(iAm, data, cb) {
 					}
 					objs.sort(sortSubscr);
 
-					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, nextNoty: nextNoty && nextNoty.nextnoty, page: page + 1, type: data.type});
+					cb({subscr: objs, countPhoto: countPhoto || 0, countNews: countNews || 0, nextNoty: nextNoty && nextNoty.nextnoty, page: page + 1, perPage: subscrPerPage, type: data.type});
 				}
 			);
 		});
