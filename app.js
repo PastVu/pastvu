@@ -140,7 +140,7 @@ async.waterfall([
 
 
 		function static404(req, res) {
-			logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent']}));
+			logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
 			res.send(404);
 		}
 

@@ -18,7 +18,7 @@ neoError.e404.prototype = Object.create(Error.prototype);
 neoError.e500.prototype = Object.create(Error.prototype);
 
 function send404(req, res, err) {
-	logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent']}));
+	logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
 	if (req.xhr) {
 		res.send(404, {error: 'Not found'});
 	} else {

@@ -13,6 +13,9 @@ var nodemailer = require('nodemailer'),
 var logger = log4js.getLogger("mail.js");
 
 module.exports.send = function send(options, callback) {
+	if (global.appVar.land !== 'prod' && options.receiver.email.indexOf('klimashkin') !== 0) {
+		return;
+	}
 	var smtpobject = {
 		from: sender[options.sender] || sender.noreply,
 		to: (options.receiver.alias ? options.receiver.alias + ' ' : '') + '<' + options.receiver.email + '>',
