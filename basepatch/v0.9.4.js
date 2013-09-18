@@ -44,6 +44,9 @@ module.exports.loadController = function (app, db) {
 		print('~~~');
 		printjson(usersStat);
 
+		//Добавляем интервал 3 часа и делаем его по умолчанию
+		db.user_settings.update({key: 'subscr_throttle'}, {$set: {val: 3*60*60*1000,vars: [5*60*1000, 30*60*1000, 60*60*1000, 3*60*60*1000, 6*60*60*1000, 24*60*60*1000] }});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
