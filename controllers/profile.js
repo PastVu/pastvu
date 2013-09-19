@@ -472,6 +472,7 @@ function delAvatar(socket, data, cb) {
 function saveUserRanks(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
+		itsOnline,
 		ranksHash,
 		i;
 
@@ -495,6 +496,7 @@ function saveUserRanks(socket, data, cb) {
 		function () {
 			var user = _session.getOnline(login);
 			if (user) {
+				itsOnline = true;
 				this(null, user);
 			} else {
 				User.findOne({login: login}, this);
@@ -512,6 +514,9 @@ function saveUserRanks(socket, data, cb) {
 			user.save(function (err, savedUser) {
 				if (err) {
 					return cb({message: err.message, error: true});
+				}
+				if (itsOnline) {
+					_session.emitUser(login);
 				}
 				cb({message: 'ok', saved: true, ranks: user.ranks || []});
 			});

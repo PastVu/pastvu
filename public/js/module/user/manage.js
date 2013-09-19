@@ -66,7 +66,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (!result || result.error || !result.saved) {
 					window.noty({text: result && result.message || 'Ошибка сохранения звания', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					this.u.ranks(result.ranks);
 					this.originUser.ranks = result.ranks;
 				}
 				if (Utils.isType('function', cb)) {
