@@ -64,24 +64,30 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				login = params.user || this.auth.iAm.login();
+				login = params.user || this.auth.iAm.login(),
+				itsMe = login === this.auth.iAm.login();
 
 			// Если перешли на url загрузки, проверяем залогиненность.
 			// Если не залогинен выводим форму авторизации и по успешному коллбеку запускаем page заново
-			if (!this.auth.loggedIn()) {
-				if (params.photoUpload) {
-					this.auth.show('login', function (result) {
-						if (result.loggedIn) {
-							this.routeHandler();
-						} else {
-							globalVM.router.navigateToUrl('/');
-						}
-					}, this);
-					return;
-				} else if (params.section === 'settings') {
-					globalVM.router.navigateToUrl('/u/' + login);
-					return;
-				}
+			if (params.photoUpload && !this.auth.loggedIn()) {
+				this.auth.show('login', function (result) {
+					if (result.loggedIn) {
+						this.routeHandler();
+					} else {
+						globalVM.router.navigateToUrl('/');
+					}
+				}, this);
+				return;
+			}
+
+			if ((params.section === 'settings' || params.section === 'subscriptions') &&
+				!itsMe && this.auth.iAm.role() < 10) {
+				globalVM.router.navigateToUrl('/u/' + login);
+				return;
+			}
+			if (params.section === 'manage' && this.auth.iAm.role() < 10) {
+				globalVM.router.navigateToUrl('/u/' + login);
+				return;
 			}
 
 			if (this.user && this.user.login() === login) {
