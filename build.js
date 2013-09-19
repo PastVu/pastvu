@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+'use strict';
+
 var start = Date.now(),
 	fs = require('fs'),
 	path = require('path'),
@@ -63,6 +65,20 @@ var start = Date.now(),
 		mainConfigFile: 'public/js/_mainConfig.js',
 		modules: [
 			{
+				//Виртуальный модуль, содержащий общие модули, которые надо исключать из частных модулей
+				name: 'commonExcludes',
+				create: true, //set create: true if 'commonExcludes' is not a module that exists before a build
+				include: [
+					'domReady', 'text', 'css',
+					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'backbone', 'knockout', 'knockout.mapping', 'moment',
+					'noty', 'noty.layouts', 'noty.themes/pastvu',
+					'Browser', 'Utils', 'socket', 'RouteManager', 'Params', 'globalVM',
+					'm/_moduleCliche', 'renderer',
+					'model/Photo', 'model/User', 'model/storage'
+				]
+			},
+
+			{
 				name: "_mainConfig" //Компилируем конфигурацию, чтобы включить туда общую зависимость 'lib/JSExtensions'
 			},
 			{
@@ -80,37 +96,20 @@ var start = Date.now(),
 			},
 			{
 				name: "m/diff/about",
-				exclude: [
-					'underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globalVM'
-				]
+				exclude: ['commonExcludes']
 			},
 			{
 				name: "m/user/subscr",
-				exclude: [
-					'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment'
-				]
+				exclude: ['commonExcludes']
 			},
 			{
 				name: "m/user/settings",
-				exclude: [
-					'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage'
-				]
-			}/*,
-			{
-				name: "appUser",
-				include: ['m/auth', 'm/top', 'm/user/brief']
+				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
 			},
 			{
-				name: "m/photo/gallery",
-				exclude: [
-					'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage',
-					'text', 'css'
-				]
-			},
-			{
-				name: "appPhoto",
-				include: ['m/auth', 'm/top', 'm/photo/photo']
-			}*/
+				name: "m/user/manage",
+				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
+			}
 		]
 	},
 	lessFiles = [];
