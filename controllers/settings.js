@@ -3,6 +3,7 @@
 var auth = require('./auth.js'),
 	Settings,
 	UserSettingsDef,
+	UserRanks,
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils = require('../commons/Utils.js'),
@@ -13,7 +14,8 @@ var auth = require('./auth.js'),
 
 	clientSettings,
 	userSettingsDef,
-	userSettingsVars = {};
+	userSettingsVars = {},
+	userRanks;
 
 /**
  * Заполняем объект для параметров клиента
@@ -30,7 +32,7 @@ function fillClientParams() {
 		},
 		function (err, settings) {
 			if (err) {
-				logger.error(err);
+				return logger.error(err);
 			}
 			for (var i = settings.length; i--;) {
 				params[settings[i].key] = settings[i].val;
@@ -51,13 +53,34 @@ function fillUserSettingsDef() {
 		},
 		function (err, settings) {
 			if (err) {
-				logger.error(err);
+				return logger.error(err);
 			}
 			for (var i = settings.length; i--;) {
 				params[settings[i].key] = settings[i].val;
 				userSettingsVars[settings[i].key] = settings[i].vars;
 			}
 			userSettingsDef = params;
+		}
+	);
+}
+
+/**
+ * Заполняем объект для возможных званий пользователя
+ */
+function fillUserRanks() {
+	var params = {};
+	step(
+		function () {
+			UserRanks.find({}, {_id: 0, key: 1}, {lean: true}, this);
+		},
+		function (err, ranks) {
+			if (err) {
+				return logger.error(err);
+			}
+			for (var i = ranks.length; i--;) {
+				params[ranks[i].key] = 1;
+			}
+			userRanks = params;
 		}
 	);
 }
@@ -71,6 +94,9 @@ module.exports.getUserSettingsDef = function () {
 module.exports.getUserSettingsVars = function () {
 	return userSettingsVars;
 };
+module.exports.getUserRanks = function () {
+	return userRanks;
+};
 
 module.exports.loadController = function (app, db, io) {
 	appvar = app;
@@ -78,8 +104,10 @@ module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');
 	UserSettingsDef = db.model('UserSettingsDef');
+	UserRanks = db.model('UserRanks');
 	fillClientParams();
 	fillUserSettingsDef();
+	fillUserRanks();
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
@@ -90,6 +118,10 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('giveUserSettingsVars', function () {
 			socket.emit('takeUserSettingsVars', userSettingsVars);
+		});
+
+		socket.on('giveUserAllRanks', function () {
+			socket.emit('takeUserAllRanks', userRanks);
 		});
 	});
 };
