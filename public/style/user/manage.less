@@ -1,0 +1,75 @@
+@import "../_vars.less";
+@import "../bootstrap/variables.less";
+@import "../bootstrap/mixins.less";
+
+.user_manage {
+	.accordion-inner {
+		padding: 11px 10px 11px 25px;
+
+		input {
+			margin-bottom: 0;
+			padding-top: 2px;
+			padding-bottom: 1px;
+		}
+		span.add-on {
+			margin: 1px 0 0 0px;
+			padding: 1px 2px 0px 3px;
+			border: 1px solid #C3C7DD;
+			background-color: @MainBlueColor;
+			cursor: pointer;
+			.box-shadow(~'0px -1px 0 0 #000, 1px 0px 0 0 #000, 0px 1px 0 0 #000');
+
+			&.save {
+				background-color: #439B43;
+			}
+			&.cancel {
+				background-color: #D12A14;
+			}
+		}
+
+		.helpico {
+			position: absolute;
+			top: 4px;
+			left: -18px;
+			cursor: help;
+		}
+
+		label.checkbox {
+			display: inline-block;
+			margin: 0 15px 0 0;
+			padding-left: 0;
+
+			input.thr {
+				margin-top: -4px;
+			}
+		}
+
+		dl.dl-horizontal {
+			position: relative; //Для позиционирования helpico
+			margin: 10px 0 0 0;
+
+			&:first-child {
+				margin: 0;
+			}
+
+			dt {
+				width: 300px;
+				padding: 3px 0;
+				text-align: left;
+				font-weight: normal;
+			}
+			dd {
+				margin-left: 305px;
+				text-align: left;
+
+				.input-append {
+					margin-bottom: 0;
+				}
+
+				&.throttle {
+					padding-top: 4px;
+				}
+			}
+		}
+	}
+}

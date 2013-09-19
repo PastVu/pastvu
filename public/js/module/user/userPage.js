@@ -52,6 +52,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 						result.push({name: 'Настройки', href: "/u/" + login + "/settings", section: 'settings'});
 						//result.push({name: 'Messages', href: "/u/" + login + '/pm', disable: true, section: 'pm'});
 					}
+					if (this.auth.iAm.role() > 9) {
+						result.push({name: 'Управление', href: "/u/" + login + "/manage", section: 'manage'});
+					}
 					return result;
 				}, this);
 
@@ -177,6 +180,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			} else if (section === 'settings') {
 				module = 'm/user/settings';
 				Utils.title.setTitle({pre: 'Настройки - ', title: this.user.disp()});
+			} else if (section === 'manage') {
+				module = 'm/user/manage';
+				Utils.title.setTitle({pre: 'Управление - ', title: this.user.disp()});
 			}
 
 			this.section(section);

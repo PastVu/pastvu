@@ -27,6 +27,7 @@ var UserScheme = new mongoose.Schema({
 	role: {type: Number},
 
 	settings: {type: Schema.Types.Mixed},
+	ranks: {type: Schema.Types.Mixed},
 
 	//Profile
 	avatar: {type: String},

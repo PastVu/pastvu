@@ -75,7 +75,7 @@ var start = Date.now(),
 					'm/photo/photo', 'm/photo/gallery',
 					'm/diff/newsList', 'm/diff/news',
 					'm/comment/comments', 'm/comment/hist',
-					'm/user/brief', 'm/user/comments', 'm/user/profile', 'm/user/settings', 'm/user/userPage'
+					'm/user/brief', 'm/user/comments', 'm/user/profile', 'm/user/userPage'
 				]
 			},
 			{
@@ -88,6 +88,12 @@ var start = Date.now(),
 				name: "m/user/subscr",
 				exclude: [
 					'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/storage', 'moment'
+				]
+			},
+			{
+				name: "m/user/settings",
+				exclude: [
+					'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage'
 				]
 			}/*,
 			{
