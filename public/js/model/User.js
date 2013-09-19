@@ -20,6 +20,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			role: 0,
 
 			settings: {},
+			ranks: [],
 
 			//profile
 			birthdate: '',

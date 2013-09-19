@@ -2,10 +2,11 @@
 	.accordion#accordion2
 		.accordion-group
 			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#ranks") Присваиваемые статусы
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#ranks") Присваиваемые звания
 			.accordion-body.collapse.in#ranks
-				.accordion-inner(data-bind="foreach: ranks")
-					label.checkbox
-						input.thr(type="checkbox", data-bind="attr: {value: $data.key}, checked: true")
-						| &nbsp;
-						span(data-bind="text: $data.desc")
+				.accordion-inner
+					form.form-inline(data-bind="foreach: ranks")
+						label.checkbox
+							input.thr(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
+							| &nbsp;
+							span(data-bind="text: $data.desc")

@@ -48,22 +48,8 @@ var UserSubscrNotySchema = new mongoose.Schema(
 	}
 );
 
-
-//Присвоенные звания пользователя
-var UserRanksSchema = new mongoose.Schema(
-	{
-		key: {type: String, lowercase: true, index: {unique: true}},
-		desc: {type: String, default: ''}
-	},
-	{
-		strict: true,
-		collection: 'user_ranks'
-	}
-);
-
 module.exports.makeModel = function (db) {
 	db.model('UserCommentsView', UserCommentsViewSchema);
 	db.model('UserSubscr', UserSubscrSchema);
 	db.model('UserSubscrNoty', UserSubscrNotySchema);
-	db.model('UserRanks', UserRanksSchema);
 };

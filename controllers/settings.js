@@ -3,7 +3,6 @@
 var auth = require('./auth.js'),
 	Settings,
 	UserSettingsDef,
-	UserRanks,
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils = require('../commons/Utils.js'),
@@ -15,7 +14,8 @@ var auth = require('./auth.js'),
 	clientSettings,
 	userSettingsDef,
 	userSettingsVars = {},
-	userRanks;
+	userRanks,
+	userRanksHash = {};
 
 /**
  * Заполняем объект для параметров клиента
@@ -49,7 +49,7 @@ function fillUserSettingsDef() {
 	var params = {};
 	step(
 		function () {
-			UserSettingsDef.find({}, {_id: 0, key: 1, val: 1, vars: 1}, {lean: true}, this);
+			UserSettingsDef.find({key: {$ne: 'ranks'}}, {_id: 0, key: 1, val: 1, vars: 1}, {lean: true}, this);
 		},
 		function (err, settings) {
 			if (err) {
@@ -68,19 +68,18 @@ function fillUserSettingsDef() {
  * Заполняем объект для возможных званий пользователя
  */
 function fillUserRanks() {
-	var params = {};
 	step(
 		function () {
-			UserRanks.find({}, {_id: 0, key: 1}, {lean: true}, this);
+			UserSettingsDef.findOne({key: 'ranks'}, {_id: 0, vars: 1}, {lean: true}, this);
 		},
-		function (err, ranks) {
+		function (err, row) {
 			if (err) {
 				return logger.error(err);
 			}
-			for (var i = ranks.length; i--;) {
-				params[ranks[i].key] = 1;
+			for (var i = 0; i < row.vars.length; i++) {
+				userRanksHash[row.vars[i]] = 1;
 			}
-			userRanks = params;
+			userRanks = row.vars;
 		}
 	);
 }
@@ -97,6 +96,9 @@ module.exports.getUserSettingsVars = function () {
 module.exports.getUserRanks = function () {
 	return userRanks;
 };
+module.exports.getUserRanksHash = function () {
+	return userRanksHash;
+};
 
 module.exports.loadController = function (app, db, io) {
 	appvar = app;
@@ -104,7 +106,6 @@ module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');
 	UserSettingsDef = db.model('UserSettingsDef');
-	UserRanks = db.model('UserRanks');
 	fillClientParams();
 	fillUserSettingsDef();
 	fillUserRanks();

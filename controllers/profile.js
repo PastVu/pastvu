@@ -468,6 +468,56 @@ function delAvatar(socket, data, cb) {
 	);
 }
 
+//Сохраняем ранки пользователя
+function saveUserRanks(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		ranksHash,
+		i;
+
+	if (!iAm || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data) || !login || !Array.isArray(data.ranks)) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	//Проверяем, чтобы не было несуществующих званий
+	ranksHash = settings.getUserRanksHash();
+	for (i = data.ranks; i--;) {
+		if (!ranksHash[data.ranks[i]]) {
+			return cb({message: msg.badParams, error: true});
+		}
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				this(null, user);
+			} else {
+				User.findOne({login: login}, this);
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			if (data.ranks.length) {
+				user.ranks = data.ranks;
+			} else {
+				user.ranks = undefined;
+			}
+			user.save(function (err, savedUser) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				cb({message: 'ok', saved: true, ranks: user.ranks || []});
+			});
+		}
+	);
+}
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("profile.js");
@@ -516,6 +566,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('delAvatar', function (data) {
 			delAvatar(socket, data, function (resultData) {
 				socket.emit('delAvatarResult', resultData);
+			});
+		});
+
+		socket.on('saveUserRanks', function (data) {
+			saveUserRanks(socket, data, function (result) {
+				socket.emit('saveUserRanksResult', result);
 			});
 		});
 	});

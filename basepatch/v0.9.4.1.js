@@ -12,9 +12,7 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function pastvuPatch() {
 		var startTime = Date.now();
 
-		db.user_ranks.save({key: 'mec', desc: 'Меценат'});
-		db.user_ranks.save({key: 'mec_silv', desc: 'Меценат серебряный'});
-		db.user_ranks.save({key: 'mec_gold', desc: 'Меценат золотой'});
+		db.user_settings.save({key: 'ranks', vars: ['mec', 'mec_silv', 'mec_gold'], desc: 'Звания пользователя'});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});

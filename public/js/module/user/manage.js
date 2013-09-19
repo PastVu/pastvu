@@ -27,7 +27,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.ranks = ko.observableArray();
 
 			this.getAllRanks(function () {
-				//this.subscriptions.ranks_throttle = this.u.settings.ranks_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
+				this.subscriptions.ranks = this.u.ranks.subscribe(_.debounce(this.ranksSelectedHandler, 1000), this);
 
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
@@ -43,10 +43,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		getAllRanks: function (cb, ctx) {
 			socket.once('takeUserAllRanks', function (result) {
 				if (result && !result.error) {
-					for (var i in result) {
-						if (result.hasOwnProperty(i)) {
-							this.ranks.push({key: i, desc: ranksLang[i] || i});
-						}
+					for (var i = 0; i < result.length; i++) {
+						this.ranks.push({key: result[i], desc: ranksLang[result[i]] || i});
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -60,31 +58,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.showing = false;
 		},
 
-		autoReply: function (data, evt) {
-			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);
+		ranksSelectedHandler: function (val) {
+			this.saveUserRanks();
 		},
-		subscr_throttleHandler: function (val) {
-			//Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
-			//Соответственно нам нужно отправлять на изменение только когда строка
-			//Если число, значит установилось в callback после отправки серверу
-			if (typeof val === 'string') {
-				this.changeSetting('subscr_throttle', Number(val));
-			}
-		},
-		changeSetting: function (key, val, checkValChange, cb, ctx) {
-			if (!this.u.settings[key] || (checkValChange && val === this.u.settings[key]())) {
-				return;
-			}
-			socket.once('changeUserSettingResult', function (result) {
-				if (result && !result.error && result.saved) {
-					this.u.settings[result.key](result.val);
-					this.originUser.settings[result.key] = result.val;
+		saveUserRanks: function (cb, ctx) {
+			socket.once('saveUserRanksResult', function (result) {
+				if (!result || result.error || !result.saved) {
+					window.noty({text: result && result.message || 'Ошибка сохранения звания', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					this.u.ranks(result.ranks);
+					this.originUser.ranks = result.ranks;
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, result);
 				}
 			}.bind(this));
-			socket.emit('changeUserSetting', {login: this.u.login(), key: key, val: val});
+			socket.emit('saveUserRanks', {login: this.u.login(), ranks: this.u.ranks()});
 		}
 	});
 });
