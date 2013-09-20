@@ -10,7 +10,7 @@ var nodemailer = require('nodemailer'),
 		noreply: 'PastVu ★<noreply@pastvu.com>'
 	};
 
-var logger = log4js.getLogger("mail.js");
+var logger = log4js.getLogger("app.js");
 
 module.exports.send = function send(options, callback) {
 	if (global.appVar.land !== 'prod' && options.receiver.email.indexOf('klimashkin') !== 0) {

@@ -14,7 +14,10 @@
 	"noServeStore": false, /* Tell app.js not to serve out store public folder.  @Default false */
 	"subdomains": "", /* Subdomains for serving store path's public folder divided by _.  @Default "" */
 
-	"logPath": "", /* Folder for logs. @Default "./logs" */
+	"logPath": "", /* Folder for logs. @Default "./logss" */
+	"manualGarbageCollect": 0, /* Manual invoke garbage collector in millisec.
+								  WARN: need to use with node flags --nouse-idle-notification --expose-gc
+								  If 0 - no manual collect. @Default 0 */
 
 	"mongo": {
 		"con": "mongodb://localhost:27017/pastvu", /* DB connection string */

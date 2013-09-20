@@ -2,11 +2,19 @@
 	"appenders": [
 		{
 			"type": "file",
+			"filename": "app.log",
+			"maxLogSize": 524288,
+			"backups": 1,
+			"pollInterval": 10,
+			"category": ["app.js", "systemjs.js"]
+		},
+		{
+			"type": "file",
 			"filename": "common.log",
 			"maxLogSize": 524288,
 			"backups": 1,
 			"pollInterval": 15,
-			"category": ["console", "app.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
+			"category": ["console", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js"]
 		},
 		{
 			"type": "file",
@@ -50,7 +58,7 @@
 		},
 		{
 			"type": "console",
-			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "mail.js", "auth.js", "tpl.js", "photo.js", "photoCluster.js", "systemjs.js"]
+			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		}
 	],
 	"replaceConsole": true

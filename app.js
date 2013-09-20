@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/*global gc:true*/
 'use strict';
 
 var express = require('express'),
@@ -16,7 +17,8 @@ var express = require('express'),
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
-	ms = require('ms'); // Tiny milisecond conversion utility
+	ms = require('ms'), // Tiny milisecond conversion utility
+	Utils;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 
@@ -65,7 +67,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
 	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
 
-	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")); //Путь к папке логов
+	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")), //Путь к папке логов
+	manualGarbageCollect = argv.manualGarbageCollect || conf.manualGarbageCollect || 0; //Интервал самостоятельного вызова gc
 
 
 /**
@@ -77,6 +80,7 @@ log4js.configure('./log4js.json', {cwd: logPath});
 var logger = log4js.getLogger("app.js"),
 	logger404 = require('log4js').getLogger("404.js");
 
+logger.info('~~~');
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
 logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ' with ' + os.cpus().length + ' cpu cores');
 
@@ -202,7 +206,7 @@ async.waterfall([
 			}
 		});
 
-		require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
+		Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 		callback(null);
 	},
 
@@ -273,6 +277,25 @@ async.waterfall([
 			process.on('exit', function () {
 				console.log("--SHUTDOWN--");
 			});
+
+			if (manualGarbageCollect && global.gc) {
+				//Самостоятельно вызываем garbage collector через определеное время
+				logger.info('Using manual garbage collection every %ss', manualGarbageCollect / 1000);
+				setTimeout(function collectGarbage() {
+					var start = Date.now(),
+						memUsage = process.memoryUsage();
+
+					logger.info('-> Start GC');
+					logger.info('rss: %s, heapUsed: %s, heapTotal: %s', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
+
+					global.gc(); //Вызываем gc
+
+					memUsage = process.memoryUsage();
+					logger.info('rss: %s, heapUsed: %s, heapTotal: %s', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
+					logger.info('Garbage collected in %ss', (Date.now() - start) / 1000);
+					setTimeout(collectGarbage, manualGarbageCollect);
+				}, manualGarbageCollect);
+			}
 
 			server.listen(listenport, listenhost, function () {
 				logger.info('Host for users: [%s]', protocol + '://' + host);
