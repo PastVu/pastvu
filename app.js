@@ -185,7 +185,7 @@ async.waterfall([
 				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
 				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
 			}
-			app.use(app.router);
+			app.use(app.router); //Здесь будут распологаться наши обработчики путей (app.get, post etc.)
 
 			//app.get должен быть всегда после app.use, в противном случае следующие app.use не будет использованы
 			//Сначала "законцовываем" пути к статике

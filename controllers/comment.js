@@ -99,7 +99,7 @@ function getCommentsObj(iAm, data, cb) {
 			}
 
 			commentsArr = comments;
-			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, disp: 1}, this);
+			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, this);
 		},
 		Utils.cursorExtract,
 		function (err, users) {
@@ -129,7 +129,8 @@ function getCommentsObj(iAm, data, cb) {
 					login: user.login,
 					avatar: avatar,
 					disp: user.disp || user.login,
-					online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+					online: _session.us[user.login] !== undefined, //Для скорости смотрим непосредственно в хеше, без функции isOnline
+					ranks: user.ranks
 				};
 				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 			}

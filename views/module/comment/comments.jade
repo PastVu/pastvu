@@ -46,6 +46,9 @@
 		.commentBody
 			.commentHead
 				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp, css: {online: $data.user.online}")
+				//ko if: $data.user.rnks
+				.ranks(data-bind="html: $data.user.rnks")
+				// /ko
 				//ko if: $data.frag
 				.dotDelimeter ·
 				a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")
@@ -77,6 +80,9 @@
 		.commentBody
 			.commentHead
 				a.author(data-bind="attr: {href: '/u/' + $data.user.login}, text: $data.user.disp, css: {online: $data.user.online}")
+				//ko if: $data.user.rnks
+				.ranks(data-bind="html: $data.user.rnks")
+				// /ko
 				//ko if: $data.frag
 				.dotDelimeter ·
 				a.frag(data-bind="attr: {href: '?hl=frag-' + $data.cid}")

@@ -5,6 +5,13 @@
 define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
+	var ranks = {
+		mec: {src: '/img/rank/bronse_1.jpg', title: 'Меценат'},
+		mec_silv: {src: '/img/rank/silver_1.jpg', title: 'Серебряный меценат'},
+		mec_gold: {src: '/img/rank/gold_1.jpg', title: 'Золотой меценат'}
+		},
+		ranksTpl = _.template('<% _.forEach(ranks, function(name) { %><li><%- name %></li><% }); %>');
+
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -125,6 +132,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					} else if (data.cid !== this.cid) {
 						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
 					} else {
+						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
 						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
 					}
@@ -134,6 +142,25 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
+		},
+		usersRanks: function (users) {
+			var user,
+				rank,
+				i,
+				r;
+
+			for (i in users) {
+				user = users[i];
+				if (user !== undefined && user.ranks && user.ranks.length) {
+					user.rnks = '';
+					for (r = 0; r < user.ranks.length; r++) {
+						rank = ranks[user.ranks[r]];
+						if (rank) {
+							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
+						}
+					}
+				}
+			}
 		},
 		treeBuild: function (arr) {
 			var i = -1,
