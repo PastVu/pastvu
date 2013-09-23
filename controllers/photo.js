@@ -766,10 +766,19 @@ function giveUserPhotosAround(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				cb({left: photosL, right: photosR});
+				cb({left: photosL || [], right: photosR || []});
 			}
 		);
 	});
+}
+
+//Берем массив ближайших фотографий
+function giveNearestPhotos(data, cb) {
+	if (!data || !Utils.geoCheck(data.geo)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	Photo.find({geo: {$near: data.geo.reverse(), $maxDistance: 2000}}, compactFields, {lean: true, limit: Math.min(Number(data.limit), 50)}, cb);
 }
 
 //Отдаем непубличные фотографии
@@ -1550,6 +1559,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('givePhotosFresh', function (data) {
 			givePhotosFresh(socket, data, function (resultData) {
 				socket.emit('takePhotosFresh', resultData);
+			});
+		});
+
+		socket.on('giveNearestPhotos', function (data) {
+			giveNearestPhotos(data, function (err, photos) {
+				socket.emit('takeNearestPhotos', err ? {message: err.message, error: true} : {photos: photos || []});
 			});
 		});
 

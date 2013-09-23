@@ -22,6 +22,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.userRibbon = ko.observableArray();
 			this.ribbonUserLeft = [];
 			this.ribbonUserRight = [];
+			this.nearestRibbon = ko.observableArray();
+			this.nearestRibbonOrigin = [];
+
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.can = ko_mapping.fromJS({
@@ -294,7 +297,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							.on('error', this.onPhotoError.bind(this))
 							.attr('src', this.p.sfile());
 
-						this.getUserRibbon(3, 3, this.applyUserRibbon, this);
+						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
+						this.getNearestRibbon(8, this.applyNearestRibbon, this);
 
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.p.ccount());
@@ -322,7 +326,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
-			this.getUserRibbon(3, 3, this.applyUserRibbon, this);
+			this.getUserRibbon(3, 4, this.applyUserRibbon, this);
 			// Запрашиваем разрешенные действия для фото
 			storage.photoCan(this.p.cid(), function (data) {
 				if (!data.error) {
@@ -376,8 +380,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				thumbWV1 = 84, //Минимальная ширина thumb
 				thumbWV2 = 90, //Максимальная ширина thumb
 				thumbMarginMin = 1,
+				thumbMarginMax = 7,
 				thumbMargin,
-				thumbNMin = 3,
+				thumbNMin = 2,
 				thumbNV1,
 				thumbNV2,
 				thumbNV1User,
@@ -395,7 +400,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 
 			thumbH = thumbW / 1.5 >> 0;
-			thumbMargin = (rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0;
+			thumbMargin = Math.min((rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0, thumbMarginMax);
 
 			this.mapH(Math.max(350, Math.min(700, P.window.h() - this.$dom.find('.photoMap').offset().top - 92)) + 'px');
 			this.thumbW(thumbW + 'px');
@@ -406,6 +411,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.sizesCalcPhoto();
 			this.applyUserRibbon();
+			this.applyNearestRibbon();
 		},
 		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
@@ -857,28 +863,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (!data || data.error) {
 					console.error('While loading user ribbon: ' + (data && data.message || 'Error occurred'));
 				} else {
-					var left = [],
-						right = [],
-						i,
-						item,
-						itemExist,
-						itemExistFunc = function (element) {
-							return element.cid === item.cid;
-						};
-
-					for (i = (data.left || []).length; i--;) {
-						item = data.left[i];
-						itemExist = _.find(this.ribbonUserLeft, itemExistFunc);
-						left.push(itemExist || Photo.factory(item, 'base', 'q'));
-					}
-					this.ribbonUserLeft = left;
-
-					for (i = (data.right || []).length; i--;) {
-						item = data.right[i];
-						itemExist = _.find(this.ribbonUserRight, itemExistFunc);
-						right.unshift(itemExist || Photo.factory(item, 'base', 'q'));
-					}
-					this.ribbonUserRight = right;
+					this.ribbonUserLeft = this.processRibbonItem(data.left.reverse(), this.ribbonUserLeft);
+					this.ribbonUserRight = this.processRibbonItem(data.right, this.ribbonUserRight);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -886,18 +872,47 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}.bind(this));
 			socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
 		},
+		getNearestRibbon: function (limit, cb, ctx) {
+			socket.once('takeNearestPhotos', function (data) {
+				if (!data || data.error) {
+					console.error('While loading nearest ribbon: ' + (data && data.message || 'Error occurred'));
+				} else {
+					if (data.photos.length && data.photos[0].cid === this.p.cid()) {
+						//первая фотография скорее всего окажется текущей - отсекаем её
+						data.photos.splice(0, 1);
+					}
+					this.nearestRibbonOrigin = this.processRibbonItem(data.photos, this.nearestRibbonOrigin);
+				}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data);
+				}
+			}.bind(this));
+			socket.emit('giveNearestPhotos', {geo: this.p.geo(), limit: limit});
+		},
+		processRibbonItem: function (incomingArr, targetArr) {
+			var resultArr = [],
+				i,
+				item,
+				itemExistFunc = function (element) {
+					return element.cid === item.cid;
+				};
+
+			for (i = 0; i < incomingArr.length ;i++) {
+				item = incomingArr[i];
+				resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
+			}
+			return resultArr;
+		},
 		applyUserRibbon: function () {
-			this.applyRibbon(this.thumbNUser(), this.ribbonUserLeft, this.ribbonUserRight);
+			var n = this.thumbNUser(),
+				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length),
+				newRibbon = this.ribbonUserLeft.slice(-nLeft);
+
+			Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
+			this.userRibbon(newRibbon);
 		},
 		applyNearestRibbon: function () {
-			this.applyRibbon(this.thumbN(), this.ribbonUserLeft, this.ribbonUserRight);
-		},
-		applyRibbon: function (n, arrLeft, arrRight) {
-			var nLeft = Math.min(Math.max(Math.ceil(n / 2), n - arrRight.length), arrLeft.length),
-				newRibbon = arrLeft.slice(-nLeft);
-
-			Array.prototype.push.apply(newRibbon, arrRight.slice(0, n - nLeft));
-			this.userRibbon(newRibbon);
+			this.nearestRibbon(this.nearestRibbonOrigin.slice(0, this.thumbN()));
 		},
 
 		/**

@@ -45,28 +45,30 @@
 				a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
 					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 				.userInfo(data-bind="html: userInfo()")
-				//ko foreach: userRibbon
-				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
-					.photoBox
-						img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-						.curtain
-						//ko if: $data.noPublic
-						i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-						// /ko
+				//ko if: userRibbon().length
+				.userRibbon
+					//ko foreach: userRibbon
+					a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+						.photoBox
+							img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+							.curtain
+							//ko if: $data.noPublic
+							i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+							// /ko
+					// /ko
 				// /ko
 			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
-			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length ? '' : 'none'}")
+			//ko if: nearestRibbon().length
+			.row-fluid.photoTiles
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
-				//ko foreach: userRibbon
-				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+				//ko foreach: nearestRibbon
+				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
 					.photoBox
 						img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain
-						//ko if: $data.noPublic
-						i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-						// /ko
 				// /ko
+			// /ko
 		.row-fluid.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
 	.row-fluid.heightExpander
 
