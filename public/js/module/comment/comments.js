@@ -109,13 +109,22 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.loading(false);
 		},
 		addMeToCommentsUsers: function () {
+			var u, rankObj;
 			if (this.canAction() && this.users[this.auth.iAm.login()] === undefined) {
-				this.users[this.auth.iAm.login()] = {
+				u = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
 					disp: this.auth.iAm.disp(),
+					ranks: this.auth.iAm.ranks(),
 					online: true
 				};
+				if (u.ranks) {
+					//Если есть звания у пользователя - обрабатываем их
+					rankObj = {};
+					rankObj[this.auth.iAm.login()] = u;
+					this.usersRanks(rankObj);
+				}
+				this.users[this.auth.iAm.login()] = u;
 			}
 		},
 

@@ -246,7 +246,7 @@ async.waterfall([
 		require('./controllers/registerRoutes.js').loadController(app);
 		require('./controllers/systemjs.js').loadController(app, db);
 		require('./controllers/errors.js').registerErrorHandling(app);
-		require('./basepatch/v0.9.4.1.js').loadController(app, db);
+		//require('./basepatch/v0.9.4.1.js').loadController(app, db);
 
 		callback(null);
 	}

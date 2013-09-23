@@ -83,7 +83,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.thumbW = ko.observable('0px');
 			this.thumbH = ko.observable('0px');
 			this.thumbM = ko.observable('1px');
-			this.userThumbN = ko.observable(3);
+			this.thumbN = ko.observable(4);
+			this.thumbNUser = ko.observable(3);
 
 			this.convertOptions = ko.observableArray([
 				{vName: 'Origin', vId: 'a'},
@@ -293,7 +294,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							.on('error', this.onPhotoError.bind(this))
 							.attr('src', this.p.sfile());
 
-						this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+						this.getUserRibbon(3, 3, this.applyUserRibbon, this);
 
 						this.commentsVM.setCid(cid);
 						this.commentsVM.count(this.p.ccount());
@@ -321,7 +322,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
-			this.getUserRibbon(7, 7, this.applyUserRibbon, this);
+			this.getUserRibbon(3, 3, this.applyUserRibbon, this);
 			// Запрашиваем разрешенные действия для фото
 			storage.photoCan(this.p.cid(), function (data) {
 				if (!data.error) {
@@ -367,18 +368,25 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		//Пересчитывает все размеры, зависимые от размера окна
 		sizesCalc: function () {
 			var rightPanelW = this.$dom.find('.rightPanel').width(),
+				userRibbonW = rightPanelW - 85,
+
 				thumbW,
 				thumbH,
-				thumbWV1 = 84,
-				thumbWV2 = 90,
+
+				thumbWV1 = 84, //Минимальная ширина thumb
+				thumbWV2 = 90, //Максимальная ширина thumb
 				thumbMarginMin = 1,
 				thumbMargin,
 				thumbNMin = 3,
 				thumbNV1,
-				thumbNV2;
+				thumbNV2,
+				thumbNV1User,
+				thumbNV2User;
 
 			thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
 			thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
+			thumbNV1User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
+			thumbNV2User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
 
 			if (thumbNV1 === thumbNV2) {
 				thumbW = thumbWV2;
@@ -393,7 +401,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.thumbW(thumbW + 'px');
 			this.thumbH(thumbH + 'px');
 			this.thumbM(thumbMargin + 'px');
-			this.userThumbN(thumbNV1);
+			this.thumbN(thumbNV1);
+			this.thumbNUser(thumbNV1User);
 
 			this.sizesCalcPhoto();
 			this.applyUserRibbon();
@@ -869,7 +878,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
 		},
 		applyUserRibbon: function (cb, ctx) {
-			var n = this.userThumbN(),
+			var n = this.thumbNUser(),
+				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.userRibbonRight.length), this.userRibbonLeft.length),
+				newRibbon = this.userRibbonLeft.slice(-nLeft);
+
+			Array.prototype.push.apply(newRibbon, this.userRibbonRight.slice(0, n - nLeft));
+			this.userRibbon(newRibbon);
+			n = nLeft = newRibbon = null;
+		},
+		applyNearestRibbon: function (cb, ctx) {
+			var n = this.thumbN(),
 				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.userRibbonRight.length), this.userRibbonLeft.length),
 				newRibbon = this.userRibbonLeft.slice(-nLeft);
 
