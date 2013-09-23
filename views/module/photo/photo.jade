@@ -13,6 +13,12 @@
 				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 					img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 					.photoLoading
+					.tools
+						.tool.watched
+							i.icon-eye-open.icon-white(title="Количество просмотров фотографии")
+							.watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
+							.watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
+							.watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
 					//ko if: !edit()
 					//ko foreach: p.frags
 					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
@@ -51,7 +57,7 @@
 			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			.row-fluid.photoTiles(data-bind="style: {display: userRibbon().length ? '' : 'none'}")
 				.lineBehind
-					span(data-bind="html: 'Отрезок <a href=\"/u/' + p.user.login() + '/photo\">' + 'галереи</a> пользователя'")
+					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: userRibbon
 				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 					.photoBox

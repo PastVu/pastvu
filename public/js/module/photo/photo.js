@@ -20,8 +20,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.photoLoadContainer = null;
 
 			this.userRibbon = ko.observableArray();
-			this.userRibbonLeft = [];
-			this.userRibbonRight = [];
+			this.ribbonUserLeft = [];
+			this.ribbonUserRight = [];
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.can = ko_mapping.fromJS({
@@ -68,10 +68,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}, this);
 
-			var userInfoTpl = _.template('Добавил <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }<br/>Смотрели сегодня ${ sd } раз, в неделю ${ sw } раз, всего ${ sa } раз');
+			var userInfoTpl = _.template('Добавил <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
 			this.userInfo = this.co.userInfo = ko.computed(function () {
 				return userInfoTpl(
-					{login: this.p.user.login(), name: this.p.user.disp(), css: this.p.user.online() ? 'class="online"' : '', stamp: moment(this.p.ldate()).format('D MMMM YYYY'), sd: this.p.vdcount(), sw: this.p.vwcount(), sa: this.p.vcount()}
+					{login: this.p.user.login(), name: this.p.user.disp(), css: this.p.user.online() ? 'class="online"' : '', stamp: moment(this.p.ldate()).format('D MMMM YYYY')}
 				);
 			}, this);
 
@@ -448,6 +448,15 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			var state = $(event.currentTarget).attr('data-state');
 			if (state && this[state]) {
 				this[state](!this[state]());
+			}
+		},
+		toolsNumFormat: function (num) {
+			if (num < 100) {
+				return num;
+			} else if (num < 1000) {
+				return (num / 100 >> 0) + 'h';
+			} else {
+				return (num / 1000 >> 0) + 'k';
 			}
 		},
 
@@ -859,17 +868,17 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 					for (i = (data.left || []).length; i--;) {
 						item = data.left[i];
-						itemExist = _.find(this.userRibbonLeft, itemExistFunc);
+						itemExist = _.find(this.ribbonUserLeft, itemExistFunc);
 						left.push(itemExist || Photo.factory(item, 'base', 'q'));
 					}
-					this.userRibbonLeft = left;
+					this.ribbonUserLeft = left;
 
 					for (i = (data.right || []).length; i--;) {
 						item = data.right[i];
-						itemExist = _.find(this.userRibbonRight, itemExistFunc);
+						itemExist = _.find(this.ribbonUserRight, itemExistFunc);
 						right.unshift(itemExist || Photo.factory(item, 'base', 'q'));
 					}
-					this.userRibbonRight = right;
+					this.ribbonUserRight = right;
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -877,23 +886,18 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}.bind(this));
 			socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
 		},
-		applyUserRibbon: function (cb, ctx) {
-			var n = this.thumbNUser(),
-				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.userRibbonRight.length), this.userRibbonLeft.length),
-				newRibbon = this.userRibbonLeft.slice(-nLeft);
-
-			Array.prototype.push.apply(newRibbon, this.userRibbonRight.slice(0, n - nLeft));
-			this.userRibbon(newRibbon);
-			n = nLeft = newRibbon = null;
+		applyUserRibbon: function () {
+			this.applyRibbon(this.thumbNUser(), this.ribbonUserLeft, this.ribbonUserRight);
 		},
-		applyNearestRibbon: function (cb, ctx) {
-			var n = this.thumbN(),
-				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.userRibbonRight.length), this.userRibbonLeft.length),
-				newRibbon = this.userRibbonLeft.slice(-nLeft);
+		applyNearestRibbon: function () {
+			this.applyRibbon(this.thumbN(), this.ribbonUserLeft, this.ribbonUserRight);
+		},
+		applyRibbon: function (n, arrLeft, arrRight) {
+			var nLeft = Math.min(Math.max(Math.ceil(n / 2), n - arrRight.length), arrLeft.length),
+				newRibbon = arrLeft.slice(-nLeft);
 
-			Array.prototype.push.apply(newRibbon, this.userRibbonRight.slice(0, n - nLeft));
+			Array.prototype.push.apply(newRibbon, arrRight.slice(0, n - nLeft));
 			this.userRibbon(newRibbon);
-			n = nLeft = newRibbon = null;
 		},
 
 		/**

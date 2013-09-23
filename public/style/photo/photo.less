@@ -2,6 +2,9 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
+@toolColor: #677A8F;
+@toolColorHover: @MainBlueColor;
+
 .photo {
 	position: relative;
 	margin-top: 40px;
@@ -66,7 +69,6 @@
 		position: relative;
 		display: inline-block;
 		max-width: 100%;
-		text-align: center;
 
 		.photoLoading {
 			position: absolute;
@@ -138,8 +140,54 @@
 		}
 	}
 	.photoImg {
+		display: block;
 		max-width: 100%;
+
+		&.floated {
+			float: left;
+		}
 	}
+
+	.tools {
+		position: absolute;
+		top: 0;
+		right: -24px;
+		width: 24px;
+		opacity: .95;
+		.transition(opacity .1s linear);
+
+		&:hover {
+			opacity: 1;
+		}
+
+		.tool {
+			position: relative;
+		 	display: inline-block;
+			width: 100%;
+			margin: 0 0 1px 0;
+			font-size: 12px;
+			line-height: 18px;
+			color: #F5F5F5;
+			cursor: default;
+			overflow: hidden;
+			white-space: nowrap;
+			text-decoration: none;
+			background-color: @toolColor;
+
+			&.interact {
+				cursor: pointer;
+
+				&:hover {
+					color: #fff;
+					background-color: @toolColorHover;
+				}
+			}
+		}
+		.watch {
+			cursor: help;
+		}
+	}
+
 
 	.photoTools {
 		//position: relative;

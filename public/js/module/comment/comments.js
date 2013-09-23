@@ -6,11 +6,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 	'use strict';
 
 	var ranks = {
-		mec: {src: '/img/rank/bronse_1.jpg', title: 'Меценат'},
-		mec_silv: {src: '/img/rank/silver_1.jpg', title: 'Серебряный меценат'},
-		mec_gold: {src: '/img/rank/gold_1.jpg', title: 'Золотой меценат'}
-		},
-		ranksTpl = _.template('<% _.forEach(ranks, function(name) { %><li><%- name %></li><% }); %>');
+		mec: {src: '/img/rank/bronse.jpg', title: 'Меценат'},
+		mec_silv: {src: '/img/rank/silver.jpg', title: 'Серебряный меценат'},
+		mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'}
+	};
 
 	return Cliche.extend({
 		jade: jade,
