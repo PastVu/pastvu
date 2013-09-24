@@ -25,6 +25,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.nearestRibbon = ko.observableArray();
 			this.nearestRibbonOrigin = [];
 
+			this.rnks = ko.observable(''); //Звания пользователя в виде готового шаблона
+
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.can = ko_mapping.fromJS({
@@ -297,6 +299,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							.on('error', this.onPhotoError.bind(this))
 							.attr('src', this.p.sfile());
 
+						this.processRanks(this.p.user.ranks());
 						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
 						this.getNearestRibbon(8, this.applyNearestRibbon, this);
 
@@ -402,7 +405,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			thumbH = thumbW / 1.5 >> 0;
 			thumbMargin = Math.min((rightPanelW - thumbNV1 * thumbW) / (thumbNV1 - 1) >> 0, thumbMarginMax);
 
-			this.mapH(Math.max(350, Math.min(700, P.window.h() - this.$dom.find('.photoMap').offset().top - 92)) + 'px');
+			this.mapH(Math.max(350, Math.min(700, P.window.h() - this.$dom.find('.photoMap').offset().top - 84)) + 'px');
 			this.thumbW(thumbW + 'px');
 			this.thumbH(thumbH + 'px');
 			this.thumbM(thumbMargin + 'px');
@@ -776,8 +779,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				target.cid = this.p.cid();
 				socket.once('savePhotoResult', function (result) {
 					if (result && !result.error && result.saved) {
-						if (target.geo) {
-							target.geo.reverse();
+						if (target.geo !== undefined) {
+							this.getNearestRibbon(8, this.applyNearestRibbon, this);
+							if (Array.isArray(target.geo)) {
+								target.geo.reverse();
+							}
 						}
 						if (this.descEditingChanged) {
 							if (result.data.desc) {
@@ -947,6 +953,20 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		applyNearestRibbon: function () {
 			this.nearestRibbon(this.nearestRibbonOrigin.slice(0, this.thumbN()));
+		},
+
+		processRanks: function (ranks) {
+			var rank,
+				rnks = '',
+				r;
+
+			for (r = 0; r < ranks.length; r++) {
+				rank = globalVM.ranks[ranks[r]];
+				if (rank) {
+					rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
+				}
+			}
+			this.rnks(rnks);
 		},
 
 		/**

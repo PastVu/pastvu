@@ -9,6 +9,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			avatar: '/img/caps/avatar.png',
 			avatarth: '/img/caps/avatarth.png',
 			disp: '',
+
+			ranks: [],
+
 			online: false
 		},
 		full: {
@@ -20,7 +23,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			role: 0,
 
 			settings: {},
-			ranks: [],
 
 			//profile
 			birthdate: '',

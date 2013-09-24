@@ -14,6 +14,12 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 		childModules: {},
 		repository: {},
 
+		ranks: {
+			mec: {src: '/img/rank/bronse.jpg', title: 'Меценат'},
+			mec_silv: {src: '/img/rank/silver.jpg', title: 'Серебряный меценат'},
+			mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'}
+		},
+
 		func: {
 			showContainer: function ($container, cb, ctx) {
 				var container = $container[0],
@@ -31,7 +37,7 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 							}
 						}, 50);
 					} else {
-						container.classList.add ('mShow');
+						container.classList.add('mShow');
 						if (Utils.isType('function', cb)) {
 							cb.call(ctx || window);
 						}

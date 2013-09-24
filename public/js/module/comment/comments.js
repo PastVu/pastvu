@@ -5,12 +5,6 @@
 define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
-	var ranks = {
-		mec: {src: '/img/rank/bronse.jpg', title: 'Меценат'},
-		mec_silv: {src: '/img/rank/silver.jpg', title: 'Серебряный меценат'},
-		mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'}
-	};
-
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -162,7 +156,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (user !== undefined && user.ranks && user.ranks.length) {
 					user.rnks = '';
 					for (r = 0; r < user.ranks.length; r++) {
-						rank = ranks[user.ranks[r]];
+						rank = globalVM.ranks[user.ranks[r]];
 						if (rank) {
 							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
 						}

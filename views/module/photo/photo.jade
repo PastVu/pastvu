@@ -42,21 +42,26 @@
 			// /ko
 		.span3-4.rightPanel
 			.row-fluid.photoUser
-				a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
-					img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
-				.userInfo(data-bind="html: userInfo()")
-				//ko if: userRibbon().length
-				.userRibbon
-					//ko foreach: userRibbon
-					a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
-						.photoBox
-							img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-							.curtain
-							//ko if: $data.noPublic
-							i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-							// /ko
-					// /ko
-				// /ko
+				table(style="width: 100%; margin-top: 0px; border-width: 0px;", border="0", cellspacing="0", cellpadding="0")
+					tbody
+						tr
+							td(style="width: 85px; min-width: 85px;")
+								a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
+									img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+							td
+								.userInfo(data-bind="html: userInfo() + rnks()")
+								//ko if: userRibbon().length
+								.userRibbon
+									//ko foreach: userRibbon
+									a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+										.photoBox
+											img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+											.curtain
+											//ko if: $data.noPublic
+											i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+											// /ko
+									// /ko
+								// /ko
 			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
 			.row-fluid.photoTiles

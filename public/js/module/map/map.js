@@ -245,6 +245,7 @@ define([
 		},
 		localDestroy: function (destroy) {
 			this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
+			this.map.off('moveend');
 			this.map.remove();
 			delete this.point;
 			delete this.map;

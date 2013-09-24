@@ -524,11 +524,11 @@ function givePhoto(socket, data, cb) {
 				if (user) {
 					photo = photo.toObject({getters: true});
 					photo.user = {
-						login: user.login, avatar: user.avatar, disp: user.disp, online: true
+						login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], online: true
 					};
 					paralellUser(null, photo);
 				} else {
-					photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}, function (err, photo) {
+					photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1}}, function (err, photo) {
 						paralellUser(err, photo && photo.toObject({getters: true}));
 					});
 				}

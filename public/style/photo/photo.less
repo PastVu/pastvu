@@ -312,7 +312,12 @@
 		z-index: 2; //Чтобы был "сверху" комментариев
 
 		.row-fluid {
-			margin-bottom: 7px;
+			margin-bottom: 5px;
+
+			&.photoMap {
+				height: 500px;
+				margin-bottom: 1px;
+			}
 		}
 		.row-fluid:last-child {
 			margin-bottom: 0;
@@ -323,17 +328,24 @@
 	}
 
 	.avatar {
-		float: left;
-		margin-right: 7px;
-		overflow: hidden;
+		display: inline-block;
+		vertical-align: top;
 		cursor: pointer;
 
 		img {
-			min-width: 75px;
-			max-width: 100px;
-			min-height: 75px;
-			max-height: 75px;
+			width: 75px;
+			height: 75px;
 			opacity: 0;
+		}
+	}
+	.userInfo {
+		white-space: nowrap;
+		overflow: hidden;
+
+		.rank {
+			width: 57px;
+			height: 14px;
+			margin: 0px 0 3px 5px;
 		}
 	}
 
@@ -341,10 +353,6 @@
 		height: 60px;
 		overflow: hidden;
 		white-space: nowrap;
-	}
-
-	.photoMap {
-		height: 500px;
 	}
 
 	.photoTiles {
