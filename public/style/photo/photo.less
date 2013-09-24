@@ -65,9 +65,16 @@
 	.photoImgRow {
 		text-align: center;
 	}
-	.photoImgWrap {
+
+	.photoImgSuperWrap {
 		position: relative;
 		display: inline-block;
+		max-width: 100%;
+		padding-right: 24px;
+		box-sizing: border-box;
+	}
+	.photoImgWrap {
+		position: relative;
 		max-width: 100%;
 
 		.photoLoading {
@@ -151,7 +158,7 @@
 	.tools {
 		position: absolute;
 		top: 0;
-		right: -24px;
+		right: 0;
 		width: 24px;
 		opacity: .95;
 		.transition(opacity .1s linear);
@@ -191,7 +198,7 @@
 
 	.photoTools {
 		//position: relative;
-		display: inline-block;
+		display: block;
 		margin-top: 2px;
 		height: 19px;
 		line-height: 19px;

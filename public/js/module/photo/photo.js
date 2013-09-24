@@ -418,7 +418,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
-			var maxWidth = this.$dom.find('.photoPanel').width() >> 0,
+			var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0,
 				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0,
 				ws = this.p.ws(),
 				hs = this.p.hs(),

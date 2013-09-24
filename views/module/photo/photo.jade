@@ -10,34 +10,34 @@
 	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
 		.span8-9.photoPanel
 			.row-fluid.photoImgRow
-				.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
-					img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
-					.photoLoading
+				.photoImgSuperWrap
+					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
+						img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
+						.photoLoading
+						//ko if: !edit()
+						//ko foreach: p.frags
+						a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
+						// /ko
+						// /ko
 					.tools
 						.tool.watched
 							i.icon-eye-open.icon-white(title="Количество просмотров фотографии")
 							.watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
 							.watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
 							.watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
-					//ko if: !edit()
-					//ko foreach: p.frags
-					a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
-					// /ko
-					// /ko
-				br
-				.photoTools(data-bind="style: {width: ws() + 'px'}")
-					span.toolsTxt
-						//ko if: ws() !== p.ws() && hs() !== p.hs()
-						span.sizeThis(data-bind="text: 'Текущий размер: ' + ws() + '×' + hs()")
-						span &nbsp;|&nbsp;
+					.photoTools(data-bind="style: {width: ws() + 'px'}")
+						span.toolsTxt
+							//ko if: ws() !== p.ws() && hs() !== p.hs()
+							span.sizeThis(data-bind="text: 'Текущий размер: ' + ws() + '×' + hs()")
+							span &nbsp;|&nbsp;
+							// /ko
+							a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: 'Стандарт: ' + p.ws() + '×' + p.hs()")
+							span &nbsp;|&nbsp;
+							a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: 'Оригинал: ' + p.w() + '×' + p.h()")
+						//ko if: hscalePossible()
+						.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscaleTumbler()}, click: stateChange")
+							i.icon-resize-vertical.icon-white
 						// /ko
-						a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: 'Стандарт: ' + p.ws() + '×' + p.hs()")
-						span &nbsp;|&nbsp;
-						a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: 'Оригинал: ' + p.w() + '×' + p.h()")
-					//ko if: hscalePossible()
-					.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscaleTumbler()}, click: stateChange")
-						i.icon-resize-vertical.icon-white
-					// /ko
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
 		.span3-4.rightPanel
