@@ -858,6 +858,24 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			]);
 		},
 
+		//Стандартная обработка поступающего массива лент фотографий,
+		//если пришедшая фотография есть, она вставляется в новый массив
+		processRibbonItem: function (incomingArr, targetArr) {
+			var resultArr = [],
+				i,
+				item,
+				itemExistFunc = function (element) {
+					return element.cid === item.cid;
+				};
+
+			for (i = 0; i < incomingArr.length; i++) {
+				item = incomingArr[i];
+				resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
+			}
+			return resultArr;
+		},
+
+		//Берем ленту ближайших фотографий к текущей в галерее пользователя
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
@@ -872,7 +890,45 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}.bind(this));
 			socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
 		},
+		applyUserRibbon: function () {
+			var n = this.thumbNUser(),
+				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length),
+				newRibbon = this.ribbonUserLeft.slice(-nLeft);
+
+			Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
+			this.userRibbon(newRibbon);
+		},
+
+		//Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
 		getNearestRibbon: function (limit, cb, ctx) {
+			if (this.nearestForCenterDebounced) {
+				//Если уже есть обработчик на moveend, удаляем его
+				this.mapVM.map.off('moveend', this.nearestForCenterDebounced, this);
+				this.nearestForCenterDebounced = null;
+			}
+
+			if (this.p.geo()) {
+				//Если у фото есть координата - берем ближайшие для неё
+				this.recieveNearestRibbon(this.p.geo(), limit, cb, ctx);
+			} else {
+				//Если у фото нет координат - берем ближайшие к центру карты
+				$.when(this.mapModulePromise).done(function () {
+					//Сразу берем, если зашли в первый раз
+					this.nearestForCenter(limit, cb, ctx);
+					//Дебаунс для moveend карты
+					this.nearestForCenterDebounced = _.debounce(function () {
+						this.nearestForCenter(limit, cb, ctx);
+					}, 1500);
+					//Вешаем обработчик перемещения
+					this.mapVM.map.on('moveend', this.nearestForCenterDebounced, this);
+				}.bind(this));
+			}
+		},
+		nearestForCenter: function (limit, cb, ctx) {
+			var latlng = this.mapVM.map.getCenter();
+			this.recieveNearestRibbon([latlng.lat, latlng.lng], limit, cb, ctx);
+		},
+		recieveNearestRibbon: function (geo, limit, cb, ctx) {
 			socket.once('takeNearestPhotos', function (data) {
 				if (!data || data.error) {
 					console.error('While loading nearest ribbon: ' + (data && data.message || 'Error occurred'));
@@ -887,29 +943,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					cb.call(ctx, data);
 				}
 			}.bind(this));
-			socket.emit('giveNearestPhotos', {geo: this.p.geo(), limit: limit});
-		},
-		processRibbonItem: function (incomingArr, targetArr) {
-			var resultArr = [],
-				i,
-				item,
-				itemExistFunc = function (element) {
-					return element.cid === item.cid;
-				};
-
-			for (i = 0; i < incomingArr.length ;i++) {
-				item = incomingArr[i];
-				resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
-			}
-			return resultArr;
-		},
-		applyUserRibbon: function () {
-			var n = this.thumbNUser(),
-				nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length),
-				newRibbon = this.ribbonUserLeft.slice(-nLeft);
-
-			Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
-			this.userRibbon(newRibbon);
+			socket.emit('giveNearestPhotos', {geo: geo, limit: limit});
 		},
 		applyNearestRibbon: function () {
 			this.nearestRibbon(this.nearestRibbonOrigin.slice(0, this.thumbN()));
