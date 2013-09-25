@@ -65,7 +65,9 @@ function subscribeUser(user, data, cb) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (data.do) {
-				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type, cdate: new Date()}}, {upsert: true, multi: false}, this);
+				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type, cdate: new Date()}}, {upsert: true, multi: false}, this.parallel());
+				//Вставляем время просмотра объекта, если его еще нет, чтобы при отправке уведомления правильно посчиталось кол-во новых с момента подписки
+				commentController.upsertCommentsView(obj._id, user._id, this.parallel());
 			} else {
 				UserSubscr.remove({obj: obj._id, user: user._id}, this);
 			}
@@ -80,21 +82,29 @@ function subscribeUser(user, data, cb) {
 }
 
 /**
- * Подписка объекта по id пользователя и объекта (внутренняя, например, после подтверждения фотоы)
+ * Подписка объекта по id пользователя и объекта (внутренняя, например, после подтверждения фото)
  * @param userId
  * @param objId
  * @param type
  * @param cb
  */
 function subscribeUserByIds(userId, objId, type, cb) {
-	UserSubscr.update({obj: objId, user: userId}, {$set: {type: type, cdate: new Date()}}, {upsert: true, multi: false}, function (err) {
-		if (err) {
-			logger.error(err.message);
+	step(
+		function () {
+			UserSubscr.update({obj: objId, user: userId}, {$set: {type: type, cdate: new Date()}}, {upsert: true, multi: false}, this.parallel());
+			//Вставляем время просмотра объекта, если его еще нет, чтобы при отправке уведомления правильно посчиталось кол-во новых с момента подписки
+			commentController.upsertCommentsView(objId, userId, this.parallel());
+		},
+		function (err) {
+			if (err) {
+				logger.error(err.message);
+			}
+			if (cb) {
+				cb(err);
+			}
 		}
-		if (cb) {
-			cb(err);
-		}
-	});
+	);
+
 }
 
 /**

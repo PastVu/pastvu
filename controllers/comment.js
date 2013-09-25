@@ -891,6 +891,16 @@ function hideObjComments(oid, hide, iAm, cb) {
 }
 
 /**
+ * Вставляет время просмотра объекта пользователем, если его еще нет
+ * @param objId
+ * @param userId
+ * @param cb
+ */
+function upsertCommentsView(objId, userId, cb) {
+	UserCommentsView.update({obj: objId, user: userId, stamp: null}, {$set: {stamp: new Date()}}, {upsert: true}).exec(cb);
+}
+
+/**
  * Находим количество новых комментариев для списка объектов для пользователя
  * @param objIds Массив _id объектов
  * @param type Тип объекта
@@ -1061,5 +1071,6 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.hideObjComments = hideObjComments;
+module.exports.upsertCommentsView = upsertCommentsView;
 module.exports.getNewCommentsCount = getNewCommentsCount;
 module.exports.fillNewCommentsCount = fillNewCommentsCount;
