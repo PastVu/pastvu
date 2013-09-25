@@ -105,7 +105,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				window.setTimeout(function () {
 					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + page);
 				}.bind(this), 200);
-			} else if (page > this.pageLast()) {
+			} else if (this.binded && page > this.pageLast()) {
 				window.setTimeout(function () {
 					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + this.pageLast() + (type !== 'photo' ? '?type=' + type : ''));
 				}.bind(this), 200);
