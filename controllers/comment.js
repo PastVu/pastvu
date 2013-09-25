@@ -897,7 +897,7 @@ function hideObjComments(oid, hide, iAm, cb) {
  * @param cb
  */
 function upsertCommentsView(objId, userId, cb) {
-	UserCommentsView.update({obj: objId, user: userId, stamp: null}, {$set: {stamp: new Date()}}, {upsert: true}).exec(cb);
+	UserCommentsView.update({obj: objId, user: userId}, {$setOnInsert: {stamp: new Date()}}, {upsert: true}).exec(cb);
 }
 
 /**
