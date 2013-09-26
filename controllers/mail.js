@@ -14,6 +14,9 @@ var logger = log4js.getLogger("app.js");
 
 module.exports.send = function send(options, callback) {
 	if (global.appVar.land !== 'prod' && options.receiver.email.indexOf('klimashkin') !== 0) {
+		if (callback) {
+			callback();
+		}
 		return;
 	}
 	var smtpobject = {

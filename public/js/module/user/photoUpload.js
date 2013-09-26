@@ -36,10 +36,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		fsuccess: 'Фотография успешно загружена',
 		fcount: 'Превышено разрешенное количество файлов',
 
-		ftype: 'Тип файла не соответствует правилам',
+		ftype: 'Тип файла не соответствует Правилам',
 		fmax: 'Файл больше разрешенного размера',
 		fmin: 'Файл слишком мал',
-		fpx: 'Согласно правилам, размер изображения должен быть не менее 400px по каждой из сторон и не менее 800px по большей стороне',
+		fpx: 'Согласно Правилам, размер изображения должен быть не менее 400px по каждой из сторон и не менее 800px по большей стороне',
 		finvalid: 'Файл не прошел валидацию' //Сообщение по умолчанию для валидации
 	};
 
@@ -74,7 +74,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (data) {
 						this.u = data.vm;
 
-						if (this.u.pcount() < 25) {
+						if (this.u.ranks && (this.u.ranks.indexOf('mec_silv') > -1 || this.u.ranks.indexOf('mec_gold') > -1)) {
+							this.canCountTotal = Infinity; //Серебряный и золотой меценаты имеют неограниченный лимит
+						} else if (this.u.ranks && this.u.ranks.indexOf('mec') > -1) {
+							this.canCountTotal = Math.max(0, 100 - this.u.pfcount()); //Меценат имеет лимит 100
+						} else if (this.u.pcount() < 25) {
 							this.canCountTotal = Math.max(0, 3 - this.u.pfcount());
 						} else if (this.u.pcount() < 50) {
 							this.canCountTotal = Math.max(0, 5 - this.u.pfcount());

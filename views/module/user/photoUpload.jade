@@ -13,10 +13,12 @@
 				input(id="fileupload2", type="file", name="files[]", multiple, data-bind="fileUploadInput: true")
 			.addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
 				#or.centering_content или
-				span Перетащите фотографи сюда
+				span Перетащите фотографии сюда
 				#dropzone
 
+	//ko if: canCount() < Infinity
 	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
+	// /ko
 
 	.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
