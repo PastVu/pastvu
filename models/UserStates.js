@@ -48,8 +48,21 @@ var UserSubscrNotySchema = new mongoose.Schema(
 	}
 );
 
+//Подписка пользователя на комментарии
+var UserSelfPublishedPhotosSchema = new mongoose.Schema(
+	{
+		user: {type: Schema.Types.ObjectId, ref: 'User', index: { unique: true }},
+		photos: [Schema.Types.ObjectId] //Массив фотографий, которые они опубликовали сами
+	},
+	{
+		strict: true,
+		collection: 'users_selfpublished_photos'
+	}
+);
+
 module.exports.makeModel = function (db) {
 	db.model('UserCommentsView', UserCommentsViewSchema);
 	db.model('UserSubscr', UserSubscrSchema);
 	db.model('UserSubscrNoty', UserSubscrNotySchema);
+	db.model('UserSelfPublishedPhotos', UserSelfPublishedPhotosSchema);
 };

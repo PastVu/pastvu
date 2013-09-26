@@ -596,10 +596,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(true);
 				socket.once('approvePhotoResult', function (data) {
 					if (data && !data.error) {
-						this.p.fresh(false);
-						this.originData.fresh = false;
-						this.commentsActivate(100);
-						ga('send', 'event', 'photo', 'approve', 'photo approve success');
+						this.setApproveSuccess();
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 						ga('send', 'event', 'photo', 'edit', 'photo approve error');
@@ -608,6 +605,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}.bind(this));
 				socket.emit('approvePhoto', this.p.cid());
 			}
+		},
+		setApproveSuccess: function () {
+			this.p.fresh(false);
+			this.originData.fresh = false;
+			this.commentsActivate(100);
+			ga('send', 'event', 'photo', 'approve', 'photo approve success');
 		},
 		toggleDisable: function (data, event) {
 			if (this.canBeDisable()) {
@@ -834,8 +837,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.exe(true);
 			socket.once('readyPhotoResult', function (data) {
 				if (data && !data.error) {
-					this.p.ready(true);
-					this.originData.ready = true;
+					if (data.published) {
+						this.setApproveSuccess();
+					} else {
+						this.p.ready(true);
+						this.originData.ready = true;
+					}
 					ga('send', 'event', 'photo', 'ready', 'photo ready success');
 				} else {
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});

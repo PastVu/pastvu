@@ -5,6 +5,7 @@ var auth = require('./auth.js'),
 	Settings,
 	User,
 	UserCommentsView,
+	UserSelfPublishedPhotos,
 	Photo,
 	PhotoFresh,
 	PhotoDis,
@@ -347,15 +348,10 @@ function removePhoto(socket, cid, cb) {
 }
 
 //Подтверждаем новую фотографию
-function approvePhoto(socket, cid, cb) {
+function approvePhoto(iAm, cid, cb) {
 	cid = Number(cid);
 	if (!cid) {
 		return cb({message: msg.notExists, error: true});
-	}
-
-	var iAm = socket.handshake.session.user;
-	if (!iAm || iAm.role < 5) {
-		return cb({message: msg.deny, error: true});
 	}
 
 	step(
@@ -1029,14 +1025,36 @@ function readyPhoto(socket, data, cb) {
 			if (!photoPermissions.getCan(photo, user).edit) {
 				return cb({message: msg.deny, error: true});
 			}
-			photo.ready = true;
-			photo.save(this);
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
+
+			if (user.ranks && user.ranks.indexOf('mec_gold') > -1) {
+				//Если пользователь - золотой меценат, значит он сразу публикует фото, если таких действий еще менее 100
+				UserSelfPublishedPhotos.find({user: user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
+					if (obj && obj.photos && obj.photos.length >= 100) {
+						justSetReady();
+					} else {
+						approvePhoto(user, cid, function (result) {
+							if (result.error) {
+								return cb(result);
+							}
+							cb({message: 'Ok', published: true});
+							UserSelfPublishedPhotos.update({user: user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
+						});
+					}
+				});
+			} else {
+				//Если пользователь обычный, то просто ставим флаг готовности
+				justSetReady();
 			}
-			cb({message: 'Ok'});
+
+			function justSetReady() {
+				photo.ready = true;
+				photo.save(function finish(err) {
+					if (err) {
+						return cb({message: err && err.message, error: true});
+					}
+					cb({message: 'Ok'});
+				});
+			}
 		}
 	);
 }
@@ -1459,6 +1477,7 @@ module.exports.loadController = function (app, db, io) {
 	UserSubscr = db.model('UserSubscr');
 
 	UserCommentsView = db.model('UserCommentsView');
+	UserSelfPublishedPhotos = db.model('UserSelfPublishedPhotos');
 
 	PhotoCluster.loadController(app, db, io);
 	PhotoConverter.loadController(app, db, io);
@@ -1489,9 +1508,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('approvePhoto', function (data) {
-			approvePhoto(socket, data, function (resultData) {
-				socket.emit('approvePhotoResult', resultData);
-			});
+			if (hs.session.user && hs.session.user.role > 4) {
+				approvePhoto(hs.session.user, data, function (resultData) {
+					socket.emit('approvePhotoResult', resultData);
+				});
+			} else {
+				socket.emit('approvePhotoResult', {message: msg.deny, error: true});
+			}
 		});
 
 		socket.on('disablePhoto', function (data) {
