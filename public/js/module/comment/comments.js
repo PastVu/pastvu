@@ -257,13 +257,17 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		//Подписывается-отписывается от комментариев
-		subscribe: function () {
+		subscribe: function (data, event, byCommentCreate) {
 			socket.once('subscrResult', function (result) {
 				if (!result || result.error) {
 					window.noty({text: result && result.message || 'Ошибка подписки', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
-					this.parentModule.setSubscr(!!result.subscr);
-					this.subscr(!!result.subscr);
+					var subscrFlag = !!result.subscr,
+						subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
+
+					this.parentModule.setSubscr(subscrFlag);
+					this.subscr(subscrFlag);
+					ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
 				}
 			}.bind(this));
 			socket.emit('subscr', {cid: this.cid, type: this.type, do: !this.subscr()});
@@ -453,7 +457,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (result && !result.error && result.comment) {
 					//Если установлен checkbox подписки, то подписываемся
 					if (!_this.subscr() && $root.find('input.chkSubscr').prop('checked')) {
-						_this.subscribe();
+						_this.subscribe(null, null, true);
 					}
 					//Закрываем ввод коммента
 					_this.cancel(data, event);
