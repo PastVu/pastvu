@@ -73,10 +73,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}, this);
 
-			var userInfoTpl = _.template('Добавил <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
+			var userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
 			this.userInfo = this.co.userInfo = ko.computed(function () {
 				return userInfoTpl(
-					{login: this.p.user.login(), name: this.p.user.disp(), css: this.p.user.online() ? 'class="online"' : '', stamp: moment(this.p.ldate()).format('D MMMM YYYY')}
+					{login: this.p.user.login(), name: this.p.user.disp(), css: this.p.user.online() ? 'class="online"' : '', addEnd: this.p.user.sex && this.p.user.sex() === 'f' ? 'а' : '', stamp: moment(this.p.ldate()).format('D MMMM YYYY')}
 				);
 			}, this);
 
