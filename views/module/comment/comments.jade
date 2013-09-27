@@ -34,17 +34,17 @@
 	// /ko
 
 	//ko if: count_new()
-	// /ko
 	.navigator
 		.arrow
 		.navigatorInn
-			.countAll +7
-			.up(data-bind="click: navUp", title="Предыдущий непрочитанный комментарий")
+			.countAll(data-bind="text: '+' + count_new()")
+			.up(data-bind="click: navUp")
 				i.icon-arrow-up.icon-white
-				.navTxt 11
-			.down(data-bind="click: navDown", title="Следующий непрочитанный комментарий")
-				.navTxt 34
+				.navTxt
+			.down(data-bind="click: navDown")
+				.navTxt
 				i.icon-arrow-down.icon-white
+	// /ko
 
 	script(id="commentTplPure", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {isnew: !$parent.isnew && $data.isnew}")

@@ -245,7 +245,7 @@
 		width: 15px;
 		height: 120px;
 		margin-top: -61px;
-		color: @MainLigthColor;
+		color: #fff;
 		text-align: center;
 		cursor: default;
 		border-width: 1px 1px 1px 0;
@@ -310,11 +310,17 @@
 			left: 0;
 			width: 100%;
 			line-height: 18px;
-			cursor: pointer;
 			text-align: center;
+			opacity: .8;
+			cursor: default;
 
-			&:hover {
-				background-color: rgba(0, 0, 0, .2);
+			&.active {
+				opacity: 1;
+				cursor: pointer;
+
+				:hover {
+					background-color: rgba(0, 0, 0, .2);
+				}
 			}
 		}
 		.up {
@@ -333,9 +339,11 @@
 		.countAll {
 			position: relative;
 			display: inline-block;
-			width: 100%;vertical-align: middle;
+			width: 100%;
 			line-height: 116px;
 			color: #88FF91;
+			vertical-align: middle;
+			text-decoration: none;
 			-webkit-transform: rotate(-90deg) translate(-4px, 0);
 			-moz-transform: rotate(-90deg) translate(-4px, 0);
 			-ms-transform: rotate(-90deg) translate(-4px, 0);

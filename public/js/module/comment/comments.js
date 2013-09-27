@@ -63,6 +63,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
+			this.subscriptions.count_new = this.count_new.subscribe(this.count_newHandler, this);
 
 			if (!this.options.autoShowOff) {
 				this.showTree(true);
@@ -74,6 +75,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				return;
 			}
 			globalVM.func.showContainer(this.$container);
+			this.count_newHandler(this.count_new());
 			this.showing = true;
 		},
 		hide: function () {
@@ -748,9 +750,46 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
-				}.bind(this)});
+				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: this.navTxtRecalc.bind(this)});
 			}
+		},
+		count_newHandler: function (val) {
+			if (val && !this.navTxtRecalcScroll) {
+				this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 1000);
+				$(window).on('scroll', this.navTxtRecalcScroll);
+			} else if (this.navTxtRecalcScroll) {
+				$(window).off('scroll', this.navTxtRecalcScroll);
+				delete this.navTxtRecalcScroll;
+			}
+		},
+
+		navTxtRecalc: function () {
+			var $navigator = this.$dom.find('.navigator'),
+				up = $navigator.find('.up')[0],
+				down = $navigator.find('.down')[0],
+				$navigatorHalf = $navigator.height() / 2 >> 0,
+				waterlineOffset = $navigator.offset().top + $navigatorHalf,
+				upCount = 0,
+				downCount = 0;
+
+			this.$dom.find('.isnew').each(function (index, element) {
+				var $element = $(element),
+					offset = $element.offset().top;
+
+				if (offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) {
+					upCount++;
+				} else if (offset > waterlineOffset) {
+					downCount++;
+				}
+			});
+
+			up.classList[upCount ? 'add' : 'remove']('active');
+			up.querySelector('.navTxt').innerHTML = upCount ? upCount : '';
+			up[upCount ? 'getAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
+
+			down.classList[downCount ? 'add' : 'remove']('active');
+			down.querySelector('.navTxt').innerHTML = downCount ? downCount : '';
+			down[downCount ? 'getAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
 		},
 
 		onAvatarError: function (data, event) {
