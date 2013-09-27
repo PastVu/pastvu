@@ -74,9 +74,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (data) {
 						this.u = data.vm;
 
-						if (this.u.ranks && (this.u.ranks.indexOf('mec_silv') > -1 || this.u.ranks.indexOf('mec_gold') > -1)) {
+						if (this.u.ranks && (~this.u.ranks.indexOf('mec_silv') || ~this.u.ranks.indexOf('mec_gold'))) {
 							this.canCountTotal = Infinity; //Серебряный и золотой меценаты имеют неограниченный лимит
-						} else if (this.u.ranks && this.u.ranks.indexOf('mec') > -1) {
+						} else if (this.u.ranks && ~this.u.ranks.indexOf('mec')) {
 							this.canCountTotal = Math.max(0, 100 - this.u.pfcount()); //Меценат имеет лимит 100
 						} else if (this.u.pcount() < 25) {
 							this.canCountTotal = Math.max(0, 3 - this.u.pfcount());

@@ -100,9 +100,9 @@ function createPhotos(socket, data, cb) {
 	var result = [],
 		canCreate = 0;
 
-	if (user.ranks && (user.ranks.indexOf('mec_silv') > -1 || user.ranks.indexOf('mec_gold') > -1)) {
+	if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
 		canCreate = Infinity; //Серебряный и золотой меценаты имеют неограниченный лимит
-	} else if (user.ranks && user.ranks.indexOf('mec') > -1) {
+	} else if (user.ranks && ~user.ranks.indexOf('mec')) {
 		canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
 	} else if (user.pcount < 25) {
 		canCreate = Math.max(0, 3 - user.pfcount);

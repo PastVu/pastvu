@@ -47,7 +47,7 @@ module.exports.registerErrorHandling = function (app) {
 
 	//Обработчик выброшенных ошибок
 	app.use(function (err, req, res, next) { //аргумент next убирать нельзя - не выстрелит
-		if (err instanceof neoError.e404 || err.code === 'ENOTDIR') {
+		if (err instanceof neoError.e404 || err.code === 'ENOENT' || err.code === 'ENOTDIR') {
 			send404(req, res, err);
 		} else if (err instanceof neoError.e500) {
 			send500(req, res, err);

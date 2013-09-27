@@ -33,6 +33,14 @@
 		// /ko
 	// /ko
 
+	//ko if: count_new()
+	// /ko
+	.navigator
+		.up(data-bind="click: navUp")
+			| u
+		.down(data-bind="click: navDown")
+			| d
+
 	script(id="commentTplPure", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {isnew: !$parent.isnew && $data.isnew}")
 			a.pull-left(data-bind="attr: {href: '/u/' + $data.user.login}")

@@ -724,6 +724,35 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			socket.emit('setNoComments', {cid: this.cid, type: this.type, val: !this.nocomments()});
 		},
 
+		navUp: function (vm, event) {
+			this.nav(-1, $(event.target.parentNode));
+		},
+		navDown: function (vm, event) {
+			this.nav(1, $(event.target.parentNode));
+		},
+		nav: function (dir, $navigator) {
+			var $navigatorHalf = $navigator.height() / 2 >> 0,
+				waterlineOffset = $navigator.offset().top + $navigatorHalf,
+				elementsArr = [];
+
+			this.$dom.find('.isnew').each(function (index, element) {
+				var $element = $(element),
+					offset = $element.offset().top;
+
+				if ((dir < 0 && offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) || (dir > 0 && offset > waterlineOffset)) {
+					elementsArr.push({offset: offset, $element: $element});
+				}
+			});
+
+			if (elementsArr.length) {
+				elementsArr.sort(function (a, b) {
+					return a.offset - b.offset;
+				});
+				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
+				}.bind(this)});
+			}
+		},
+
 		onAvatarError: function (data, event) {
 			event.target.setAttribute('src', '/img/caps/avatarth.png');
 			data = event = null;
