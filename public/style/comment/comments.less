@@ -164,7 +164,7 @@
 			color: #777;
 			cursor: text;
 		}
-		.replySubscr .chkSubscr{
+		.replySubscr .chkSubscr {
 			margin-top: -2px;
 		}
 		.btnCommentSend, .btnCommentCancel, .btnCommentFrag, .btnCommentFragDel, .replySubscr {
@@ -240,36 +240,108 @@
 
 	.navigator {
 		position: fixed;
-		left: 0px;
+		left: 0;
 		top: 50%;
-		width: 14px;
-		height: 100px;
-		margin-top: -51px;
+		width: 15px;
+		height: 120px;
+		margin-top: -61px;
 		color: @MainLigthColor;
+		text-align: center;
+		cursor: default;
 		border-width: 1px 1px 1px 0;
 		border-style: solid;
 		border-color: #C3C7DD;
 		background-color: @MainBlueColor;
 		.transition(width .1s linear);
 		.box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
+		.box-sizing(border-box);
+		.user-select(none);
 
 		&:hover {
 			width: 30px;
+
+			.navTxt {
+				.rotate(0);
+			}
+			.countAll {
+				-webkit-transform: rotate(0) translate(0, 0);
+				-moz-transform: rotate(0) translate(0, 0);
+				-ms-transform: rotate(0) translate(0, 0);
+				-o-transform: rotate(0) translate(0, 0);
+				transform: rotate(0) translate(0, 0);
+			}
+		}
+
+		.navigatorInn {
+			position: relative;
+			width: 100%;
+			overflow: hidden;
+		}
+
+		.arrow,
+		.arrow::after {
+			position: absolute;
+			display: block;
+			width: 0;
+			height: 0;
+			border-color: transparent;
+			border-style: solid;
+		}
+		.arrow {
+			top: 50%;
+			right: -@popoverArrowOuterWidth;
+			margin-top: -@popoverArrowOuterWidth;
+			border-width: @popoverArrowOuterWidth;
+			border-right-width: 0;
+			border-left-color: #999; // IE8 fallback
+			border-left-color: @popoverArrowOuterColor;
+		}
+		.arrow::after {
+			content: "";
+			right: 2px;
+			border-width: @popoverArrowWidth;
+			border-right-width: 0;
+			border-left-color: @popoverArrowColor;
+			bottom: -@popoverArrowWidth;
 		}
 
 		.up, .down {
 			position: absolute;
 			left: 0;
 			width: 100%;
-			height: 20px;
+			line-height: 18px;
 			cursor: pointer;
 			text-align: center;
+
+			&:hover {
+				background-color: rgba(0, 0, 0, .2);
+			}
 		}
 		.up {
 			top: 0;
 		}
 		.down {
 			bottom: 0;
+		}
+		.navTxt {
+			position: relative;
+			display: inline-block;
+			width: 100%;
+			.rotate(-90deg);
+			.transition(all .1s linear);
+		}
+		.countAll {
+			position: relative;
+			display: inline-block;
+			width: 100%;vertical-align: middle;
+			line-height: 116px;
+			color: #88FF91;
+			-webkit-transform: rotate(-90deg) translate(-4px, 0);
+			-moz-transform: rotate(-90deg) translate(-4px, 0);
+			-ms-transform: rotate(-90deg) translate(-4px, 0);
+			-o-transform: rotate(-90deg) translate(-4px, 0);
+			transform: rotate(-90deg) translate(-4px, 0);
+			.transition(all .1s linear);
 		}
 	}
 }

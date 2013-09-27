@@ -36,10 +36,15 @@
 	//ko if: count_new()
 	// /ko
 	.navigator
-		.up(data-bind="click: navUp")
-			| u
-		.down(data-bind="click: navDown")
-			| d
+		.arrow
+		.navigatorInn
+			.countAll +7
+			.up(data-bind="click: navUp", title="Предыдущий непрочитанный комментарий")
+				i.icon-arrow-up.icon-white
+				.navTxt 11
+			.down(data-bind="click: navDown", title="Следующий непрочитанный комментарий")
+				.navTxt 34
+				i.icon-arrow-down.icon-white
 
 	script(id="commentTplPure", type="text/html")
 		li.media(data-bind="attr: {'data-cid': $data.cid}, css: {isnew: !$parent.isnew && $data.isnew}")
