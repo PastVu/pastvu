@@ -251,7 +251,6 @@
 		border-width: 1px 1px 1px 0;
 		border-style: solid;
 		border-color: #C3C7DD;
-		background-color: @MainBlueColor;
 		.transition(width .1s linear);
 		.box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
 		.box-sizing(border-box);
@@ -270,12 +269,17 @@
 				-o-transform: rotate(0) translate(0, 0);
 				transform: rotate(0) translate(0, 0);
 			}
+			.arrow {
+				right: -@popoverArrowOuterWidth;
+			}
+
 		}
 
 		.navigatorInn {
 			position: relative;
 			width: 100%;
 			overflow: hidden;
+			background-color: @MainBlueColor;
 		}
 
 		.arrow,
@@ -289,12 +293,13 @@
 		}
 		.arrow {
 			top: 50%;
-			right: -@popoverArrowOuterWidth;
+			right: 1px;
 			margin-top: -@popoverArrowOuterWidth;
 			border-width: @popoverArrowOuterWidth;
 			border-right-width: 0;
 			border-left-color: #999; // IE8 fallback
 			border-left-color: @popoverArrowOuterColor;
+			.transition(right .1s linear);
 		}
 		.arrow::after {
 			content: "";
@@ -311,14 +316,14 @@
 			width: 100%;
 			line-height: 18px;
 			text-align: center;
-			opacity: .8;
+			opacity: .5;
 			cursor: default;
 
 			&.active {
 				opacity: 1;
 				cursor: pointer;
 
-				:hover {
+				&:hover {
 					background-color: rgba(0, 0, 0, .2);
 				}
 			}
@@ -340,7 +345,7 @@
 			position: relative;
 			display: inline-block;
 			width: 100%;
-			line-height: 116px;
+			line-height: 118px;
 			color: #88FF91;
 			vertical-align: middle;
 			text-decoration: none;

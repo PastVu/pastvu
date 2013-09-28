@@ -75,12 +75,15 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				return;
 			}
 			globalVM.func.showContainer(this.$container);
-			this.count_newHandler(this.count_new());
 			this.showing = true;
 		},
 		hide: function () {
 			if (!this.showing) {
 				return;
+			}
+			if (this.navTxtRecalcScroll) {
+				$(window).off('scroll', this.navTxtRecalcScroll);
+				delete this.navTxtRecalcScroll;
 			}
 			globalVM.func.hideContainer(this.$container);
 			this.showTree(false);
@@ -139,6 +142,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
 						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
+
+						//Если есть новые комментарии, планируем пересчет значений навигатора по новым
+						if (this.count_new()) {
+							window.setTimeout(function () {
+								this.count_newHandler(this.count_new());
+								this.navTxtRecalc();
+							}.bind(this), 10 * data.comments.length); //Каждая строка отодвигает пересчет на 10мс, чтобы они успели отрисоваться
+						}
 					}
 				}
 				if (Utils.isType('function', cb)) {
@@ -750,14 +761,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: this.navTxtRecalc.bind(this)});
+				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400});
 			}
 		},
 		count_newHandler: function (val) {
 			if (val && !this.navTxtRecalcScroll) {
-				this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 1000);
+				this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
 				$(window).on('scroll', this.navTxtRecalcScroll);
-			} else if (this.navTxtRecalcScroll) {
+			} else if (!val && this.navTxtRecalcScroll) {
 				$(window).off('scroll', this.navTxtRecalcScroll);
 				delete this.navTxtRecalcScroll;
 			}
@@ -785,11 +796,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			up.classList[upCount ? 'add' : 'remove']('active');
 			up.querySelector('.navTxt').innerHTML = upCount ? upCount : '';
-			up[upCount ? 'getAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
+			up[upCount ? 'setAttribute' : 'removeAttribute']('title', 'Предыдущий непрочитанный комментарий');
 
 			down.classList[downCount ? 'add' : 'remove']('active');
 			down.querySelector('.navTxt').innerHTML = downCount ? downCount : '';
-			down[downCount ? 'getAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
+			down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
 		},
 
 		onAvatarError: function (data, event) {
