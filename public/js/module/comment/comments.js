@@ -2,7 +2,7 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -27,6 +27,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.loading = ko.observable(false);
 			this.showTree = ko.observable(false);
 			this.exe = ko.observable(false);
+			this.touch = !Browser.support.touch;
 
 			this.canManage = this.co.canAction = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role() > 9;

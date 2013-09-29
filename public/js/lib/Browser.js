@@ -7,6 +7,8 @@
  *              platform: string, support: Object.<string, boolean>}}
  */
 define(["lib/flash_detect"], function (FlashDetect) {
+	'use strict';
+
 	var uA = navigator.userAgent.toUpperCase(),
 		res,
 		b = {
@@ -41,11 +43,16 @@ define(["lib/flash_detect"], function (FlashDetect) {
 					return !!navigator.geolocation;
 				}()),
 				touch: (function () {
-					try {
-						document.createEvent("TouchEvent");
+					if(('ontouchstart' in window) || window.DocumentTouch && document instanceof window.DocumentTouch) {
+						//Indicates if the browser supports the W3C Touch Events API
 						return true;
-					} catch (e) {
-						return false;
+					} else {
+						try {
+							document.createEvent("TouchEvent");
+							return true;
+						} catch (e) {
+							return false;
+						}
 					}
 				}()),
 				cssAnimation: true,

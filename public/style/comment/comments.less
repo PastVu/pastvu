@@ -256,7 +256,7 @@
 		.box-sizing(border-box);
 		.user-select(none);
 
-		&:hover {
+		&:hover, &.touch {
 			width: 30px;
 
 			.navTxt {
@@ -322,8 +322,9 @@
 			&.active {
 				opacity: 1;
 				cursor: pointer;
+				-webkit-tap-highlight-color: rgba(0, 0, 0, .2);
 
-				&:hover {
+				&:hover, &:active {
 					background-color: rgba(0, 0, 0, .2);
 				}
 			}
