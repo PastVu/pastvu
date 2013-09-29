@@ -747,16 +747,21 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		nav: function (dir, $navigator) {
 			var $navigatorHalf = $navigator.height() / 2 >> 0,
 				waterlineOffset = $navigator.offset().top + $navigatorHalf,
-				elementsArr = [];
+				elementsArr = [],
 
-			this.$dom.find('.isnew').each(function (index, element) {
-				var $element = $(element),
-					offset = $element.offset().top;
+				newComments = this.$dom[0].querySelectorAll('.isnew'),
+				$element,
+				offset,
+				i;
+
+			for (i = 0; i < newComments.length; i++) {
+				$element = $(newComments[i]);
+				offset = $element.offset().top;
 
 				if ((dir < 0 && offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) || (dir > 0 && offset > waterlineOffset)) {
 					elementsArr.push({offset: offset, $element: $element});
 				}
-			});
+			}
 
 			if (elementsArr.length) {
 				elementsArr.sort(function (a, b) {
@@ -782,18 +787,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$navigatorHalf = $navigator.height() / 2 >> 0,
 				waterlineOffset = $navigator.offset().top + $navigatorHalf,
 				upCount = 0,
-				downCount = 0;
+				downCount = 0,
 
-			this.$dom.find('.isnew').each(function (index, element) {
-				var $element = $(element),
-					offset = $element.offset().top;
+				newComments = this.$dom[0].querySelectorAll('.isnew'),
+				$element,
+				offset,
+				i = newComments.length;
+
+			while (i--) {
+				$element = $(newComments[i]);
+				offset = $element.offset().top;
 
 				if (offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) {
 					upCount++;
 				} else if (offset > waterlineOffset) {
 					downCount++;
 				}
-			});
+			}
 
 			up.classList[upCount ? 'add' : 'remove']('active');
 			up.querySelector('.navTxt').innerHTML = upCount ? upCount : '';
