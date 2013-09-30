@@ -5,6 +5,8 @@
 define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
+	var $window = $(window);
+
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -27,7 +29,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.loading = ko.observable(false);
 			this.showTree = ko.observable(false);
 			this.exe = ko.observable(false);
-			this.touch = !Browser.support.touch;
+			this.touch = Browser.support.touch;
 
 			this.canManage = this.co.canAction = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
@@ -72,9 +74,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		show: function () {
-			if (this.showing) {
-				return;
-			}
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
@@ -83,12 +82,77 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 			if (this.navTxtRecalcScroll) {
-				$(window).off('scroll', this.navTxtRecalcScroll);
+				$window.off('scroll', this.navTxtRecalcScroll);
 				delete this.navTxtRecalcScroll;
 			}
+			this.deactivate();
 			globalVM.func.hideContainer(this.$container);
 			this.showTree(false);
 			this.showing = false;
+		},
+		activate: function (checkTimeout) {
+			//Если есть комментарии и еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
+			if (!this.viewportCheckTimeout) {
+				this.viewScrollOn();
+				this.loading(true);
+				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheck.bind(this), checkTimeout || 10);
+			}
+			if (!this.showing) {
+				this.show();
+			}
+		},
+		deactivate: function () {
+			this.inViewport = false;
+			this.viewScrollOff();
+
+			window.clearTimeout(this.viewportCheckTimeout);
+			delete this.viewportCheckTimeout;
+
+			this.comments([]);
+			this.users = {};
+			this.addMeToCommentsUsers();
+			this.loading(false);
+		},
+		viewScrollOn: function () {
+			if (!this.viewScrollHandleBind) {
+				this.viewScrollHandleBind = _.debounce(this.viewScrollHandle.bind(this), 100);
+				$window.on('scroll', this.viewScrollHandleBind);
+			}
+		},
+		viewScrollOff: function () {
+			if (this.viewScrollHandleBind) {
+				$window.off('scroll', this.viewScrollHandleBind);
+				delete this.viewScrollHandleBind;
+			}
+		},
+		viewScrollHandle: function () {
+			if (!this.commentsInViewport) {
+				this.inViewportCheck();
+			}
+		},
+		inViewportCheck: function () {
+			window.clearTimeout(this.viewportCheckTimeout);
+			delete this.viewportCheckTimeout;
+
+			var cTop = this.$comments.offset().top,
+				wFold = $window.height() + $window.scrollTop();
+
+			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
+				this.commentsInViewport = true;
+				this.viewScrollOff();
+				window.clearTimeout(this.commentsRecieveTimeout);
+				this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
+			}
+		},
+
+		setParams: function (cid, count, count_new, subscr, nocomments) {
+			this.cid = cid;
+			this.count(count);
+			this.count_new(count_new);
+			this.subscr(!!subscr);
+			this.nocomments(!!nocomments);
+
+			return this;
 		},
 
 		loggedInHandler: function () {
@@ -97,15 +161,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.recieve();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
-		},
-		setCid: function (cid) {
-			this.cid = cid;
-		},
-		clear: function () {
-			this.comments([]);
-			this.users = {};
-			this.addMeToCommentsUsers();
-			this.loading(false);
 		},
 		addMeToCommentsUsers: function () {
 			var u, rankObj;
@@ -131,6 +186,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (cid) {
 				this.cid = cid;
 			}
+			this.loading(true);
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
 					console.error('No comments data recieved');
@@ -143,6 +199,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
 						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
+						this.showTree(true);
 
 						//Если есть новые комментарии, планируем пересчет значений навигатора по новым
 						if (this.count_new()) {
@@ -153,6 +210,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						}
 					}
 				}
+				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
@@ -247,6 +305,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			return results;
 		},
+
 		scrollTo: function (ccid) {
 			var $element;
 
@@ -257,7 +316,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			if ($element && $element.length === 1) {
 				this.highlightOff();
-				$(window).scrollTo($element, {duration: 400, onAfter: function () {
+				$window.scrollTo($element, {duration: 400, onAfter: function () {
 					this.highlight(ccid);
 				}.bind(this)});
 			}
@@ -383,11 +442,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		checkInViewport: function (root, scrollDuration, cb) {
 			var btnSend = root.find('.btnCommentSend'),
 				cBottom = btnSend.offset().top + btnSend.height() + 10,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
+				wTop = $window.scrollTop(),
+				wFold = $window.height() + wTop;
 
 			if (wFold < cBottom) {
-				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
 					if (Utils.isType('function', cb)) {
 						cb.call(this);
 					}
@@ -742,6 +801,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.nav(-1, $(event.target.parentNode));
 		},
 		navDown: function (vm, event) {
+			if (!this.showTree()) {
+
+			}
 			this.nav(1, $(event.target.parentNode));
 		},
 		nav: function (dir, $navigator) {
@@ -767,15 +829,21 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				$(window).scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400});
+				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400});
 			}
 		},
 		count_newHandler: function (val) {
 			if (val && !this.navTxtRecalcScroll) {
-				this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
-				$(window).on('scroll', this.navTxtRecalcScroll);
+				if (this.showTree()) {
+					//Если дерево уже показывается, подписываемся на скролл
+					this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
+					$window.on('scroll', this.navTxtRecalcScroll);
+				} else {
+					//Если дерево еще скрыто, т.е. recieve еще не было, просто пишем сколько новых комментариев ниже
+					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(val);
+				}
 			} else if (!val && this.navTxtRecalcScroll) {
-				$(window).off('scroll', this.navTxtRecalcScroll);
+				$window.off('scroll', this.navTxtRecalcScroll);
 				delete this.navTxtRecalcScroll;
 			}
 		},

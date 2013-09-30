@@ -121,19 +121,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			});
 
-			this.commentsInViewport = false;
 
 			this.scrollTimeout = null;
-			this.commentsRecieveTimeout = null;
-			this.commentsViewportTimeout = null;
 
 			this.$comments = this.$dom.find('.commentsContainer');
 
 			this.descFocusBind = this.inputFocus.bind(this);
 			this.descLabelClickBind = this.inputLabelClick.bind(this);
-			this.commentsRecieveBind = this.commentsRecieve.bind(this);
-			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
-			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
 			this.scrollToBind = this.scrollTo.bind(this);
 
 			this.fraging = ko.observable(false);
@@ -271,14 +265,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
 				this.photoLoading(true);
 
-				this.commentsVM.clear();
-				this.commentsInViewport = false;
-
-				this.viewScrollOff();
-				window.clearTimeout(this.commentsRecieveTimeout);
-				window.clearTimeout(this.commentsViewportTimeout);
-				this.commentsRecieveTimeout = null;
-				this.commentsViewportTimeout = null;
+				this.commentsVM.deactivate();
 
 				storage.photo(cid, function (data) {
 					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
@@ -303,11 +290,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
 						this.getNearestRibbon(8, this.applyNearestRibbon, this);
 
-						this.commentsVM.setCid(cid);
-						this.commentsVM.count(this.p.ccount());
-						this.commentsVM.count_new(this.p.ccount_new());
-						this.commentsVM.subscr(this.p.subscr());
-						this.commentsVM.nocomments(this.p.nocomments());
+						this.commentsVM.setParams(cid, this.p.ccount(), this.p.ccount_new(), this.p.subscr(), this.p.nocomments());
 						this.commentsActivate(this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300));
 
 						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
@@ -343,7 +326,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		editHandler: function (v) {
 			if (v) {
 				$.when(this.mapModulePromise).done(this.mapEditOn.bind(this));
-				this.commentsDeActivate();
+				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
 				this.commentsActivate();
@@ -979,58 +962,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		/**
 		 * COMMENTS
 		 */
-		viewScrollOn: function () {
-			$(window).on('scroll', this.viewScrollHandleBind);
-		},
-		viewScrollOff: function () {
-			$(window).off('scroll', this.viewScrollHandleBind);
-		},
-		viewScrollHandle: function () {
-			if (!this.commentsInViewport) {
-				this.commentsCheckInViewport();
-			}
-		},
 		commentsActivate: function (checkTimeout) {
 			//Активируем, если фото не новое и не редактируется
 			if (!this.edit() && !this.p.fresh()) {
-				//Если есть комментарии и еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
-				if (!this.commentsViewportTimeout) {
-					this.viewScrollOn();
-					this.commentsVM.loading(true);
-					this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
-				}
-				this.commentsVM.show();
+				this.commentsVM.activate(checkTimeout);
 			}
-		},
-		commentsDeActivate: function () {
-			this.viewScrollOff();
-			this.commentsVM.hide();
-			this.commentsInViewport = false;
-		},
-		commentsCheckInViewport: function () {
-			window.clearTimeout(this.commentsViewportTimeout);
-			this.commentsViewportTimeout = null;
-
-			var cTop = this.$comments.offset().top,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
-
-			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
-				this.commentsInViewport = true;
-				this.viewScrollOff();
-				this.commentsGet();
-			}
-		},
-		commentsGet: function () {
-			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
-		},
-		commentsRecieve: function () {
-			this.commentsVM.recieve(this.p.cid(), function () {
-				this.commentsVM.loading(false);
-				this.commentsVM.showTree(true);
-				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
-			}, this);
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
