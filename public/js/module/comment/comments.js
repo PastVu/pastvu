@@ -47,7 +47,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
 
-			this.recieveBind = this.recieve.bind(this);
 			this.replyBind = this.reply.bind(this);
 			this.editBind = this.edit.bind(this);
 			this.removeBind = this.remove.bind(this);
@@ -98,15 +97,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.nocomments(!!params.nocomments);
 			}
 
+			//Удаляем ожидание существующей проверки и обработчик скролла,
+			//если, например, вызвали эту активацию еще раз до попадания во вьюпорт
+			this.viewScrollOff();
+			window.clearTimeout(this.viewportCheckTimeout);
+			window.clearTimeout(this.recieveTimeout);
+			this.inViewport = false;
+
 			this.loading(true);
 			this.addMeToCommentsUsers();
 
 			if (this.showTree() || options && options.instant) {
+				//Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
 				this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), 150);
-			} else if (!this.viewportCheckTimeout) {
-				//Если еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
-				this.viewScrollOn();
-				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheck.bind(this), options && options.checkTimeout || 10);
+			} else {
+				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
+				this.inViewportCheckBind = _.debounce(this.inViewportCheck.bind(this, cb || null, ctx || null), 50);
+				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
 			}
 			if (!this.showing) {
 				this.show();
@@ -116,13 +123,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.showing) {
 				return;
 			}
-			this.inViewport = false;
-			this.viewScrollOff();
 
-			window.clearTimeout(this.recieveTimeout);
+			this.viewScrollOff();
 			window.clearTimeout(this.viewportCheckTimeout);
-			delete this.recieveTimeout;
-			delete this.viewportCheckTimeout;
+			window.clearTimeout(this.recieveTimeout);
+			this.inViewport = false;
 
 			this.comments([]);
 			this.users = {};
@@ -130,33 +135,31 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.showTree(false);
 		},
 		viewScrollOn: function () {
-			if (!this.viewScrollHandleBind) {
-				this.viewScrollHandleBind = _.debounce(this.viewScrollHandle.bind(this), 100);
-				$window.on('scroll', this.viewScrollHandleBind);
+			if (!this.viewportScrollHandling) {
+				$window.on('scroll', this.inViewportCheckBind);
+				this.viewportScrollHandling = true;
 			}
 		},
 		viewScrollOff: function () {
-			if (this.viewScrollHandleBind) {
-				$window.off('scroll', this.viewScrollHandleBind);
-				delete this.viewScrollHandleBind;
+			if (this.viewportScrollHandling || this.inViewportCheckBind) {
+				$window.off('scroll', this.inViewportCheckBind);
+				delete this.viewportScrollHandling;
+				delete this.inViewportCheckBind;
 			}
 		},
-		viewScrollHandle: function () {
+		inViewportCheck: function (cb, ctx) {
 			if (!this.inViewport) {
-				this.inViewportCheck();
-			}
-		},
-		inViewportCheck: function () {
-			window.clearTimeout(this.viewportCheckTimeout);
-			delete this.viewportCheckTimeout;
+				var cTop = this.$container.offset().top,
+					wFold = $window.height() + $window.scrollTop();
 
-			var cTop = this.$container.offset().top,
-				wFold = $window.height() + $window.scrollTop();
-
-			if (cTop < wFold && !this.inViewport) {
-				this.inViewport = true;
-				this.viewScrollOff();
-				this.recieveTimeout = window.setTimeout(this.recieveBind, this.count() > 50 ? 750 : 400);
+				if (cTop < wFold) {
+					this.inViewport = true;
+					this.viewScrollOff();
+					this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
+				} else {
+					//Если после первая проверка отрицательна, вешаем обработчик на скролл
+					this.viewScrollOn();
+				}
 			}
 		},
 
@@ -222,8 +225,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						}
 					}
 				}
-				window.clearTimeout(this.recieveTimeout);
-				delete this.recieveTimeout;
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
