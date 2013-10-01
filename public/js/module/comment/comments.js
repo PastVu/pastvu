@@ -89,7 +89,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
-		activate: function (params, options) {
+		activate: function (params, options, cb, ctx) {
 			if (params) {
 				this.cid = params.cid;
 				this.count(params.count);
@@ -99,18 +99,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			this.loading(true);
+			this.addMeToCommentsUsers();
 
-			if (this.showTree() || options && (options.instant || options.scrollTo)) {
-				var recieveBind;
-
-				if (options.scrollTo) {
-					recieveBind = this.recieve.bind(this, function () {
-						this.scrollTo(options.scrollTo);
-					}, this);
-				} else {
-					recieveBind = this.recieveBind;
-				}
-				this.recieveTimeout = window.setTimeout(recieveBind, 150);
+			if (this.showTree() || options && options.instant) {
+				this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), 150);
 			} else if (!this.viewportCheckTimeout) {
 				//Если еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
 				this.viewScrollOn();
@@ -121,6 +113,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		deactivate: function () {
+			if (!this.showing) {
+				return;
+			}
 			this.inViewport = false;
 			this.viewScrollOff();
 
@@ -131,7 +126,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			this.comments([]);
 			this.users = {};
-			this.addMeToCommentsUsers();
 			this.loading(false);
 			this.showTree(false);
 		},
@@ -159,10 +153,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var cTop = this.$container.offset().top,
 				wFold = $window.height() + $window.scrollTop();
 
-			if (cTop < wFold && !this.recieveTimeout) {
+			if (cTop < wFold && !this.inViewport) {
 				this.inViewport = true;
 				this.viewScrollOff();
-				this.recieveTimeout = window.setTimeout(this.recieveBind, this.count() > 30 ? 750 : 400);
+				this.recieveTimeout = window.setTimeout(this.recieveBind, this.count() > 50 ? 750 : 400);
 			}
 		},
 

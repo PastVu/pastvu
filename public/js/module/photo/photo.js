@@ -965,10 +965,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (!this.edit() && !this.p.fresh()) {
 				this.commentsVM.activate(
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
-					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length > 0, scrollTo: this.toComment, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)})
+					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length > 0, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)}),
+					function () {
+						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания recieve
+						window.setTimeout(this.scrollToBind, 150);
+					},
+					this
 				);
 			}
-			this.toComment = undefined;
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
