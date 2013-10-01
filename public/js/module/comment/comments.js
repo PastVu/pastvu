@@ -47,6 +47,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentEditingCid = ko.observable(0);
 			this.commentNestingMax = 9;
 
+			this.recieveBind = this.recieve.bind(this);
 			this.replyBind = this.reply.bind(this);
 			this.editBind = this.edit.bind(this);
 			this.removeBind = this.remove.bind(this);
@@ -69,8 +70,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.subscriptions.count_new = this.count_new.subscribe(this.count_newHandler, this);
 
 			if (!this.options.autoShowOff) {
-				this.showTree(true);
-				this.show();
+				this.activate();
 			}
 		},
 		show: function () {
@@ -87,15 +87,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			this.deactivate();
 			globalVM.func.hideContainer(this.$container);
-			this.showTree(false);
 			this.showing = false;
 		},
-		activate: function (checkTimeout) {
-			//Если есть комментарии и еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
-			if (!this.viewportCheckTimeout) {
+		activate: function (params, options, checkTimeout) {
+			if (params) {
+				this.cid = params.cid;
+				this.count(params.count);
+				this.count_new(params.count_new);
+				this.subscr(!!params.subscr);
+				this.nocomments(!!params.nocomments);
+			}
+
+			this.loading(true);
+
+			if (this.showTree() || options && (options.instant || options.toComment)) {
+				var recieveBind,
+					toComment;
+				if (options.toComment) {
+					recieveBind = this.recieve.bind(this, function () {
+						if (options.toComment === true) {
+
+						}
+					}, this);
+				} else {
+					recieveBind = this.recieve.bind(this);
+				}
+				this.commentsRecieveTimeout = window.setTimeout(recieveBind, 150);
+			} else if (!this.viewportCheckTimeout) {
+				//Если еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
 				this.viewScrollOn();
-				this.loading(true);
-				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheck.bind(this), checkTimeout || 10);
+				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheck.bind(this), options && options.checkTimeout || 10);
 			}
 			if (!this.showing) {
 				this.show();
@@ -105,13 +126,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inViewport = false;
 			this.viewScrollOff();
 
+			window.clearTimeout(this.commentsRecieveTimeout);
 			window.clearTimeout(this.viewportCheckTimeout);
+			delete this.commentsRecieveTimeout;
 			delete this.viewportCheckTimeout;
 
 			this.comments([]);
 			this.users = {};
 			this.addMeToCommentsUsers();
 			this.loading(false);
+			this.showTree(false);
 		},
 		viewScrollOn: function () {
 			if (!this.viewScrollHandleBind) {
@@ -126,7 +150,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		viewScrollHandle: function () {
-			if (!this.commentsInViewport) {
+			if (!this.inViewport) {
 				this.inViewportCheck();
 			}
 		},
@@ -134,14 +158,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			window.clearTimeout(this.viewportCheckTimeout);
 			delete this.viewportCheckTimeout;
 
-			var cTop = this.$comments.offset().top,
+			var cTop = this.$container.offset().top,
 				wFold = $window.height() + $window.scrollTop();
 
-			if (this.toComment || this.p.frags().length > 0 || cTop < wFold) {
-				this.commentsInViewport = true;
+			if (cTop < wFold) {
+				this.inViewport = true;
 				this.viewScrollOff();
 				window.clearTimeout(this.commentsRecieveTimeout);
-				this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
+				this.commentsRecieveTimeout = window.setTimeout(this.recieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
 			}
 		},
 
@@ -182,10 +206,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
-		recieve: function (cid, cb, ctx) {
-			if (cid) {
-				this.cid = cid;
-			}
+		recieve: function (cb, ctx) {
 			this.loading(true);
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
@@ -307,17 +328,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		scrollTo: function (ccid) {
-			var $element;
+			var $element,
+				highlight;
 
 			if (ccid === true) {
 				$element = this.$container;
+			} else if (ccid === 'unread') {
+				this.navFirst();
 			} else {
 				$element = this.$dom.find('.media[data-cid="' + ccid + '"]');
+				highlight = true;
 			}
 			if ($element && $element.length === 1) {
 				this.highlightOff();
 				$window.scrollTo($element, {duration: 400, onAfter: function () {
-					this.highlight(ccid);
+					if (highlight) {
+						this.highlight(ccid);
+					}
 				}.bind(this)});
 			}
 			return $element;
@@ -830,6 +857,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					return a.offset - b.offset;
 				});
 				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400});
+			}
+		},
+		navFirst: function () {
+			var $element = this.$dom.find('.isnew').first();
+
+			if ($element.length) {
+				$window.scrollTo($element.offset().top - P.window.h() / 2 + 26 >> 0, {duration: 400});
 			}
 		},
 		count_newHandler: function (val) {

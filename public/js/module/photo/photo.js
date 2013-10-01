@@ -4,7 +4,8 @@
  */
 define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
-	var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+	var $window = $(window),
+		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
 	return Cliche.extend({
 		jade: jade,
@@ -254,7 +255,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (hl) {
 				if (hl.indexOf('comment-') === 0) {
-					this.toComment = parseInt(hl.substr(8), 10) || undefined; //Навигация к конкретному комментарию
+					this.toComment = hl.substr(8) || undefined; //Навигация к конкретному комментарию
 				} else if (hl.indexOf('comments') === 0) {
 					this.toComment = true; //Навигация к секции комментариев
 				} else if (hl.indexOf('frag-') === 0) {
@@ -290,8 +291,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
 						this.getNearestRibbon(8, this.applyNearestRibbon, this);
 
-						this.commentsVM.setParams(cid, this.p.ccount(), this.p.ccount_new(), this.p.subscr(), this.p.nocomments());
-						this.commentsActivate(this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300));
+						this.commentsActivate({instant: this.toComment || this.p.frags().length > 0, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)});
 
 						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
 						if (this.binded) {
@@ -329,7 +329,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
-				this.commentsActivate();
+				this.commentsActivate({instant: true});
 			}
 		},
 
@@ -483,7 +483,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				.off('keyup').off('blur')
 				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
 				.on('blur', _.debounce(this.inputBlur.bind(this), 200));
-			this.checkInViewport(root, scrollDuration, function () {
+			this.inputCheckInViewport(root, scrollDuration, function () {
 				if (focus) {
 					input.focus();
 				}
@@ -523,16 +523,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				input.height('auto');
 			} else if (heightScroll > height) {
 				input.height(heightScroll);
-				this.checkInViewport(input);
+				this.inputCheckInViewport(input);
 			}
 		},
-		checkInViewport: function (input, scrollDuration, cb) {
+		inputCheckInViewport: function (input, scrollDuration, cb) {
 			var cBottom = input.offset().top + input.height() + 10,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
+				wTop = $window.scrollTop(),
+				wFold = $window.height() + wTop;
 
 			if (wFold < cBottom) {
-				$(window).scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
 					if (Utils.isType('function', cb)) {
 						cb.call(this);
 					}
@@ -592,7 +592,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		setApproveSuccess: function () {
 			this.p.fresh(false);
 			this.originData.fresh = false;
-			this.commentsActivate(100);
+			this.commentsActivate({checkTimeout: 100});
 			ga('send', 'event', 'photo', 'approve', 'photo approve success');
 		},
 		toggleDisable: function (data, event) {
@@ -962,17 +962,19 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		/**
 		 * COMMENTS
 		 */
-		commentsActivate: function (checkTimeout) {
+		commentsActivate: function (options) {
 			//Активируем, если фото не новое и не редактируется
 			if (!this.edit() && !this.p.fresh()) {
-				this.commentsVM.activate(checkTimeout);
+				this.commentsVM.activate(
+					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
+					options
+				);
+				//this.commentsVM.activate(checkTimeout);
 			}
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
-			var $wrap = this.$dom.find('.photoImgWrap');
-
-			$(window).scrollTo($wrap, {duration: duration || 400, onAfter: function () {
+			$window.scrollTo(this.$dom.find('.photoImgWrap'), {duration: duration || 400, onAfter: function () {
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx);
 				}
@@ -992,7 +994,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if ($element && $element.length === 1) {
 				this.highlightFragOff();
-				$(window).scrollTo($element, {duration: 400, onAfter: function () {
+				$window.scrollTo($element, {duration: 400, onAfter: function () {
 					this.highlightFrag(frag);
 				}.bind(this)});
 			}
