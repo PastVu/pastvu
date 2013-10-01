@@ -34,11 +34,11 @@ define(function () {
 					console.log('Disconnected');
 				});
 
-				s.once('connectData', recieveConnectDataFirst);
+				s.once('connectData', receiveConnectDataFirst);
 
-				function recieveConnectDataFirst(data) {
+				function receiveConnectDataFirst(data) {
 					if (!data || !Utils.isType('object', data.p)) {
-						console.log('First connectData recieve error!');
+						console.log('First connectData receive error!');
 						return;
 					}
 
@@ -55,15 +55,15 @@ define(function () {
 						updateCookie(data.cook);
 					}
 
-					s.on('connectData', recieveConnectDataFurther);
+					s.on('connectData', receiveConnectDataFurther);
 
 					onLoad(s);
 				}
 
 				//Обработчик получения данных после повторных коннектов
-				function recieveConnectDataFurther(data) {
+				function receiveConnectDataFurther(data) {
 					if (!data || !Utils.isType('object', data.p)) {
-						console.log('connectData recieve error!');
+						console.log('connectData receive error!');
 						return;
 					}
 

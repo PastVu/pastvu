@@ -903,7 +903,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (this.p.geo()) {
 				//Если у фото есть координата - берем ближайшие для неё
-				this.recieveNearestRibbon(this.p.geo(), limit, cb, ctx);
+				this.receiveNearestRibbon(this.p.geo(), limit, cb, ctx);
 			} else {
 				//Если у фото нет координат - берем ближайшие к центру карты
 				$.when(this.mapModulePromise).done(function () {
@@ -920,9 +920,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		nearestForCenter: function (limit, cb, ctx) {
 			var latlng = this.mapVM.map.getCenter();
-			this.recieveNearestRibbon([latlng.lat, latlng.lng], limit, cb, ctx);
+			this.receiveNearestRibbon([latlng.lat, latlng.lng], limit, cb, ctx);
 		},
-		recieveNearestRibbon: function (geo, limit, cb, ctx) {
+		receiveNearestRibbon: function (geo, limit, cb, ctx) {
 			socket.once('takeNearestPhotos', function (data) {
 				if (!data || data.error) {
 					console.error('While loading nearest ribbon: ' + (data && data.message || 'Error occurred'));
@@ -967,7 +967,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
 					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length > 0, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)}),
 					function () {
-						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания recieve
+						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
 						window.setTimeout(this.scrollToBind, 150);
 					},
 					this

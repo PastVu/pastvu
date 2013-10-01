@@ -102,7 +102,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			//если, например, вызвали эту активацию еще раз до попадания во вьюпорт
 			this.viewScrollOff();
 			window.clearTimeout(this.viewportCheckTimeout);
-			window.clearTimeout(this.recieveTimeout);
+			window.clearTimeout(this.receiveTimeout);
 			this.inViewport = false;
 
 			this.loading(true);
@@ -110,7 +110,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			if (this.showTree() || options && options.instant) {
 				//Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
-				this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), 100);
+				this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), 100);
 			} else {
 				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
 				this.inViewportCheckBind = _.debounce(this.inViewportCheck.bind(this, cb || null, ctx || null), 50);
@@ -127,7 +127,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			this.viewScrollOff();
 			window.clearTimeout(this.viewportCheckTimeout);
-			window.clearTimeout(this.recieveTimeout);
+			window.clearTimeout(this.receiveTimeout);
 			this.inViewport = false;
 
 			this.comments([]);
@@ -156,7 +156,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if (cTop < wFold) {
 					this.inViewport = true;
 					this.viewScrollOff();
-					this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
+					this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
 				} else {
 					//Если после первая проверка отрицательна, вешаем обработчик на скролл
 					this.viewScrollOn();
@@ -177,7 +177,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		loggedInHandler: function () {
 			// После логина добавляем себя в комментаторы
 			this.addMeToCommentsUsers();
-			this.recieve();
+			this.receive();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -201,16 +201,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
-		recieve: function (cb, ctx) {
+		receive: function (cb, ctx) {
 			this.loading(true);
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
-					console.error('No comments data recieved');
+					console.error('No comments data received');
 				} else {
 					if (data.error) {
 						console.error('While loading comments: ', data.message || 'Error occurred');
 					} else if (data.cid !== this.cid) {
-						console.info('Comments recieved for another ' + this.type + ' ' + data.cid);
+						console.info('Comments received for another ' + this.type + ' ' + data.cid);
 					} else {
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
@@ -761,7 +761,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 										if (Utils.isType('array', result.frags)) {
 											this.parentModule.fragReplace(result.frags);
 										}
-										this.recieve();
+										this.receive();
 									} else {
 										root.removeClass('hlRemove');
 									}
@@ -885,7 +885,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
 					$window.on('scroll', this.navTxtRecalcScroll);
 				} else {
-					//Если дерево еще скрыто, т.е. recieve еще не было, просто пишем сколько новых комментариев ниже
+					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
 					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(val);
 				}
 			} else if (!val && this.navTxtRecalcScroll) {

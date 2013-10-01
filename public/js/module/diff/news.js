@@ -195,7 +195,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 100 : (this.news.ccount() > 30 ? 750 : 400));
 		},
 		commentsRecieve: function () {
-			this.commentsVM.recieve(this.news.cid(), function () {
+			this.commentsVM.receive(this.news.cid(), function () {
 				this.commentsVM.loading(false);
 				this.commentsVM.showTree(true);
 				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);

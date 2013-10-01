@@ -138,7 +138,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!this.filter.nogeo) {
 						//В режиме ленты запрашиваем приватные и подмешиваем в текущие
 						this.loading(true);
-						this.recievePhotosPrivate(function (data) {
+						this.receivePhotosPrivate(function (data) {
 							this.loading(false);
 							if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
 								this.getNextPage();
@@ -277,7 +277,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		getPhotos: function (skip, limit, cb, ctx) {
 			this.loading(true);
-			this.recievePhotos(skip, limit, function (data) {
+			this.receivePhotos(skip, limit, function (data) {
 				if (!data || data.error) {
 					return;
 				}
@@ -306,7 +306,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 			}, this);
 		},
-		recievePhotos: function (skip, limit, cb, ctx) {
+		receivePhotos: function (skip, limit, cb, ctx) {
 			var reqName = this.u ? 'giveUserPhotos' : 'givePhotosPublic',
 				resName = this.u ? 'takeUserPhotos' : 'takePhotosPublic',
 				params = {skip: skip, limit: limit};
@@ -331,7 +331,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}.bind(this));
 			socket.emit(reqName, params);
 		},
-		recievePhotosPrivate: function (cb, ctx) {
+		receivePhotosPrivate: function (cb, ctx) {
 			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined};
 
 			socket.once('takeUserPhotosPrivate', function (data) {
