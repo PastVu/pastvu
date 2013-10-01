@@ -29,6 +29,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.loading = ko.observable(false);
 			this.showTree = ko.observable(false);
 			this.exe = ko.observable(false);
+			this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
 			this.touch = Browser.support.touch;
 
 			this.canManage = this.co.canAction = ko.computed(function () {
@@ -109,7 +110,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			if (this.showTree() || options && options.instant) {
 				//Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
-				this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), 150);
+				this.recieveTimeout = window.setTimeout(this.recieve.bind(this, cb || null, ctx || null), 100);
 			} else {
 				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
 				this.inViewportCheckBind = _.debounce(this.inViewportCheck.bind(this, cb || null, ctx || null), 50);
@@ -328,7 +329,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (ccid === true) {
 				$element = this.$container;
 			} else if (ccid === 'unread') {
-				this.navFirst();
+				this.navCheckBefore(0, true);
 			} else {
 				$element = this.$dom.find('.media[data-cid="' + ccid + '"]');
 				highlight = true;
@@ -818,18 +819,29 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			socket.emit('setNoComments', {cid: this.cid, type: this.type, val: !this.nocomments()});
 		},
 
-		navUp: function (vm, event) {
-			this.nav(-1, $(event.target.parentNode));
+		navUp: function () {
+			this.navCheckBefore(-1);
 		},
-		navDown: function (vm, event) {
-			if (!this.showTree()) {
-
+		navDown: function () {
+			this.navCheckBefore(1);
+		},
+		//Сначала проверяет, не навигируется ли сейчас и есть ли дерево, если нет - запросит
+		navCheckBefore: function (dir, onlyFirst) {
+			if (!this.navigating()) {
+				if (!this.showTree()) {
+					this.navigating(true);
+					this.activate(null, {instant: true}, function () {
+						this.navigating(false);
+						this.nav(dir, onlyFirst);
+					}, this);
+				} else {
+					this.nav(dir, onlyFirst);
+				}
 			}
-			this.nav(1, $(event.target.parentNode));
 		},
-		nav: function (dir, $navigator) {
-			var $navigatorHalf = $navigator.height() / 2 >> 0,
-				waterlineOffset = $navigator.offset().top + $navigatorHalf,
+		nav: function (dir, onlyFirst) {
+			var $navigator = this.$dom.find('.navigator'),
+				waterlineOffset,
 				elementsArr = [],
 
 				newComments = this.$dom[0].querySelectorAll('.isnew'),
@@ -837,12 +849,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				offset,
 				i;
 
-			for (i = 0; i < newComments.length; i++) {
-				$element = $(newComments[i]);
-				offset = $element.offset().top;
+			if (!newComments.length) {
+				return;
+			}
 
-				if ((dir < 0 && offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) || (dir > 0 && offset > waterlineOffset)) {
-					elementsArr.push({offset: offset, $element: $element});
+			if (onlyFirst) {
+				$element = $(newComments[0]);
+				elementsArr.push({offset: $element.offset().top, $element: $element});
+			} else {
+				waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0;
+				for (i = 0; i < newComments.length; i++) {
+					$element = $(newComments[i]);
+					offset = $element.offset().top;
+
+					if ((dir < 0 && offset < waterlineOffset && (offset + $element.height() < waterlineOffset)) || (dir > 0 && offset > waterlineOffset)) {
+						elementsArr.push({offset: offset, $element: $element});
+					}
 				}
 			}
 
@@ -850,14 +872,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400});
-			}
-		},
-		navFirst: function () {
-			var $element = this.$dom.find('.isnew').first();
-
-			if ($element.length) {
-				$window.scrollTo($element.offset().top - P.window.h() / 2 + 26 >> 0, {duration: 400});
+				this.navigating(true);
+				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
+					this.navigating(false);
+				}.bind(this)});
 			}
 		},
 		count_newHandler: function (val) {
@@ -880,8 +898,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var $navigator = this.$dom.find('.navigator'),
 				up = $navigator.find('.up')[0],
 				down = $navigator.find('.down')[0],
-				$navigatorHalf = $navigator.height() / 2 >> 0,
-				waterlineOffset = $navigator.offset().top + $navigatorHalf,
+				waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0,
 				upCount = 0,
 				downCount = 0,
 
