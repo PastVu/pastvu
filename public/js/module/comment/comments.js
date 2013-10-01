@@ -89,7 +89,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
-		activate: function (params, options, checkTimeout) {
+		activate: function (params, options) {
 			if (params) {
 				this.cid = params.cid;
 				this.count(params.count);
@@ -100,19 +100,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			this.loading(true);
 
-			if (this.showTree() || options && (options.instant || options.toComment)) {
-				var recieveBind,
-					toComment;
-				if (options.toComment) {
-					recieveBind = this.recieve.bind(this, function () {
-						if (options.toComment === true) {
+			if (this.showTree() || options && (options.instant || options.scrollTo)) {
+				var recieveBind;
 
-						}
+				if (options.scrollTo) {
+					recieveBind = this.recieve.bind(this, function () {
+						this.scrollTo(options.scrollTo);
 					}, this);
 				} else {
-					recieveBind = this.recieve.bind(this);
+					recieveBind = this.recieveBind;
 				}
-				this.commentsRecieveTimeout = window.setTimeout(recieveBind, 150);
+				this.recieveTimeout = window.setTimeout(recieveBind, 150);
 			} else if (!this.viewportCheckTimeout) {
 				//Если еще не проверяется на активацию, пытаемся их активировать с необходимой задержкой
 				this.viewScrollOn();
@@ -126,9 +124,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inViewport = false;
 			this.viewScrollOff();
 
-			window.clearTimeout(this.commentsRecieveTimeout);
+			window.clearTimeout(this.recieveTimeout);
 			window.clearTimeout(this.viewportCheckTimeout);
-			delete this.commentsRecieveTimeout;
+			delete this.recieveTimeout;
 			delete this.viewportCheckTimeout;
 
 			this.comments([]);
@@ -161,11 +159,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var cTop = this.$container.offset().top,
 				wFold = $window.height() + $window.scrollTop();
 
-			if (cTop < wFold) {
+			if (cTop < wFold && !this.recieveTimeout) {
 				this.inViewport = true;
 				this.viewScrollOff();
-				window.clearTimeout(this.commentsRecieveTimeout);
-				this.commentsRecieveTimeout = window.setTimeout(this.recieveBind, this.toComment ? 150 : (this.p.ccount() > 30 ? 750 : 400));
+				this.recieveTimeout = window.setTimeout(this.recieveBind, this.count() > 30 ? 750 : 400);
 			}
 		},
 
@@ -231,6 +228,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						}
 					}
 				}
+				window.clearTimeout(this.recieveTimeout);
+				delete this.recieveTimeout;
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);

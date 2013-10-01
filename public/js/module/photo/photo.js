@@ -291,8 +291,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
 						this.getNearestRibbon(8, this.applyNearestRibbon, this);
 
-						this.commentsActivate({instant: this.toComment || this.p.frags().length > 0, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)});
-
 						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
 						if (this.binded) {
 							$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
@@ -329,7 +327,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.commentsVM.hide();
 			} else {
 				$.when(this.mapModulePromise).done(this.mapEditOff.bind(this));
-				this.commentsActivate({instant: true});
+				this.commentsActivate();
 			}
 		},
 
@@ -967,10 +965,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (!this.edit() && !this.p.fresh()) {
 				this.commentsVM.activate(
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
-					options
+					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length > 0, scrollTo: this.toComment, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)})
 				);
-				//this.commentsVM.activate(checkTimeout);
 			}
+			this.toComment = undefined;
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
@@ -988,6 +986,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.highlightFragOff();
 				this.commentsVM.scrollTo(this.toComment);
 			}
+			this.toComment = this.toFrag = undefined;
 		},
 		scrollToFrag: function (frag) {
 			var $element = $('.photoFrag[data-cid="' + frag + '"]');
