@@ -134,41 +134,42 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		viewScrollOn: function () {
 			if (!this.viewportScrollHandling) {
-				$window.on('scroll', this.inViewportCheckBind);
-				this.viewportScrollHandling = true;
+				this.viewportScrollHandling = function () {
+					this.inViewportCheckBind();
+				}.bind(this);
+				$window.on('scroll', this.viewportScrollHandling);
 			}
 		},
 		viewScrollOff: function () {
-			if (this.viewportScrollHandling || this.inViewportCheckBind) {
-				$window.off('scroll', this.inViewportCheckBind);
+			if (this.viewportScrollHandling) {
+				$window.off('scroll', this.viewportScrollHandling);
 				delete this.viewportScrollHandling;
-				delete this.inViewportCheckBind;
 			}
+			delete this.inViewportCheckBind;
 		},
-		inViewportCheck: function (cb, ctx) {
+		inViewportCheck: function (cb, ctx, force) {
 			if (!this.inViewport) {
 				var cTop = this.$container.offset().top,
 					wFold = $window.height() + $window.scrollTop();
 
-				if (cTop < wFold) {
+				if (force || cTop < wFold) {
 					this.inViewport = true;
 					this.viewScrollOff();
-					this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
+					if (force && force.cb) {
+						this.receive(function () {
+							force.cb();
+							if (cb) {
+								cb.call(ctx);
+							}
+						});
+					} else {
+						this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
+					}
 				} else {
 					//Если после первая проверка отрицательна, вешаем обработчик на скролл
 					this.viewScrollOn();
 				}
 			}
-		},
-
-		setParams: function (cid, count, count_new, subscr, nocomments) {
-			this.cid = cid;
-			this.count(count);
-			this.count_new(count_new);
-			this.subscr(!!subscr);
-			this.nocomments(!!nocomments);
-
-			return this;
 		},
 
 		loggedInHandler: function () {
@@ -318,7 +319,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (ccid === true) {
 				$element = this.$container;
 			} else if (ccid === 'unread') {
-				this.navCheckBefore(0, true);
+				if (this.count_new()) {
+					this.navCheckBefore(0, true);
+				}
 			} else {
 				$element = this.$dom.find('.media[data-cid="' + ccid + '"]');
 				highlight = true;
@@ -819,10 +822,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.navigating()) {
 				if (!this.showTree()) {
 					this.navigating(true);
-					this.activate(null, {instant: true}, function () {
+					this.inViewportCheckBind({cb: function () {
 						this.navigating(false);
 						this.nav(dir, onlyFirst);
-					}, this);
+					}.bind(this)});
 				} else {
 					this.nav(dir, onlyFirst);
 				}
@@ -898,8 +901,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		navTxtRecalc: function () {
-			var $navigator = this.$dom.find('.navigator'),
-				up = $navigator.find('.up')[0],
+			var $navigator = this.$dom.find('.navigator');
+
+			if (!$navigator.length) {
+				return;
+			}
+
+			var up = $navigator.find('.up')[0],
 				down = $navigator.find('.down')[0],
 				waterlineOffset = $navigator.offset().top + $navigator.height() / 2 >> 0,
 				upCount = 0,
