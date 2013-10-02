@@ -67,7 +67,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
-			this.subscriptions.count_new = this.count_new.subscribe(this.count_newHandler, this);
+			this.subscriptions.count_new = this.count_new.subscribe(this.navCounterHandler, this);
+			this.subscriptions.showTree = this.showTree.subscribe(this.showTreeHandler, this);
 
 			if (!this.options.autoShowOff) {
 				this.activate();
@@ -80,10 +81,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		hide: function () {
 			if (!this.showing) {
 				return;
-			}
-			if (this.navTxtRecalcScroll) {
-				$window.off('scroll', this.navTxtRecalcScroll);
-				delete this.navTxtRecalcScroll;
 			}
 			this.deactivate();
 			globalVM.func.hideContainer(this.$container);
@@ -216,14 +213,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.users = _.assign(data.users, this.users);
 						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
 						this.showTree(true);
-
-						//Если есть новые комментарии, планируем пересчет значений навигатора по новым
-						if (this.count_new()) {
-							window.setTimeout(function () {
-								this.count_newHandler(this.count_new());
-								this.navTxtRecalc();
-							}.bind(this), 10 * data.comments.length); //Каждая строка отодвигает пересчет на 10мс, чтобы они успели отрисоваться
-						}
 					}
 				}
 				this.loading(false);
@@ -878,17 +867,31 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}.bind(this)});
 			}
 		},
-		count_newHandler: function (val) {
-			if (val && !this.navTxtRecalcScroll) {
+		showTreeHandler: function (val) {
+			this.navCounterHandler();
+		},
+		navCounterHandler: function () {
+			if (this.count_new()) {
 				if (this.showTree()) {
-					//Если дерево уже показывается, подписываемся на скролл
-					this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
-					$window.on('scroll', this.navTxtRecalcScroll);
+					this.navScrollCounterOn();
 				} else {
 					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(val);
+					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.count_new());
+					this.navScrollCounterOff();
 				}
-			} else if (!val && this.navTxtRecalcScroll) {
+			} else {
+				this.navScrollCounterOff();
+			}
+		},
+		navScrollCounterOn: function () {
+			if (!this.navTxtRecalcScroll && this.showTree()) {
+				//Если дерево уже показывается, подписываемся на скролл
+				this.navTxtRecalcScroll = _.debounce(this.navTxtRecalc.bind(this), 300);
+				$window.on('scroll', this.navTxtRecalcScroll);
+			}
+		},
+		navScrollCounterOff: function () {
+			if (this.navTxtRecalcScroll) {
 				$window.off('scroll', this.navTxtRecalcScroll);
 				delete this.navTxtRecalcScroll;
 			}
@@ -925,11 +928,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			down.classList[downCount ? 'add' : 'remove']('active');
 			down.querySelector('.navTxt').innerHTML = downCount ? downCount : '';
 			down[downCount ? 'setAttribute' : 'removeAttribute']('title', 'Следующий непрочитанный комментарий');
-		},
-
-		onAvatarError: function (data, event) {
-			event.target.setAttribute('src', '/img/caps/avatarth.png');
-			data = event = null;
 		}
 	});
 });

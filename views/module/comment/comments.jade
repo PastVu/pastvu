@@ -123,7 +123,7 @@
 	script(id="replyTpl", type="text/html")
 		li.media.commentAdd
 			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $parents[$data.level].auth.iAm.login()}")
-				img.media-object(data-bind="attr: {src: $parents[$data.level].auth.iAm.avatarth()}, event: {error: $parents[$data.level].onAvatarError}")
+				img.media-object(data-bind="attr: {src: $parents[$data.level].auth.iAm.avatarth()}")
 			.media-body(data-bind="template: 'replyBodyTpl'")
 	script(id="replyBodyTpl", type="text/html")
 		textarea.commentInput(wrap="soft", data-bind="event: {focus: $parents[$data.level].inputFocusBind}")
