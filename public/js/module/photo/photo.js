@@ -124,12 +124,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 
 			this.scrollTimeout = null;
-
-			this.$comments = this.$dom.find('.commentsContainer');
+			this.scrollToBind = this.scrollTo.bind(this);
 
 			this.descFocusBind = this.inputFocus.bind(this);
 			this.descLabelClickBind = this.inputLabelClick.bind(this);
-			this.scrollToBind = this.scrollTo.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragArea = null;
@@ -269,7 +267,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.commentsVM.deactivate();
 
 				storage.photo(cid, function (data) {
-					var editMode; // Если фото новое и пользователь - владелец, открываем его на редактирование
+					var editModeCurr = this.edit(),
+						editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
+
 					if (data) {
 						this.originData = data.origin;
 						this.p = Photo.vm(data.origin, this.p, true);
@@ -277,7 +277,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 						Utils.title.setTitle({title: this.p.title()});
 
-						editMode = this.can.edit() && this.IOwner() && this.p.fresh() && !this.p.ready();
+						editModeNew = this.can.edit() && this.IOwner() && this.p.fresh() && !this.p.ready();
 
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
@@ -296,7 +296,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
 						}
 
-						this.edit(editMode);
+						if (editModeCurr !== editModeNew) {
+							this.edit(editModeNew);
+						} else {
+							this.editHandler(editModeCurr);
+						}
+
 						if (!this.binded) {
 							this.makeBinding();
 						}
@@ -965,10 +970,17 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (!this.edit() && !this.p.fresh()) {
 				this.commentsVM.activate(
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
-					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length > 0, checkTimeout: this.toComment ? 100 : (this.p.ccount() > 30 ? 500 : 300)}),
+					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length, checkTimeout: this.p.ccount() > 30 ? 500 : 300}),
 					function () {
 						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
 						window.setTimeout(this.scrollToBind, 150);
+
+						//Если у нас есть новые комментарии, то нужно сбросить их количество,
+						//но только у оригинального ресурса, чтобы сейчас надпись новых отображалась,
+						//а при уходе и возврате уже нет
+						if (this.p.ccount_new()) {
+							this.originData.ccount_new = 0;
+						}
 					},
 					this
 				);

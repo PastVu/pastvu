@@ -23,17 +23,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.canEdit = ko.observable(this.auth.loggedIn() && this.auth.iAm.role() > 9);
 
-			this.commentsInViewport = false;
-
 			this.scrollTimeout = null;
-			this.commentsRecieveTimeout = null;
-			this.commentsViewportTimeout = null;
-
-			this.$comments = this.$dom.find('.commentsContainer');
-
-			this.commentsRecieveBind = this.commentsRecieve.bind(this);
-			this.commentsCheckInViewportBind = this.commentsCheckInViewport.bind(this);
-			this.viewScrollHandleBind = this.viewScrollHandle.bind(this);
 			this.scrollToBind = this.scrollTo.bind(this);
 
 			this.childs = [
@@ -88,34 +78,19 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (hl) {
 				if (hl.indexOf('comment-') === 0) {
-					//Навигация к конкретному комментарию
-					this.toComment = parseInt(hl.substr(8), 10) || undefined;
+					this.toComment = hl.substr(8) || undefined; //Навигация к конкретному комментарию
 				} else if (hl.indexOf('comments') === 0) {
-					//Навигация к секции комментариев
-					this.toComment = true;
+					this.toComment = true; //Навигация к секции комментариев
 				}
 			}
 
 			if (!this.news || (this.news && Utils.isType('function', this.news.cid) && this.news.cid() !== cid)) {
-				this.commentsVM.clear();
-				this.commentsInViewport = false;
-
-				this.viewScrollOff();
-				window.clearTimeout(this.commentsRecieveTimeout);
-				window.clearTimeout(this.commentsViewportTimeout);
-				this.commentsRecieveTimeout = null;
-				this.commentsViewportTimeout = null;
+				this.commentsVM.deactivate();
 
 				this.getNews(cid, function (data) {
 					Utils.title.setTitle({title: data.news.title});
 					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
-						this.commentsVM.setCid(cid);
-						this.commentsVM.count(this.news.ccount());
-						this.commentsVM.count_new(this.news.ccount_new());
-						this.commentsVM.nocomments(this.news.nocomments());
-						this.commentsVM.subscr(this.news.subscr());
-						this.commentsVM.show();
-						this.commentsActivate(this.toComment ? 100 : (this.news.ccount() > 30 ? 600 : 410));
+						this.commentsActivate();
 					}.bind(this)});
 
 					this.makeBinding();
@@ -158,54 +133,23 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		/**
 		 * COMMENTS
 		 */
-		viewScrollOn: function () {
-			$(window).on('scroll', this.viewScrollHandleBind);
-		},
-		viewScrollOff: function () {
-			$(window).off('scroll', this.viewScrollHandleBind);
-		},
-		viewScrollHandle: function () {
-			if (!this.commentsInViewport) {
-				this.commentsCheckInViewport();
-			}
-		},
-		commentsActivate: function (checkTimeout) {
-			if (!this.commentsViewportTimeout) {
-				this.viewScrollOn();
-				this.commentsVM.loading(true);
-				this.commentsViewportTimeout = window.setTimeout(this.commentsCheckInViewportBind, checkTimeout || 10);
-			}
-		},
-		commentsCheckInViewport: function () {
-			window.clearTimeout(this.commentsViewportTimeout);
-			this.commentsViewportTimeout = null;
-
-			var cTop = this.$comments.offset().top,
-				wTop = $(window).scrollTop(),
-				wFold = $(window).height() + wTop;
-
-			if (this.toComment || cTop < wFold) {
-				this.commentsInViewport = true;
-				this.viewScrollOff();
-				this.commentsGet();
-			}
-		},
-		commentsGet: function () {
-			window.clearTimeout(this.commentsRecieveTimeout);
-			this.commentsRecieveTimeout = window.setTimeout(this.commentsRecieveBind, this.toComment ? 100 : (this.news.ccount() > 30 ? 750 : 400));
-		},
-		commentsRecieve: function () {
-			this.commentsVM.receive(this.news.cid(), function () {
-				this.commentsVM.loading(false);
-				this.commentsVM.showTree(true);
-				this.scrollTimeout = window.setTimeout(this.scrollToBind, 100);
-			}, this);
+		commentsActivate: function (options) {
+			this.commentsVM.activate(
+				{cid: this.news.cid(), count: this.news.ccount(), count_new: this.news.ccount_new(), subscr: this.news.subscr(), nocomments: this.news.nocomments()},
+				_.defaults(options || {}, {instant: !!this.toComment, checkTimeout: this.news.ccount() > 30 ? 600 : 410}),
+				function () {
+					//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
+					window.setTimeout(this.scrollToBind, 150);
+				},
+				this
+			);
 		},
 
 		scrollTo: function () {
 			if (this.toComment) {
 				this.commentsVM.scrollTo(this.toComment);
 			}
+			this.toComment = undefined;
 		},
 
 		commentCountIncrement: function (delta) {
