@@ -30,7 +30,8 @@ var fs = require('fs'),
 	noticeTpl,
 
 	declension = {
-		comment: [' новый комментарий', ' новых комментария', ' новых комментариев']
+		comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
+		commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
 	},
 
 	sendFreq = 2000, //Частота шага конвейера отправки в ms
@@ -275,7 +276,7 @@ var notifierConveyer = (function () {
 				function () {
 					for (var i = usersNoty.length; i--;) {
 						userIds.push(usersNoty[i].user);
-						sendUserNotice(usersNoty[i].user, this.parallel());
+						sendUserNotice(usersNoty[i].user, usersNoty[i].lastnoty, this.parallel());
 					}
 				},
 				function (err) {
@@ -300,7 +301,7 @@ var notifierConveyer = (function () {
  * @param userId
  * @param cb
  */
-function sendUserNotice(userId, cb) {
+function sendUserNotice(userId, lastnoty, cb) {
 	var u = _session.getOnline(null, userId);
 	if (u) {
 		userProcess(null, u);
@@ -314,18 +315,18 @@ function sendUserNotice(userId, cb) {
 		}
 
 		//Ищем все готовые к уведомлению (noty: true) подписки пользователя
-		UserSubscr.find({user: userId, noty: true}, {_id: 1, obj: 1, type: 1}, {lean: true}, function (err, objs) {
+		UserSubscr.find({user: userId, noty: true}, {noty: 0}, {lean: true}, function (err, objs) {
 			if (err || !objs || !objs.length) {
 				return cb(err);
 			}
 
-			var notysId = [],//Массив _id уведомлений, который мы обработаем и сбросим в случае успеха отправки
+			var noticesId = [],//Массив _id уведомлений, который мы обработаем и сбросим в случае успеха отправки
 				objsIdNews = [],
 				objsIdPhotos = [],
 				i = objs.length;
 
 			while (i--) {
-				notysId.push(objs[i]._id);
+				noticesId.push(objs[i]._id);
 				if (objs[i].type === 'news') {
 					objsIdNews.push(objs[i].obj);
 				} else {
@@ -339,19 +340,19 @@ function sendUserNotice(userId, cb) {
 
 			function finish(err) {
 				//Сбрасываем флаг готовности к уведомлению (noty) у всех отправленных объектов
-				UserSubscr.update({_id: {$in: notysId}}, {$unset: {noty: 1}, $set: {ndate: new Date()}}, {multi: true}).exec();
+				UserSubscr.update({_id: {$in: noticesId}}, {$unset: {noty: 1}, $set: {ndate: new Date()}}, {multi: true}).exec();
 				cb(err);
 			}
 
 			step(
 				function () {
 					if (objsIdNews.length) {
-						News.find({_id: {$in: objsIdNews}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
+						News.find({_id: {$in: objsIdNews}, ccount: {$gt: 0}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
 					if (objsIdPhotos.length) {
-						Photo.find({_id: {$in: objsIdPhotos}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
+						Photo.find({_id: {$in: objsIdPhotos}, ccount: {$gt: 0}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
@@ -361,14 +362,14 @@ function sendUserNotice(userId, cb) {
 						return finish(err);
 					}
 
-					//Ищем кол-во новых комментариев для каждого объекта
+					//Ищем кол-во непрочитанных комментариев для каждого объекта
 					if (news.length) {
-						commentController.fillNewCommentsCount(news, user._id, 'news', this.parallel());
+						commentController.getNewCommentsBrief(news, lastnoty, user._id, 'news', this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
 					if (photos.length) {
-						commentController.fillNewCommentsCount(photos, user._id, null, this.parallel());
+						commentController.getNewCommentsBrief(photos, lastnoty, user._id, null, this.parallel());
 					} else {
 						this.parallel()(null, []);
 					}
@@ -379,22 +380,32 @@ function sendUserNotice(userId, cb) {
 					}
 					var newsResult = [],
 						photosResult = [],
+						obj,
 						i;
 
 					//Оставляем только те объекты, у который кол-во новых действительно есть.
 					//Если пользователь успел зайти в объект, например, в период выполнения этого шага коневйера,
 					//то новые обнулятся и уведомлять об этом объекте уже не нужно
 					for (i = news.length; i--;) {
-						if (news[i].ccount_new) {
-							news[i].ccount_new_format = news[i].ccount_new + Utils.format.wordEndOfNum(news[i].ccount_new, declension.comment);
-							newsResult.push(news[i]);
+						obj = news[i];
+						if (obj.brief && obj.brief.newest) {
+							newsResult.push(objProcess(obj));
 						}
 					}
 					for (i = photos.length; i--;) {
-						if (photos[i].ccount_new) {
-							photos[i].ccount_new_format = photos[i].ccount_new + Utils.format.wordEndOfNum(photos[i].ccount_new, declension.comment);
-							photosResult.push(photos[i]);
+						obj = photos[i];
+						if (obj.brief && obj.brief.newest) {
+							photosResult.push(objProcess(obj));
 						}
+					}
+
+					function objProcess(obj) {
+						obj.briefFormat = {};
+						obj.briefFormat.newest = obj.brief.newest + Utils.format.wordEndOfNum(obj.brief.newest, declension.comment);
+						if (obj.brief.newest !== obj.brief.unread) {
+							obj.briefFormat.unread = obj.brief.unread + Utils.format.wordEndOfNum(obj.brief.unread, declension.commentUnread);
+						}
+						return obj;
 					}
 
 					if (newsResult.length || photosResult.length) {

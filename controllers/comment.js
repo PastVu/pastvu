@@ -1007,6 +1007,98 @@ function fillNewCommentsCount(objs, userId, type, cb) {
 }
 
 
+/**
+ * Находим количество новых комментариев для формирования письма уведомления пользователю
+ * @param objs Массив _id объектов
+ * @param newestFromDate Время, с которого считается кол-во новых
+ * @param userId _id пользователя
+ * @param type Тип объекта
+ * @param cb
+ */
+function getNewCommentsBrief(objs, newestFromDate, userId, type, cb) {
+	var commentModel = type === 'news' ? CommentN : Comment,
+		objIdsWithCounts = [],
+		objIds = [],
+		i = objs.length;
+
+	while (i) {
+		objIds.push(objs[--i]._id);
+	}
+
+	step(
+		function () {
+			UserCommentsView.find({obj: {$in: objIds}, user: userId}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
+		},
+		function (err, views) {
+			if (err) {
+				return cb(err);
+			}
+			var i,
+				objId,
+				stamp,
+				stampsHash = {};
+
+			//Собираем хеш {idPhoto: stamp}
+			for (i = views.length; i--;) {
+				stampsHash[views[i].obj] = views[i].stamp;
+			}
+
+			//Запоняем массив id объектов теми у которых действительно есть последние посещения,
+			//и по каждому выбираем комментарии со времени stamp
+			for (i = objIds.length; i--;) {
+				objId = objIds[i];
+				stamp = stampsHash[objId];
+				if (stamp !== undefined) {
+					objIdsWithCounts.push(objId);
+					commentModel
+						.find({obj: objId, stamp: {$gt: stamp}, user: {$ne: userId}}, {_id: 0, user: 1, stamp: 1}, {lean: true, sort: {stamp: 1}})
+						.populate({path: 'user', select: {_id: 0, login: 1, disp: 1}})
+						.exec(this.parallel());
+				}
+			}
+			if (!objIdsWithCounts.length) {
+				this();
+			}
+		},
+		function (err) {
+			if (err) {
+				return cb(err);
+			}
+			var i,
+				j,
+				obj,
+				comment,
+				comments,
+				briefsHash = {};
+
+			for (i = 0; i < objIdsWithCounts.length; i++) {
+				comments = arguments[i + 1];
+				obj = {unread: comments.length, newest: 0, users: {}};
+
+				for (j = 0; j < comments.length; j++) {
+					comment = comments[j];
+					if (!newestFromDate || comment.stamp > newestFromDate) {
+						obj.newest++;
+					}
+					if (obj.users[comment.user.login] === undefined) {
+						obj.users[comment.user.login] = comment.user.disp;
+					}
+				}
+				briefsHash[objIdsWithCounts[i]] = obj;
+				console.log(briefsHash);
+			}
+
+			//Присваиваем каждому объекту brief
+			for (i = objs.length; i--;) {
+				obj = objs[i];
+				obj.brief = briefsHash[obj._id];
+			}
+			cb(null, objs);
+		}
+	);
+}
+
+
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
 	appEnv = app.get('appEnv');
@@ -1074,3 +1166,4 @@ module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
 module.exports.getNewCommentsCount = getNewCommentsCount;
 module.exports.fillNewCommentsCount = fillNewCommentsCount;
+module.exports.getNewCommentsBrief = getNewCommentsBrief;

@@ -1,16 +1,22 @@
+mixin noticeLi(arr, path)
+	each val in arr
+		li
+			a(href=hosturl + path + val.cid + '?hl=comment-unread', target='_blank')= val.title
+			| : #{val.briefFormat.newest}
+			if val.briefFormat.unread
+				|  (всего #{val.briefFormat.unread})
+
 include head
 - var hosturl = addr.protocol + '://' + addr.host
-p На момент отправки данного уведомления в подписанных вами материалах есть следующее количество непрочитанных комментариев:
+p На момент отправки данного уведомления в подписанных вами темах было добавлено следующее количество комментариев:
 if news.length
 	p(style="margin-bottom: 2px;")
 		strong Новости:
-	each val in news
-		li <a href='#{hosturl + '/news/' + val.cid}' target='_blank'>#{val.title}</a>: #{val.ccount_new_format}
+	+noticeLi(news, '/news/')
 if photos.length
 	p(style="margin-bottom: 2px;")
 		strong Фотографии:
-	each val in photos
-		li <a href='#{hosturl + '/p/' + val.cid}' target='_blank'>#{val.title}</a>: #{val.ccount_new_format}
+	+noticeLi(photos, '/p/')
 p
 	| Управлять подписанными материалами вы можете на странице подписок: <a href='#{hosturl + '/u/' + user.login + '/subscriptions'}' target='_blank'>#{addr.host + '/u/' + user.login + '/subscriptions'}</a>
 	br
