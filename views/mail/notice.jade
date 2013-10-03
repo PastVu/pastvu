@@ -1,10 +1,25 @@
 mixin noticeLi(arr, path)
 	each val in arr
-		li
+		- usersLogin = Object.keys(val.brief.users)
+		li(style="margin-left: 10px;")
 			a(href=hosturl + path + val.cid + '?hl=comment-unread', target='_blank')= val.title
-			| : #{val.briefFormat.newest}
-			if val.briefFormat.unread
-				|  (всего #{val.briefFormat.unread})
+			div(style="margin-left: 13px;")
+				= val.briefFormat.newest
+				if val.briefFormat.unread
+					= ' (всего ' + val.briefFormat.unread + ')'
+			if usersLogin.length > 1
+				div(style="margin-left: 13px; margin-bottom: 4px;")
+					| Авторы:
+					each login, index in usersLogin
+						if (index < 6)
+							if (index > 0)
+								| ,
+							= ' ' + val.brief.users[login]
+					if usersLogin.length > 6
+						= ' и др.'
+			if usersLogin.length === 1
+				div(style="margin-left: 13px; margin-bottom: 4px;")
+					| Автор: #{val.brief.users[usersLogin[0]]}
 
 include head
 - var hosturl = addr.protocol + '://' + addr.host

@@ -44,7 +44,7 @@ module.exports.send = function send(options, callback) {
 		});
 	}
 
-	console.log('Send');
+	//console.log('Send');
 
 	transport.sendMail(smtpobject, function (err) {
 			if (callback) {

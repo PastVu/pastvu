@@ -299,6 +299,7 @@ var notifierConveyer = (function () {
 /**
  * Формируем письмо для пользователя из готовых уведомлений (noty: true) и отправляем его
  * @param userId
+ * @param lastnoty Время прошлого уведомления пользователя для подсчета кол-ва новых
  * @param cb
  */
 function sendUserNotice(userId, lastnoty, cb) {
@@ -441,7 +442,7 @@ function sendUserNotice(userId, lastnoty, cb) {
 	}
 }
 function sortNotice(a, b) {
-	return a.ccount_new < b.ccount_new ? 1 : (a.ccount_new > b.ccount_new ? -1 : 0);
+	return a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
 }
 
 var subscrPerPage = 24;

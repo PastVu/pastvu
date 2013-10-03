@@ -1079,13 +1079,10 @@ function getNewCommentsBrief(objs, newestFromDate, userId, type, cb) {
 					comment = comments[j];
 					if (!newestFromDate || comment.stamp > newestFromDate) {
 						obj.newest++;
-					}
-					if (obj.users[comment.user.login] === undefined) {
 						obj.users[comment.user.login] = comment.user.disp;
 					}
 				}
 				briefsHash[objIdsWithCounts[i]] = obj;
-				console.log(briefsHash);
 			}
 
 			//Присваиваем каждому объекту brief
