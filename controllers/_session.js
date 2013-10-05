@@ -18,9 +18,9 @@ var Session,
 
 	browserSuportFrom = {
 		'IE': 9,
-		'Firefox': 7,
+		'Firefox': 10,
 		'Opera': 12,
-		'Chrome': 13,
+		'Chrome': 14,
 		'Android': 3,
 		'Safari': 5,
 		'Mobile Safari': 5

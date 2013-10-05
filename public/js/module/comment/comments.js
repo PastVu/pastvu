@@ -367,14 +367,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		//Комментарий на комментарий
 		reply: function (data, event) {
 			var cid,
+				$target = $(event.target),
 				$media,
 				$root;
 
 			if (data.level < this.commentNestingMax) {
-				$media = $(event.target).closest('li.media');
+				$media = $target.closest('li.media');
 				cid = data.cid;
 			} else if (data.level === this.commentNestingMax) {
-				$media = $($(event.target).parents('li.media')[1]);
+				$media = $($target.parents('li.media')[1]);
 				cid = Number($media.attr('data-cid')) || 0;
 			}
 			this.commentEditingCid(0);
