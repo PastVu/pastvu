@@ -6,6 +6,7 @@ var auth = require('./auth.js'),
 	User,
 	Photo,
 	Comment,
+	CommentN,
 	News,
 	UserSubscr,
 	_ = require('lodash'),
@@ -246,13 +247,32 @@ var giveStats = (function () {
 
 				Photo.count({adate: {$gt: dayStart}}, this.parallel());
 				Photo.count({adate: {$gt: weekStart}}, this.parallel());
+
+				Comment.count(this.parallel());
+				CommentN.count(this.parallel());
+				Comment.count({stamp: {$gt: dayStart}}, this.parallel());
+				CommentN.count({stamp: {$gt: dayStart}}, this.parallel());
+				Comment.count({stamp: {$gt: weekStart}}, this.parallel());
+				CommentN.count({stamp: {$gt: weekStart}}, this.parallel());
 			},
-			function (err, pallCount, userCount, pdayCount, pweekCount) {
+			function (err, pallCount, userCount, pdayCount, pweekCount, callCount, cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount) {
 				if (err) {
 					return handler(err);
 				}
 				//console.log(Date.now() - st);
-				handler(null, {all: {pallCount: pallCount || 0, userCount: userCount || 0, photoYear: photoYear, pdayCount: pdayCount || 0, pweekCount: pweekCount || 0}});
+				handler(
+					null,
+					{all: {
+						pallCount: pallCount || 0,
+						userCount: userCount || 0,
+						photoYear: photoYear,
+						pdayCount: pdayCount || 0,
+						pweekCount: pweekCount || 0,
+						callCount: (callCount || 0) + (cnallCount || 0),
+						cdayCount: (cdayCount || 0) + (cndayCount || 0),
+						cweekCount: (cweekCount || 0) + (cnweekCount || 0)
+					}}
+				);
 			}
 		);
 	}, ms('5m'));
@@ -400,61 +420,61 @@ function giveNewsPublic(iAm, data, cb) {
 	}
 
 	News.findOne({cid: data.cid}, {_id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1}, {lean: true}, function (err, news) {
-			if (err || !news) {
-				return cb(err);
-			}
+		if (err || !news) {
+			return cb(err);
+		}
 
-			step (
-				function () {
-					var user = _session.getOnline(null, news.user),
-						paralellUser = this.parallel();
+		step(
+			function () {
+				var user = _session.getOnline(null, news.user),
+					paralellUser = this.parallel();
 
-					if (user) {
-						news.user = {
-							login: user.login, avatar: user.avatar, disp: user.disp, online: true
-						};
-						paralellUser(null, news);
-					} else {
-						User.findOne({_id: news.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, {lean: true}, function (err, user) {
-							if (err) {
-								return cb(err);
-							}
-							news.user = user;
-							paralellUser(err, news);
-						});
-					}
+				if (user) {
+					news.user = {
+						login: user.login, avatar: user.avatar, disp: user.disp, online: true
+					};
+					paralellUser(null, news);
+				} else {
+					User.findOne({_id: news.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, {lean: true}, function (err, user) {
+						if (err) {
+							return cb(err);
+						}
+						news.user = user;
+						paralellUser(err, news);
+					});
+				}
 
-					if (iAm) {
-						UserSubscr.findOne({obj: news._id, user: iAm._id}, {_id: 0}, this.parallel());
-					}
-				},
-				function (err, news, subscr) {
-					if (err) {
-						return cb(err);
-					}
+				if (iAm) {
+					UserSubscr.findOne({obj: news._id, user: iAm._id}, {_id: 0}, this.parallel());
+				}
+			},
+			function (err, news, subscr) {
+				if (err) {
+					return cb(err);
+				}
 
-					if (subscr) {
-						news.subscr = true;
-					}
+				if (subscr) {
+					news.subscr = true;
+				}
 
-					if (!iAm || !news.ccount) {
+				if (!iAm || !news.ccount) {
+					delete news._id;
+					cb(null, {news: news});
+				} else {
+					commentController.getNewCommentsCount([news._id], iAm._id, 'news', function (err, countsHash) {
+						if (err) {
+							return cb(err);
+						}
+						if (countsHash[news._id]) {
+							news.ccount_new = countsHash[news._id];
+						}
 						delete news._id;
 						cb(null, {news: news});
-					} else {
-						commentController.getNewCommentsCount([news._id], iAm._id, 'news', function (err, countsHash) {
-							if (err) {
-								return cb(err);
-							}
-							if (countsHash[news._id])  {
-								news.ccount_new = countsHash[news._id];
-							}
-							delete news._id;
-							cb(null, {news: news});
-						});
-					}
+					});
 				}
-			);
-		});
+			}
+		);
+	});
 }
 
 /**
@@ -489,6 +509,7 @@ module.exports.loadController = function (app, db, io) {
 	User = db.model('User');
 	Photo = db.model('Photo');
 	Comment = db.model('Comment');
+	CommentN = db.model('CommentN');
 	News = db.model('News');
 	UserSubscr = db.model('UserSubscr');
 
@@ -502,7 +523,7 @@ module.exports.loadController = function (app, db, io) {
 				giveIndexNewsAnonym(returnIndexNews);
 			}
 		});
-		function returnIndexNews (err, news) {
+		function returnIndexNews(err, news) {
 			socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
 		}
 

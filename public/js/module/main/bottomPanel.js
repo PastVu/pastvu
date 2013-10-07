@@ -79,7 +79,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					userCount: 0,
 					photoYear: {},
 					pdayCount: 0,
-					pweekCount: 0
+					pweekCount: 0,
+					callCount: 0,
+					cdayCount: 0,
+					cweekCount: 0
 				},
 				common: {
 					onall: 0,
