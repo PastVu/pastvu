@@ -6,7 +6,6 @@ var start = Date.now(),
 	path = require('path'),
 	sys = require('util'),
 	step = require('step'),
-	File = require('file-utils').File,
 	requirejs = require('requirejs'),
 	less = require('less'),
 	Utils = require('./commons/Utils.js'),
@@ -117,16 +116,15 @@ var start = Date.now(),
 step(
 	//Ищем less-файлы для компиляции и создаем плоский массив
 	function searchLess() {
-		var lessFolder = new File('./' + requireBuildConfig.appDir + 'style'),
-			_this = this;
+		var _this = this;
 
-		lessFolder.list(function (e, files) {
+		Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bootstrap', 'fonts'], function (e, files) {
 			if (e) {
 				console.dir(e);
 				process.exit(1);
 			}
-			lessFiles = Utils.filesRecursive(files, '', ['bootstrap', 'fonts'], function getOnlyLess(element) {
-				return element.indexOf('.less') > -1;
+			lessFiles = Utils.filesListProcess(files, requireBuildConfig.appDir + 'style/', '', function getOnlyLess(element) {
+				return ~element.indexOf('.less');
 			});
 			_this();
 		});
@@ -153,21 +151,21 @@ step(
 
 	//Удаляем less из собранной директории
 	function removeLessFromBuild() {
-		var styleFolder = new File(requireBuildConfig.dir + '/style'),
-			_this = this;
+		var _this = this;
 
 		console.dir('Removing Less from build');
-		styleFolder.list(function (e, files) {
+		Utils.walkParallel(path.normalize(requireBuildConfig.dir + '/style'), function (e, files) {
 			if (e) {
 				console.dir(e);
 				process.exit(1);
 			}
-			lessFiles = Utils.filesRecursive(files, requireBuildConfig.dir + '/style/', null, function getOnlyLess(element) {
-				return element.indexOf('.less') > -1;
+			lessFiles = Utils.filesListProcess(files, null, '', function getOnlyLess(element) {
+				return ~element.indexOf('.less');
 			});
 			lessFiles.forEach(function (item) {
-				(new File(item)).remove(_this.parallel());
+				fs.unlinkSync(item);
 			});
+			_this();
 		});
 	},
 

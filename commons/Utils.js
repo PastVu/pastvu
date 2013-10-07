@@ -1,4 +1,5 @@
 var fs = require('fs'),
+	path = require('path'),
 	Utils = new Object(null),
 	_ = require('lodash'),
 	_s = require('underscore.string');
@@ -26,7 +27,8 @@ Utils.getObjectPropertyLength = function (obj) {
 	return Object.keys(obj).length;
 };
 
-Utils.dummyFn = function () {};
+Utils.dummyFn = function () {
+};
 
 Utils.randomString = (function () {
 	'use strict';
@@ -193,27 +195,6 @@ Utils.copyFile = function (source, target, cb) {
 			cbCalled = true;
 		}
 	}
-};
-
-Utils.filesRecursive = function filesRecursive(files, prefix, excludeFolders, filter) {
-	'use strict';
-	var result = [];
-
-	Object.keys(files).forEach(function (element, index, array) {
-		if (Utils.isType('object', files[element])) {
-			if (!Utils.isType('array', excludeFolders) || (Utils.isType('array', excludeFolders) && excludeFolders.indexOf(element) === -1)) {
-				Array.prototype.push.apply(result, filesRecursive(files[element], prefix + element + '/', excludeFolders, filter));
-			}
-		} else {
-			result.push(prefix + element);
-		}
-	});
-
-	if (filter) {
-		result = result.filter(filter);
-	}
-
-	return result;
 };
 
 //Экстракт данных из курсора MongoDB-native
@@ -426,36 +407,75 @@ Utils.format = (function () {
 	};
 }());
 
+Utils.filesListProcess = function filesRecursive(files, dirCutOff, prefixAdd, filter) {
+	'use strict';
+
+	var result = [],
+		file,
+		dirCutOffLen = dirCutOff && dirCutOff.length,
+		i = files.length;
+
+	while (i--) {
+		file = files[i];
+
+		if (dirCutOffLen && file.indexOf(dirCutOff) === 0) {
+			file = file.substr(dirCutOffLen);
+		}
+		if (prefixAdd) {
+			file = prefixAdd + file;
+		}
+		result.unshift(file);
+	}
+
+	if (filter) {
+		result = result.filter(filter);
+	}
+
+	return result;
+};
+
 /**
  * List on files in folder recursive (in parallel mode)
  * @param dir Folder to search files
- * @param done Callback function with params (err, resultArr)
  */
-Utils.walkParallel = function (dir, done) {
-	var results = [];
+Utils.walkParallel = function (dir/*, noDir, excludeFolders, done*/) {
+	var done = arguments[arguments.length - 1],
+		noDir = arguments.length > 2 && arguments[1],
+		excludeFolders = arguments.length > 3 && arguments[2],
+		checkDirsExcluding = Array.isArray(excludeFolders) && excludeFolders.length,
+		results = [];
+
 	fs.readdir(dir, function (err, list) {
 		if (err) {
 			return done(err);
 		}
-		var pending = list.length;
+		var pending = list.length,
+			checkEnd = function () {
+				if (!--pending) {
+					done(null, results);
+				}
+			};
+
 		if (!pending) {
 			return done(null, results);
 		}
+
 		list.forEach(function (file) {
-			file = dir + '/' + file;
-			fs.stat(file, function (err, stat) {
+			var fileFull = path.join(dir, file);
+
+			fs.stat(fileFull, function (err, stat) {
 				if (stat && stat.isDirectory()) {
-					Utils.walkParallel(file, function (err, res) {
-						results = results.concat(res);
-						if (!--pending) {
-							done(null, results);
-						}
-					});
-				} else {
-					results.push(file);
-					if (!--pending) {
-						done(null, results);
+					if (checkDirsExcluding && ~excludeFolders.indexOf(file)) {
+						checkEnd();
+					} else {
+						Utils.walkParallel(fileFull, noDir, excludeFolders, function (err, res) {
+							results = results.concat(res);
+							checkEnd();
+						});
 					}
+				} else {
+					results.push((noDir ? file : fileFull).split(path.sep).join('/'));
+					checkEnd();
 				}
 			});
 		});
@@ -479,7 +499,7 @@ Utils.walkSerial = function (dir, done) {
 			if (!file) {
 				return done(null, results);
 			}
-			file = dir + '/' + file;
+			file = path.join(dir, file);
 			fs.stat(file, function (err, stat) {
 				if (stat && stat.isDirectory()) {
 					Utils.walkSerial(file, function (err, res) {
