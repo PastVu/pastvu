@@ -315,7 +315,7 @@ define([
 	 * Обрабатывает входящие данные по зуму
 	 */
 	MarkerManager.prototype.processIncomingDataZoom = function (data, boundChanged, localWork, localCluster) {
-		var photos = {},
+		var photos = {}, //новый хэш фотографий
 			divIcon,
 			curr,
 			existing,
@@ -348,12 +348,10 @@ define([
 				// Если оно новое - создаем его объект и маркер
 				if (!boundChanged || this.calcBound.contains(curr.geo)) {
 					curr.sfile = P.preaddr + Photo.picFormats.m + curr.file;
-					divIcon = L.divIcon(
-						{
-							className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
-							iconSize: this.sizePoint
-						}
-					);
+					divIcon = L.divIcon({
+						className: 'photoIcon ' + 'y' + curr.year + ' ' + curr.dir,
+						iconSize: this.sizePoint
+					});
 					curr.marker =
 						L.marker(curr.geo, {icon: divIcon, riseOnHover: true, data: {cid: curr.cid, type: 'photo', obj: curr}})
 							.on('click', this.clickMarker, this)
@@ -365,13 +363,8 @@ define([
 		}
 
 		// В текущем объекте остались только фото на удаление
-		for (i in this.mapObjects.photos) {
-			if (this.mapObjects.photos[i] !== undefined) {
-				this.layerPhotos.removeLayer(this.mapObjects.photos[i].marker.clearAllEventListeners());
-			}
-		}
+		this.clearObjHash(this.mapObjects.photos, this.layerPhotos);
 		this.mapObjects.photos = photos;
-
 
 		// Создаем маркеры кластеров
 		if (!localWork) {
@@ -521,7 +514,9 @@ define([
 			cluster,
 			clusters = {},
 			clustCoordId,
-			clustCoordIdS = [];
+			clustCoordIdS = [],
+
+			precisionDivider = 1e+6;
 
 		i = data.length;
 		while (i) {
@@ -529,11 +524,13 @@ define([
 			geoPhoto = photo.geo;
 			geoPhotoCorrection = [geoPhoto[0] > 0 ? 1 : 0, geoPhoto[1] < 0 ? -1 : 0];
 
-			geo = Utils.geo.geoToPrecision([clusterH * ((geoPhoto[0] / clusterH >> 0) + geoPhotoCorrection[0]), clusterW * ((geoPhoto[1] / clusterW >> 0) + geoPhotoCorrection[1])]);
+			geo = [~~(clusterH * (~~(geoPhoto[0] / clusterH) + geoPhotoCorrection[0]) * precisionDivider) / precisionDivider, ~~(clusterW * (~~(geoPhoto[1] / clusterW) + geoPhotoCorrection[1]) * precisionDivider) / precisionDivider];
 			clustCoordId = geo[0] + '@' + geo[1];
 			cluster = clusters[clustCoordId];
 			if (cluster === undefined) {
-				clusters[clustCoordId] = {cid: clustCoordId, geo: geo, lats: geo[0] - clusterHHalf, lngs: geo[1] + clusterWHalf, year: 0, c: 1, photos: []};
+				//При создании объекта в year надо присвоить минимум значащую цифру,
+				//иначе v8(>=3.19) видимо не выделяет память и при добавлении очередного photo.year крэшится через несколько итераций
+				clusters[clustCoordId] = {cid: clustCoordId, geo: geo, lats: geo[0] - clusterHHalf, lngs: geo[1] + clusterWHalf, year: 1, c: 1, photos: []};
 				clustCoordIdS.push(clustCoordId);
 				cluster = clusters[clustCoordId];
 			}
@@ -551,12 +548,13 @@ define([
 		while (i) {
 			clustCoordId = clustCoordIdS[--i];
 			cluster = clusters[clustCoordId];
+
 			if (cluster.c > 2) {
 				if (withGravity) {
-					cluster.geo = [Utils.math.toPrecision(cluster.lats / cluster.c), Utils.math.toPrecision(cluster.lngs / cluster.c)];
+					cluster.geo = [~~(cluster.lats / cluster.c * precisionDivider) / precisionDivider, ~~(cluster.lngs / cluster.c * precisionDivider) / precisionDivider];
 				}
 				cluster.c -= 1;
-				cluster.year = (cluster.year / cluster.c) >> 0;
+				cluster.year = --cluster.year / cluster.c >> 0; //Из суммы лет надо вычесть единицу, т.к. прибавили её при создании кластера для v8
 				cluster.lats = undefined;
 				cluster.lngs = undefined;
 				result.clusters.push(cluster);
@@ -668,13 +666,36 @@ define([
 	};
 
 	MarkerManager.prototype.clearClusters = function () {
+		this.clearObjHash(this.mapObjects.clusters, this.layerClusters);
 		this.layerClusters.clearLayers();
 		this.mapObjects.clusters = {};
 	};
 	MarkerManager.prototype.clearPhotos = function () {
+		this.clearObjHash(this.mapObjects.photos, this.layerPhotos);
 		this.layerPhotos.clearLayers();
 		this.mapObjects.photos = {};
 		this.photosAll = [];
+	};
+
+	/**
+	 * Очищает объекты хэша с удалением маркера с карты и чисткой критических для памяти свойств
+	 * @param objHash Хэш объектов
+	 * @param layer Слой, с которого удаляются маркеры
+	 * @param onlyOutBouned Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
+	 */
+	MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBouned) {
+		var obj,
+			i;
+		for (i in objHash) {
+			obj = objHash[i];
+			if (obj !== undefined && (!onlyOutBouned || !onlyOutBouned.contains(obj.geo))) {
+				layer.removeLayer(obj.marker.clearAllEventListeners());
+				delete obj.marker.options.data.obj;
+				delete obj.marker.options.data;
+				delete obj.marker;
+				delete objHash[i];
+			}
+		}
 	};
 
 	/**
@@ -780,26 +801,10 @@ define([
 		}
 
 		// Удаляем невходящие маркеры фотографий
-		arr = Object.keys(this.mapObjects.photos);
-		i = arr.length;
-		while (i) {
-			curr = this.mapObjects.photos[arr[--i]];
-			if (curr !== undefined && !bound.contains(curr.geo)) {
-				this.layerPhotos.removeLayer(curr.marker.clearAllEventListeners());
-				this.mapObjects.photos[curr.cid] = undefined;
-			}
-		}
+		this.clearObjHash(this.mapObjects.photos, this.layerPhotos, bound);
 
 		// Удаляем невходящие маркеры кластеров
-		arr = Object.keys(this.mapObjects.clusters);
-		i = arr.length;
-		while (i) {
-			curr = this.mapObjects.clusters[arr[--i]];
-			if (curr !== undefined && !bound.contains(curr.geo)) {
-				this.layerClusters.removeLayer(curr.marker.clearAllEventListeners());
-				this.mapObjects.clusters[curr.cid] = undefined;
-			}
-		}
+		this.clearObjHash(this.mapObjects.clusters, this.layerClusters, bound);
 
 		i = curr = arr = null;
 	};
@@ -878,7 +883,7 @@ define([
 			photo = photos[i];
 			if (this.subdl > 1) {
 				photo.sfile = P.preaddrs[i % this.subdl] + Photo.picFormats.m + photo.file;
-				photoPosterFile = small ? photo.sfile :  P.preaddrs[i % this.subdl] + Photo.picFormats.h + photo.file;
+				photoPosterFile = small ? photo.sfile : P.preaddrs[i % this.subdl] + Photo.picFormats.h + photo.file;
 				photoPrevFile = P.preaddrs[i % this.subdl] + Photo.picFormats.x + photo.file;
 			} else {
 				photo.sfile = P.preaddr + Photo.picFormats.m + photo.file;
