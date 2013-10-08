@@ -432,7 +432,7 @@ define([
 
 					system.selected(true);
 					type.selected(true);
-					this.layerActiveDesc(system.desc + ': ' + type.desc);
+					this.layerActiveDesc(this.embedded ? system.desc : system.desc + ': ' + type.desc);
 					this.layerActive({sys: system, type: type});
 
 					if (system.deps && !type.obj) {

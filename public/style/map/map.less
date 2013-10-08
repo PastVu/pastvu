@@ -585,7 +585,8 @@
 		position: absolute;
 		top: 5px;
 		right: 5px;
-		height: 22px;
+		height: 23px;
+		text-align: right;
 		overflow: hidden;
 		.user-select(none);
 		.transition(height 0.7s ease-out);
@@ -605,9 +606,19 @@
 			white-space: nowrap;
 			font-weight: bold;
 			font-size: 16px;
-			line-height: 22px;
+			line-height: 21px;
 			text-align: right;
 			cursor: pointer;
+		}
+		.currentLayerTxt {
+			position: relative;
+			display: inline-block;
+			vertical-align: middle;
+		}
+		.layerImg {
+			width: 16px;
+			height: 16px;
+			margin: 0 0 1px 4px;
 		}
 
 		.h_separator {
@@ -628,20 +639,22 @@
 		.layerSystems {
 			display: inline-block;
 			position: relative;
-			width: 104px;
+			width: 64px;
 			opacity: 0;
 			overflow: hidden;
 			white-space: nowrap;
+			text-align: right;
 			.transition(~'width 0.7s ease-in-out, opacity 0.7s ease-in-out');
 
 			.layerSystem {
-				display: inline-block;
-				vertical-align: top;
-				width: 100px;
-				padding: 0 0 2px 0;
-				border: 1px solid transparent;
-				margin: 1px;
 				position: relative;
+				display: inline-block;
+				width: 100px;
+				margin: 1px;
+				padding: 0 0 2px 0;
+				cursor: default;
+				vertical-align: top;
+				border: 1px solid transparent;
 			}
 
 			.layerHead {
