@@ -1142,7 +1142,7 @@ function getBounds(data, cb) {
 		for (var i = photos.length; i--;) {
 			photos[i].geo.reverse();
 		}
-		cb({photos: photos, clusters: clusters, startAt: data.startAt});
+		cb({photos: photos, clusters: clusters, startAt: data.startAt, z: data.z});
 	}
 }
 
