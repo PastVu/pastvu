@@ -116,7 +116,7 @@ Utils.linkifyUrlString = function (text, target, className) {
 	matches = _.uniq(text.match(replacePattern));
 	for (i = 0; i < matches.length; i++) {
 		url = decodeURI(matches[i]);
-		text = text.replace(matches[i], '<a href="' + url + '"' + target + className + '>' + url + '<\/a>');
+		text = text.replace(matches[i], '<a href="' + url + '" rel="nofollow"' + target + className + '>' + url + '<\/a>');
 	}
 
 	//Starting with "www." (without // before it, or it'd re-link the ones done above).
@@ -125,7 +125,7 @@ Utils.linkifyUrlString = function (text, target, className) {
 	for (i = 0; i < matches.length; i++) {
 		matches[i] = _s.trim(matches[i]); //Так как в результат match попадут и переносы и пробелы (^|[^\/]), то надо их удалить
 		url = decodeURI(matches[i]);
-		text = text.replace(matches[i], '<a href="http:\/\/' + url + '"' + target + className + '>' + url + '<\/a>');
+		text = text.replace(matches[i], '<a href="http:\/\/' + url + '" rel="nofollow"' + target + className + '>' + url + '<\/a>');
 	}
 
 	return text;
