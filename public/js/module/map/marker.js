@@ -210,9 +210,13 @@ define([
 	 * При изменении масштаба отсрачиваем обновление данных, т.к. масштаб может меняться многократно за короткий промежуток времени
 	 */
 	MarkerManager.prototype.onMapMoveEnd = function () {
-		if (this.zoomChanged && this.currZoom !== this.map.getZoom()) {
+		if (this.zoomChanged) {
 			if (this.currZoom >= this.firstClientWorkZoom && this.map.getZoom() >= this.firstClientWorkZoom) {
-				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 50);
+				//Если установленный и новый зумы находятся в масштабах локальной работы, то вызываем пересчет быстрее
+				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 100);
+			} else if (this.currZoom === this.map.getZoom()) {
+				//Если установленный и новый зум равны, значит вернулись на тотже масштаб с которого начали зум, и надо полностью обновить данные
+				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoom.bind(this, true), 400);
 			} else {
 				this.refreshByZoomTimeout = window.setTimeout(this.refreshDataByZoomBind, 400);
 			}
@@ -234,9 +238,9 @@ define([
 		var newZoom = this.map.getZoom(),
 			willLocalWork = newZoom >= this.firstClientWorkZoom,
 			crossingLocalWorkZoom = (this.currZoom < this.firstClientWorkZoom && willLocalWork) || (this.currZoom >= this.firstClientWorkZoom && !willLocalWork),
-			direction = newZoom > this.currZoom ? 'down' : 'up',
+			direction = newZoom - this.currZoom,
 			bound = L.latLngBounds(this.calcBound.getSouthWest(), this.calcBound.getNorthEast()),
-			bounds,
+			bounds, //Новые баунды для запроса
 			pollServer = true,
 			curr,
 			i;
@@ -245,7 +249,17 @@ define([
 
 		if (!init && willLocalWork && !crossingLocalWorkZoom) {
 			// Если на клиенте уже есть все фотографии для данного зума
-			if (direction === 'down') {
+			if (!direction) {
+				//Если зум не изменился, то считаем дополнительные баунды, если они есть, запрашиваем их
+				//а если их нет (т.е. баунд тоже не изменился), то просто пересчитываем локальные кластеры
+				bounds = this.boundSubtraction(bound, this.calcBoundPrev);
+				if (bounds.length) {
+					this.cropByBound(null, true);
+				} else {
+					pollServer = false;
+					this.processIncomingDataZoom(null, false, true, this.clientClustering);
+				}
+			} else if (direction > 0) {
 				// Если новый зум больше предыдущего, то просто отбрасываем объекты, не попадающие в новый баунд
 				// и пересчитываем кластеры
 				pollServer = false;
@@ -267,7 +281,6 @@ define([
 		}
 
 		if (pollServer) {
-
 			if (this.visBound) {
 				//Визуализация баундов, по которым будет отправлен запрос к серверу
 				i = 4;
@@ -681,14 +694,15 @@ define([
 	 * Очищает объекты хэша с удалением маркера с карты и чисткой критических для памяти свойств
 	 * @param objHash Хэш объектов
 	 * @param layer Слой, с которого удаляются маркеры
-	 * @param onlyOutBouned Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
+	 * @param onlyOutBound Баунд, при выходе за который надо удалять. Если не указан, удаляется всё из хэша
 	 */
-	MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBouned) {
+	MarkerManager.prototype.clearObjHash = function (objHash, layer, onlyOutBound) {
 		var obj,
 			i;
+
 		for (i in objHash) {
 			obj = objHash[i];
-			if (obj !== undefined && (!onlyOutBouned || !onlyOutBouned.contains(obj.geo))) {
+			if (obj !== undefined && (!onlyOutBound || !onlyOutBound.contains(obj.geo))) {
 				layer.removeLayer(obj.marker.clearAllEventListeners());
 				delete obj.marker.options.data.obj;
 				delete obj.marker.options.data;
@@ -802,11 +816,8 @@ define([
 
 		// Удаляем невходящие маркеры фотографий
 		this.clearObjHash(this.mapObjects.photos, this.layerPhotos, bound);
-
 		// Удаляем невходящие маркеры кластеров
 		this.clearObjHash(this.mapObjects.clusters, this.layerClusters, bound);
-
-		i = curr = arr = null;
 	};
 
 	/**
