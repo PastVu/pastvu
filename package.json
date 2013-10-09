@@ -1,6 +1,6 @@
 {
 	"name": "pastvu",
-	"version": "0.9.4",
+	"version": "0.9.5-dev",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/pastvu",
 	"keywords": ["oldmos", "pastvu"],
