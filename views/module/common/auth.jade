@@ -80,8 +80,9 @@
 			div(data-bind="text: msg()")
 
 	script(id="recallRequestForMeTpl", type="text/html")
-		.head Восстановление пароля
-		| Отправить запрос на изменение пароля без ввода текущего?
+		.head Запрос нового пароля
+		div(style="text-align: center; max-width: 350px; margin-bottom: 10px;")
+			| На почту придет письмо со ссылкой на установку нового пароля без ввода текущего. Отправить запрос?
 		//-Send request to change your password without entering current?
 		button.btn-strict.formAction(type="submit") Отправить
 		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена

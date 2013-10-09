@@ -20,11 +20,11 @@
 						dt Мой пароль
 						dd
 							//ko if: itsMe()
-							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
+							button.btn-strict.btn-strict-small(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
 								span Сменить
 							// /ko
-							button.btn-strict.btn-strict-small(type="button", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
-								span Восстановить
+							button.btn-strict.btn-strict-small(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
+								span Запросить смену
 					dl.dl-horizontal
 						dt Показывать в обсуждениях реальное имя
 						dd
