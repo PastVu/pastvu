@@ -1,0 +1,23 @@
+doctype 5
+html
+	include ../includes/head_meta
+		link(rel="stylesheet", href="/style/leaflet.css")
+		style(type="text/css")
+			html, body {
+				height: 100%;
+				margin: 0;
+			}
+			#map {
+				height: 100%;
+			}
+		script(src="/js/lib/jquery/jquery-2.0.3.js")
+		script(src="/js/lib/leaflet/leaflet_0.6.4.js")
+		script.
+			$(document).ready(function () {
+				var map = new L.map('map', {center: [55.751667, 37.617778], zoom: 8, minZoom: 3, maxZoom: 16, trackResize: true});
+				L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+					maxZoom: 16
+				}).addTo(map);
+			});
+	body
+		#map
