@@ -13,12 +13,20 @@ html
 			}
 
 		script(src="/js/lib/jquery/jquery-2.0.3.js")
+		script(src="/js/lib/doT.js")
 		script(src="/js/lib/leaflet/leaflet_0.6.4.js")
 		script.
 			$(document).ready(function () {
-				var map = new L.map('map', {center: [55.751667, 37.617778], zoom: 8, minZoom: 3, maxZoom: 16, trackResize: true}),
+				var map = new L.map('map', {center: [55.751667, 37.617778], zoom: 7, minZoom: 3, maxZoom: 16, trackResize: true}),
 					pointLayer = L.layerGroup(),
-					marker;
+					$request,
+					marker,
+					popupTpl = doT.template(
+						"<table border='0', cellspacing='5', cellpadding='0'><tbody>" +
+						"<tr><td style='width:60px; vertical-align: top;'><strong>Short</strong>:</td><td style='width:170px;'>{{=it.sc}};<br>{{=it.s1}};<br>{{=it.s2}}</td></tr>" +
+						"<tr><td style='width:60px; vertical-align: top;'><strong>Long</strong>:</td><td style='width:170px;'>{{=it.lc}};<br>{{=it.l1}};<br>{{=it.l2}}</td></tr>" +
+						"</tbody></table>: "
+					);
 
 				L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
 					maxZoom: 16
@@ -31,6 +39,7 @@ html
 							var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
 
 							if (marker) {
+								marker.closePopup();
 								marker.setLatLng(geo);
 							} else {
 								markerCreate(geo);
@@ -40,17 +49,75 @@ html
 				});
 
 				function markerCreate (geo) {
-					marker = L.marker(geo, {draggable: true, title: 'Точка для проверки региона', icon: new L.Icon.Default()})
+					marker = L.marker(geo, {draggable: true, title: 'Точка для проверки региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], popupAnchor: [0, -36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
+						.on('dragstart', function () {
+							marker.closePopup();
+						})
 						.on('dragend', function () {
 							var latlng = this.getLatLng();
 							updateGeoRegion([to6Precision(latlng.lat), to6Precision(latlng.lng)]);
 						})
+						.bindPopup(L.popup({maxWidth: 500, minWidth: 200, closeButton: false, offset: new L.Point(0, 60), autoPanPadding: new L.Point(5, 5)}))
 						.addTo(pointLayer);
 				}
 				function to6Precision(number) {
 					return ~~(number * 1e+6) / 1e+6;
 				}
 				function updateGeoRegion(geo) {
+					if ($request) {
+						$request.abort();
+						$request = null;
+					}
+					$request = $.ajax(
+							'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
+							{
+								crossDomain: true,
+								dataType: 'json',
+								cache: false,
+								error: function (jqXHR, textStatus, errorThrown) {
+									console.warn(textStatus, errorThrown);
+									marker.setPopupContent(textStatus).openPopup();
+								},
+								success: function (result, textStatus, jqXHR) {
+									if (result && Array.isArray(result.results)) {
+										var txt,
+											level2 = {},
+											level1 = {},
+											country = {},
+											admLevel1,
+											i = result.results.length;
+
+										if (result.status === 'OK') {
+											txt = 'Strange. Can\'t find administration levels';
+
+											while (i--) {
+												if (Array.isArray(result.results[i].types)) {
+													if (~result.results[i].types.indexOf('country')) {
+														country = result.results[i].address_components[0];
+													}
+													if (~result.results[i].types.indexOf('administrative_area_level_1')) {
+														level1 = result.results[i].address_components[0];
+													}
+													if (~result.results[i].types.indexOf('administrative_area_level_2')) {
+														level2 = result.results[i].address_components[0];
+													}
+												}
+											}
+											txt = popupTpl({
+												s2: level2.short_name, s1: level1.short_name, sc: country.short_name,
+												l2: level2.long_name, l1: level1.long_name, lc: country.long_name
+											});
+										} else {
+											txt = result.status;
+										}
+
+										marker.setPopupContent(txt).openPopup();
+									}
+									console.dir(result);
+								}
+							}
+						)
+						.always(function() {$request = null;});
 					console.log(geo);
 				}
 			});
