@@ -2,22 +2,57 @@ doctype 5
 html
 	include ../includes/head_meta
 		link(rel="stylesheet", href="/style/leaflet.css")
-		style(type="text/css")
+		style.
 			html, body {
 				height: 100%;
 				margin: 0;
 			}
+
 			#map {
 				height: 100%;
 			}
+
 		script(src="/js/lib/jquery/jquery-2.0.3.js")
 		script(src="/js/lib/leaflet/leaflet_0.6.4.js")
 		script.
 			$(document).ready(function () {
-				var map = new L.map('map', {center: [55.751667, 37.617778], zoom: 8, minZoom: 3, maxZoom: 16, trackResize: true});
+				var map = new L.map('map', {center: [55.751667, 37.617778], zoom: 8, minZoom: 3, maxZoom: 16, trackResize: true}),
+					pointLayer = L.layerGroup(),
+					marker;
+
 				L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
 					maxZoom: 16
 				}).addTo(map);
+
+				map.whenReady(function () {
+					map
+						.addLayer(pointLayer)
+						.on('click', function (e) {
+							var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
+
+							if (marker) {
+								marker.setLatLng(geo);
+							} else {
+								markerCreate(geo);
+							}
+							updateGeoRegion(geo);
+						});
+				});
+
+				function markerCreate (geo) {
+					marker = L.marker(geo, {draggable: true, title: 'Точка для проверки региона', icon: new L.Icon.Default()})
+						.on('dragend', function () {
+							var latlng = this.getLatLng();
+							updateGeoRegion([to6Precision(latlng.lat), to6Precision(latlng.lng)]);
+						})
+						.addTo(pointLayer);
+				}
+				function to6Precision(number) {
+					return ~~(number * 1e+6) / 1e+6;
+				}
+				function updateGeoRegion(geo) {
+					console.log(geo);
+				}
 			});
 	body
 		#map
