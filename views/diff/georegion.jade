@@ -23,9 +23,10 @@ html
 					marker,
 					popupTpl = doT.template(
 						"<table border='0', cellspacing='5', cellpadding='0'><tbody>" +
-						"<tr><td style='width:60px; vertical-align: top;'><strong>Short</strong>:</td><td style='width:170px;'>{{=it.sc}};<br>{{=it.s1}};<br>{{=it.s2}}</td></tr>" +
-						"<tr><td style='width:60px; vertical-align: top;'><strong>Long</strong>:</td><td style='width:170px;'>{{=it.lc}};<br>{{=it.l1}};<br>{{=it.l2}}</td></tr>" +
-						"</tbody></table>: "
+						"<tr><td colspan='2' style='text-align: center;'>{{=it.geo}}<hr></td></tr>" +
+						"<tr><td style='vertical-align: top;'><i>Short:</i></td><td style='width:190px;'><strong>{{=it.sc}};</strong><br>{{=it.s1}};<br><small>{{=it.s2}}</small></td></tr>" +
+						"<tr><td style='vertical-align: top;'><i>Long:</i></td><td style='width:190px;'><strong>{{=it.lc}};</strong><br>{{=it.l1}};<br><small>{{=it.l2}}</small></td></tr>" +
+						"</tbody></table>"
 					);
 
 				L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
@@ -76,7 +77,7 @@ html
 								cache: false,
 								error: function (jqXHR, textStatus, errorThrown) {
 									console.warn(textStatus, errorThrown);
-									marker.setPopupContent(textStatus).openPopup();
+									marker.setPopupContent('<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + textStatus + '</div>').openPopup();
 								},
 								success: function (result, textStatus, jqXHR) {
 									if (result && Array.isArray(result.results)) {
@@ -88,7 +89,7 @@ html
 											i = result.results.length;
 
 										if (result.status === 'OK') {
-											txt = 'Strange. Can\'t find administration levels';
+											txt = '<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + 'Strange. Can\'t find administration levels' + '</div>';
 
 											while (i--) {
 												if (Array.isArray(result.results[i].types)) {
@@ -104,11 +105,12 @@ html
 												}
 											}
 											txt = popupTpl({
+												geo: geo[0] + ' ; ' + geo[1],
 												s2: level2.short_name, s1: level1.short_name, sc: country.short_name,
 												l2: level2.long_name, l1: level1.long_name, lc: country.long_name
 											});
 										} else {
-											txt = result.status;
+											txt = '<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + result.status + '</div>';
 										}
 
 										marker.setPopupContent(txt).openPopup();
@@ -118,7 +120,6 @@ html
 							}
 						)
 						.always(function() {$request = null;});
-					console.log(geo);
 				}
 			});
 	body
