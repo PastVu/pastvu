@@ -1,8 +1,11 @@
+'use strict';
+
 module.exports = function (grunt) {
 	global.appVar = {};
 
 	var path = require('path'),
 		Utils = require('./commons/Utils.js'),
+		land = grunt.option('land') || 'prod', //Например, --land test
 		upperDir = path.normalize(path.resolve('../') + '/'),
 		targetDir = path.normalize(upperDir + 'appBuild/'),
 		appHash = Utils.randomString(5);
@@ -67,7 +70,7 @@ module.exports = function (grunt) {
 			main: {
 				files: [
 					{expand: true, src: ['basepatch/**', 'commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
-					{expand: true, src: ['views/app.jade', 'views/includes/**', 'views/mail/**', 'views/status/**'], dest: targetDir},
+					{expand: true, src: ['views/app.jade', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'], dest: targetDir},
 					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
 					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', './README'], dest: targetDir}
 				]
@@ -88,7 +91,7 @@ module.exports = function (grunt) {
 			compileTpls: {
 				options: {
 					data: {
-						appLand: 'prod', appHash: appHash, pretty: false
+						appLand: land, appHash: appHash, pretty: false
 					}
 				},
 				files: [
@@ -100,7 +103,7 @@ module.exports = function (grunt) {
 					data: function (dest, src) {
 						var name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
 						grunt.log.write('appName: ' + name + '. ');
-						return {appName: name, appLand: 'prod', appHash: appHash, pretty: false};
+						return {appName: name, appLand: land, appHash: appHash, pretty: false};
 					}
 				},
 				files: [
@@ -157,5 +160,6 @@ module.exports = function (grunt) {
 
 		grunt.file.write(targetDir + 'build.json', buildString);
 		grunt.log.writeln('Build json: ' + buildString);
+		grunt.log.write('appLand: ' + land + '. ');
 	});
 };
