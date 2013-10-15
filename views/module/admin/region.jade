@@ -15,7 +15,7 @@
 				label.checkbox
 					input.thr(type="radio", id="level_radios_1", name="level_radios", value="1", data-bind="checked: region.level")
 					| &nbsp;Субъект
-				//ko if: region.level
+				//ko if: Number(region.level())
 				input(type='text', data-bind="value: region.parent, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
 				// /ko
 		.control-group

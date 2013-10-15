@@ -59,7 +59,7 @@ define([
 			if (this.map) {
 				return;
 			}
-			var options = {center: [36, -25], zoom: 3, minZoom: 2, maxZoom: 15, trackResize: true};
+			var options = {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: true};
 
 			if (this.layerSaved) {
 				options.center = this.layerSaved.getBounds().getCenter();
@@ -136,14 +136,20 @@ define([
 		save: function () {
 			var saveData = ko_mapping.toJS(this.region);
 
-			if (!saveData.title_en) {
-				window.noty({text: 'Нужно заполнить английское название', type: 'error', layout: 'center', timeout: 2000, force: true});
-				return false;
-			}
 			if (!saveData.geo) {
 				window.noty({text: 'GeoJSON обязателен!', type: 'error', layout: 'center', timeout: 2000, force: true});
 				return false;
 			}
+			if (saveData.geo === this.geoStringOrigin) {
+				delete saveData.geo;
+			}
+
+			if (!saveData.title_en) {
+				window.noty({text: 'Нужно заполнить английское название', type: 'error', layout: 'center', timeout: 2000, force: true});
+				return false;
+			}
+
+			saveData.level = Number(saveData.level);
 			if (saveData.level) {
 				saveData.parent = Number(saveData.parent);
 				if (!saveData.parent) {

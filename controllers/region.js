@@ -19,8 +19,20 @@ function saveRegion(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !data.geo || !data.title_en) {
+	if (!Utils.isType('object', data) || !data.title_en) {
 		return cb({message: 'Bad params', error: true});
+	}
+
+	data.level = Number(data.level);
+	if (isNaN(data.level) || [0, 1].indexOf(data.level) === -1) {
+		return cb({message: 'Bad level', error: true});
+	}
+	if (data.level) {
+		//Если уровень больше 0, т.е. ниже страны, необходим номер родительского региона
+		data.parent = Number(data.parent);
+		if (!data.parent || data.parent < 0) {
+			return cb({message: 'Level lower than country requires parent region', error: true});
+		}
 	}
 
 	if (typeof data.geo === 'string') {
@@ -29,6 +41,11 @@ function saveRegion(socket, data, cb) {
 		} catch (err) {
 			return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
 		}
+		if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
+			return cb({message: 'It\'s not GeoJSON geometry!'});
+		}
+	} else if (data.geo) {
+		delete data.geo;
 	}
 
 	if (!data.cid) {
@@ -48,17 +65,20 @@ function saveRegion(socket, data, cb) {
 	}
 
 	function fill(region) {
-		region.geo = data.geo;
-		region.markModified('geo');
+		if (data.geo) {
+			//Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
+			region.geo = data.geo;
+			region.markModified('geo');
+		}
 
+		region.level = data.level;
 		if (data.level) {
-			region.level = data.level;
 			region.parent = data.parent;
 		} else if (region.parent) {
 			region.parent = undefined;
 		}
 		region.title_en = String(data.title_en);
-		region.title_local = data.title_local ? undefined : String(data.title_local);
+		region.title_local = data.title_local ? String(data.title_local) : undefined;
 
 		region.save(function (err, region) {
 			if (err || !region) {
