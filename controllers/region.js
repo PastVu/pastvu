@@ -84,6 +84,12 @@ function saveRegion(socket, data, cb) {
 			if (err || !region) {
 				return cb({message: err && err.message || 'Save error', error: true});
 			}
+			region = region.toObject();
+			if (data.geo) {
+				region.geo = JSON.stringify(region.geo);
+			} else {
+				delete region.geo;
+			}
 			cb({region: region});
 		});
 	}

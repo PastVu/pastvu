@@ -11,13 +11,13 @@ define([
 	'use strict';
 
 	var regionDef = {
-			cid: 0,
-			parent: undefined,
-			geo: '',
-			level: 0,
-			title_en: '',
-			title_local: ''
-		};
+		cid: 0,
+		parent: undefined,
+		geo: '',
+		level: 0,
+		title_en: '',
+		title_local: ''
+	};
 
 	return Cliche.extend({
 		jade: jade,
@@ -55,7 +55,7 @@ define([
 			this.hide();
 			destroy.call(this);
 		},
-		createMap: function ()  {
+		createMap: function () {
 			if (this.map) {
 				return;
 			}
@@ -80,7 +80,7 @@ define([
 			} else {
 				this.getOneRegion(cid, function (data, error) {
 					if (!error) {
-						this.fillData();
+						this.drawData();
 					}
 				}, this);
 			}
@@ -91,7 +91,7 @@ define([
 			}
 			ko_mapping.fromJS(regionDef, this.region);
 		},
-		fillData: function () {
+		drawData: function () {
 			if (this.layerSaved) {
 				this.map.removeLayer(this.layerSaved);
 			}
@@ -109,22 +109,30 @@ define([
 			this.map.fitBounds(this.layerSaved.getBounds());
 			this.layerSaved.addTo(this.map);
 		},
+		fillData: function (region) {
+			ko_mapping.fromJS(region, this.region);
+
+			if (region.geo) {
+				this.geoStringOrigin = region.geo;
+				try {
+					this.geoObj = JSON.parse(region.geo);
+				} catch (err) {
+					window.noty({text: 'GeoJSON client parse error!', type: 'error', layout: 'center', timeout: 3000, force: true});
+					this.geoStringOrigin = null;
+					this.geoObj = null;
+					return false;
+				}
+			}
+			return true;
+		},
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {
 				var error = !data || !!data.error || !data.region;
 
 				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					ko_mapping.fromJS(data.region, this.region);
-					this.geoStringOrigin = data.region.geo;
-					try {
-						this.geoObj = JSON.parse(data.region.geo);
-					} catch (err) {
-						window.noty({text: 'GeoJSON client parse error!', type: 'error', layout: 'center', timeout: 3000, force: true});
-						this.geoObj = null;
-						error = true;
-					}
+					error = !this.fillData(data.region);
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -162,11 +170,17 @@ define([
 
 			socket.once('saveRegionResult', function (data) {
 				if (!data || data.error || !data.region) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
+
 					if (this.createMode()) {
+						//Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
 						globalVM.router.navigateToUrl('/admin/region/' + data.region.cid);
+					} else if (data.region.geo) {
+						//Если отредактирован geojson региона, но заполняем заного его переменные и перерисовываем
+						this.fillData(data.region);
+						this.drawData();
 					}
 				}
 			}.bind(this));
