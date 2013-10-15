@@ -44,7 +44,8 @@ require([
 			routes: [
 				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
-				{route: "photo(/)(:section)(/)", handler: "photo"}
+				{route: "photo(/)(:section)(/)", handler: "photo"},
+				{route: "region(/)(:param1)(/)", handler: "region"}
 			],
 			handlers: {
 				index: function (section, param1, param2, qparams) {
@@ -109,6 +110,19 @@ require([
 					if (section === 'conveyer') {
 						modules.push({module: 'm/admin/conveyer', container: '#bodyContainer'});
 					}
+					renderer(modules);
+				},
+				region: function (param1, qparams) {
+					var auth = globalVM.repository['m/common/auth'],
+						modules = [];
+
+					if (!auth.loggedIn()) {
+						location.href = '/';
+						return;
+					}
+					this.params(_.assign({section: 'region', cid: param1, _handler: 'region'}, qparams));
+
+					modules.push({module: 'm/admin/region', container: '#bodyContainer'});
 					renderer(modules);
 				}
 			}

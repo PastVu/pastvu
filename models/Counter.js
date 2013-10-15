@@ -1,3 +1,5 @@
+'use strict';
+
 var mongoose = require('mongoose');
 
 var CounterSchema = new mongoose.Schema({

@@ -20,6 +20,9 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 				],
 				photo: [
 					{name: 'Conveyer', href: "/admin/photo/conveyer", section: 'conveyer'}
+				],
+				region: [
+					{name: 'Regions', href: "/admin/region", section: 'region'}
 				]
 			};
 

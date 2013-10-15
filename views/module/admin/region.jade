@@ -1,4 +1,4 @@
 .adminRegion(data-bind="with: repository[M!M]")
 	h4(data-bind="text: createMode() ? 'Создание региона' : 'Редактирование региона'")
 	.map
-	textarea.geojson
+	textarea.geojson(wrap="soft", data-bind="value: region.geo, valueUpdate: 'keyup'")
