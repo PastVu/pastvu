@@ -19,44 +19,54 @@ function saveRegion(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data)) {
+	if (!Utils.isType('object', data) || !data.geo || !data.title_en) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Region.findOne({cid: data.cid}, function (err, region) {
-		if (err) {
-			return cb({message: err.message, error: true});
+	if (typeof data.geo === 'string') {
+		try {
+			data.geo = JSON.parse(data.geo);
+		} catch (err) {
+			return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
 		}
-		if (!region) {
-			step(
-				function () {
-					Counter.increment('region', this);
-				},
-				function (err, count) {
-					if (err || !count) {
-						return finish(err || {message: 'Increment comment counter error'});
-					}
+	}
 
-					var region = new Region({
-						cid: count.next,
-						geo: data.geo
-					});
-					region.save(finish);
-				}
-			);
-		} else {
-			region.geo = data.geo;
-			region.save(finish);
+	if (!data.cid) {
+		Counter.increment('region', function (err, count) {
+			if (err || !count) {
+				return cb({message: err && err.message || 'Increment comment counter error', error: true});
+			}
+			fill(new Region({cid: count.next}));
+		});
+	} else {
+		Region.findOne({cid: data.cid}, function (err, region) {
+			if (err || !region) {
+				return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
+			}
+			fill(region);
+		});
+	}
+
+	function fill(region) {
+		region.geo = data.geo;
+		region.markModified('geo');
+
+		if (data.level) {
+			region.level = data.level;
+			region.parent = data.parent;
+		} else if (region.parent) {
+			region.parent = undefined;
 		}
+		region.title_en = String(data.title_en);
+		region.title_local = data.title_local ? undefined : String(data.title_local);
 
-
-		function finish(err, region) {
+		region.save(function (err, region) {
 			if (err || !region) {
 				return cb({message: err && err.message || 'Save error', error: true});
 			}
 			cb({region: region});
-		}
-	});
+		});
+	}
 }
 
 function getRegion(socket, data, cb) {

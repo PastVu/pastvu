@@ -240,6 +240,7 @@ async.waterfall([
 		require('./controllers/subscr.js').loadController(app, db, io);
 		require('./controllers/comment.js').loadController(app, db, io);
 		require('./controllers/profile.js').loadController(app, db, io);
+		require('./controllers/region.js').loadController(app, db, io);
 		require('./controllers/admin.js').loadController(app, db, io);
 		if (land === 'dev') {
 			require('./controllers/tpl.js').loadController(app);

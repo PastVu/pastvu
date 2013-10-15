@@ -1,4 +1,32 @@
 .adminRegion(data-bind="with: repository[M!M]")
 	h4(data-bind="text: createMode() ? 'Создание региона' : 'Редактирование региона'")
+	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
+		.control-group
+			label.control-label Название
+			.controls
+				input(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
+				input(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(LOCAL) Местное", autocorrect="off", autocapitalize="off")
+		.control-group
+			label.control-label Уровень
+			.controls
+				label.checkbox
+					input.thr(type="radio", id="level_radios_0", name="level_radios", value="0", data-bind="checked: region.level")
+					| &nbsp;Страна
+				label.checkbox
+					input.thr(type="radio", id="level_radios_1", name="level_radios", value="1", data-bind="checked: region.level")
+					| &nbsp;Субъект
+				//ko if: region.level
+				input(type='text', data-bind="value: region.parent, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+				// /ko
+		.control-group
+			label.control-label
+				| Геометрия
+				br
+				| GeoJSON
+			.controls
+				textarea.geojson(wrap="soft", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
+		.control-group
+			button.btn-strict.btn-strict-success(type="submit")
+				i.icon-ok.icon-white
+				span Сохранить
 	.map
-	textarea.geojson(wrap="soft", data-bind="value: region.geo, valueUpdate: 'keyup'")
