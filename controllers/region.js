@@ -80,10 +80,11 @@ function getRegion(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Region.findOne({cid: data.cid}, {_id: 0}, function (err, region) {
+	Region.findOne({cid: data.cid}, {_id: 0}, {lean: true}, function (err, region) {
 		if (err || !region) {
 			return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 		}
+		region.geo = JSON.stringify(region.geo);
 		cb({region: region});
 	});
 }
@@ -103,7 +104,7 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('saveRegionResult', resultData);
 			});
 		});
-		socket.on('getRegion', function (data) {
+		socket.on('giveRegion', function (data) {
 			getRegion(socket, data, function (resultData) {
 				socket.emit('takeRegion', resultData);
 			});

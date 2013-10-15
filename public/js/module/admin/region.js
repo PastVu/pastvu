@@ -28,30 +28,30 @@ define([
 			this.createMode = ko.observable(true);
 
 			this.region = ko_mapping.fromJS(regionDef);
+			this.geoStringOrigin = null;
+			this.geoObj = null;
+
 			this.map = null;
+			this.layerSaved = null;
+			this.layerCurr = null;
 
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
-			this.routeHandler();
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
+			this.show(function () {
+				this.routeHandler();
+			}, this);
 		},
-		show: function () {
+		show: function (cb, ctx) {
 			globalVM.func.showContainer(this.$container, function () {
-				var map = new L.map(this.$dom.find('.map')[0], {center: [42.536892, 1.573791], zoom: 9, minZoom: 3, maxZoom: 13, trackResize: true});
+				this.map = new L.map(this.$dom.find('.map')[0], {center: [42.536892, 1.573791], zoom: 9, minZoom: 3, maxZoom: 13, trackResize: true});
 
 				L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
 					maxZoom: 16
-				}).addTo(map);
+				}).addTo(this.map);
 
-				map.whenReady(function () {
-					L.geoJson(OSM_ANDORRA_GEOJSON, {
-						style: {
-							"color": "#F00",
-							"weight": 4,
-							"opacity": 0.65
-						}
-					}).addTo(map);
+				this.map.whenReady(function () {
+					cb.call(ctx);
 				});
 			}, this);
 			this.showing = true;
@@ -74,27 +74,51 @@ define([
 			if (this.createMode()) {
 				this.resetData();
 			} else {
-				this.getOneNews(cid, function () {
-					this.fillData();
+				this.getOneRegion(cid, function (data, error) {
+					if (!error) {
+						this.fillData();
+					}
 				}, this);
 			}
 		},
 		resetData: function () {
+			if (this.layerSaved) {
+				this.map.removeLayer(this.layerSaved);
+			}
 			ko_mapping.fromJS(regionDef, this.region);
 		},
 		fillData: function () {
-
+			if (this.layerSaved) {
+				this.map.removeLayer(this.layerSaved);
+			}
+			this.layerSaved = L.geoJson(this.geoObj, {
+				style: {
+					"color": "#F00",
+					"weight": 3,
+					"opacity": 0.6
+				}
+			}).addTo(this.map);
 		},
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {
-				if (!data || data.error || !data.region) {
+				var error = !data || !!data.error || !data.region;
+
+				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					ko_mapping.fromJS(data.region, this.region);
+					this.geoStringOrigin = data.region.geo;
+					try {
+						this.geoObj = JSON.parse(data.region.geo);
+					} catch (err) {
+						window.noty({text: 'GeoJSON client parse error!', type: 'error', layout: 'center', timeout: 3000, force: true});
+						this.geoObj = null;
+						error = true;
+					}
 				}
 
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+					cb.call(ctx, data, error);
 				}
 			}.bind(this));
 			socket.emit('giveRegion', {cid: cid});
