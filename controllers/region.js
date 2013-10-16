@@ -115,6 +115,26 @@ function getRegion(socket, data, cb) {
 	});
 }
 
+function getRegionList(socket, data, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	Region.find({}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
+		if (err || !regions) {
+			return cb({message: err && err.message || 'No regions', error: true});
+		}
+		console.log(regions);
+		cb({regions: regions});
+	});
+}
+
 module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');
@@ -133,6 +153,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveRegion', function (data) {
 			getRegion(socket, data, function (resultData) {
 				socket.emit('takeRegion', resultData);
+			});
+		});
+		socket.on('giveRegionList', function (data) {
+			getRegionList(socket, data, function (resultData) {
+				socket.emit('takeRegionList', resultData);
 			});
 		});
 	});

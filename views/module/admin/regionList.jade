@@ -1,0 +1,9 @@
+.adminRegions(data-bind="with: repository[M!M]")
+	h4 Список регионов
+	.tree.well
+		ul.media-list(data-bind="foreach: regions")
+			li
+				span
+					i.icon-globe
+					span(data-bind="text: $data.title_en")
+				span(data-bind="text: $data.title_local")
