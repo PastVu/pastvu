@@ -114,15 +114,22 @@ require([
 				},
 				region: function (param1, qparams) {
 					var auth = globalVM.repository['m/common/auth'],
+						params,
 						modules = [];
 
 					if (!auth.loggedIn()) {
 						location.href = '/';
 						return;
 					}
-					this.params(_.assign({section: 'region', cid: param1, _handler: 'region'}, qparams));
+					if (param1) {
+						params = {section: 'region', cid: param1};
+						modules.push({module: 'm/admin/region', container: '#bodyContainer'});
+					} else {
+						params = {section: 'region', cid: param1};
+						modules.push({module: 'm/admin/regionList', container: '#bodyContainer'});
+					}
 
-					modules.push({module: 'm/admin/region', container: '#bodyContainer'});
+					this.params(_.assign(params, {_handler: 'region'}, qparams));
 					renderer(modules);
 				}
 			}

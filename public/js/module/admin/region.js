@@ -71,13 +71,18 @@ define([
 			}).addTo(this.map);
 		},
 		routeHandler: function () {
-			var cid = Number(globalVM.router.params().cid);
+			var cid = globalVM.router.params().cid;
 
-			this.createMode(!cid);
-			if (this.createMode()) {
+			if (cid === 'create') {
+				this.createMode(true);
 				this.resetData();
 				this.createMap();
 			} else {
+				cid = Number(cid);
+				if (!cid) {
+					return globalVM.router.navigateToUrl('/admin/region');
+				}
+				this.createMode(false);
 				this.getOneRegion(cid, function (data, error) {
 					if (!error) {
 						this.drawData();
