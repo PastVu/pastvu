@@ -60,6 +60,7 @@ function saveRegion(socket, data, cb) {
 			if (err || !region) {
 				return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 			}
+			region.udate = new Date();
 			fill(region);
 		});
 	}
@@ -130,7 +131,6 @@ function getRegionList(socket, data, cb) {
 		if (err || !regions) {
 			return cb({message: err && err.message || 'No regions', error: true});
 		}
-		console.log(regions);
 		cb({regions: regions});
 	});
 }

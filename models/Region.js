@@ -11,6 +11,9 @@ var RegionSchema = new Schema(
 		geo: Schema.Types.Mixed,
 		level: {type: Number, 'default': 0}, //0 - Страна, 1 - Субъект
 
+		cdate: {type: Date, 'default': Date.now, required: true, index: true}, //Дата создания
+		udate: {type: Date, 'default': Date.now, required: true}, //Дата изменения
+
 		title_en: {type: String},
 		title_local: {type: String}
 	},
