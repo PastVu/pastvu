@@ -7,15 +7,15 @@
 				input(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
 				input(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(LOCAL) Местное", autocorrect="off", autocapitalize="off")
 		.control-group
-			label.control-label Уровень
+			label.control-label Родительский регион
 			.controls
 				label.checkbox
-					input.thr(type="radio", id="level_radios_0", name="level_radios", value="0", data-bind="checked: region.level")
-					| &nbsp;Страна
+					input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
+					| &nbsp;Отсутствует
 				label.checkbox
-					input.thr(type="radio", id="level_radios_1", name="level_radios", value="1", data-bind="checked: region.level")
-					| &nbsp;Субъект
-				//ko if: Number(region.level())
+					input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
+					| &nbsp;Есть
+				//ko if: Number(haveParent())
 				input(type='text', data-bind="value: region.parent, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
 				// /ko
 		.control-group

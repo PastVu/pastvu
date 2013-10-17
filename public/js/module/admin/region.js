@@ -14,7 +14,6 @@ define([
 		cid: 0,
 		parent: undefined,
 		geo: '',
-		level: 0,
 		title_en: '',
 		title_local: ''
 	};
@@ -27,6 +26,7 @@ define([
 			this.createMode = ko.observable(true);
 
 			this.region = ko_mapping.fromJS(regionDef);
+			this.haveParent = ko.observable('0');
 			this.geoStringOrigin = null;
 			this.geoObj = null;
 
@@ -147,7 +147,8 @@ define([
 			socket.emit('giveRegion', {cid: cid});
 		},
 		save: function () {
-			var saveData = ko_mapping.toJS(this.region);
+			var saveData = ko_mapping.toJS(this.region),
+				haveParent;
 
 			if (!saveData.geo) {
 				window.noty({text: 'GeoJSON обязателен!', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -162,8 +163,8 @@ define([
 				return false;
 			}
 
-			saveData.level = Number(saveData.level);
-			if (saveData.level) {
+			haveParent = Number(this.haveParent());
+			if (haveParent) {
 				saveData.parent = Number(saveData.parent);
 				if (!saveData.parent) {
 					window.noty({text: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!', type: 'error', layout: 'center', timeout: 5000, force: true});

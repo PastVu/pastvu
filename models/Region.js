@@ -6,10 +6,8 @@ var mongoose = require('mongoose'),
 var RegionSchema = new Schema(
 	{
 		cid: {type: Number, index: {unique: true}},
-		parent: {type: Number, index: true}, //Родительский cid, если level > 0
-
+		parents: [Number], //Родительские регионы, если есть
 		geo: Schema.Types.Mixed,
-		level: {type: Number, 'default': 0}, //0 - Страна, 1 - Субъект
 
 		cdate: {type: Date, 'default': Date.now, required: true, index: true}, //Дата создания
 		udate: {type: Date, 'default': Date.now, required: true}, //Дата изменения
