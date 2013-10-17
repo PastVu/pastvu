@@ -1,12 +1,17 @@
-(function(_, Backbone) {
-
-// Require Underscore and Backbone if there's a `require` function.
-// This makes `backbone.queryparam` work on the server or when using
-// `browserify`.
-if (typeof require !== 'undefined') {
-  _ = _ || require('underscore');
-  Backbone = Backbone || require('backbone');
-}
+(function (root, factory) {
+   if (typeof exports === 'object' && root.require) {
+     module.exports = factory(require("underscore"), require("backbone"));
+   } else if (typeof define === "function" && define.amd) {
+      // AMD. Register as an anonymous module.
+      define(["underscore","backbone"], function(_, Backbone) {
+        // Use global variables if the locals are undefined.
+        return factory(_ || root._, Backbone || root.Backbone);
+      });
+   } else {
+      // RequireJS isn't being used. Assume underscore and backbone are loaded in <script> tags
+      factory(_, Backbone);
+   }
+}(this, function(_, Backbone) {
 
 var queryStringParam = /^\?(.*)/,
     optionalParam = /\((.*?)\)/g,
@@ -15,7 +20,7 @@ var queryStringParam = /^\?(.*)/,
     escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g,
     queryStrip = /(\?.*)$/,
     fragmentStrip = /^([^\?]*)/,
-    hasQueryString = /(\?)[\w-]+=/i,
+    hasQueryString = /(\?)[\w-]+/i,
     namesPattern = /[\:\*]([^\:\?\/]+)/g,
     routeStripper = /^[#\/]|\s+$/g,
     trailingSlash = /\/$/;
@@ -41,7 +46,7 @@ _.extend(Backbone.History.prototype, {
     var excludeQueryString = (this._wantsHashChange && this._wantsPushState &&
       !this._hasPushState);
     var _fragment = _getFragment.apply(this, arguments);
-    if(fragment == null && !hasQueryString.test(_fragment)) {
+    if(fragment == null && _fragment == null && !hasQueryString.test(_fragment)) {
       _fragment += this.location.search;
     } else if (excludeQueryString) {
       _fragment = _fragment.replace(queryStrip, '');
@@ -60,6 +65,8 @@ _.extend(Backbone.History.prototype, {
       queryString = match[1];
       var rtn = {};
       iterateQueryString(queryString, function(name, value) {
+        // decodeURIComponent doesn't touch '+'
+        value = value.replace(/\+/g, '%20');
         value = decodeURIComponent(value);
         if (!rtn[name]) {
           rtn[name] = value;
@@ -100,8 +107,11 @@ _.extend(Backbone.Router.prototype, {
                  .replace(namedParam, function(match, optional){
                    return optional ? match : '([^\\/\\?]+)';
                  })
-                 .replace(splatParam, '([^\?]*?)');
-    route += '([\?]{1}.*)?';
+                 // `[^??]` is hacking around a regular expression bug under iOS4.
+                 // If only `[^?]` is used then paths like signin/photos will fail
+                 // while paths with `?` anywhere, like `signin/photos?`, will succeed.
+                 .replace(splatParam, '([^??]*?)');
+    route += '(\\?.*)?';
     var rtn = new RegExp('^' + route + '$');
 
     // use the rtn value to hold some parameter data
@@ -175,6 +185,7 @@ _.extend(Backbone.Router.prototype, {
    */
   _setParamValue: function(key, value, data) {
     // use '.' to define hash separators
+    key = key.replace('[]', '');
     var parts = key.split('.');
     var _data = data;
     for (var i=0; i<parts.length; i++) {
@@ -194,6 +205,9 @@ _.extend(Backbone.Router.prototype, {
    * @param currentValue the currently known value (or list of values)
    */
   _decodeParamValue: function(value, currentValue) {
+    // decodeURIComponent doesn't translate '+'
+    value = value.replace(/\+/g, '%20');
+
     // '|' will indicate an array.  Array with 1 value is a=|b - multiple values can be a=b|c
     var splitChar = Backbone.Router.arrayValueSplit;
     if (splitChar && value.indexOf(splitChar) >= 0) {
@@ -249,7 +263,7 @@ _.extend(Backbone.Router.prototype, {
       if (_.isString(_val) || _.isNumber(_val) || _.isBoolean(_val) || _.isDate(_val)) {
         // primitive type
         _val = this._toQueryParam(_val);
-        if (_.isBoolean(_val) || _.isNumber(_val) || _val) {
+        if (_.isBoolean(_val) || _.isNumber(_val) || _.isString(_val) || _val) {
           rtn += (rtn ? '&' : '') + this._toQueryParamName(name, namePrefix) + '=' + encodeSplit(encodeURIComponent(_val));
         }
       } else if (_.isArray(_val)) {
@@ -300,10 +314,8 @@ function iterateQueryString(queryString, callback) {
   var keyValues = queryString.split('&');
   _.each(keyValues, function(keyValue) {
     var arr = keyValue.split('=');
-    if (arr.length > 1) {
-      callback(arr[0], arr[1]);
-    }
+    callback(arr.shift(), arr.join('='));
   });
 }
 
-})(typeof _ === 'undefined' ? null : _, typeof Backbone === 'undefined' ? null : Backbone);
+}));
