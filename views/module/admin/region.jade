@@ -28,15 +28,22 @@
 					span.current(data-bind="text: region.cid() + '. ' + region.title_en()")
 					// /ko
 				// /ko
+		//ko if: createMode() || showGeo()
 		.control-group
 			label.control-label
 				| Геометрия
 				br
 				| GeoJSON
 			.controls
-				textarea.geojson(wrap="soft", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
+				textarea.geojson(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
+		// /ko
 		.control-group
 			button.btn-strict.btn-strict-success(type="submit")
 				i.icon-ok.icon-white
 				span Сохранить
+			//ko if: !createMode()
+			button.btn-strict(type="button", data-bind="click: function () {showGeo(!showGeo())}")
+				i.icon-th-list.icon-white
+				span(data-bind="text: showGeo() ? 'Скрыть координаты' : 'Показать координаты'")
+			// /ko
 	.map

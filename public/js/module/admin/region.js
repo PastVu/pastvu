@@ -25,6 +25,8 @@ define([
 			this.auth = globalVM.repository['m/common/auth'];
 			this.createMode = ko.observable(true);
 
+			this.showGeo = ko.observable(false);
+
 			this.region = ko_mapping.fromJS(regionDef);
 			this.haveParent = ko.observable('0');
 			this.parentCid = ko.observable(0);
