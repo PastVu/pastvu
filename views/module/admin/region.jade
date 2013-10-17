@@ -16,7 +16,17 @@
 					input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
 					| &nbsp;Есть
 				//ko if: Number(haveParent())
-				input(type='text', data-bind="value: region.parent, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+				input(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+				.regions
+					//ko foreach: region.parents
+					a(data-bind="text: '' + $data.cid() + '. ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
+					| &nbsp;
+					i.icon-play
+					| &nbsp;
+					// /ko
+					//ko if: !createMode() && region.parents().length
+					span.current(data-bind="text: region.cid() + '. ' + region.title_en()")
+					// /ko
 				// /ko
 		.control-group
 			label.control-label

@@ -6,6 +6,7 @@ var auth = require('./auth.js'),
 	User,
 	Counter,
 	Region,
+	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	msg = {
@@ -122,7 +123,37 @@ function getRegion(socket, data, cb) {
 			return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 		}
 		region.geo = JSON.stringify(region.geo);
-		cb({region: region});
+
+		if (region.parents && region.parents.length) {
+			//Если есть родительские регионы - вручную их "популируем"
+			Region.find({cid: {$in: region.parents}}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
+				if (err || !regions) {
+					return cb({message: err && err.message || 'Can\'t find parent regions', error: true});
+				}
+				if (region.parents.length !== regions.length) {
+					return cb({region: region});
+				}
+				var parentsSortedArr = [],
+					parent,
+					i = region.parents.length,
+					parentfind = function (parent) {
+						return parent.cid === region.parents[i];
+					};
+
+				//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
+				while (i--) {
+					parent = _.find(regions, parentfind);
+					if (parent) {
+						parentsSortedArr.unshift(parent);
+					}
+				}
+				region.parents = parentsSortedArr;
+
+				cb({region: region});
+			});
+		} else {
+			cb({region: region});
+		}
 	});
 }
 

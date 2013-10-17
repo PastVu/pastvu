@@ -12,7 +12,7 @@ define([
 
 	var regionDef = {
 		cid: 0,
-		parent: undefined,
+		parents: [],
 		geo: '',
 		title_en: '',
 		title_local: ''
@@ -27,6 +27,7 @@ define([
 
 			this.region = ko_mapping.fromJS(regionDef);
 			this.haveParent = ko.observable('0');
+			this.parentCid = ko.observable(0);
 			this.geoStringOrigin = null;
 			this.geoObj = null;
 
@@ -95,6 +96,8 @@ define([
 				this.map.removeLayer(this.layerSaved);
 			}
 			ko_mapping.fromJS(regionDef, this.region);
+			this.haveParent('0');
+			this.parentCid(0);
 		},
 		drawData: function () {
 			if (this.layerSaved) {
@@ -138,6 +141,13 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					error = !this.fillData(data.region);
+					if (data.region.parents && data.region.parents.length) {
+						this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
+						this.haveParent('1');
+					} else {
+						this.haveParent('0');
+						this.parentCid(0);
+					}
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -147,8 +157,7 @@ define([
 			socket.emit('giveRegion', {cid: cid});
 		},
 		save: function () {
-			var saveData = ko_mapping.toJS(this.region),
-				haveParent;
+			var saveData = ko_mapping.toJS(this.region);
 
 			if (!saveData.geo) {
 				window.noty({text: 'GeoJSON обязателен!', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -163,15 +172,12 @@ define([
 				return false;
 			}
 
-			haveParent = Number(this.haveParent());
-			if (haveParent) {
-				saveData.parent = Number(saveData.parent);
+			if (this.haveParent() === '1') {
+				saveData.parent = this.parentCid();
 				if (!saveData.parent) {
 					window.noty({text: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!', type: 'error', layout: 'center', timeout: 5000, force: true});
 					return false;
 				}
-			} else if (saveData.parent !== undefined) {
-				delete saveData.parent;
 			}
 
 			socket.once('saveRegionResult', function (data) {
