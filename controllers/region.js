@@ -23,77 +23,87 @@ function saveRegion(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	data.level = Number(data.level);
-	if (isNaN(data.level) || [0, 1].indexOf(data.level) === -1) {
-		return cb({message: 'Bad level', error: true});
-	}
-	if (data.level) {
-		//Если уровень больше 0, т.е. ниже страны, необходим номер родительского региона
-		data.parent = Number(data.parent);
-		if (!data.parent || data.parent < 0) {
-			return cb({message: 'Level lower than country requires parent region', error: true});
+	data.parent = data.parent && Number(data.parent);
+	if (data.parent) {
+		if (data.cid && data.cid === data.parent) {
+			return cb({message: 'You trying to specify a parent himself', error: true});
 		}
-	}
-
-	if (typeof data.geo === 'string') {
-		try {
-			data.geo = JSON.parse(data.geo);
-		} catch (err) {
-			return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
-		}
-		if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
-			return cb({message: 'It\'s not GeoJSON geometry!'});
-		}
-	} else if (data.geo) {
-		delete data.geo;
-	}
-
-	if (!data.cid) {
-		Counter.increment('region', function (err, count) {
-			if (err || !count) {
-				return cb({message: err && err.message || 'Increment comment counter error', error: true});
+		Region.findOne({cid: data.parent}, {_id: 0, cid: 1, parents: 1}, {lean: true}, function (err, region) {
+			if (err || !region) {
+				return cb({message: err && err.message || 'Such parent region doesn\'t exists', error: true});
 			}
-			fill(new Region({cid: count.next}));
+			var parentsArray = region.parents || [];
+
+			if (data.cid && ~parentsArray.indexOf(data.cid)) {
+				return cb({message: 'You specify the parent, which already has this region as his own parent', error: true});
+			}
+
+			parentsArray.push(region.cid);
+			findOrCreate(parentsArray);
 		});
 	} else {
-		Region.findOne({cid: data.cid}, function (err, region) {
-			if (err || !region) {
-				return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
-			}
-			region.udate = new Date();
-			fill(region);
-		});
+		findOrCreate([]);
 	}
 
-	function fill(region) {
-		if (data.geo) {
+	function findOrCreate(parentsArray) {
+		if (typeof data.geo === 'string') {
+			try {
+				data.geo = JSON.parse(data.geo);
+			} catch (err) {
+				return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
+			}
+			if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
+				return cb({message: 'It\'s not GeoJSON geometry!'});
+			}
+		} else if (data.geo) {
+			delete data.geo;
+		}
+
+		if (!data.cid) {
+			Counter.increment('region', function (err, count) {
+				if (err || !count) {
+					return cb({message: err && err.message || 'Increment comment counter error', error: true});
+				}
+				fill(new Region({cid: count.next}));
+			});
+		} else {
+			Region.findOne({cid: data.cid}, function (err, region) {
+				if (err || !region) {
+					return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
+				}
+				region.udate = new Date();
+				fill(region);
+			});
+		}
+
+		function fill(region) {
 			//Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
-			region.geo = data.geo;
-			region.markModified('geo');
-		}
-
-		region.level = data.level;
-		if (data.level) {
-			region.parent = data.parent;
-		} else if (region.parent) {
-			region.parent = undefined;
-		}
-		region.title_en = String(data.title_en);
-		region.title_local = data.title_local ? String(data.title_local) : undefined;
-
-		region.save(function (err, region) {
-			if (err || !region) {
-				return cb({message: err && err.message || 'Save error', error: true});
-			}
-			region = region.toObject();
 			if (data.geo) {
-				region.geo = JSON.stringify(region.geo);
-			} else {
-				delete region.geo;
+				region.geo = data.geo;
+				region.markModified('geo');
 			}
-			cb({region: region});
-		});
+
+			region.parents = parentsArray;
+
+			region.title_en = String(data.title_en);
+			region.title_local = data.title_local ? String(data.title_local) : undefined;
+
+			region.save(function (err, region) {
+				if (err || !region) {
+					return cb({message: err && err.message || 'Save error', error: true});
+				}
+				region = region.toObject();
+				if (data.geo) {
+					region.geo = JSON.stringify(region.geo);
+				} else {
+					delete region.geo;
+				}
+				cb({region: region});
+			});
+		}
 	}
+
+
 }
 
 function getRegion(socket, data, cb) {
