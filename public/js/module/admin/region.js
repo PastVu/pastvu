@@ -123,8 +123,20 @@ define([
 			this.map.fitBounds(this.layerSaved.getBounds());
 			this.layerSaved.addTo(this.map);
 		},
-		fillData: function (region) {
+		fillData: function (data) {
+			var region = data.region;
+
 			ko_mapping.fromJS(region, this.region);
+
+			this.childsAll(data.childsAll);
+			this.childsOwn(data.childsOwn);
+			if (data.region.parents && data.region.parents.length) {
+				this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
+				this.haveParent('1');
+			} else {
+				this.haveParent('0');
+				this.parentCid(0);
+			}
 
 			if (region.geo) {
 				this.geoStringOrigin = region.geo;
@@ -136,7 +148,9 @@ define([
 					this.geoObj = null;
 					return false;
 				}
+				this.drawData();
 			}
+
 			return true;
 		},
 		getOneRegion: function (cid, cb, ctx) {
@@ -146,16 +160,7 @@ define([
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					error = !this.fillData(data.region);
-					this.childsAll(data.childsAll);
-					this.childsOwn(data.childsOwn);
-					if (data.region.parents && data.region.parents.length) {
-						this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
-						this.haveParent('1');
-					} else {
-						this.haveParent('0');
-						this.parentCid(0);
-					}
+					error = !this.fillData(data);
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -197,10 +202,8 @@ define([
 					if (this.createMode()) {
 						//Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
 						globalVM.router.navigateToUrl('/admin/region/' + data.region.cid);
-					} else if (data.region.geo) {
-						//Если отредактирован geojson региона, но заполняем заного его переменные и перерисовываем
-						this.fillData(data.region);
-						this.drawData();
+					} else {
+						this.fillData(data);
 					}
 				}
 			}.bind(this));
