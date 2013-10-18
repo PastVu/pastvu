@@ -118,42 +118,61 @@ function getRegion(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Region.findOne({cid: data.cid}, {_id: 0}, {lean: true}, function (err, region) {
+	Region.findOne({cid: data.cid}, {_id: 0, __v: 0}, {lean: true}, function (err, region) {
 		if (err || !region) {
 			return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 		}
-		region.geo = JSON.stringify(region.geo);
+		var level = region.parents && region.parents.length || 0; //Уровень региона равен кол-ву родительских
 
-		if (region.parents && region.parents.length) {
-			//Если есть родительские регионы - вручную их "популируем"
-			Region.find({cid: {$in: region.parents}}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
-				if (err || !regions) {
-					return cb({message: err && err.message || 'Can\'t find parent regions', error: true});
-				}
-				if (region.parents.length !== regions.length) {
-					return cb({region: region});
-				}
-				var parentsSortedArr = [],
-					parent,
-					i = region.parents.length,
-					parentfind = function (parent) {
-						return parent.cid === region.parents[i];
-					};
+		step (
+			function () {
+				var ownChildrenQuery = {};
 
-				//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
-				while (i--) {
-					parent = _.find(regions, parentfind);
-					if (parent) {
-						parentsSortedArr.unshift(parent);
+				//Ищем кол-во всех потомков
+				Region.count({parents: region.cid}, this.parallel());
+
+				//Ищем кол-во собственных потомков (у которых этот регион непосредственный родитель)
+				//У таких регионов на позиции текущего уровня будет стоять этот регион и кол-во уровней будет на один больше текущего
+				//Например, прямые потомки региона 77, имеющего одного родителя, будут найдены так {'parents.1': 77, parents: {$size: 2}}
+				ownChildrenQuery['parents.' + level]  = region.cid;
+				ownChildrenQuery.parents = {$size: level + 1};
+				Region.count(ownChildrenQuery, this.parallel());
+
+				if  (level) {
+					//Если есть родительские регионы - вручную их "популируем"
+					Region.find({cid: {$in: region.parents}}, {_id: 0, geo: 0, __v: 0}, {lean: true}, this.parallel());
+				}
+			},
+			function (err, childsAll, childsOwn, regions) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				if (level && regions) {
+					if (region.parents.length === regions.length) {
+						var parentsSortedArr = [],
+							parent,
+							i = region.parents.length,
+							parentfind = function (parent) {
+								return parent.cid === region.parents[i];
+							};
+
+						//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
+						while (i--) {
+							parent = _.find(regions, parentfind);
+							if (parent) {
+								parentsSortedArr.unshift(parent);
+							}
+						}
+						region.parents = parentsSortedArr;
 					}
 				}
-				region.parents = parentsSortedArr;
 
-				cb({region: region});
-			});
-		} else {
-			cb({region: region});
-		}
+				//Клиенту отдаем стрингованный geojson
+				region.geo = JSON.stringify(region.geo);
+
+				cb({childsAll: childsAll, childsOwn: childsOwn, region: region});
+			}
+		);
 	});
 }
 

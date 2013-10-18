@@ -30,6 +30,8 @@ define([
 			this.region = ko_mapping.fromJS(regionDef);
 			this.haveParent = ko.observable('0');
 			this.parentCid = ko.observable(0);
+			this.childsAll = ko.observable(0);
+			this.childsOwn = ko.observable(0);
 			this.geoStringOrigin = null;
 			this.geoObj = null;
 
@@ -100,6 +102,8 @@ define([
 			ko_mapping.fromJS(regionDef, this.region);
 			this.haveParent('0');
 			this.parentCid(0);
+			this.childsAll(0);
+			this.childsOwn(0);
 		},
 		drawData: function () {
 			if (this.layerSaved) {
@@ -143,6 +147,8 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					error = !this.fillData(data.region);
+					this.childsAll(data.childsAll);
+					this.childsOwn(data.childsOwn);
 					if (data.region.parents && data.region.parents.length) {
 						this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
 						this.haveParent('1');

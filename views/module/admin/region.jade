@@ -25,8 +25,11 @@
 					| &nbsp;
 					// /ko
 					//ko if: !createMode() && region.parents().length
-					span.current(data-bind="text: region.cid() + '. ' + region.title_en()")
+					span.current(title="Текущий регион", data-bind="text: region.cid() + '. ' + region.title_en()")
 					// /ko
+				// /ko
+				//ko if: childsAll() || childsOwn()
+				.childs(data-bind="text: childsOwn() + ' непосредственных потомков, всего ' + childsAll() + ' потомков'")
 				// /ko
 		//ko if: createMode() || showGeo()
 		.control-group
