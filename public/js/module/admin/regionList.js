@@ -58,7 +58,7 @@ define([
 
 			function incrementParentsChildLen(region, deepestLevel) {
 				var parentRegion = region.parent,
-					parentChildsArrPosition = deepestLevel - parentRegion.parents.length - 1;
+					parentChildsArrPosition = deepestLevel - parentRegion.level - 1;
 
 				parentRegion.childLenAll += 1;
 				parentRegion.childLenArr[parentChildsArrPosition] = -~parentRegion.childLenArr[parentChildsArrPosition];
@@ -70,14 +70,16 @@ define([
 			for (; i < len; i++) {
 				region = arr[i];
 				region.regions = [];
+				region.level = region.parents.length;
 				region.childLen = 0; //Количество непосредственных потомков
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
-				if (region.parents.length) {
-					region.parent = hash[region.parents[region.parents.length - 1]];
+				region.opened = ko.observable(false);
+				if (region.level) {
+					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);
 					region.parent.childLen += 1;
-					incrementParentsChildLen(region, region.parents.length);
+					incrementParentsChildLen(region, region.level);
 				} else {
 					results.push(region);
 				}
@@ -86,6 +88,9 @@ define([
 			console.dir(results);
 
 			return results;
+		},
+		collapseToggle: function (data, event) {
+			data.opened(!data.opened());
 		}
 	});
 });
