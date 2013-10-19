@@ -1,8 +1,26 @@
 .adminRegions(data-bind="with: repository[M!M]")
 	h4 Список регионов
 	.tree.well
-		ul.media-list(data-bind="foreach: regions")
-			li
-				.name
-					i.icon-globe
-					span(data-bind="text: ' ' + $data.title_local")
+		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
+
+	script(id="treeNode", type="text/html")
+		li(data-bind="css: {isparent: $data.childLen}")
+			//ko if: $data.childLen
+			.chevron
+				i.icon-chevron-down
+			// /ko
+			a.name(title="Открыть регион", target="_blank", data-bind="attr: {href: location + '/' + $data.cid}")
+				i.icon-globe
+				span(data-bind="text: ' ' + $data.title_en")
+				//ko if: $data.childLen
+				.childsCount
+					//ko foreach: childLenArr
+					| &nbsp;
+					i.icon-play
+					span(data-bind="text: ' ' + $data")
+					// /ko
+				// /ko
+			//ko if: $data.childLen
+			//ko template: {name: 'treeNode', foreach: $data.regions}
+			// /ko
+			// /ko

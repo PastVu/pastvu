@@ -49,17 +49,35 @@ define([
 				len = arr.length,
 				hash = {},
 				region,
+				parent,
 				results = [];
 
 			arr.sort(function (a, b) {
 				return a.parents.length < b.parents.length || a.title_en < b.title_en ? -1 : 1;
 			});
 
-			for (;i < len; i++) {
+			function incrementParentsChildLen(region, deepestLevel) {
+				var parentRegion = region.parent,
+					parentChildsArrPosition = deepestLevel - parentRegion.parents.length - 1;
+
+				parentRegion.childLenAll += 1;
+				parentRegion.childLenArr[parentChildsArrPosition] = -~parentRegion.childLenArr[parentChildsArrPosition];
+				if (parentRegion.parent) {
+					incrementParentsChildLen(parentRegion, deepestLevel);
+				}
+			}
+
+			for (; i < len; i++) {
 				region = arr[i];
 				region.regions = [];
+				region.childLen = 0; //Количество непосредственных потомков
+				region.childLenAll = 0; //Количество всех потомков
+				region.childLenArr = [0]; //Массив количеств потомков
 				if (region.parents.length) {
-					hash[region.parents[region.parents.length - 1]].regions.push(region);
+					region.parent = hash[region.parents[region.parents.length - 1]];
+					region.parent.regions.push(region);
+					region.parent.childLen += 1;
+					incrementParentsChildLen(region, region.parents.length);
 				} else {
 					results.push(region);
 				}
