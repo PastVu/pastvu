@@ -45,25 +45,27 @@ define([
 			socket.emit('giveRegionList', {});
 		},
 		treeBuild: function (arr) {
-			var i,
+			var i = 0,
 				len = arr.length,
 				hash = {},
 				region,
 				results = [];
 
-			for (i = 0; i < len; i++) {
+			arr.sort(function (a, b) {
+				return a.parents.length < b.parents.length || a.title_en < b.title_en ? -1 : 1;
+			});
+
+			for (;i < len; i++) {
 				region = arr[i];
-				if (!region.level) {
-					hash[region.cid] = region;
+				region.regions = [];
+				if (region.parents.length) {
+					hash[region.parents[region.parents.length - 1]].regions.push(region);
+				} else {
 					results.push(region);
 				}
+				hash[region.cid] = region;
 			}
-			for (i = 0; i < len; i++) {
-				region = arr[i];
-				if (region.level > 0 && hash[region.parent] !== undefined) {
-					hash[region.parent].regions.push(region);
-				}
-			}
+			console.dir(results);
 
 			return results;
 		}
