@@ -234,6 +234,20 @@ function getRegionList(socket, data, cb) {
 	});
 }
 
+//Возвращает список регионов, в которые попадает заданая точка
+var getRegionByGeoPoint = function () {
+	var defFields = {_id: 0, geo: 0, __v: 0};
+
+	return function (geo, fields, cb) {
+		Region.find({geo: {$nearSphere: {$geometry: {type: 'Point', coordinates: geo}}, $maxDistance: 1}}, fields || defFields, {lean: true, sort: {parents: -1}}, function (err, regions) {
+			if (err || !regions) {
+				return cb({message: err && err.message || 'No regions', error: true});
+			}
+			cb({regions: regions});
+		});
+	};
+}();
+
 module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');

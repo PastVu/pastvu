@@ -1,9 +1,12 @@
+Как найти номер отношения OSM, которое является административной гтраницей:
+http://nominatim.openstreetmap.org/ Вводим искомое название, находим, нажимаем 'details' и в открывшейся странице находим 'boundary:administrative, relation: NUMBER'
 
 Номера OSM границ некоторых объектов:
 Russia - 60189
 Moscow - 102269
 Moscow Oblast - 51490
 Saint Petersburg - 337422
+Krasnogorsk - 181345
 
 USA - 148838
 New York - 61320
