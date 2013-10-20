@@ -82,6 +82,10 @@ define([
 				this.createMode(true);
 				this.resetData();
 				this.createMap();
+				if (Number(globalVM.router.params().parent))  {
+					this.parentCid(Number(globalVM.router.params().parent));
+					this.haveParent('1');
+				}
 			} else {
 				cid = Number(cid);
 				if (!cid) {

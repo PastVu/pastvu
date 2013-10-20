@@ -39,7 +39,7 @@
 	}
 
 	.tree {
-		padding: 5px;
+		padding: 10px;
 		border: 1px solid #999;
 		.user-select(none);
 
@@ -48,8 +48,14 @@
 
 			> li {
 				margin: 0;
+				padding-left: 0;
+
 				&::before, &::after {
 					border:0
+				}
+
+				&:first-child {
+					padding-top: 0;
 				}
 			}
 		}
@@ -101,7 +107,7 @@
 				border: 1px solid #999;
 				border-left-color: #f2f2f2;
 			}
-			.chevron, .name {
+			.chevron, .name, .addChild {
 				color: #f2f2f2;
 				background: #6F7080;
 
@@ -117,6 +123,23 @@
 
 			.childsCount {
 				display: inline-block;
+			}
+			.addChild {
+				display: none;
+				padding: 2px 6px;
+				text-decoration: none;
+				border-width: 1px 1px 1px 0;
+				border-style: solid;
+				border-color: #999;
+			}
+
+			.lirow:hover {
+				> .name {
+					border-right-color: #f2f2f2;
+				}
+				> .addChild {
+					display: inline-block;
+				}
 			}
 		}
 	}

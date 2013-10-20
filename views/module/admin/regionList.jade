@@ -1,7 +1,7 @@
 .adminRegions(data-bind="with: repository[M!M]")
 	h4 Список регионов
 	.regionsHead
-		a.headElem.interact(href="/admin/region/create", target="_blank")
+		a.headElem.interact(href="/admin/region/create")
 			i.icon-plus.icon-white
 			|  Добавить
 		.headElem.interact(data-bind="click: expandAll")
@@ -15,20 +15,26 @@
 
 	script(id="treeNode", type="text/html")
 		li(data-bind="css: {isparent: $data.childLen}")
-			//ko if: $data.childLen
-			.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
-				i.icon-white(data-bind="css: {'icon-chevron-up': $data.opened(), 'icon-chevron-down': !$data.opened()}")
-			// /ko
-			a.name(title="Открыть регион", target="_blank", data-bind="attr: {href: '/admin/region/' + $data.cid}")
-				i.icon-globe.icon-white
-				span(data-bind="text: ' ' + $data.title_en")
+			.lirow
 				//ko if: $data.childLen
-				.childsCount
-					//ko foreach: childLenArr
-					| &nbsp;
-					i.icon-play.icon-white
-					span(data-bind="text: ' ' + $data")
+				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
+					i.icon-white(data-bind="css: {'icon-chevron-up': $data.opened(), 'icon-chevron-down': !$data.opened()}")
+				// /ko
+				a.name(title="Открыть регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
+					i.icon-globe.icon-white
+					span(data-bind="text: ' ' + $data.title_en")
+					//ko if: $data.childLen
+					.childsCount
+						//ko foreach: childLenArr
+						| &nbsp;
+						i.icon-play.icon-white
+						span(data-bind="text: ' ' + $data")
+						// /ko
 					// /ko
+				//ko if: $data.level < 4
+				a.addChild(title="Создать дочерний регион", data-bind="attr: {href: '/admin/region/create?parent=' + $data.cid}")
+					i.icon-plus.icon-white
+					|  Добавить потомка
 				// /ko
 			//ko if: $data.childLen && $data.opened()
 			//ko template: {name: 'treeNode', foreach: $data.regions}
