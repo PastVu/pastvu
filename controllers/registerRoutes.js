@@ -28,11 +28,4 @@ module.exports.loadController = function (app) {
 		res.statusCode = 200;
 		res.render('app.jade', {appName: 'Admin'});
 	}
-
-	//Geocoding for Regions
-	app.get('/georegion', function (req, res) {
-		console.log(req.route.params[0]);
-		res.statusCode = 200;
-		res.render('diff/georegion.jade', {});
-	});
 };

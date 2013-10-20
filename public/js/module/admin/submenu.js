@@ -22,7 +22,8 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 					{name: 'Conveyer', href: "/admin/photo/conveyer", section: 'conveyer'}
 				],
 				region: [
-					{name: 'Regions', href: "/admin/region", section: 'region'}
+					{name: 'Regions', href: "/admin/region", section: 'region'},
+					{name: 'Region check', href: "/admin/regionCheck", section: 'regionCheck'}
 				]
 			};
 

@@ -45,7 +45,8 @@ require([
 				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
 				{route: "photo(/)(:section)(/)", handler: "photo"},
-				{route: "region(/)(:param1)(/)", handler: "region"}
+				{route: "region(/)(:param1)(/)", handler: "region"},
+				{route: "regionCheck(/)", handler: "regionCheck"}
 			],
 			handlers: {
 				index: function (section, param1, param2, qparams) {
@@ -130,6 +131,19 @@ require([
 					}
 
 					this.params(_.assign(params, {_handler: 'region'}, qparams));
+					renderer(modules);
+				},
+				regionCheck: function (qparams) {
+					var auth = globalVM.repository['m/common/auth'],
+						modules = [];
+
+					if (!auth.loggedIn()) {
+						location.href = '/';
+						return;
+					}
+
+					this.params(_.assign({section: 'regionCheck', _handler: 'region'}, qparams));
+					modules.push({module: 'm/admin/regionCheck', container: '#bodyContainer'});
 					renderer(modules);
 				}
 			}

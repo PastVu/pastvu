@@ -14,7 +14,7 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 			this.menuItems = [
 				{name: 'Index', href: "/admin", section: 'index'},
 				{name: 'Map', href: "/admin/map", section: 'map'},
-				{name: 'Regions', href: "/admin/regions", section: 'region'},
+				{name: 'Regions', href: "/admin/region", section: 'region'},
 				{name: 'Photos', href: "/admin/photo", section: 'photo'}
 			];
 
