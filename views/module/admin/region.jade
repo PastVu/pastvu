@@ -6,6 +6,15 @@
 			.controls
 				input(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
 				input(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(LOCAL) Местное", autocorrect="off", autocapitalize="off")
+				//ko if: !createMode()
+				.regionInfo
+					| Номер:
+					strong(data-bind="text: ' ' + region.cid()")
+					| ; Уровень:
+					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+					| ;&nbsp;
+					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Показать в дереве регионов
+				// /ko
 		.control-group
 			label.control-label Родительский регион
 			.controls

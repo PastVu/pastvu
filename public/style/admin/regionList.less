@@ -51,7 +51,7 @@
 				padding-left: 0;
 
 				&::before, &::after {
-					border:0
+					border: 0
 				}
 
 				&:first-child {
@@ -113,9 +113,10 @@
 
 				&:hover {
 					color: #fff;
-					background: @MainBlueColor;
+					background: @MainBlueColor !important;
 				}
 			}
+
 			&.isparent > .name {
 				cursor: pointer;
 
@@ -133,12 +134,17 @@
 				border-color: #999;
 			}
 
-			.lirow:hover {
-				> .name {
-					border-right-color: #f2f2f2;
+			.lirow {
+				&.hl .chevron, &.hl .name, &.hl .addChild {
+					background: #7276AF;
 				}
-				> .addChild {
-					display: inline-block;
+				&:hover {
+					> .name {
+						border-right-color: #f2f2f2;
+					}
+					> .addChild {
+						display: inline-block;
+					}
 				}
 			}
 		}

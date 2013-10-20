@@ -15,7 +15,7 @@
 
 	script(id="treeNode", type="text/html")
 		li(data-bind="css: {isparent: $data.childLen}")
-			.lirow
+			.lirow(data-bind="css: {hl: $data.hl}")
 				//ko if: $data.childLen
 				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
 					i.icon-white(data-bind="css: {'icon-chevron-up': $data.opened(), 'icon-chevron-down': !$data.opened()}")

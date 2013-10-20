@@ -50,7 +50,9 @@ define([
 				len = arr.length,
 				hash = {},
 				region,
-				results = [];
+				results = [],
+				cidHL = Number(globalVM.router.params().hl),
+				reallyHL;
 
 			arr.sort(function (a, b) {
 				return a.parents.length < b.parents.length || a.title_en < b.title_en ? -1 : 1;
@@ -60,6 +62,10 @@ define([
 				var parentRegion = region.parent,
 					parentChildsArrPosition = deepestLevel - parentRegion.level - 1;
 
+				//Если открыт дочерний, надо открыть и родителя
+				if (region.opened()) {
+					parentRegion.opened(true);
+				}
 				parentRegion.childLenAll += 1;
 				parentRegion.childLenArr[parentChildsArrPosition] = -~parentRegion.childLenArr[parentChildsArrPosition];
 				if (parentRegion.parent) {
@@ -74,7 +80,8 @@ define([
 				region.childLen = 0; //Количество непосредственных потомков
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
-				region.opened = ko.observable(false);
+				region.hl = cidHL === region.cid; //Подсветка региона по переданному параметру
+				region.opened = ko.observable(region.hl); //Подсвеченный регион должен быть открыт
 				if (region.level) {
 					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);
@@ -83,9 +90,17 @@ define([
 				} else {
 					results.push(region);
 				}
+				if (region.hl) {
+					reallyHL = true;
+				}
 				hash[region.cid] = region;
 			}
-			console.dir(results);
+
+			if (reallyHL) {
+				window.setTimeout(function () {
+					$(window).scrollTo(this.$dom.find('.lirow.hl'), 400);
+				}.bind(this), 700);
+			}
 
 			return results;
 		},
@@ -99,7 +114,7 @@ define([
 			this.collapseToggleAll(false);
 		},
 		collapseToggleAll: function (expand) {
-			for (var i = this.regionsFlat.length - 1; i >= 0 ; i--) {
+			for (var i = this.regionsFlat.length - 1; i >= 0; i--) {
 				this.regionsFlat[i].opened(expand);
 			}
 		}
