@@ -1,5 +1,15 @@
 .adminRegions(data-bind="with: repository[M!M]")
 	h4 Список регионов
+	.regionsHead
+		a.headElem.interact(href="/admin/region/create", target="_blank")
+			i.icon-plus.icon-white
+			|  Добавить
+		.headElem.interact(data-bind="click: expandAll")
+			i.icon-chevron-down.icon-white
+			|  Раскрыть все
+		.headElem.interact(data-bind="click: collapseAll")
+			i.icon-chevron-up.icon-white
+			|  Свернуть все
 	.tree.well
 		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
 

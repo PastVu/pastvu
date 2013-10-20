@@ -2,9 +2,41 @@
 @import "../bootstrap/variables.less";
 @import "../bootstrap/mixins.less";
 
+@headColor: #677A8F;
+@headColorHover: @MainBlueColor;
+
 .adminRegions {
 	position: relative;
 	height: 100%;
+
+	.regionsHead {
+		position: relative;
+		.user-select(none);
+	}
+
+	.headElem {
+		position: relative;
+		display: inline-block;
+		margin: 0 1px 8px 0;
+		padding: 0 7px 1px 7px;
+		vertical-align: top;
+		font-size: 12px;
+		line-height: 18px;
+		color: #F5F5F5;
+		cursor: default;
+		white-space: nowrap;
+		text-decoration: none;
+		background-color: @headColor;
+
+		&.interact {
+			cursor: pointer;
+
+			&:hover {
+				color: #fff;
+				background-color: @headColorHover;
+			}
+		}
+	}
 
 	.tree {
 		padding: 5px;

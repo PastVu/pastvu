@@ -36,6 +36,7 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					this.regions(this.treeBuild(data.regions));
+					this.regionsFlat = data.regions;
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -49,7 +50,6 @@ define([
 				len = arr.length,
 				hash = {},
 				region,
-				parent,
 				results = [];
 
 			arr.sort(function (a, b) {
@@ -91,6 +91,17 @@ define([
 		},
 		collapseToggle: function (data, event) {
 			data.opened(!data.opened());
+		},
+		expandAll: function (data, event) {
+			this.collapseToggleAll(true);
+		},
+		collapseAll: function (data, event) {
+			this.collapseToggleAll(false);
+		},
+		collapseToggleAll: function (expand) {
+			for (var i = this.regionsFlat.length - 1; i >= 0 ; i--) {
+				this.regionsFlat[i].opened(expand);
+			}
 		}
 	});
 });
