@@ -10,12 +10,22 @@ define([
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, doT, jade) {
 	'use strict';
 
-	var $request,
+	var $requestGoogle,
+		popupLoadingTpl = doT.template(
+			"<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
+				"<tr><td style='width: 200px;'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
+				"<tr><td><img src='/img/misc/load.gif' style='width: 67px; height: 10px'/></td></tr>" +
+				"</tbody></table>"
+		),
 		popupTpl = doT.template(
-			"<table border='0', cellspacing='5', cellpadding='0'><tbody>" +
-				"<tr><td colspan='2' style='text-align: center;'>{{=it.geo}}<hr></td></tr>" +
-				"<tr><td style='vertical-align: top;'><i>Short:</i></td><td style='width:190px;'><strong>{{=it.sc}};</strong><br>{{=it.s1}};<br><small>{{=it.s2}}</small></td></tr>" +
-				"<tr><td style='vertical-align: top;'><i>Long:</i></td><td style='width:190px;'><strong>{{=it.lc}};</strong><br>{{=it.l1}};<br><small>{{=it.l2}}</small></td></tr>" +
+			"<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
+				"<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
+				"<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
+				"<tr><td style='vertical-align: top;'>" +
+				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_en}}</a><br>{{~}}" +
+				"</td><td style=''>" +
+				"{{~it.garr :value:index}}{{=value}}<br>{{~}}" +
+				"</td></tr>" +
 				"</tbody></table>"
 		);
 
@@ -76,65 +86,88 @@ define([
 				.addTo(this.pointLayer);
 		},
 		updateRegion: function (geo) {
-			if ($request) {
-				$request.abort();
-				$request = null;
+			if ($requestGoogle) {
+				$requestGoogle.abort();
+				$requestGoogle = null;
 			}
-			$request = $.ajax(
+
+			this.marker.setPopupContent(popupLoadingTpl({geo: geo[0] + ' ; ' + geo[1]})).openPopup();
+
+			var ownRegionsDeffered = new $.Deferred(),
+				tplObj = {
+					geo: geo[0] + ' ; ' + geo[1],
+					parr: [],
+					garr: []
+				};
+
+			$requestGoogle = $.ajax(
 				'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
 				{
 					crossDomain: true,
 					dataType: 'json',
 					cache: false,
-					context: this,
-					error: function (jqXHR, textStatus, errorThrown) {
-						console.warn(textStatus, errorThrown);
-						this.marker.setPopupContent('<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + textStatus + '</div>').openPopup();
-					},
-					success: function (result, textStatus, jqXHR) {
-						if (result && Array.isArray(result.results)) {
-							var txt,
-								level2 = {},
-								level1 = {},
-								country = {},
-								i = result.results.length;
+					context: this
+				}
+			);
+			$requestGoogle
+				.fail(function (jqXHR, textStatus, errorThrown) {
+					console.warn(textStatus, errorThrown);
+					tplObj.garr.push(textStatus);
+				})
+				.done(function (result, textStatus, jqXHR) {
+					if (result && Array.isArray(result.results)) {
+						var txt,
+							level2 = {},
+							level1 = {},
+							country = {},
+							i = result.results.length;
 
-							if (result.status === 'OK') {
-								txt = '<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + 'Strange. Can\'t find administration levels' + '</div>';
-
-								while (i--) {
-									if (Array.isArray(result.results[i].types)) {
-										if (~result.results[i].types.indexOf('country')) {
-											country = result.results[i].address_components[0];
-										}
-										if (~result.results[i].types.indexOf('administrative_area_level_1')) {
-											level1 = result.results[i].address_components[0];
-										}
-										if (~result.results[i].types.indexOf('administrative_area_level_2')) {
-											level2 = result.results[i].address_components[0];
-										}
+						if (result.status === 'OK') {
+							while (i--) {
+								if (Array.isArray(result.results[i].types)) {
+									if (~result.results[i].types.indexOf('country')) {
+										country = result.results[i].address_components[0];
+									}
+									if (~result.results[i].types.indexOf('administrative_area_level_1')) {
+										level1 = result.results[i].address_components[0];
+									}
+									if (~result.results[i].types.indexOf('administrative_area_level_2')) {
+										level2 = result.results[i].address_components[0];
 									}
 								}
-								txt = popupTpl({
-									geo: geo[0] + ' ; ' + geo[1],
-									s2: level2.short_name, s1: level1.short_name, sc: country.short_name,
-									l2: level2.long_name, l1: level1.long_name, lc: country.long_name
-								});
-							} else {
-								txt = '<div style="text-align: center;">' + geo[0] + ' ; ' + geo[1] + '<br>' + result.status + '</div>';
 							}
-
-							this.marker.setPopupContent(txt).openPopup();
+							if (country.long_name) {
+								tplObj.garr.push(country.long_name);
+							}
+							if (level1.long_name) {
+								tplObj.garr.push(level1.long_name);
+							}
+							if (level2.long_name) {
+								tplObj.garr.push(level2.long_name);
+							}
+						} else {
+							tplObj.garr.push(result.status);
 						}
-						console.dir(result);
+
 					}
-				}
-			)
+				})
 				.always(function () {
-					$request = null;
+					$requestGoogle = null;
 				});
 
-			this.getPastvuRegion(geo);
+			$.when(ownRegionsDeffered.promise(), $requestGoogle).done(function () {
+				console.dir(tplObj);
+				this.marker.setPopupContent(popupTpl(tplObj)).openPopup();
+			}.bind(this));
+
+			this.getPastvuRegion(geo, function (err, data) {
+				if (err) {
+					tplObj.parr.push(data.message);
+				} else {
+					tplObj.parr = data.regions.reverse();
+				}
+				ownRegionsDeffered.resolve();
+			});
 		},
 		getPastvuRegion: function (geo, cb, ctx) {
 			socket.once('takeRegionsByGeo', function (data) {
@@ -142,12 +175,10 @@ define([
 
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else {
-					console.dir(data.regions);
 				}
 
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data, error);
+					cb.call(ctx, error, data);
 				}
 			}.bind(this));
 			socket.emit('giveRegionsByGeo', {geo: geo});
