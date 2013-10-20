@@ -95,7 +95,7 @@ function saveRegion(socket, data, cb) {
 				}
 				region = region.toObject();
 
-				getParentsAndChilds(region, function (err, childsAll, childsOwn, parentsSortedArr) {
+				getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
 					if (err) {
 						return cb({message: 'Saved, but: ' + err.message, error: true});
 					}
@@ -109,7 +109,7 @@ function saveRegion(socket, data, cb) {
 						delete region.geo;
 					}
 
-					cb({childsAll: childsAll, childsOwn: childsOwn, region: region});
+					cb({childLenArr: childLenArr, region: region});
 				});
 			});
 		}
@@ -132,7 +132,7 @@ function getRegion(socket, data, cb) {
 			return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 		}
 
-		getParentsAndChilds(region, function (err, childsAll, childsOwn, parentsSortedArr) {
+		getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -143,7 +143,7 @@ function getRegion(socket, data, cb) {
 			//Клиенту отдаем стрингованный geojson
 			region.geo = JSON.stringify(region.geo);
 
-			cb({childsAll: childsAll, childsOwn: childsOwn, region: region});
+			cb({childLenArr: childLenArr, region: region});
 		});
 	});
 }
@@ -158,29 +158,47 @@ function getParentsAndChilds(region, cb) {
 
 	step(
 		function () {
-			var ownChildrenQuery = {};
+			var childrenLevel = level,
+				childrenQuery = {};
 
-			//Ищем кол-во всех потомков
-			Region.count({parents: region.cid}, this.parallel());
+			//Ищем кол-во потомков по уровням
+			//У таких регионов на позиции текущего уровня будет стоять этот регион
+			//и на кажой итераци кол-во уровней будет на один больше текущего
+			//Например, потомки региона 77, имеющего одного родителя, будут найдены так:
+			// {'parents.1': 77, parents: {$size: 2}}
+			// {'parents.1': 77, parents: {$size: 3}}
+			// {'parents.1': 77, parents: {$size: 4}}
+			childrenQuery['parents.' + level] = region.cid;
+			while (childrenLevel++ < 4) {
+				childrenQuery.parents = {$size: childrenLevel};
+				Region.count(childrenQuery, this.parallel());
+			}
+		},
+		function (err/*, childCounts*/) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			var childLenArr = [],
+				i;
 
-			//Ищем кол-во собственных потомков (у которых этот регион непосредственный родитель)
-			//У таких регионов на позиции текущего уровня будет стоять этот регион и кол-во уровней будет на один больше текущего
-			//Например, прямые потомки региона 77, имеющего одного родителя, будут найдены так {'parents.1': 77, parents: {$size: 2}}
-			ownChildrenQuery['parents.' + level] = region.cid;
-			ownChildrenQuery.parents = {$size: level + 1};
-			Region.count(ownChildrenQuery, this.parallel());
+			for (i = 1; i < arguments.length; i++) {
+				if (arguments[i]) {
+					childLenArr.push(arguments[i]);
+				}
+			}
 
+			this.parallel()(null, childLenArr);
+			//Если есть родительские регионы - вручную их "популируем"
 			if (level) {
-				//Если есть родительские регионы - вручную их "популируем"
 				getOrderedRegionList(region.parents, this.parallel());
 			}
 		},
-		function (err, childsAll, childsOwn, parentsSortedArr) {
+		function (err, childLenArr, parentsSortedArr) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
 
-			cb(null, childsAll, childsOwn, parentsSortedArr);
+			cb(null, childLenArr, parentsSortedArr);
 		}
 	);
 }

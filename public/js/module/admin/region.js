@@ -30,8 +30,7 @@ define([
 			this.region = ko_mapping.fromJS(regionDef);
 			this.haveParent = ko.observable('0');
 			this.parentCid = ko.observable(0);
-			this.childsAll = ko.observable(0);
-			this.childsOwn = ko.observable(0);
+			this.childLenArr = ko.observableArray();
 			this.geoStringOrigin = null;
 			this.geoObj = null;
 
@@ -106,8 +105,7 @@ define([
 			ko_mapping.fromJS(regionDef, this.region);
 			this.haveParent('0');
 			this.parentCid(0);
-			this.childsAll(0);
-			this.childsOwn(0);
+			this.childLenArr([]);
 		},
 		drawData: function () {
 			if (this.layerSaved) {
@@ -132,8 +130,7 @@ define([
 
 			ko_mapping.fromJS(region, this.region);
 
-			this.childsAll(data.childsAll);
-			this.childsOwn(data.childsOwn);
+			this.childLenArr(data.childLenArr || []);
 			if (data.region.parents && data.region.parents.length) {
 				this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
 				this.haveParent('1');

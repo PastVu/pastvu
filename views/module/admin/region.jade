@@ -26,19 +26,23 @@
 					| &nbsp;Есть
 				//ko if: Number(haveParent())
 				input(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+				// /ko
+				//ko if: region.parents().length || childLenArr().length
 				.regions
 					//ko foreach: region.parents
-					a(data-bind="text: '' + $data.cid() + '. ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
+					a(data-bind="text: ' ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
 					| &nbsp;
 					i.icon-play
 					| &nbsp;
 					// /ko
-					//ko if: !createMode() && region.parents().length
-					span.current(title="Текущий регион", data-bind="text: region.cid() + '. ' + region.title_en()")
+					//ko if: !createMode()
+					span.current(title="Текущий регион", data-bind="text: ' ' + region.title_en()")
 					// /ko
-				// /ko
-				//ko if: childsAll() || childsOwn()
-				.childs(data-bind="text: childsOwn() + ' непосредственных потомков, всего ' + childsAll() + ' потомков'")
+					//ko foreach: childLenArr
+					| &nbsp;
+					i.icon-play
+					span(data-bind="text: ' ' + $data")
+					// /ko
 				// /ko
 		//ko if: createMode() || showGeo()
 		.control-group
