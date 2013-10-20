@@ -69,7 +69,7 @@ define([
 					this.marker.closePopup();
 				}, this)
 				.on('dragend', function () {
-					var latlng = this.getLatLng();
+					var latlng = this.marker.getLatLng();
 					this.updateRegion([to6Precision(latlng.lat), to6Precision(latlng.lng)]);
 				}, this)
 				.bindPopup(L.popup({maxWidth: 500, minWidth: 200, closeButton: false, offset: new L.Point(0, 60), autoPanPadding: new L.Point(5, 5)}))
@@ -133,9 +133,24 @@ define([
 				.always(function () {
 					$request = null;
 				});
-		},
-		getPastvuRegion: function (geo) {
 
+			this.getPastvuRegion(geo);
+		},
+		getPastvuRegion: function (geo, cb, ctx) {
+			socket.once('takeRegionsByGeo', function (data) {
+				var error = !data || !!data.error || !data.regions;
+
+				if (error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					console.dir(data.regions);
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data, error);
+				}
+			}.bind(this));
+			socket.emit('giveRegionsByGeo', {geo: geo});
 		}
 	});
 });

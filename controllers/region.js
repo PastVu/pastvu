@@ -257,11 +257,11 @@ var getRegionByGeoPoint = function () {
 	var defFields = {_id: 0, geo: 0, __v: 0};
 
 	return function (geo, fields, cb) {
-		Region.find({geo: {$nearSphere: {$geometry: {type: 'Point', coordinates: geo}}, $maxDistance: 1}}, fields || defFields, {lean: true, sort: {parents: -1}}, function (err, regions) {
-			if (err || !regions) {
-				return cb({message: err && err.message || 'No regions', error: true});
+		Region.find({geo: {$nearSphere: {$geometry: {type: 'Point', coordinates: geo}, $maxDistance: 1}} }, fields || defFields, {lean: true, sort: {parents: -1}}, function (err, regions) {
+			if (err) {
+				return cb(err);
 			}
-			cb({regions: regions});
+			cb(null, regions);
 		});
 	};
 }();
@@ -290,6 +290,30 @@ module.exports.loadController = function (app, db, io) {
 			getRegionList(socket, data, function (resultData) {
 				socket.emit('takeRegionList', resultData);
 			});
+		});
+		socket.on('giveRegionsByGeo', function (data) {
+			var iAm = hs.session.user;
+
+			if (!iAm || !iAm.role || iAm.role < 10) {
+				return response({message: msg.deny, error: true});
+			}
+			if (!Utils.isType('object', data) || !Utils.geoCheck(data.geo)) {
+				return response({message: 'Bad params', error: true});
+			}
+			data.geo = data.geo.reverse();
+
+			getRegionByGeoPoint(data.geo, {_id: 0, cid: 1, title_en: 1}, function (err, regions) {
+				if (err || !regions) {
+					response({message: err && err.message || 'No regions', error: true});
+				} else {
+					response({regions: regions});
+				}
+
+			});
+
+			function response(resultData) {
+				socket.emit('takeRegionsByGeo', resultData);
+			}
 		});
 	});
 
