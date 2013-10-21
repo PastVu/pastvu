@@ -9,7 +9,5 @@
 		.extlnk
 			span.infotxt Ссылка на отображаемую точку:
 			.input-append
-				input.input-xlarge(type="text", data-bind="value: location.host + location.pathname + link()")
-				span.add-on(title="Скопировать в буфер", data-bind="click: inputGeo")
-					i.icon-share
+				input.inputLink(type="text", onclick="this.select();", onkeypress="return false;", data-bind="value: location.host + location.pathname + link()")
 	.map

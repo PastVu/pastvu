@@ -237,10 +237,6 @@ define([
 							if (level1.long_name) {
 								tplObj.garr.push(level1.long_name);
 							}
-							/*
-							 if (level2.long_name) {
-							 tplObj.garr.push(level2.long_name);
-							 }*/
 						} else {
 							tplObj.garr.push(result.status);
 						}

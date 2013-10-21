@@ -45,8 +45,7 @@ require([
 				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
 				{route: "photo(/)(:section)(/)", handler: "photo"},
-				{route: "region(/)(:param1)(/)", handler: "region"},
-				{route: "regionCheck(/)", handler: "regionCheck"}
+				{route: "region(/)(:param1)(/)", handler: "region"}
 			],
 			handlers: {
 				index: function (section, param1, param2, qparams) {
@@ -123,27 +122,19 @@ require([
 						return;
 					}
 					if (param1) {
-						params = {section: 'region', cid: param1};
-						modules.push({module: 'm/admin/region', container: '#bodyContainer'});
+						if (param1 === 'check') {
+							params = {section: 'regionCheck'};
+							modules.push({module: 'm/admin/regionCheck', container: '#bodyContainer'});
+						} else {
+							params = {section: 'region', cid: param1};
+							modules.push({module: 'm/admin/region', container: '#bodyContainer'});
+						}
 					} else {
 						params = {section: 'region', cid: param1};
 						modules.push({module: 'm/admin/regionList', container: '#bodyContainer'});
 					}
 
 					this.params(_.assign(params, {_handler: 'region'}, qparams));
-					renderer(modules);
-				},
-				regionCheck: function (qparams) {
-					var auth = globalVM.repository['m/common/auth'],
-						modules = [];
-
-					if (!auth.loggedIn()) {
-						location.href = '/';
-						return;
-					}
-
-					this.params(_.assign({section: 'regionCheck', _handler: 'region'}, qparams));
-					modules.push({module: 'm/admin/regionCheck', container: '#bodyContainer'});
 					renderer(modules);
 				}
 			}
