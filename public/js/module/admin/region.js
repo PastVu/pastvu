@@ -36,15 +36,11 @@ define([
 
 			this.map = null;
 			this.layerSaved = null;
-			this.layerCurr = null;
 
 			this.mh = ko.observable('300px'); //Высота карты
 
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
 			this.routeHandler();
-
-			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
 		},
 		show: function (cb, ctx) {
 			globalVM.func.showContainer(this.$container);
@@ -63,6 +59,13 @@ define([
 			this.hide();
 			destroy.call(this);
 		},
+		makeBinding: function () {
+			if (!this.binded) {
+				ko.applyBindings(globalVM, this.$dom[0]);
+				this.show();
+				this.binded = true;
+			}
+		},
 		//Пересчитывает размер карты
 		sizesCalc: function () {
 			var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
@@ -72,43 +75,24 @@ define([
 				this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
 			}
 		},
-		createMap: function () {
-			if (this.map) {
-				return;
-			}
-			var options = {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: true};
-
-			if (this.layerSaved) {
-				options.center = this.layerSaved.getBounds().getCenter();
-			}
-
-			this.map = new L.map(this.$dom.find('.map')[0], options);
-			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
-				maxZoom: 16
-			}).addTo(this.map);
-		},
 		routeHandler: function () {
 			var cid = globalVM.router.params().cid;
 
 			if (cid === 'create') {
 				this.createMode(true);
 				this.resetData();
-				this.createMap();
-				if (Number(globalVM.router.params().parent))  {
+				if (Number(globalVM.router.params().parent)) {
 					this.parentCid(Number(globalVM.router.params().parent));
 					this.haveParent('1');
 				}
+				this.createMap();
 			} else {
 				cid = Number(cid);
 				if (!cid) {
 					return globalVM.router.navigateToUrl('/admin/region');
 				}
 				this.createMode(false);
-				this.getOneRegion(cid, function (data, error) {
-					if (!error) {
-						this.drawData();
-					}
-				}, this);
+				this.getOneRegion(cid);
 			}
 		},
 		resetData: function () {
@@ -119,24 +103,6 @@ define([
 			this.haveParent('0');
 			this.parentCid(0);
 			this.childLenArr([]);
-		},
-		drawData: function () {
-			if (this.layerSaved) {
-				this.map.removeLayer(this.layerSaved);
-			}
-			this.layerSaved = L.geoJson(this.geoObj, {
-				style: {
-					"color": "#F00",
-					"weight": 3,
-					"opacity": 0.6
-				}
-			});
-
-			if (!this.map) {
-				this.createMap();
-			}
-			this.map.fitBounds(this.layerSaved.getBounds());
-			this.layerSaved.addTo(this.map);
 		},
 		fillData: function (data) {
 			var region = data.region;
@@ -166,6 +132,53 @@ define([
 			}
 
 			return true;
+		},
+		drawData: function () {
+			var mapInit = !this.map;
+
+			if (this.layerSaved) {
+				this.map.removeLayer(this.layerSaved);
+			}
+			this.layerSaved = L.geoJson(this.geoObj, {
+				style: {
+					"color": "#F00",
+					"weight": 3,
+					"opacity": 0.6
+				}
+			});
+
+
+			this.createMap();
+			this.map.whenReady(function () {
+				if (mapInit) {
+					//В 0.6.4 бывает после создания карты fitBounds её подвешивает (#2085), поэтому вызываем в setTimeout
+					window.setTimeout(function () {
+						this.map.fitBounds(this.layerSaved.getBounds());
+						window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500); //Рисуем после анимации fitBounds
+					}.bind(this), 200);
+				} else {
+					this.map.fitBounds(this.layerSaved.getBounds());
+					window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500);
+				}
+			}, this);
+		},
+		createMap: function () {
+			//Bind и show должны вызываться перед созданием карты для правильно расчета её высоты
+			this.makeBinding();
+
+			if (this.map) {
+				return;
+			}
+			var options = {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false};
+
+			if (this.layerSaved) {
+				options.center = this.layerSaved.getBounds().getCenter();
+			}
+
+			this.map = new L.map(this.$dom.find('.map')[0], options);
+			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+				maxZoom: 16
+			}).addTo(this.map);
 		},
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {
