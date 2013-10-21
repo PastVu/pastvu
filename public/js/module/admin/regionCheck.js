@@ -18,12 +18,12 @@ define([
 				"</tbody></table>"
 		),
 		popupTpl = doT.template(
-			"<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
+			"<table style='text-align: center;', border='0', cellspacing='5', cellpadding='0'><tbody>" +
 				"<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
 				"<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
 				"<tr><td style='vertical-align: top;'>" +
 				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_en}}</a><br>{{~}}" +
-				"</td><td style=''>" +
+				"</td><td style='vertical-align: top;'>" +
 				"{{~it.garr :value:index}}{{=value}}<br>{{~}}" +
 				"</td></tr>" +
 				"</tbody></table>"
@@ -38,6 +38,7 @@ define([
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.regions = ko.observableArray();
+			this.geo = null;
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
@@ -70,6 +71,8 @@ define([
 			this.showing = true;
 		},
 		hide: function () {
+			this.updateRegionAbort();
+			socket.removeAllListeners('takeRegionsByGeo');
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -85,21 +88,68 @@ define([
 				.bindPopup(L.popup({maxWidth: 500, minWidth: 200, closeButton: false, offset: new L.Point(0, 60), autoPanPadding: new L.Point(5, 5)}))
 				.addTo(this.pointLayer);
 		},
-		updateRegion: function (geo) {
+		updateRegionAbort: function () {
+			if (this.ownRegionsDeffered) {
+				this.ownRegionsDeffered.reject();
+				this.ownRegionsDeffered = null;
+			}
+			if (this.googRegionsDeffered) {
+				this.googRegionsDeffered.reject();
+				this.googRegionsDeffered = null;
+			}
 			if ($requestGoogle) {
 				$requestGoogle.abort();
 				$requestGoogle = null;
 			}
+		},
+		updateRegion: function (geo) {
+			//Если уже ожидаются запросы - отменяем их
+			this.updateRegionAbort();
 
-			this.marker.setPopupContent(popupLoadingTpl({geo: geo[0] + ' ; ' + geo[1]})).openPopup();
+			var tplObj = {
+				geo: geo[0] + ' ; ' + geo[1],
+				parr: [],
+				garr: []
+			};
 
-			var ownRegionsDeffered = new $.Deferred(),
-				tplObj = {
-					geo: geo[0] + ' ; ' + geo[1],
-					parr: [],
-					garr: []
-				};
+			//Сразу показываем маркер загрузки регионов
+			this.marker.setPopupContent(popupLoadingTpl({geo: tplObj.geo})).openPopup();
+			this.geo = geo;
 
+			//Так как $.when дожидается исполнения обоих событий только если они оба успешные
+			//(если какой-то fail, то when выстрелит сразу и один раз),
+			//то надо создать свои deffered, которые резолвить по окончанию обоих запросов (независимо от их итогового статуса),
+			//а в случае повторного запроса реджектить.
+			//Тогда нижележащий $.when.done выстрелит гарантированно по окончанию обоих запросов
+			//и не выстрелит, если мы сами их отменим
+			this.ownRegionsDeffered = new $.Deferred();
+			this.googRegionsDeffered = new $.Deferred();
+			this.ownRegionsDeffered.always(function () {
+				this.ownRegionsDeffered = null;
+			}.bind(this));
+			this.googRegionsDeffered.always(function () {
+				this.googRegionsDeffered = null;
+			}.bind(this));
+			$.when(this.ownRegionsDeffered, this.googRegionsDeffered)
+				.done(function () {
+					console.log('WhenDone', geo[1]);
+					console.dir(tplObj);
+					this.marker.setPopupContent(popupTpl(tplObj)).openPopup();
+				}.bind(this));
+
+			//Запрашиваем собственные регионы
+			this.getPastvuRegion(geo, function (err, data) {
+				if (err) {
+					tplObj.parr.push(data.message);
+				} else {
+					tplObj.parr = data.regions.reverse();
+				}
+				if (this.ownRegionsDeffered) {
+					this.ownRegionsDeffered.resolve();
+				}
+			}, this);
+
+			//Запрашиваем регионы Google
 			$requestGoogle = $.ajax(
 				'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
 				{
@@ -116,8 +166,7 @@ define([
 				})
 				.done(function (result, textStatus, jqXHR) {
 					if (result && Array.isArray(result.results)) {
-						var txt,
-							level2 = {},
+						var level2 = {},
 							level1 = {},
 							country = {},
 							i = result.results.length;
@@ -141,10 +190,10 @@ define([
 							}
 							if (level1.long_name) {
 								tplObj.garr.push(level1.long_name);
-							}
+							}/*
 							if (level2.long_name) {
 								tplObj.garr.push(level2.long_name);
-							}
+							}*/
 						} else {
 							tplObj.garr.push(result.status);
 						}
@@ -152,27 +201,23 @@ define([
 					}
 				})
 				.always(function () {
+					if (this.googRegionsDeffered) {
+						this.googRegionsDeffered.resolve();
+					}
 					$requestGoogle = null;
 				});
-
-			$.when(ownRegionsDeffered.promise(), $requestGoogle).done(function () {
-				console.dir(tplObj);
-				this.marker.setPopupContent(popupTpl(tplObj)).openPopup();
-			}.bind(this));
-
-			this.getPastvuRegion(geo, function (err, data) {
-				if (err) {
-					tplObj.parr.push(data.message);
-				} else {
-					tplObj.parr = data.regions.reverse();
-				}
-				ownRegionsDeffered.resolve();
-			});
 		},
 		getPastvuRegion: function (geo, cb, ctx) {
-			socket.once('takeRegionsByGeo', function (data) {
-				var error = !data || !!data.error || !data.regions;
+			//Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			socket.removeAllListeners('takeRegionsByGeo');
+			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
+			socket.on('takeRegionsByGeo', function (data) {
+				//Если вернулись данные для другой(прошлой) точки, то выходи
+				if (data && (!Array.isArray(data.geo) || data.geo[0] !== this.geo[0] || data.geo[1] !== this.geo[1])) {
+					return;
+				}
 
+				var error = !data || !!data.error || !data.regions;
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				}

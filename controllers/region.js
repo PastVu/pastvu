@@ -306,7 +306,7 @@ module.exports.loadController = function (app, db, io) {
 				if (err || !regions) {
 					response({message: err && err.message || 'No regions', error: true});
 				} else {
-					response({regions: regions});
+					response({geo: data.geo.reverse(), regions: regions});
 				}
 
 			});
