@@ -39,12 +39,23 @@ define([
 			this.auth = globalVM.repository['m/common/auth'];
 			this.regions = ko.observableArray();
 			this.geo = null;
+			this.link = ko.observable('');
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
 		show: function () {
-			this.map = new L.map(this.$dom.find('.map')[0], {center: [55.751667, 37.617778], zoom: 6, minZoom: 3, maxZoom: 16, trackResize: true});
+			var passedGeo = globalVM.router.params().geo;
+			if (passedGeo) {
+				passedGeo = passedGeo.split(',').map(function(element){
+					return parseFloat(element);
+				});
+				if (!Utils.geoCheck(passedGeo)) {
+					passedGeo = null;
+				}
+			}
+
+			this.map = new L.map(this.$dom.find('.map')[0], {center: passedGeo || [55.751667, 37.617778], zoom: 6, minZoom: 3, maxZoom: 16, trackResize: true});
 			this.pointLayer = L.layerGroup();
 
 			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
@@ -58,6 +69,10 @@ define([
 						var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
 						this.goToGeo(geo);
 					}, this);
+
+				if (Utils.geoCheck(passedGeo)) {
+					this.goToGeo(passedGeo);
+				}
 			}, this);
 
 			globalVM.func.showContainer(this.$container);
@@ -102,6 +117,7 @@ define([
 				.on('dragstart', function () {
 					this.updateRegionAbort();
 					this.marker.closePopup();
+					this.link('');
 				}, this)
 				.on('dragend', function () {
 					var latlng = this.marker.getLatLng();
@@ -136,6 +152,7 @@ define([
 
 			//Сразу показываем маркер загрузки регионов
 			this.marker.setPopupContent(popupLoadingTpl({geo: tplObj.geo})).openPopup();
+			this.link('?geo=' + geo[0] + ',' + geo[1]);
 			this.geo = geo;
 
 			//Так как $.when дожидается исполнения обоих событий только если они оба успешные

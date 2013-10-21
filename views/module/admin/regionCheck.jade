@@ -1,9 +1,15 @@
 .adminRegionCheck(data-bind="with: repository[M!M]")
 	h4 Находит регионы по точке.
 	.topinfo
-		span.infotxt Кликните на карту или введите координаты через запятую
+		span.infotxt Кликните на карту или введите координаты через запятую:
 		.input-append
-			input.input-medium.inputGeo(type="text", id='inBirthdate', data-bind="event: { keyup: inputEnter}", placeholder="Широта, долгота")
+			input.input-medium.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Широта, долгота")
 			span.add-on(data-bind="click: inputGeo")
 				i.icon-screenshot
+		.extlnk
+			span.infotxt Ссылка на отображаемую точку:
+			.input-append
+				input.input-xlarge(type="text", data-bind="value: location.host + location.pathname + link()")
+				span.add-on(title="Скопировать в буфер", data-bind="click: inputGeo")
+					i.icon-share
 	.map
