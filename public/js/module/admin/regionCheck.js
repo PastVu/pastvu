@@ -56,14 +56,7 @@ define([
 					.addLayer(this.pointLayer)
 					.on('click', function (e) {
 						var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
-
-						if (this.marker) {
-							this.marker.closePopup();
-							this.marker.setLatLng(geo);
-						} else {
-							this.markerCreate(geo);
-						}
-						this.updateRegion(geo);
+						this.goToGeo(geo);
 					}, this);
 			}, this);
 
@@ -76,9 +69,38 @@ define([
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+		inputEnter: function (data, event) {
+			if (event.keyCode === 13) {
+				this.inputGeo();
+			}
+			return true;
+		},
+		inputGeo: function (data, event) {
+			var val = this.$dom.find('input.inputGeo').val(),
+				geo = val.split(',').map(function(element){
+					return parseFloat(element);
+				});
+
+			if (Utils.geoCheck(geo)) {
+				this.map.panTo(geo);
+				this.goToGeo(geo);
+			} else {
+				window.noty({text: 'Неверный формат', type: 'error', layout: 'center', timeout: 1000, force: true});
+			}
+		},
+		goToGeo: function (geo) {
+			if (this.marker) {
+				this.marker.closePopup();
+				this.marker.setLatLng(geo);
+			} else {
+				this.markerCreate(geo);
+			}
+			this.updateRegion(geo);
+		},
 		markerCreate: function (geo) {
 			this.marker = L.marker(geo, {draggable: true, title: 'Точка для проверки региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], popupAnchor: [0, -36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragstart', function () {
+					this.updateRegionAbort();
 					this.marker.closePopup();
 				}, this)
 				.on('dragend', function () {
@@ -107,7 +129,7 @@ define([
 			this.updateRegionAbort();
 
 			var tplObj = {
-				geo: geo[0] + ' ; ' + geo[1],
+				geo: geo[0] + ' , ' + geo[1],
 				parr: [],
 				garr: []
 			};
@@ -132,8 +154,6 @@ define([
 			}.bind(this));
 			$.when(this.ownRegionsDeffered, this.googRegionsDeffered)
 				.done(function () {
-					console.log('WhenDone', geo[1]);
-					console.dir(tplObj);
 					this.marker.setPopupContent(popupTpl(tplObj)).openPopup();
 				}.bind(this));
 
@@ -190,10 +210,11 @@ define([
 							}
 							if (level1.long_name) {
 								tplObj.garr.push(level1.long_name);
-							}/*
-							if (level2.long_name) {
-								tplObj.garr.push(level2.long_name);
-							}*/
+							}
+							/*
+							 if (level2.long_name) {
+							 tplObj.garr.push(level2.long_name);
+							 }*/
 						} else {
 							tplObj.garr.push(result.status);
 						}
