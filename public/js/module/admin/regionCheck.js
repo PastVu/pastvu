@@ -45,17 +45,21 @@ define([
 			this.show();
 		},
 		show: function () {
-			var passedGeo = globalVM.router.params().geo;
+			var passedGeo = globalVM.router.params().g,
+				passedZoom;
+
 			if (passedGeo) {
 				passedGeo = passedGeo.split(',').map(function(element){
 					return parseFloat(element);
 				});
-				if (!Utils.geoCheck(passedGeo)) {
+				if (Utils.geoCheck(passedGeo)) {
+					passedZoom = Number(globalVM.router.params().z);
+				} else {
 					passedGeo = null;
 				}
 			}
 
-			this.map = new L.map(this.$dom.find('.map')[0], {center: passedGeo || [55.751667, 37.617778], zoom: 6, minZoom: 3, maxZoom: 16, trackResize: true});
+			this.map = new L.map(this.$dom.find('.map')[0], {center: passedGeo || [55.751667, 37.617778], zoom: passedZoom || 7, minZoom: 3, maxZoom: 16, trackResize: true});
 			this.pointLayer = L.layerGroup();
 
 			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
@@ -65,6 +69,11 @@ define([
 			this.map.whenReady(function () {
 				this.map
 					.addLayer(this.pointLayer)
+					.on('zoomend', function (e) {
+						if (this.geo && this.link()) {
+							this.link('?g=' + this.geo[0] + ',' + this.geo[1]+'&z=' + this.map.getZoom());
+						}
+					}, this)
 					.on('click', function (e) {
 						var geo = [to6Precision(e.latlng.lat), to6Precision(e.latlng.lng)];
 						this.goToGeo(geo);
@@ -152,7 +161,7 @@ define([
 
 			//Сразу показываем маркер загрузки регионов
 			this.marker.setPopupContent(popupLoadingTpl({geo: tplObj.geo})).openPopup();
-			this.link('?geo=' + geo[0] + ',' + geo[1]);
+			this.link('?g=' + geo[0] + ',' + geo[1]+'&z=' + this.map.getZoom());
 			this.geo = geo;
 
 			//Так как $.when дожидается исполнения обоих событий только если они оба успешные
