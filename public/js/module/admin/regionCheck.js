@@ -41,6 +41,8 @@ define([
 			this.geo = null;
 			this.link = ko.observable('');
 
+			this.mh = ko.observable('300px'); //Высота карты
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 			this.show();
 		},
@@ -49,7 +51,7 @@ define([
 				passedZoom;
 
 			if (passedGeo) {
-				passedGeo = passedGeo.split(',').map(function(element){
+				passedGeo = passedGeo.split(',').map(function (element) {
 					return parseFloat(element);
 				});
 				if (Utils.geoCheck(passedGeo)) {
@@ -58,6 +60,11 @@ define([
 					passedGeo = null;
 				}
 			}
+
+			globalVM.func.showContainer(this.$container);
+			this.showing = true;
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+			this.sizesCalc();
 
 			this.map = new L.map(this.$dom.find('.map')[0], {center: passedGeo || [55.751667, 37.617778], zoom: passedZoom || 7, minZoom: 3, maxZoom: 16, trackResize: true});
 			this.pointLayer = L.layerGroup();
@@ -71,7 +78,7 @@ define([
 					.addLayer(this.pointLayer)
 					.on('zoomend', function (e) {
 						if (this.geo && this.link()) {
-							this.link('?g=' + this.geo[0] + ',' + this.geo[1]+'&z=' + this.map.getZoom());
+							this.link('?g=' + this.geo[0] + ',' + this.geo[1] + '&z=' + this.map.getZoom());
 						}
 					}, this)
 					.on('click', function (e) {
@@ -83,9 +90,15 @@ define([
 					this.goToGeo(passedGeo);
 				}
 			}, this);
+		},
+		//Пересчитывает размер карты
+		sizesCalc: function () {
+			var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
 
-			globalVM.func.showContainer(this.$container);
-			this.showing = true;
+			this.mh(height + 'px');
+			if (this.map) {
+				this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+			}
 		},
 		hide: function () {
 			this.updateRegionAbort();
@@ -101,7 +114,7 @@ define([
 		},
 		inputGeo: function (data, event) {
 			var val = this.$dom.find('input.inputGeo').val(),
-				geo = val.split(',').map(function(element){
+				geo = val.split(',').map(function (element) {
 					return parseFloat(element);
 				});
 
@@ -161,7 +174,7 @@ define([
 
 			//Сразу показываем маркер загрузки регионов
 			this.marker.setPopupContent(popupLoadingTpl({geo: tplObj.geo})).openPopup();
-			this.link('?g=' + geo[0] + ',' + geo[1]+'&z=' + this.map.getZoom());
+			this.link('?g=' + geo[0] + ',' + geo[1] + '&z=' + this.map.getZoom());
 			this.geo = geo;
 
 			//Так как $.when дожидается исполнения обоих событий только если они оба успешные

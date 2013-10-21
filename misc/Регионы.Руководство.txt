@@ -11,6 +11,7 @@ Krasnogorsk - 181345
 USA - 148838
 New York - 61320
 New York City - 175905
+New Jersey - 224951
 
 France - 1403916
 Bretagne - 102740

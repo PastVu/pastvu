@@ -38,6 +38,8 @@ define([
 			this.layerSaved = null;
 			this.layerCurr = null;
 
+			this.mh = ko.observable('300px'); //Высота карты
+
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
 			this.routeHandler();
 
@@ -47,6 +49,8 @@ define([
 		show: function (cb, ctx) {
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
+			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+			this.sizesCalc();
 		},
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
@@ -58,6 +62,15 @@ define([
 
 			this.hide();
 			destroy.call(this);
+		},
+		//Пересчитывает размер карты
+		sizesCalc: function () {
+			var height = P.window.h() - this.$dom.find('.map').offset().top - 37 >> 0;
+
+			this.mh(height + 'px');
+			if (this.map) {
+				this.map.whenReady(this.map._onResize, this.map); //Самостоятельно обновляем размеры карты
+			}
 		},
 		createMap: function () {
 			if (this.map) {
