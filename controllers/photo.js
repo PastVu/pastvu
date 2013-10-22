@@ -533,18 +533,26 @@ function givePhoto(socket, data, cb) {
 						paralellUser(err, photo && photo.toObject({getters: true}));
 					});
 				}
+				regionController.getObjRegionList(photo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, this.parallel());
 
 				if (iAm) {
 					UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
 				}
 			},
-			function (err, photo, subscr) {
+			function (err, photo, regions, subscr) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
 
 				if (subscr) {
 					photo.subscr = true;
+				}
+
+				for (var i = 0; i < 5; i++) {
+					delete photo['r' + i];
+				}
+				if (regions.length) {
+					photo.regions = regions;
 				}
 
 				if (!iAm || !photo.ccount) {

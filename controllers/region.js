@@ -190,7 +190,7 @@ function getParentsAndChilds(region, cb) {
 			this.parallel()(null, childLenArr);
 			//Если есть родительские регионы - вручную их "популируем"
 			if (level) {
-				getOrderedRegionList(region.parents, this.parallel());
+				getOrderedRegionList(region.parents, null, this.parallel());
 			}
 		},
 		function (err, childLenArr, parentsSortedArr) {
@@ -203,35 +203,6 @@ function getParentsAndChilds(region, cb) {
 	);
 }
 
-/**
- * Возвращает список регионов по массиву cid в том же порядке, что и переданный массив
- * @param cidArr Массив номеров регионов
- * @param cb
- */
-function getOrderedRegionList(cidArr, cb) {
-	Region.find({cid: {$in: cidArr}}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
-		if (err) {
-			return cb(err);
-		}
-		var parentsSortedArr = [],
-			parent,
-			i = cidArr.length,
-			parentfind = function (parent) {
-				return parent.cid === cidArr[i];
-			};
-
-		if (cidArr.length === regions.length) {
-			//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
-			while (i--) {
-				parent = _.find(regions, parentfind);
-				if (parent) {
-					parentsSortedArr.unshift(parent);
-				}
-			}
-		}
-		cb(null, parentsSortedArr);
-	});
-}
 
 function getRegionList(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
@@ -252,8 +223,47 @@ function getRegionList(socket, data, cb) {
 	});
 }
 
+/**
+ * Возвращает список регионов по массиву cid в том же порядке, что и переданный массив
+ * @param cidArr Массив номеров регионов
+ * @param cb
+ */
+var getOrderedRegionList = (function () {
+	var defFields = {_id: 0, geo: 0, __v: 0};
 
-function getObjRegionList(obj, regionsHash, cb) {
+	return function (cidArr, fields, cb) {
+		Region.find({cid: {$in: cidArr}}, fields || defFields, {lean: true}, function (err, regions) {
+			if (err) {
+				return cb(err);
+			}
+			var parentsSortedArr = [],
+				parent,
+				i = cidArr.length,
+				parentfind = function (parent) {
+					return parent.cid === cidArr[i];
+				};
+
+			if (cidArr.length === regions.length) {
+				//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
+				while (i--) {
+					parent = _.find(regions, parentfind);
+					if (parent) {
+						parentsSortedArr.unshift(parent);
+					}
+				}
+			}
+			cb(null, parentsSortedArr);
+		});
+	};
+}());
+
+/**
+ * Возвращает спопулированный массив регионов для заданного объекта
+ * @param obj Объект (фото, комментарий и т.д.)
+ * @param fields Выбранные поля регионов
+ * @param cb Коллбек
+ */
+function getObjRegionList(obj, fields, cb) {
 	var cidArr = [],
 		rcid,
 		i;
@@ -261,31 +271,36 @@ function getObjRegionList(obj, regionsHash, cb) {
 	for (i = 0; i < 5; i++) {
 		rcid = obj['r' + i];
 		if (rcid) {
-			cidArr.push(regionsHash ? regionsHash[rcid] : rcid);
+			cidArr.push(rcid);
 		}
 	}
-	if (!cidArr.length || regionsHash) {
+	if (!cidArr.length) {
 		cb(null, cidArr);
 	} else {
-		getOrderedRegionList(cidArr, cb);
+		getOrderedRegionList(cidArr, fields, cb);
 	}
 }
 
-function setObjRegions(obj, geo, hashFields, cb) {
-	if (!hashFields) {
-		hashFields = {_id: 0, cid: 1, parents: 1};
-	} else if (!hashFields.cid || !hashFields.parents) {
-		hashFields.cid = 1;
-		hashFields.parents = 1;
+/**
+ * Устанавливает объекту свойства регионов r0-r4 на основе переданной координаты
+ * @param obj Объект (фото, комментарий и т.д.)
+ * @param geo Координата
+ * @param returnArrFields В коллбек вернётся массив регионов с выбранными полями
+ * @param cb Коллбек
+ */
+function setObjRegions(obj, geo, returnArrFields, cb) {
+	if (!returnArrFields) {
+		returnArrFields = {_id: 0, cid: 1, parents: 1};
+	} else if (!returnArrFields.cid || !returnArrFields.parents) {
+		returnArrFields.cid = 1;
+		returnArrFields.parents = 1;
 	}
-	getRegionByGeoPoint(geo, hashFields, function (err, regions) {
+	getRegionsByGeoPoint(geo, returnArrFields, function (err, regions) {
 		if (err || !regions) {
 			return cb(err || {message: 'No regions'});
 		}
 		var regionsArr = [],
 			i;
-
-		console.log(regions);
 
 		for (i = 0; i < 5; i++) {
 			if (regions[i]) {
@@ -299,6 +314,10 @@ function setObjRegions(obj, geo, hashFields, cb) {
 		cb(null, regionsArr);
 	});
 }
+/**
+ * Очищает все регионы у объекта
+ * @param obj Объект (фото, комментарий и т.д.)
+ */
 function clearObjRegions(obj) {
 	for (var i = 0; i < 5; i++) {
 		obj['r' + i] = undefined;
@@ -306,7 +325,7 @@ function clearObjRegions(obj) {
 }
 
 //Возвращает список регионов, в которые попадает заданая точка
-var getRegionByGeoPoint = function () {
+var getRegionsByGeoPoint = function () {
 	var defFields = {_id: 0, geo: 0, __v: 0};
 
 	return function (geo, fields, cb) {
@@ -355,7 +374,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 			data.geo = data.geo.reverse();
 
-			getRegionByGeoPoint(data.geo, {_id: 0, cid: 1, title_en: 1}, function (err, regions) {
+			getRegionsByGeoPoint(data.geo, {_id: 0, cid: 1, title_en: 1}, function (err, regions) {
 				if (err || !regions) {
 					response({message: err && err.message || 'No regions', error: true});
 				} else {
@@ -371,7 +390,7 @@ module.exports.loadController = function (app, db, io) {
 	});
 
 };
-module.exports.getRegionByGeoPoint = getRegionByGeoPoint;
+module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;
