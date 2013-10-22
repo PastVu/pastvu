@@ -33,6 +33,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				stack_order: 0,
 
 				geo: null,
+				regions: [],
 				dir: undefined,
 
 				type: 'image/jpeg',

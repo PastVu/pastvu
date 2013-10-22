@@ -236,11 +236,11 @@ async.waterfall([
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);
+		require('./controllers/region.js').loadController(app, db, io);
 		require('./controllers/photo.js').loadController(app, db, io);
 		require('./controllers/subscr.js').loadController(app, db, io);
 		require('./controllers/comment.js').loadController(app, db, io);
 		require('./controllers/profile.js').loadController(app, db, io);
-		require('./controllers/region.js').loadController(app, db, io);
 		require('./controllers/admin.js').loadController(app, db, io);
 		if (land === 'dev') {
 			require('./controllers/tpl.js').loadController(app);

@@ -27,8 +27,17 @@ var FragmentSchema = new Schema({
 		hs: {type: Number}, //Стандартная высота
 
 		geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
-		dir: {type: String, 'default': ''},
 
+		//Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
+		//http://docs.mongodb.org/manual/faq/indexes/#can-i-use-a-multi-key-index-to-support-a-query-for-a-whole-array
+		//Поэтому делаем избыточные поля на каждый уровень региона, со sparse индексом
+		r0: {type: Number, sparse: true},
+		r1: {type: Number, sparse: true},
+		r2: {type: Number, sparse: true},
+		r3: {type: Number, sparse: true},
+		r4: {type: Number, sparse: true},
+
+		dir: {type: String, 'default': ''},
 		title: {type: String, 'default': ''},
 		year: {type: Number, 'default': 2000},
 		year2: {type: Number},

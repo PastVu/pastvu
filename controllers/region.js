@@ -252,6 +252,29 @@ function getRegionList(socket, data, cb) {
 	});
 }
 
+function getObjRegionList(obj, regionsHash, cb) {
+	var cidArr = [],
+		rcid,
+		i;
+
+	for (i = 0; i < 5; i++) {
+		rcid = obj['r' + i];
+		if (rcid) {
+			cidArr.push(regionsHash ? regionsHash[rcid] : rcid);
+		}
+	}
+	if (!cidArr.length || regionsHash) {
+		cb(null, cidArr);
+	} else {
+		getOrderedRegionList(cidArr, cb);
+	}
+}
+function clearObjRegions(obj) {
+	for (var i = 0; i < 5; i++) {
+		obj['r' + i] = undefined;
+	}
+}
+
 //Возвращает список регионов, в которые попадает заданая точка
 var getRegionByGeoPoint = function () {
 	var defFields = {_id: 0, geo: 0, __v: 0};
@@ -318,3 +341,6 @@ module.exports.loadController = function (app, db, io) {
 	});
 
 };
+module.exports.getRegionByGeoPoint = getRegionByGeoPoint;
+module.exports.getObjRegionList = getObjRegionList;
+module.exports.clearObjRegions = clearObjRegions;
