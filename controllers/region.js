@@ -252,6 +252,7 @@ function getRegionList(socket, data, cb) {
 	});
 }
 
+
 function getObjRegionList(obj, regionsHash, cb) {
 	var cidArr = [],
 		rcid,
@@ -268,6 +269,35 @@ function getObjRegionList(obj, regionsHash, cb) {
 	} else {
 		getOrderedRegionList(cidArr, cb);
 	}
+}
+
+function setObjRegions(obj, geo, hashFields, cb) {
+	if (!hashFields) {
+		hashFields = {_id: 0, cid: 1, parents: 1};
+	} else if (!hashFields.cid || !hashFields.parents) {
+		hashFields.cid = 1;
+		hashFields.parents = 1;
+	}
+	getRegionByGeoPoint(geo, hashFields, function (err, regions) {
+		if (err || !regions) {
+			return cb(err || {message: 'No regions'});
+		}
+		var regionsArr = [],
+			i;
+
+		console.log(regions);
+
+		for (i = 0; i < 5; i++) {
+			if (regions[i]) {
+				obj['r' + regions[i].parents.length] = regions[i].cid;
+				regionsArr[regions[i].parents.length] = regions[i];
+			} else {
+				obj['r' + i] = undefined;
+			}
+		}
+
+		cb(null, regionsArr);
+	});
 }
 function clearObjRegions(obj) {
 	for (var i = 0; i < 5; i++) {
@@ -343,4 +373,5 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.getRegionByGeoPoint = getRegionByGeoPoint;
 module.exports.getObjRegionList = getObjRegionList;
+module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;

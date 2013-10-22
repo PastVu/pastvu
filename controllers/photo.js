@@ -908,12 +908,11 @@ function giveCanPhoto(socket, data, cb) {
 function savePhoto(socket, data, cb) {
 	var user = socket.handshake.session.user,
 		cid = Number(data.cid),
-		regionsHash = {},
 		photoOldObj,
 		newValues,
 		oldGeo,
 		newGeo,
-		sendingBack = {};
+		sendingBack = {regions: []};
 
 	if (!user) {
 		return cb({message: msg.deny, error: true});
@@ -969,14 +968,11 @@ function savePhoto(socket, data, cb) {
 
 		if (!_.isEqual(oldGeo, newGeo)) {
 			if (newGeo) {
-				regionController.getRegionByGeoPoint(newGeo, {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1}, function (err, regions) {
-					if (err || !regions) {
-						return cb({message: err && err.message || 'No regions', error: true});
+				regionController.setObjRegions(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
+					if (err) {
+						return cb({message: err.message, error: true});
 					}
-					for (var i = 0; i < regions.length; i++) {
-						newValues['r' + regions[i].parents.length] = regions[i].cid;
-						regionsHash[regions[i].cid] = regions[i];
-					}
+					sendingBack.regions = regionsArr;
 					save();
 				});
 			} else {
@@ -1003,27 +999,23 @@ function savePhoto(socket, data, cb) {
 					oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
 				}
 
-				step (
-					function () {
-						regionController.getObjRegionList(photoSaved, regionsHash, this.parallel());
+				// Если фото - публичное, у него
+				// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
+				// то запускаем пересчет кластеров этой фотографии
+				if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
+					(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
+					(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+					PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, finish);
+				} else {
+					finish();
+				}
 
-						// Если фото - публичное, у него
-						// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
-						// то запускаем пересчет кластеров этой фотографии
-						if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
-							(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
-							(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-							PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, this.parallel());
-						}
-					},
-					function finish(err, regions) {
-						if (err) {
-							return cb({message: 'Photo saved, but ' + err.message, error: true});
-						}
-						sendingBack.regions = regions;
-						cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
+				function finish(err) {
+					if (err) {
+						return cb({message: 'Photo saved, but ' + err.message, error: true});
 					}
-				);
+					cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
+				}
 			});
 		}
 	});
