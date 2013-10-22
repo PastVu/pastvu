@@ -141,25 +141,19 @@ define([
 			}
 			this.layerSaved = L.geoJson(this.geoObj, {
 				style: {
-					"color": "#F00",
-					"weight": 3,
-					"opacity": 0.6
+					color: "#F00",
+					weight: 3,
+					opacity: 0.6,
+					clickable: false
 				}
 			});
 
-
 			this.createMap();
 			this.map.whenReady(function () {
-				if (mapInit) {
-					//В 0.6.4 бывает после создания карты fitBounds её подвешивает (#2085), поэтому вызываем в setTimeout
-					window.setTimeout(function () {
-						this.map.fitBounds(this.layerSaved.getBounds());
-						window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500); //Рисуем после анимации fitBounds
-					}.bind(this), 200);
-				} else {
+				if (!mapInit) {
 					this.map.fitBounds(this.layerSaved.getBounds());
-					window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500);
 				}
+				window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), mapInit ? 100 : 500); //Рисуем после анимации fitBounds
 			}, this);
 		},
 		createMap: function () {
@@ -169,16 +163,13 @@ define([
 			if (this.map) {
 				return;
 			}
-			var options = {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false};
 
+			this.map = new L.map(this.$dom.find('.map')[0], {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false});
 			if (this.layerSaved) {
-				options.center = this.layerSaved.getBounds().getCenter();
+				//window.setTimeout(this.map.fitBounds.bind(this.map, this.layerSaved.getBounds()), 200); //В 0.6.4 бывает после создания карты fitBounds её подвешивает (#2085), поэтому вызываем пока в setTimeout
+				this.map.fitBounds(this.layerSaved.getBounds());
 			}
-
-			this.map = new L.map(this.$dom.find('.map')[0], options);
-			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
-				maxZoom: 16
-			}).addTo(this.map);
+			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
 		},
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {
