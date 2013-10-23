@@ -5,7 +5,7 @@
 			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
 			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
 				span start
-		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
+		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length ? '' : 'none'}")
 
 	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
 		.span8-9.photoPanel
@@ -117,24 +117,32 @@
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
 		.row-fluid.photoInfoBlock
-			//ko if: p.title().length > 0
+			//ko if: p.title().length
 			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
 			// /ko
-			//ko if: p.desc().length > 0
+			//ko if: p.regions().length
+			.row-fluid.regions(data-bind="foreach: p.regions")
+				.region
+					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/admin/region/' + $data.cid()}")
+					//ko if: $index() < $parent.p.regions().length - 1
+					| ,&nbsp;
+					// /ko
+			// /ko
+			//ko if: p.desc().length
 			.row-fluid.photoInfo(data-bind="html: p.desc()")
 			// /ko
 		.row-fluid.photoInfoBlock
-			//ko if: p.address().length > 0
+			//ko if: p.address().length
 			.row-fluid.photoInfo
 				.infoName Адрес снимка:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес точки съемки?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
 			// /ko
-			//ko if: p.source().length > 0
+			//ko if: p.source().length
 			.row-fluid.photoInfo
 				.infoName Источник:
 				.editable(data-bind="html: p.source()")
 			// /ko
-			//ko if: p.author().length > 0
+			//ko if: p.author().length
 			.row-fluid.photoInfo
 				.infoName Автор:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
@@ -146,7 +154,7 @@
 				span(data-bind="html: p.year()")
 				span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
 				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
-				//ko if: p.dir && p.dir() && p.dir().length > 0
+				//ko if: p.dir && p.dir() && p.dir().length
 				span &nbsp;(направление съемки &minus;&nbsp;
 				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )
