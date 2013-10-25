@@ -1,7 +1,6 @@
 @import "_vars.less";
 @import "fonts/fontU.less";
-@import "bootstrap/bootstrap.less";
-@import "bootstrap/responsive.less";
+@import "bs/bootstrap.less";
 
 ::-webkit-scrollbar-button:decrement {
 	height: 36px;
@@ -84,7 +83,7 @@ html, body {
 	bottom: 0;
 	opacity: 0;
 	background-color: rgba(0, 0, 0, 0.3);
-	z-index: @zindexModalBackdrop;
+	z-index: @zindex-modal-background;
 
 	// Ценрируем форму
 	text-align: center;
@@ -115,7 +114,7 @@ html, body {
 		border-color: @MainBlueColor;
 		background-color: darken(@MainLigthColor, 5%);
 		.box-shadow(0 2px 30px 1px #666);
-		z-index: @zindexModal;
+		z-index: @zindex-modal;
 
 		.neoModalTools {
 			position: relative;
@@ -278,16 +277,16 @@ html, body {
 		margin: 0 auto;
 		filter: none;
 		background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2Y5ZjlmOSIgc3RvcC1vcGFjaXR5PSIwLjciLz4KICAgIDxzdG9wIG9mZnNldD0iOCUiIHN0b3AtY29sb3I9IiMwNzVhYjMiIHN0b3Atb3BhY2l0eT0iMC44Ii8+CiAgICA8c3RvcCBvZmZzZXQ9IjQ5JSIgc3RvcC1jb2xvcj0iIzA1M2Y3ZSIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjkyJSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjgiLz4KICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2Y5ZjlmOSIgc3RvcC1vcGFjaXR5PSIwLjciLz4KICA8L2xpbmVhckdyYWRpZW50PgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9InVybCgjZ3JhZC11Y2dnLWdlbmVyYXRlZCkiIC8+Cjwvc3ZnPg==);
-		background: -moz-linear-gradient(left, fade(@bodyBackground, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@bodyBackground, 70%) 100%); /* FF3.6+ */
+		background: -moz-linear-gradient(left, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* FF3.6+ */
 		background: -webkit-gradient(linear, left top, right top, color-stop(0%, rgba(242, 242, 242, 0)), color-stop(1%, rgba(222, 229, 237, 0)), color-stop(12%, rgba(7, 90, 179, 0.8)), color-stop(49%, rgba(5, 63, 126, 1)), color-stop(88%, rgba(7, 90, 179, 0.8)), color-stop(100%, rgba(242, 242, 242, 0))); /* Chrome,Safari4+ */
-		background: -webkit-linear-gradient(left, fade(@bodyBackground, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@bodyBackground, 70%) 100%); /* Chrome10+,Safari5.1+ */
-		background: -o-linear-gradient(left, fade(@bodyBackground, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@bodyBackground, 70%) 100%); /* Opera 11.10+ */
-		background: -ms-linear-gradient(left, fade(@bodyBackground, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@bodyBackground, 70%) 100%); /* IE10+ */
-		background: linear-gradient(to right, fade(@bodyBackground, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@bodyBackground, 70%) 100%); /* W3C */
+		background: -webkit-linear-gradient(left, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* Chrome10+,Safari5.1+ */
+		background: -o-linear-gradient(left, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* Opera 11.10+ */
+		background: -ms-linear-gradient(left, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* IE10+ */
+		background: linear-gradient(to right, fade(@body-bg, 70%) 0%, rgba(7, 90, 179, 0.8) 8%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 92%, fade(@body-bg, 70%) 100%); /* W3C */
 		z-index: -1;
 	}
 	span {
-		background: @bodyBackground;
+		background: @body-bg;
 		padding: 0 8px;
 	}
 }
