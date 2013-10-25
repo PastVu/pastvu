@@ -33,6 +33,27 @@
 								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
 		.accordion-group
 			.accordion-heading
+				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Регионы
+			.accordion-body.collapse.in#notice
+				.accordion-inner
+					dl.dl-horizontal
+						dt Мой язык
+						dd
+							.btn-group-toggle
+								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
+								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
+						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+					dl.dl-horizontal
+						dt Мои регионы
+						dd.throttle(data-bind="foreach: vars.subscr_throttle")
+							label.checkbox
+								input.thr(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
+								| &nbsp;
+								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
+						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+
+		.accordion-group
+			.accordion-heading
 				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Подписка и уведомления
 			.accordion-body.collapse.in#notice
 				.accordion-inner

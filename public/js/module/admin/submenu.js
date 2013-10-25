@@ -23,7 +23,8 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 				],
 				region: [
 					{name: 'Список и просмотр', href: "/admin/region", section: 'region'},
-					{name: 'Проверка по точке', href: "/admin/region/check", section: 'regionCheck'}
+					{name: 'Проверка по точке', href: "/admin/region/check", section: 'regionCheck'},
+					{name: 'Select', href: "/admin/region/select", section: 'regionSelect'}
 				]
 			};
 
