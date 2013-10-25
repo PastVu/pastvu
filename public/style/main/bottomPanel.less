@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .bottomPanel {
 	position: relative;
@@ -116,7 +116,7 @@
 			padding: 0;
 			text-align: center;
 			border-width: 0 0 1px 0;
-			background: darken(@navbarBackground, 1%);
+			background: darken(@navbar-default-bg, 1%);
 			.box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
 
 			.nav {
@@ -208,7 +208,7 @@
 
 				.comm {
 					bottom: @PhotoTitleHeight + 4 - 4;
-					font-size: @fontSizeSmall;
+					font-size: @font-size-small;
 					line-height: 14px;
 				}
 				.photoTitle {
@@ -269,7 +269,7 @@
 				.ratAmount {
 					display: block;
 					font-size: 12px;
-					color: @textColor;
+					color: @text-color;
 				}
 			}
 		}

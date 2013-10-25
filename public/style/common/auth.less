@@ -1,6 +1,6 @@
 @import "../_vars";
-@import "../bootstrap/variables";
-@import "../bootstrap/mixins";
+@import "../bs/variables";
+@import "../bs/mixins";
 
 @authFormWidth: 300px;
 
@@ -34,11 +34,11 @@
 		background-color: darken(@MainLigthColor, 5%);
 		@shadow: 0 2px 4px 0px #222, inset 0 0 15px 3px darken(@MainLigthColor, 17%);
 		.box-shadow(@shadow);
-		z-index: @zindexPopover;
+		z-index: @zindex-popover;
 
 		.footnote {
 			width: @authFormWidth;
-			font-size: @fontSizeSmall;
+			font-size: @font-size-small;
 			color: #7391B3;
 			margin: -16px 0 10px 0;
 
@@ -62,7 +62,7 @@
 			left: 0;
 			right: 0;
 			bottom: 0;
-			z-index: @zindexTooltip;
+			z-index: @zindex-tooltip;
 		}
 
 		&.working::after {
@@ -122,7 +122,7 @@
 			}
 			.userTitleLogin {
 				display: block;
-				color: @textColor;
+				color: @text-color;
 			}
 		}
 
@@ -252,7 +252,7 @@
 			}
 			/* The area containing the validation message&nbsp;*/
 			&::-webkit-validation-bubble-message {
-				font: 11px/14px @baseFontFamily;
+				font: 11px/14px @font-family-base;
 				color: @MainBlueColor;
 				border-radius: 0;
 				border: 1px solid @MainBlueColor;

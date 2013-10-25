@@ -1,12 +1,12 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .mapNavigator {
 	position: absolute;
 	width: 71px;
 	box-sizing: content-box;
-	z-index: @zindexPopover;
+	z-index: @zindex-popover;
 	.user-select(none);
 
 	.stateWrap {
@@ -187,7 +187,7 @@
 			left: 20px;
 			width: 27px;
 			height: 10px;
-			font-family: @altFontFamily;
+			font-family: @font-family-alt;
 			font-size: 11px;
 			line-height: 11px;
 			text-align: center;
@@ -196,7 +196,7 @@
 
 			&:hover {
 				border-color: #EFF2FF;
-				color: @white;
+				color: #fff;
 			}
 		}
 

@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 @import "../leaflet.less";
 
 @spinVal: 242 / 121;
@@ -117,7 +117,7 @@
 		right: 0;
 		bottom: 0;
 		height: 26px;
-		background-color: darken(@navbarLinkBackgroundActive, 5%);
+		background-color: darken(@navbar-default-link-active-bg, 5%);
 
 		.ui-slider-range {
 			background: none;
@@ -202,7 +202,7 @@
 		.transition(none);
 
 		.leaflet-popup-content-wrapper {
-			.border-radius(0);
+			border-radius: 0;
 			.box-shadow(0 1px 12px rgba(0, 0, 0, 0.6));
 
 			.leaflet-popup-content {
@@ -329,7 +329,7 @@
 	.photoIcon {
 		overflow: visible;
 		.box-shadow(0 0 1px 1px #fff);
-		.border-radius(50%);
+		border-radius: 50%;
 
 		&::after {
 			display: none;
@@ -566,9 +566,9 @@
 		font-weight: bold;
 		font-family: Arial;
 		text-align: center;
+		border-radius: 50%;
 		.box-sizing(border-box);
 		.box-shadow(0 0 1px 1px #fff);
-		.border-radius(50%);
 
 		&.m {
 			line-height: 16px;

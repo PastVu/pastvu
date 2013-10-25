@@ -1,13 +1,13 @@
 @import "../_vars";
-@import "../bootstrap/variables";
-@import "../bootstrap/mixins";
+@import "../bs/variables";
+@import "../bs/mixins";
 
 /**
  * TOP PANEL
  */
 #top {
 	position: relative;
-	//font-family: @altFontFamily;
+	//font-family: @font-family-alt;
 
 	.appV {
 		position: absolute;
@@ -38,7 +38,7 @@
 		background-image: url(/img/misc/logo.png);
 		background-position: 50% 50%;
 		background-repeat: no-repeat;
-		z-index: @zindexPopover;
+		z-index: @zindex-popover;
 		zoom: 1; // IE fix for left
 		.box-sizing(border-box);
 	}
@@ -48,7 +48,7 @@
 		top: 39px;
 		left: 1px;
 		white-space: nowrap;
-		z-index: @zindexPopover;
+		z-index: @zindex-popover;
 	}
 
 	#panel {
@@ -71,7 +71,7 @@
 			cursor: pointer;
 
 			&:hover {
-				color: @white;
+				color: #fff;
 			}
 		}
 
@@ -91,14 +91,14 @@
 			height: 30px;
 			padding: 0 7px;
 			color: @MainLigthColor;
-			font: 14px/30px @baseFontFamily;
+			font: 14px/30px @font-family-base;
 			text-align: center;
 			vertical-align: middle;
 			white-space: nowrap;
 			cursor: pointer;
 
 			&:hover {
-				color: @white;
+				color: #fff;
 				#gradient > .vertical-three-colors(fade(darken(@MainBlueColor, 6%), 10%), darken(@MainBlueColor, 6%), 55%, fade(darken(@MainBlueColor, 6%), 10%));
 				background-color: transparent;
 			}

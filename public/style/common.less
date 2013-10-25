@@ -486,7 +486,7 @@ html, body {
 			bottom: 0;
 			height: @PhotoTitleHeight;
 			padding: 0 0 0 3px;
-			font-family: @uconFontFamily;
+			font-family: @font-family-alt;
 			font-size: 16px;
 			line-height: @PhotoTitleHeight;
 			color: @MainLigthColor;
@@ -600,8 +600,6 @@ h4 {
 .navbar-inner {
 	padding-left: 5px;
 	padding-right: 5px;
-	#gradient > .vertical(@navbarBackground, @navbarBackgroundHighlight);
-	.border-radius(0);
 	.box-shadow(~'0 0 0 1px #000, 0 1px 6px 0px #222');
 }
 
@@ -656,11 +654,10 @@ a.disabled:hover {
 .btn-strict {
 	display: inline-block;
 	position: relative;
-	.ie7-inline-block();
 	margin: 0 7px 0 1px;
 	padding: 1px 9px;
-	font-size: @baseFontSize;
-	line-height: @baseLineHeight;
+	font-size: @font-size-base;
+	line-height: @line-height-computed;
 	text-align: center;
 	vertical-align: middle;
 	cursor: pointer;
@@ -673,14 +670,14 @@ a.disabled:hover {
 	.caret {
 		margin-top: 8px;
 		margin-left: 1px;
-		border-top-color: @white;
-		border-bottom-color: @white;
+		border-top-color: #fff;
+		border-bottom-color: #fff;
 	}
 
 	&.btn-strict-small {
 		padding: 1px 6px;
 		font-size: 12px;
-		line-height: @baseLineHeight - 3px;
+		line-height: @line-height-computed - 3px;
 		.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
 
 		[class^="icon-"] {
@@ -694,8 +691,8 @@ a.disabled:hover {
 	}
 	&.btn-strict-mini {
 		padding: 0 5px;
-		font-size: @fontSizeMini;
-		line-height: @baseLineHeight - 4px;
+		font-size: @font-size-mini;
+		line-height: @line-height-computed - 4px;
 		.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
 
 		[class^="icon-"] {

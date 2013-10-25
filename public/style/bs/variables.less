@@ -39,14 +39,17 @@
 // Typography
 // -------------------------
 
+@font-family-ucon: 		  UCondensed;
 @font-family-sans-serif:  "Helvetica Neue", Helvetica, Arial, sans-serif;
 @font-family-serif:       Georgia, "Times New Roman", Times, serif;
 @font-family-monospace:   Monaco, Menlo, Consolas, "Courier New", monospace;
 @font-family-base:        @font-family-sans-serif;
+@font-family-alt:         @font-family-ucon;
 
-@font-size-base:          14px;
+@font-size-base:          14spx;
 @font-size-large:         ceil(@font-size-base * 1.25); // ~18px
 @font-size-small:         ceil(@font-size-base * 0.85); // ~12px
+@font-size-mini:          ceil(@font-size-base * 0.75); // ~12px
 
 @font-size-h1:            floor(@font-size-base * 2.6); // ~36px
 @font-size-h2:            floor(@font-size-base * 2.15); // ~30px
@@ -261,8 +264,8 @@
 @navbar-padding-vertical:          ((@navbar-height - @line-height-computed) / 2);
 
 @navbar-default-color:             #777;
-@navbar-default-bg:                #f8f8f8;
-@navbar-default-border:            darken(@navbar-default-bg, 6.5%);
+@navbar-default-bg:                darken(desaturate(@MainBlueColor, 7%), 5%);
+@navbar-default-border:            darken(#C3C7DD, 5%);
 
 // Navbar links
 @navbar-default-link-color:                #777;

@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 @maxThumbDimension: 164px; // 246x164
 
@@ -138,7 +138,7 @@
 			}
 			.comm {
 				bottom: @PhotoTitleHeight + 4 - 3;
-				font-size: @fontSizeSmall;
+				font-size: @font-size-small;
 				line-height: 14px;
 			}
 			.photoTitle {
@@ -153,7 +153,7 @@
 @media (min-width: 900px) and (max-width: 1280px) {
 	.gallery {
 		.photoPreview {
-			font-size: @fontSizeSmall;
+			font-size: @font-size-small;
 			padding-bottom: @PhotoTitleHeight - 4;
 
 			&.addPhoto {
@@ -163,7 +163,7 @@
 			}
 			.comm {
 				bottom: @PhotoTitleHeight + 4 - 4;
-				font-size: @fontSizeSmall;
+				font-size: @font-size-small;
 				line-height: 14px;
 			}
 			.photoTitle {
@@ -178,7 +178,7 @@
 @media (max-width: 899px) {
 	.gallery {
 		.photoPreview {
-			font-size: @fontSizeMini;
+			font-size: @font-size-mini;
 			padding-bottom: @PhotoTitleHeight - 5;
 
 			&.addPhoto {
@@ -189,7 +189,7 @@
 			.comm {
 				min-width: 12px;
 				bottom: @PhotoTitleHeight + 4 - 5;
-				font-size: @fontSizeMini;
+				font-size: @font-size-mini;
 				line-height: 13px;
 			}
 			.photoTitle {
