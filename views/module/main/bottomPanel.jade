@@ -1,6 +1,6 @@
 .bottomPanel(data-bind="with: repository[M!M]")
 	//ko if: news().length > 0
-	.row-fluid.news
+	.row.news
 		.newsHeader Новости проекта
 		//ko foreach: news
 		//ko if: $index
@@ -20,7 +20,7 @@
 				// /ko
 		// /ko
 	// /ko
-	.row-fluid
+	.row
 		.navbar.catMenu
 			.navbar-inner
 				ul.nav
@@ -37,7 +37,7 @@
 		// /ko
 
 	script(id="photosTpl", type="text/html")
-		.row-fluid.photosNew
+		.row.photosNew
 			//ko foreach: photos
 			.photoPreview.withTitle.fringe(data-bind="attr: {title: title}")
 				a.photoBox(data-bind="attr: {href: $data.link}")
@@ -56,10 +56,10 @@
 			// /ko
 
 	script(id="ratingsTpl", type="text/html")
-		.row-fluid.ratings
+		.row.ratings
 			.span6
 				.catHead Рейтинг фотографий
-				.row-fluid
+				.row
 					.span6
 						.catGroupHead По просмотрам
 						.btn-group#pbyview
@@ -78,7 +78,7 @@
 						// /ko
 			.span6
 				.catHead Рейтинг пользователей
-				.row-fluid
+				.row
 					.span6
 						.catGroupHead По комментариям
 						.btn-group#ubycomm
@@ -97,34 +97,34 @@
 						// /ko
 
 	script(id="ratingsColumnTpl", type="text/html")
-		a.row-fluid.ratElem(data-bind="attr: {href: $data.link}")
+		a.row.ratElem(data-bind="attr: {href: $data.link}")
 			.imgLoad
 				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onImgLoad, error: $parent.onImgErr}")
 			.ratName(data-bind="text: $data.title, css: {online: $data.online}")
 			.ratAmount(data-bind="text: $data.amount")
 
 	script(id="statsTpl", type="text/html")
-		.row-fluid.stats
-			.row-fluid.statsFast
+		.row.stats
+			.row.statsFast
 				.onlineStat(data-bind="text: stats.common.onlineTxt")
-			.row-fluid
+			.row
 				.span6
 					.catHead Весь проект
-					.row-fluid
-						.row-fluid(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-						.row-fluid(data-bind="text: 'Фотографий: ' + stats.all.pallCount")
-						.row-fluid(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
-						.row-fluid(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
-						.row-fluid(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
-						.row-fluid(data-bind="text: 'Комментариев: ' + stats.all.callCount")
-						.row-fluid(data-bind="text: 'Сегодня новых комментариев: ' + stats.all.cdayCount")
-						.row-fluid(data-bind="text: 'За неделю новых комментариев: ' + stats.all.cweekCount")
+					.row
+						.row(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
+						.row(data-bind="text: 'Фотографий: ' + stats.all.pallCount")
+						.row(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+						.row(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
+						.row(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
+						.row(data-bind="text: 'Комментариев: ' + stats.all.callCount")
+						.row(data-bind="text: 'Сегодня новых комментариев: ' + stats.all.cdayCount")
+						.row(data-bind="text: 'За неделю новых комментариев: ' + stats.all.cweekCount")
 				//-.span6
 					.catHead Москва
-					.row-fluid
-						.row-fluid(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
-						.row-fluid(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-						.row-fluid(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
-						.row-fluid(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
-						.row-fluid(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
+					.row
+						.row(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
+						.row(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
+						.row(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+						.row(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
+						.row(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
 

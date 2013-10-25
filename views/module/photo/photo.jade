@@ -7,9 +7,9 @@
 				span start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length ? '' : 'none'}")
 
-	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
+	.row.photoData(data-bind="css: {editMode: edit()}")
 		.span8-9.photoPanel
-			.row-fluid.photoImgRow
+			.row.photoImgRow
 				.photoImgSuperWrap
 					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 						img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
@@ -41,7 +41,7 @@
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
 		.span3-4.rightPanel
-			.row-fluid.photoUser
+			.row.photoUser
 				table(style="width: 100%; margin-top: 0px; border-width: 0px;", border="0", cellspacing="0", cellpadding="0")
 					tbody
 						tr
@@ -62,9 +62,9 @@
 											// /ko
 									// /ko
 								// /ko
-			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
+			.row.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
-			.row-fluid.photoTiles
+			.row.photoTiles
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: nearestRibbon
@@ -74,8 +74,8 @@
 						.curtain
 				// /ko
 			// /ko
-		.row-fluid.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
-	.row-fluid.heightExpander
+		.row.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
+	.row.heightExpander
 
 
 	//-ACTIONS VIEW MODE
@@ -116,12 +116,12 @@
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
-		.row-fluid.photoInfoBlock
+		.row.photoInfoBlock
 			//ko if: p.title().length
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
+			.row.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
 			// /ko
 			//ko if: p.regions().length
-			.row-fluid.regions(data-bind="foreach: p.regions")
+			.row.regions(data-bind="foreach: p.regions")
 				.region
 					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/admin/region/' + $data.cid()}")
 					//ko if: $index() < $parent.p.regions().length - 1
@@ -129,26 +129,26 @@
 					// /ko
 			// /ko
 			//ko if: p.desc().length
-			.row-fluid.photoInfo(data-bind="html: p.desc()")
+			.row.photoInfo(data-bind="html: p.desc()")
 			// /ko
-		.row-fluid.photoInfoBlock
+		.row.photoInfoBlock
 			//ko if: p.address().length
-			.row-fluid.photoInfo
+			.row.photoInfo
 				.infoName Адрес снимка:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес точки съемки?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
 			// /ko
 			//ko if: p.source().length
-			.row-fluid.photoInfo
+			.row.photoInfo
 				.infoName Источник:
 				.editable(data-bind="html: p.source()")
 			// /ko
 			//ko if: p.author().length
-			.row-fluid.photoInfo
+			.row.photoInfo
 				.infoName Автор:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
 			// /ko
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
+		.row.photoInfoBlock
+			.row.photoInfo
 				| Мы думаем, что снимок сделан
 				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
 				span(data-bind="html: p.year()")
@@ -165,23 +165,23 @@
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
-			.row-fluid.photoInfo.photoDesc
+		.row.photoInfoBlock
+			.row.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
+			.row.photoInfo.photoDesc
 				textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
 				label.descInputLabel(data-bind="click: descLabelClickBind") Опишите фотографию
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
+		.row.photoInfoBlock
+			.row.photoInfo
 				.infoName Адрес снимка:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес снимка?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-			.row-fluid.photoInfo
+			.row.photoInfo
 				.infoName Источник:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Если вам известен источник фотографии, укажите его здесь'}")
-			.row-fluid.photoInfo
+			.row.photoInfo
 				.infoName Автор:
 				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
+		.row.photoInfoBlock
+			.row.photoInfo
 				| Я считаю, что снимок сделан между&nbsp;
 				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
 				| &nbsp;и&nbsp;

@@ -1,6 +1,6 @@
 .conveyerModuleWrapper(data-bind="with: repository[M!M]")
 	h4 Управление конвейером конвертаций фотографий
-	.row-fluid
+	.row
 		.span2-3
 			h6 Действия
 			button.btn-strict.btn-strict-small.btn-strict-warning(type="button", data-bind="css: {disabled: exe(), 'btn-strict-warning': conveyerEnabled(), 'btn-strict-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
@@ -30,10 +30,10 @@
 				span.stateRate(data-bind="text:cmaxlength()")
 				span.stateDesc Максимальная длина конвейера с песледней 10-минутки
 	br
-	.row-fluid
+	.row
 		h6 Сконвертированно
 		#conveyerConvertGraph
 	br
-	.row-fluid
+	.row
 		h6 Максимальная длина конвейера
 		#conveyerLengthGraph

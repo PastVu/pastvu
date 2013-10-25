@@ -1,5 +1,5 @@
 .user_brief(data-bind="with: repository[M!M]")
-	.row-fluid
+	.row
 		.avatar.fringe
 			img(data-bind="attr: {src: user.avatar(), alt: user.disp()}, event: {load: onAvaLoad, error: onAvaError}")
 			//ko if: avaexe()
@@ -22,16 +22,16 @@
 			// /ko
 			// /ko
 
-	.row-fluid.userName(data-bind="text: user.disp()")
+	.row.userName(data-bind="text: user.disp()")
 	//ko if: rn()
-	.row-fluid.roleName(data-bind="text: rn(), css: rc()")
+	.row.roleName(data-bind="text: rn(), css: rc()")
 	// /ko
 
-	//-.row-fluid(data-bind="style: {display:  can_pm() ? '': 'none'}")
+	//-.row(data-bind="style: {display:  can_pm() ? '': 'none'}")
 		button.btn-strict(type="button", data-bind="event: {}")
 			i.icon-envelope.icon-white
 			span Send message
-	.row-fluid.statBlock
+	.row.statBlock
 		#info_common.block
 			.head Общее
 			.h_separator
@@ -40,7 +40,7 @@
 				dd(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
 				dt Статус:
 				dd(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
-	.row-fluid.statBlock
+	.row.statBlock
 		#short_stat.block
 			.head Краткая статистика
 			.h_separator

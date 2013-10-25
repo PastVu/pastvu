@@ -1,11 +1,11 @@
 .newsWrapper(data-bind="with: repository[M!M]")
 	.indentLogo.newsHeader Новости проекта
 	//ko if: canEdit()
-	.row-fluid
+	.row
 		a.addNews(href="/admin/news/create")
 			| Добавить новость
 	// /ko
-	.row-fluid.news
+	.row.news
 		//ko foreach: news
 		hr
 		.novel.clearfix

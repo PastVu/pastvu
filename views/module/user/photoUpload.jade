@@ -1,12 +1,12 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
-	.row-fluid.text-error(style="margin-bottom: 5px;")
+	.row.text-error(style="margin-bottom: 5px;")
 		| Внимание! Временно принимаются только фотографии в пределах Московской и Ленинградской областей, остальные будут отклонены. Подробности&nbsp;
 		a(target="_blank", href="/news/85") здесь
-	.row-fluid.toptext(data-bind="html: toptext()")
+	.row.toptext(data-bind="html: toptext()")
 
 	//ko if: canLoad()
 	form(id="fileupload", method="POST", enctype="multipart/form-data")
-		.row-fluid#addFiles
+		.row#addFiles
 			span.btn-strict#fileinput-btn
 				i.icon-plus.icon-white
 				span Добавить...
@@ -20,7 +20,7 @@
 	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
 	// /ko
 
-	.row-fluid(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
+	.row(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
 			.progress.progress-striped.active
 				.bar(data-bind="style: {width: fileProgressAll() + '%'}")

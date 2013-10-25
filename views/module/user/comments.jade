@@ -1,9 +1,9 @@
 .comments(data-bind="with: repository[M!M]")
 	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: briefText")
-	.row-fluid.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
+	.row.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	.row-fluid.comments(data-bind="foreach: comments")
-		.row-fluid.comment
+	.row.comments(data-bind="foreach: comments")
+		.row.comment
 			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
 				img.img(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			.commentHead
@@ -15,7 +15,7 @@
 				.commentChanged(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parent.commentHist($data.cid)}")
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-	.row-fluid.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
+	.row.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	script(id="pagerTpl", type="text/html")
 		ul

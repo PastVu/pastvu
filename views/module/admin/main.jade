@@ -1,6 +1,6 @@
 .mainAdmin(data-bind="with: repository[M!M]")
 	h6 Текущие соединения
-	.row-fluid
+	.row
 		div
 			span.stateRate
 				.rate(data-bind="text: onlines.users()")
@@ -46,7 +46,7 @@
 			br
 			| Пользователь, авторизованный (залогиненный) в нескольких браузерах одновременно, считается как один, но имеет несколько сессий, по количеству открытых браузеров. Поэтому "активных сессий авторизованных" может быть больше числа авторизованных.
 		br
-	.row-fluid
+	.row
 		//ko if: headers().length
 		h6 Заголовки АКТИВНЫХ сессий без соединений (при наличии):
 		div(data-bind="foreach: headers")
@@ -54,7 +54,7 @@
 			.headers(data-bind="html: $data")
 		br
 		// /ko
-	.row-fluid
+	.row
 		//ko if: headersWC().length
 		h6 Заголовки ОЖИАЮЩИХ сессий без соединений (при наличии):
 		div(data-bind="foreach: headersWC")

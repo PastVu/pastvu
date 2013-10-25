@@ -1,11 +1,11 @@
 .subscr(data-bind="with: repository[M!M]")
 	//ko if: nextNoty() !== null
-	.row-fluid.pagOverTop
+	.row.pagOverTop
 		.nextNoty
 			i.icon-bullhorn.icon-white
 		span(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
 	// /ko
-	.row-fluid.pagTop
+	.row.pagTop
 		.pills
 			ul.nav.nav-pills
 				li(data-bind="css: {active: type() === 'photo'}")
@@ -16,9 +16,9 @@
 		//ko if: paginationShow()
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 		// /ko
-	.row-fluid.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
+	.row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
 	//ko if: paginationShow()
-	.row-fluid.pagBottoms
+	.row.pagBottoms
 		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
 	// /ko
 	script(id="photoSubscrTpl", type="text/html")
