@@ -21,6 +21,13 @@ define([
 			}, this);
 		},
 		show: function (cb, ctx) {
+			this.$dom.find('#tokenfield').tokenfield({
+				typeahead: {
+					name: 'tags',
+					local: ['red','blue','green','yellow','violet','brown','purple','black','white']
+				},
+				allowDuplicates: true
+			});
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},

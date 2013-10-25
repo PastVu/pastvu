@@ -5,7 +5,15 @@
  * Copyright 2013 Sliptree
  * ============================================================ */
 
-!function ($) {
+(function (factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['jquery', 'bs/bootstrap-typeahead'], factory);
+	} else {
+		// Browser globals
+		factory(jQuery);
+	}
+}(function ($) {
 
   "use strict"; // jshint ;_;
 
@@ -887,4 +895,4 @@
     return this
   }
 
-}(window.jQuery);
+}));
