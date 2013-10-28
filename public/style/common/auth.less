@@ -28,7 +28,7 @@
 		display: inline-block;
 		vertical-align: middle;
 		text-align: left;
-		padding: 0 15px 36px;
+		padding: 0 15px;
 		color: @MainBlueColor;
 		border-color: darken(@MainLigthColor, 5%);
 		background-color: darken(@MainLigthColor, 5%);
@@ -38,9 +38,9 @@
 
 		.footnote {
 			width: @authFormWidth;
-			font-size: @font-size-small;
+			font-size: @font-size-mini;
 			color: #7391B3;
-			margin: -16px 0 10px 0;
+			margin: 0px 0 10px 0;
 
 			.lll {
 				border-color: #7696BC;
@@ -185,11 +185,7 @@
 
 		.inputwrap {
 			position: relative;
-			margin: 5px 0 8px;
-
-			&:first-child {
-				margin-bottom: 5px;
-			}
+			margin-top: 5px;
 
 			&::after {
 				content: '';
@@ -214,13 +210,12 @@
 				background-position: -72px 0;
 			}
 		}
-		input {
-			display: inline-block;
+		input.form-control {
+			height: 30px;
 			outline: medium none !important;
-			border: 1px solid #8C8C8C;
+			border-color: #8C8C8C;
 			color: #000;
 			padding: 5px 5px 4px 21px;
-			width: @authFormWidth - 5 - 21 - 2;
 			background-color: rgba(255, 255, 255, 0.6);
 			.box-shadow(~'inset 0 1px 4px 0 #A8A8A8');
 			.transition(background-color 0.2s ease-out);
@@ -261,13 +256,18 @@
 			}
 
 		}
+		.col-xs-6 {
+			&.colcent {
+				text-align: center;
+			}
+			&.colright {
+				text-align: right;
+			}
+		}
 
 		button {
-			position: absolute;
-			bottom: 13px;
 			text-shadow: 0 1px 1px #000;
 			font-weight: bold;
-			font-size: 13px;
 			width: 90px;
 
 			&[type='submit'] {

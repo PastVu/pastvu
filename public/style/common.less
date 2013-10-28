@@ -652,19 +652,10 @@ a.disabled:hover {
 
 //Custom buttons
 .btn-strict {
-	display: inline-block;
-	position: relative;
-	margin: 0 7px 0 1px;
-	padding: 1px 9px;
-	font-size: @font-size-base;
-	line-height: @line-height-computed;
-	text-align: center;
-	vertical-align: middle;
-	cursor: pointer;
+	margin: 0 4px 0 0;
 	color: @MainLigthColor;
-	white-space: nowrap;
-	background-color: #285991;
 	border: 1px solid #C3C7DD;
+	.button-size(1px; 9px; @font-size-base; @line-height-base);
 	.box-shadow(~'0 0 0 1px #000, 0 2px 6px 0 #222');
 
 	.caret {
@@ -674,89 +665,59 @@ a.disabled:hover {
 		border-bottom-color: #fff;
 	}
 
-	&.btn-strict-small {
-		padding: 1px 6px;
-		font-size: 12px;
-		line-height: @line-height-computed - 3px;
-		.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
-
-		[class^="icon-"] {
-			margin-top: 0;
-			margin-right: 6px;
-			vertical-align: top;
-		}
-		.caret {
-			margin-top: 8px;
-		}
-	}
-	&.btn-strict-mini {
-		padding: 0 5px;
-		font-size: @font-size-mini;
-		line-height: @line-height-computed - 4px;
-		.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
-
-		[class^="icon-"] {
-			margin-top: 0;
-			margin-right: 5px;
-		}
-		.caret {
-			margin-top: 6px;
-		}
-	}
-
 	&:hover {
-		color: #fff;
-		text-decoration: none;
 		background-color: spin(#285991, 5);
-	}
-
-	&:focus {
-		color: #fff;
-		outline: 0;
 	}
 
 	&.active,
 	&:active {
-		background-color: spin(#285991, 5);
-		background-color: spin(#285991, 5) e("\9");
-		outline: 0;
 		border-color: darken(#C3C7DD, 15%);
+		background-color: spin(#285991, 5);
 		.box-shadow(~'0 0 0 1px #000, 0 0 0 0 #222, 0 1px 4px -2px #000 inset');
 		.transition(box-shadow .05s linear);
 	}
 
 	&.disabled,
 	&[disabled] {
-		cursor: default;
 		background-color: darken(#285991, 15%);
-		.opacity(65);
 		.box-shadow(~'0 0 0 1px #000');
 	}
-
-	&.btn-strict-primary {
-		background-color: #285991;
-	}
-	&.btn-strict-warning {
-		background-color: #E99100;
-	}
-	&.btn-strict-danger {
-		background-color: #D12A14;
-	}
-	&.btn-strict-success {
-		background-color: #439B43;
-	}
-	&.btn-strict-info {
-		background-color: #2F96B4;
-	}
-	&.btn-strict-inverse {
-		background-color: #222;
-	}
-
-	[class^="icon-"], [class*=" icon-"] {
-		margin: 1px 8px 0 0;
-	}
-
 }
+.btn-strict-lg {
+	// line-height: ensure even-numbered height of button next to large input
+	.button-size(@padding-large-vertical; @padding-large-horizontal; @font-size-large; @line-height-large);
+}
+.btn-strict-sm {
+	.button-size(1px; 6px; @font-size-small; @line-height-computed - 3px);
+	.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
+}
+.btn-strict-sm {
+	.button-size(0px; 5px; @font-size-mini; @line-height-computed - 4px);
+	.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
+}
+
+.btn-strict-default {
+	background-color: #285991;
+}
+.btn-strict-primary {
+	background-color: #285991;
+}
+.btn-strict-warning {
+	background-color: #E99100;
+}
+.btn-strict-danger {
+	background-color: #D12A14;
+}
+.btn-strict-success {
+	background-color: #439B43;
+}
+.btn-strict-info {
+	background-color: #2F96B4;
+}
+.btn-strict-inverse {
+	background-color: #222;
+}
+
 // Float them, remove border radius, then re-add to first and last elements
 .btn-group-toggle > [class*="btn-strict"] {
 	position: relative;

@@ -12,10 +12,10 @@
 	#logo {
 		position: absolute;
 		top: 0;
-		left: 24px;
+		left: 0;
 		width: 30px;
 		height: 30px;
-		padding: 0;
+		padding: 1px 0 0 0;
 		cursor: pointer;
 		zoom: 1; // IE fix for left
 		z-index: @zindex-popover;
@@ -26,12 +26,12 @@
 		.transition(all .25s linear);
 
 		&.hover, &:hover {
-			left: 9px;
+			left: 10px;
 			width: @logoW;
 			height: @logoH;
 			padding: 6px;
 			border-color: #c3c7dd;
-			background-color: darken(@MainBlueColor, 6%);
+			background-color: @MainBlueColor;
 			.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0 #222');
 		}
 	}
@@ -39,7 +39,7 @@
 		position: relative;
 		display: inline-block;
 		top: 0;
-		left: 56px;
+		left: 30px;
 		width: 275px;
 		height: 29px;
 		line-height: 29px;
@@ -48,7 +48,7 @@
 		.transition(left .25s linear);
 
 		&.hover, &:hover {
-			left: 66px;
+			left: 67px;
 			color: #fff;
 		}
 	}

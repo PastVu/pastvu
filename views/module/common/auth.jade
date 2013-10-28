@@ -8,33 +8,39 @@
 
 	script(id="loginTpl", type="text/html")
 		.head Авторизация
-		dl.dl-horizontal
-			dt Имя пользователя:
-			dd
-				span(data-bind="click: function () {mode('reg')}") Регистрация
-		div.inputwrap.user
-			input(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
-		dl.dl-horizontal
-			dt Пароль:
-			dd
-				span(data-bind="click: function () {mode('recallRequest')}") Восстановить пароль
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
-		.footnote
-			| Если вы были зарегистрированы на проектах oldmos или oldsp, воспользуйтесь&nbsp;
-			span.lll(data-bind="click: function () {mode('recallRequest')}") формой восстановления пароля
-		dl.dl-horizontal
-			dt.checked#remember(onclick="this.classList.toggle('checked')") Запомнить меня
-			dd.cantLoging
-				a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())")
-					| Не можете войти?
-		button.btn-strict.formAction(type="submit") Вход
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
-			i.icon-warning-sign
-			| Caps Lock активен
-		.mess
-			div(data-bind="text: msg()")
+		.form-group
+			dl.dl-horizontal
+				dt Имя пользователя:
+				dd
+					span(data-bind="click: function () {mode('reg')}") Регистрация
+			.inputwrap.user
+				input.form-control(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
+		.form-group
+			dl.dl-horizontal
+				dt Пароль:
+				dd
+					span(data-bind="click: function () {mode('recallRequest')}") Восстановить пароль
+			.inputwrap.lock
+				input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
+			.footnote
+				| Если вы были зарегистрированы на проектах oldmos или oldsp, воспользуйтесь&nbsp;
+				span.lll(data-bind="click: function () {mode('recallRequest')}") формой восстановления пароля
+		.form-group
+			dl.dl-horizontal
+				dt.checked#remember(onclick="this.classList.toggle('checked')") Запомнить меня
+				dd.cantLoging
+					a(href="", target="_blank", onclick="ga('send', 'event', 'support', 'click', 'support click login'); $(this).attr('href', 'mailto:support@pastvu.com?Subject=%5BНе%20могу%20войти%5D%20' + $(this).parents('form').find('[name=login]').val())")
+						| Не можете войти?
+			.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
+				i.icon-warning-sign
+				| Caps Lock активен
+			.mess
+				div(data-bind="text: msg()")
+			.row
+				.col-xs-6
+					button.btn.btn-strict.btn-strict-default.formAction(type="submit") Вход
+				.col-xs-6.colright
+					button.btn.btn-strict.btn-strict-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
 
 	script(id="regTpl", type="text/html")
 		.head Регистрация
@@ -42,23 +48,23 @@
 			dt Имя пользователя:
 			dd
 				span(data-bind="click: function () {mode('login')}") Авторизация
-		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
+		.inputwrap.user
+			input.form-control(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt E-mail:
-		div.inputwrap.envelope
-			input(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
+		.inputwrap.envelope
+			input.form-control(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt Пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
 			dt Повторите пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict.formAction(type="submit") Отправить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
+		button.btn.btn-default.formAction(type="submit") Отправить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn.btn-default.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock активен
@@ -71,11 +77,11 @@
 			dt Имя пользователя или e-mail:
 			dd
 				span(data-bind="click: function () {mode('login')}") Авторизация
-		div.inputwrap.user
-			input(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
-		button.btn-strict.formAction(type="submit") Отправить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
+		.inputwrap.user
+			input.form-control(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
+		button.btn.btn-default.formAction(type="submit") Отправить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn.btn-default.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.mess
 			div(data-bind="text: msg()")
 
@@ -84,9 +90,9 @@
 		div(style="text-align: center; max-width: 350px; margin-bottom: 10px;")
 			| На почту придет письмо со ссылкой на установку нового пароля без ввода текущего. Отправить запрос?
 		//-Send request to change your password without entering current?
-		button.btn-strict.formAction(type="submit") Отправить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
+		button.btn.btn-default.formAction(type="submit") Отправить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn.btn-default.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.mess
 			div(data-bind="text: msg()")
 
@@ -97,15 +103,15 @@
 			.userTitleLogin(data-bind="text: login()")
 		dl.dl-horizontal
 			dt Новый пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
 			dt Повторите новый пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict.formAction(type="submit") Сменить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
+		button.btn.btn-default.formAction(type="submit") Сменить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn.btn-default.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock активен
@@ -116,19 +122,19 @@
 		.head Смена пароля
 		dl.dl-horizontal
 			dt Текущий пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
 		dl.dl-horizontal
 			dt Новый пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}"))
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}"))
 		dl.dl-horizontal
 			dt Повторите новый пароль:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}"))
-		button.btn-strict.formAction(type="submit") Сменить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
-		button.btn-strict.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}"))
+		button.btn.btn-default.formAction(type="submit") Сменить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		button.btn.btn-default.formFinish(type="button", data-bind="click: function () {formClose()}") Завершить
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock активен
@@ -139,10 +145,10 @@
 		.head Верификация
 		dl.dl-horizontal
 			dt Введите свой пароль для подтверждения:
-		div.inputwrap.lock
-			input(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
-		button.btn-strict.formAction(type="submit") Отправить
-		button.btn-strict.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
+		.inputwrap.lock
+			input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
+		button.btn.btn-default.formAction(type="submit") Отправить
+		button.btn.btn-default.formAction(type="button", data-bind="click: function () {formClose()}") Отмена
 		.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
 			i.icon-warning-sign
 			| Caps Lock активен

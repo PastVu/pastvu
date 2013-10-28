@@ -46,10 +46,10 @@
 @font-family-base:        @font-family-sans-serif;
 @font-family-alt:         @font-family-ucon;
 
-@font-size-base:          14spx;
+@font-size-base:          13px;
 @font-size-large:         ceil(@font-size-base * 1.25); // ~18px
-@font-size-small:         ceil(@font-size-base * 0.85); // ~12px
-@font-size-mini:          ceil(@font-size-base * 0.75); // ~12px
+@font-size-small:         12px; //ceil(@font-size-base * 0.85); // ~12px
+@font-size-mini:          11px; //ceil(@font-size-base * 0.75); // ~12px
 
 @font-size-h1:            floor(@font-size-base * 2.6); // ~36px
 @font-size-h2:            floor(@font-size-base * 2.15); // ~30px
@@ -58,8 +58,8 @@
 @font-size-h5:            @font-size-base;
 @font-size-h6:            ceil(@font-size-base * 0.85); // ~12px
 
-@line-height-base:        1.428571429; // 20/14
-@line-height-computed:    floor(@font-size-base * @line-height-base); // ~20px
+@line-height-base:        1.461538462; // 19/13
+@line-height-computed:    floor(@font-size-base * @line-height-base); // ~19px
 
 @headings-font-family:    @font-family-base;
 @headings-font-weight:    500;
@@ -90,9 +90,9 @@
 @line-height-large:              1.33;
 @line-height-small:              1.5;
 
-@border-radius-base:             4px;
-@border-radius-large:            6px;
-@border-radius-small:            3px;
+@border-radius-base:             0;
+@border-radius-large:            0;
+@border-radius-small:            0;
 
 @component-active-color:         #fff;
 @component-active-bg:            @brand-primary;
@@ -119,7 +119,7 @@
 
 @btn-font-weight:                normal;
 
-@btn-default-color:              #333;
+@btn-default-color:              @MainLigthColor;
 @btn-default-bg:                 #fff;
 @btn-default-border:             #ccc;
 
