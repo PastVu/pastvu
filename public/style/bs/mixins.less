@@ -30,7 +30,7 @@
 // WebKit-style focus
 .tab-focus() {
   // Default
-  outline: thin dotted #333;
+  outline: thin dotted #555555;
   // WebKit
   outline: 5px auto -webkit-focus-ring-color;
   outline-offset: -2px;
@@ -467,14 +467,14 @@
   &:active,
   &.active,
   .open .dropdown-toggle& {
-    color: @color;
-    background-color: darken(@background, 8%);
-        border-color: darken(@border, 12%);
+    color: #fff;
+    background-color: spin(@background, 5);
   }
   &:active,
   &.active,
   .open .dropdown-toggle& {
     background-image: none;
+	border-color: darken(@border, 15%);
   }
   &.disabled,
   &[disabled],
@@ -484,7 +484,7 @@
     &:focus,
     &:active,
     &.active {
-      background-color: @background;
+      background-color: darken(@background, 15%);
           border-color: @border;
     }
   }

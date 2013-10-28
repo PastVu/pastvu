@@ -617,7 +617,7 @@ a.disabled:hover {
 	margin: 1px;
 	color: @MainLigthColor;
 	text-decoration: none;
-	border: 1px solid #C3C7DD;
+	border: 1px solid @FringeBorder;
 	background-color: @MainBlueColor;
 	.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0px #222');
 
@@ -648,74 +648,6 @@ a.disabled:hover {
 
 .online {
 	color: #007700; //#2C852D
-}
-
-//Custom buttons
-.btn-strict {
-	margin: 0 4px 0 0;
-	color: @MainLigthColor;
-	border: 1px solid #C3C7DD;
-	.button-size(1px; 9px; @font-size-base; @line-height-base);
-	.box-shadow(~'0 0 0 1px #000, 0 2px 6px 0 #222');
-
-	.caret {
-		margin-top: 8px;
-		margin-left: 1px;
-		border-top-color: #fff;
-		border-bottom-color: #fff;
-	}
-
-	&:hover {
-		background-color: spin(#285991, 5);
-	}
-
-	&.active,
-	&:active {
-		border-color: darken(#C3C7DD, 15%);
-		background-color: spin(#285991, 5);
-		.box-shadow(~'0 0 0 1px #000, 0 0 0 0 #222, 0 1px 4px -2px #000 inset');
-		.transition(box-shadow .05s linear);
-	}
-
-	&.disabled,
-	&[disabled] {
-		background-color: darken(#285991, 15%);
-		.box-shadow(~'0 0 0 1px #000');
-	}
-}
-.btn-strict-lg {
-	// line-height: ensure even-numbered height of button next to large input
-	.button-size(@padding-large-vertical; @padding-large-horizontal; @font-size-large; @line-height-large);
-}
-.btn-strict-sm {
-	.button-size(1px; 6px; @font-size-small; @line-height-computed - 3px);
-	.box-shadow(~'0 0 0 1px #000, 0 1px 5px 0 #222');
-}
-.btn-strict-sm {
-	.button-size(0px; 5px; @font-size-mini; @line-height-computed - 4px);
-	.box-shadow(~'0 0 0 1px #000, 0 1px 4px 0 #222');
-}
-
-.btn-strict-default {
-	background-color: #285991;
-}
-.btn-strict-primary {
-	background-color: #285991;
-}
-.btn-strict-warning {
-	background-color: #E99100;
-}
-.btn-strict-danger {
-	background-color: #D12A14;
-}
-.btn-strict-success {
-	background-color: #439B43;
-}
-.btn-strict-info {
-	background-color: #2F96B4;
-}
-.btn-strict-inverse {
-	background-color: #222;
 }
 
 // Float them, remove border radius, then re-add to first and last elements

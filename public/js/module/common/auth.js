@@ -126,7 +126,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			var css = '';
 			switch (type) {
 			case 'error':
-				css = 'text-error';
+				css = 'text-danger';
 				break;
 			case 'warn':
 				css = 'text-warning';

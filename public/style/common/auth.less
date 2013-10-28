@@ -173,8 +173,8 @@
 				border-style: dashed;
 				cursor: pointer;
 				&:hover {
-					color: #93A5BA;
-					border-color: #93A5BA;
+					color: #8a9aae;
+					border-color: #8a9aae;
 				}
 			}
 
@@ -257,11 +257,13 @@
 
 		}
 		.col-xs-6 {
-			&.colcent {
-				text-align: center;
-			}
 			&.colright {
 				text-align: right;
+			}
+		}
+		.col-xs-12 {
+			&.colcent {
+				text-align: center;
 			}
 		}
 
@@ -269,20 +271,6 @@
 			text-shadow: 0 1px 1px #000;
 			font-weight: bold;
 			width: 90px;
-
-			&[type='submit'] {
-				left: 15px;
-			}
-
-			&[type='button'] {
-				right: 15px;
-
-				&.formFinish {
-					display: none;
-					right: 50%;
-					margin-right: -45px;
-				}
-			}
 		}
 
 		.mess, .caps-warn{
@@ -306,16 +294,16 @@
 			}
 		}
 
+		.btnsFinish {
+			display: none;
+		}
+
 		&.finish {
-			button {
-				&.formAction {
-					display: none;
-				}
-				&[type='button'] {
-					&.formFinish {
-						display: block;
-					}
-				}
+			.btnsAction {
+				display: none;
+			}
+			.btnsFinish {
+				display: block;
 			}
 		}
 	}
