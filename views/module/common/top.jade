@@ -1,9 +1,6 @@
 #top(data-bind="with: repository[M!M]")
 	.fringe#panel
-		//ko if: auth.loggedIn() && can.adm()
-		a.appV(target="_blank", href="/history.txt", data-bind="text: 'v' + $root.P.settings.appVersion()")
-		// /ko
-		img#appName.indentLogo(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x", title="PastVu - ретроспектива среды обитания человечества")
+		img#appName(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x", title="PastVu - ретроспектива среды обитания человечества", onmouseover="$('#logo').addClass('hover');", onmouseout="$('#logo').removeClass('hover');")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
 			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
@@ -32,7 +29,8 @@
 			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: auth.loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.doLogout()}}")
 				.text(data-bind="text: $root.i18n.logout()")
 				.ico
-	a.fringe.indentLogo#logo(href='/')
-	#appMsg.indentLogo(data-bind="css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
+	a#logo(href='/', onmouseover="$('#appName').addClass('hover');", onmouseout="$('#appName').removeClass('hover');", title="PastVu - ретроспектива среды обитания человечества")
+		img.img-responsive(src="/img/misc/logo.png")
+	#appMsg(data-bind="css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
 		//i.icon-warning-sign(style="margin-top: 3px; margin-right: 4px;")
 		span(data-bind="text: msg()")

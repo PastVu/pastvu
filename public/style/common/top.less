@@ -9,38 +9,48 @@
 	position: relative;
 	//font-family: @font-family-alt;
 
-	.appV {
-		position: absolute;
-		display: block;
-		top: 8px;
-		left: 5px;
-		line-height: 16px;
-		color: @MainLigthColor;
-		text-decoration: none;
-		border-color: @MainLigthColor;
-		border-style: dotted;
-		border-width: 0;
-
-		&:hover {
-			border-width: 0 0 1px 0;
-		}
-	}
 	#logo {
 		position: absolute;
 		top: 0;
-		left: -@logoW/2;
-		width: @logoW;
-		height: @logoH;
-		margin-top: 0;
-		padding-left: 0;
-		border-width: 0 1px 1px;
-		background-color: darken(@MainBlueColor, 6%);
-		background-image: url(/img/misc/logo.png);
-		background-position: 50% 50%;
-		background-repeat: no-repeat;
-		z-index: @zindex-popover;
+		left: 24px;
+		width: 30px;
+		height: 30px;
+		padding: 0;
+		cursor: pointer;
 		zoom: 1; // IE fix for left
+		z-index: @zindex-popover;
+		border-width: 0 1px 1px 1px;
+		border-style: solid;
+		border-color: transparent;
 		.box-sizing(border-box);
+		.transition(all .25s linear);
+
+		&.hover, &:hover {
+			left: 9px;
+			width: @logoW;
+			height: @logoH;
+			padding: 6px;
+			border-color: #c3c7dd;
+			background-color: darken(@MainBlueColor, 6%);
+			.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0 #222');
+		}
+	}
+	#appName {
+		position: relative;
+		display: inline-block;
+		top: 0;
+		left: 56px;
+		width: 275px;
+		height: 29px;
+		line-height: 29px;
+		overflow: hidden;
+		cursor: pointer;
+		.transition(left .25s linear);
+
+		&.hover, &:hover {
+			left: 66px;
+			color: #fff;
+		}
 	}
 
 	#appMsg {
@@ -54,26 +64,10 @@
 	#panel {
 		position: relative;
 		width: 100%;
-		height: 30px;
+		height: 31px;
 		margin: 1px 0;
 		border-width: 0 0 1px 0;
 		.box-shadow(~'0 1px 0 0 #000, 0 -1px 0 0 #000, 1px 2px 4px 0px #222');
-
-		#appName {
-			position: relative;
-			display: inline-block;
-			top: 0;
-			left: 1px;
-			width: 275px;
-			height: 30px;
-			line-height: 30px;
-			overflow: hidden;
-			cursor: pointer;
-
-			&:hover {
-				color: #fff;
-			}
-		}
 
 		#panelTools {
 			position: absolute;
