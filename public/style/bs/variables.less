@@ -257,7 +257,7 @@
 // -------------------------
 
 // Basics of a navbar
-@navbar-height:                    50px;
+@navbar-height:                    30px;
 @navbar-margin-bottom:             @line-height-computed;
 @navbar-border-radius:             @border-radius-base;
 @navbar-padding-horizontal:        floor(@grid-gutter-width / 2);
@@ -285,6 +285,27 @@
 @navbar-default-toggle-hover-bg:           #ddd;
 @navbar-default-toggle-icon-bar-bg:        #ccc;
 @navbar-default-toggle-border-color:       #ddd;
+
+//PastVu
+@navbar-pastvu-color:             		   @MainLigthColor;
+@navbar-pastvu-bg:               		   darken(desaturate(@MainBlueColor, 3%), 4%);
+@navbar-pastvu-border:           		   darken(@FringeBorder, 5%);
+// Navbar links
+@navbar-pastvu-link-color:                darken(@MainLigthColor, 5%);
+@navbar-pastvu-link-hover-color:          #fff;
+@navbar-pastvu-link-hover-bg:             transparent;
+@navbar-pastvu-link-active-color:         @MainLigthColor;
+@navbar-pastvu-link-active-bg:            darken(desaturate(@MainBlueColor, 7%), 10%);
+@navbar-pastvu-link-disabled-color:       #ccc;
+@navbar-pastvu-link-disabled-bg:          transparent;
+// Navbar brand label
+@navbar-pastvu-brand-color:               @navbar-pastvu-link-color;
+@navbar-pastvu-brand-hover-color:         #fff;
+@navbar-pastvu-brand-hover-bg:            transparent;
+// Navbar toggle
+@navbar-pastvu-toggle-hover-bg:           #ddd;
+@navbar-pastvu-toggle-icon-bar-bg:        #ccc;
+@navbar-pastvu-toggle-border-color:       #ddd;
 
 
 // Inverted navbar

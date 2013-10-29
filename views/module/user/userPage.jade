@@ -1,10 +1,9 @@
 row.userPage(data-bind="with: repository[M!M]")
 	.col-xs-12.col-sm-4.col-md-3.col-lg-2
 		.mContainer.mNoDisplay.mFadeIn#user_brief
-	.col-xs-12.col-sm-8.col-md-9.col-lg-2
-		.navbar.user_menu
-			.navbar-inner
-				ul.nav(data-bind="foreach: menuItems")
-					li(data-bind="css: {active: $data.section === $parent.section()}")
-						a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
+	.col-xs-12.col-sm-8.col-md-9.col-lg-10
+		nav.navbar.navbar-pastvu.user_menu
+			ul.nav.navbar-nav(data-bind="foreach: menuItems")
+				li(data-bind="css: {active: $data.section === $parent.section()}")
+					a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
 		.mContainer.mHidden.mFadeIn#user_content
