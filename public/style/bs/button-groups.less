@@ -42,12 +42,24 @@
   > .btn {
     position: relative;
     float: left;
-    // Bring the "active" button to the front
+	margin-right: 0;
+	color: #d5d5d5;
+	vertical-align: middle;
+	z-index: 2;
+    // Send the "active" button to the back
     &:hover,
     &:focus,
     &:active,
     &.active {
-      z-index: 2;
+		color: #fff;
+    }
+    &.active {
+	  margin-top: 1px;
+	  line-height: 1.2;
+	  cursor: default;
+	  border-color: #fff;
+	  .box-shadow(0 0 0 1px #000);
+      z-index: 1;
     }
     &:focus {
       // Remove focus outline when dropdown JS adds it after closing the menu
@@ -55,14 +67,20 @@
     }
   }
 }
-
-// Prevent double borders when buttons are next to each other
+//У активной кнопки левый и/или правая граница должна быть нулевой, чтобы она казалась "подлезающей" под неактивные
+.btn-group > .btn.active:not(:first-child) {
+	border-left-width: 0;
+}
+.btn-group > .btn.active:not(:last-child) {
+	border-right-width: 0;
+}
+//Слева кнопки делаем отступ, чтобы была видна граница предстоящего
 .btn-group {
   .btn + .btn,
   .btn + .btn-group,
   .btn-group + .btn,
   .btn-group + .btn-group {
-    margin-left: -1px;
+    margin-left: 1px;
   }
 }
 
@@ -128,9 +146,9 @@
 //
 // Remix the default button sizing classes into new ones for easier manipulation.
 
-.btn-group-xs > .btn { .btn-xs(); }
-.btn-group-sm > .btn { .btn-sm(); }
-.btn-group-lg > .btn { .btn-lg(); }
+.btn-group-xs > .btn { .btn-xs(); &.active {line-height: 1.33}}
+.btn-group-sm > .btn { .btn-sm(); &.active {line-height: 1.33}}
+.btn-group-lg > .btn { .btn-lg(); &.active {line-height: 1.1}}
 
 
 // Split button dropdowns

@@ -19,6 +19,13 @@
       border: 1px solid @pagination-border;
       margin-left: -1px;
     }
+	&.edge { //Klimashkin: подравниваем стрелки перемотки
+		> a,
+		> span {
+	  	  padding-top: @padding-base-vertical - 1px;
+	      padding-bottom: @padding-base-vertical + 1px;
+		}
+	}
     &:first-child {
       > a,
       > span {
@@ -48,7 +55,6 @@
       z-index: 2;
       color: @pagination-active-color;
       background-color: @pagination-active-bg;
-      border-color: @pagination-active-bg;
       cursor: default;
     }
   }
