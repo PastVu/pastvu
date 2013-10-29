@@ -2,19 +2,20 @@
 	//ko if: topTitle()
 	.indentLogo.pageHeader(data-bind="text: topTitle()")
 	// /ko
-	.row.photosRow
-		.photoThumbs(data-bind="style: {width: panelW()}")
-			.photoTop
-				.pageBrief(data-bind="css: {pageLoading: !feed() && loading()}, text: briefText")
-				.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
-					.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
+	.photosRow
+		.thumbs(data-bind="style: {width: panelW()}")
+			.row.toprow
+				.col-xs-6.col-sm-4.brief(data-bind="css: {pageLoading: !feed() && loading()}, text: briefText")
 				//ko if: photos().length
-				.btn-group.feedSwitch
-					button.btn.btn-small(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
-						i.icon-th-list
-					button.btn.btn-small(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
-						i.icon-book
+				.col-xs-6.col-sm-4.col-sm-push-4.switch
+					| 123
+					//-.btn-group.feedSwitch
+						button.btn.btn-small(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
+							i.icon-th-list
+						button.btn.btn-small(title="Постранично", data-bind="click: function () {feedSelect(false)}, css: {active: !feed()}")
+							i.icon-book
 				// /ko
+				.col-xs-12.col-sm-4.col-sm-pull-4.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'photoPagerTpl'}")
 			//ko if: u && canAdd()
 			a.photoPreview.withTitle.fringe.addPhoto(href="/photoUpload")
 				img.img(src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", data-bind="style: {width: w, height: h}")
@@ -38,10 +39,9 @@
 			.photoPreview.withTitle.loadingPhoto(data-bind="style: {visibility: loading() ? 'visible' : 'hidden', width: w, height: h}")
 				.loadPhoto Загрузка
 			// /ko
-	.row.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'photoPagerTpl'}")
+	.row.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'photoPagerTpl'}")
 	script(id="photoPagerTpl", type="text/html")
-		ul
+		ul.pagination
 			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
 			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
 			//ko foreach: pages
