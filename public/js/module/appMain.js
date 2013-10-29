@@ -148,7 +148,7 @@ require([
 											speed: 500
 										},
 										buttons: [
-											{addClass: 'btn-strict btn-strict-success', text: 'Ok (7)', onClick: function ($noty) {
+											{addClass: 'btn btn-success', text: 'Ok (7)', onClick: function ($noty) {
 												// this = $button element
 												// $noty = $noty element
 												$noty.close();
@@ -157,7 +157,7 @@ require([
 										],
 										callback: {
 											afterShow: function () {
-												var okButton = this.$buttons.find('.btn-strict-success');
+												var okButton = this.$buttons.find('.btn-success');
 												Utils.timer(
 													8000,
 													function (timeleft) {

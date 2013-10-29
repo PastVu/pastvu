@@ -1,56 +1,55 @@
 .user_brief(data-bind="with: repository[M!M]")
-	.row
+	.briefBlock
 		.avatar.fringe
 			img(data-bind="attr: {src: user.avatar(), alt: user.disp()}, event: {load: onAvaLoad, error: onAvaError}")
 			//ko if: avaexe()
 			.avaLoadCurtain
 			// /ko
 			//ko if: canAva()
-			button.btn-strict.btn-strict-small.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
+			button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
 				i.icon-pencil.icon-white
 			//ko if: avaction()
 			.avaAction
 				input.avaInput(type="file", name="files[]")
-				button.btn-strict.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
+				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
 					i.icon-picture.icon-white
 					span Сменить
 				//ko if: avaExists()
-				button.btn-strict.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
+				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
 					i.icon-remove.icon-white
 					span Удалить
 				// /ko
 			// /ko
 			// /ko
 
-	.row.userName(data-bind="text: user.disp()")
-	//ko if: rn()
-	.row.roleName(data-bind="text: rn(), css: rc()")
-	// /ko
+		.userName(data-bind="text: user.disp()")
+		//ko if: rn()
+		.roleName(data-bind="text: rn(), css: rc()")
+		// /ko
 
 	//-.row(data-bind="style: {display:  can_pm() ? '': 'none'}")
 		button.btn-strict(type="button", data-bind="event: {}")
 			i.icon-envelope.icon-white
 			span Send message
-	.row.statBlock
-		#info_common.block
-			.head Общее
-			.h_separator
-			dl.dl-horizontal
-				dt Регистрация:
-				dd(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
-				dt Статус:
-				dd(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
-	.row.statBlock
-		#short_stat.block
-			.head Краткая статистика
-			.h_separator
-			dl.dl-horizontal
-				dt Фотографий:
-				dd(data-bind="text: user.pcount()")
-				//-dt Blogs created:
-				//-dd(data-bind="text: user.bcount()")
-				//-dt Favorite areas:
-				//-dd 0
-				dt Комментариев:
-				dd(data-bind="text: user.ccount()")
-	//#leftSideDash
+	.briefBlock
+		.head Общее
+		.h_separator
+		table.briefTable
+			tbody
+				tr
+					td Регистрация:
+					td(data-bind="text: moment(user.regdate()).format('D MMMM YYYY')")
+				tr
+					td Статус:
+					td(data-bind="text: user.online() ? 'Онлайн' : 'Оффлайн', css: {online : user.online()}")
+	.briefBlock
+		.head Краткая статистика
+		.h_separator
+		table.briefTable
+			tbody
+				tr
+					td Фотографий:
+					td(data-bind="text: user.pcount()")
+				tr
+					td Комментариев:
+					td(data-bind="text: user.ccount()")
