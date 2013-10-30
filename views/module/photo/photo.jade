@@ -1,5 +1,5 @@
 .photo(data-bind="with: repository[M!M]")
-	.indentLogo.photoTop(data-bind="style: {display: can.edit() ? 'block' : 'none'}")
+	.photoTop(data-bind="style: {display: can.edit() ? 'block' : 'none'}")
 		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
 		.photoAction.convertAction(data-bind="style: {display: !edit() && can.convert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
 			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")

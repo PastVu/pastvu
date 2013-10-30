@@ -1,6 +1,6 @@
 .gallery(data-bind="with: repository[M!M]")
 	//ko if: topTitle()
-	.indentLogo.pageHeader(data-bind="text: topTitle()")
+	.pageHeader(data-bind="text: topTitle()")
 	// /ko
 	.photosRow
 		.thumbs(data-bind="style: {width: panelW()}")
@@ -28,7 +28,8 @@
 					img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 					.curtain
 					//ko if: $data.noPublic
-					i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+					.status.fringe
+						span.glyphicon(data-bind="css: {'glyphicon-asterisk': fresh && !ready, 'glyphicon-flag': fresh && ready, 'glyphicon-lock': disabled, 'glyphicon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
 					// /ko
 				a.photoTitle(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
 				//ko if: $data.ccount
