@@ -1,6 +1,6 @@
 .row.userPage(data-bind="with: repository[M!M]")
 	.col-xs-12.col-sm-3.col-lg-2(style="z-index:2;")
-		.mContainer.mNoDisplay.mFadeIn#user_brief
+		.mContainer.mNoDisplay.mFadeIn.affix-top.userBrief(data-bind="style: {width: briefW()}")
 	.col-xs-12.col-sm-9.col-lg-10
 		nav.navbar.navbar-pastvu.user_menu
 			ul.nav.navbar-nav(data-bind="foreach: menuItems")

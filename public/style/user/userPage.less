@@ -3,7 +3,23 @@
 @import "../bs/mixins";
 
 .userPage {
+	.userBrief {
+		position: relative;
+		padding-top: 10px;
+
+		&.affix {
+			position: fixed;
+			top: 0;
+		}
+	}
 	.user_menu {
 		margin: -1px 1px 10px 1px;
+	}
+}
+
+@media (max-width: 767px) {
+	.userPage .userBrief.affix {
+		position: relative;
+		top: auto;
 	}
 }

@@ -2,7 +2,7 @@
 /**
  * Модель статистики пользователя
  */
-define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief', 'bs/bootstrap-affix'], function (_, P, ko, socket, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/brief.jade', 'css!style/user/brief'], function (_, P, ko, socket, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
 	var mess = {
@@ -93,15 +93,6 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 			}, this);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-
-			if (this.options.affix) {
-				this.$dom.affix({
-					offset: {
-						top: 40
-					},
-					addClasses: 'span2-3'
-				});
-			}
 			this.userInited = true;
 			this.show();
 		},

@@ -5,7 +5,7 @@
 			.col-sm-9.col-md-9
 				p.form-control-static
 					span.glyphicon.glyphicon-user
-					span.loginName(data-bind="text: u.login()")
+					span.loginName(data-bind="text: ' ' + u.login()")
 		.form-group(data-bind="style: {display: canBeEdit() ||  u.firstName().length || u.lastName().length > 0 ? '' : 'none'}")
 			label.col-sm-3.col-md-2.control-label(for="inName") Реальное имя
 			.col-sm-3.col-md-2
