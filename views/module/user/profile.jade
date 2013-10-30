@@ -1,5 +1,5 @@
 .user_profile(data-bind="with: repository[M!M]")
-	form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit(), edit_mode: editMode()}")
+	form.form-horizontal(data-bind="css: {canBeEdit: canBeEdit(), cannotBeEdit: !canBeEdit()}")
 		.form-group
 			label.col-sm-3.col-md-2.control-label(for="inName") Псевдоним
 			.col-sm-9.col-md-9
@@ -15,10 +15,7 @@
 		.form-group
 			label.col-sm-3.col-md-2.control-label(for="inBirthdate") Дата рождения
 			.col-sm-3.col-md-2
-				.input-group.date.birthPick(data-date-format="dd.mm.yyyy", data-bind="attr: {'data-date': (new Date().getDate())+'.'+(new Date().getMonth()+1)+'.'+(new Date().getFullYear())}")
-					input.form-control(type="text", id='inBirthdate', data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
-					span.input-group-btn(data-bind="style: {display: (editMode() ? '' : 'none')}")
-						i.icon-calendar
+				input#inBirthdate.form-control(type="text", data-bind="attr: {disabled: !editMode()}, value: u.birthdate, valueUpdate: 'keyup'")
 		.form-group
 			label.col-sm-3.col-md-2.control-label(for="inSex2") Пол
 			.col-sm-4.col-md-3
@@ -73,10 +70,10 @@
 			.col-sm-7.col-md-8
 				textarea.form-control(rows="4", id='inaboutme', data-bind="attr: {disabled: !editMode()}, value: u.aboutme, valueUpdate: 'afterkeydown'")
 		.form-group(data-bind="style: {display: canBeEdit() ? '' : 'none'}")
-			.col-sm-3.col-md-2
-				button.btn-strict(type="button", data-bind="css: {'btn-strict-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
-					i.icon-pencil.icon-white(data-bind="css: {'icon-pencil': !editMode(), 'icon-ok': editMode()}")
-					span(data-bind="text: editMode() ? 'Сохранить профиль' : 'Редактировать'")
-				button.btn-strict.btn-strict-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
-					i.icon-remove.icon-white
-					span Отмена
+			.col-sm-12
+				button.btn.btn-primary(type="button", data-bind="css: {'btn-success': editMode()}, event: {click: function(data, event) { if (!data.editMode()){data.edit(true)} else{data.saveUser()}}}")
+					span.glyphicon(data-bind="css: {'glyphicon-pencil': !editMode(), 'glyphicon-ok': editMode()}")
+					span(data-bind="text: editMode() ? ' Сохранить профиль' : ' Редактировать'")
+				button.btn.btn-danger(type="button", data-bind="style: {display: editMode() ? '' : 'none'}, event: {click: function(data, event) { if (data.editMode()) {data.cancelUser()}}}")
+					span.glyphicon.glyphicon-remove
+					|  Отмена

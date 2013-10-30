@@ -36,6 +36,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.showing = true;
 		},
 		hide: function () {
+			if (this.$dom.find('#inBirthdate').datepicker) {
+				this.$dom.find('#inBirthdate').datepicker('remove');
+			}
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -57,6 +60,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 							}.bind(this));
 					}
 				}.bind(this));
+			} else {
+				var $dp = this.$dom.find('#inBirthdate');
+				if ($dp.datepicker) {
+					$dp.datepicker('remove');
+					delete $dp.datepicker;
+
+				}
 			}
 		},
 		saveUser: function () {
