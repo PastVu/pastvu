@@ -2,7 +2,7 @@
 /**
  * Модель профиля пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/profile.jade', 'css!style/user/profile', 'bs/bootstrap-datepicker', 'css!style/bootstrap-datepicker' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'moment', 'text!tpl/user/profile.jade', 'css!style/user/profile'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, moment, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -26,19 +26,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				return this.canBeEdit() && this.edit();
 			}, this);
 
+			this.subscriptions.editMode = this.editMode.subscribe(this.editModeHandler, this);
+
 			ko.applyBindings(globalVM, this.$dom[0]);
-
-			window.setTimeout(function () {
-				if (this.$dom instanceof jQuery) {
-					this.$dom
-						.find('.birthPick')
-						.datepicker()
-						.on('changeDate', function (evt) {
-							this.u.birthdate(this.$dom.find('#inBirthdate').val());
-						}.bind(this));
-				}
-			}.bind(this), 1000);
-
 			this.show();
 		},
 		show: function () {
@@ -48,6 +38,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+		editModeHandler: function (val) {
+			if (val) {
+				require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bs/ext/datepicker'], function (Construct) {
+					if (this.$dom instanceof jQuery) {
+						this.$dom
+							.find('#inBirthdate')
+							.datepicker({
+								language: 'ru',
+								format: 'dd.mm.yyyy',
+								startView: 'decade',
+								startDate: moment("1920-01-01").toDate(),
+								endDate: moment().subtract('years', 13).toDate()
+							})
+							.on('changeDate', function (evt) {
+								this.u.birthdate(this.$dom.find('#inBirthdate').val());
+							}.bind(this));
+					}
+				}.bind(this));
+			}
 		},
 		saveUser: function () {
 			var target = _.pick(ko_mapping.toJS(this.u), 'firstName', 'lastName', 'birthdate', 'sex', 'country', 'city', 'work', 'www', 'icq', 'skype', 'aim', 'lj', 'flickr', 'blogger', 'aboutme'),
