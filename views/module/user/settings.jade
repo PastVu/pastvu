@@ -51,19 +51,23 @@
 			.panel-collapse.collapse.in#notice
 				.panel-body
 					dl.dl-horizontal
-						dt Автоподписка при комментировании темы
+						dt.helpexists
+							abbr(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+								span.glyphicon.glyphicon-info-sign
+								|  Автоподписка при комментировании темы
 						dd
 							.btn-group.btn-group-sm
 								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
 								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
-						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
 					dl.dl-horizontal
-						dt Минимальный интервал между отправками
+						dt.helpexists
+							abbr(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+								span.glyphicon.glyphicon-info-sign
+								|  Минимальный интервал между отправками
 						dd.throttle(data-bind="foreach: vars.subscr_throttle")
 							label.radio-inline
 								input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
 								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
-						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 
 		.panel.panel-pastvu
 			.panel-heading

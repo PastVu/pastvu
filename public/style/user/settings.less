@@ -3,6 +3,8 @@
 @import "../bs/mixins.less";
 
 .user_settings {
+	padding: 0 5px;
+
 	.panel-body {
 		padding: 11px 10px 11px 22px;
 
@@ -23,11 +25,17 @@
 			}
 		}
 
-		.helpico {
-			position: absolute;
-			top: 4px;
-			left: -18px;
-			cursor: help;
+		.helpexists {
+			overflow: visible;
+
+			> abbr {
+				position: relative;
+				margin-left: -16px;
+
+				> .glyphicon {
+					font-size: @font-size-small;
+				}
+			}
 		}
 
 		.radio-inline {

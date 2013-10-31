@@ -17,9 +17,19 @@
 	}
 }
 
-@media (max-width: 767px) {
-	.userPage .userBrief.affix {
-		position: relative;
-		top: auto;
+@media (min-width: @screen-sm-min) {
+	.userPage {
+		> .userBody {
+			padding-left: 10px
+		}
+	}
+}
+
+@media (max-width: @screen-xs-max) {
+	.userPage {
+		.userBrief.affix {
+			position: relative;
+			top: auto;
+		}
 	}
 }
