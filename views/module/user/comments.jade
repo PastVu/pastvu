@@ -1,9 +1,11 @@
 .comments(data-bind="with: repository[M!M]")
-	.commentsBrief(data-bind="css: {commentsLoading: loadingComments()}, text: briefText")
-	.row.pagTop(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	.row.comments(data-bind="foreach: comments")
-		.row.comment
+	.row
+		.col-xs-6.col-md-3.topcol
+			span.brief(data-bind="css: {pageLoading: loadingComments()}, text: briefText")
+		.col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
+
+	.commentsList(data-bind="foreach: comments")
+		.comment.clearfix
 			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
 				img.img(data-bind="attr: {src: $parent.commentsPhotos[$data.obj].sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			.commentHead
@@ -15,15 +17,14 @@
 				.commentChanged(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parent.commentHist($data.cid)}")
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-	.row.pagBottom(data-bind="style: {display: paginationShow() ? '' : 'none'}")
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	script(id="pagerTpl", type="text/html")
-		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/'}", title="Первая страница") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() - 1)}", title="Предыдущая страница") &laquo;
-			//ko foreach: pages
-			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: '/u/' + $parent.u.login() + '/comments/' + $data}, text: $data")
-			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + (page() + 1)}", title="Следующая страница") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: '/u/' + u.login() + '/comments/' + pageLast()}", title="Последняя страница") &raquo;&raquo;
+	.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
 
+	script(id="pagerTpl", type="text/html")
+		ul.pagination
+			li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
+			li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+			//ko foreach: pages
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
+			// /ko
+			li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
+			li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;

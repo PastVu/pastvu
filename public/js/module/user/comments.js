@@ -54,8 +54,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
+				var txt = '';
+				if (this.u.ccount()) {
+					txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount();
+				} else {
+					txt = 'Пользователь пока не оставил комментариев в данной категории';
+				}
+				return txt;
 			}, this);
+
+			this.pageUrl = ko.observable('/u/' + this.u.login() + '/comments');
+			this.pageQuery = ko.observable('');
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 

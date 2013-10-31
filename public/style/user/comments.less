@@ -1,24 +1,39 @@
 @import "../_vars.less";
 @import "../bs/variables.less";
-@import "../bss/mixins.less";
+@import "../bs/mixins.less";
 
 .comments {
 	position: relative;
+	padding: 0 5px;
 
-	.commentsBrief {
-		position: absolute;
-		top: 5px;
-		left: 3px;
-		z-index: -1;
 
-		&.commentsLoading {
+	.topcol {
+		margin-top: 2px;
+		margin-bottom: 4px;
+	}
+	.switch {
+		text-align: right;
+	}
+	.pag {
+		margin-top: 2px;
+		margin-bottom: 14px;
+		text-align: center;
+	}
+	.brief {
+		line-height: 24px;
+		white-space: nowrap;
+
+		&.pageLoading {
 			padding-right: 75px;
 			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
 		}
 	}
-
 	.pagination {
-		margin: 0 0 5px 0;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+	.brief, .pagination {
+		vertical-align: middle;
 	}
 
 	.comment {
@@ -56,7 +71,7 @@
 		}
 		.commentStamp, .commentChanged {
 			display: inline-block;
-			font-size: @fontSizeSmall;
+			font-size: @font-size-small;
 			cursor: pointer;
 			color: #888;
 		}
@@ -73,8 +88,4 @@
 			text-decoration: none;
 		}
 	}
-}
-
-@media (max-width: 767px) {
-
 }
