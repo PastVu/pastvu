@@ -103,11 +103,11 @@ var start = Date.now(),
 			},
 			{
 				name: "m/user/settings",
-				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
+				exclude: ['commonExcludes', 'bs/collapse']
 			},
 			{
 				name: "m/user/manage",
-				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
+				exclude: ['commonExcludes', 'bs/collapse']
 			}
 		]
 	},

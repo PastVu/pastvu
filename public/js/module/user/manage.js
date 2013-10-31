@@ -2,7 +2,7 @@
 /**
  * Модель управления пользователем
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/bootstrap-collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
 
 	var ranksLang = {
@@ -34,7 +34,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			}, this);
 		},
 		show: function () {
-			this.$dom.find("#accordion2 .collapse").collapse({
+			this.$dom.find("#accordion").collapse({
 				toggle: false
 			});
 			globalVM.func.showContainer(this.$container);

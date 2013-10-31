@@ -1,12 +1,12 @@
 .user_manage(data-bind="with: repository[M!M]")
-	.accordion#accordion2
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#ranks") Присваиваемые звания
-			.accordion-body.collapse.in#ranks
-				.accordion-inner
-					form.form-inline(data-bind="foreach: ranks")
-						label.checkbox
-							input.thr(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
-							| &nbsp;
+	.panel-group#accordion
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a.accordion-toggle(data-toggle="collapse", href="#ranks") Присваиваемые звания
+			.panel-collapse.collapse.in#ranks
+				.panel-body
+					form(data-bind="foreach: ranks")
+						label.checkbox-inline
+							input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
 							span(data-bind="text: $data.desc")
