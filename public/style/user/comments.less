@@ -6,7 +6,6 @@
 	position: relative;
 	padding: 0 5px;
 
-
 	.topcol {
 		margin-top: 2px;
 		margin-bottom: 4px;
@@ -51,18 +50,17 @@
 			margin: 2px 8px 3px 3px;
 
 			.img {
-				width: 60px;
+				width: 90px;
 				height: 60px;
 			}
 		}
 
 		.commentHead {
 			line-height: 14px;
-			height: 14px;
-			margin-bottom: 3px;
+			margin-bottom: 1px;
 		}
 		.photoName {
-			display: inline-block;
+			display: inline;
 			cursor: pointer;
 		}
 		.photoYear {
@@ -70,10 +68,11 @@
 			white-space: nowrap;
 		}
 		.commentStamp, .commentChanged {
-			display: inline-block;
-			font-size: @font-size-small;
+			display: inline;
+			font-size: @font-size-mini;
 			cursor: pointer;
 			color: #888;
+			white-space: nowrap;
 		}
 		.commentChanged {
 			&:hover {
@@ -82,8 +81,7 @@
 		}
 		.commentText {
 			display: block;
-			min-height: 46px;
-			margin-left: 71px;
+			margin-left: 101px;
 			color: @text-color;
 			text-decoration: none;
 		}

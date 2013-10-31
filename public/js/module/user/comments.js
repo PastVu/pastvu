@@ -115,14 +115,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					for (i in data.photos) {
 						if (data.photos[i] !== undefined) {
 							photo = data.photos[i];
-							photo.sfile = Photo.picFormats.s + photo.file;
+							photo.sfile = Photo.picFormats.q + photo.file;
 							photo.link = '/p/' + photo.cid;
 							photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
 							photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';
 							if (P.preaddrs.length > 1) {
-								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
+								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.q + photo.file;
 							} else {
-								photo.sfile = P.preaddr + Photo.picFormats.s + photo.file;
+								photo.sfile = P.preaddr + Photo.picFormats.q + photo.file;
 							}
 						}
 					}

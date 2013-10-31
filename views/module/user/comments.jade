@@ -3,7 +3,6 @@
 		.col-xs-6.col-md-3.topcol
 			span.brief(data-bind="css: {pageLoading: loadingComments()}, text: briefText")
 		.col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
-
 	.commentsList(data-bind="foreach: comments")
 		.comment.clearfix
 			a.imgLoad(data-bind="attr: {href: $parent.commentsPhotos[$data.obj].link}")
@@ -14,7 +13,7 @@
 				a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
 				//ko if: $data.lastChanged
 				.dotDelimeter ·
-				.commentChanged(data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), tooltip: {title: 'Показать историю изменений', trigger: 'click hover'}, click: function () {$parent.commentHist($data.cid)}")
+				.commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.commentHist($data.cid)}")
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
 	.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
