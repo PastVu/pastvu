@@ -7,16 +7,16 @@
 			// /ko
 			//ko if: canAva()
 			button.btn.btn-sm.btn-primary.avaEdit(data-bind="click: avaActionToggle, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Редактировать аватару")
-				span.glyphicon.glyphicon-pencil.light
+				span.glyphicon.glyphicon-pencil
 			//ko if: avaction()
 			.avaAction
 				input.avaInput(type="file", name="files[]")
 				button.btn.btn-primary.avaSelect(data-bind="click: avaSelect, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Загрузить новое изображение")
-					span.glyphicon.glyphicon-picture.light
+					span.glyphicon.glyphicon-picture
 					|  Сменить
 				//ko if: avaExists()
 				button.btn.btn-primary.avaDel(data-bind="click: avaDel, css: {disabled: avaexe()}, attr: {disabled: avaexe()}", title="Удалить загруженное изображение")
-					span.glyphicon.glyphicon-remove.light
+					span.glyphicon.glyphicon-remove
 					|  Удалить
 				// /ko
 			// /ko

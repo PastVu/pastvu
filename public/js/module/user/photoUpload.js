@@ -94,7 +94,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						if (!this.canCount()) {
 							this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество для вашего профиля.');
 						} else {
-							this.toptext('Выберите фотографию на вашем устройстве, нажав на кнопку добавления' + (this.filereader() ? ' или перетаскивая фотографии в пунктирную область' : ''));
+							this.toptext('Выберите фотографии, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
 							this.canLoad(true);
 
 							this.fileOptions = {
@@ -126,7 +126,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		show: function () {
 			globalVM.func.showContainer(this.$container, function () {
 				if (this.canLoad()) {
-					this.$fileupload = this.$dom.find('#fileupload');
+					this.$fileupload = this.$dom.find('.uploadForm');
 
 					// Initialize the jQuery File Upload widget:
 					this.$fileupload.fileupload();
@@ -162,17 +162,25 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.showing = true;
 		},
 		hide: function () {
-			this.$dom.find('#fileupload').fileupload('disable');
+			this.$dom.find('.uploadForm').fileupload('disable');
 			$(document).off('dragenter').off('dragleave');
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
 			this.hide();
-			this.$dom.find('#fileupload').fileupload('destroy');
+			this.$dom.find('.uploadForm').fileupload('destroy');
 			destroy.call(this);
 		},
 
+		selectFile: function (vm, e) {
+			if (e.stopPropagation) {
+				e.stopPropagation();
+			}
+			//Генерируем клик по инпуту
+			this.$dom.find('.fileInput').trigger('click');
+			return false;
+		},
 
 		startFile: function (file) {
 			if (file.ext.valid) {

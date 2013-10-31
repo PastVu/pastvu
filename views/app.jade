@@ -11,7 +11,10 @@ html
 		else
 			script.
 				function ga() {}
-		include ../public/style/appstart.css
+		if appLand === 'dev'
+			link(rel="stylesheet", href="/style/appstart.css")
+		else
+			include ../public/style/appstart.css
 		include ../public/js/appstart.js
 		if appLand === 'dev'
 			include ../public/js/lib/require/require.js

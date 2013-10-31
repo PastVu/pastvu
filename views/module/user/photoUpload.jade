@@ -1,16 +1,16 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
-	.row.text-danger(style="margin-bottom: 5px;")
+	.text-danger(style="margin-bottom: 5px;")
 		| Внимание! Временно принимаются только фотографии в пределах Московской и Ленинградской областей, остальные будут отклонены. Подробности&nbsp;
 		a(target="_blank", href="/news/85") здесь
-	.row.toptext(data-bind="html: toptext()")
+	.toptext(data-bind="html: toptext()")
 
 	//ko if: canLoad()
-	form(id="fileupload", method="POST", enctype="multipart/form-data")
-		.row#addFiles
-			span.btn-strict#fileinput-btn
-				i.icon-plus.icon-white
-				span Добавить...
-				input(id="fileupload2", type="file", name="files[]", multiple, data-bind="fileUploadInput: true")
+	form.uploadForm(method="POST", enctype="multipart/form-data")
+		#addFiles
+			input.fileInput(type="file", name="files[]", multiple)
+			button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
+				span.glyphicon.glyphicon-plus
+				|  Добавить...
 			.addfiles_area.centering_content(data-bind="css: {hide: !filereader()}")
 				#or.centering_content или
 				span Перетащите фотографии сюда
@@ -20,10 +20,10 @@
 	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
 	// /ko
 
-	.row(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
+	div(data-bind="style: {display: fileList().length > 0 ? '' : 'none'}")
 		.allprogress(data-bind="style: {visibility: filesUploading()? 'visible' : 'hidden'}")
 			.progress.progress-striped.active
-				.bar(data-bind="style: {width: fileProgressAll() + '%'}")
+				.progress-bar(data-bind="style: {width: fileProgressAll() + '%'}")
 			.extText(data-bind="text: fileProgressAllText()")
 		table.table.table-striped.table-hover.filesTable
 			caption Добавленные фотографии
@@ -42,17 +42,17 @@
 						// /ko
 						div.fileMsg(data-bind="text: ext.msg(), css: ext.msgCss()")
 						//ko if: ext.valid
-						.progress.progress-striped.progress-success.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
-							.bar(data-bind="style: {width: ext.progress() + '%'}")
+						.progress.progress-striped.active(data-bind="style: {visibility: ext.uploading()? 'visible' : 'hidden'}")
+							.progress-bar.progress-bar-success(data-bind="style: {width: ext.progress() + '%'}")
 						// /ko
 					td.fileButtons
 						//ko if: ext.valid && !$parent.options.auto && !ext.uploaded()
-						button.btn-strict.btn-strict-success(data-bind="click: function () {$parent.startFile($data)}, attr: {disabled: ext.uploading()}")
-							i.icon-upload.icon-white
-							span Загрузить
+						button.btn.btn-success(data-bind="click: function () {$parent.startFile($data)}, css: {disabled: ext.uploading()}, attr: {disabled: ext.uploading()}")
+							span.glyphicon.glyphicon-upload
+							|  Загрузить
 						// /ko
-						button.btn-strict(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-strict-warning': !ext.uploaded(), 'btn-strict-danger': ext.uploaded()}")
-							i.icon-white(data-bind="css: {'icon-ban-circle': !ext.uploaded(), 'icon-remove-circle': ext.uploaded()}")
-							span(data-bind="text: ext.uploaded() ? 'Удалить' : 'Отменить'")
+						button.btn(data-bind="click: function () {$parent.cancelFile($data)}, css: {'btn-warning': !ext.uploaded(), 'btn-danger': ext.uploaded()}")
+							span.glyphicon(data-bind="css: {'glyphicon-ban-circle': !ext.uploaded(), 'glyphicon-remove-circle': ext.uploaded()}")
+							span(data-bind="text: ext.uploaded() ? ' Удалить' : ' Отменить'")
 				// /ko
 	// /ko
