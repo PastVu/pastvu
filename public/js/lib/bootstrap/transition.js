@@ -18,7 +18,15 @@
  * ======================================================================== */
 
 
-+function ($) { "use strict";
+(function (factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['jquery'], factory);
+	} else {
+		// Browser globals
+		factory(jQuery);
+	}
+}(function ($) { "use strict";
 
   // CSS TRANSITION SUPPORT (Shoutout: http://www.modernizr.com/)
   // ============================================================
@@ -53,4 +61,4 @@
     $.support.transition = transitionEnd()
   })
 
-}(window.jQuery);
+}));

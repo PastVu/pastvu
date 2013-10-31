@@ -3,9 +3,9 @@
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
 			a.off.closeClick(data-bind="tooltip: {title: '${ closeTxt }', trigger: 'hover'}")
-				i.icon-off.icon-white
+				span.glyphicon.glyphicon-off
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
 		.neoModalFoot
-			a.btn-strict.btn-strict-small.closeClick
-				i.icon-ok.icon-white
-				span ${ closeTxt }
+			button.btn.btn-xs.btn-primary.closeClick
+				span.glyphicon.glyphicon-ok
+				|  ${ closeTxt }

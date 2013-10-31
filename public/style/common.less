@@ -52,11 +52,7 @@ html, body {
 		opacity: 0;
 		&.mShow {
 			opacity: 1;
-			-webkit-animation: cssFadeIn .3s ease 1 alternate;
-			-moz-animation: cssFadeIn .3s ease 1 alternate;
-			-ms-animation: cssFadeIn .3s ease 1 alternate;
-			-o-animation: cssFadeIn .3s ease 1 alternate;
-			animation: cssFadeIn .3s ease 1 alternate;
+			.animation(cssFadeIn .3s ease 1 alternate);
 		}
 	}
 	&.mNoDisplay {
@@ -97,11 +93,7 @@ html, body {
 
 	&.showModalCurtain {
 		opacity: 1;
-		-webkit-animation: cssFadeIn .3s ease 1 alternate;
-		-moz-animation: cssFadeIn .3s ease 1 alternate;
-		-ms-animation: cssFadeIn .3s ease 1 alternate;
-		-o-animation: cssFadeIn .3s ease 1 alternate;
-		animation: cssFadeIn .3s ease 1 alternate;
+		.animation(cssFadeIn .3s ease 1 alternate);
 	}
 
 	.neoModal {
@@ -118,7 +110,7 @@ html, body {
 
 		.neoModalTools {
 			position: relative;
-			height: 24px;
+			height: 25px;
 			margin: 0;
 			margin-left: -1px;
 			margin-right: -1px;
@@ -146,9 +138,14 @@ html, body {
 
 			.off {
 				position: absolute;
-				top: 5px;
+				top: 3px;
 				right: 5px;
+				color: @MainLigthColor;
 				cursor: pointer;
+
+				&:hover {
+					color: #fff;
+				}
 			}
 		}
 
@@ -178,7 +175,7 @@ html, body {
 
 		.neoModalFoot {
 			position: relative;
-			height: 25px;
+			height: 29px;
 			padding-top: 3px;
 			text-align: center;
 			border-width: 1px 0 0 0;
