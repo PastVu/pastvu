@@ -9,29 +9,31 @@
 					dl.dl-horizontal
 						dt Мой email
 						dd
-							.input-append
-								input(type="email", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
-								span.add-on(data-bind="click: saveEmail, css: {save: editEmail()}")
-									i.icon-white(data-bind="css: {'icon-pencil': !editEmail(), 'icon-ok': editEmail()}")
-								//ko if:editEmail()
-								span.add-on.cancel(data-bind="click: cancelEmail")
-									i.icon-remove.icon-white
-								// /ko
+							.row
+								.col-xs-9.col-sm-10.col-md-7.col-lg-4
+									.input-group
+										input.form-control(type="email", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
+										span.input-group-addon(data-bind="click: saveEmail, css: {save: editEmail()}")
+											span.glyphicon(data-bind="css: {'glyphicon-pencil': !editEmail(), 'glyphicon-ok': editEmail()}")
+										//ko if:editEmail()
+										span.input-group-addon.cancel(data-bind="click: cancelEmail, css: {save: editEmail()}")
+											span.glyphicon.glyphicon-remove
+										// /ko
 					dl.dl-horizontal
 						dt Мой пароль
 						dd
 							//ko if: itsMe()
-							button.btn-strict.btn-strict-small(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
+							button.btn.btn-sm.btn-primary(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
 								span Сменить
 							// /ko
-							button.btn-strict.btn-strict-small(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
+							button.btn.btn-sm.btn-primary(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
 								span Запросить смену
 					dl.dl-horizontal
 						dt Показывать в обсуждениях реальное имя
 						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
-								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title
@@ -41,18 +43,6 @@
 					dl.dl-horizontal
 						dt Мой язык
 						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
-								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
-						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
-					dl.dl-horizontal
-						dt Мои регионы
-						dd.throttle(data-bind="foreach: vars.subscr_throttle")
-							label.checkbox
-								input.thr(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
-								| &nbsp;
-								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
-						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 
 		.panel.panel-pastvu
 			.panel-heading
@@ -63,16 +53,15 @@
 					dl.dl-horizontal
 						dt Автоподписка при комментировании темы
 						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
-								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
 						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
 					dl.dl-horizontal
 						dt Минимальный интервал между отправками
 						dd.throttle(data-bind="foreach: vars.subscr_throttle")
-							label.checkbox
-								input.thr(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
-								| &nbsp;
+							label.radio-inline
+								input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
 								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
 						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 

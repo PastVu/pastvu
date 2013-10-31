@@ -55,7 +55,7 @@
     }
     &.active {
 	  margin-top: 1px;
-	  line-height: 1.2;
+	  line-height: 1.3;
 	  cursor: default;
 	  border-color: #fff;
 	  .box-shadow(0 0 0 1px #000);
@@ -146,9 +146,9 @@
 //
 // Remix the default button sizing classes into new ones for easier manipulation.
 
-.btn-group-xs > .btn { .btn-xs(); &.active {line-height: 1.33}}
-.btn-group-sm > .btn { .btn-sm(); &.active {line-height: 1.33}}
-.btn-group-lg > .btn { .btn-lg(); &.active {line-height: 1.1}}
+.btn-group-xs > .btn { .btn-xs(); &.active {line-height: @line-height-computed - 3px}}
+.btn-group-sm > .btn { .btn-sm(); &.active {line-height: @line-height-computed - 3px}}
+.btn-group-lg > .btn { .btn-lg(); &.active {line-height: 1.2}}
 
 
 // Split button dropdowns

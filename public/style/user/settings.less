@@ -4,20 +4,16 @@
 
 .user_settings {
 	.panel-body {
-		padding: 11px 10px 11px 25px;
+		padding: 11px 10px 11px 22px;
 
-		input {
-			margin-bottom: 0;
-			padding-top: 2px;
-			padding-bottom: 1px;
-		}
-		span.add-on {
-			margin: 1px 0 0 0px;
-			padding: 1px 2px 0px 3px;
-			border: 1px solid #C3C7DD;
-			background-color: @MainBlueColor;
+		span.input-group-addon {
+			color: @MainLigthColor;
 			cursor: pointer;
-			.box-shadow(~'0px -1px 0 0 #000, 1px 0px 0 0 #000, 0px 1px 0 0 #000');
+			background-color: @MainBlueColor;
+
+			&:hover {
+				color: #fff;
+			}
 
 			&.save {
 				background-color: #439B43;
@@ -34,13 +30,13 @@
 			cursor: help;
 		}
 
-		label.checkbox {
-			display: inline-block;
-			margin: 0 15px 0 0;
-			padding-left: 0;
+		.radio-inline {
+			margin-right: 10px;
+			padding-left: 17px;
 
-			input.thr {
-				margin-top: -4px;
+			input[type="radio"] {
+				margin-top: 3px;
+				margin-left: -17px;
 			}
 		}
 
@@ -61,14 +57,6 @@
 			dd {
 				margin-left: 305px;
 				text-align: left;
-
-				.input-append {
-					margin-bottom: 0;
-				}
-
-				&.throttle {
-					padding-top: 4px;
-				}
 			}
 		}
 	}
