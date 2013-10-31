@@ -158,7 +158,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				renderer(
 					[
 						{
-							module: 'm/user/brief', container: '.userBrief', options: {affix: true, userVM: this.user},
+							module: 'm/user/brief', container: '.userBrief', options: {userVM: this.user},
 							callback: function (vm) {
 								this.briefVM = this.childModules[vm.id] = vm;
 							}.bind(this)

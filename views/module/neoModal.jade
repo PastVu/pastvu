@@ -2,7 +2,7 @@
 	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * P.window.w() / 5 >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
-			a.off.closeClick(data-bind="tooltip: {title: '${ closeTxt }', trigger: 'hover'}")
+			a.off.closeClick(title="${ closeTxt }")
 				span.glyphicon.glyphicon-off
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
 		.neoModalFoot

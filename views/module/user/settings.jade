@@ -1,10 +1,11 @@
 .user_settings(data-bind="with: repository[M!M]")
-	.accordion#accordion2
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseOne") Конфиденциальность
-			.accordion-body.collapse.in#collapseOne
-				.accordion-inner
+	.panel-group#accordion
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#privacy") Конфиденциальность
+			.panel-collapse.collapse.in#privacy
+				.panel-body
 					dl.dl-horizontal
 						dt Мой email
 						dd
@@ -31,11 +32,12 @@
 							.btn-group-toggle
 								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
 								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Регионы
-			.accordion-body.collapse.in#notice
-				.accordion-inner
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#region") Регионы
+			.panel-collapse.collapse.in#region
+				.panel-body
 					dl.dl-horizontal
 						dt Мой язык
 						dd
@@ -52,11 +54,12 @@
 								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
 						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Подписка и уведомления
-			.accordion-body.collapse.in#notice
-				.accordion-inner
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#notice") Подписка и уведомления
+			.panel-collapse.collapse.in#notice
+				.panel-body
 					dl.dl-horizontal
 						dt Автоподписка при комментировании темы
 						dd
@@ -73,8 +76,9 @@
 								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
 						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Карта
-			.accordion-body.collapse#collapseTwo
-				.accordion-inner Раздел в процессе разработки...
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#collapseTwo") Карта
+			.panel-collapse.collapse#collapseTwo
+				.panel-body Раздел в процессе разработки...

@@ -2,7 +2,7 @@
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/bootstrap-collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -37,7 +37,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			}
 		},
 		show: function () {
-			this.$dom.find("#accordion2 .collapse").collapse({
+			this.$dom.find("#accordion").collapse({
 				toggle: false
 			});
 			globalVM.func.showContainer(this.$container);

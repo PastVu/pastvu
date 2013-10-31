@@ -8,7 +8,6 @@
   margin-bottom: @line-height-computed;
   background-color: @panel-bg;
   border: 1px solid transparent;
-  border-radius: @panel-border-radius;
   .box-shadow(0 1px 1px rgba(0,0,0,.05));
 }
 
@@ -92,9 +91,8 @@
 
 // Optional heading
 .panel-heading {
-  padding: 10px 15px;
+  padding: 1px 15px;
   border-bottom: 1px solid transparent;
-  .border-top-radius(@panel-border-radius - 1);
 
   & > .dropdown .dropdown-toggle {
     color: inherit;
@@ -105,18 +103,20 @@
 .panel-title {
   margin-top: 0;
   margin-bottom: 0;
-  font-size: ceil((@font-size-base * 1.125));
+  font-size: @font-size-base + 1px;
   > a {
+	display: block;
+	padding: 7px 0;
     color: inherit;
+	text-decoration: none;
   }
 }
 
 // Optional footer (stays gray in every modifier class)
 .panel-footer {
-  padding: 10px 15px;
+  padding: 8px 15px;
   background-color: @panel-footer-bg;
   border-top: 1px solid @panel-inner-border;
-  .border-bottom-radius(@panel-border-radius - 1);
 }
 
 
@@ -129,7 +129,6 @@
   // Tighten up margin so it's only between panels
   .panel {
     margin-bottom: 0;
-    border-radius: @panel-border-radius;
     overflow: hidden; // crop contents when collapsed
     + .panel {
       margin-top: 5px;
@@ -169,4 +168,9 @@
 }
 .panel-info {
   .panel-variant(@panel-info-border; @panel-info-text; @panel-info-heading-bg; @panel-info-border);
+}
+
+//PastVu
+.panel-pastvu {
+	.panel-variant(@panel-pastvu-border; @panel-pastvu-text; @panel-pastvu-heading-bg; @panel-pastvu-border);
 }

@@ -18,7 +18,15 @@
  * ======================================================================== */
 
 
-+function ($) { "use strict";
+(function (factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['jquery'], factory);
+	} else {
+		// Browser globals
+		factory(jQuery);
+	}
+}(function ($) { "use strict";
 
   // COLLAPSE PUBLIC CLASS DEFINITION
   // ================================
@@ -176,4 +184,4 @@
     $target.collapse(option)
   })
 
-}(window.jQuery);
+}));
