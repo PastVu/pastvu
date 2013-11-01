@@ -9,47 +9,30 @@
 	position: relative;
 	//font-family: @font-family-alt;
 
-	#logo {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 30px;
-		height: 30px;
-		padding: 1px 0 0 0;
-		cursor: pointer;
-		zoom: 1; // IE fix for left
-		z-index: @zindex-popover;
-		border-width: 0 1px 1px 1px;
-		border-style: solid;
-		border-color: transparent;
-		.box-sizing(border-box);
-		.transition(all .25s linear);
-
-		&.hover, &:hover {
-			left: 10px;
-			width: @logoW;
-			height: @logoH;
-			padding: 6px;
-			border-color: #c3c7dd;
-			background-color: @MainBlueColor;
-			.box-shadow(~'0 0 0 1px #000, 0 2px 4px 0 #222');
-		}
-	}
-	#appName {
+	#brand {
 		position: relative;
 		display: inline-block;
-		top: 0;
-		left: 30px;
-		width: 275px;
-		height: 29px;
-		line-height: 29px;
-		overflow: hidden;
-		cursor: pointer;
-		.transition(left .25s linear);
+		left: 1px;
+		width: 306px;
+		line-height: 30px;
 
-		&.hover, &:hover {
-			left: 67px;
-			color: #fff;
+		> .logo, > .name {
+			vertical-align: top;
+		}
+
+		> .logo {
+			width: 30px;
+			height: 30px;
+		}
+		> .name {
+			width: 275px;
+			height: 29px;
+		}
+
+		&:hover {
+			> .logo {
+				.animation(logorot 3s ease-in-out 1s infinite);
+			}
 		}
 	}
 
@@ -176,4 +159,13 @@
 			}
 		}
 	}
+}
+
+@-webkit-keyframes logorot {
+	from{-webkit-transform: rotate(0deg);}
+	to{-webkit-transform: rotate(360deg);}
+}
+@keyframes logorot {
+	from{transform: rotate(0deg);}
+	to{transform: rotate(360deg);}
 }
