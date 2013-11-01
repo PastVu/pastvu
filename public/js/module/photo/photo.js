@@ -122,7 +122,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			});
 
-
 			this.scrollTimeout = null;
 			this.scrollToBind = this.scrollTo.bind(this);
 

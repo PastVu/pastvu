@@ -19,24 +19,24 @@
 						a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
 						// /ko
 						// /ko
-					.tools
+					.toolsRht
 						.tool.watched
 							span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров фотографии")
 							.watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
 							.watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
 							.watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
-					.photoTools(data-bind="style: {width: ws() + 'px'}")
+					.toolsBtm(data-bind="style: {width: ws() + 'px'}")
 						span.toolsTxt
 							//ko if: ws() !== p.ws() && hs() !== p.hs()
-							span.sizeThis(data-bind="text: 'Текущий размер: ' + ws() + '×' + hs()")
-							span &nbsp;|&nbsp;
+							.sizeThis(data-bind="text: (ws()>390 ? 'Текущий размер: ' : '') + ws() + '×' + hs()")
+							| &nbsp;|&nbsp;
 							// /ko
-							a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: 'Стандарт: ' + p.ws() + '×' + p.hs()")
-							span &nbsp;|&nbsp;
-							a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: 'Оригинал: ' + p.w() + '×' + p.h()")
+							a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: (ws()>390 ? 'Стандарт: ' : '') + p.ws() + '×' + p.hs()")
+							| &nbsp;|&nbsp;
+							a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: (ws()>390 ? 'Оригинал: ' : '') + p.w() + '×' + p.h()")
 						//ko if: hscalePossible()
-						.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscaleTumbler()}, click: stateChange")
-							i.icon-resize-vertical.icon-white
+						button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Подгонять по высоте видимой области")
+							span.glyphicon.glyphicon-resize-vertical
 						// /ko
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
