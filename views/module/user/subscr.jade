@@ -3,13 +3,13 @@
 	.pagOverTop
 		.nextNoty
 			span.glyphicon.glyphicon-bullhorn
-		span(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
+		span.text-success(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
 	// /ko
 	ul.nav.nav-tabs
 		li(data-bind="css: {active: type() === 'photo'}")
-			a(data-bind="attr: {href: location.pathname}, text: 'Фотографии [' + types['photo']() + ']'")
+			a(data-bind="attr: {href: location.pathname}, text: 'Фотографии [' + types['photo_persist']() + ']'")
 		li(data-bind="css: {active: type() === 'news'}")
-			a(href="?type=news", data-bind="text: 'Новости [' + types['news']() + ']'")
+			a(href="?type=news", data-bind="text: 'Новости [' + types['news_persist']() + ']'")
 	.navContent
 		.row
 			.col-xs-6.col-md-3.topcol
@@ -19,7 +19,7 @@
 		.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
 
 	script(id="photoSubscrTpl", type="text/html")
-		.object
+		.object.clearfix
 			a.imgLoad(data-bind="attr: {href: $data.link}")
 				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 			a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
@@ -28,18 +28,18 @@
 			a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
 			//ko if: $data.noty
 			.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
-				i.icon-bullhorn.icon-white
+				span.glyphicon.glyphicon-bullhorn
 			// /ko
 			// /ko
 	script(id="newsSubscrTpl", type="text/html")
-		.object
+		.object.clearfix
 			a.objTitle(data-bind="attr: {href: $data.link}, text: $data.cid + '. ' + $data.title")
 			//ko if: $data.ccount
 			br
 			a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
 			//ko if: $data.noty
 			.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
-				i.icon-bullhorn.icon-white
+				span.glyphicon.glyphicon-bullhorn
 			// /ko
 			// /ko
 
