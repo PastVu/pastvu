@@ -79,12 +79,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				var txt = '';
-				if (this.count()) {
+				var count = this.count(),
+					txt = '';
+				if (count) {
 					if (this.feed()) {
-						txt = 'Всего ' + this.count() + ' фотографий';
+						txt = 'Всего ' + count + ' фотографий';
 					} else {
-						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count();
+						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
 					}
 				} else {
 					txt = 'Пока нет ни одной фотографии';

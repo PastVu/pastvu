@@ -1,26 +1,23 @@
 .subscr(data-bind="with: repository[M!M]")
 	//ko if: nextNoty() !== null
-	.row.pagOverTop
+	.pagOverTop
 		.nextNoty
-			i.icon-bullhorn.icon-white
+			span.glyphicon.glyphicon-bullhorn
 		span(data-bind="text: 'Отправка следующего уведомления запланирована на ' + nextNoty().calendar().toLowerCase() + ' (' + nextNoty().fromNow() + ')'")
 	// /ko
-	.row.pagTop
-		.pills
-			ul.nav.nav-pills
-				li(data-bind="css: {active: type() === 'photo'}")
-					a(data-bind="attr: {href: location.pathname}, text: 'Фотографии [' + types['photo']() + ']'")
-				li(data-bind="css: {active: type() === 'news'}")
-					a(href="?type=news", data-bind="text: 'Новости [' + types['news']() + ']'")
-		.pagesBrief(data-bind="css: {loading: loading()}, text: briefText")
-		//ko if: paginationShow()
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-		// /ko
-	.row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
-	//ko if: paginationShow()
-	.row.pagBottoms
-		.pagination.pagination-small.pagination-centered(data-bind="template: {name: 'pagerTpl'}")
-	// /ko
+	ul.nav.nav-tabs
+		li(data-bind="css: {active: type() === 'photo'}")
+			a(data-bind="attr: {href: location.pathname}, text: 'Фотографии [' + types['photo']() + ']'")
+		li(data-bind="css: {active: type() === 'news'}")
+			a(href="?type=news", data-bind="text: 'Новости [' + types['news']() + ']'")
+	.navContent
+		.row
+			.col-xs-6.col-md-3.topcol
+				span.brief(data-bind="css: {pageLoading: loading()}, text: briefText")
+			.col-xs-12.col-md-6.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
+		.row.objects(data-bind="css: {photoObjs: type() === 'photo', newsObjs: type() === 'news', }, template: {name: type() + 'SubscrTpl', foreach: objects}")
+		.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")
+
 	script(id="photoSubscrTpl", type="text/html")
 		.object
 			a.imgLoad(data-bind="attr: {href: $data.link}")
@@ -45,13 +42,13 @@
 				i.icon-bullhorn.icon-white
 			// /ko
 			// /ko
-	script(id="pagerTpl", type="text/html")
-		ul
-			li(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageBase + (type() !== 'photo' ? location.search : '')}", title="Первая страница") &laquo;&laquo;
-			li(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageBase + (page() - 1) + (type() !== 'photo' ? location.search : '')}", title="Предыдущая страница") &laquo;
-			//ko foreach: pages
-			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageBase + $data + ($parent.type() !== 'photo' ? location.search : '')}, text: $data")
-			// /ko
-			li(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageBase + (page() + 1) + (type() !== 'photo' ? location.search : '')}", title="Следующая страница") &raquo;
-			li(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageBase + pageLast() + (type() !== 'photo' ? location.search : '')}", title="Последняя страница") &raquo;&raquo;
 
+	script(id="pagerTpl", type="text/html")
+		ul.pagination
+			li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
+			li.edge(data-bind="css: {disabled: !pageHasPrev()}"): a(data-bind="attr: {href: pageUrl() + (page() > 1 ? '/' + (page() - 1) : '')+ pageQuery()}", title="Предыдущая страница") &laquo;
+			//ko foreach: pages
+			li(data-bind="css: {active: $data === $parent.page()}"): a(data-bind="attr: {href: $parent.pageUrl() + '/' + $data + $parent.pageQuery()}, text: $data")
+			// /ko
+			li.edge(data-bind="css: {disabled: !pageHasNext()}"): a(data-bind="attr: {href: pageUrl() + '/' + (page() + 1) + pageQuery()}", title="Следующая страница") &raquo;
+			li.edge(data-bind="css: {disabled: page() === pageLast()}"): a(data-bind="attr: {href: pageUrl() + '/' + pageLast() + pageQuery()}", title="Последняя страница") &raquo;&raquo;

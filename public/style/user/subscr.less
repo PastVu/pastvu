@@ -7,36 +7,36 @@
 
 .subscr {
 	position: relative;
+	padding: 0 5px;
 
-	.pagOverTop {
-		margin-bottom: 7px;
+	.topcol {
+		margin-top: 2px;
+		margin-bottom: 4px;
 	}
-
-	.pagTop {
-		position: relative;
-		margin-bottom: 15px;
-	}
-	.pills, .pagesBrief {
-		display: inline-block;
-		vertical-align: top;
-	}
-	.pills {
-		margin-right: 10px;
-		padding-left: 2px;
-		background-color: rgba(97, 104, 195, 0.1);
-	}
-	.nav-pills {
-		margin-bottom: 0;
-	}
-	.pagesBrief {
-		min-width: 150px;
-		font-style: italic;
-		font-size: 12px;
-		line-height: 29px;
+	.pag {
+		margin-top: 2px;
+		margin-bottom: 14px;
 		text-align: center;
 	}
+	.brief {
+		line-height: 24px;
+		white-space: nowrap;
+
+		&.pageLoading {
+			padding-right: 75px;
+			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
+		}
+	}
 	.pagination {
-		margin: 10px 0 0 0;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+	.brief, .pagination {
+		vertical-align: middle;
+	}
+
+	.navContent {
+		margin: 7px 0 0 5px;
 	}
 
 	.object {
@@ -53,11 +53,11 @@
 
 	.imgLoad {
 		float: left;
-		margin: 2px 8px 3px 3px;
+		margin: 2px 8px 3px 0;
 
 		.img {
-			width: 150px;
-			height: 100px;
+			width: 120px;
+			height: 80px;
 		}
 	}
 

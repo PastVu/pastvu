@@ -15,7 +15,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.u = this.options.userVM;
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};
-			this.paginationShow = ko.observable(false);
 			this.loadingComments = ko.observable(false);
 
 			this.page = ko.observable(1);
@@ -52,11 +51,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 				return result;
 			}, this);
+			this.paginationShow = this.co.paginationShow = ko.computed(function () {
+				return this.pageLast() > 1;
+			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				var txt = '';
-				if (this.u.ccount()) {
-					txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount();
+				var count = this.u.ccount(),
+					txt = '';
+				if (count) {
+					txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
 				} else {
 					txt = 'Пользователь пока не оставил комментариев в данной категории';
 				}
@@ -137,9 +140,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						}
 					}
 					this.comments(commentsToInsert);
-					if (this.pageLast() > 1) {
-						this.paginationShow(true);
-					}
 				}
 				this.loadingComments(false);
 				if (Utils.isType('function', cb)) {

@@ -30,7 +30,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				this.page = ko.observable(0);
 				this.pageSize = ko.observable(0);
 				this.pageSlide = ko.observable(2);
-				this.pageBase = '/u/' + this.u.login() + '/subscriptions/';
 
 				this.pageLast = this.co.pageLast = ko.computed(function () {
 					return ((this.types[this.type()]() - 1) / this.pageSize() >> 0) + 1;
@@ -62,14 +61,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					}
 					return result;
 				}, this);
-
-				this.briefText = this.co.briefText = ko.computed(function () {
-					return this.types[this.type()]() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' +this.types[this.type()]() : 'Пока нет подписок этого типа';
-				}, this);
-
 				this.paginationShow = this.co.paginationShow = ko.computed(function () {
 					return this.pageLast() > 1;
 				}, this);
+
+				this.briefText = this.co.briefText = ko.computed(function () {
+					var count = this.types[this.type()](),
+						txt = '';
+					if (count) {
+						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+					} else {
+						txt = 'Пока нет подписок в данной категории';
+					}
+					return txt;
+				}, this);
+
+				this.pageUrl = ko.observable('/u/' + this.u.login() + '/subscriptions');
+				this.pageQuery = ko.observable('');
 
 				this.routeHandlerDebounced = _.throttle(this.routeHandler, 700, {leading: true, trailing: true});
 
@@ -110,6 +118,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + this.pageLast() + (type !== 'photo' ? '?type=' + type : ''));
 				}.bind(this), 200);
 			} else if (page !== this.page() || type !== this.type()) {
+				this.pageQuery(location.search);
 				this.page(page);
 				this.type(type);
 				this.getPage(page, type, this.makeBinding, this);
