@@ -7,7 +7,7 @@
 
 .photo {
 	position: relative;
-	padding: 5px .2% 0 1%;
+	padding: 7px .2% 0 .5%;
 
 	.help {
 		display: block;
@@ -54,6 +54,10 @@
 			display: inline-block;
 			vertical-align: middle;
 		}
+	}
+
+	.photoPanel {
+		padding-right: 2px;
 	}
 
 	.photoImgRow {
@@ -161,7 +165,7 @@
 			opacity: 1;
 		}
 
-		.tool {
+		> .tool {
 			position: relative;
 		 	display: inline-block;
 			width: 100%;
@@ -184,8 +188,17 @@
 				}
 			}
 		}
-		.watch {
-			cursor: help;
+		.watched  {
+			padding-top: 1px;
+
+			> .watch, > .glyphicon {
+				padding: 1px 0;
+				cursor: help;
+
+				&:hover {
+					color: #fff;
+				}
+			}
 		}
 	}
 
@@ -302,23 +315,15 @@
 		}
 	}
 
-	.h_separator {
-		margin: 5px 0 12px 0;
-	}
-
+	//Правая панель
 	.rightPanel {
 		position: relative;
 		z-index: 2; //Чтобы был "сверху" комментариев
+	}
+	.rightrow {
+		margin: 0 0 5px 0;
 
-		.row {
-			margin-bottom: 5px;
-
-			&.photoMap {
-				height: 500px;
-				margin-bottom: 1px;
-			}
-		}
-		.row:last-child {
+		&:last-child {
 			margin-bottom: 0;
 		}
 		.lineBehind {
@@ -330,13 +335,12 @@
 		margin-top: 0px;
 		border-width: 0px;
 	}
-
 	.avatar {
 		display: inline-block;
 		vertical-align: top;
 		cursor: pointer;
 
-		img {
+		> img {
 			width: 75px;
 			height: 75px;
 			opacity: 0;
@@ -352,7 +356,10 @@
 			margin: 0px 0 3px 5px;
 		}
 	}
-
+	.photoMap {
+		height: 500px;
+		margin-bottom: 1px;
+	}
 	.userRibbon {
 		height: 60px;
 		overflow: hidden;

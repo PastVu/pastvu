@@ -8,7 +8,7 @@
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length ? '' : 'none'}")
 
 	.row.photoData(data-bind="css: {editMode: edit()}")
-		.col-xs-12.col-sm-8.col-lg-9.photoPanel
+		.col-xs-12.col-sm-8.col-lg-8.photoPanel
 			.photoImgRow
 				.photoImgSuperWrap
 					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
@@ -40,12 +40,12 @@
 						// /ko
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
-		.col-xs-12.col-sm-4.col-lg-3.rightPanel
-			table.tableUser(cellpadding="0")
+		.col-xs-12.col-sm-4.col-lg-4.rightPanel
+			table.rightrow.tableUser(cellpadding="0")
 				tbody
 					tr
 						td(style="width: 85px; min-width: 85px;")
-							a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
+							a.avatar.fringe.plain(data-bind="attr: {href: '/u/' + p.user.login()}")
 								img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
 						td
 							.userInfo(data-bind="html: userInfo() + rnks()")
@@ -61,9 +61,9 @@
 										// /ko
 								// /ko
 							// /ko
-			.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
+			.rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
-			.photoTiles
+			.rightrow.photoTiles
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: nearestRibbon
@@ -158,9 +158,8 @@
 				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )
 				// /ko
-		a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
+		a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
 			img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
-		.h_separator
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
