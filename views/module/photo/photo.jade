@@ -3,13 +3,13 @@
 		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
 		.photoAction.convertAction(data-bind="style: {display: !edit() && can.convert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
 			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
-			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
-				span start
+			button.btn.btn-primary.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
+				| start
 		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length ? '' : 'none'}")
 
 	.row.photoData(data-bind="css: {editMode: edit()}")
-		.span8-9.photoPanel
-			.row.photoImgRow
+		.col-xs-12.col-sm-8.col-lg-9.photoPanel
+			.photoImgRow
 				.photoImgSuperWrap
 					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 						img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
@@ -21,7 +21,7 @@
 						// /ko
 					.tools
 						.tool.watched
-							i.icon-eye-open.icon-white(title="Количество просмотров фотографии")
+							span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров фотографии")
 							.watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
 							.watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
 							.watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
@@ -40,31 +40,30 @@
 						// /ko
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
-		.span3-4.rightPanel
-			.row.photoUser
-				table(style="width: 100%; margin-top: 0px; border-width: 0px;", border="0", cellspacing="0", cellpadding="0")
-					tbody
-						tr
-							td(style="width: 85px; min-width: 85px;")
-								a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
-									img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
-							td
-								.userInfo(data-bind="html: userInfo() + rnks()")
-								//ko if: userRibbon().length
-								.userRibbon
-									//ko foreach: userRibbon
-									a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
-										.photoBox
-											img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-											.curtain
-											//ko if: $data.noPublic
-											i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-											// /ko
-									// /ko
+		.col-xs-12.col-sm-4.col-lg-3.rightPanel
+			table.tableUser(cellpadding="0")
+				tbody
+					tr
+						td(style="width: 85px; min-width: 85px;")
+							a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
+								img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+						td
+							.userInfo(data-bind="html: userInfo() + rnks()")
+							//ko if: userRibbon().length
+							.userRibbon
+								//ko foreach: userRibbon
+								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+									.photoBox
+										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+										.curtain
+										//ko if: $data.noPublic
+										i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+										// /ko
 								// /ko
-			.row.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
+							// /ko
+			.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
-			.row.photoTiles
+			.photoTiles
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: nearestRibbon
@@ -74,45 +73,45 @@
 						.curtain
 				// /ko
 			// /ko
-		.row.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
-	.row.heightExpander
+		.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
+	.heightExpander
 
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
-		button.btn-strict(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-			i.icon-pencil.icon-white
-			span Редактировать
+		button.btn.btn-primary(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-pencil
+			|  Редактировать
 		//ko if: IOwner() && p.fresh() && !p.ready()
-		button.btn-strict.btn-strict-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
-			i.icon-check.icon-white
-			span Готово
+		button.btn.btn-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-check
+			|  Готово
 		// /ko
 		div(style="display:inline-block")
 			//ko if: canBeApprove()
-			button.btn-strict.btn-strict-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
-				i.icon-ok.icon-white
-				span Подтвердить
+			button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-ok
+				|  Подтвердить
 			// /ko
 			//ko if: canBeDisable()
-			button.btn-strict(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-				span(data-bind="text: p.disabled() ? 'Активировать' : 'Деактивировать'")
+			button.btn(type="button", data-bind="css: {'btn-warning': !p.disabled(), 'btn-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+				span.glyphicon(data-bind="css: {'glyphicon-exclamation-sign': !p.disabled(), 'glyphicon-ok-sign': p.disabled()}")
+				span(data-bind="text: p.disabled() ? ' Активировать' : ' Деактивировать'")
 			// /ko
 			//ko if: !p.del() && can.remove()
-			button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-				i.icon-trash.icon-white
-				span(data-bind="text: !IOwner() && p.fresh() ? 'Отклонить' : 'Удалить'")
+			button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-trash
+				span(data-bind="text: !IOwner() && p.fresh() ? ' Отклонить' : ' Удалить'")
 			// /ko
 
 	//-ACTIONS EDIT MODE
 	script(id="photoActionsEdit", type="text/html")
-		button.btn-strict.btn-strict-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-			i.icon-ok.icon-white
-			span Сохранить
-		button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
-			i.icon-remove.icon-white
-			span Отмена редактирования
+		button.btn.btn-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-ok
+			|  Сохранить
+		button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-remove
+			|  Отмена редактирования
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")

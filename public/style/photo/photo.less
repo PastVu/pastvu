@@ -7,7 +7,7 @@
 
 .photo {
 	position: relative;
-	margin-top: 40px;
+	padding: 5px .2% 0 1%;
 
 	.help {
 		display: block;
@@ -23,8 +23,7 @@
 	.photoTop {
 		display: none;
 		position: relative;
-		min-height: 37px;
-		margin-top: -37px;
+		margin-bottom: 3px;
 
 		.photoAction {
 			display: inline-block;
@@ -55,11 +54,6 @@
 			display: inline-block;
 			vertical-align: middle;
 		}
-	}
-
-	.photoData {
-		width: auto;
-		margin: 0 .5% 0 1.2%;
 	}
 
 	.photoImgRow {
@@ -320,8 +314,6 @@
 
 	.rightPanel {
 		position: relative;
-		float: right;
-		zoom: 1;
 		z-index: 2; //Чтобы был "сверху" комментариев
 
 		.row {
@@ -338,6 +330,11 @@
 		.lineBehind {
 			margin-bottom: 1px;
 		}
+	}
+	.tableUser {
+		width: 100%;
+		margin-top: 0px;
+		border-width: 0px;
 	}
 
 	.avatar {
@@ -481,11 +478,10 @@
 	}
 }
 
-@media (max-width: 767px) {
+@media (max-width: @screen-xs-max) {
 	.photo {
-		.photoData {
-			margin: 0 3px;
-		}
+		padding: 5px 2px 0 2px;
+
 		.rightPanel {
 			float: none;
 		}
