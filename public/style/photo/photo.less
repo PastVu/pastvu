@@ -20,39 +20,35 @@
 		}
 	}
 
-	.photoTop {
-		display: none;
+	.topInfo {
 		position: relative;
-		margin-bottom: 3px;
 
-		.photoAction {
+		> .photoAction {
 			display: inline-block;
 
-			button {
+			.btn {
 				min-width: 110px;
-				margin-top: 3px;
-				margin-bottom: 5px;
+				margin-bottom: 4px;
 			}
 		}
-		.convertAction {
-			.btn-strict.btnConvert {
+		> .convertAction {
+			> .btnConvert {
+				position: relative;
 				min-width: 45px;
-				margin-left: 0;
+				margin-left: 0px;
+				z-index: 2;
 				.box-shadow(~'1px 0 0 0 #000, 1px 1px 0 0 #000, 1px -1px 0 0 #000, 1px 2px 6px 0px #222');
 			}
-			.btn-strict.multiselect {
-				min-width: 138px;
-				margin-right: 0;
-			}
-			&.disabled .btn-strict {
+			&.disabled > .btn {
 				cursor: default;
 				.opacity(65);
 				.box-shadow(~'0 0 0 1px #000');
 			}
 		}
 		.photoMsg {
-			display: inline-block;
-			vertical-align: middle;
+			font-size: @font-size-small;
+			font-weight: normal;
+			cursor: default;
 		}
 	}
 
@@ -318,6 +314,7 @@
 	//Правая панель
 	.rightPanel {
 		position: relative;
+		float: right;
 		z-index: 2; //Чтобы был "сверху" комментариев
 	}
 	.rightrow {

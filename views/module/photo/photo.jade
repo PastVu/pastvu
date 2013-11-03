@@ -1,14 +1,21 @@
 .photo(data-bind="with: repository[M!M]")
-	.photoTop(data-bind="style: {display: can.edit() ? 'block' : 'none'}")
-		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
-		.photoAction.convertAction(data-bind="style: {display: !edit() && can.convert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
-			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
-			button.btn.btn-primary.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
-				| start
-		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length ? '' : 'none'}")
-
 	.row.photoData(data-bind="css: {editMode: edit()}")
 		.col-xs-12.col-sm-8.col-lg-8.photoPanel
+			//ko if: can.edit()
+			.topInfo
+				.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+				//ko if: !edit() && can.convert()
+				.photoAction.convertAction(data-bind="css: {disabled: exe()}")
+					select.multiselect(multiple="multiple", data-bind="options: convertVars, optionsValue: 'vId', optionsText: 'vName', selectedOptions: convertVarsSel, multiselect: convertOptions")
+					button.btn.btn-primary.btnConvert(data-bind="click: toConvert, attr: {disabled: exe()}")
+						| start
+				// /ko
+				//ko if: msg().length
+				.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle}")
+					span.glyphicon.glyphicon-warning-sign
+					span(data-bind="text: ' ' + msg()")
+				// /ko
+			// /ko
 			.photoImgRow
 				.photoImgSuperWrap
 					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
@@ -87,22 +94,21 @@
 			span.glyphicon.glyphicon-check
 			|  Готово
 		// /ko
-		div(style="display:inline-block")
-			//ko if: canBeApprove()
-			button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-ok
-				|  Подтвердить
-			// /ko
-			//ko if: canBeDisable()
-			button.btn(type="button", data-bind="css: {'btn-warning': !p.disabled(), 'btn-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-				span.glyphicon(data-bind="css: {'glyphicon-exclamation-sign': !p.disabled(), 'glyphicon-ok-sign': p.disabled()}")
-				span(data-bind="text: p.disabled() ? ' Активировать' : ' Деактивировать'")
-			// /ko
-			//ko if: !p.del() && can.remove()
-			button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-				span.glyphicon.glyphicon-trash
-				span(data-bind="text: !IOwner() && p.fresh() ? ' Отклонить' : ' Удалить'")
-			// /ko
+		//ko if: canBeApprove()
+		button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-ok
+			|  Подтвердить
+		// /ko
+		//ko if: canBeDisable()
+		button.btn(type="button", data-bind="css: {'btn-warning': !p.disabled(), 'btn-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
+			span.glyphicon(data-bind="css: {'glyphicon-exclamation-sign': !p.disabled(), 'glyphicon-ok-sign': p.disabled()}")
+			span(data-bind="text: p.disabled() ? ' Активировать' : ' Деактивировать'")
+		// /ko
+		//ko if: !p.del() && can.remove()
+		button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-trash
+			span(data-bind="text: !IOwner() && p.fresh() ? ' Отклонить' : ' Удалить'")
+		// /ko
 
 	//-ACTIONS EDIT MODE
 	script(id="photoActionsEdit", type="text/html")

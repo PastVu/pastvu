@@ -2,7 +2,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/dropdown', 'bs/ext/multiselect', 'css!style/bs/ext/multiselect', 'knockout.bs', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 	var $window = $(window),
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -54,19 +54,20 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.msg = ko.observable('');
 			this.msgCss = ko.observable('');
+			this.msgTitle = ko.observable('');
 
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				if (this.edit()) {
-					this.setMessage('Фото в режиме редактирования. Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
+					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
 				} else if (this.p.fresh()) {
 					if (!this.p.ready()) {
-						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', 'warn'); //Photo is new. Administrator must approve it
+						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', '', 'warn'); //Photo is new. Administrator must approve it
 					} else {
-						this.setMessage('Новая фотография. Ожидает подтверждения модератором', 'warn'); //Photo is new. Administrator must approve it
+						this.setMessage('Новая фотография. Ожидает подтверждения модератором', '', 'warn'); //Photo is new. Administrator must approve it
 					}
 				} else if (this.p.disabled()) {
-					this.setMessage('Фотография деактивирована администрацией. Только вы и модераторы можете видеть ёё и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
+					this.setMessage('Фотография деактивирована модератором', 'Только вы и модераторы можете видеть её и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
 				} else if (this.p.del()) {
 					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
 				} else {
@@ -92,7 +93,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.thumbN = ko.observable(4);
 			this.thumbNUser = ko.observable(3);
 
-			this.convertOptions = ko.observableArray([
+			this.convertVars = ko.observableArray([
 				{vName: 'Origin', vId: 'a'},
 				{vName: 'Standard', vId: 'd'},
 				{vName: 'Thumb', vId: 'h'},
@@ -101,14 +102,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				{vName: 'Micro', vId: 's'},
 				{vName: 'Micros', vId: 'x'}
 			]);
-			this.selectedOpt = ko.observableArray([]);
-			this.$dom.find('#convertSelect').multiselect({
-				buttonClass: 'btn-strict',
-				buttonWidth: 'auto', // Default
-				buttonText: function (options) {
+			this.convertVarsSel = ko.observableArray([]);
+			this.convertOptions = {
+				includeSelectAllOption: true,
+				//buttonContainer: '',
+				buttonClass: 'btn btn-primary',
+				buttonWidth: '150px',
+				buttonText: function (options, select) {
 					if (options.length === 0) {
 						return 'Convert variants <b class="caret"></b>';
-					} else if (options.length === _this.convertOptions().length) {
+					} else if (options.length === _this.convertVars().length) {
 						return 'All variants selected <b class="caret"></b>';
 					} else if (options.length > 2) {
 						return options.length + ' variants selected <b class="caret"></b>';
@@ -120,7 +123,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
 					}
 				}
-			});
+			};
 
 			this.scrollTimeout = null;
 			this.scrollToBind = this.scrollTo.bind(this);
@@ -839,7 +842,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		toConvert: function (data, event) {
-			if (!this.can.convert() || this.selectedOpt().length === 0) {
+			if (!this.can.convert() || this.convertVarsSel().length === 0) {
 				return false;
 			}
 			this.exe(true);
@@ -852,7 +855,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(false);
 			}.bind(this));
 			socket.emit('convertPhotos', [
-				{cid: this.p.cid(), variants: this.selectedOpt()}
+				{cid: this.p.cid(), variants: this.convertVarsSel()}
 			]);
 		},
 
@@ -1199,28 +1202,29 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			parent.classList.add('showPrv');
 		},
 
-		setMessage: function (text, type) {
+		setMessage: function (text, abbr, type) {
 			var css = '';
 			switch (type) {
 			case 'error':
-				css = 'text-error';
+				css = 'label-danger';
 				break;
 			case 'warn':
-				css = 'text-warning';
+				css = 'label-warning';
 				break;
 			case 'info':
-				css = 'text-info';
+				css = 'label-info';
 				break;
 			case 'success':
-				css = 'text-success';
+				css = 'label-success';
 				break;
 			default:
-				css = 'muted';
+				css = 'label-default';
 				break;
 			}
 
 			this.msg(text);
 			this.msgCss(css);
+			this.msgTitle(abbr);
 
 			text = type = css = null;
 		}
