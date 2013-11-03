@@ -207,7 +207,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.showing = true;
 		},
 		hide: function () {
-			this.$dom.find('.photoImgWrap').off();
+			this.$dom.find('.imgWrap').off();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 			//globalVM.pb.publish('/top/message', ['', 'muted']);
@@ -407,7 +407,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
 			var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0,
-				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0,
+				maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 47 >> 0,
 				ws = this.p.ws(),
 				hs = this.p.hs(),
 				aspect = ws / hs,
@@ -990,7 +990,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
-			$window.scrollTo(this.$dom.find('.photoImgWrap'), {duration: duration || 400, onAfter: function () {
+			$window.scrollTo(this.$dom.find('.imgWrap'), {duration: duration || 400, onAfter: function () {
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx);
 				}
@@ -1039,7 +1039,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 
 		fragAreasActivate: function () {
-			var $wrap = this.$dom.find('.photoImgWrap');
+			var $wrap = this.$dom.find('.imgWrap');
 			$wrap
 				.on('mouseenter', 'a.photoFrag', function (evt) {
 					var frag = $(evt.target),
@@ -1079,7 +1079,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		fragAreaCreate: function (selections) {
 			if (!this.fragArea) {
-				var $parent = this.$dom.find('.photoImgWrap'),
+				var $parent = this.$dom.find('.imgWrap'),
 					ws = this.p.ws(), hs = this.p.hs(),
 					ws2, hs2;
 

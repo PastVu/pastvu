@@ -16,9 +16,9 @@
 					span(data-bind="text: ' ' + msg()")
 				// /ko
 			// /ko
-			.photoImgRow
-				.photoImgSuperWrap
-					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
+			.imgRow
+				.imgSuperWrap
+					.imgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 						img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 						.photoLoading
 						//ko if: !edit()
@@ -81,8 +81,6 @@
 				// /ko
 			// /ko
 		.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
-	.heightExpander
-
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
