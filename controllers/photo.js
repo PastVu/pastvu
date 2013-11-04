@@ -1181,13 +1181,14 @@ function convertPhotos(socket, data, cb) {
 	if (!user || user.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Array.isArray(data) || data.length === 0) {
+	if (!Array.isArray(data) || !data.length) {
 		return cb({message: 'Bad params', error: true});
 	}
 
 	for (i = data.length; i--;) {
 		data[i].cid = Number(data[i].cid);
-		if (data[i].cid) {
+		data[i].variants = _.intersection(data[i].variants, [ "a",  "d",  "h",  "m",  "q",  "s",  "x"]);
+		if (data[i].cid && data[i].variants.length) {
 			cids.push(data[i].cid);
 		}
 	}

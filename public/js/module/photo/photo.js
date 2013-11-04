@@ -842,7 +842,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		toConvert: function (data, event) {
-			if (!this.can.convert() || this.convertVarsSel().length === 0) {
+			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a",  "d",  "h",  "m",  "q",  "s",  "x"]);
+			if (!this.can.convert() || !convertVarsSel.length) {
 				return false;
 			}
 			this.exe(true);
@@ -855,7 +856,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(false);
 			}.bind(this));
 			socket.emit('convertPhotos', [
-				{cid: this.p.cid(), variants: this.convertVarsSel()}
+				{cid: this.p.cid(), variants: convertVarsSel}
 			]);
 		},
 
