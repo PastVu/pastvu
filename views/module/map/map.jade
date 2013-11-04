@@ -6,20 +6,20 @@
 		//ko if: editing()
 		.mapInfo.info
 			//ko if: point.geo()
-			button.btn-strict.btn-strict-small(type="button", data-bind="click: delPointGeo")
-				i.icon-remove-circle.icon-white
-				span Обнулить кооринаты
+			button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
+				span.glyphicon.glyphicon-remove-circle
+				|  Обнулить кооринаты
 			// /ko
 			//ko ifnot: point.geo()
-			i.icon-map-marker
+			span.glyphicon.glyphicon-map-marker
 			| Для установки координаты кликните по карте
 			// /ko
 		// /ko
 
 		//ko if: !editing() && !point.geo()
 		.mapInfo.warn
-			i.icon-warning-sign
-			| Координаты фотографии не указаны
+			span.glyphicon.glyphicon-warning-sign
+			|  Координаты фотографии не указаны
 		// /ko
 		// /ko
 
