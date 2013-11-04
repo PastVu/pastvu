@@ -720,7 +720,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -728,7 +728,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							}
 
 							socket.once('removeCommentResult', function (result) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
+								$noty.$buttons.find('.btn-danger').remove();
 								var msg,
 									okButton = $noty.$buttons.find('button')
 										.attr('disabled', false)
@@ -743,7 +743,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 									ga('send', 'event', 'comment', 'delete', 'comment delete error');
 								}
 								$noty.$message.children().html(msg);
-								okButton.text('Close').on('click', function () {
+								okButton.text('Закрыть').on('click', function () {
 									$noty.close();
 									if (!result.error) {
 										if (Utils.isType('number', result.countComments)) {
@@ -764,7 +764,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							}.bind(_this));
 							socket.emit('removeComment', {type: _this.type, cid: cid});
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							root.removeClass('hlRemove');
 							$noty.close();
 						}}

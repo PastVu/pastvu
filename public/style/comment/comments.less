@@ -103,11 +103,7 @@
 		line-height: 14px;
 		margin-bottom: 1px;
 	}
-	.author {
-		display: inline-block;
-		cursor: pointer;
-	}
-	.ranks {
+	.author, .ranks {
 		display: inline-block;
 	}
 	.rank {
@@ -176,7 +172,6 @@
 			color: #777;
 			cursor: text;
 		}
-		.form-inline {}
 		.btnCommentSend, .btnCommentCancel, .btnCommentFrag, .btnCommentFragDel, .replySubscr {
 			display: none;
 			min-width: 100px;
@@ -281,7 +276,6 @@
 		border-color: @FringeBorder;
 		.transition(width .1s linear);
 		.box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
-		.box-sizing(border-box);
 		.user-select(none);
 
 		&:hover, &.touch {

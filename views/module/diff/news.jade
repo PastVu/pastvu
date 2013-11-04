@@ -1,7 +1,7 @@
 .newsApart(data-bind="with: repository[M!M]")
 	.newsHeader Новости проекта
 
-	.row.news
+	.news
 		.novelAuthor
 			a.avatar.pull-left.fringe(data-bind="attr: {href: '/u/' + news.user.login()}")
 				img(data-bind="attr: {src: news.user.avatar()}, event: {load: onImgLoad}")
