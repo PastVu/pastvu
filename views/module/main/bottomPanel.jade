@@ -1,9 +1,9 @@
 .bottomPanel(data-bind="with: repository[M!M]")
 	//ko if: news().length > 0
-	.row.news
+	.news
 		.newsHeader Новости проекта
 		//ko foreach: news
-		//ko if: $index
+		//ko if: $index()
 		hr
 		// /ko
 		.novel.clearfix
@@ -20,24 +20,22 @@
 				// /ko
 		// /ko
 	// /ko
-	.row
-		.navbar.catMenu
-			.navbar-inner
-				ul.nav
-					//ko foreach: cats
-					li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
-						a(data-bind="text: $parent.catsObj[$data].name")
-					// /ko
-					li
-						a(target="_blank", href="/news")
-							| Архив новостей
-							i.icon-share.icon-white
-		//ko if: catActive()
-		.catContent(data-bind="template: catsObj[catActive()].tpl")
-		// /ko
+	nav.navbar.navbar-pastvu.catMenu
+		ul.nav.navbar-nav
+			//ko foreach: cats
+			li(data-bind="css: {loading: $data === $parent.catLoading(), active: $data === $parent.catActive()}, click: $parent.catClickBind")
+				a(data-bind="text: $parent.catsObj[$data].name")
+			// /ko
+			li
+				a(target="_blank", href="/news")
+					| Архив новостей
+					span.glyphicon.glyphicon-share
+	//ko if: catActive()
+	.catContent(data-bind="template: catsObj[catActive()].tpl")
+	// /ko
 
 	script(id="photosTpl", type="text/html")
-		.row.photosNew
+		.photosNew
 			//ko foreach: photos
 			.photoPreview.withTitle.fringe(data-bind="attr: {title: title}")
 				a.photoBox(data-bind="attr: {href: $data.link}")
@@ -51,8 +49,8 @@
 			//ko if: moreLink()
 			a.photoPreview.withTitle.nextPhoto(target="_blank", data-bind="attr: {href: moreLink()}")
 				.nextPhotoTxt
-					i.icon-fast-forward
-					Еще..
+					span.glyphicon.glyphicon-fast-forward
+					| Еще..
 			// /ko
 
 	script(id="ratingsTpl", type="text/html")
