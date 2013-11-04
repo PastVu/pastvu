@@ -50,47 +50,47 @@
 			a.photoPreview.withTitle.nextPhoto(target="_blank", data-bind="attr: {href: moreLink()}")
 				.nextPhotoTxt
 					span.glyphicon.glyphicon-fast-forward
-					| Еще..
+					|  Еще..
 			// /ko
 
 	script(id="ratingsTpl", type="text/html")
 		.row.ratings
-			.span6
+			.col-xs-6
 				.catHead Рейтинг фотографий
 				.row
-					.span6
+					.col-xs-6
 						.catGroupHead По просмотрам
-						.btn-group#pbyview
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
+						.btn-group.btn-group-sm#pbyview
+							button.btn.btn-primary(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbyview.selected() === 'day'}")
+							button.btn.btn-primary(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbyview.selected() === 'week'}")
+							button.btn.btn-primary(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbyview.selected() === 'all'}")
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbyview[ratings.pbyview.selected()] }
 						// /ko
-					.span6
+					.col-xs-6
 						.catGroupHead По комментариям
-						.btn-group#pbycomm
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
+						.btn-group.btn-group-sm#pbycomm
+							button.btn.btn-primary(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'day'}")
+							button.btn.btn-primary(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'week'}")
+							button.btn.btn-primary(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.pbycomm.selected() === 'all'}")
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.pbycomm[ratings.pbycomm.selected()] }
 						// /ko
-			.span6
+			.col-xs-6
 				.catHead Рейтинг пользователей
 				.row
-					.span6
+					.col-xs-6
 						.catGroupHead По комментариям
-						.btn-group#ubycomm
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'all'}")
+						.btn-group.btn-group-sm#ubycomm
+							button.btn.btn-primary(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'day'}")
+							button.btn.btn-primary(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'week'}")
+							button.btn.btn-primary(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubycomm.selected() === 'all'}")
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubycomm[ratings.ubycomm.selected()] }
 						// /ko
-					.span6
+					.col-xs-6
 						.catGroupHead По загрузкам
-						.btn-group#ubyphoto
-							button.btn.btn-small(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
-							button.btn.btn-small(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
-							button.btn.btn-small(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'all'}")
+						.btn-group.btn-group-sm#ubyphoto
+							button.btn.btn-primary(data-time="day", data-bind="text: 'День', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'day'}")
+							button.btn.btn-primary(data-time="week", data-bind="text: 'Неделя', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'week'}")
+							button.btn.btn-primary(data-time="all", data-bind="text: 'Все', click: ratSelect, css: {active: ratings.ubyphoto.selected() === 'all'}")
 						//ko template: { name: 'ratingsColumnTpl', foreach: ratings.ubyphoto[ratings.ubyphoto.selected()] }
 						// /ko
 
@@ -102,27 +102,25 @@
 			.ratAmount(data-bind="text: $data.amount")
 
 	script(id="statsTpl", type="text/html")
-		.row.stats
-			.row.statsFast
+		.stats
+			.statsFast
 				.onlineStat(data-bind="text: stats.common.onlineTxt")
 			.row
-				.span6
+				.col-xs-12
 					.catHead Весь проект
-					.row
-						.row(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-						.row(data-bind="text: 'Фотографий: ' + stats.all.pallCount")
-						.row(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
-						.row(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
-						.row(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
-						.row(data-bind="text: 'Комментариев: ' + stats.all.callCount")
-						.row(data-bind="text: 'Сегодня новых комментариев: ' + stats.all.cdayCount")
-						.row(data-bind="text: 'За неделю новых комментариев: ' + stats.all.cweekCount")
+					.statrow(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
+					.statrow(data-bind="text: 'Фотографий: ' + stats.all.pallCount")
+					.statrow(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+					.statrow(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
+					.statrow(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
+					.statrow(data-bind="text: 'Комментариев: ' + stats.all.callCount")
+					.statrow(data-bind="text: 'Сегодня новых комментариев: ' + stats.all.cdayCount")
+					.statrow(data-bind="text: 'За неделю новых комментариев: ' + stats.all.cweekCount")
 				//-.span6
 					.catHead Москва
-					.row
-						.row(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
-						.row(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
-						.row(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
-						.row(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
-						.row(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
+					.statrow(data-bind="text: 'Фотографий на сегодня: ' + stats.all.pallCount")
+					.statrow(data-bind="text: 'Зарегистрированных пользователей: ' + stats.all.userCount")
+					.statrow(data-bind="text: 'Больше всего фотографий относится к ' + stats.all.photoYear.pop.year + ' году, их ' + stats.all.photoYear.pop.count")
+					.statrow(data-bind="text: 'Сегодня новых фотографий: ' + stats.all.pdayCount")
+					.statrow(data-bind="text: 'За неделю новых фотографий: ' + stats.all.pweekCount")
 
