@@ -28,8 +28,8 @@
 				img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.w, height: $parent.h}")
 				.curtain
 				//ko if: $data.noPublic
-				.status.fringe
-					span.glyphicon(data-bind="css: {'glyphicon-asterisk': fresh && !ready, 'glyphicon-flag': fresh && ready, 'glyphicon-lock': disabled, 'glyphicon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+				.status.fringe(data-bind="attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+					span.glyphicon(data-bind="css: {'glyphicon-asterisk': fresh && !ready, 'glyphicon-flag': fresh && ready, 'glyphicon-lock': disabled, 'glyphicon-trash': del}")
 				// /ko
 			a.photoTitle(data-bind="text: title, attr: {href: '/p/' + cid, target: $parent.feed() ? '_blank' : '_self'}")
 			//ko if: $data.ccount

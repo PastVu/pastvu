@@ -57,24 +57,25 @@
 						td
 							.userInfo(data-bind="html: userInfo() + rnks()")
 							//ko if: userRibbon().length
-							.userRibbon
+							.userRibbon.photoTiles
 								//ko foreach: userRibbon
 								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
 									.photoBox
 										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 										.curtain
 										//ko if: $data.noPublic
-										i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+										.status.fringe(data-bind="attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
+											span.glyphicon(data-bind="css: {'glyphicon-asterisk': fresh && !ready, 'glyphicon-flag': fresh && ready, 'glyphicon-lock': disabled, 'glyphicon-trash': del}")
 										// /ko
 								// /ko
 							// /ko
 			.rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
-			.rightrow.photoTiles
+			.rightrow.photoTiles(style="text-align: center;")
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: nearestRibbon
-				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
+				a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
 					.photoBox
 						img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain

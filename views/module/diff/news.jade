@@ -16,8 +16,8 @@
 					//ko if: canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + news.cid()}")
-						i.icon-pencil
-						| &nbsp;Редактировать
+						span.glyphicon.glyphicon-pencil
+						|  Редактировать
 					// /ko
 				.newsTxt(data-bind="html: news.txt()")
 	hr

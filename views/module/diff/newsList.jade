@@ -24,8 +24,8 @@
 					//ko if: $parent.canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
-						i.icon-pencil
-						| &nbsp;Редактировать
+						span.glyphicon.glyphicon-pencil
+						|  Редактировать
 					// /ko
 				.newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
 				//ko if: $data.expand

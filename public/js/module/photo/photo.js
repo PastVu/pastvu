@@ -651,11 +651,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict', text: 'Продолжить', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Продолжить', onClick: function ($noty) {
 							cb.call(this);
 							$noty.close();
 						}.bind(this)},
-						{addClass: 'btn-strict btn-strict-success', text: 'Указать координату', onClick: function ($noty) {
+						{addClass: 'btn btn-success', text: 'Указать координату', onClick: function ($noty) {
 							this.edit(true);
 							$noty.close();
 						}.bind(this)}
@@ -686,7 +686,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -694,7 +694,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							}
 
 							socket.once('removePhotoCallback', function (data) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
+								$noty.$buttons.find('.btn-danger').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
 									.removeClass('disabled')
@@ -732,7 +732,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							socket.emit('removePhoto', that.p.cid());
 
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							that.exe(false);
 						}}
