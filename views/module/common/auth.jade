@@ -13,14 +13,16 @@
 				dt Имя пользователя:
 				dd
 					span(data-bind="click: function () {mode('reg')}") Регистрация
-			.inputwrap.user
+			.inputwrap
+				span.glyphicon.glyphicon-user
 				input.form-control(autocomplete="on", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
 		.form-group
 			dl.dl-horizontal
 				dt Пароль:
 				dd
 					span(data-bind="click: function () {mode('recallRequest')}") Восстановить пароль
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 			.footnote
 				| Если вы были зарегистрированы на проектах oldmos или oldsp, воспользуйтесь&nbsp;
@@ -49,25 +51,29 @@
 				dt Имя пользователя:
 				dd
 					span(data-bind="click: function () {mode('login')}") Авторизация
-			.inputwrap.user
+			.inputwrap
+				span.glyphicon.glyphicon-user
 				input.form-control(autocomplete="off", type="text", required="required", placeholder="User", name="login", autocorrect="off", autocapitalize="off")
 		.form-group
 			dl.dl-horizontal
 				dt E-mail:
 				dd
-			.inputwrap.envelope
+			.inputwrap
+				span.glyphicon.glyphicon-envelope
 				input.form-control(autocomplete="on", type="email", required="required", placeholder="email", name="email", autocorrect="off", autocapitalize="off")
 		.form-group
 			dl.dl-horizontal
 				dt Пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			dl.dl-horizontal
 				dt Повторите пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(autocomplete="off", type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
@@ -91,7 +97,8 @@
 				dt Имя пользователя или e-mail:
 				dd
 					span(data-bind="click: function () {mode('login')}") Авторизация
-			.inputwrap.user
+			.inputwrap
+				span.glyphicon.glyphicon-user
 				input.form-control(autocomplete="off", type="text", required="required", placeholder="Enter username or e-mail", name="login", autocorrect="off", autocapitalize="off")
 		.form-group
 			.mess
@@ -131,13 +138,15 @@
 			dl.dl-horizontal
 				dt Новый пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			dl.dl-horizontal
 				dt Повторите новый пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="pass2", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
@@ -160,19 +169,22 @@
 			dl.dl-horizontal
 				dt Текущий пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
 		.form-group
 			dl.dl-horizontal
 				dt Новый пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="passNew", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			dl.dl-horizontal
 				dt Повторите новый пароль:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="passNew2", data-bind="event: {keypress: pressHandler}"))
 		.form-group
 			.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")
@@ -195,7 +207,8 @@
 			dl.dl-horizontal
 				dt Введите свой пароль для подтверждения:
 				dd
-			.inputwrap.lock
+			.inputwrap
+				span.glyphicon.glyphicon-lock
 				input.form-control(type="password", required="required", placeholder="Enter password", name="pass", data-bind="event: {keypress: pressHandler}"), autocorrect="off", autocapitalize="off")
 		.form-group
 			.text-warning.caps-warn(data-bind="style: {height: caps() ? '20px' : '0px'}")

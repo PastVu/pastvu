@@ -4,7 +4,7 @@
 
 .mapNavigator {
 	position: absolute;
-	width: 71px;
+	width: 72px;
 	z-index: @zindex-popover;
 	.user-select(none);
 
@@ -16,33 +16,24 @@
 	.butt {
 		position: absolute;
 		height: 28px;
-		width: 29px;
+		width: 30px;
+		color: #e4e4e4;
+		font-size: @font-size-small;
 		cursor: pointer;
 		.transition(all 0.25s ease-out 1s);
 
-		&::after {
-			content: '';
-			position: absolute;
-			width: 13px;
-			height: 14px;
-			opacity: 0.8;
-			background-repeat: no-repeat;
-			background-image: url(/img/misc/tww.png);
-		}
-
 		&:hover {
+			color: #fff;
 			border-color: #EFF2FF;
-
-			&::after {
-				opacity: 1;
-			}
 		}
 
 		&.inout {
 			left: 20px;
-			&::after {
-				left: 7px;
-				top: 6px;
+			line-height: 22px;
+			text-align: center;
+
+			> .glyphicon {
+				vertical-align: middle;
 			}
 		}
 	}
@@ -52,25 +43,25 @@
 		height: 15px;
 		left: 20px;
 		top: 19px;
-		width: 29px;
+		text-align: center;
 		opacity: 0;
-		&::after {
-			left: 7px;
-			top: 0;
-			background-position: -289px -96px;
+
+		> .glyphicon {
+			vertical-align: top;
 		}
 	}
 	.mright {
 		display: none;
 		height: 28px;
-		left: 34px;
+		left: 35px;
 		top: 20px;
 		width: 15px;
+		line-height: 22px;
+		text-align: left;
 		opacity: 0;
-		&::after {
-			left: -1px;
-			top: 6px;
-			background-position: -264px -96px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 	.mdown {
@@ -78,12 +69,11 @@
 		height: 15px;
 		left: 20px;
 		top: 33px;
-		width: 29px;
+		text-align: center;
 		opacity: 0;
-		&::after {
-			left: 7px;
-			top: -1px;
-			background-position: -312px -96px;
+
+		> .glyphicon {
+			vertical-align: top;
 		}
 	}
 	.mleft {
@@ -92,37 +82,32 @@
 		left: 20px;
 		top: 20px;
 		width: 15px;
+		line-height: 22px;
+		text-align: right;
 		opacity: 0;
-		&::after {
-			left: 0;
-			top: 6px;
-			background-position: -240px -96px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 	.mhome {
 		left: 20px;
 		top: 38px;
 		height: 28px;
-		width: 29px;
+		line-height: 22px;
+		text-align: center;
 		.transition(top 0.25s ease-out 1.3s);
-		&::after {
-			left: 7px;
-			top: 6px;
-			background-position: 0 -24px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 
 	.zoomin {
 		top: 72px;
-		&::after {
-			background-position: -408px -96px;
-		}
 	}
 	.zoomout {
 		bottom: 0;
-		&::after {
-			background-position: -433px -96px;
-		}
 	}
 
 	.stick {
@@ -184,7 +169,7 @@
 			position: absolute;
 			bottom: 2px;
 			left: 20px;
-			width: 29px;
+			width: 30px;
 			height: 12px;
 			font-family: @font-family-alt;
 			font-size: 11px;
@@ -263,7 +248,7 @@
 				opacity: 1;
 			}
 			.mright {
-				left: 53px;
+				left: 54px;
 				opacity: 1;
 			}
 			.mdown {

@@ -187,27 +187,12 @@
 			position: relative;
 			margin-top: 5px;
 
-			&::after {
-				content: '';
+			> .glyphicon {
 				position: absolute;
 				display: block;
-				top: 8px;
+				top: 9px;
 				left: 6px;
-				height: 14px;
-				width: 13px;
-				opacity: 0.7;
-				background-image: url(/img/misc/tw.png);
-				background-repeat: no-repeat;
-			}
-
-			&.user::after {
-				background-position: -168px 0;
-			}
-			&.lock::after {
-				background-position: -287px -24px;
-			}
-			&.envelope::after {
-				background-position: -72px 0;
+				color: #666;
 			}
 		}
 		input.form-control {
