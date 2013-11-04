@@ -319,7 +319,6 @@
 			margin-top: -@popover-arrow-outer-width;
 			border-width: @popover-arrow-outer-width;
 			border-right-width: 0;
-			border-left-color: #999; // IE8 fallback
 			border-left-color: @popover-arrow-outer-color;
 			.transition(right .1s linear);
 		}
@@ -329,7 +328,7 @@
 			border-width: @popover-arrow-width;
 			border-right-width: 0;
 			border-left-color: @popover-arrow-color;
-			bottom: @popover-arrow-width;
+			bottom: -@popover-arrow-width;
 		}
 
 		.up, .down {
@@ -338,15 +337,16 @@
 			width: 100%;
 			line-height: 18px;
 			text-align: center;
-			opacity: .5;
+			color: #bbb;
 			cursor: default;
 
 			&.active {
-				opacity: 1;
+				color: @MainLigthColor;
 				cursor: pointer;
 				-webkit-tap-highlight-color: rgba(0, 0, 0, .2);
 
 				&:hover, &:active {
+					color: #fff;
 					background-color: rgba(0, 0, 0, .2);
 				}
 			}
