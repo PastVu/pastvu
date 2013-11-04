@@ -3,9 +3,10 @@
 	//ko if: canEdit()
 	.row
 		a.addNews(href="/admin/news/create")
-			| Добавить новость
+			span.glyphicon.glyphicon-plus
+			|  Добавить новость
 	// /ko
-	.row.news
+	.news
 		//ko foreach: news
 		hr
 		.novel.clearfix
