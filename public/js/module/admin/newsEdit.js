@@ -8,7 +8,7 @@ define([
 	'model/User', 'model/storage',
 	'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit',
 	'jquery-plugins/redactor/redactor', 'css!style/jquery/redactor/redactor',
-	'bs/bootstrap-datetimepicker', 'css!style/bootstrap-datetimepicker'
+	'bs/ext/datetimepicker/datetimepicker'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
 
