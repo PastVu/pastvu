@@ -1,24 +1,24 @@
 .conveyerModuleWrapper(data-bind="with: repository[M!M]")
 	h4 Управление конвейером конвертаций фотографий
 	.row
-		.span2-3
-			h6 Действия
-			button.btn-strict.btn-strict-small.btn-strict-warning(type="button", data-bind="css: {disabled: exe(), 'btn-strict-warning': conveyerEnabled(), 'btn-strict-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
-				i.icon-white(data-bind="css: {'icon-stop': conveyerEnabled(), 'icon-play': !conveyerEnabled()}")
-				span(data-bind="text: conveyerEnabled() ? 'Остановить' : 'Запустить'")
-			button.btn-strict.btn-strict-small.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
-				i.icon-trash.icon-white
-				span Очистить
+		.col-xs-5.col-md-4
+			h5 Действия
+			button.btn.btn-sm(type="button", data-bind="css: {disabled: exe(), 'btn-warning': conveyerEnabled(), 'btn-success': !conveyerEnabled()}, click: startstop, attr: {disabled: exe()}")
+				span.glyphicon(data-bind="css: {'glyphicon-stop': conveyerEnabled(), 'glyphicon-play': !conveyerEnabled()}")
+				span(data-bind="text: conveyerEnabled() ? ' Остановить' : ' Запустить'")
+			button.btn.btn-sm.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: clearConveyer, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-trash
+				|  Очистить
 			br
 			.toConvertSection
-				span.stateDesc Отправить на конвертацию все фото проекта:
+				span.stateDesc Отправить на конвертацию все фото:
 				br
 				.convertAction(data-bind="css: {disabled: exe()}")
-					select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
-					button.btn-strict.btn-strict-small.btnConvert(type="button", data-bind="click: toConvert, css: {disabled: exe()|| !selectedOpt().length}, attr: {disabled: exe() || !selectedOpt().length}")
-						span старт
-		.span9-10
-			h6 Текущее состояние конвейера
+					select.multiselect(multiple="multiple", data-bind="options: convertVars, optionsValue: 'vId', optionsText: 'vName', selectedOptions: convertVarsSel, multiselect: convertOptions")
+					button.btn.btn-primary.btnConvert(data-bind="click: toConvert, attr: {disabled: exe()}")
+						| старт
+		.col-xs-7.col-md-8
+			h5 Текущее состояние конвейера
 			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
 			div
 				span.stateRate(data-bind="text:converted()")
@@ -30,10 +30,8 @@
 				span.stateRate(data-bind="text:cmaxlength()")
 				span.stateDesc Максимальная длина конвейера с песледней 10-минутки
 	br
-	.row
-		h6 Сконвертированно
-		#conveyerConvertGraph
+	h5 Сконвертированно
+	#conveyerConvertGraph
 	br
-	.row
-		h6 Максимальная длина конвейера
-		#conveyerLengthGraph
+	h5 Максимальная длина конвейера
+	#conveyerLengthGraph

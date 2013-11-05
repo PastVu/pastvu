@@ -7,7 +7,7 @@ define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'model/User', 'model/storage',
 	'highstock/highstock.src',
-	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect'
+	'text!tpl/admin/conveyer.jade', 'css!style/admin/conveyer', 'bs/ext/multiselect'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Highcharts, jade) {
 	'use strict';
 
@@ -345,7 +345,7 @@ define([
 				}
 			};
 
-			this.convertOptions = ko.observableArray([
+			this.convertVars = ko.observableArray([
 				{vName: 'Origin', vId: 'a'},
 				{vName: 'Standard', vId: 'd'},
 				{vName: 'Thumb', vId: 'h'},
@@ -354,14 +354,16 @@ define([
 				{vName: 'Micro', vId: 's'},
 				{vName: 'Micros', vId: 'x'}
 			]);
-			this.selectedOpt = ko.observableArray([]);
-			this.$dom.find('#convertSelect').multiselect({
-				buttonClass: 'btn-strict btn-strict-small',
-				buttonWidth: '150', // Default
-				buttonText: function (options) {
+			this.convertVarsSel = ko.observableArray([]);
+			this.convertOptions = {
+				includeSelectAllOption: true,
+				//buttonContainer: '',
+				buttonClass: 'btn btn-primary',
+				buttonWidth: '162px',
+				buttonText: function (options, select) {
 					if (options.length === 0) {
-						return 'Выберите варианты фото <b class="caret"></b>';
-					} else if (options.length === _this.convertOptions().length) {
+						return 'Выберите варианты <b class="caret"></b>';
+					} else if (options.length === _this.convertVars().length) {
 						return 'Все варианты выбранны <b class="caret"></b>';
 					} else if (options.length > 2) {
 						return options.length + ' вариантов выбранно <b class="caret"></b>';
@@ -372,13 +374,10 @@ define([
 						});
 						return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
 					}
-				},
-				//buttonContainer: '<span class=""/>'
-			});
+				}
+			};
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-
-			// Subscriptions
 			this.show();
 		},
 		show: function () {
@@ -474,7 +473,7 @@ define([
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -482,7 +481,7 @@ define([
 							}
 
 							socket.once('conveyerClearResult', function (data) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
+								$noty.$buttons.find('.btn-danger').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
 									.removeClass('disabled')
@@ -498,7 +497,7 @@ define([
 							}.bind(_this));
 							socket.emit('conveyerClear', true);
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							_this.exe(false);
 						}}
@@ -508,7 +507,8 @@ define([
 		},
 
 		toConvert: function (data, event) {
-			if (this.selectedOpt().length === 0) {
+			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a",  "d",  "h",  "m",  "q",  "s",  "x"]);
+			if (!convertVarsSel.length) {
 				return false;
 			}
 			this.exe(true);
@@ -520,7 +520,7 @@ define([
 				}
 				this.exe(false);
 			}.bind(this));
-			socket.emit('convertPhotosAll', {variants: this.selectedOpt()});
+			socket.emit('convertPhotosAll', {variants: convertVarsSel});
 		},
 
 		statFast: function () {
