@@ -200,7 +200,7 @@ define([
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
-			this.selectLayer('osm', 'osmosnimki');
+			this.selectLayer('yandex', 'scheme');
 
 			Locations.subscribe(function (val) {
 				this.mapDefCenter = new L.LatLng(val.lat, val.lng);

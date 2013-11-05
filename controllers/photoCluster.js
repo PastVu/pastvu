@@ -85,7 +85,7 @@ module.exports.loadController = function (app, db, io) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						dbNative.eval('clusterPhotosAll(true)', this);
+						dbNative.eval('function (gravity) {clusterPhotosAll(gravity);}', [true], {nolock:true}, this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {

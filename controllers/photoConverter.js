@@ -394,7 +394,7 @@ module.exports.addPhotosAll = function (data, cb) {
 		variantsArrString = JSON.stringify(data.variants);
 	}
 
-	dbNative.eval('convertPhotosAll(' + variantsArrString + ')', function (err, ret) {
+	dbNative.eval('function (variants) {convertPhotosAll(variants)', [data.variants], {nolock:true}, function (err, ret) {
 		if (err) {
 			return cb({message: err && err.message, error: true});
 		}

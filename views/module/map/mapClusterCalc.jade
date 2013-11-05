@@ -29,6 +29,6 @@
 		button.btn.btn-warning.btnSave(type="button", data-bind="click: cancel")
 			span.glyphicon.glyphicon-exclamation-sign
 			|  Cancel
-	p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс пересчета новых размеров кластеров на разных уровнях зума:
+	p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс расчета новых параметров на разных уровнях зума:
 	.progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
 		.progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")
