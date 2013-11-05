@@ -10,27 +10,31 @@
 			label.col-xs-3.col-md-2.col-lg-1.control-label Публикация
 			.col-xs-3.col-md-2
 				.input-group.date#newsPdate
-					input.form-control(data-format="dd.MM.yyyy hh:mm:ss", type="text")
+					input.form-control(data-format="DD.MM.YYYY HH:mm:ss", type="text")
 					span.input-group-addon
 						span.glyphicon.glyphicon-calendar
+			.col-xs-4.col-md-3(style="text-align: right;")
 				button.btn.btn-sm.btn-primary.toggleTDate(type="button", title="Время, когда новость пропадет с главной. В общем списке она останется", data-bind="click: toggleTDate")
 					span(data-bind="text: tDateExists() ? 'Убрать время скрытия с главной' : 'Добавить время скрытия с главной'")
-				//ko if: tDateExists()
+			//ko if: tDateExists()
+			.col-xs-3.col-md-2
 				.input-group.date#newsTdate
-					input.form-control(data-format="dd.MM.yyyy hh:mm:ss", type="text")
+					input.form-control(data-format="DD.MM.YYYY HH:mm:ss", type="text")
 					span.input-group-addon
 						span.glyphicon.glyphicon-calendar
-				// /ko
+			// /ko
 		.form-group
-			label.col-xs-3.col-md-2.col-lg-1.control-label Без комментариев
-			.col-xs-3.col-md-2
-				input(type="checkbox", data-bind="checked: news.nocomments")
+			.col-xs-3.col-xs-offset-3.col-md-2.col-md-offset-2.col-lg-offset-1
+				.checkbox
+					label
+						input(type="checkbox", data-bind="checked: news.nocomments")
+						|  Без комментариев
 		.form-group
 			.textName
 				button.btn.btn-sm.btn-primary.toggleNotice(type="button", data-bind="click: toggleNotice")
 					span(data-bind="text: noticeExists() ? 'Убрать краткую версию' : 'Добавить краткую версию'")
 				//ko if: noticeExists()
-				span.muted Краткая версия
+				span.text-muted Краткая версия
 				// /ko
 			//ko if: noticeExists()
 			textarea#newsNotice

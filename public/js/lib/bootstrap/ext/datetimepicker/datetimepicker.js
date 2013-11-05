@@ -750,7 +750,7 @@
 							'<li' + (collapse ? ' class="collapse in"' : '') + '>' +
 								'<div class="datepicker">' + dpGlobal.template + '</div>' +
 							'</li>' +
-							'<li class="picker-switch accordion-toggle"><a class="btn" style="width:100%"><span class="' + picker.options.icons.time + '"></span></a></li>' +
+							'<li class="picker-switch accordion-toggle"><a class="btn btn-default" style="width:100%"><span class="' + picker.options.icons.time + '"></span></a></li>' +
 							'<li' + (collapse ? ' class="collapse"' : '') + '>' +
 								'<div class="timepicker">' + tpGlobal.getTemplate() + '</div>' +
 							'</li>' +
@@ -820,9 +820,9 @@
                 '<div class="timepicker-picker">' +
                     '<table class="table-condensed">' +
 						'<tr>' +
-							'<td><a href="#" class="btn" data-action="incrementHours"><span class="' + picker.options.icons.up + '"></span></a></td>' +
+							'<td><a href="#" class="btn btn-default" data-action="incrementHours"><span class="' + picker.options.icons.up + '"></span></a></td>' +
 							'<td class="separator"></td>' +
-							'<td><a href="#" class="btn" data-action="incrementMinutes"><span class="' + picker.options.icons.up + '"></span></a></td>' +
+							'<td><a href="#" class="btn btn-default" data-action="incrementMinutes"><span class="' + picker.options.icons.up + '"></span></a></td>' +
 							(!picker.use24hours ? '<td class="separator"></td>' : '') +
 						'</tr>' +
 						'<tr>' +
@@ -833,9 +833,9 @@
 							'<td><button type="button" class="btn btn-primary" data-action="togglePeriod"></button></td>' : '') +
 						'</tr>' +
 						'<tr>' +
-							'<td><a href="#" class="btn" data-action="decrementHours"><span class="' + picker.options.icons.down + '"></span></a></td>' +
+							'<td><a href="#" class="btn btn-default" data-action="decrementHours"><span class="' + picker.options.icons.down + '"></span></a></td>' +
 							'<td class="separator"></td>' +
-							'<td><a href="#" class="btn" data-action="decrementMinutes"><span class="' + picker.options.icons.down + '"></span></a></td>' +
+							'<td><a href="#" class="btn btn-default" data-action="decrementMinutes"><span class="' + picker.options.icons.down + '"></span></a></td>' +
 							(!picker.use24hours ? '<td class="separator"></td>' : '') +
 						'</tr>' +
                     '</table>' +
