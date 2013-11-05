@@ -23,12 +23,12 @@
 		dt(data-bind="text: 'Новые размеры:'")
 		dd(data-bind="text: '' + wNew() + ' x ' + hNew() + ''")
 	.clusterButt(data-bind="style: {display: changed() ? '' : 'none'}")
-		button.btn-strict.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
-			i.icon-ok.icon-white
-			span Save and start conversion
-		button.btn-strict.btn-strict-warning.btnSave(type="button", data-bind="click: cancel")
-			i.icon-exclamation-sign.icon-white
-			span Cancel
+		button.btn.btn-primary.btnSave(type="button", data-bind="css: {disabled: exe()}, click: save, attr: {disabled: exe()}")
+			span.glyphicon.glyphicon-ok
+			|  Save and start conversion
+		button.btn.btn-warning.btnSave(type="button", data-bind="click: cancel")
+			span.glyphicon.glyphicon-exclamation-sign
+			|  Cancel
 	p(style="margin-top: 6px; margin-bottom: 0;", data-bind="style: {display: exe() && changed() ? '' : 'none'}") Процесс пересчета новых размеров кластеров на разных уровнях зума:
-	.progress.progress-success.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
-		.bar(data-bind="style: {width: exePercent() + '%'}")
+	.progress.progress-striped.active(data-bind="style: {display: exe() && changed() ? '' : 'none'}")
+		.progress-bar.progress-bar-success(data-bind="style: {width: exePercent() + '%'}")

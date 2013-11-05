@@ -157,7 +157,7 @@ define([
 				}.bind(this));
 
 				this.map.whenReady(function () {
-					this.selectLayer('osm', 'osmosnimki');
+					this.selectLayer('google', 'scheme');
 					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
 						this.options.deferredWhenReady.resolve();
 					}
@@ -273,7 +273,7 @@ define([
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-warning', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -281,7 +281,7 @@ define([
 							}
 
 							socket.once('clusterAllResult', function (data) {
-								$noty.$buttons.find('.btn-strict-warning').remove();
+								$noty.$buttons.find('.btn-warning').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
 									.removeClass('disabled')
@@ -304,7 +304,7 @@ define([
 							}.bind(_this));
 							socket.emit('clusterAll', {params: arr, conditions: _this.saveParams});
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							_this.cancel();
 						}}
