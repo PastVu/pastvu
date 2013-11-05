@@ -1,6 +1,5 @@
 .adminMenu(data-bind="with: repository[M!M]")
-	.navbar
-		.navbar-inner
-			ul.nav(data-bind="foreach: menuItems")
-				li(data-bind="css: {active: $data.section === $parent.section()}")
-					a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
+	nav.navbar.navbar-pastvu
+		ul.nav.navbar-nav(data-bind="foreach: menuItems")
+			li(data-bind="css: {active: $data.section === $parent.section()}")
+				a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")

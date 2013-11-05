@@ -1,63 +1,65 @@
 .mainAdmin(data-bind="with: repository[M!M]")
 	h6 Текущие соединения
-	.row
-		div
-			span.stateRate
-				.rate(data-bind="text: onlines.users()")
-				| /
-				.rate(data-bind="text: (onlines.all() - onlines.users())")
-				| /
-				.rate(data-bind="text: onlines.all()")
-			span.stateDesc Посетителей авторизованных/анонимных/всего
-		div
-			span.stateRate
-				.rate(data-bind="text: onlines.sessUC()")
-				| /
-				.rate(data-bind="text: onlines.sessAC()")
-				| /
-				.rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
-			span.stateDesc(data-bind="text: 'Активных сессий авторизованных/анонимных/всего. С нулем соединений: [' + onlines.sessUZC() + '/' + onlines.sessAZC() + ']. Без соединений: [' + onlines.sessUNC() + '/' + onlines.sessANC() + '].'")
+	div
+		span.stateRate
+			.rate(data-bind="text: onlines.users()")
+			| /
+			.rate(data-bind="text: (onlines.all() - onlines.users())")
+			| /
+			.rate(data-bind="text: onlines.all()")
+		span.stateDesc Посетителей авторизованных/анонимных/всего
+	div
+		span.stateRate
+			.rate(data-bind="text: onlines.sessUC()")
+			| /
+			.rate(data-bind="text: onlines.sessAC()")
+			| /
+			.rate(data-bind="text: (onlines.sessUC() + onlines.sessAC())")
+		span.stateDesc(data-bind="text: 'Активных сессий авторизованных/анонимных/всего. С нулем соединений: [' + onlines.sessUZC() + '/' + onlines.sessAZC() + ']. Без соединений: [' + onlines.sessUNC() + '/' + onlines.sessANC() + '].'")
 
-		div
-			span.stateRate
-				.rate(data-bind="text: onlines.sessWCUC()")
-				| /
-				.rate(data-bind="text: onlines.sessWCAC()")
-				| /
-				.rate(data-bind="text: (onlines.sessWCUC() + onlines.sessWCAC())")
-			span.stateDesc Ожидающих сессий авторизованных/анонимных/всего
-		div
-			span.stateRate
-				.rate(data-bind="text: onlines.sockUC()")
-				| /
-				.rate(data-bind="text: onlines.sockAC()")
-				| /
-				.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
-			span.stateDesc Активных соединений авторизованных/анонимных/всего
-		.desc
-			| Активная сессия - один браузер клиента с открытым pastvu хотябы на одной вкладке. Если есть с нулем соединений, значит закрытие соединения не очистило сессию (норма по нулям). Если есть без соединения, значит сессия проскочила в активную без установки реального соединения (норма по нулям).
-			br
-			| Ожидающая сессия - клиент, прошедший рукопожатие (handshake), но не установивший в дальнейшем реального соединения. Такая сессия удаляется через 5 минут, если соединение так и не будет установлено.
-			br
-			| Активное соединение - каждая открытая клиентом вкладка активной сессии
-			br
-			br
-			| В каждой сессии (браузере) клиента может быть несколько открытых соединений (вкладок)
-			br
-			| Пользователь, авторизованный (залогиненный) в нескольких браузерах одновременно, считается как один, но имеет несколько сессий, по количеству открытых браузеров. Поэтому "активных сессий авторизованных" может быть больше числа авторизованных.
+	div
+		span.stateRate
+			.rate(data-bind="text: onlines.sessWCUC()")
+			| /
+			.rate(data-bind="text: onlines.sessWCAC()")
+			| /
+			.rate(data-bind="text: (onlines.sessWCUC() + onlines.sessWCAC())")
+		span.stateDesc Ожидающих сессий авторизованных/анонимных/всего
+	div
+		span.stateRate
+			.rate(data-bind="text: onlines.sockUC()")
+			| /
+			.rate(data-bind="text: onlines.sockAC()")
+			| /
+			.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
+		span.stateDesc Активных соединений авторизованных/анонимных/всего
+	.desc
+		strong Активная сессия
+		|  - один браузер клиента с открытым pastvu хотябы на одной вкладке. Если есть с нулем соединений, значит закрытие соединения не очистило сессию (норма по нулям). Если есть без соединения, значит сессия проскочила в активную без установки реального соединения (норма по нулям).
 		br
-	.row
-		//ko if: headers().length
-		h6 Заголовки АКТИВНЫХ сессий без соединений (при наличии):
-		div(data-bind="foreach: headers")
-			| -------
-			.headers(data-bind="html: $data")
+		strong Ожидающая сессия
+		|  - клиент, прошедший рукопожатие (handshake), но не установивший в дальнейшем реального соединения. Такая сессия удаляется через 5 минут, если соединение так и не будет установлено.
 		br
-		// /ko
-	.row
-		//ko if: headersWC().length
-		h6 Заголовки ОЖИАЮЩИХ сессий без соединений (при наличии):
-		div(data-bind="foreach: headersWC")
-			| -------
-			.headers(data-bind="html: $data")
-		// /ko
+		strong Активное соединение
+		|  - каждая открытая клиентом вкладка активной сессии
+		br
+		br
+		| В каждой сессии (браузере) клиента может быть несколько открытых соединений (вкладок)
+		br
+		| Пользователь, авторизованный (залогиненный) в нескольких браузерах одновременно, считается как один, но имеет несколько сессий, по количеству открытых браузеров. Поэтому "активных сессий авторизованных" может быть больше числа авторизованных.
+	br
+
+	//ko if: headers().length
+	h6 Заголовки АКТИВНЫХ сессий без соединений (при наличии):
+	div(data-bind="foreach: headers")
+		| -------
+		.headers(data-bind="html: $data")
+	br
+	// /ko
+
+	//ko if: headersWC().length
+	h6 Заголовки ОЖИАЮЩИХ сессий без соединений (при наличии):
+	div(data-bind="foreach: headersWC")
+		| -------
+		.headers(data-bind="html: $data")
+	// /ko
