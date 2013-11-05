@@ -1195,7 +1195,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (data.conv) {
 				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: ''});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i>'});
+				content = imgFailTpl({style: '', txt: '<span class="glyphicon glyphicon-road"></span>'});
 			} else {
 				content = imgFailTpl({style: 'width:24px; height:20px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: ''});
 			}
