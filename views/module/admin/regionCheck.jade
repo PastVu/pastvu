@@ -2,12 +2,12 @@
 	h4 Поиск регионов по точке
 	.topinfo
 		span.infotxt Кликните на карту или введите координаты через запятую:
-		.input-append
-			input.input-medium.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Широта, долгота")
-			span.add-on(data-bind="click: inputGeo")
-				i.icon-screenshot
+		.inputGeoWrap
+			.input-group
+				input.form-control.input-sm.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Широта, долгота")
+				span.input-group-addon(data-bind="click: inputGeo")
+					span.glyphicon.glyphicon-screenshot
 		.extlnk
 			span.infotxt Ссылка на отображаемую точку:
-			.input-append
-				input.inputLink(type="text", onclick="this.select();", onkeypress="return false;", data-bind="value: location.host + location.pathname + link()")
+			input.form-control.input-sm.inputLink(type="text", onclick="this.select();", onkeypress="return false;", data-bind="value: location.host + location.pathname + link()")
 	.map(data-bind="style: {height: mh()}")

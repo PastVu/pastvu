@@ -69,7 +69,7 @@ define([
 			this.map = new L.map(this.$dom.find('.map')[0], {center: passedGeo || [55.751667, 37.617778], zoom: passedZoom || 7, minZoom: 3, maxZoom: 16, trackResize: false});
 			this.pointLayer = L.layerGroup();
 
-			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {
+			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				maxZoom: 16
 			}).addTo(this.map);
 

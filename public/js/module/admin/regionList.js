@@ -1,7 +1,7 @@
 /*global define:true*/
 
 /**
- * Модель создания/редактирования новости
+ * Модель списка регионов
  */
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
