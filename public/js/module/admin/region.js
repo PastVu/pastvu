@@ -1,7 +1,7 @@
 /*global define:true*/
 
 /**
- * Модель создания/редактирования новости
+ * Модель региона
  */
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
@@ -169,7 +169,7 @@ define([
 				//window.setTimeout(this.map.fitBounds.bind(this.map, this.layerSaved.getBounds()), 200); //В 0.6.4 бывает после создания карты fitBounds её подвешивает (#2085), поэтому вызываем пока в setTimeout
 				this.map.fitBounds(this.layerSaved.getBounds());
 			}
-			L.tileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
+			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
 		},
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {

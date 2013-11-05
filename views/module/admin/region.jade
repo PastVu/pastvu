@@ -1,38 +1,48 @@
 .adminRegion(data-bind="with: repository[M!M]")
 	h4(data-bind="text: createMode() ? 'Создание региона' : 'Редактирование региона'")
 	form.form-horizontal(action='', autocomplete="off", method='POST', data-bind="event: {submit: save}")
-		.control-group
-			label.control-label Название
-			.controls
-				input(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
-				input(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(LOCAL) Местное", autocorrect="off", autocapitalize="off")
-				//ko if: !createMode()
-				.regionInfo
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Название
+			.col-xs-3.col-sm-2
+				input.form-control(type='text', data-bind="value: region.title_en, valueUpdate: 'keyup'", placeholder="(EN) Английское", required="required", autocorrect="off", autocapitalize="off")
+			.col-xs-3.col-sm-2
+				input.form-control(type='text', data-bind="value: region.title_local, valueUpdate: 'keyup'", placeholder="(LOCAL) Местное", autocorrect="off", autocapitalize="off")
+		//ko if: !createMode()
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label
+			.col-xs-8.col-sm-9.col-lg-10
+				p.form-control-static
 					| Номер:
 					strong(data-bind="text: ' ' + region.cid()")
 					| ; Уровень:
 					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
 					| ;&nbsp;
 					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Показать в дереве регионов
-				// /ko
-		.control-group
-			label.control-label Родительский регион
-			.controls
-				label.checkbox
-					input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
-					| &nbsp;Отсутствует
-				label.checkbox
-					input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
-					| &nbsp;Есть
-				//ko if: Number(haveParent())
-				input(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
-				// /ko
-				//ko if: region.parents().length || childLenArr().length
-				.regions
+		// /ko
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Родительский регион
+			.col-xs-6.col-sm-4
+				.row
+					.col-xs-8.col-sm-9.col-md-8.col-lg-6
+						label.radio-inline
+							input.thr(type="radio", id="parent_radios_0", name="parent_radios", value="0", data-bind="checked: haveParent")
+							|  Отсутствует
+						label.radio-inline
+							input.thr(type="radio", id="parent_radios_1", name="parent_radios", value="1", data-bind="checked: haveParent")
+							|  Есть
+					//ko if: Number(haveParent())
+					.col-xs-4.col-sm-3.col-lg-3
+						input.form-control(type='text', data-bind="value: parentCid, valueUpdate: 'keyup'", placeholder="Номер родительского региона", required="required", autocorrect="off", autocapitalize="off")
+					// /ko
+		//ko if: region.parents().length || childLenArr().length
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label
+			.col-xs-8.col-sm-9.col-lg-10
+				p.form-control-static.regions
 					//ko foreach: region.parents
 					a(data-bind="text: ' ' + $data.title_en(), attr: {href: '/admin/region/' + $data.cid()}")
 					| &nbsp;
-					i.icon-play
+					span.glyphicon.glyphicon-play
 					| &nbsp;
 					// /ko
 					//ko if: !createMode()
@@ -40,26 +50,26 @@
 					// /ko
 					//ko foreach: childLenArr
 					| &nbsp;
-					i.icon-play
+					span.glyphicon.glyphicon-play
 					span(data-bind="text: ' ' + $data")
 					// /ko
-				// /ko
+		// /ko
 		//ko if: createMode() || showGeo()
-		.control-group
-			label.control-label
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label
 				| Геометрия
 				br
 				| GeoJSON
-			.controls
-				textarea.geojson(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
+			.col-xs-8.col-sm-9.col-lg-10
+				textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
 		// /ko
-		.control-group
-			button.btn-strict.btn-strict-success(type="submit")
-				i.icon-ok.icon-white
-				span Сохранить
+		.form-group
+			button.btn.btn-success(type="submit")
+				span.glyphicon.glyphicon-ok
+				|  Сохранить
 			//ko if: !createMode()
-			button.btn-strict(type="button", data-bind="click: function () {showGeo(!showGeo())}")
-				i.icon-th-list.icon-white
-				span(data-bind="text: showGeo() ? 'Скрыть координаты' : 'Показать координаты'")
+			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}")
+				span.glyphicon.glyphicon-th-list
+				span(data-bind="text: showGeo() ? ' Скрыть координаты' : ' Показать координаты'")
 			// /ko
 	.map(data-bind="style: {height: mh()}")
