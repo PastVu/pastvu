@@ -118,7 +118,7 @@ step(
 	function searchLess() {
 		var _this = this;
 
-		Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bootstrap', 'fonts'], function (e, files) {
+		Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bs', 'fonts'], function (e, files) {
 			if (e) {
 				console.dir(e);
 				process.exit(1);

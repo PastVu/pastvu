@@ -5,7 +5,7 @@
  */
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-	'model/storage', 'text!tpl/region/select.jade', 'css!style/region/select', 'bs/bootstrap-tokenfield', 'css!style/bs/tokenfield/tokenfield'
+	'model/storage', 'text!tpl/region/select.jade', 'css!style/region/select', 'bs/ext/tokenfield/tokenfield', 'css!style/bs/ext/tokenfield'
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 
