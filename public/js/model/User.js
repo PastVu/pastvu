@@ -23,6 +23,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			role: 0,
 
 			settings: {},
+			regions: [], //Спопулированные регионы из настроек
 
 			//profile
 			birthdate: '',

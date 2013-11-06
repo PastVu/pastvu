@@ -132,13 +132,16 @@ function authSocket(handshake, callback) {
 		} else {
 			regen(session, data);
 		}
+		if (!session.popdata) {
+			session.popdata = {};
+		}
 		if (session.user) {
 			regionController.getOrderedRegionList(session.user.settings.regions, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regions) {
 				if (err) {
 					return callback('Error: ' + err, false);
 				}
 				console.log(regions);
-				session.user.settings.regions = regions;
+				session.popdata.regions = regions;
 				cb(session);
 			});
 
@@ -157,7 +160,8 @@ function authSocket(handshake, callback) {
 //Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
-	var session = socket.handshake.session;
+	var session = socket.handshake.session,
+		userPlain;
 	//console.log('firstConnection');
 
 	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
@@ -169,17 +173,21 @@ function firstConnection(socket) {
 	if (!sess[session.key]) {
 		return; //Если сессии уже нет, выходим
 	}
+	userPlain = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : {};
 
 	if (!session.sockets) {
 		session.sockets = {};
 	}
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
+	if (userPlain) {
+		userPlain.regions = session.popdata.regions || [];
+	}
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
-		u: session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null
+		u: userPlain
 	});
 
 	socket.on('disconnect', function () {
