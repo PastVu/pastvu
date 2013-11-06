@@ -27,6 +27,7 @@ var Session,
 	},
 
 	settings = require('./settings.js'),
+	regionController = require('./region.js'),
 	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
 	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
 	sess = {},//Sessions. Хэш всех активных сессий, с установленными соединениями
@@ -80,13 +81,14 @@ function authSocket(handshake, callback) {
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
-		session = sessionProcess();
-		sessWaitingConnect[session.key] = session;
-		finishAuthConnection(session);
+		sessionProcess(null, null, function (session) {
+			sessWaitingConnect[session.key] = session;
+			finishAuthConnection(session);
+		});
 	} else {
 		if (sess[existsSid] !== undefined || sessWaitingConnect[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			finishAuthConnection(sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid]));
+			sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid], finishAuthConnection);
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
 			if (sessWaitingSelect[existsSid] !== undefined) {
@@ -99,26 +101,26 @@ function authSocket(handshake, callback) {
 				];
 
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-					session = sessionProcess(err, session); //Переприсваиваем, так как если не выбралась из базы, она создаться
+					sessionProcess(err, session, function (session) {
+						sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
 
-					sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
+						if (session.user) {
+							addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
+						}
 
-					if (session.user) {
-						addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
-					}
-
-					if (Array.isArray(sessWaitingSelect[existsSid])) {
-						sessWaitingSelect[existsSid].forEach(function (item) {
-							item.cb.call(global, session);
-						});
-						delete sessWaitingSelect[existsSid];
-					}
+						if (Array.isArray(sessWaitingSelect[existsSid])) {
+							sessWaitingSelect[existsSid].forEach(function (item) {
+								item.cb.call(global, session);
+							});
+							delete sessWaitingSelect[existsSid];
+						}
+					});
 				});
 			}
 		}
 	}
 
-	function sessionProcess(err, session) {
+	function sessionProcess(err, session, cb) {
 		if (err) {
 			return callback('Error: ' + err, false);
 		}
@@ -130,7 +132,20 @@ function authSocket(handshake, callback) {
 		} else {
 			regen(session, data);
 		}
-		return session;
+		if (session.user) {
+			regionController.getOrderedRegionList(session.user.settings.regions, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regions) {
+				if (err) {
+					return callback('Error: ' + err, false);
+				}
+				console.log(regions);
+				session.user.settings.regions = regions;
+				cb(session);
+			});
+
+			addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
+		} else {
+			cb(session);
+		}
 	}
 
 	function finishAuthConnection(session) {

@@ -391,6 +391,7 @@ module.exports.loadController = function (app, db, io) {
 
 };
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
+module.exports.getOrderedRegionList = getOrderedRegionList;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;
