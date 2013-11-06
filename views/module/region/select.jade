@@ -1,2 +1,28 @@
 .regsel(data-bind="with: repository[M!M]")
-	input#tokenfield.form-control(type="text", value="red,green,blue")
+	.input-group
+		span.input-group-addon Выбор:
+		input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
+
+	.regionsHead
+		.headElem.interact(data-bind="click: expandAll")
+			span.glyphicon.glyphicon-plus
+			|  Раскрыть все
+		.headElem.interact(data-bind="click: collapseAll")
+			span.glyphicon.glyphicon-minus
+			|  Свернуть все
+	.tree
+		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
+
+	script(id="treeNode", type="text/html")
+		li(data-bind="css: {isparent: $data.childLen}")
+			.lirow(data-bind="css: {hl: $data.hl}")
+				//ko if: $data.childLen
+				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
+					span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
+				// /ko
+				a.name(title="Выбрать регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
+					span(data-bind="text: ' ' + $data.title_en")
+			//ko if: $data.childLen && $data.opened()
+			//ko template: {name: 'treeNode', foreach: $data.regions}
+			// /ko
+			// /ko

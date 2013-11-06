@@ -9,7 +9,7 @@ var mongoose = require('mongoose'),
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 			data: {type: Schema.Types.Mixed, 'default': {}}
 
-			/*popdata: {} - поле для данных, которое не должны быть сохранены в ьазе, например, вручную спопулированные регионы*/
+			/*popdata: {} - поле для данных, которое не должны быть сохранены в базе, например, вручную спопулированные регионы*/
 		},
 		{
 			strict: true //Строгий режим, сохраняет только то, что есть в модели

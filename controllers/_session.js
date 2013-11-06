@@ -173,7 +173,7 @@ function firstConnection(socket) {
 	if (!sess[session.key]) {
 		return; //Если сессии уже нет, выходим
 	}
-	userPlain = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : {};
+	userPlain = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null;
 
 	if (!session.sockets) {
 		session.sockets = {};

@@ -1,0 +1,197 @@
+@import "../../bs/variables";
+@import "../../bs/mixins";
+
+.tokenfield {
+	height: auto;
+	min-height: 34px;
+	padding-bottom: 0px;
+
+	&.focus {
+		border-color: #66afe9;
+		outline: 0;
+		.box-shadow(~'inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6)');
+	}
+
+	> .token {
+		display: inline-block;
+		height: 24px;
+		margin: 1px 5px 0 0;
+		line-height: 22px;
+		vertical-align: middle;
+		cursor: default;
+		white-space: nowrap;
+		border: 1px solid #d9d9d9;
+		background-color: #ededed;
+
+		&:hover {
+			border-color: #b9b9b9;
+		}
+		&.active {
+			border-color: rgb(82, 168, 236);
+			border-color: rgba(82, 168, 236, 0.8);
+		}
+
+		/* Invalid token */
+		&.invalid {
+			background: none;
+			border-color: transparent;
+			border-bottom-style: dotted;
+			border-bottom-color: #b94a48;
+
+			&.active {
+				background: #ededed;
+				border: 1px solid #ededed;
+			}
+		}
+
+		> .token-label {
+			display: inline-block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			padding-left: 4px;
+			vertical-align: top;
+		}
+
+		> .close {
+			font-family: Arial;
+			display: inline-block;
+			line-height: 100%;
+			font-size: 1.1em;
+			line-height: 1.49em;
+			margin-left: 5px;
+			float: none;
+			height: 100%;
+			vertical-align: middle;
+			padding-right: 4px;
+		}
+	}
+
+	.token-input {
+		background: none;
+		width: 60px;
+		min-width: 60px;
+		border: 0;
+		height: 20px;
+		padding: 0;
+		margin-bottom: 6px;
+		.box-shadow(none);
+
+		&:focus {
+			border-color: transparent;
+			outline: 0;
+			.box-shadow(none);
+		}
+	}
+
+
+	/* Disabled tokenfield */
+	&.disabled {
+		cursor: not-allowed;
+		background-color: #eee;
+
+		.token-input {
+			cursor: not-allowed;
+		}
+
+		.close:hover {
+			cursor: not-allowed;
+			opacity: 0.2;
+		}
+	}
+}
+
+
+/* Different sizes */
+.tokenfield.input-sm,
+.input-group-sm .tokenfield {
+	min-height: 30px;
+	padding-bottom: 0px;
+}
+
+.input-group-sm .token,
+.tokenfield.input-sm .token {
+	height: 20px;
+	margin-bottom: 4px;
+}
+
+.input-group-sm .token-input,
+.tokenfield.input-sm .token-input {
+	height: 18px;
+	margin-bottom: 5px;
+}
+
+.tokenfield.input-lg,
+.input-group-lg .tokenfield {
+	min-height: 45px;
+	padding-bottom: 4px;
+}
+
+.input-group-lg .token,
+.tokenfield.input-lg .token {
+	height: 25px;
+}
+
+.input-group-lg .token-label,
+.tokenfield.input-lg .token-label {
+	line-height: 23px;
+}
+
+.input-group-lg .token .close,
+.tokenfield.input-lg .token .close {
+	line-height: 1.3em;
+}
+
+.input-group-lg .token-input,
+.tokenfield.input-lg .token-input {
+	height: 23px;
+	line-height: 23px;
+	margin-bottom: 6px;
+	vertical-align: top;
+}
+
+
+.twitter-typeahead .tt-hint {
+	border: 0;
+	padding: 0;
+}
+
+.tt-dropdown-menu {
+	min-width: 160px;
+	margin-top: 2px;
+	padding: 5px 0;
+	background-color: #fff;
+	border: 1px solid rgba(0, 0, 0, .2);
+	*border-right-width: 2px;
+	*border-bottom-width: 2px;
+	-webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+	-moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+	box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+	-webkit-background-clip: padding-box;
+	-moz-background-clip: padding;
+	background-clip: padding-box;
+}
+
+.tt-suggestion {
+	display: block;
+	padding: 3px 20px;
+}
+
+.tt-suggestion.tt-is-under-cursor {
+	color: #fff;
+	background-color: #0081c2;
+	background-image: -moz-linear-gradient(top, #0088cc, #0077b3);
+	background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#0088cc), to(#0077b3));
+	background-image: -webkit-linear-gradient(top, #0088cc, #0077b3);
+	background-image: -o-linear-gradient(top, #0088cc, #0077b3);
+	background-image: linear-gradient(to bottom, #0088cc, #0077b3);
+	background-repeat: repeat-x;
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff0088cc', endColorstr='#ff0077b3', GradientType=0)
+}
+
+.tt-suggestion.tt-is-under-cursor a {
+	color: #fff;
+}
+
+.tt-suggestion p {
+	margin: 0;
+}

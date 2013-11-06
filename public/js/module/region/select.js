@@ -5,7 +5,7 @@
  */
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
-	'model/storage', 'text!tpl/region/select.jade', 'css!style/region/select', 'bs/ext/tokenfield/tokenfield', 'css!style/bs/ext/tokenfield'
+	'model/storage', 'text!tpl/region/select.jade', 'css!style/region/select', 'bs/ext/tokenfield'
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 
@@ -17,17 +17,11 @@ define([
 
 			this.getRegions(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
+				this.createTokens();
 				this.show();
 			}, this);
 		},
 		show: function (cb, ctx) {
-			this.$dom.find('#tokenfield').tokenfield({
-				typeahead: {
-					name: 'tags',
-					local: ['red','blue','green','yellow','violet','brown','purple','black','white']
-				},
-				allowDuplicates: true
-			});
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
@@ -51,6 +45,22 @@ define([
 				}
 			}.bind(this));
 			socket.emit('giveRegionList', {});
+		},
+		createTokens: function () {
+			this.$dom.find('.regionstkn').tokenfield({
+				allowDuplicates: false,
+				createTokensOnBlur: false,
+				minLength: 1,
+				tokens: [{ value: "one", label: "Einz" }, { value: "two", label: "Zwei" }],
+
+				typeahead: {
+					name: 'regions',
+					valueKey: 'cid',
+					limit: 7,
+					local: ['red','blue','green','yellow','violet','brown','purple','black','white']
+				}
+			});
+
 		},
 		treeBuild: function (arr) {
 			var i = 0,
