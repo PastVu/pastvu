@@ -41,9 +41,18 @@
 			.panel-collapse.collapse.in#region
 				.panel-body
 					dl.dl-horizontal
-						dt Мой язык
+						dt.helpexists
+							abbr(title="Интересующие вас регионы мира, по которым будет производится автоматическая фильтрация контента. Допустимо иметь до 5 регионов")
+								span.glyphicon.glyphicon-info-sign
+								|  Мои регионы
 						dd
-
+							//ko foreach: u.settings.regions
+							span.region
+								span(data-bind="text: $data.title_local()")
+							// /ko
+							span.regionEdit
+								span.glyphicon.glyphicon-pencil
+								|  Изменить
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title

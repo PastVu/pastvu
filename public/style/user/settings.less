@@ -7,65 +7,85 @@
 
 	.panel-body {
 		padding: 11px 10px 11px 22px;
+	}
+	.input-group-addon {
+		color: @MainLigthColor;
+		cursor: pointer;
+		background-color: @MainBlueColor;
 
-		span.input-group-addon {
-			color: @MainLigthColor;
-			cursor: pointer;
-			background-color: @MainBlueColor;
-
-			&:hover {
-				color: #fff;
-			}
-
-			&.save {
-				background-color: #439B43;
-			}
-			&.cancel {
-				background-color: #D12A14;
-			}
+		&:hover {
+			color: #fff;
 		}
 
-		.helpexists {
-			overflow: visible;
+		&.save {
+			background-color: #439B43;
+		}
+		&.cancel {
+			background-color: #D12A14;
+		}
+	}
 
-			> abbr {
-				position: relative;
-				margin-left: -16px;
+	.helpexists {
+		overflow: visible;
 
-				> .glyphicon {
-					font-size: @font-size-small;
-				}
+		> abbr {
+			position: relative;
+			margin-left: -16px;
+
+			> .glyphicon {
+				font-size: @font-size-small;
 			}
 		}
+	}
 
-		.radio-inline {
-			margin-right: 10px;
-			padding-left: 17px;
+	.radio-inline {
+		margin-right: 10px;
+		padding-left: 17px;
 
-			input[type="radio"] {
-				margin-top: 3px;
-				margin-left: -17px;
-			}
+		input[type="radio"] {
+			margin-top: 3px;
+			margin-left: -17px;
+		}
+	}
+
+	dl.dl-horizontal {
+		position: relative; //Для позиционирования helpico
+		margin: 10px 0 0 0;
+
+		&:first-child {
+			margin: 0;
 		}
 
-		dl.dl-horizontal {
-			position: relative; //Для позиционирования helpico
-			margin: 10px 0 0 0;
+		dt {
+			width: 300px;
+			padding: 3px 0;
+			text-align: left;
+			font-weight: normal;
+		}
+		dd {
+			margin-left: 305px;
+			text-align: left;
+		}
+	}
 
-			&:first-child {
-				margin: 0;
-			}
+	.region {
+		margin-right: 5px;
+		padding: 3px 5px;
+		line-height: 24px;
+		cursor: default;
+		background-color: #ddd;
+	}
+	.regionEdit {
+		padding: 3px 5px;
+		color: @gray;
+		font-size: @font-size-small;
+		font-style: italic;
+		line-height: 24px;
+		cursor: pointer;
 
-			dt {
-				width: 300px;
-				padding: 3px 0;
-				text-align: left;
-				font-weight: normal;
-			}
-			dd {
-				margin-left: 305px;
-				text-align: left;
-			}
+		&:hover {
+			color: @gray-darker;
+			background-color: #fff;
 		}
 	}
 }
