@@ -1,15 +1,20 @@
 .regsel(data-bind="with: repository[M!M]")
-	.input-group
-		span.input-group-addon Выбор:
-		input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
+	h4.namehead
+		span.glyphicon.glyphicon-globe
+		|  Выбор регионов
+	.offsetwrap
+		h6 Вводите имя региона непосредственно в поле выбора для поиска или выбирайте вручную в дереве регионов ниже
+		.input-group.regionsgroup
+			span.input-group-addon Выбор:
+			input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
 
-	.regionsHead
-		.headElem.interact(data-bind="click: expandAll")
-			span.glyphicon.glyphicon-plus
-			|  Раскрыть все
-		.headElem.interact(data-bind="click: collapseAll")
-			span.glyphicon.glyphicon-minus
-			|  Свернуть все
+		.regionsHead
+			.headElem.interact(data-bind="click: expandAll")
+				span.glyphicon.glyphicon-plus
+				|  Раскрыть все
+			.headElem.interact(data-bind="click: collapseAll")
+				span.glyphicon.glyphicon-minus
+				|  Свернуть все
 	.tree
 		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
 

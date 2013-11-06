@@ -7,17 +7,29 @@
 
 .regsel {
 	position: relative;
-	padding: 0 6px;
+	padding: 0 3px;
+
+	.namehead {
+		font-weight: bold;
+	}
+
+	.offsetwrap {
+		margin-left: 22px;
+	}
+	.regionsgroup {
+		margin-bottom: 5px;
+	}
 
 	.regionsHead {
 		position: relative;
+		margin: 10px 0 5px 0;
 		.user-select(none);
 	}
 
 	.headElem {
 		position: relative;
 		display: inline-block;
-		margin: 0 1px 8px 0;
+		margin: 0 1px 3px 0;
 		padding: 0 7px 1px 7px;
 		vertical-align: top;
 		color: #F5F5F5;
@@ -44,7 +56,7 @@
 			padding: 0;
 
 			> li {
-				margin: 0;
+				margin: 0 !important;
 				padding-left: 0;
 
 				&::before, &::after {
@@ -59,14 +71,14 @@
 
 		li {
 			position: relative;
-			margin: 0 0 0 25px;
+			margin: 0 0 0 50px;
 			padding: 7px 0 0 5px;
 			cursor: default;
 			list-style-type: none;
 
 			&::before, &::after {
 				position: absolute;
-				left: -14px;
+				left: -28px;
 				right: auto;
 				content: '';
 			}
@@ -78,12 +90,12 @@
 				border-left: 1px solid #999;
 			}
 			&:last-child::before {
-				height: 26px;
+				height: 20px;
 			}
 			&::after {
-				width: 20px;
+				width: 33px;
 				height: 20px;
-				top: 25px;
+				top: 19px;
 				border-top: 1px solid #999;
 			}
 
@@ -96,22 +108,45 @@
 				cursor: pointer;
 				border-width: 1px 0 1px 1px;
 				border-style: solid;
-				border-color: #999;
+				border-color: transparent;
+
+				&:hover {
+					border-color: #999;
+					background: @MainLigthColor !important;
+				}
 			}
 			.name {
 				display: inline-block;
+				min-width: 100px;
+				margin-left: 22px;
 				padding: 2px 6px;
 				color: @gray-dark;
 				text-decoration: none;
 				border: 1px solid #999;
-				border-left-color: #f2f2f2;
+				background: #DFDFF0;
 			}
 			.chevron, .name {
-				background: #DFDFF0;
-
 				&:hover {
 					color: @gray-darker;
 					background: @MainLigthColor !important;
+				}
+			}
+
+			&.isparent {
+				margin: 0 0 0 28px;
+
+				&::before, &::after {
+					left: -6px;
+				}
+				&:last-child::before {
+					height: 20px;
+				}
+				&::after {
+					width: 10px;
+				}
+
+				.name {
+					margin-left: 0;
 				}
 			}
 		}
