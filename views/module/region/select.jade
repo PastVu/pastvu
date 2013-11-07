@@ -16,16 +16,16 @@
 				span.glyphicon.glyphicon-minus
 				|  Свернуть все
 	.tree
-		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
+		ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
 
 	script(id="treeNode", type="text/html")
 		li(data-bind="css: {isparent: $data.childLen}")
-			.lirow(data-bind="css: {hl: $data.hl}")
+			.lirow(data-bind="css: {selected: $data.selected()}")
 				//ko if: $data.childLen
 				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
 					span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
 				// /ko
-				a.name(title="Выбрать регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
+				.name(title="Выбрать регион", data-bind="click: function() {$parents[$data.level].selectToggle($data.cid)}")
 					span(data-bind="text: ' ' + $data.title_en")
 			//ko if: $data.childLen && $data.opened()
 			//ko template: {name: 'treeNode', foreach: $data.regions}

@@ -112,7 +112,6 @@
 
 				&:hover {
 					border-color: #999;
-					background: @MainLigthColor !important;
 				}
 			}
 			.name {
@@ -121,14 +120,15 @@
 				margin-left: 22px;
 				padding: 2px 6px;
 				color: @gray-dark;
+				cursor: pointer;
 				text-decoration: none;
 				border: 1px solid #999;
-				background: #DFDFF0;
+				background-color: #DFDFF0;
 			}
 			.chevron, .name {
 				&:hover {
 					color: @gray-darker;
-					background: @MainLigthColor !important;
+					background-color: @MainLigthColor;
 				}
 			}
 
@@ -147,6 +147,17 @@
 
 				.name {
 					margin-left: 0;
+				}
+			}
+
+			> .lirow.selected {
+				> .name {
+					background-color: #94ff82;
+
+					&:hover {
+						color: @gray-darker;
+						background-color: @MainLigthColor;
+					}
 				}
 			}
 		}

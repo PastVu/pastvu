@@ -13,7 +13,10 @@ define([
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
-			this.regions = ko.observableArray();
+			this.regionsTree = ko.observableArray();
+			this.regionsFlat = [];
+			this.regionsTypehead = [];
+			this.regionsHashByTitle = {};
 
 			this.getRegions(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
@@ -36,8 +39,9 @@ define([
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					this.regions(this.treeBuild(data.regions));
+					this.regionsTree(this.treeBuild(data.regions));
 					this.regionsFlat = data.regions;
+					console.log(this.regionsTypehead);
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -47,19 +51,39 @@ define([
 			socket.emit('giveRegionList', {});
 		},
 		createTokens: function () {
-			this.$dom.find('.regionstkn').tokenfield({
-				allowDuplicates: false,
-				createTokensOnBlur: false,
-				minLength: 1,
-				tokens: [{ value: "one", label: "Einz" }, { value: "two", label: "Zwei" }],
+			this.$dom.find('.regionstkn')
+				.tokenfield({
+					allowDuplicates: false,
+					createTokensOnBlur: false,
+					minLength: 1,
+					tokens: [
+						{
+							value: 'США',
+							label: 'США'
+						}
+					], //[{value: "one", label: "Einz"}, {value: "two", label: "Zwei"}],
 
-				typeahead: {
-					name: 'regions',
-					valueKey: 'cid',
-					limit: 7,
-					local: ['red','blue','green','yellow','violet','brown','purple','black','white']
-				}
-			});
+					typeahead: {
+						name: 'regions',
+						valueKey: 'title',
+						limit: 7,
+						local: this.regionsTypehead/*[{
+						 title: 'США',
+						 tokens: ['USA', 'США', 'Соединенные Штаты Америки']
+						 }]*/
+					}
+				})
+				.on('afterCreateToken', function (e) {
+					var title = e.token.value,
+						region = this.regionsHashByTitle[title];
+
+					if (region) {
+						region.selected(true);
+						this.nodeToggle(region, false, true, 'up');
+					} else {
+						$(e.relatedTarget).addClass('invalid');
+					}
+				}.bind(this));
 
 		},
 		treeBuild: function (arr) {
@@ -67,9 +91,7 @@ define([
 				len = arr.length,
 				hash = {},
 				region,
-				results = [],
-				cidHL = Number(globalVM.router.params().hl),
-				reallyHL;
+				results = [];
 
 			//Сортируем массим по уровням и названиям в пределах одного уровня
 			arr.sort(function (a, b) {
@@ -98,8 +120,8 @@ define([
 				region.childLen = 0; //Количество непосредственных потомков
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
-				region.hl = cidHL === region.cid; //Подсветка региона по переданному параметру
-				region.opened = ko.observable(region.hl); //Подсвеченный регион должен быть открыт
+				region.opened = ko.observable(false);
+				region.selected = ko.observable(false);
 				if (region.level) {
 					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);
@@ -108,33 +130,55 @@ define([
 				} else {
 					results.push(region);
 				}
-				if (region.hl) {
-					reallyHL = true;
-				}
 				hash[region.cid] = region;
-			}
 
-			if (reallyHL) {
-				window.setTimeout(function () {
-					$(window).scrollTo(this.$dom.find('.lirow.hl'), 400);
-				}.bind(this), 700);
+				this.regionsTypehead.push({title: region.title_local, tokens: [region.title_local, region.title_en]});
+				this.regionsHashByTitle[region.title_local] = region;
 			}
 
 			return results;
 		},
+
+		/**
+		 * Открывает/закрывает узел дерева. Возможно рекурсивное переклчение
+		 * @param region Стартовый регион
+		 * @param expandSelf Открыть/закрыть непосредственно переданный узел (true/false)
+		 * @param cascadeExpand Открыть/закрыть рекурсивные узлы (true/false)
+		 * @param cascadeDir Направление рекурсивного переключения ('up'/'down')
+		 */
+		nodeToggle: function (region, expandSelf, cascadeExpand, cascadeDir) {
+			var nextRegions,
+				i;
+
+			if (region) {
+				region.opened(typeof expandSelf === 'boolean' ? expandSelf : (typeof cascadeExpand === 'boolean' ? cascadeExpand : !region.opened()));
+			} else if (cascadeDir) {
+				region = {regions: this.regionsTree()};
+			}
+
+			if (cascadeDir === 'up' && region.parent) {
+				nextRegions = [region.parent];
+			} else if (cascadeDir === 'down' && region.regions.length) {
+				nextRegions = region.regions;
+			}
+			if (nextRegions) {
+				for (i = nextRegions.length; i--;) {
+					this.nodeToggle(nextRegions[i], undefined, cascadeExpand, cascadeDir);
+				}
+			}
+		},
+
 		collapseToggle: function (data, event) {
 			data.opened(!data.opened());
 		},
 		expandAll: function (data, event) {
-			this.collapseToggleAll(true);
+			this.nodeToggle(null, null, true, 'down');
 		},
 		collapseAll: function (data, event) {
-			this.collapseToggleAll(false);
+			this.nodeToggle(null, null, false, 'down');
 		},
-		collapseToggleAll: function (expand) {
-			for (var i = this.regionsFlat.length - 1; i >= 0; i--) {
-				this.regionsFlat[i].opened(expand);
-			}
+		selectToggle: function (cid) {
+			console.log(arguments);
 		}
 	});
 });
