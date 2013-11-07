@@ -61,7 +61,7 @@ define([
 							value: 'США',
 							label: 'США'
 						}
-					], //[{value: "one", label: "Einz"}, {value: "two", label: "Zwei"}],
+					],
 
 					typeahead: {
 						name: 'regions',
@@ -73,19 +73,47 @@ define([
 						 }]*/
 					}
 				})
-				.on('afterCreateToken', function (e) {
-					var title = e.token.value,
-						region = this.regionsHashByTitle[title];
-
-					if (region) {
-						region.selected(true);
-						this.nodeToggle(region, false, true, 'up');
-					} else {
-						$(e.relatedTarget).addClass('invalid');
-					}
-				}.bind(this));
+				.on('afterCreateToken', this.createToken.bind(this)) //При создании токена добавляем выбор
+				.on('beforeEditToken removeToken', this.removeToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
 
 		},
+		createToken: function (e) {
+			var title = e.token.value,
+				region = this.regionsHashByTitle[title];
+
+			if (region) {
+				region.selected(true);
+				this.nodeToggle(region, false, true, 'up');
+			} else {
+				$(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
+			}
+		},
+		removeToken: function (e) {
+			var title = e.token.value,
+				region = this.regionsHashByTitle[title];
+
+			if (region) {
+				region.selected(false);
+			}
+		},
+		selectNode: function (title) {
+			var region = this.regionsHashByTitle[title],
+				add = !region.selected(),
+				tkn = this.$dom.find('.regionstkn'),
+				tokensExists;
+
+			if (add) {
+				tkn.tokenfield('createToken', {value: title, label: title});
+			} else {
+				tokensExists = tkn.tokenfield('getTokens');
+				_.remove(tokensExists, function (item) {
+					return item.value === title;
+				});
+				tkn.tokenfield('setTokens', tokensExists);
+			}
+			region.selected(add);
+		},
+
 		treeBuild: function (arr) {
 			var i = 0,
 				len = arr.length,
@@ -176,9 +204,6 @@ define([
 		},
 		collapseAll: function (data, event) {
 			this.nodeToggle(null, null, false, 'down');
-		},
-		selectToggle: function (cid) {
-			console.log(arguments);
 		}
 	});
 });

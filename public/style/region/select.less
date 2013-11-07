@@ -17,7 +17,7 @@
 		margin-left: 22px;
 	}
 	.regionsgroup {
-		margin-bottom: 5px;
+		margin: 5px 0;
 	}
 
 	.regionsHead {
@@ -115,15 +115,32 @@
 				}
 			}
 			.name {
+				position: relative;
 				display: inline-block;
 				min-width: 100px;
 				margin-left: 22px;
-				padding: 2px 6px;
+				padding: 2px 16px 2px 6px;
 				color: @gray-dark;
 				cursor: pointer;
 				text-decoration: none;
 				border: 1px solid #999;
 				background-color: #DFDFF0;
+
+				&:hover::after {
+					position: absolute;
+					display: block;
+					content: '\e013';
+					top: 4px;
+					right: 2px;
+					width: 14px;
+					font-family: 'Glyphicons Halflings';
+					font-style: normal;
+					font-weight: normal;
+					line-height: 1;
+					color: #00c300;
+					-webkit-font-smoothing: antialiased;
+					-moz-osx-font-smoothing: grayscale;
+				}
 			}
 			.chevron, .name {
 				&:hover {
@@ -156,7 +173,13 @@
 
 					&:hover {
 						color: @gray-darker;
-						background-color: @MainLigthColor;
+						background-color: #ffd8b5;
+
+						&::after {
+							top: 5px;
+							content: '\e014';
+							color: #c30000;
+						}
 					}
 				}
 			}

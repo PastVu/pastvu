@@ -3,7 +3,8 @@
 		span.glyphicon.glyphicon-globe
 		|  Выбор регионов
 	.offsetwrap
-		h6 Вводите имя региона непосредственно в поле выбора для поиска или выбирайте вручную в дереве регионов ниже
+		div Вводите имя региона непосредственно в поле выбора для поиска или выбирайте вручную в дереве регионов ниже
+		div Возможно выбрать от 1 до 5 регионов
 		.input-group.regionsgroup
 			span.input-group-addon Выбор:
 			input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
@@ -25,7 +26,7 @@
 				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Раскрыть') + ' дочерние регионы'}")
 					span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
 				// /ko
-				.name(title="Выбрать регион", data-bind="click: function() {$parents[$data.level].selectToggle($data.cid)}")
+				.name(title="Выбрать регион", data-bind="click: function() {$parents[$data.level].selectNode($data.title_local)}")
 					span(data-bind="text: ' ' + $data.title_en")
 			//ko if: $data.childLen && $data.opened()
 			//ko template: {name: 'treeNode', foreach: $data.regions}
