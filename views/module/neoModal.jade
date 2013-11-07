@@ -1,10 +1,15 @@
 .neoModalCurtain
-	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (4 * P.window.w() / 5 >> 0) + 'px'}")
+	.neoModal.fringe(style="width: ${ initWidth };", data-bind="style: {maxWidth: (P.window.w() * ${ maxWidthRatio } >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption ${ topic }
 			a.off.closeClick(title="${ closeTxt }")
 				span.glyphicon.glyphicon-off
+		<% if ( fullHeight ){ %>
+		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px', minHeight: P.window.h() - 120 + 'px'}")
+		<% } %>
+		<% if ( !fullHeight ){ %>
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
+		<% } %>
 		.neoModalFoot
 			button.btn.btn-xs.btn-primary.closeClick
 				span.glyphicon.glyphicon-ok

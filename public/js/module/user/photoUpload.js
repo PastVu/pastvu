@@ -5,33 +5,6 @@
 define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'load-image', 'text!tpl/user/photoUpload.jade', 'css!style/user/photoUpload', 'jfileupload/jquery.iframe-transport', 'jfileupload/jquery.fileupload'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, loadImage, jade) {
 	'use strict';
 
-	/**
-	 * Для некоторых браузеров необходимо смещать input в сторону, чтобы срабатывало изменение курсора
-	 * При этом надо генерировать событие клик на таком input'е
-	 */
-	ko.bindingHandlers.fileUploadInput = {
-		init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-			// First get the latest data that we're bound to
-			var value = valueAccessor(), allBindings = allBindingsAccessor(),
-				valueUnwrapped = ko.unwrap(value),
-				$element = $(element);
-
-			// Now manipulate the DOM element
-			if (valueUnwrapped === true) {
-				if (Browser.name === 'FIREFOX' || Browser.name === 'MSIE') {
-					$element
-						.css({'left': '141px'})
-						.on("click", function (event) {
-							event.stopPropagation(); // Чтобы опять не вызвать клик родительского элемента
-						})
-						.parent().on("click", function (event) {
-							$(this).find("input[type='file']").trigger('click');
-						});
-				}
-			}
-		}
-	};
-
 	var mess = {
 		fsuccess: 'Фотография успешно загружена',
 		fcount: 'Превышено разрешенное количество файлов',

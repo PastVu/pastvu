@@ -90,11 +90,11 @@ html, body {
 		vertical-align: middle;
 		text-align: left;
 		zoom: 1;
+		z-index: @zindex-modal;
 		border-width: 0 1px 1px 1px;
 		border-color: @MainBlueColor;
 		background-color: darken(@MainLigthColor, 5%);
 		.box-shadow(0 2px 30px 1px #666);
-		z-index: @zindex-modal;
 
 		.neoModalTools {
 			position: relative;
@@ -153,6 +153,16 @@ html, body {
 			}
 			&::-webkit-scrollbar-thumb {
 				border-width: 5px 3px 5px 4px;
+			}
+
+			&.scroll {
+				//Для правильного подсчета ширины некоторых элементов нужно сразу учитывать скролл (Наример, input в tokenfield)
+				//Добавить скролл можно, растянув дочерний контейнер на 101% (overflow-y: scroll на элементах не работает)
+				//И надо иметь любой положительный height родителя для растягивания потомка в процентах http://habrahabr.ru/post/189252/
+				height: 1px;
+				> div {
+					min-height: 101%;
+				}
 			}
 
 			&.show {
