@@ -11,8 +11,22 @@ define([
 
 	return Cliche.extend({
 		jade: jade,
+		options: {
+			selectedInit: []
+		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+
+			this.selectedInit = this.options.selectedInit;
+			this.selectedInitHash = {};
+			this.selectedInitTkns = [];
+			if (this.selectedInit.length) {
+				this.selectedInit.forEach(function (item) {
+					this.selectedInitHash[item.title_local] = item;
+					this.selectedInitTkns.push({value: item.title_local, label: item.title_local});
+				}, this);
+			}
+
 			this.regionsTree = ko.observableArray();
 			this.regionsFlat = [];
 			this.regionsTypehead = [];
@@ -20,8 +34,9 @@ define([
 
 			this.getRegions(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
-				this.createTokens();
 				this.show();
+				//Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
+				this.createTokens();
 			}, this);
 		},
 		show: function (cb, ctx) {
@@ -56,13 +71,8 @@ define([
 					allowDuplicates: false,
 					createTokensOnBlur: false,
 					minLength: 1,
-					tokens: [
-						{
-							value: 'США',
-							label: 'США'
-						}
-					],
-
+					minWidth: 200,
+					tokens: this.selectedInitTkns,
 					typeahead: {
 						name: 'regions',
 						valueKey: 'title',
@@ -148,8 +158,8 @@ define([
 				region.childLen = 0; //Количество непосредственных потомков
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
-				region.opened = ko.observable(false);
-				region.selected = ko.observable(false);
+				region.selected = ko.observable(this.selectedInitHash[region.title_local] !== undefined);
+				region.opened = ko.observable(region.selected);
 				if (region.level) {
 					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);

@@ -383,7 +383,8 @@
         })
 
       // Listen to window resize
-      $(window).on('resize', $.proxy(this.update, this ))
+	  //Klimashkin: поставил в таймауте, так как вызывался раньше ресайза собственных контролов
+      $(window).on('resize', function () {window.setTimeout($.proxy(this.update, this ), 50)}.bind(this))
 
     }
 
@@ -829,7 +830,8 @@
       }
       else {
         this.$input.css( 'width', this.options.minWidth + 'px' )
-        this.$input.width( this.$wrapper.offset().left + this.$wrapper.width() - this.$input.offset().left + 5 )
+	    //Klimashkin: в конце было +5, в ff это было много, поменял на +3
+        this.$input.width( this.$wrapper.offset().left + this.$wrapper.width() - this.$input.offset().left + 3 )
       }
     }
 

@@ -1,8 +1,8 @@
-/*global define:true*/
+/*global define:true, ga:true*/
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -137,6 +137,78 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			if (this.editEmail()) {
 				this.u.email(this.originUser.email);
 				this.editEmail(false);
+			}
+		},
+
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								selectedInit: ko_mapping.toJS(this.u.regions)
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Изменение списка регионов для отслеживания',
+								closeTxt: 'Сохранить',
+								closeFunc: function (evt) {
+									this.regselectVM.createPhotos(function (data) {
+										if (data && !data.error) {
+											this.closeRegionSelect(data.cids.length);
+											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+										}
+									}, this);
+									evt.stopPropagation();
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		closeRegionSelect: function (newCount) {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+
+				if (newCount) {
+					socket.once('takePhotosFresh', function (data) {
+						if (!data || data.error) {
+							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+						} else {
+							if (data.photos.length > 0) {
+								this.processPhotos(data.photos);
+								this.count(this.count() + data.photos.length);
+								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
+
+								if (this.page() > 1) {
+									//Если в постраничном режиме, не на первой странице, то переходим на первую
+									globalVM.router.navigateToUrl(this.pageUrl());
+								} else {
+									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
+									if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
+										this.photos.splice(this.limit - data.photos.length);
+									}
+									this.photos.concat(data.photos, true);
+								}
+							}
+						}
+					}.bind(this));
+					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
+				}
+
+				delete this.regselectVM;
 			}
 		}
 	});
