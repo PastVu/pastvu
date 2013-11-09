@@ -95,28 +95,44 @@ define([
 						 }]*/
 					}
 				})
-				.on('afterCreateToken', this.createToken.bind(this)) //При создании токена добавляем выбор
-				.on('beforeEditToken removeToken', this.removeToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
+				.on('afterCreateToken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор
+				.on('beforeEditToken removeToken', this.onRemoveToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
 
 		},
-		createToken: function (e) {
+		onCreateToken: function (e) {
 			var title = e.token.value,
 				region = this.regionsHashByTitle[title];
 
 			if (region) {
+				if (this.checkBranchSelected(region)) {
+					this.removeToken(region);
+					window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
+					return;
+				}
 				region.selected(true);
 				this.nodeToggle(region, false, true, 'up');
 			} else {
 				$(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
 			}
 		},
-		removeToken: function (e) {
+		onRemoveToken: function (e) {
 			var title = e.token.value,
 				region = this.regionsHashByTitle[title];
 
 			if (region) {
 				region.selected(false);
 			}
+		},
+		removeToken: function (region) {
+			var title = region.title_local,
+				tkn = this.$dom.find('.regionstkn'),
+				tokensExists;
+
+			tokensExists = tkn.tokenfield('getTokens');
+			_.remove(tokensExists, function (item) {
+				return item.value === title;
+			});
+			tkn.tokenfield('setTokens', tokensExists);
 		},
 		selectNode: function (title) {
 			var region = this.regionsHashByTitle[title],
@@ -125,15 +141,33 @@ define([
 				tokensExists;
 
 			if (add) {
+				if (this.checkBranchSelected(region)) {
+					window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
+					return;
+				}
 				tkn.tokenfield('createToken', {value: title, label: title});
 			} else {
-				tokensExists = tkn.tokenfield('getTokens');
-				_.remove(tokensExists, function (item) {
-					return item.value === title;
-				});
-				tkn.tokenfield('setTokens', tokensExists);
+				this.removeToken(region);
 			}
 			region.selected(add);
+		},
+		checkBranchSelected: function (region) {
+			return uprecursive(region.parent) || downrecursive(region.regions);
+
+			function uprecursive(region) {
+				return region && (region.selected() || uprecursive(region.parent));
+			}
+
+			function downrecursive(regions) {
+				if (regions && regions.length) {
+					for (var i = regions.length; i--;) {
+						if (regions[i].selected() || downrecursive(regions[i].regions)) {
+							return true;
+						}
+					}
+				}
+				return false;
+			}
 		},
 
 		treeBuild: function (arr) {
@@ -190,7 +224,7 @@ define([
 		},
 
 		/**
-		 * Открывает/закрывает узел дерева. Возможно рекурсивное переклчение
+		 * Открывает/закрывает узел дерева. Возможно рекурсивное переключение
 		 * @param region Стартовый регион
 		 * @param expandSelf Открыть/закрыть непосредственно переданный узел (true/false)
 		 * @param cascadeExpand Открыть/закрыть рекурсивные узлы (true/false)
