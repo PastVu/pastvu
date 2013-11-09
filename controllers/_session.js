@@ -69,8 +69,7 @@ function authSocket(handshake, callback) {
 
 	var uaParsed = uaParser.parse(handshake.headers['user-agent']),
 		cookieObj,
-		existsSid,
-		session;
+		existsSid;
 
 	if (!uaParsed.family || !uaParsed.major || uaParsed.major < browserSuportFrom[uaParsed.family]) {
 		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
@@ -105,14 +104,25 @@ function authSocket(handshake, callback) {
 						sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
 
 						if (session.user) {
-							addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
+							//Если есть юзер, добавляем его в хеш пользователей
+							addUserSession(session);
+							session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+								if (err) {
+									return callback('Error: ' + err, false);
+								}
+								callWaitings();
+							});
+						} else {
+							callWaitings();
 						}
 
-						if (Array.isArray(sessWaitingSelect[existsSid])) {
-							sessWaitingSelect[existsSid].forEach(function (item) {
-								item.cb.call(global, session);
-							});
-							delete sessWaitingSelect[existsSid];
+						function callWaitings() {
+							if (Array.isArray(sessWaitingSelect[existsSid])) {
+								sessWaitingSelect[existsSid].forEach(function (item) {
+									item.cb.call(global, session);
+								});
+								delete sessWaitingSelect[existsSid];
+							}
 						}
 					});
 				});
@@ -132,20 +142,7 @@ function authSocket(handshake, callback) {
 		} else {
 			regen(session, data);
 		}
-		if (!session.popdata) {
-			session.popdata = {};
-		}
-		if (session.user) {
-			session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
-				if (err) {
-					return callback('Error: ' + err, false);
-				}
-				cb(session);
-			});
-			addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
-		} else {
-			cb(session);
-		}
+		cb(session);
 	}
 
 	function finishAuthConnection(session) {
@@ -402,9 +399,11 @@ function regen(session, data, keyRegen, userRePop, cb) {
 		//https://github.com/LearnBoost/mongoose/issues/1530
 		if (userRePop && session.user) {
 			session.populate('user', function (err, session) {
-				if (cb) {
-					cb(err, session);
-				}
+				session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+					if (cb) {
+						cb(err, session);
+					}
+				});
 			});
 		} else if (cb) {
 			cb(err, session);
