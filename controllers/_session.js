@@ -136,15 +136,12 @@ function authSocket(handshake, callback) {
 			session.popdata = {};
 		}
 		if (session.user) {
-			regionController.getOrderedRegionList(session.user.settings.regions, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regions) {
+			session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
 				if (err) {
 					return callback('Error: ' + err, false);
 				}
-				console.log(regions);
-				session.popdata.regions = regions;
 				cb(session);
 			});
-
 			addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
 		} else {
 			cb(session);
@@ -180,9 +177,6 @@ function firstConnection(socket) {
 	}
 	session.sockets[socket.id] = socket; //Кладем сокет в сессию
 
-	if (userPlain) {
-		userPlain.regions = session.popdata.regions || [];
-	}
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
@@ -273,6 +267,67 @@ var checkWaitingSess = (function () {
 		setTimeout(clearWaitingSess, ms('1m'));
 	};
 }());
+
+//Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
+function regetSession(sessionCurrent, cb) {
+	Session.findOne({key: sessionCurrent.key}).populate('user').exec(function (err, session) {
+		if (err) {
+			console.log('Error wile regeting session (' + sessionCurrent.key + ')', err.message);
+			cb(err);
+		}
+
+		if (session.user) {
+			session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+				finish(err);
+			});
+		} else {
+			finish();
+		}
+
+		//TODO: Не заменять, а обновлять usObj, и oбновлять user во всех остальных sessions. Переложить новую сессию в socket.handshake
+		function finish(err) {
+			if (err) {
+				cb(err);
+			}
+			//Заменяем текущий объект сессии в хеше на вновь выбранный
+			sess[session.key] = session;
+			//Если есть пользователь, удаляем ссылку на его старый объект из хеша и вызываем функцию добавления нового
+			if (session.user) {
+				delete us[session.user.login];
+				delete usid[session.user._id];
+				addUserSession(session);
+			}
+			cb(null, session);
+		}
+	});
+}
+
+//Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
+function regetUser(session, cb) {
+	User.findOne({login: session.user.login}).populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}).exec(function (err, user) {
+		if (err || !user) {
+			console.log('Error wile regeting user (' + session.user.login + ')', err && err.message || 'No such user for reget');
+			cb(err || {message: 'No such user for reget'});
+		}
+
+		var usObj = us[user.login],
+			s;
+
+		if (usObj) {
+			//Присваиваем новый объект пользователя usObj
+			usObj.user = user;
+			//Присваиваем новый объект пользователя всем его открытым сессиям
+			for (s in usObj.sessions) {
+				if (usObj.sessions.hasOwnProperty(s)) {
+					usObj.sessions[s].user = user;
+				}
+			}
+		} else {
+			session.user = user;
+		}
+		cb(null, user);
+	});
+}
 
 function generate(data, cb) {
 	var session = new Session({
@@ -500,6 +555,8 @@ module.exports.us = us;
 module.exports.usid = usid;
 module.exports.sess = sess;
 module.exports.sessWaitingConnect = sessWaitingConnect;
+module.exports.regetSession = regetSession;
+module.exports.regetUser = regetUser;
 module.exports.userToPublicObject = userToPublicObject;
 
 module.exports.loadController = function (a, db, io) {

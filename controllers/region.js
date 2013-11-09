@@ -338,6 +338,92 @@ var getRegionsByGeoPoint = function () {
 	};
 }();
 
+
+/**
+ * Сохраняет регионы пользователю
+ */
+function saveUserRegions(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
+
+	if (!iAm || !itsMe && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
+		return cb({message: msg.badParams, error: true});
+	}
+	if (!data.regions.length || data.regions.length > 5) {
+		return cb({message: 'Вы можете выбрать от 1 до 5 регионов', error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this.parallel()(null, user);
+			} else {
+				User.findOne({login: login}, this.parallel());
+			}
+			getOrderedRegionList(data.regions, {}, this.parallel());
+		},
+		function (err, user, regions) {
+			if (err || !user || !regions) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			if (!regions.length) {
+				return cb({message: 'You want to save nonexistent regions', error: true});
+			}
+			var regionsHash = {},
+				regionsIds = [],
+				region,
+				i,
+				j;
+
+			//Проверяем, что регионы не обладают родствеными связями
+			for (i = regions.length; i--;) {
+				region = regions[i];
+				regionsIds.push(region._id);
+				regionsHash[region.cid] = region;
+			}
+			for (i = regions.length; i--;) {
+				region = regions[i];
+				for (j = region.parents.length; j--;) {
+					if (regionsHash[region.parents[j]] !== undefined) {
+						return cb({message: 'Выбранные регионы не должны обладать родственными связями', error: true});
+					}
+				}
+			}
+
+			//Нелья просто присвоить массив объектов регионов и сохранить
+			//https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes#prevent-potentially-destructive-operations-on-populated-arrays
+			//Надо сделать user.update({$set: regionsIds}), затем user.regions = regionsIds; а затем populate по новому массиву
+			//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
+			//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
+			//Поэтому полностью заново берем юзера из базы
+			user.update({$set: {regions: regionsIds}}, function (err, numberAffected, raw) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				if (itsOnline) {
+					_session.regetUser(socket.handshake.session, function (err) {
+						if (err) {
+							return cb({message: err.message, error: true});
+						}
+
+						_session.emitUser(user.login); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
+						cb({message: 'ok', saved: 1});
+					});
+				} else {
+					cb({message: 'ok', saved: 1});
+				}
+			});
+		}
+	);
+}
+
 module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');
@@ -386,6 +472,12 @@ module.exports.loadController = function (app, db, io) {
 			function response(resultData) {
 				socket.emit('takeRegionsByGeo', resultData);
 			}
+		});
+
+		socket.on('saveUserRegions', function (data) {
+			saveUserRegions(socket, data, function (resultData) {
+				socket.emit('saveUserRegionsResult', resultData);
+			});
 		});
 	});
 
