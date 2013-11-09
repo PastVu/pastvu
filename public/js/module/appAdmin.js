@@ -125,9 +125,6 @@ require([
 						if (param1 === 'check') {
 							params = {section: 'regionCheck'};
 							modules.push({module: 'm/admin/regionCheck', container: '#bodyContainer'});
-						} else if (param1 === 'select') {
-							params = {section: 'regionSelect'};
-							modules.push({module: 'm/region/select', container: '#bodyContainer'});
 						} else {
 							params = {section: 'region', cid: param1};
 							modules.push({module: 'm/admin/region', container: '#bodyContainer'});

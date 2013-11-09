@@ -54,7 +54,9 @@ function giveUser(socket, data, cb) {
 				itsOnline = true;
 				this(null, user.toObject({transform: _session.userToPublicObject}));
 			} else {
-				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true}, this);
+				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true})
+					.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}})
+					.exec(this);
 			}
 		},
 		function (err, user) {

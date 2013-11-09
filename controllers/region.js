@@ -408,12 +408,12 @@ function saveUserRegions(socket, data, cb) {
 					return cb({message: err.message, error: true});
 				}
 				if (itsOnline) {
-					_session.regetUser(socket.handshake.session, function (err) {
+					_session.regetUser(user, function (err, user) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
 
-						_session.emitUser(user.login); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
+						_session.emitUser(user.login, socket);
 						cb({message: 'ok', saved: 1});
 					});
 				} else {

@@ -300,10 +300,10 @@ function regetSession(sessionCurrent, cb) {
 }
 
 //Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-function regetUser(session, cb) {
-	User.findOne({login: session.user.login}).populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}).exec(function (err, user) {
+function regetUser(u, cb) {
+	User.findOne({login: u.login}).populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}).exec(function (err, user) {
 		if (err || !user) {
-			console.log('Error wile regeting user (' + session.user.login + ')', err && err.message || 'No such user for reget');
+			console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
 			cb(err || {message: 'No such user for reget'});
 		}
 
@@ -319,8 +319,6 @@ function regetUser(session, cb) {
 					usObj.sessions[s].user = user;
 				}
 			}
-		} else {
-			session.user = user;
 		}
 		cb(null, user);
 	});

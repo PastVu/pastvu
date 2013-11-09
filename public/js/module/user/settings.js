@@ -158,15 +158,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 								closeTxt: 'Сохранить',
 								closeFunc: function (evt) {
 									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegions(['cid']);
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
 									if (!regions.length || regions.length > 5) {
 										window.noty({text: 'Допускается выбирать от 1 до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
 									}
-									regions = _.pluck(regions, 'cid');
 
-									this.saveRegions(regions, function (err) {
+									this.saveRegions(_.pluck(regions, 'cid'), function (err) {
 										if (!err) {
+											User.vm({regions: regions}, this.u);
 											this.closeRegionSelect();
 											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
 										}
