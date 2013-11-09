@@ -21,9 +21,9 @@ define([
 			this.selectedInitHash = {};
 			this.selectedInitTkns = [];
 			if (this.selectedInit.length) {
-				this.selectedInit.forEach(function (item) {
-					this.selectedInitHash[item.title_local] = item;
-					this.selectedInitTkns.push({value: item.title_local, label: item.title_local});
+				this.selectedInit.forEach(function (region) {
+					this.selectedInitHash[region.title_local] = region;
+					this.selectedInitTkns.push({value: region.title_local, label: region.title_local});
 				}, this);
 			}
 
@@ -36,7 +36,7 @@ define([
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
 				//Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
-				this.createTokens();
+				this.createTokenfield();
 			}, this);
 		},
 		show: function (cb, ctx) {
@@ -77,7 +77,7 @@ define([
 			}, this);
 			return result;
 		},
-		createTokens: function () {
+		createTokenfield: function () {
 			this.$dom.find('.regionstkn')
 				.tokenfield({
 					allowDuplicates: false,
@@ -99,6 +99,7 @@ define([
 				.on('beforeEditToken removeToken', this.onRemoveToken.bind(this)); //При удалении или редиктировании токена удаляем выбор
 
 		},
+		//Событие создания токена. Вызовется как при создании в поле, так и при удалении из дерева (потому что при этом пересоздаются неудаляемые токены)
 		onCreateToken: function (e) {
 			var title = e.token.value,
 				region = this.regionsHashByTitle[title];
@@ -110,19 +111,24 @@ define([
 					return;
 				}
 				region.selected(true);
+				this.toggleBranchSelectable(region, false);
 				this.nodeToggle(region, false, true, 'up');
 			} else {
 				$(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
 			}
 		},
+		//Событие удаления токена непосредственно из поля
 		onRemoveToken: function (e) {
 			var title = e.token.value,
 				region = this.regionsHashByTitle[title];
 
 			if (region) {
 				region.selected(false);
+				this.toggleBranchSelectable(region, true);
 			}
 		},
+		//Ручное удаление токена, работает полной заменой токенов, кроме удаляемого.
+		//Поэтому для удаляемого токена событие onRemoveToken не сработает, но сработает onCreateToken для каждого неудаляемого
 		removeToken: function (region) {
 			var title = region.title_local,
 				tkn = this.$dom.find('.regionstkn'),
@@ -134,6 +140,7 @@ define([
 			});
 			tkn.tokenfield('setTokens', tokensExists);
 		},
+		//Клик по узлу дерева
 		selectNode: function (title) {
 			var region = this.regionsHashByTitle[title],
 				add = !region.selected(),
@@ -148,6 +155,7 @@ define([
 				tkn.tokenfield('createToken', {value: title, label: title});
 			} else {
 				this.removeToken(region);
+				this.toggleBranchSelectable(region, true);
 			}
 			region.selected(add);
 		},
@@ -169,13 +177,34 @@ define([
 				return false;
 			}
 		},
+		toggleBranchSelectable: function (region, selectable) {
+			return uprecursive(region.parent) || downrecursive(region.regions);
+
+			function uprecursive(region) {
+				if (region) {
+					region.selectable(selectable);
+					uprecursive(region.parent);
+				}
+			}
+
+			function downrecursive(regions) {
+				if (regions && regions.length) {
+					for (var i = regions.length; i--;) {
+						regions[i].selectable(selectable);
+						downrecursive(regions[i].regions);
+					}
+				}
+			}
+		},
 
 		treeBuild: function (arr) {
 			var i = 0,
 				len = arr.length,
 				hash = {},
 				region,
-				results = [];
+				selected,
+				selectedRegions = [],
+				result = [];
 
 			//Сортируем массим по уровням и названиям в пределах одного уровня
 			arr.sort(function (a, b) {
@@ -204,23 +233,35 @@ define([
 				region.childLen = 0; //Количество непосредственных потомков
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
-				region.selected = ko.observable(this.selectedInitHash[region.title_local] !== undefined);
-				region.opened = ko.observable(region.selected());
+
+				selected = this.selectedInitHash[region.title_local] !== undefined;
+				region.selectable = ko.observable(true);
+				region.selected = ko.observable(selected);
+				region.opened = ko.observable(selected);
+				if (selected) {
+					selectedRegions.push(region);
+				}
+
 				if (region.level) {
 					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);
 					region.parent.childLen += 1;
 					incrementParentsChildLen(region, region.level);
 				} else {
-					results.push(region);
+					result.push(region);
 				}
-				hash[region.cid] = region;
 
+				hash[region.cid] = region;
 				this.regionsTypehead.push({title: region.title_local, tokens: [region.title_local, region.title_en]});
 				this.regionsHashByTitle[region.title_local] = region;
 			}
 
-			return results;
+			//У изначально выбранных регионов делаем невыбираемыми другие регионы этой ветки
+			selectedRegions.forEach(function (region) {
+				this.toggleBranchSelectable(region, false);
+			}, this);
+
+			return result;
 		},
 
 		/**
