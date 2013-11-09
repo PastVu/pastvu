@@ -105,14 +105,15 @@ define([
 				region = this.regionsHashByTitle[title];
 
 			if (region) {
-				if (this.checkBranchSelected(region)) {
-					this.removeToken(region);
-					window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
-					return;
+				//Если регион уже выбран, значит, мы создаем токен вручную после клика по узлу дерева
+				//или пересоздаем после удаления одного из токенов и ничего делать не надо
+				if (!region.selected()) {
+					if (this.selectRegion(region)) {
+						this.nodeToggle(region, true, true, 'up'); //При успешном выборе региона из поля, раскрываем его ветку в дереве
+					} else {
+						this.removeToken(region); //Если выбор не возможен, удаляем этот токен
+					}
 				}
-				region.selected(true);
-				this.toggleBranchSelectable(region, false);
-				this.nodeToggle(region, false, true, 'up');
 			} else {
 				$(e.relatedTarget).addClass('invalid').attr('title', 'Нет такого региона');
 			}
@@ -140,25 +141,33 @@ define([
 			});
 			tkn.tokenfield('setTokens', tokensExists);
 		},
+
+		selectRegion: function (region) {
+			if (this.checkBranchSelected(region)) {
+				window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
+				return false;
+			}
+			region.selected(true);
+			this.toggleBranchSelectable(region, false);
+			return true;
+		},
 		//Клик по узлу дерева
-		selectNode: function (title) {
+		clickNode: function (title) {
 			var region = this.regionsHashByTitle[title],
 				add = !region.selected(),
-				tkn = this.$dom.find('.regionstkn'),
-				tokensExists;
+				tkn = this.$dom.find('.regionstkn');
 
 			if (add) {
-				if (this.checkBranchSelected(region)) {
-					window.noty({text: 'Нельзя одновременно выбирать родительский и дочерний регионы', type: 'error', layout: 'center', timeout: 3000, force: true});
-					return;
+				if (this.selectRegion(region)) {
+					tkn.tokenfield('createToken', {value: title, label: title});
 				}
-				tkn.tokenfield('createToken', {value: title, label: title});
 			} else {
+				region.selected(false);
 				this.removeToken(region);
 				this.toggleBranchSelectable(region, true);
 			}
-			region.selected(add);
 		},
+		//Проверяем, выбран ли какой-то другой регион в ветке, в которой находится переданный регион
 		checkBranchSelected: function (region) {
 			return uprecursive(region.parent) || downrecursive(region.regions);
 
@@ -177,6 +186,7 @@ define([
 				return false;
 			}
 		},
+		//Ставит selectable всем в ветке, в которой находится переданный регион
 		toggleBranchSelectable: function (region, selectable) {
 			return uprecursive(region.parent) || downrecursive(region.regions);
 
