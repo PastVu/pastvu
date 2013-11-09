@@ -204,7 +204,7 @@ function getParentsAndChilds(region, cb) {
 }
 
 
-function getRegionList(socket, data, cb) {
+function getRegionsFull(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
 	if (!iAm || !iAm.role || iAm.role < 10) {
@@ -216,6 +216,19 @@ function getRegionList(socket, data, cb) {
 	}
 
 	Region.find({}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
+		if (err || !regions) {
+			return cb({message: err && err.message || 'No regions', error: true});
+		}
+		cb({regions: regions});
+	});
+}
+
+function getRegionsPublic(socket, data, cb) {
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	Region.find({}, {_id: 0, cid: 1, title_en: 1, title_local: 1, parents: 1}, {lean: true}, function (err, regions) {
 		if (err || !regions) {
 			return cb({message: err && err.message || 'No regions', error: true});
 		}
@@ -385,7 +398,7 @@ function saveUserRegions(socket, data, cb) {
 			//Проверяем, что регионы не обладают родствеными связями
 			for (i = regions.length; i--;) {
 				region = regions[i];
-				regionsIds.push(region._id);
+				regionsIds.unshift(region._id);
 				regionsHash[region.cid] = region;
 			}
 			for (i = regions.length; i--;) {
@@ -444,9 +457,14 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takeRegion', resultData);
 			});
 		});
-		socket.on('giveRegionList', function (data) {
-			getRegionList(socket, data, function (resultData) {
-				socket.emit('takeRegionList', resultData);
+		socket.on('giveRegionsFull', function (data) {
+			getRegionsFull(socket, data, function (resultData) {
+				socket.emit('takeRegionsFull', resultData);
+			});
+		});
+		socket.on('giveRegions', function (data) {
+			getRegionsPublic(socket, data, function (resultData) {
+				socket.emit('takeRegions', resultData);
 			});
 		});
 		socket.on('giveRegionsByGeo', function (data) {

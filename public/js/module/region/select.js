@@ -48,7 +48,7 @@ define([
 			this.showing = false;
 		},
 		getRegions: function (cb, ctx) {
-			socket.once('takeRegionList', function (data) {
+			socket.once('takeRegions', function (data) {
 				var error = !data || !!data.error || !data.regions;
 
 				if (error) {
@@ -62,7 +62,7 @@ define([
 					cb.call(ctx, data, error);
 				}
 			}.bind(this));
-			socket.emit('giveRegionList', {});
+			socket.emit('giveRegions', {});
 		},
 		getSelectedRegions: function (fields) {
 			var tkn = this.$dom.find('.regionstkn'),

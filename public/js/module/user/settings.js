@@ -162,11 +162,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 									if (!regions.length || regions.length > 5) {
 										window.noty({text: 'Допускается выбирать от 1 до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
 									}
 
 									this.saveRegions(_.pluck(regions, 'cid'), function (err) {
 										if (!err) {
-											User.vm({regions: regions}, this.u);
+											User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
 											this.closeRegionSelect();
 											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
 										}

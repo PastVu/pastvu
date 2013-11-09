@@ -29,7 +29,7 @@ define([
 			this.showing = false;
 		},
 		getRegions: function (cb, ctx) {
-			socket.once('takeRegionList', function (data) {
+			socket.once('takeRegionsFull', function (data) {
 				var error = !data || !!data.error || !data.regions;
 
 				if (error) {
@@ -43,7 +43,7 @@ define([
 					cb.call(ctx, data, error);
 				}
 			}.bind(this));
-			socket.emit('giveRegionList', {});
+			socket.emit('giveRegionsFull', {});
 		},
 		treeBuild: function (arr) {
 			var i = 0,
