@@ -56,7 +56,6 @@ define([
 				} else {
 					this.regionsTree(this.treeBuild(data.regions));
 					this.regionsFlat = data.regions;
-					console.log(this.regionsTypehead);
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -64,6 +63,19 @@ define([
 				}
 			}.bind(this));
 			socket.emit('giveRegionList', {});
+		},
+		getSelectedRegions: function (fields) {
+			var tkn = this.$dom.find('.regionstkn'),
+				tokens = tkn.tokenfield('getTokens'),
+				result = [];
+
+			tokens.forEach(function (item) {
+				var region = this.regionsHashByTitle[item.value];
+				if (region) {
+					result.push(fields ? _.pick(region, fields) : region);
+				}
+			}, this);
+			return result;
 		},
 		createTokens: function () {
 			this.$dom.find('.regionstkn')
@@ -159,7 +171,7 @@ define([
 				region.childLenAll = 0; //Количество всех потомков
 				region.childLenArr = [0]; //Массив количеств потомков
 				region.selected = ko.observable(this.selectedInitHash[region.title_local] !== undefined);
-				region.opened = ko.observable(region.selected);
+				region.opened = ko.observable(region.selected());
 				if (region.level) {
 					region.parent = hash[region.parents[region.level - 1]];
 					region.parent.regions.push(region);

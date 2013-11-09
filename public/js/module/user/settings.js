@@ -157,13 +157,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 								topic: 'Изменение списка регионов для отслеживания',
 								closeTxt: 'Сохранить',
 								closeFunc: function (evt) {
-									this.regselectVM.createPhotos(function (data) {
-										if (data && !data.error) {
-											this.closeRegionSelect(data.cids.length);
-											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegions(['cid']);
+
+									if (!regions.length || regions.length > 5) {
+										window.noty({text: 'Допускается выбирать от 1 до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+									}
+									regions = _.pluck(regions, 'cid');
+
+									this.saveRegions(regions, function (err) {
+										if (!err) {
+											this.closeRegionSelect();
+											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
 										}
 									}, this);
-									evt.stopPropagation();
 								}.bind(this)},
 							callback: function (vm) {
 								this.regselectVM = vm;
@@ -178,36 +185,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				);
 			}
 		},
-		closeRegionSelect: function (newCount) {
+		saveRegions: function (regions, cb, ctx) {
+			socket.once('saveUserRegionsResult', function (data) {
+				var error = !data || data.error || !data.saved;
+				if (error) {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				}
+				cb.call(ctx, error);
+			}.bind(this));
+			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
+		},
+		closeRegionSelect: function () {
 			if (this.regselectVM) {
 				this.regselectVM.destroy();
-
-				if (newCount) {
-					socket.once('takePhotosFresh', function (data) {
-						if (!data || data.error) {
-							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-						} else {
-							if (data.photos.length > 0) {
-								this.processPhotos(data.photos);
-								this.count(this.count() + data.photos.length);
-								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
-
-								if (this.page() > 1) {
-									//Если в постраничном режиме, не на первой странице, то переходим на первую
-									globalVM.router.navigateToUrl(this.pageUrl());
-								} else {
-									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
-									if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
-										this.photos.splice(this.limit - data.photos.length);
-									}
-									this.photos.concat(data.photos, true);
-								}
-							}
-						}
-					}.bind(this));
-					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
-				}
-
 				delete this.regselectVM;
 			}
 		}
