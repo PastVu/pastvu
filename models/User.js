@@ -27,6 +27,7 @@ var UserScheme = new mongoose.Schema({
 	role: {type: Number},
 
 	settings: {type: Schema.Types.Mixed},
+	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}],
 	ranks: [String],
 
 	//Profile

@@ -7,7 +7,9 @@ var mongoose = require('mongoose'),
 			key: {type: String, index: {unique: true}},
 			stamp: {type: Date, 'default': Date.now, index: {expires: '14d'}},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-			data: {type: Schema.Types.Mixed, 'default': {}}
+			data: {type: Schema.Types.Mixed, 'default': {}},
+
+			regions: [{type: Schema.Types.ObjectId, ref: 'Region'}]
 
 			/*popdata: {} - поле для данных, которое не должны быть сохранены в базе, например, вручную спопулированные регионы*/
 		},
