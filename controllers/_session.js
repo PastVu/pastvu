@@ -42,7 +42,7 @@ function addUserSession(session) {
 
 	if (usObj === undefined) {
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}, rquery: {}};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
 		if (!user.settings) {
 			user.settings = {};
@@ -106,7 +106,7 @@ function authSocket(handshake, callback) {
 						if (session.user) {
 							//Если есть юзер, добавляем его в хеш пользователей
 							addUserSession(session);
-							session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+							popUserRegions(session.user, function (err, user) {
 								if (err) {
 									return callback('Error: ' + err, false);
 								}
@@ -265,6 +265,57 @@ var checkWaitingSess = (function () {
 	};
 }());
 
+//Пупулируем регионы пользователя и строим запросы для них
+function popUserRegions(user, cb) {
+	user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+		if (err) {
+			return cb(err);
+		}
+		var rquery,
+			$orobj,
+			levels,
+			level,
+			region,
+			i;
+
+		if (user.regions.length) {
+			rquery = {$or: []};
+			levels = {};
+
+			//Формируем запрос для регионов
+			for (i = user.regions.length; i--;) {
+				region = regionController.regionCacheHash[user.regions[i].cid];
+				level = 'r' + region.parents.length;
+
+				if (levels[level] === undefined) {
+					levels[level] = [];
+				}
+				levels[level].push(region.cid);
+			}
+
+			for (i in levels) {
+				if (levels.hasOwnProperty(i)) {
+					level = levels[i];
+					$orobj = {};
+					if (level.length === 1) {
+						$orobj[i] = level[0];
+					} else if (level.length > 1) {
+						$orobj[i] = {$in: level};
+					}
+					rquery.$or.push($orobj);
+				}
+			}
+
+			if (rquery.$or.length === 1) {
+				rquery = rquery.$or[0];
+			}
+			//console.log(JSON.stringify(rquery));
+			us[user.login].rquery = rquery;
+		}
+
+		cb();
+	});
+}
 //Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
 function regetSession(sessionCurrent, cb) {
 	Session.findOne({key: sessionCurrent.key}).populate('user').exec(function (err, session) {
@@ -274,7 +325,7 @@ function regetSession(sessionCurrent, cb) {
 		}
 
 		if (session.user) {
-			session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+			popUserRegions(session.user, function (err, user) {
 				finish(err);
 			});
 		} else {
@@ -301,26 +352,28 @@ function regetSession(sessionCurrent, cb) {
 
 //Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
 function regetUser(u, cb) {
-	User.findOne({login: u.login}).populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}).exec(function (err, user) {
-		if (err || !user) {
-			console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
-			cb(err || {message: 'No such user for reget'});
-		}
+	User.findOne({login: u.login}, function (err, user) {
+		popUserRegions(user, function (err, user) {
+			if (err || !user) {
+				console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
+				cb(err || {message: 'No such user for reget'});
+			}
 
-		var usObj = us[user.login],
-			s;
+			var usObj = us[user.login],
+				s;
 
-		if (usObj) {
-			//Присваиваем новый объект пользователя usObj
-			usObj.user = user;
-			//Присваиваем новый объект пользователя всем его открытым сессиям
-			for (s in usObj.sessions) {
-				if (usObj.sessions.hasOwnProperty(s)) {
-					usObj.sessions[s].user = user;
+			if (usObj) {
+				//Присваиваем новый объект пользователя usObj
+				usObj.user = user;
+				//Присваиваем новый объект пользователя всем его открытым сессиям
+				for (s in usObj.sessions) {
+					if (usObj.sessions.hasOwnProperty(s)) {
+						usObj.sessions[s].user = user;
+					}
 				}
 			}
-		}
-		cb(null, user);
+			cb(null, user);
+		});
 	});
 }
 
@@ -397,7 +450,7 @@ function regen(session, data, keyRegen, userRePop, cb) {
 		//https://github.com/LearnBoost/mongoose/issues/1530
 		if (userRePop && session.user) {
 			session.populate('user', function (err, session) {
-				session.user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+				popUserRegions(session.user, function (err, user) {
 					if (cb) {
 						cb(err, session);
 					}

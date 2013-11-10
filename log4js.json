@@ -4,7 +4,7 @@
 			"type": "file",
 			"filename": "app.log",
 			"maxLogSize": 524288,
-			"backups": 1,
+			"backups": 2,
 			"pollInterval": 10,
 			"category": ["app.js", "systemjs.js"]
 		},
@@ -12,9 +12,17 @@
 			"type": "file",
 			"filename": "common.log",
 			"maxLogSize": 524288,
-			"backups": 1,
+			"backups": 2,
 			"pollInterval": 15,
 			"category": ["console", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js"]
+		},
+		{
+			"type": "file",
+			"filename": "region.log",
+			"maxLogSize": 524288,
+			"backups": 1,
+			"pollInterval": 15,
+			"category": ["region.js"]
 		},
 		{
 			"type": "file",

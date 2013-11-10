@@ -232,11 +232,13 @@ async.waterfall([
 		callback(null);
 	},
 	function loadingControllers(callback) {
+		var regionController;
+
 		require('./controllers/settings.js').loadController(app, db, io);
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);
-		require('./controllers/region.js').loadController(app, db, io);
+		regionController = require('./controllers/region.js').loadController(app, db, io);
 		require('./controllers/photo.js').loadController(app, db, io);
 		require('./controllers/subscr.js').loadController(app, db, io);
 		require('./controllers/comment.js').loadController(app, db, io);
@@ -250,7 +252,7 @@ async.waterfall([
 		require('./controllers/errors.js').registerErrorHandling(app);
 		//require('./basepatch/v0.9.4.2.js').loadController(app, db);
 
-		callback(null);
+		regionController.fillCache(callback);
 	}
 ],
 	function finish(err) {

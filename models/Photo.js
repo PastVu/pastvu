@@ -134,6 +134,11 @@ PhotoSchema_Del.virtual('del').get(function () {
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
 //Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoSchema.index({ g: '2d', year: 1});
+PhotoSchema.index({ r0: 1, adate: 1});
+PhotoSchema.index({ r1: 1, adate: 1});
+PhotoSchema.index({ r2: 1, adate: 1});
+PhotoSchema.index({ r3: 1, adate: 1});
+PhotoSchema.index({ r4: 1, adate: 1});
 
 
 PhotoSchema.pre('save', preSave);

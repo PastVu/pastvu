@@ -11,7 +11,34 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	msg = {
 		deny: 'You do not have permission for this action'
-	};
+	},
+	logger = require('log4js').getLogger("region.js"),
+	loggerApp = require('log4js').getLogger("app.js"),
+
+	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
+	regionCacheArr = []; //Массив-кэш регионов из базы [{_id, cid, parents}]
+
+function fillCache(cb) {
+	Region.find({}, {_id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1}, {lean: true}, function (err, regions) {
+		if (err) {
+			logger.error('FillCache: ' + err.message);
+			if (cb) {
+				cb(err);
+			}
+			return;
+		}
+		for (var i = regions.length; i--;) {
+			regionCacheHash[regions[i].cid] = regions[i];
+		}
+		regionCacheArr = regions;
+
+		logger.info('Region cache filled with ' + regions.length);
+		loggerApp.info('Region cache filled with ' + regions.length);
+		if (cb) {
+			cb();
+		}
+	});
+}
 
 function saveRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
@@ -499,7 +526,11 @@ module.exports.loadController = function (app, db, io) {
 		});
 	});
 
+	return module.exports;
 };
+module.exports.fillCache = fillCache;
+module.exports.regionCacheHash = regionCacheHash;
+module.exports.regionCacheArr = regionCacheArr;
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
 module.exports.getObjRegionList = getObjRegionList;

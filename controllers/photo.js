@@ -601,18 +601,23 @@ function givePhotosPublic(iAm, data, cb) {
 
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
-		filter = data.filter;
+		filter = data.filter || {};
 
 	step(
 		function () {
 			var query = {},
+				regions,
+				i,
 				fieldsSelect = iAm ? compactFieldsId : compactFields;
 
-			if (filter) {
-				if (filter.nogeo) {
-					query.geo = null;
+			if (filter.nogeo) {
+				query.geo = null;
+			} else {
+				if (iAm) {
+					_.assign(query, _session.us[iAm.login].rquery);
 				}
 			}
+			console.log(query);
 			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
 			Photo.count(query, this.parallel());
 		},
