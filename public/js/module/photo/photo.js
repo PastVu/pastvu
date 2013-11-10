@@ -776,6 +776,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							if (Array.isArray(target.geo)) {
 								target.geo.reverse();
 							}
+							if (result.data.regions) {
+								Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
+							}
 						}
 						if (this.descEditingChanged) {
 							if (result.data.desc) {

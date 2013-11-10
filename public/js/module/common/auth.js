@@ -87,7 +87,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		formFocus: function () {
 			window.setTimeout(function () {
 				try {
-					this.$dom.children('form:visible')[0].querySelector('input:first-child:not([disabled])').focus();
+					this.$dom.children('form:visible')[0].querySelector('.form-control:not([disabled])').focus();
 				} catch (e) {
 				}
 			}.bind(this), 200);
