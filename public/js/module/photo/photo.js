@@ -322,6 +322,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			storage.photoCan(this.p.cid(), function (data) {
 				if (!data.error) {
 					this.can = ko_mapping.fromJS(data.can, this.can);
+					this.sizesCalc();
 				}
 			}, this);
 			this.subscriptions.loggedIn.dispose();
@@ -407,7 +408,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
 			var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0,
-				maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 47 >> 0,
+				maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0,
 				ws = this.p.ws(),
 				hs = this.p.hs(),
 				aspect = ws / hs,
