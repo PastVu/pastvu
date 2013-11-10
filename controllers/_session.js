@@ -38,9 +38,11 @@ var Session,
 //Добавляем сессию в хеш пользователей
 function addUserSession(session) {
 	var user = session.user,
-		usObj = us[user.login];
+		usObj = us[user.login],
+		firstAdding = false;
 
 	if (usObj === undefined) {
+		firstAdding = true;
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
 		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}, rquery: {}};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
@@ -57,7 +59,7 @@ function addUserSession(session) {
 
 	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
 
-	return usObj === undefined; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
+	return firstAdding; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
 }
 
 //Обработчик установки соединения сокетом 'authorization'
@@ -104,14 +106,18 @@ function authSocket(handshake, callback) {
 						sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
 
 						if (session.user) {
-							//Если есть юзер, добавляем его в хеш пользователей
-							addUserSession(session);
-							popUserRegions(session.user, function (err) {
-								if (err) {
-									return callback('Error: ' + err, false);
-								}
+							//Если есть юзер, добавляем его в хеш пользователей и если он добавлен впервые в хеш,
+							//значит будет использоваться именно новый объект и надо спопулировать у него регионы
+							if (addUserSession(session)) {
+								popUserRegions(session.user, function (err) {
+									if (err) {
+										return callback('Error: ' + err, false);
+									}
+									callWaitings();
+								});
+							} else {
 								callWaitings();
-							});
+							}
 						} else {
 							callWaitings();
 						}
@@ -310,10 +316,12 @@ function popUserRegions(user, cb) {
 				rquery = rquery.$or[0];
 			}
 			//console.log(JSON.stringify(rquery));
-			us[user.login].rquery = rquery;
+			if (us[user.login]) {
+				us[user.login].rquery = rquery;
+			}
 		}
 
-		cb();
+		cb(null, rquery);
 	});
 }
 //Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
@@ -476,23 +484,42 @@ function authUser(socket, user, data, cb) {
 	session.key = Utils.randomString(12);
 	sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
 
-	regen(session, {remember: data.remember}, false, true, function (err, session) {
+	regen(session, {remember: data.remember}, false, false, function (err, session) {
+
 		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
-
-		//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
-		//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
-		addUserSession(session);
-		var user = session.user.toObject({transform: userToPublicObject});
-
-		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-		for (var i in session.sockets) {
-			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-				session.sockets[i].emit('youAre', user);
+		session.populate('user', function (err, session) {
+			if (err && cb) {
+				cb(err, session);
 			}
-		}
 
-		emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
-		cb(err, session);
+			//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
+			//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
+			//Если не переприсвоился, и взялся именно новый, популируем у него регионы
+			if (addUserSession(session)) {
+				popUserRegions(session.user, function (err) {
+					if (err && cb) {
+						cb(err, session);
+					}
+					finish();
+				});
+			} else {
+				finish();
+			}
+
+			function finish() {
+				var user = session.user.toObject({transform: userToPublicObject});
+
+				//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
+				for (var i in session.sockets) {
+					if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
+						session.sockets[i].emit('youAre', user);
+					}
+				}
+
+				emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
+				cb(err, session);
+			}
+		});
 	});
 }
 
