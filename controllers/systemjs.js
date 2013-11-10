@@ -146,6 +146,31 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
+	saveSystemJSFunc(function assignToRegions(variants) {
+		var startTime = Date.now();
+
+		print('Start to assign for ' + db.regions.count() + ' regions..\n');
+		db.regions.find({}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {
+			var startTime = Date.now(),
+				queryObject = {},
+				setObject = {$set: {}};
+
+			print('Assigning for [r' + region.parents.length + '] ' + region.cid + ' '+ region.title_en + ' region');
+
+			queryObject.geo = {$geoWithin: {$geometry: region.geo } };
+			setObject.$set['r' + region.parents.length] = region.cid;
+
+			db.photos.update(queryObject, setObject, {multi: true});
+			db.photos_fresh.update(queryObject, setObject, {multi: true});
+			db.photos_disabled.update(queryObject, setObject, {multi: true});
+			db.photos_del.update(queryObject, setObject, {multi: true});
+
+			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
+		});
+
+		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	saveSystemJSFunc(function calcUserStats() {
 		var startTime = Date.now(),
 			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),

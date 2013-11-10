@@ -106,7 +106,7 @@ function authSocket(handshake, callback) {
 						if (session.user) {
 							//Если есть юзер, добавляем его в хеш пользователей
 							addUserSession(session);
-							popUserRegions(session.user, function (err, user) {
+							popUserRegions(session.user, function (err) {
 								if (err) {
 									return callback('Error: ' + err, false);
 								}
@@ -325,7 +325,7 @@ function regetSession(sessionCurrent, cb) {
 		}
 
 		if (session.user) {
-			popUserRegions(session.user, function (err, user) {
+			popUserRegions(session.user, function (err) {
 				finish(err);
 			});
 		} else {
@@ -353,7 +353,7 @@ function regetSession(sessionCurrent, cb) {
 //Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
 function regetUser(u, cb) {
 	User.findOne({login: u.login}, function (err, user) {
-		popUserRegions(user, function (err, user) {
+		popUserRegions(user, function (err) {
 			if (err || !user) {
 				console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
 				cb(err || {message: 'No such user for reget'});
@@ -450,7 +450,7 @@ function regen(session, data, keyRegen, userRePop, cb) {
 		//https://github.com/LearnBoost/mongoose/issues/1530
 		if (userRePop && session.user) {
 			session.populate('user', function (err, session) {
-				popUserRegions(session.user, function (err, user) {
+				popUserRegions(session.user, function (err) {
 					if (cb) {
 						cb(err, session);
 					}

@@ -255,12 +255,7 @@ function getRegionsPublic(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Region.find({}, {_id: 0, cid: 1, title_en: 1, title_local: 1, parents: 1}, {lean: true}, function (err, regions) {
-		if (err || !regions) {
-			return cb({message: err && err.message || 'No regions', error: true});
-		}
-		cb({regions: regions});
-	});
+	cb({regions: regionCacheArr});
 }
 
 /**
