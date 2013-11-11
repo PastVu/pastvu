@@ -3,6 +3,27 @@
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title
+					a.accordion-toggle(data-toggle="collapse", href="#credentials") Полномочия
+			.panel-collapse.collapse.in#credentials
+				.panel-body
+					form
+						.form-group(data-bind="foreach: roles")
+							label.radio-inline
+								input(type="radio", name="credent_radios", data-bind="attr: {value: ''+$data.cid}, checked: $parent.role")
+								span(data-bind="text: $data.name")
+						//ko if: credentialsChanged()
+						.form-group
+							.col-xs-12
+								button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}")
+									span.glyphicon.glyphicon-ok
+									|  Сохранить полномочия
+								button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}")
+									span.glyphicon.glyphicon-remove
+									|  Отмена
+						// /ko
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
 					a.accordion-toggle(data-toggle="collapse", href="#ranks") Присваиваемые звания
 			.panel-collapse.collapse.in#ranks
 				.panel-body

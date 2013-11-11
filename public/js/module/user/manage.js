@@ -24,6 +24,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				globalVM.router.navigateToUrl('/u/' + this.u.login());
 			}
 			this.originUser = storage.userImmediate(this.u.login()).origin;
+
+			this.role = ko.observable(this.u.role());
+			this.roles = [
+				{cid: 0, name: 'Обычный пользователь'},
+				{cid: 5, name: 'Модератор'},
+				{cid: 10, name: 'Администратор'},
+				{cid: 11, name: 'Суперадминистратор'}
+			];
+			this.credentialsChanged = this.co.credentialsChanged = ko.computed(function () {
+				return Number(this.role()) !== this.u.role();
+			}, this);
+
 			this.ranks = ko.observableArray();
 
 			this.getAllRanks(function () {
@@ -56,6 +68,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+
+		saveCredentials: function (data, event) {
+
+		},
+		cancelCredentials: function (data, event) {
+
 		},
 
 		ranksSelectedHandler: function (val) {
