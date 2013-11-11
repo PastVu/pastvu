@@ -2,7 +2,7 @@
 /**
  * Модель управления пользователем
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'text!tpl/user/manage.jade', 'css!style/user/manage', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, jade) {
 	'use strict';
 
 	var ranksLang = {
@@ -19,11 +19,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
+			this.u_origin = storage.userImmediate(this.u.login()).origin;
 
 			if (this.auth.iAm.role() < 10) {
 				globalVM.router.navigateToUrl('/u/' + this.u.login());
 			}
-			this.originUser = storage.userImmediate(this.u.login()).origin;
 
 			this.role = ko.observable(this.u.role());
 			this.roles = [
@@ -32,8 +32,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				{cid: 10, name: 'Администратор'},
 				{cid: 11, name: 'Суперадминистратор'}
 			];
+			this.newRegions = ko.observableArray(this.u_origin.mod_regions);
 			this.credentialsChanged = this.co.credentialsChanged = ko.computed(function () {
-				return Number(this.role()) !== this.u.role();
+				return Number(this.role()) !== this.u.role() || !_.isEqual(this.u_origin.mod_regions, this.newRegions());
 			}, this);
 
 			this.ranks = ko.observableArray();
@@ -71,10 +72,70 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		saveCredentials: function (data, event) {
-
+			var regions;
+			if (!_.isEqual(this.u_origin.mod_regions, this.newRegions())) {
+				regions = _.pluck(this.newRegions(), 'cid');
+			}
+			socket.once('saveUserCredentialsResult', function (data) {
+				var error = !data || data.error || !data.saved;
+				if (error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					User.vm({mod_regions: regions}, this.u, true);
+				}
+			}.bind(this));
+			socket.emit('saveUserCredentials', {login: this.u.login(), role: Number(this.role()), regions: regions});
 		},
 		cancelCredentials: function (data, event) {
 
+		},
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								min: 0,
+								max: 20,
+								selectedInit: this.newRegions()
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Изменение списка регионов для отслеживания',
+								closeTxt: 'Сохранить',
+								closeFunc: function (evt) {
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+
+									if (regions.length > 20) {
+										window.noty({text: 'Допускается выбирать до 20 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
+									}
+									this.newRegions(regions);
+									this.closeRegionSelect();
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		closeRegionSelect: function () {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+				delete this.regselectVM;
+			}
 		},
 
 		ranksSelectedHandler: function (val) {

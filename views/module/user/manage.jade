@@ -7,10 +7,31 @@
 			.panel-collapse.collapse.in#credentials
 				.panel-body
 					form
-						.form-group(data-bind="foreach: roles")
-							label.radio-inline
-								input(type="radio", name="credent_radios", data-bind="attr: {value: ''+$data.cid}, checked: $parent.role")
-								span(data-bind="text: $data.name")
+						.form-group
+							.col-xs-12(data-bind="foreach: roles")
+								label.radio-inline
+									input(type="radio", name="credent_radios", data-bind="attr: {value: ''+$data.cid}, checked: $parent.role")
+									span(data-bind="text: $data.name")
+						//ko if: Number(role()) === 5
+						.form-group
+							.col-xs-12
+								.checkbox
+									label
+										input(type="checkbox")
+										| Региональный:&nbsp;
+										//ko foreach: newRegions
+										span.region
+											span(data-bind="text: $data.title_local")
+										// /ko
+										span.regionEdit(data-bind="click: regionSelect")
+											span.glyphicon.glyphicon-pencil
+											| Изменить
+								.checkbox
+									label
+										input(type="checkbox", disabled)
+										| Языковой
+
+						// /ko
 						//ko if: credentialsChanged()
 						.form-group
 							.col-xs-12

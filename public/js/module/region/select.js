@@ -12,6 +12,8 @@ define([
 	return Cliche.extend({
 		jade: jade,
 		options: {
+			min: 1,
+			max: 5,
 			selectedInit: []
 		},
 		create: function () {

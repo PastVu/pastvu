@@ -4,7 +4,7 @@
 		|  Выбор регионов
 	.offsetwrap
 		div Вводите имя региона непосредственно в поле выбора или найдите их вручную в дереве регионов ниже
-		div Возможно выбрать от 1 до 5 регионов, они не должны быть вложены друг в друга
+		div(data-bind="text: 'Возможно выбрать от ' + options.min + ' до ' + options.max + ' регионов, они не должны быть вложены друг в друга'")
 		.input-group.regionsgroup
 			span.input-group-addon Выбор:
 			input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
