@@ -30,6 +30,8 @@ var UserScheme = new mongoose.Schema({
 	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}],
 	ranks: [String],
 
+	mod_regions: [{type: Schema.Types.ObjectId, ref: 'Region'}],
+
 	//Profile
 	avatar: {type: String},
 	firstName: {type: String},

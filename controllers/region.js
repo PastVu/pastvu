@@ -381,7 +381,9 @@ function saveUserRegions(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+		itsOnline,
+		i,
+		j;
 
 	if (!iAm || !itsMe && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
@@ -391,6 +393,12 @@ function saveUserRegions(socket, data, cb) {
 	}
 	if (!data.regions.length || data.regions.length > 5) {
 		return cb({message: 'Вы можете выбрать от 1 до 5 регионов', error: true});
+	}
+	//Проверяем, что переданы номера регионов
+	for (i = data.regions.length; i--;) {
+		if (typeof data.regions[i] !== 'number' || data.regions[i] < 1) {
+			return cb({message: 'Passed in is invalid types of regions', error: true});
+		}
 	}
 
 	step(
@@ -408,14 +416,12 @@ function saveUserRegions(socket, data, cb) {
 			if (err || !user || !regions) {
 				return cb({message: err && err.message || msg.nouser, error: true});
 			}
-			if (!regions.length) {
+			if (regions.length !== data.regions) {
 				return cb({message: 'You want to save nonexistent regions', error: true});
 			}
 			var regionsHash = {},
 				regionsIds = [],
-				region,
-				i,
-				j;
+				region;
 
 			//Проверяем, что регионы не обладают родствеными связями
 			for (i = regions.length; i--;) {
@@ -457,6 +463,55 @@ function saveUserRegions(socket, data, cb) {
 			});
 		}
 	);
+}
+
+/**
+ * Сохраняет массив _id регионов в указанное поле юзера
+ */
+function setUserRegions(login, regionsCids, field, cb) {
+	var i,
+		j;
+
+	//Проверяем, что переданы номера регионов
+	for (i = regionsCids.length; i--;) {
+		if (typeof regionsCids[i] !== 'number' || regionsCids[i] < 1) {
+			return cb({message: 'Passed in is invalid types of regions', error: true});
+		}
+	}
+
+	getOrderedRegionList(regionsCids, {}, function (err, regions) {
+		if (err || !regions) {
+			return cb(err || {message: msg.nouser, error: true});
+		}
+		if (regions.length !== regionsCids) {
+			return cb({message: 'You want to save nonexistent regions', error: true});
+		}
+
+		var regionsHash = {},
+			regionsIds = [],
+			region,
+			$set = {};
+
+		//Проверяем, что регионы не обладают родственными связями
+		for (i = regions.length; i--;) {
+			region = regions[i];
+			regionsIds.unshift(region._id);
+			regionsHash[region.cid] = region;
+		}
+		for (i = regions.length; i--;) {
+			region = regions[i];
+			for (j = region.parents.length; j--;) {
+				if (regionsHash[region.parents[j]] !== undefined) {
+					return cb({message: 'Выбранные регионы не должны обладать родственными связями', error: true});
+				}
+			}
+		}
+
+		$set[field] = regionsIds;
+		User.update({login: login}, {$set: $set}, function (err, numberAffected, raw) {
+			cb(err);
+		});
+	});
 }
 
 module.exports.loadController = function (app, db, io) {
@@ -531,3 +586,4 @@ module.exports.getOrderedRegionList = getOrderedRegionList;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;
+module.exports.setUserRegions = setUserRegions;
