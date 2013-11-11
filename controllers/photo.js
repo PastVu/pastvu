@@ -606,8 +606,6 @@ function givePhotosPublic(iAm, data, cb) {
 	step(
 		function () {
 			var query = {},
-				regions,
-				i,
 				fieldsSelect = iAm ? compactFieldsId : compactFields;
 
 			if (filter.nogeo) {
@@ -688,11 +686,18 @@ function giveUserPhotos(iAm, data, cb) {
 				finishOrNewCommentsCount
 			);
 		} else {
-			if (filter) {
-				if (filter.nogeo) {
-					query.geo = null;
+			if (!filter) {
+				filter = {};
+			}
+
+			if (filter.nogeo) {
+				query.geo = null;
+			} else {
+				if (iAm) {
+					_.assign(query, _session.us[iAm.login].rquery);
 				}
 			}
+
 			step(
 				function () {
 					Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, this.parallel());
@@ -1192,7 +1197,7 @@ function convertPhotos(socket, data, cb) {
 
 	for (i = data.length; i--;) {
 		data[i].cid = Number(data[i].cid);
-		data[i].variants = _.intersection(data[i].variants, [ "a",  "d",  "h",  "m",  "q",  "s",  "x"]);
+		data[i].variants = _.intersection(data[i].variants, [ "a", "d", "h", "m", "q", "s", "x"]);
 		if (data[i].cid && data[i].variants.length) {
 			cids.push(data[i].cid);
 		}
