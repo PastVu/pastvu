@@ -61,9 +61,9 @@ define([
 					types: ko.observableArray([
 						{
 							id: 'osmosnimki',
-							desc: 'Osmosnimki',
+							desc: 'Kosmosnimki',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
+							obj: new L.TileLayer('http://{s}.tile.osm.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
 							maxZoom: 19,
 							limitZoom: 18,
 							maxAfter: 'google.scheme'
@@ -200,7 +200,7 @@ define([
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
-			this.selectLayer('yandex', 'scheme');
+			this.selectLayer('osm', 'osmosnimki');
 
 			Locations.subscribe(function (val) {
 				this.mapDefCenter = new L.LatLng(val.lat, val.lng);
