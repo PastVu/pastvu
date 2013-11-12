@@ -651,16 +651,20 @@ function givePhotosPublic(iAm, data, cb) {
 
 
 //Отдаем последние фотографии, ожидающие подтверждения
-function givePhotosForApprove(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user || user.role < 5) {
+function givePhotosForApprove(iAm, data, cb) {
+	var query = {ready: true};
+
+	if (!iAm || iAm.role < 5) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
+	if (iAm.role === 5) {
+		_.assign(query, _session.us[iAm.login].mod_rquery);
+	}
 
-	PhotoFresh.find({ready: true}, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
+	PhotoFresh.find(query, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
 }
 
 //Отдаем галерею пользователя в компактном виде
@@ -1597,7 +1601,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosForApprove', function (data) {
-			givePhotosForApprove(socket, data, function (err, photos) {
+			givePhotosForApprove(hs.session.user, data, function (err, photos) {
 				socket.emit('takePhotosForApprove', err ? {message: err.message, error: true} : {photos: photos});
 			});
 		});
