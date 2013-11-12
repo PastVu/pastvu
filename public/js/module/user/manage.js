@@ -20,12 +20,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.u_origin = storage.userImmediate(this.u.login()).origin;
+			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			if (this.auth.iAm.role() < 10) {
 				globalVM.router.navigateToUrl('/u/' + this.u.login());
 			}
 
-			this.role = ko.observable(String(this.u.role()));
+			this.role = ko.observable(String(this.u_origin.role));
 			this.roles = [
 				{cat: 'reg', name: 'Обычный пользователь'},
 				{cat: 'mod', name: 'Модератор'},
@@ -68,9 +69,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				},
 				owner: this
 			});
-			this.newRegions = ko.observableArray(this.u_origin.mod_regions);
+			this.regions = ko.observableArray(this.u_origin.mod_regions);
 			this.credentialsChanged = this.co.credentialsChanged = ko.computed(function () {
-				return Number(this.role()) !== this.u.role() || !_.isEqual(this.u_origin.mod_regions, this.newRegions());
+				return Number(this.role()) !== this.u.role() || !_.isEqual(this.u_origin.mod_regions, this.regions());
 			}, this);
 
 			this.ranks = ko.observableArray();
@@ -108,22 +109,32 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		saveCredentials: function (data, event) {
-			var regions, role = Number(this.role());
-			if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.newRegions())) {
-				regions = _.pluck(this.newRegions(), 'cid');
+			var regionsCids, role = Number(this.role());
+			if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.regions())) {
+				regionsCids = _.pluck(this.regions(), 'cid');
 			}
+
+			this.exe(true);
 			socket.once('saveUserCredentialsResult', function (data) {
 				var error = !data || data.error || !data.saved;
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					User.vm({mod_regions: regions}, this.u, true);
+					var regions = regionsCids ? this.regions() : [],
+						updatedProps = {role: role, mod_regions: regions};
+
+					_.assign(this.u_origin, updatedProps);
+					User.vm(updatedProps, this.u, true);
+
+					this.regions(regions); //Переприсваиваем, чтобы сработал computed
 				}
+				this.exe(false);
 			}.bind(this));
-			socket.emit('saveUserCredentials', {login: this.u.login(), role: role, regions: regions});
+			socket.emit('saveUserCredentials', {login: this.u.login(), role: role, regions: regionsCids});
 		},
 		cancelCredentials: function (data, event) {
-
+			this.role(String(this.u_origin.role));
+			this.regions(this.u_origin.mod_regions);
 		},
 		regionSelect: function () {
 			if (!this.regselectVM) {
@@ -134,7 +145,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 							options: {
 								min: 0,
 								max: 20,
-								selectedInit: this.newRegions()
+								selectedInit: this.regions()
 							},
 							modal: {
 								initWidth: '900px',
@@ -151,7 +162,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 										window.noty({text: 'Допускается выбирать до 20 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
 										return;
 									}
-									this.newRegions(regions);
+									this.regions(regions);
 									this.closeRegionSelect();
 								}.bind(this)},
 							callback: function (vm) {

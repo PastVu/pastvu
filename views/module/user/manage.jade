@@ -19,12 +19,12 @@
 									label
 										input(type="checkbox", value = '5', data-bind="checked: role")
 										| Региональный:&nbsp;
-										//ko if: !newRegions().length
+										//ko if: !regions().length
 										span.region
 											span.glyphicon.glyphicon-globe
 											|  Весь мир
 										// /ko
-										//ko foreach: newRegions
+										//ko foreach: regions
 										span.region
 											span(data-bind="text: $data.title_local")
 										// /ko
@@ -40,10 +40,10 @@
 						//ko if: credentialsChanged()
 						.form-group
 							.col-xs-12
-								button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}")
+								button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
 									span.glyphicon.glyphicon-ok
 									|  Сохранить полномочия
-								button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}")
+								button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
 									span.glyphicon.glyphicon-remove
 									|  Отмена
 						// /ko

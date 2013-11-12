@@ -196,8 +196,6 @@ function saveUserCredentials(socket, data, cb) {
 		itsOnline,
 		i;
 
-	console.log(data);
-
 	if (!iAm || iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
