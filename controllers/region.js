@@ -483,7 +483,7 @@ function setUserRegions(login, regionsCids, field, cb) {
 		if (err || !regions) {
 			return cb(err || {message: msg.nouser, error: true});
 		}
-		if (regions.length !== regionsCids) {
+		if (regions.length !== regionsCids.length) {
 			return cb({message: 'You want to save nonexistent regions', error: true});
 		}
 
@@ -492,12 +492,12 @@ function setUserRegions(login, regionsCids, field, cb) {
 			region,
 			$set = {};
 
-		//Проверяем, что регионы не обладают родственными связями
 		for (i = regions.length; i--;) {
 			region = regions[i];
 			regionsIds.unshift(region._id);
 			regionsHash[region.cid] = region;
 		}
+		//Проверяем, что регионы не обладают родственными связями
 		for (i = regions.length; i--;) {
 			region = regions[i];
 			for (j = region.parents.length; j--;) {

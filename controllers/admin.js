@@ -235,13 +235,13 @@ function saveUserCredentials(socket, data, cb) {
 			}
 			var existsRegions;
 
-			if (data.regions) {
+			if (data.role === 5 && data.regions) {
 				existsRegions = [];
 				user.mod_regions.forEach(function (item) {
 					existsRegions.push(item.cid);
 				});
 				if (!_.isEqual(data.regions, existsRegions)) {
-					regionController.setUserRegions(user, data.regions, 'mod_regions', function (err) {
+					regionController.setUserRegions(login, data.regions, 'mod_regions', function (err) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
@@ -265,7 +265,10 @@ function saveUserCredentials(socket, data, cb) {
 
 			function further() {
 				if (user.role !== data.role) {
-					user.role = data.role;
+					user.role = data.role || undefined;
+					if (data.role !== 5) {
+						user.mod_regions = undefined;
+					}
 				}
 
 				user.save(function (err, savedUser) {
@@ -312,7 +315,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('saveUserCredentials', function (data) {
-			saveUserCredentials(socket, data, function (err, resultData) {
+			saveUserCredentials(socket, data, function (resultData) {
 				socket.emit('saveUserCredentialsResult', resultData);
 			});
 		});

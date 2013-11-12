@@ -273,55 +273,68 @@ var checkWaitingSess = (function () {
 
 //Пупулируем регионы пользователя и строим запросы для них
 function popUserRegions(user, cb) {
-	user.populate({path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}, function (err, user) {
+	var paths = [
+		{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
+	];
+
+	if (user.role === 5) {
+		paths.push({path: 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}});
+	}
+	user.populate(paths, function (err, user) {
 		if (err) {
 			return cb(err);
 		}
-		var rquery,
-			$orobj,
-			levels,
-			level,
-			region,
-			i;
 
-		if (user.regions.length) {
-			rquery = {$or: []};
-			levels = {};
-
-			//Формируем запрос для регионов
-			for (i = user.regions.length; i--;) {
-				region = regionController.regionCacheHash[user.regions[i].cid];
-				level = 'r' + region.parents.length;
-
-				if (levels[level] === undefined) {
-					levels[level] = [];
-				}
-				levels[level].push(region.cid);
-			}
-
-			for (i in levels) {
-				if (levels.hasOwnProperty(i)) {
-					level = levels[i];
-					$orobj = {};
-					if (level.length === 1) {
-						$orobj[i] = level[0];
-					} else if (level.length > 1) {
-						$orobj[i] = {$in: level};
-					}
-					rquery.$or.push($orobj);
-				}
-			}
-
-			if (rquery.$or.length === 1) {
-				rquery = rquery.$or[0];
-			}
-			//console.log(JSON.stringify(rquery));
-			if (us[user.login]) {
-				us[user.login].rquery = rquery;
-			}
+		if (us[user.login]) {
+			us[user.login].rquery = buildQuery(user.regions);
+			us[user.login].mod_rquery = buildQuery(user.mod_regions);
 		}
 
-		cb(null, rquery);
+		function buildQuery(regions) {
+			var rquery,
+				$orobj,
+				levels,
+				level,
+				region,
+				i;
+
+			if (regions &&  regions.length) {
+				rquery = {$or: []};
+				levels = {};
+
+				//Формируем запрос для регионов
+				for (i = regions.length; i--;) {
+					region = regionController.regionCacheHash[regions[i].cid];
+					level = 'r' + region.parents.length;
+
+					if (levels[level] === undefined) {
+						levels[level] = [];
+					}
+					levels[level].push(region.cid);
+				}
+
+				for (i in levels) {
+					if (levels.hasOwnProperty(i)) {
+						level = levels[i];
+						$orobj = {};
+						if (level.length === 1) {
+							$orobj[i] = level[0];
+						} else if (level.length > 1) {
+							$orobj[i] = {$in: level};
+						}
+						rquery.$or.push($orobj);
+					}
+				}
+
+				if (rquery.$or.length === 1) {
+					rquery = rquery.$or[0];
+				}
+				//console.log(JSON.stringify(rquery));
+			}
+			return rquery;
+		}
+
+		cb(null);
 	});
 }
 //Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты

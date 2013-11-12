@@ -25,13 +25,49 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				globalVM.router.navigateToUrl('/u/' + this.u.login());
 			}
 
-			this.role = ko.observable(this.u.role());
+			this.role = ko.observable(String(this.u.role()));
 			this.roles = [
-				{cid: 0, name: 'Обычный пользователь'},
-				{cid: 5, name: 'Модератор'},
-				{cid: 10, name: 'Администратор'},
-				{cid: 11, name: 'Суперадминистратор'}
+				{cat: 'reg', name: 'Обычный пользователь'},
+				{cat: 'mod', name: 'Модератор'},
+				{cat: 'adm', name: 'Администратор'},
+				{cat: 'sadm', name: 'Суперадминистратор'}
 			];
+			this.roleCategory = ko.computed({
+				read: function () {
+					switch (Number(this.role())) {
+					case 4:
+					case 5:
+						return 'mod';
+					case 10:
+						return 'adm';
+					case 11:
+						return 'sadm';
+					case 0:
+						return 'reg';
+					default:
+						return 'reg';
+					}
+				},
+				write: function (value) {
+					switch (value) {
+					case 'mod':
+						this.role('5');
+						break;
+					case 'adm':
+						this.role('10');
+						break;
+					case 'sadm':
+						this.role('11');
+						break;
+					case 'reg':
+						this.role('0');
+						break;
+					default:
+						this.role('0');
+					}
+				},
+				owner: this
+			});
 			this.newRegions = ko.observableArray(this.u_origin.mod_regions);
 			this.credentialsChanged = this.co.credentialsChanged = ko.computed(function () {
 				return Number(this.role()) !== this.u.role() || !_.isEqual(this.u_origin.mod_regions, this.newRegions());
@@ -72,8 +108,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		saveCredentials: function (data, event) {
-			var regions;
-			if (!_.isEqual(this.u_origin.mod_regions, this.newRegions())) {
+			var regions, role = Number(this.role());
+			if (role === 5 && !_.isEqual(this.u_origin.mod_regions, this.newRegions())) {
 				regions = _.pluck(this.newRegions(), 'cid');
 			}
 			socket.once('saveUserCredentialsResult', function (data) {
@@ -84,7 +120,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					User.vm({mod_regions: regions}, this.u, true);
 				}
 			}.bind(this));
-			socket.emit('saveUserCredentials', {login: this.u.login(), role: Number(this.role()), regions: regions});
+			socket.emit('saveUserCredentials', {login: this.u.login(), role: role, regions: regions});
 		},
 		cancelCredentials: function (data, event) {
 
