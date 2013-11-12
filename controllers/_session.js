@@ -284,14 +284,24 @@ function popUserRegions(user, cb) {
 		if (err) {
 			return cb(err);
 		}
+		var regionsData,
+			usObj = us[user.login];
 
-		if (us[user.login]) {
-			us[user.login].rquery = buildQuery(user.regions);
-			us[user.login].mod_rquery = buildQuery(user.mod_regions);
+		if (usObj) {
+			regionsData = buildQuery(user.regions);
+			usObj.rquery = regionsData.rquery;
+			usObj.rhash = regionsData.rhash;
+
+			if (user.role === 5) {
+				regionsData = buildQuery(user.mod_regions);
+				usObj.mod_rquery = regionsData.rquery;
+				usObj.mod_rhash = regionsData.rhash;
+			}
 		}
 
 		function buildQuery(regions) {
-			var rquery,
+			var rquery = {},
+				rhash = {},
 				$orobj,
 				levels,
 				level,
@@ -299,12 +309,13 @@ function popUserRegions(user, cb) {
 				i;
 
 			if (regions &&  regions.length) {
-				rquery = {$or: []};
+				rquery.$or = [];
 				levels = {};
 
 				//Формируем запрос для регионов
 				for (i = regions.length; i--;) {
 					region = regionController.regionCacheHash[regions[i].cid];
+					rhash[region.cid] = region;
 					level = 'r' + region.parents.length;
 
 					if (levels[level] === undefined) {
@@ -331,7 +342,7 @@ function popUserRegions(user, cb) {
 				}
 				//console.log(JSON.stringify(rquery));
 			}
-			return rquery;
+			return {rquery: rquery, rhash: rhash};
 		}
 
 		cb(null);
