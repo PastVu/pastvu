@@ -10,6 +10,56 @@ var FragmentSchema = new Schema({
 		w: {type: Number}, //Width
 		h: {type: Number}  //Height
 	}),
+	PhotoNewSchema = {
+		cid: {type: Number, index: { unique: true }},
+		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
+
+		file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
+
+		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
+		adate: {type: Date, index: true}, // Время активации
+		type: {type: String}, // like 'image/jpeg'
+		format: {type: String}, // like 'JPEG'
+		sign: {type: String},
+		size: {type: Number},
+		w: {type: Number}, //Оригинальная ширина
+		h: {type: Number}, //Оригинальная высота
+		ws: {type: Number}, //Стандартная ширина
+		hs: {type: Number}, //Стандартная высота
+
+		geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
+
+		//Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
+		//http://docs.mongodb.org/manual/faq/indexes/#can-i-use-a-multi-key-index-to-support-a-query-for-a-whole-array
+		//Поэтому делаем избыточные поля на каждый уровень региона, со sparse индексом
+		r0: {type: Number, sparse: true},
+		r1: {type: Number, sparse: true},
+		r2: {type: Number, sparse: true},
+		r3: {type: Number, sparse: true},
+		r4: {type: Number, sparse: true},
+
+		s: {type: Number}, //Статус фотографии {0-новая, 1-готовая, 5-публичная, 7-деактивированная, 9-удаленная}
+
+		dir: {type: String, 'default': ''},
+		title: {type: String, 'default': ''},
+		year: {type: Number, 'default': 2000},
+		year2: {type: Number},
+		address: {type: String},
+		desc: {type: String},
+		source: {type: String},
+		author: {type: String},
+
+		conv: {type: Boolean}, //Конвертируется
+		convqueue: {type: Boolean}, //В очереди на конвертацию
+
+		vdcount: {type: Number, index: true}, //Кол-во просмотров за день
+		vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
+		vcount: {type: Number, index: true}, //Кол-во просмотров всего
+		ccount: {type: Number, index: true}, //Кол-во комментариев
+		frags: [FragmentSchema], //Фрагменты с комментариями
+
+		nocomments: {type: Boolean} //Запретить комментирование
+	},
 	commonStructure = {
 		cid: {type: Number, index: { unique: true }},
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
