@@ -44,19 +44,42 @@ var auth = require('./auth.js'),
 	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	photoPermissions = {
+		canModerate: function (photo, user) {
+			var rhash,
+				photoRegion,
+				i;
+
+			//Если у пользователя роль модератора регионов, смотрим его регионы,
+			//и если фотография принадлежит одному из них, значит пользователь может её модерировать
+			if (user && user.role === 5) {
+				rhash = _session.us[user.login].mod_rhash;
+				for (i = 0; i < 5; i++) {
+					photoRegion = photo['r' + i];
+					if (photoRegion && rhash[photoRegion] !== undefined) {
+						return true;
+					}
+				}
+			}
+			return false;
+		},
 		getCan: function (photo, user) {
 			var can = {
-				edit: false,
-				disable: false,
-				remove: false,
-				approve: false,
-				convert: false
-			};
+					edit: false,
+					disable: false,
+					remove: false,
+					approve: false,
+					convert: false
+				},
+				ownPhoto,
+				isModerator;
 
 			if (user) {
-				can.edit = user.role > 4 || photo.user && photo.user.equals(user._id);
-				can.remove = user.role > 4 || photo.fresh && photo.user && photo.user.equals(user._id); //Пока фото новое, её может удалить и владелец
-				if (user.role > 4) {
+				ownPhoto = photo.user && photo.user.equals(user._id);
+				isModerator = photoPermissions.canModerate(photo, user);
+
+				can.edit = isModerator || user.role > 5 || ownPhoto;
+				can.remove = isModerator || user.role > 5 || photo.fresh && ownPhoto; //Пока фото новое, её может удалить и владелец
+				if (isModerator || user.role > 5) {
 					can.disable = true;
 					if (photo.fresh) {
 						can.approve = true;
@@ -69,8 +92,11 @@ var auth = require('./auth.js'),
 			return can;
 		},
 		checkType: function (type, photo, user) {
+			var ownPhoto = photo.user && photo.user.equals(user._id),
+				isModerator = photoPermissions.canModerate(photo, user);
+
 			if (type === 'fresh' || type === 'dis') {
-				return user.role > 4 || photo.user && photo.user.equals(user._id);
+				return isModerator || user.role > 5 || ownPhoto;
 			} else if (type === 'del') {
 				return user.role > 9;
 			}
