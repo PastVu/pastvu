@@ -322,7 +322,7 @@ module.exports.getBounds = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $geoWithin: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {
@@ -377,7 +377,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $geoWithin: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {

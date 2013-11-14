@@ -7,6 +7,7 @@ var auth = require('./auth.js'),
 	UserCommentsView,
 	UserSelfPublishedPhotos,
 	Photo,
+	PhotoMap,
 	PhotoFresh,
 	PhotoDis,
 	PhotoDel,
@@ -1168,11 +1169,11 @@ function getBounds(data, cb) {
 				}
 
 				while (i--) {
-					criteria = {geo: { "$within": {"$box": data.bounds[i]} }};
+					criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
 					if (year) {
 						criteria.year = yearCriteria;
 					}
-					Photo.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
+					PhotoMap.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
 				}
 			},
 			function cursors(err) {
@@ -1188,13 +1189,12 @@ function getBounds(data, cb) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				var allPhotos = photos,
-					i = arguments.length;
+				var i = arguments.length;
 
 				while (i > 2) {
-					allPhotos.push.apply(allPhotos, arguments[--i]);
+					photos.push.apply(photos, arguments[--i]);
 				}
-				res(err, allPhotos);
+				res(err, photos);
 			}
 		);
 	}
@@ -1535,6 +1535,7 @@ module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	User = db.model('User');
 	Photo = db.model('Photo');
+	PhotoMap = db.model('PhotoMap');
 	PhotoFresh = db.model('PhotoFresh');
 	PhotoDis = db.model('PhotoDisabled');
 	PhotoDel = db.model('PhotoDel');

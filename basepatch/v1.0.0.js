@@ -12,6 +12,12 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now(),
 			countBegin = db.users_comments_view.count();
 
+		//Заполняем новую коллекцию для карты публичными фотографиями
+		print('Filling photos_map with ' + db.photos.count() + ' public photos');
+		db.photos.find({}, {cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).forEach(function (photo) {
+			db.photos_map.insert(photo);
+		});
+
 		//Сливаем все фотографии с разными статусами в одну коллекцию
 		print('Updating ' + db.photos.count() + ' public photos for state 5');
 		db.photos.update({}, {$set: {s: 5}}, {multi: true});
