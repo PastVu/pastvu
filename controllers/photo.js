@@ -36,7 +36,8 @@ var auth = require('./auth.js'),
 	commentController = require('./comment.js'),
 	msg = {
 		deny: 'You do not have permission for this action',
-		notExists: 'Requested photo does not exist'
+		notExists: 'Requested photo does not exist',
+		anotherStatus: 'Фотография уже в другом статусе, обновите страницу'
 	},
 	dummyFn = function () {
 	},
@@ -181,7 +182,7 @@ function createPhotos(socket, data, cb) {
 			for (i = 0; i < data.length; i++) {
 				item = data[i];
 
-				photo = new PhotoFresh({
+				photo = new Photo({
 					cid: next + i,
 					user: user._id,
 					file: item.fullfile,
@@ -189,7 +190,9 @@ function createPhotos(socket, data, cb) {
 					type: item.type,
 					size: item.size,
 					geo: undefined,
+					s: 0,
 					title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
+					frags: undefined,
 					convqueue: true
 					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
 					//dir: dirs[_.random(0, dirs.length - 1)],
@@ -198,26 +201,6 @@ function createPhotos(socket, data, cb) {
 
 				result.push({cid: photo.cid});
 				photo.save(this.parallel());
-			}
-		},
-		function createInSort(err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			var photoSort,
-				item,
-				i;
-
-			for (i = 0; i < data.length; i++) {
-				item = data[i];
-
-				photoSort = new PhotoSort({
-					photo: item.photoObj._id,
-					user: user._id,
-					stamp: new Date(item.photoObj.ldate.getTime() + shift10y), //Прибавляем 10 лет новым, чтобы они были всегда в начале сортировки
-					state: 1
-				});
-				photoSort.save(this.parallel());
 			}
 		},
 		function (err) {
@@ -382,42 +365,36 @@ function approvePhoto(iAm, cid, cb) {
 		return cb({message: msg.notExists, error: true});
 	}
 
-	step(
-		function () {
-			PhotoFresh.findOne({cid: cid}, {}, {lean: true}, this);
-		},
-		function (err, photoFresh) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			if (!photoFresh) {
-				return cb({message: msg.notExists, error: true});
-			}
-			delete photoFresh.ready;
+	Photo.findOne({cid: cid}, function (err, photo) {
+		if (err) {
+			return cb({message: err.message, error: true});
+		}
+		if (!photo) {
+			return cb({message: msg.notExists, error: true});
+		}
+		if (photo.s !== 0 && photo.s !== 1) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
 
-			var photo = new Photo(photoFresh);
-
-			photo.adate = new Date();
-			photo.frags = undefined;
-			if (!Utils.geoCheck(photoFresh.geo)) {
-				photo.geo = undefined;
-			}
-
-			photo.save(this.parallel());
-			PhotoSort.update({photo: photo._id}, {$set: {state: 5, stamp: photo.adate}}, {upsert: false}, this.parallel());
-		},
-		function (err, photoSaved) {
+		photo.adate = new Date();
+		photo.save(function (err, photoSaved) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
 			cb({message: 'Photo approved successfully'});
 
 			if (Utils.geoCheck(photoSaved.geo)) {
-				PhotoCluster.clusterPhoto(photoSaved);
+				PhotoCluster.clusterPhoto(photoSaved); 	//Отправляем на кластеризацию
+				new PhotoMap({
+					cid: photoSaved.cid,
+					geo: photoSaved.geo,
+					file: photoSaved.file,
+					dir: photoSaved.dir,
+					title: photoSaved.title,
+					year: photoSaved.year,
+					year2: photoSaved.year2
+				}).save();
 			}
-
-			//Удаляем из коллекции новых
-			PhotoFresh.remove({cid: cid}).exec();
 
 			//Обновляем количество у автора фотографии
 			var user = _session.getOnline(null, photoSaved.user);
@@ -431,8 +408,8 @@ function approvePhoto(iAm, cid, cb) {
 
 			//Подписываем автора фотографии на неё
 			subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
-		}
-	);
+		});
+	});
 }
 
 //Активация/деактивация фото
@@ -679,7 +656,7 @@ function givePhotosPublic(iAm, data, cb) {
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
-	var query = {ready: true};
+	var query = {s: 1};
 
 	if (!iAm || iAm.role < 5) {
 		return cb({message: msg.deny, error: true});
@@ -691,7 +668,7 @@ function givePhotosForApprove(iAm, data, cb) {
 		_.assign(query, _session.us[iAm.login].mod_rquery);
 	}
 
-	PhotoFresh.find(query, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
+	Photo.find(query, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
 }
 
 //Отдаем галерею пользователя в компактном виде
@@ -911,14 +888,14 @@ function givePhotosFresh(socket, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			var criteria = {};
+			var criteria = {s: 0};
 			if (userid) {
 				criteria.user = userid;
 			}
 			if (data.after) {
 				criteria.ldate = {$gt: new Date(data.after)};
 			}
-			PhotoFresh.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
+			Photo.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
 		},
 		Utils.cursorExtract,
 		function (err, photos) {
@@ -1083,11 +1060,14 @@ function readyPhoto(socket, data, cb) {
 	}
 	step(
 		function () {
-			PhotoFresh.findOne({cid: cid}, this);
+			Photo.findOne({cid: cid}, this);
 		},
 		function (err, photo) {
 			if (err || !photo) {
 				return cb({message: err && err.message || msg.notExists, error: true});
+			}
+			if (photo.s !== 0) {
+				return cb({message: msg.anotherStatus, error: true});
 			}
 			if (!photoPermissions.getCan(photo, user).edit) {
 				return cb({message: msg.deny, error: true});
@@ -1114,7 +1094,7 @@ function readyPhoto(socket, data, cb) {
 			}
 
 			function justSetReady() {
-				photo.ready = true;
+				photo.s = 1;
 				photo.save(function finish(err) {
 					if (err) {
 						return cb({message: err && err.message, error: true});
@@ -1235,36 +1215,18 @@ function convertPhotos(socket, data, cb) {
 	if (!cids.length) {
 		return cb({message: 'Bad params', error: true});
 	}
-	step(
-		function () {
-			Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this);
-		},
-		function (err, count) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			//Если не все нашлись в публичных, пробуем обновить в остальных статусах
-			if (count !== cids.length) {
-				PhotoFresh.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-				PhotoDis.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-				PhotoDel.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, this.parallel());
-			} else {
-				this();
-			}
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			PhotoConverter.addPhotos(data, this);
-		},
-		function (err, addResult) {
+
+	Photo.update({cid: {$in: cids}}, {$set: {convqueue: true}}, {multi: true}, function (err) {
+		if (err) {
+			return cb({message: err && err.message, error: true});
+		}
+		PhotoConverter.addPhotos(data, function (err, addResult) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
 			cb(addResult);
-		}
-	);
+		});
+	});
 }
 
 //Отправляет все фото выбранных вариантов на конвертацию
@@ -1536,10 +1498,6 @@ module.exports.loadController = function (app, db, io) {
 	User = db.model('User');
 	Photo = db.model('Photo');
 	PhotoMap = db.model('PhotoMap');
-	PhotoFresh = db.model('PhotoFresh');
-	PhotoDis = db.model('PhotoDisabled');
-	PhotoDel = db.model('PhotoDel');
-	PhotoSort = db.model('PhotoSort');
 	Counter = db.model('Counter');
 	Comment = db.model('Comment');
 	UserSubscr = db.model('UserSubscr');

@@ -17,7 +17,7 @@ var FragmentSchema = new Schema({
 		file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
 
 		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
-		adate: {type: Date, index: true}, // Время активации
+		adate: {type: Date, sparse: true}, // Время активации
 		type: {type: String}, // like 'image/jpeg'
 		format: {type: String}, // like 'JPEG'
 		sign: {type: String},
