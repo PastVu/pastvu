@@ -58,7 +58,7 @@ function subscribeUser(user, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, {_id: 1, user: 1}, user, true, this);
+				photoController.findPhoto({cid: cid}, {_id: 1, user: 1}, user, this);
 			}
 		},
 		function (err, obj) {

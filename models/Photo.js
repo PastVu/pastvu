@@ -121,7 +121,7 @@ var FragmentSchema = new Schema({
 	);
 
 PhotoNewSchema.virtual('fresh').get(function () {
-	return this.s === 0;
+	return this.s === 0 || this.s === 1;
 });
 PhotoNewSchema.virtual('ready').get(function () {
 	return this.s === 1;

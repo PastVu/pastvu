@@ -71,15 +71,15 @@ var auth = require('./auth.js'),
 					convert: false
 				},
 				ownPhoto,
-				isModerator;
+				canModerate;
 
 			if (user) {
 				ownPhoto = photo.user && photo.user.equals(user._id);
-				isModerator = photoPermissions.canModerate(photo, user);
+				canModerate = user.role > 5 || photoPermissions.canModerate(photo, user);
 
-				can.edit = isModerator || user.role > 5 || ownPhoto;
-				can.remove = isModerator || user.role > 5 || photo.fresh && ownPhoto; //Пока фото новое, её может удалить и владелец
-				if (isModerator || user.role > 5) {
+				can.edit = canModerate || ownPhoto;
+				can.remove = canModerate || photo.fresh && ownPhoto; //Пока фото новое, её может удалить и владелец
+				if (canModerate) {
 					can.disable = true;
 					if (photo.fresh) {
 						can.approve = true;
@@ -91,15 +91,17 @@ var auth = require('./auth.js'),
 			}
 			return can;
 		},
-		checkType: function (type, photo, user) {
-			var ownPhoto = photo.user && photo.user.equals(user._id),
-				isModerator = photoPermissions.canModerate(photo, user);
-
-			if (type === 'fresh' || type === 'dis') {
-				return isModerator || user.role > 5 || ownPhoto;
-			} else if (type === 'del') {
-				return user.role > 9;
+		canSee: function (photo, user) {
+			if (photo.s === 5) {
+				return true;
+			} else if (user && photo.user) {
+				if (photo.s === 9) {
+					return user.role > 9;
+				} else {
+					return photo.user.equals(user._id) || photoPermissions.canModerate(photo, user);
+				}
 			}
+
 			return false;
 		}
 	};
@@ -319,7 +321,7 @@ function removePhoto(socket, cid, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {}, iAm, true, function (err, photo) {
+	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
 		if (err || !photo) {
 			return cb({message: err && err.message || 'No such photo', error: true});
 		}
@@ -472,91 +474,79 @@ function givePhoto(socket, data, cb) {
 	}
 
 	//Инкрементируем кол-во просмотров только у публичных фото
+	//TODO: Сделать инкрементацию только у публичных!
 	Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
 		if (err) {
 			return cb({message: err && err.message, error: true});
 		}
 
-		//Если фото не найдено и пользователь залогинен, то ищем в новых, неактивных и удаленных
-		if (!photo && iAm) {
-			findPhotoNotPublic({cid: cid}, fieldSelect, iAm, function (err, photo) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				process(photo, data.checkCan);
-			});
-		} else {
-			process(photo, data.checkCan);
-		}
-	});
-
-	function process(photo, checkCan) {
-		if (!photo) {
+		if (!photo || !photoPermissions.canSee(photo, iAm)) {
 			return cb({message: msg.notExists, error: true});
-		}
-		var can;
+		} else {
+			var can;
 
-		if (checkCan) {
-			//Права надо проверять до популяции пользователя
-			can = photoPermissions.getCan(photo, iAm);
-		}
+			if (data.checkCan) {
+				//Права надо проверять до популяции пользователя
+				can = photoPermissions.getCan(photo, iAm);
+			}
 
-		step(
-			function () {
-				var user = _session.getOnline(null, photo.user),
-					paralellUser = this.parallel();
+			step(
+				function () {
+					var user = _session.getOnline(null, photo.user),
+						paralellUser = this.parallel();
 
-				if (user) {
-					photo = photo.toObject({getters: true});
-					photo.user = {
-						login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
-					};
-					paralellUser(null, photo);
-				} else {
-					photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
-						paralellUser(err, photo && photo.toObject({getters: true}));
-					});
-				}
-				regionController.getObjRegionList(photo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, this.parallel());
+					if (user) {
+						photo = photo.toObject({getters: true});
+						photo.user = {
+							login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
+						};
+						paralellUser(null, photo);
+					} else {
+						photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
+							paralellUser(err, photo && photo.toObject({getters: true}));
+						});
+					}
+					regionController.getObjRegionList(photo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, this.parallel());
 
-				if (iAm) {
-					UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
-				}
-			},
-			function (err, photo, regions, subscr) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
+					if (iAm) {
+						UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
+					}
+				},
+				function (err, photo, regions, subscr) {
+					if (err) {
+						return cb({message: err && err.message, error: true});
+					}
 
-				if (subscr) {
-					photo.subscr = true;
-				}
+					if (subscr) {
+						photo.subscr = true;
+					}
 
-				for (var i = 0; i < 5; i++) {
-					delete photo['r' + i];
-				}
-				if (regions.length) {
-					photo.regions = regions;
-				}
+					for (var i = 0; i < 5; i++) {
+						delete photo['r' + i];
+					}
+					if (regions.length) {
+						photo.regions = regions;
+					}
 
-				if (!iAm || !photo.ccount) {
-					delete photo._id;
-					cb({photo: photo, can: can});
-				} else {
-					commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
-						if (err) {
-							return cb({message: err && err.message, error: true});
-						}
-						if (countsHash[photo._id]) {
-							photo.ccount_new = countsHash[photo._id];
-						}
+					if (!iAm || !photo.ccount) {
 						delete photo._id;
 						cb({photo: photo, can: can});
-					});
+					} else {
+						commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
+							if (err) {
+								return cb({message: err && err.message, error: true});
+							}
+							if (countsHash[photo._id]) {
+								photo.ccount_new = countsHash[photo._id];
+							}
+							delete photo._id;
+							cb({photo: photo, can: can});
+						});
+					}
 				}
-			}
-		);
-	}
+			);
+		}
+	});
 }
 
 //Отдаем последние публичные фотографии на главной для анонимов в memoized
@@ -734,7 +724,7 @@ function giveUserPhotosAround(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, user, true, function (err, photo) {
+	findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, user, function (err, photo) {
 		if (err || !photo || !photo.user) {
 			return cb({message: msg.notExists, error: true});
 		}
@@ -927,7 +917,7 @@ function savePhoto(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {frags: 0}, user, true, function (err, photo) {
+	findPhoto({cid: cid}, {frags: 0}, user, function (err, photo) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
@@ -1224,81 +1214,22 @@ function convertPhotosAll(socket, data, cb) {
 	});
 }
 
-
-//Последовательно ищем фотографию в новых, неактивных и удаленных, если у пользователя есть на них права
-function findPhotoNotPublic(query, fieldSelect, user, cb) {
-	if (!user) {
-		cb({message: 'No such photo for this user'});
-	}
-
-	async.series(
-		[
-			function (callback) {
-				PhotoFresh.findOne(query, fieldSelect, function (err, photo) {
-					if (err) {
-						return cb(err);
-					}
-
-					if (photo && photoPermissions.checkType('fresh', photo, user)) {
-						photo = {photo: photo};
-					} else {
-						photo = null;
-					}
-					callback(photo);
-				});
-			},
-			function (callback) {
-				PhotoDis.findOne(query, fieldSelect, function (err, photo) {
-					if (err) {
-						return cb(err);
-					}
-
-					if (photo || !user.role || user.role < 10) {
-						//Для не админов этот шаг последний, нашлось фото или нет
-						photo = {photo: photo && photoPermissions.checkType('dis', photo, user) ? photo : null};
-					} else {
-						photo = null; //Если фото не найденно и юзер админ - ищем в удаленных
-					}
-					callback(photo);
-				});
-			},
-			function (callback) {
-				PhotoDel.findOne(query, fieldSelect, function (err, photo) {
-					if (err) {
-						return cb(err);
-					}
-					if (photo && !photoPermissions.checkType('del', photo, user)) {
-						photo = null;
-					}
-					callback({photo: photo});
-				});
-			}
-		],
-		function (obj) {
-			cb(null, obj.photo);
-		}
-	);
-}
-
 /**
  * Находим фотографию
  * @param query
  * @param fieldSelect Выбор полей
  * @param user Пользователь сессии
- * @param noPublicToo Искать ли в непубличных при наличии прав
  * @param cb
  */
-function findPhoto(query, fieldSelect, user, noPublicToo, cb) {
+function findPhoto(query, fieldSelect, user, cb) {
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
-		if (!photo && noPublicToo && user) {
-			findPhotoNotPublic(query, fieldSelect, user, function (err, photo) {
-				cb(err, photo);
-			});
-		} else {
+		if (photoPermissions.canSee(photo, user)) {
 			cb(null, photo);
+		} else {
+			cb(null, null);
 		}
 	});
 }
@@ -1632,5 +1563,4 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
-module.exports.findPhotoNotPublic = findPhotoNotPublic;
 module.exports.findPhotosAll = findPhotosAll;

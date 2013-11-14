@@ -463,7 +463,7 @@ function conveyerControl() {
 			async.waterfall(
 				[
 					function find(callback) {
-						photoController.findPhoto({cid: photoConv.cid}, {cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}, {role: 10}, true, callback);
+						photoController.findPhoto({cid: photoConv.cid}, {cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}, {role: 10}, callback);
 					},
 					function getUser(photo, callback) {
 						if (!photo) {
