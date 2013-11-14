@@ -234,12 +234,12 @@ function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 				User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
 			}
 
-			//Если у фото есть координаты, значит надо провести действие с кластером
+			//Если у фото есть координаты, значит надо провести действие с картой
 			if (Utils.geoCheck(photo.geo)) {
 				if (makePublic) {
-					PhotoCluster.clusterPhoto(photo, null, null, this.parallel());
+					photoToMap(photo, null, null, this.parallel());
 				} else {
-					PhotoCluster.declusterPhoto(photo, this.parallel());
+					photoFromMap(photo, this.parallel());
 				}
 			}
 		},
@@ -358,6 +358,51 @@ function removePhoto(socket, cid, cb) {
 	});
 }
 
+//Добавляет фото на карту
+function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
+	step(
+		function () {
+			PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld, this.parallel()); 	//Отправляем на кластеризацию
+			PhotoMap.update(
+				{cid: photo.cid},
+				{
+					$setOnInsert: {cid: photo.cid},
+					$set: {
+						cid: photo.cid,
+						geo: photo.geo,
+						file: photo.file,
+						dir: photo.dir,
+						title: photo.title,
+						year: photo.year,
+						year2: photo.year2
+					}
+				},
+				{upsert: true},
+				this.parallel()
+			);
+		},
+		function (err) {
+			if (cb) {
+				cb(err);
+			}
+		}
+	);
+}
+//Удаляет фото с карты
+function photoFromMap(photo, cb) {
+	step(
+		function () {
+			PhotoCluster.declusterPhoto(photo, this.parallel());
+			PhotoMap.remove({cid: photo.cid}, this.parallel());
+		},
+		function (err) {
+			if (cb) {
+				cb(err);
+			}
+		}
+	);
+}
+
 //Подтверждаем новую фотографию
 function approvePhoto(iAm, cid, cb) {
 	cid = Number(cid);
@@ -384,16 +429,7 @@ function approvePhoto(iAm, cid, cb) {
 			cb({message: 'Photo approved successfully'});
 
 			if (Utils.geoCheck(photoSaved.geo)) {
-				PhotoCluster.clusterPhoto(photoSaved); 	//Отправляем на кластеризацию
-				new PhotoMap({
-					cid: photoSaved.cid,
-					geo: photoSaved.geo,
-					file: photoSaved.file,
-					dir: photoSaved.dir,
-					title: photoSaved.title,
-					year: photoSaved.year,
-					year2: photoSaved.year2
-				}).save();
+				photoToMap(photoSaved);
 			}
 
 			//Обновляем количество у автора фотографии
@@ -428,57 +464,31 @@ function activateDeactivate(socket, data, cb) {
 		return cb({message: msg.notExists, error: true});
 	}
 
-	step(
-		function () {
-			if (makeDisabled) {
-				Photo.collection.findOne({cid: cid}, {__v: 0}, this);
-			} else {
-				PhotoDis.collection.findOne({cid: cid}, {__v: 0}, this);
-			}
-		},
-		function createInNewModel(err, p) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			if (!p) {
-				return cb({message: msg.notExists, error: true});
-			}
-			var newPhoto;
-
-			if (makeDisabled) {
-				newPhoto = new PhotoDis(p);
-			} else {
-				newPhoto = new Photo(p);
-			}
-
-			if (!Array.isArray(p.frags) || !p.frags.length) {
-				newPhoto.frags = undefined;
-			}
-			if (!Utils.geoCheck(p.geo)) {
-				newPhoto.geo = undefined;
-			}
-
-			newPhoto.save(this.parallel());
-		},
-		function removeFromOldModel(err, photoSaved) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			if (makeDisabled) {
-				Photo.remove({cid: cid}).exec(this.parallel());
-			} else {
-				PhotoDis.remove({cid: cid}).exec(this.parallel());
-			}
-			PhotoSort.update({photo: photoSaved._id}, {$set: {state: makeDisabled ? 7 : 5}}, {upsert: false}, this.parallel());
-			changePublicPhotoExternality(socket, photoSaved, user, !makeDisabled, this.parallel());
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			cb({disabled: makeDisabled});
+	Photo.findOne({cid: cid}, function createInNewModel(err, photo) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
-	);
+		if (!photo) {
+			return cb({message: msg.notExists, error: true});
+		}
+		if (makeDisabled && photo.s === 7 || !makeDisabled && photo.s === 5) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
+
+		photo.s = makeDisabled ? 7 : 5;
+		photo.save(function (err, photoSaved) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+
+			changePublicPhotoExternality(socket, photoSaved, user, !makeDisabled, function (err) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				cb({disabled: makeDisabled});
+			});
+		});
+	});
 }
 
 //Отдаем фотографию для её страницы
@@ -1031,7 +1041,7 @@ function savePhoto(socket, data, cb) {
 				if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
 					(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
 					(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-					PhotoCluster.clusterPhoto(photoSaved, oldGeo, photoOldObj.year, finish);
+					photoToMap(photo, oldGeo, photoOldObj.year, finish);
 				} else {
 					finish();
 				}
@@ -1469,20 +1479,13 @@ var planResetDisplayStat = (function () {
 		if (needWeek) {
 			setQuery.vwcount = 0;
 		}
-		step(
-			function () {
-				Photo.update({}, {$set: setQuery}, {multi: true}, this.parallel());
-				PhotoDis.update({}, {$set: setQuery}, {multi: true}, this.parallel());
-				PhotoDel.update({}, {$set: setQuery}, {multi: true}, this.parallel());
-			},
-			function (err, count, countDis, countDel) {
-				planResetDisplayStat();
-				if (err) {
-					return logger.error(err);
-				}
-				logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s public, %s disabled and %s deleted photos', count, countDis, countDel);
+		Photo.update({s: {$in: [5, 7, 9]}}, {$set: setQuery}, {multi: true}, function (err, count) {
+			planResetDisplayStat();
+			if (err) {
+				return logger.error(err);
 			}
-		);
+			logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s photos', count);
+		});
 	}
 
 	return function () {
