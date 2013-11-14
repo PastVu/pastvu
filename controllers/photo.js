@@ -39,8 +39,6 @@ var auth = require('./auth.js'),
 		notExists: 'Requested photo does not exist',
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу'
 	},
-	dummyFn = function () {
-	},
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
@@ -249,115 +247,6 @@ function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 	);
 }
 
-//Удаляет из Incoming загруженное, но не созданное фото
-function removePhotoIncoming(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	fs.unlink(incomeDir + data.file, cb);
-}
-
-/**
- * Удаление фотографии
- * @param socket Сокет пользователя
- * @param cid
- * @param cb Коллбэк
- */
-function removePhoto(socket, cid, cb) {
-	var iAm = socket.handshake.session.user;
-
-	cid = Number(cid);
-	if (!iAm) {
-		return cb({message: msg.deny, error: true});
-	}
-	if (!cid) {
-		return cb({message: 'Bad params', error: true});
-	}
-
-	findPhoto({cid: cid}, {}, iAm, true, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || 'No such photo', error: true});
-		}
-
-		if (photo.fresh) {
-			//Неподтвержденную фотографию удаляем безвозвратно
-			step(
-				function () {
-					photo.remove(this);
-				},
-				function (err) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-					PhotoSort.remove({photo: photo._id}, this);
-				},
-				function (err) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-
-					var user = _session.getOnline(null, photo.user);
-
-					//Пересчитывам кол-во новых фото у владельца
-					if (user) {
-						user.pfcount = user.pfcount - 1;
-						_session.saveEmitUser(user.login);
-					} else {
-						User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
-					}
-
-					//Удаляем из конвейера если есть
-					PhotoConverter.removePhotos([photo.cid]);
-
-					//Удаляем файлы фотографии
-					fs.unlink(privateDir + photo.file, dummyFn);
-					imageFolders.forEach(function (folder) {
-						fs.unlink(publicDir + folder + photo.file, dummyFn);
-					});
-
-					cb({message: 'ok'});
-				}
-			);
-		} else {
-			var isPublic = !photo.disabled && !photo.del;
-
-			step(
-				function () {
-					var photoPlain = photo.toObject(),
-						photoNew = new PhotoDel(photoPlain);
-
-					if (!Array.isArray(photoPlain.frags) || !photoPlain.frags.length) {
-						photoNew.frags = undefined;
-					}
-					if (!Utils.geoCheck(photoPlain.geo)) {
-						photoNew.geo = undefined;
-					}
-
-					photoNew.save(this.parallel());
-				},
-				function removeFromOldModel(err, photoSaved) {
-					if (err) {
-						return cb({message: err && err.message, error: true});
-					}
-					photo.remove(this.parallel());
-					PhotoSort.update({photo: photoSaved._id}, {$set: {state: 9}}, {upsert: false}, this.parallel());
-					if (isPublic) {
-						changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
-					}
-				},
-				function (err) {
-					if (err) {
-						return cb({message: err && err.message, error: true});
-					}
-					cb({message: 'ok'});
-				}
-			);
-		}
-	});
-}
-
 //Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
 	step(
@@ -401,6 +290,87 @@ function photoFromMap(photo, cb) {
 			}
 		}
 	);
+}
+
+//Удаляет из Incoming загруженное, но не созданное фото
+function removePhotoIncoming(socket, data, cb) {
+	var user = socket.handshake.session.user;
+	if (!user) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	fs.unlink(incomeDir + data.file, cb);
+}
+
+/**
+ * Удаление фотографии
+ * @param socket Сокет пользователя
+ * @param cid
+ * @param cb Коллбэк
+ */
+function removePhoto(socket, cid, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm) {
+		return cb({message: msg.deny, error: true});
+	}
+	cid = Number(cid);
+	if (!cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	findPhoto({cid: cid}, {}, iAm, true, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || 'No such photo', error: true});
+		}
+
+		if (photo.s === 0 || photo.s === 1) {
+			//Неподтвержденную фотографию удаляем безвозвратно
+			photo.remove(function (err) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+
+				var user = _session.getOnline(null, photo.user);
+
+				//Пересчитывам кол-во новых фото у владельца
+				if (user) {
+					user.pfcount = user.pfcount - 1;
+					_session.saveEmitUser(user.login);
+				} else {
+					User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
+				}
+
+				//Удаляем из конвейера если есть
+				PhotoConverter.removePhotos([photo.cid]);
+
+				//Удаляем файлы фотографии
+				fs.unlink(privateDir + photo.file, Utils.dummyFn);
+				imageFolders.forEach(function (folder) {
+					fs.unlink(publicDir + folder + photo.file, Utils.dummyFn);
+				});
+
+				cb({message: 'ok'});
+			});
+		} else {
+			var isPublic = photo.s === 5;
+
+			photo.s = 9;
+			photo.save(function (err, photoSaved) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				if (isPublic) {
+					changePublicPhotoExternality(socket, photoSaved, iAm, false, function (err) {
+						if (err) {
+							return cb({message: err && err.message, error: true});
+						}
+						cb({message: 'ok'});
+					});
+				}
+			});
+		}
+	});
 }
 
 //Подтверждаем новую фотографию
