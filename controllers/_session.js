@@ -274,10 +274,12 @@ var checkWaitingSess = (function () {
 //Пупулируем регионы пользователя и строим запросы для них
 function popUserRegions(user, cb) {
 	var paths = [
-		{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
-	];
+			{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
+		],
+		mod_regions_equals; //Регионы интересов и модерирования равны
 
 	if (user.role === 5) {
+		mod_regions_equals = _.isEqual(user.regions, user.mod_regions) || undefined;
 		paths.push({path: 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}});
 	}
 	user.populate(paths, function (err, user) {
@@ -288,66 +290,26 @@ function popUserRegions(user, cb) {
 			usObj = us[user.login];
 
 		if (usObj) {
-			regionsData = buildQuery(user.regions);
+			regionsData = regionController.buildQuery(user.regions);
 			usObj.rquery = regionsData.rquery;
 			usObj.rhash = regionsData.rhash;
 
 			if (user.role === 5) {
-				regionsData = buildQuery(user.mod_regions);
+				regionsData = regionController.buildQuery(user.mod_regions);
 				usObj.mod_rquery = regionsData.rquery;
 				usObj.mod_rhash = regionsData.rhash;
 			}
-		}
-
-		function buildQuery(regions) {
-			var rquery = {},
-				rhash = {},
-				$orobj,
-				levels,
-				level,
-				region,
-				i;
-
-			if (regions &&  regions.length) {
-				rquery.$or = [];
-				levels = {};
-
-				//Формируем запрос для регионов
-				for (i = regions.length; i--;) {
-					region = regionController.regionCacheHash[regions[i].cid];
-					rhash[region.cid] = region;
-					level = 'r' + region.parents.length;
-
-					if (levels[level] === undefined) {
-						levels[level] = [];
-					}
-					levels[level].push(region.cid);
-				}
-
-				for (i in levels) {
-					if (levels.hasOwnProperty(i)) {
-						level = levels[i];
-						$orobj = {};
-						if (level.length === 1) {
-							$orobj[i] = level[0];
-						} else if (level.length > 1) {
-							$orobj[i] = {$in: level};
-						}
-						rquery.$or.push($orobj);
-					}
-				}
-
-				if (rquery.$or.length === 1) {
-					rquery = rquery.$or[0];
-				}
-				//console.log(JSON.stringify(rquery));
+			if (!mod_regions_equals) {
+				delete usObj.mod_regions_equals;
+			} else {
+				usObj.mod_regions_equals = mod_regions_equals;
 			}
-			return {rquery: rquery, rhash: rhash};
 		}
 
 		cb(null);
 	});
 }
+
 //Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
 function regetSession(sessionCurrent, cb) {
 	Session.findOne({key: sessionCurrent.key}).populate('user').exec(function (err, session) {

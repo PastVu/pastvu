@@ -498,6 +498,58 @@ function setUserRegions(login, regionsCids, field, cb) {
 	});
 }
 
+/**
+ * Возвращает запрос для выборки по регионам вида $or: [{r0: 1}, {r1: {$in: [3, 4]}}, {r2: 10}]
+ * и хэш переданных регионов
+ * @param regions Массив спопулированных регионов
+ * @returns {{rquery: {}, rhash: {}}}
+ */
+function buildQuery(regions) {
+	var rquery = {},
+		rhash = {},
+		$orobj,
+		levels,
+		level,
+		region,
+		i;
+
+	if (regions && regions.length) {
+		rquery.$or = [];
+		levels = {};
+
+		//Формируем запрос для регионов
+		for (i = regions.length; i--;) {
+			region = regionCacheHash[regions[i].cid];
+			rhash[region.cid] = region;
+			level = 'r' + region.parents.length;
+
+			if (levels[level] === undefined) {
+				levels[level] = [];
+			}
+			levels[level].push(region.cid);
+		}
+
+		for (i in levels) {
+			if (levels.hasOwnProperty(i)) {
+				level = levels[i];
+				$orobj = {};
+				if (level.length === 1) {
+					$orobj[i] = level[0];
+				} else if (level.length > 1) {
+					$orobj[i] = {$in: level};
+				}
+				rquery.$or.push($orobj);
+			}
+		}
+
+		if (rquery.$or.length === 1) {
+			rquery = rquery.$or[0];
+		}
+		//console.log(JSON.stringify(rquery));
+	}
+	return {rquery: rquery, rhash: rhash};
+}
+
 module.exports.loadController = function (app, db, io) {
 
 	Settings = db.model('Settings');
@@ -571,3 +623,4 @@ module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;
 module.exports.setUserRegions = setUserRegions;
+module.exports.buildQuery = buildQuery;

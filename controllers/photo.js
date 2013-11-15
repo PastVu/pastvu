@@ -651,65 +651,43 @@ function giveUserPhotos(iAm, data, cb) {
 			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
 			skip = data.skip || 0,
 			limit = Math.min(data.limit || 20, 100),
-			filter = data.filter,
+			filter = data.filter || {},
 			fieldsSelect = iAm ? compactFieldsId : compactFields;
 
-		if (noPublic && !filter) {
-			//Не можем пользоваться фильтром по сквозной таблице
-			step(
-				function () {
-					findPhotosAll(query, fieldsSelect, {sort: {stamp: -1}, skip: skip, limit: limit}, iAm, this.parallel());
-					countPhotosAll(query, iAm, this.parallel());
-				},
-				finishOrNewCommentsCount
-			);
-		} else {
-			if (!filter) {
-				filter = {};
-			}
-
-			if (filter.nogeo) {
-				query.geo = null;
-			} else {
-				if (iAm) {
-					_.assign(query, _session.us[iAm.login].rquery);
+		step(
+			function () {
+				var query = buildPhotosQuery(filter, user._id, iAm);
+				query.user = user._id;
+				console.log(JSON.stringify(query));
+				Photo.find(query, fieldsSelect, {lean: true, sort: {stamp: -1}, skip: skip, limit: limit}, this.parallel());
+				Photo.count(query, this.parallel());
+			},
+			function (err, photos, count) {
+				if (err || !photos) {
+					return cb({message: err && err.message || msg.notExists, error: true});
 				}
-			}
 
-			step(
-				function () {
-					Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1}, skip: skip, limit: limit}, this.parallel());
-					Photo.count(query, this.parallel());
-				},
-				finishOrNewCommentsCount
-			);
-		}
-
-		function finishOrNewCommentsCount(err, photos, count) {
-			if (err || !photos) {
-				return cb({message: err && err.message || 'Photos does not exist', error: true});
-			}
-
-			if (!iAm || !photos.length) {
-				//Если аноним или фотографий нет, сразу возвращаем
-				finish(null, photos);
-			} else {
-				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
-			}
-
-			function finish(err, photos) {
-				if (err) {
-					return cb({message: err.message, error: true});
+				if (!iAm || !photos.length) {
+					//Если аноним или фотографий нет, сразу возвращаем
+					finish(null, photos);
+				} else {
+					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+					commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
 				}
-				if (iAm) {
-					for (var i = photos.length; i--;) {
-						delete photos[i]._id;
+
+				function finish(err, photos) {
+					if (err) {
+						return cb({message: err.message, error: true});
 					}
+					if (iAm) {
+						for (var i = photos.length; i--;) {
+							delete photos[i]._id;
+						}
+					}
+					cb({photos: photos, count: count, skip: skip});
 				}
-				cb({photos: photos, count: count, skip: skip});
 			}
-		}
+		);
 	});
 }
 
@@ -1235,6 +1213,151 @@ function findPhoto(query, fieldSelect, user, cb) {
 }
 
 /**
+ * Находим фотографии с учетом прав на статусы
+ * @param filter
+ * @param forUserId
+ * @param iAm Пользователь сессии
+ * @param cb
+ */
+function buildPhotosQuery(filter, forUserId, iAm) {
+	var query = {},
+		usObj,
+		i;
+
+	if (filter.nogeo) {
+		query.geo = null;
+	}
+
+	if (!iAm) {
+		query.s = 5; //Анонимам отдаем только публичные
+	} else if (iAm.role < 9) {
+		if (forUserId && forUserId.equals(iAm._id)) {
+			//Собственную галерею отдаем без удаленных и если фильтр не указан - всю
+			query.s = {$ne: 9};
+			//if (Array.isArray(filter.r) && filter.r.length) { }
+		} else {
+			usObj = _session.us[iAm.login];
+
+			//Если фильтр не указан - отдаем по регионам
+			if (filter.r === undefined && iAm.regions.length) {
+				_.assign(query, usObj.rquery);
+			} //else if (Array.isArray(filter.r) && filter.r.length) {}
+
+			if (iAm.role < 5) {
+				query.s = 5; //Ниже чем модераторам региона отдаем только публичные
+			} else if (iAm.role === 5) {
+				if (!iAm.mod_regions.length || usObj.mod_regions_equals) {
+					//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
+					//отдаем фотографии без удаленных
+					query.s = {$ne: 9};
+				} else {
+					//Региональным модераторам отдаем в своих регионах без удаленных,
+					//в остальных (на которые подписаны) - только публичные
+					var regions_pub = [],
+						regions_mod = [];
+
+					for (i in usObj.rhash) {
+						if (usObj.rhash.hasOwnProperty(i)){
+							if (usObj.rhash.mod_rhash[i]) {
+								regions_mod.push(usObj.rhash[i]);
+							} else {
+								regions_pub.push(usObj.rhash[i]);
+							}
+						}
+					}
+
+					query.$or = [
+						{s: 5},
+						{s: {$ne: 9}}
+					];
+					_.assign(query.$or[0], regionController.buildQuery(regions_pub));
+					_.assign(query.$or[1], regionController.buildQuery(regions_mod));
+				}
+			}
+		}
+	}
+	return query;
+}
+/**
+ * Находим фотографии с учетом прав на статусы
+ * @param query
+ * @param fieldSelect Выбор полей
+ * @param options
+ * @param iAm Пользователь сессии
+ * @param cb
+ */
+function findPhotos(query, fieldSelect, options, iAm, cb) {
+	var queryPublicOr;
+
+	if (!iAm) {
+		query.s = 5; //Анонимам отдаем только публичные
+	} else if (iAm.role < 9) {
+		if (query.user && query.user.equals(iAm._id)) {
+			query.s = {$ne: 9}; //Собственную галерею отдаем без удаленных
+		} else if (iAm.role < 5) {
+			query.s = 5; //Ниже чем модераторам региона отдаем только публичные
+		} else if (iAm.role === 5) {
+			if (!iAm.mod_regions.length) {
+				query.s = {$ne: 9}; //Глобальным модераторам отдаем без удаленных все фотографии
+			} else {
+				//Региональным модераторам отдаем в своих регионах без удаленных,
+				//в остальных (на которые подписаны) - только публичные
+				queryPublicOr = query.$or || {};
+				query.$or = [
+					{s: 5},
+					{s: {$ne: 9}}
+				];
+				console.log(queryPublicOr);
+				console.log(_session.us[iAm.login].mod_rquery);
+				_.assign(query.$or[1], _session.us[iAm.login].mod_rquery);
+			}
+		}
+	}
+
+	options = options || {};
+	options.lean = true;
+	Photo.find(query, fieldSelect, options, function (err, photos) {
+		cb(err, photos);
+	});
+}
+/**
+ * Считаем фотографии по сквозной таблице
+ * @param query
+ * @param iAm Пользователь сессии
+ * @param cb
+ */
+function countPhotos(query, iAm, cb) {
+	var queryPublicOr;
+
+	if (!iAm) {
+		query.s = 5; //Анонимам отдаем только публичные
+	} else if (iAm.role < 9) {
+		if (query.user && query.user.equals(iAm._id)) {
+			query.s = {$ne: 9}; //Собственную галерею отдаем без удаленных
+		} else if (iAm.role < 5) {
+			query.s = 5; //Ниже чем модераторам региона отдаем только публичные
+		} else if (iAm.role === 5) {
+			if (!iAm.mod_regions.length) {
+				query.s = {$ne: 9}; //Глобальным модераторам отдаем без удаленных все фотографии
+			} else {
+				//Региональным модераторам отдаем в своих регионах без удаленных,
+				//в остальных (на которые подписаны) - только публичные
+				queryPublicOr = query.$or || {};
+				query.$or = [
+					{s: 5},
+					{s: {$ne: 9}}
+				];
+				console.log(queryPublicOr);
+				console.log(_session.us[iAm.login].mod_rquery);
+				_.assign(query.$or[1], _session.us[iAm.login].mod_rquery);
+			}
+		}
+	}
+
+	Photo.count(query, cb);
+}
+
+/**
  * Находим фотографии по сквозной таблице, независимо от статуса
  * @param query
  * @param fieldSelect Выбор полей
@@ -1563,4 +1686,4 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
-module.exports.findPhotosAll = findPhotosAll;
+module.exports.findPhotos = findPhotos;
