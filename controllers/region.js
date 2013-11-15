@@ -391,8 +391,8 @@ function saveUserRegions(socket, data, cb) {
 	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
 		return cb({message: msg.badParams, error: true});
 	}
-	if (!data.regions.length || data.regions.length > 5) {
-		return cb({message: 'Вы можете выбрать от 1 до 5 регионов', error: true});
+	if (data.regions.length > 5) {
+		return cb({message: 'Вы можете выбрать до 5 регионов', error: true});
 	}
 	//Проверяем, что переданы номера регионов
 	for (i = data.regions.length; i--;) {
@@ -406,48 +406,26 @@ function saveUserRegions(socket, data, cb) {
 			var user = _session.getOnline(login);
 			if (user) {
 				itsOnline = true;
-				this.parallel()(null, user);
+				this(null, user);
 			} else {
-				User.findOne({login: login}, this.parallel());
+				User.findOne({login: login}, this());
 			}
-			getOrderedRegionList(data.regions, {}, this.parallel());
 		},
-		function (err, user, regions) {
-			if (err || !user || !regions) {
+		function (err, user) {
+			if (err || !user) {
 				return cb({message: err && err.message || msg.nouser, error: true});
 			}
-			if (regions.length !== data.regions) {
-				return cb({message: 'You want to save nonexistent regions', error: true});
-			}
-			var regionsHash = {},
-				regionsIds = [],
-				region;
 
-			//Проверяем, что регионы не обладают родствеными связями
-			for (i = regions.length; i--;) {
-				region = regions[i];
-				regionsIds.unshift(region._id);
-				regionsHash[region.cid] = region;
-			}
-			for (i = regions.length; i--;) {
-				region = regions[i];
-				for (j = region.parents.length; j--;) {
-					if (regionsHash[region.parents[j]] !== undefined) {
-						return cb({message: 'Выбранные регионы не должны обладать родственными связями', error: true});
-					}
-				}
-			}
-
-			//Нелья просто присвоить массив объектов регионов и сохранить
-			//https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes#prevent-potentially-destructive-operations-on-populated-arrays
-			//Надо сделать user.update({$set: regionsIds}), затем user.regions = regionsIds; а затем populate по новому массиву
-			//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
-			//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
-			//Поэтому полностью заново берем юзера из базы
-			user.update({$set: {regions: regionsIds}}, function (err, numberAffected, raw) {
+			setUserRegions(login, data.regions, 'regions', function (err) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
+				//Нелья просто присвоить массив объектов регионов и сохранить
+				//https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes#prevent-potentially-destructive-operations-on-populated-arrays
+				//Надо сделать user.update({$set: regionsIds}), затем user.regions = regionsIds; а затем populate по новому массиву
+				//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
+				//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
+				//Поэтому полностью заново берем юзера из базы
 				if (itsOnline) {
 					_session.regetUser(user, function (err, user) {
 						if (err) {
@@ -490,7 +468,7 @@ function setUserRegions(login, regionsCids, field, cb) {
 		var regionsHash = {},
 			regionsIds = [],
 			region,
-			$set = {};
+			$update = {};
 
 		for (i = regions.length; i--;) {
 			region = regions[i];
@@ -507,8 +485,14 @@ function setUserRegions(login, regionsCids, field, cb) {
 			}
 		}
 
-		$set[field] = regionsIds;
-		User.update({login: login}, {$set: $set}, function (err, numberAffected, raw) {
+		if (regionsIds.length) {
+			$update.$set = {};
+			$update.$set[field] = regionsIds;
+		} else {
+			$update.$unset = {};
+			$update.$unset[field] = 1;
+		}
+		User.update({login: login}, $update, function (err, numberAffected, raw) {
 			cb(err);
 		});
 	});

@@ -147,6 +147,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						{
 							module: 'm/region/select',
 							options: {
+								min: 0,
+								max: 5,
 								selectedInit: ko_mapping.toJS(this.u.regions)
 							},
 							modal: {
@@ -160,8 +162,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 									evt.stopPropagation();
 									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-									if (!regions.length || regions.length > 5) {
-										window.noty({text: 'Допускается выбирать от 1 до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+									if (regions.length > 5) {
+										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
 										return;
 									}
 

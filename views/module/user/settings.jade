@@ -46,6 +46,11 @@
 								span.glyphicon.glyphicon-info-sign
 								|  Мои регионы
 						dd
+							//ko if: !u.regions().length
+							span.region
+								span.glyphicon.glyphicon-globe
+								|  Весь мир
+							// /ko
 							//ko foreach: u.regions
 							span.region
 								span(data-bind="text: $data.title_local()")
