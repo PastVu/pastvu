@@ -98,7 +98,7 @@ var auth = require('./auth.js'),
 				if (photo.s === 9) {
 					return user.role > 9;
 				} else {
-					return photo.user.equals(user._id) || photoPermissions.canModerate(photo, user);
+					return photo.user.equals(user._id) || user.role > 5 || photoPermissions.canModerate(photo, user);
 				}
 			}
 
@@ -659,7 +659,7 @@ function giveUserPhotos(iAm, data, cb) {
 				var query = buildPhotosQuery(filter, user._id, iAm);
 				query.user = user._id;
 				console.log(JSON.stringify(query));
-				Photo.find(query, fieldsSelect, {lean: true, sort: {stamp: -1}, skip: skip, limit: limit}, this.parallel());
+				Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1, cdate: -1}, skip: skip, limit: limit}, this.parallel());
 				Photo.count(query, this.parallel());
 			},
 			function (err, photos, count) {
@@ -1217,12 +1217,12 @@ function findPhoto(query, fieldSelect, user, cb) {
  * @param filter
  * @param forUserId
  * @param iAm Пользователь сессии
- * @param cb
  */
 function buildPhotosQuery(filter, forUserId, iAm) {
 	var query = {},
 		usObj,
-		i;
+		i,
+		j;
 
 	if (filter.nogeo) {
 		query.geo = null;
@@ -1238,40 +1238,85 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		} else {
 			usObj = _session.us[iAm.login];
 
-			//Если фильтр не указан - отдаем по регионам
-			if (filter.r === undefined && iAm.regions.length) {
-				_.assign(query, usObj.rquery);
-			} //else if (Array.isArray(filter.r) && filter.r.length) {}
-
 			if (iAm.role < 5) {
-				query.s = 5; //Ниже чем модераторам региона отдаем только публичные
+				//Ниже чем модераторам региона отдаем только публичные
+				query.s = 5;
+				//Если фильтр не указан - отдаем по регионам
+				if (filter.r === undefined && iAm.regions.length) {
+					_.assign(query, usObj.rquery);
+				} //else if (Array.isArray(filter.r) && filter.r.length) {}
 			} else if (iAm.role === 5) {
 				if (!iAm.mod_regions.length || usObj.mod_regions_equals) {
 					//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
 					//отдаем фотографии без удаленных
 					query.s = {$ne: 9};
+					//Если фильтр не указан - отдаем по регионам
+					if (filter.r === undefined && iAm.regions.length) {
+						_.assign(query, usObj.rquery);
+					} //else if (Array.isArray(filter.r) && filter.r.length) {}
 				} else {
 					//Региональным модераторам отдаем в своих регионах без удаленных,
 					//в остальных (на которые подписаны) - только публичные
-					var regions_pub = [],
-						regions_mod = [];
+					var region,
+						contained,
+						regions_pub = [],
+						regions_mod = [],
+						query_pub,
+						query_mod;
 
-					for (i in usObj.rhash) {
-						if (usObj.rhash.hasOwnProperty(i)){
-							if (usObj.rhash.mod_rhash[i]) {
-								regions_mod.push(usObj.rhash[i]);
-							} else {
-								regions_pub.push(usObj.rhash[i]);
+					//Если сам регион пользователя или один из его родителей является модерируемым,
+					//то включаем его в массив модерируемых
+					for (i = iAm.regions.length; i--;) {
+						region = usObj.rhash[iAm.regions[i].cid];
+						contained = false;
+
+						if (usObj.mod_rhash[region.cid]) {
+							contained = true;
+						} else if (region.parents) {
+							for (j = region.parents.length; j--;) {
+								if (usObj.mod_rhash[region.parents[j]]) {
+									contained = true;
+									break;
+								}
+							}
+						}
+						if (contained) {
+							regions_mod.push(region);
+						} else {
+							regions_pub.push(region);
+						}
+					}
+
+					//Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
+					//то включаем такой модерируемый регион в массив модерируемых,
+					//несмотря на то, что родительский лежит в массиве публичных
+					for (i = iAm.mod_regions.length; i--;) {
+						region = usObj.mod_rhash[iAm.mod_regions[i].cid];
+						if (region.parents) {
+							for (j = region.parents.length; j--;) {
+								if (usObj.rhash[region.parents[j]]) {
+									regions_mod.push(region);
+								}
 							}
 						}
 					}
 
-					query.$or = [
-						{s: 5},
-						{s: {$ne: 9}}
-					];
-					_.assign(query.$or[0], regionController.buildQuery(regions_pub));
-					_.assign(query.$or[1], regionController.buildQuery(regions_mod));
+					if (regions_pub.length) {
+						query_pub = {s: 5};
+						_.assign(query_pub, regionController.buildQuery(regions_pub).rquery);
+					}
+					if (regions_mod.length) {
+						query_mod = {s: {$ne: 9}};
+						_.assign(query_mod, regionController.buildQuery(regions_mod).rquery);
+					}
+					if (regions_pub.length && regions_mod.length) {
+						query = {$or: [
+							query_pub,
+							query_mod
+						]};
+					} else {
+						query = query_pub || query_mod || {};
+					}
 				}
 			}
 		}
