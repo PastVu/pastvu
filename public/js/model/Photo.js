@@ -20,6 +20,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			compact: {
 				ldate: Date.now(),
 				adate: Date.now(),
+				sdate: Date.now(),
 
 				year: 2000,
 				year2: 2000,
@@ -103,6 +104,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 		if (defType === 'compact' || defType === 'full') {
 			origin.ldate = new Date(origin.ldate);
 			origin.adate = new Date(origin.adate);
+			origin.sdate = new Date(origin.sdate);
 		}
 		if (defType === 'full') {
 			if (Utils.geoCheck(origin.geo)) {

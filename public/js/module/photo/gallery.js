@@ -333,7 +333,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			socket.emit(reqName, params);
 		},
 		receivePhotosPrivate: function (cb, ctx) {
-			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined};
+			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).sdate : undefined, endTime: undefined};
 
 			socket.once('takeUserPhotosPrivate', function (data) {
 				if (data && !data.error && data.len > 0) {
@@ -353,7 +353,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}
 					if (needSort) {
 						currArray.sort(function (a, b) {
-							return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
+							return a.sdate < b.sdate ? 1 : (a.sdate > b.sdate ? -1 : 0);
 						});
 					}
 

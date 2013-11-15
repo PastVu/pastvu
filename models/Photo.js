@@ -11,13 +11,15 @@ var FragmentSchema = new Schema({
 		h: {type: Number}  //Height
 	}),
 	PhotoNewSchema = new Schema({
-		cid: {type: Number, index: { unique: true }},
+		cid: {type: Number, index: {unique: true}},
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 
 		file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
 
 		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
 		adate: {type: Date, sparse: true}, // Время активации
+		sdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время сортировки
+
 		type: {type: String}, // like 'image/jpeg'
 		format: {type: String}, // like 'JPEG'
 		sign: {type: String},
@@ -136,11 +138,11 @@ PhotoNewSchema.virtual('del').get(function () {
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
 //Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoNewSchema.index({g: '2d', year: 1});
-PhotoNewSchema.index({r0: 1, adate: 1});
-PhotoNewSchema.index({r1: 1, adate: 1});
-PhotoNewSchema.index({r2: 1, adate: 1});
-PhotoNewSchema.index({r3: 1, adate: 1});
-PhotoNewSchema.index({r4: 1, adate: 1});
+PhotoNewSchema.index({r0: 1, sdate: 1});
+PhotoNewSchema.index({r1: 1, sdate: 1});
+PhotoNewSchema.index({r2: 1, sdate: 1});
+PhotoNewSchema.index({r3: 1, sdate: 1});
+PhotoNewSchema.index({r4: 1, sdate: 1});
 
 
 PhotoNewSchema.pre('save', preSave);
@@ -159,7 +161,7 @@ PhotoNewSchema.statics.getPhotosCompact = function (query, options, cb) {
 		cb({message: 'query is not specified'});
 	}
 	options = options || {};
-	this.find(query, null, options).sort('-adate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
+	this.find(query, null, options).sort('-sdate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
 };
 PhotoNewSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
 	if (!query) {

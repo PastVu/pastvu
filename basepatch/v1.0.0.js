@@ -40,7 +40,13 @@ module.exports.loadController = function (app, db) {
 		});
 		db.photos_del.drop();
 
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', updated: db.users_comments_view.count() - countBegin};
+		//Заполняем для всех фотографий новое поле для сортировки sdate
+		print('Filling sdate for ' + db.photos.count() + ' photos');
+		db.photos.find({}, {cid: 1, ldate: 1, adate: 1}).forEach(function (photo) {
+			db.photos.update({cid: photo.cid}, {$set: {sdate: photo.adate || photo.ldate}});
+		});
+
+		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	/**

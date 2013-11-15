@@ -187,6 +187,7 @@ function createPhotos(socket, data, cb) {
 					user: user._id,
 					file: item.fullfile,
 					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
+					sdate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
 					type: item.type,
 					size: item.size,
 					geo: undefined,
@@ -393,7 +394,7 @@ function approvePhoto(iAm, cid, cb) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
 
-		photo.adate = new Date();
+		photo.adate = photo.sdate = new Date();
 		photo.save(function (err, photoSaved) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
@@ -551,7 +552,7 @@ function givePhoto(socket, data, cb) {
 
 //Отдаем последние публичные фотографии на главной для анонимов в memoized
 var givePhotosPublicIndex = (function () {
-	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 29};
+	var options = {lean: true, sort: {sdate: -1}, skip: 0, limit: 29};
 
 	return Utils.memoizeAsync(function (handler) {
 		Photo.find({}, compactFields, options, handler);
@@ -560,7 +561,7 @@ var givePhotosPublicIndex = (function () {
 
 //Отдаем последние публичные "Где это?" фотографии для главной
 var givePhotosPublicNoGeoIndex = (function () {
-	var options = {lean: true, sort: {adate: -1}, skip: 0, limit: 29};
+	var options = {lean: true, sort: {sdate: -1}, skip: 0, limit: 29};
 
 	return Utils.memoizeAsync(function (handler) {
 		Photo.find({geo: null}, compactFields, options, handler);
@@ -590,7 +591,7 @@ function givePhotosPublic(iAm, data, cb) {
 				}
 			}
 			console.log(query);
-			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {adate: -1}}, this.parallel());
+			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
 			Photo.count(query, this.parallel());
 		},
 		finishOrNewCommentsCount
@@ -659,7 +660,7 @@ function giveUserPhotos(iAm, data, cb) {
 				var query = buildPhotosQuery(filter, user._id, iAm);
 				query.user = user._id;
 				console.log(JSON.stringify(query));
-				Photo.find(query, fieldsSelect, {lean: true, sort: {adate: -1, cdate: -1}, skip: skip, limit: limit}, this.parallel());
+				Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
 				Photo.count(query, this.parallel());
 			},
 			function (err, photos, count) {
