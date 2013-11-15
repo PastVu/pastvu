@@ -123,17 +123,8 @@ module.exports.loadController = function (app, db) {
 				);
 			};
 
-		print('Start to fill conveyer for ' + db.photos.count() + ' public photos');
+		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
 		db.photos.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_fresh.count() + ' new photos');
-		db.photos_fresh.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_disabled.count() + ' disabled photos');
-		db.photos_disabled.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_del.count() + ' deleted photos');
-		db.photos_del.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
 
 		if (Array.isArray(variants) && variants.length > 0) {
 			photoCounter = conveyer.length;
@@ -161,9 +152,6 @@ module.exports.loadController = function (app, db) {
 			setObject.$set['r' + region.parents.length] = region.cid;
 
 			db.photos.update(queryObject, setObject, {multi: true});
-			db.photos_fresh.update(queryObject, setObject, {multi: true});
-			db.photos_disabled.update(queryObject, setObject, {multi: true});
-			db.photos_del.update(queryObject, setObject, {multi: true});
 
 			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
 		});
@@ -188,8 +176,8 @@ module.exports.loadController = function (app, db) {
 			user = users[userCounter];
 			$set = {};
 			$unset = {};
-			pcount = db.photos.count({user: user._id});
-			pfcount = db.photos_fresh.count({user: user._id});
+			pcount = db.photos.count({user: user._id, s: 5});
+			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
 			ccount = db.comments.count({user: user._id}) + db.commentsn.count({user: user._id});
 			if (pcount > 0) {
 				$set.pcount = pcount;
