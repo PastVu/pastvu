@@ -64,7 +64,7 @@ function getCommentsObj(iAm, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, {_id: 1, user: 1}, iAm, this);
+				photoController.findPhoto({cid: cid}, {_id: 1, user: 1, s: 1}, iAm, this);
 			}
 		},
 		function createCursor(err, obj) {
@@ -370,7 +370,7 @@ function createComment(socket, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: Number(data.obj)}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
+				photoController.findPhoto({cid: Number(data.obj)}, {_id: 1, s: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
 			}
 
 			if (data.parent) {
@@ -505,7 +505,7 @@ function removeComment(socket, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
 			} else {
-				photoController.findPhoto({_id: comment.obj}, {_id: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
+				photoController.findPhoto({_id: comment.obj}, {_id: 1, s: 1, ccount: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
 			}
 		},
 		function createCursor(err, o) {
@@ -618,7 +618,7 @@ function updateComment(socket, data, cb) {
 				News.findOne({cid: data.obj}, {cid: 1, frags: 1, nocomments: 1}, this.parallel());
 			} else {
 				Comment.findOne({cid: cid}, this.parallel());
-				photoController.findPhoto({cid: data.obj}, {cid: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
+				photoController.findPhoto({cid: data.obj}, {cid: 1, s: 1, frags: 1, nocomments: 1, user: 1}, iAm, this.parallel());
 			}
 		},
 		function (err, comment, obj) {

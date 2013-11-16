@@ -463,13 +463,10 @@ function conveyerControl() {
 			async.waterfall(
 				[
 					function find(callback) {
-						photoController.findPhoto({cid: photoConv.cid}, {cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1}, {role: 10}, callback);
-					},
-					function getUser(photo, callback) {
-						if (!photo) {
-							return callback({message: 'Can not find such photo'}, photo);
-						}
-						photo.populate({path: 'user', select: {_id: 0, login: 1}}, callback);
+						Photo
+							.findOne({cid: photoConv.cid}, {cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1})
+							.populate({path: 'user', select: {_id: 0, login: 1}})
+							.exec(callback);
 					},
 					function setFlag(photo, callback) {
 						step (

@@ -41,8 +41,8 @@ var auth = require('./auth.js'),
 	},
 
 	shift10y = ms('10y'),
-	compactFields = {_id: 0, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
-	compactFieldsId = {_id: 1, cid: 1, file: 1, ldate: 1, adate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	photoPermissions = {
 		canModerate: function (photo, user) {
 			var rhash,
@@ -555,7 +555,7 @@ var givePhotosPublicIndex = (function () {
 	var options = {lean: true, sort: {sdate: -1}, skip: 0, limit: 29};
 
 	return Utils.memoizeAsync(function (handler) {
-		Photo.find({}, compactFields, options, handler);
+		Photo.find({s: 5}, compactFields, options, handler);
 	}, ms('30s'));
 }());
 
@@ -564,7 +564,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 	var options = {lean: true, sort: {sdate: -1}, skip: 0, limit: 29};
 
 	return Utils.memoizeAsync(function (handler) {
-		Photo.find({geo: null}, compactFields, options, handler);
+		Photo.find({s: 5, geo: null}, compactFields, options, handler);
 	}, ms('30s'));
 }());
 
@@ -580,8 +580,8 @@ function givePhotosPublic(iAm, data, cb) {
 
 	step(
 		function () {
-			var query = {},
-				fieldsSelect = iAm ? compactFieldsId : compactFields;
+			var query = {s: 5},
+				fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
 
 			if (filter.nogeo) {
 				query.geo = null;
@@ -590,7 +590,7 @@ function givePhotosPublic(iAm, data, cb) {
 					_.assign(query, _session.us[iAm.login].rquery);
 				}
 			}
-			console.log(query);
+
 			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
 			Photo.count(query, this.parallel());
 		},
@@ -639,7 +639,7 @@ function givePhotosForApprove(iAm, data, cb) {
 		_.assign(query, _session.us[iAm.login].mod_rquery);
 	}
 
-	Photo.find(query, compactFields, {lean: true, sort: {ldate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
+	Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
 }
 
 //Отдаем галерею пользователя в компактном виде
@@ -648,9 +648,7 @@ function giveUserPhotos(iAm, data, cb) {
 		if (err || !user) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
-		var query = {user: user._id},
-			noPublic = iAm && (iAm.role > 4 || user._id.equals(iAm._id)),
-			skip = data.skip || 0,
+		var skip = data.skip || 0,
 			limit = Math.min(data.limit || 20, 100),
 			filter = data.filter || {},
 			fieldsSelect = iAm ? compactFieldsId : compactFields;
@@ -659,7 +657,7 @@ function giveUserPhotos(iAm, data, cb) {
 			function () {
 				var query = buildPhotosQuery(filter, user._id, iAm);
 				query.user = user._id;
-				console.log(JSON.stringify(query));
+				//console.log(JSON.stringify(query));
 
 				Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
 				Photo.count(query, this.parallel());
@@ -704,7 +702,7 @@ function giveUserPhotosAround(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {_id: 0, user: 1, sdate: 1}, iAm, function (err, photo) {
+	findPhoto({cid: cid}, {_id: 0, user: 1, sdate: 1, s: 1}, iAm, function (err, photo) {
 		if (err || !photo || !photo.user) {
 			return cb({message: msg.notExists, error: true});
 		}
@@ -749,57 +747,39 @@ function giveNearestPhotos(data, cb) {
 
 //Отдаем непубличные фотографии
 function giveUserPhotosPrivate(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user || (user.role < 5 && user.login !== data.login)) {
+	var iAm = socket.handshake.session.user;
+	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
 		return cb({message: msg.deny, error: true});
 	}
+
 	User.getUserID(data.login, function (err, userid) {
 		if (err) {
 			return cb({message: err && err.message, error: true});
 		}
+		var query = {user: userid};
 
-		step(
-			function () {
-				var query = {user: userid};
-				if (data.startTime || data.endTime) {
-					query.adate = {};
-					if (data.startTime) {
-						query.adate.$gte = new Date(data.startTime);
-					}
-					if (data.endTime) {
-						query.adate.$lte = new Date(data.endTime);
-					}
-				}
+		if (iAm.role === 5) {
+			query.s = {$ne: 9};
+			_.assign(query, _session.us[iAm.login].mod_rquery);
+		}
 
-				PhotoFresh.collection.find({user: userid}, compactFields, {sort: {ldate: -1}}, this.parallel());
-				PhotoDis.collection.find(query, compactFields, this.parallel());
-				if (user.role > 9) {
-					PhotoDel.collection.find(query, compactFields, this.parallel());
-				}
-			},
-			Utils.cursorsExtract,
-			function (err, fresh, disabled, del) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				var res = {fresh: fresh || [], disabled: disabled || [], len: fresh.length + disabled.length},
-					i;
-				for (i = res.fresh.length; i--;) {
-					res.fresh[i].fresh = true;
-				}
-				for (i = res.disabled.length; i--;) {
-					res.disabled[i].disabled = true;
-				}
-				if (user.role > 9) {
-					res.del = del || [];
-					res.len += res.del.length;
-					for (i = res.del.length; i--;) {
-						res.del[i].del = true;
-					}
-				}
-				cb(res);
+		if (data.startTime || data.endTime) {
+			query.sdate = {};
+			if (data.startTime) {
+				query.sdate.$gte = new Date(data.startTime);
 			}
-		);
+			if (data.endTime) {
+				query.sdate.$lte = new Date(data.endTime);
+			}
+		}
+
+		Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}}, function (err, photos) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+
+			cb({photos: photos});
+		});
 	});
 }
 
@@ -1186,14 +1166,11 @@ function convertPhotosAll(socket, data, cb) {
 /**
  * Находим фотографию
  * @param query
- * @param fieldSelect Выбор полей
+ * @param fieldSelect Выбор полей (обязательно должен присутствовать s)
  * @param user Пользователь сессии
  * @param cb
  */
 function findPhoto(query, fieldSelect, user, cb) {
-	if (fieldSelect.s === undefined) {
-		fieldSelect.s = 1;
-	}
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
@@ -1427,30 +1404,6 @@ var findPhotosAll = (function () {
 				cb(err, res);
 			}
 		);
-	};
-}());
-
-/**
- * Считаем фотографии по сквозной таблице
- * @param query
- * @param user Пользователь сессии
- * @param cb
- */
-var countPhotosAll = (function () {
-	return function (query, user, cb) {
-		if (user.role > 4) {
-			var notin = [];
-
-			if (user.role < 10) {
-				notin.push(9); //Не обладающие ролью админа не могут видеть удаленные фотографии
-			}
-			if (notin.length) {
-				query.state = {$nin: notin};
-			}
-		} else {
-			query.state = 5;
-		}
-		PhotoSort.count(query, cb);
 	};
 }());
 

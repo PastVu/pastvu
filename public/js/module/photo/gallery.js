@@ -134,22 +134,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		loggedInHandler: function () {
 			// После логина перезапрашиваем фотографии пользователя
-			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				if (this.feed()) {
-					if (!this.filter.nogeo) {
-						//В режиме ленты запрашиваем приватные и подмешиваем в текущие
-						this.loading(true);
-						this.receivePhotosPrivate(function (data) {
-							this.loading(false);
-							if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-								this.getNextPage();
-							}
-						}, this);
-					}
-				} else {
-					//В постраничном режиме просто перезапрашиваем страницу
-					this.getPhotos((this.page() - 1) * this.limit, this.limit);
-				}
+			if (this.feed()) {
+				//В режиме ленты также перезапрашиваем всё, а не только приватные,
+				//т.к. необходимо обновить по регионам пользователя
+				this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
+			} else {
+				//В постраничном режиме просто перезапрашиваем страницу
+				this.getPhotos((this.page() - 1) * this.limit, this.limit);
 			}
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
@@ -276,7 +267,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.getPhotos(this.photos().length, this.limit);
 			}
 		},
-		getPhotos: function (skip, limit, cb, ctx) {
+		getPhotos: function (skip, limit, cb, ctx, forceReplace) {
 			this.loading(true);
 			this.receivePhotos(skip, limit, function (data) {
 				if (!data || data.error) {
@@ -292,7 +283,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 				if (this.feed()) {
 					if (data.photos && data.photos.length) {
-						this.photos.concat(data.photos, false);
+						if (forceReplace) {
+							this.photos(data.photos);
+						} else {
+							this.photos.concat(data.photos, false);
+						}
 					}
 					if (this.scrollActive && limit > data.photos.length) {
 						this.scrollDeActivate();
@@ -332,40 +327,44 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}.bind(this));
 			socket.emit(reqName, params);
 		},
+		//Запрос непубличных фотографий, использовался при логине
 		receivePhotosPrivate: function (cb, ctx) {
-			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).sdate : undefined, endTime: undefined};
+			var params = {login: this.u.login()};
+
+			if (this.photos().length) {
+				params.startTime = _.last(this.photos()).sdate;
+			}
 
 			socket.once('takeUserPhotosPrivate', function (data) {
-				if (data && !data.error && data.len > 0) {
-					var currArray = this.photos(),
-						needSort,
-						needReplacement;
+				if (data && !data.error && data.photos && data.photos.length) {
+					var currPhotos = this.photos(),
+						photo,
+						newPhotosFresh = [],
+						newPhotosNotFresh = [],
+						i = data.photos.length;
 
-					if (data.disabled && data.disabled.length) {
-						this.processPhotos(data.disabled);
-						Array.prototype.push.apply(currArray, data.disabled);
-						needReplacement = needSort = true;
-					}
-					if (data.del && data.del.length) {
-						this.processPhotos(data.del);
-						Array.prototype.push.apply(currArray, data.del);
-						needReplacement = needSort = true;
-					}
-					if (needSort) {
-						currArray.sort(function (a, b) {
-							return a.sdate < b.sdate ? 1 : (a.sdate > b.sdate ? -1 : 0);
-						});
+					this.processPhotos(data.photos);
+
+					while (i--) {
+						photo = data.photos[i];
+						if (photo.s < 2) {
+							newPhotosFresh.unshift(photo);
+						} else {
+							newPhotosNotFresh.unshift(photo);
+						}
 					}
 
-					if (data.fresh && data.fresh.length) {
-						this.processPhotos(data.fresh);
-						Array.prototype.unshift.apply(currArray, data.fresh);
-						needReplacement = true;
+					Array.prototype.push.apply(currPhotos, newPhotosNotFresh);
+					currPhotos.sort(function (a, b) {
+						return a.sdate < b.sdate ? 1 : (a.sdate > b.sdate ? -1 : 0);
+					});
+
+					//Неподтвержденные всегда вначале списка
+					if (newPhotosFresh.length) {
+						Array.prototype.unshift.apply(currPhotos, newPhotosFresh);
 					}
 
-					if (needReplacement) {
-						this.photos(currArray);
-					}
+					this.photos(currPhotos);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
