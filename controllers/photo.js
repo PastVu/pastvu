@@ -660,6 +660,7 @@ function giveUserPhotos(iAm, data, cb) {
 				var query = buildPhotosQuery(filter, user._id, iAm);
 				query.user = user._id;
 				console.log(JSON.stringify(query));
+
 				Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
 				Photo.count(query, this.parallel());
 			},
@@ -694,7 +695,7 @@ function giveUserPhotos(iAm, data, cb) {
 
 //Берем массив до и после указанной фотографии пользователя указанной длины
 function giveUserPhotosAround(socket, data, cb) {
-	var user = socket.handshake.session.user,
+	var iAm = socket.handshake.session.user,
 		cid = Number(data && data.cid),
 		limitL = Math.min(Number(data.limitL), 100),
 		limitR = Math.min(Number(data.limitR), 100);
@@ -703,37 +704,26 @@ function giveUserPhotosAround(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {_id: 0, user: 1, adate: 1, ldate: 1}, user, function (err, photo) {
+	findPhoto({cid: cid}, {_id: 0, user: 1, sdate: 1}, iAm, function (err, photo) {
 		if (err || !photo || !photo.user) {
 			return cb({message: msg.notExists, error: true});
 		}
 
 		step(
 			function () {
-				var query = {user: photo.user},
-					noPublic = user && (user.role > 4 || photo.user.equals(user._id));
+				var query = buildPhotosQuery({}, photo.user, iAm);
+				query.user = photo.user;
 
 				if (limitL) {
-					if (noPublic) {
-						//Если текущая фотография новая, то stamp должен быть увеличен на 10 лет
-						query.stamp = {$gt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-						findPhotosAll(query, compactFields, {sort: {stamp: 1}, limit: limitL}, user, this.parallel());
-					} else {
-						query.adate = {$gt: photo.adate};
-						Photo.find(query, compactFields, {lean: true, sort: {adate: 1}, limit: limitL}, this.parallel());
-					}
+					query.sdate = {$gt: photo.sdate};
+					Photo.find(query, compactFields, {lean: true, sort: {sdate: 1}, limit: limitL}, this.parallel());
 				} else {
 					this.parallel()(null, []);
 				}
 
 				if (limitR) {
-					if (noPublic) {
-						query.stamp = {$lt: photo.adate || new Date(photo.ldate.getTime() + shift10y)};
-						findPhotosAll(query, compactFields, {sort: {stamp: -1}, limit: limitR}, user, this.parallel());
-					} else {
-						query.adate = {$lt: photo.adate};
-						Photo.find(query, compactFields, {lean: true, sort: {adate: -1}, limit: limitR}, this.parallel());
-					}
+					query.sdate = {$lt: photo.sdate};
+					Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}, limit: limitL}, this.parallel());
 				} else {
 					this.parallel()(null, []);
 				}
@@ -1201,6 +1191,9 @@ function convertPhotosAll(socket, data, cb) {
  * @param cb
  */
 function findPhoto(query, fieldSelect, user, cb) {
+	if (fieldSelect.s === undefined) {
+		fieldSelect.s = 1;
+	}
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
@@ -1214,7 +1207,7 @@ function findPhoto(query, fieldSelect, user, cb) {
 }
 
 /**
- * Находим фотографии с учетом прав на статусы
+ * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
  * @param filter
  * @param forUserId
  * @param iAm Пользователь сессии
@@ -1323,84 +1316,6 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		}
 	}
 	return query;
-}
-/**
- * Находим фотографии с учетом прав на статусы
- * @param query
- * @param fieldSelect Выбор полей
- * @param options
- * @param iAm Пользователь сессии
- * @param cb
- */
-function findPhotos(query, fieldSelect, options, iAm, cb) {
-	var queryPublicOr;
-
-	if (!iAm) {
-		query.s = 5; //Анонимам отдаем только публичные
-	} else if (iAm.role < 9) {
-		if (query.user && query.user.equals(iAm._id)) {
-			query.s = {$ne: 9}; //Собственную галерею отдаем без удаленных
-		} else if (iAm.role < 5) {
-			query.s = 5; //Ниже чем модераторам региона отдаем только публичные
-		} else if (iAm.role === 5) {
-			if (!iAm.mod_regions.length) {
-				query.s = {$ne: 9}; //Глобальным модераторам отдаем без удаленных все фотографии
-			} else {
-				//Региональным модераторам отдаем в своих регионах без удаленных,
-				//в остальных (на которые подписаны) - только публичные
-				queryPublicOr = query.$or || {};
-				query.$or = [
-					{s: 5},
-					{s: {$ne: 9}}
-				];
-				console.log(queryPublicOr);
-				console.log(_session.us[iAm.login].mod_rquery);
-				_.assign(query.$or[1], _session.us[iAm.login].mod_rquery);
-			}
-		}
-	}
-
-	options = options || {};
-	options.lean = true;
-	Photo.find(query, fieldSelect, options, function (err, photos) {
-		cb(err, photos);
-	});
-}
-/**
- * Считаем фотографии по сквозной таблице
- * @param query
- * @param iAm Пользователь сессии
- * @param cb
- */
-function countPhotos(query, iAm, cb) {
-	var queryPublicOr;
-
-	if (!iAm) {
-		query.s = 5; //Анонимам отдаем только публичные
-	} else if (iAm.role < 9) {
-		if (query.user && query.user.equals(iAm._id)) {
-			query.s = {$ne: 9}; //Собственную галерею отдаем без удаленных
-		} else if (iAm.role < 5) {
-			query.s = 5; //Ниже чем модераторам региона отдаем только публичные
-		} else if (iAm.role === 5) {
-			if (!iAm.mod_regions.length) {
-				query.s = {$ne: 9}; //Глобальным модераторам отдаем без удаленных все фотографии
-			} else {
-				//Региональным модераторам отдаем в своих регионах без удаленных,
-				//в остальных (на которые подписаны) - только публичные
-				queryPublicOr = query.$or || {};
-				query.$or = [
-					{s: 5},
-					{s: {$ne: 9}}
-				];
-				console.log(queryPublicOr);
-				console.log(_session.us[iAm.login].mod_rquery);
-				_.assign(query.$or[1], _session.us[iAm.login].mod_rquery);
-			}
-		}
-	}
-
-	Photo.count(query, cb);
 }
 
 /**
@@ -1732,4 +1647,3 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
-module.exports.findPhotos = findPhotos;
