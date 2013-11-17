@@ -10,7 +10,8 @@ module.exports.loadController = function (app, db) {
 
 	saveSystemJSFunc(function pastvuPatch() {
 		var startTime = Date.now(),
-			countBegin = db.users_comments_view.count();
+			shift10y = 315576000000,
+			sdate;
 
 		//Заполняем новую коллекцию для карты публичными фотографиями
 		print('Filling photos_map with ' + db.photos.count() + ' public photos');
@@ -42,8 +43,9 @@ module.exports.loadController = function (app, db) {
 
 		//Заполняем для всех фотографий новое поле для сортировки sdate
 		print('Filling sdate for ' + db.photos.count() + ' photos');
-		db.photos.find({}, {cid: 1, ldate: 1, adate: 1}).forEach(function (photo) {
-			db.photos.update({cid: photo.cid}, {$set: {sdate: photo.adate || photo.ldate}});
+		db.photos.find({}, {cid: 1, ldate: 1, adate: 1, s: 1}).forEach(function (photo) {
+			sdate = photo.s < 2 ? new Date(photo.ldate.getTime() + shift10y): (photo.adate || photo.ldate);
+			db.photos.update({cid: photo.cid}, {$set: {sdate: sdate}});
 		});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};

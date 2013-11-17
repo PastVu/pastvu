@@ -187,7 +187,7 @@ function createPhotos(socket, data, cb) {
 					user: user._id,
 					file: item.fullfile,
 					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
-					sdate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
+					sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
 					type: item.type,
 					size: item.size,
 					geo: undefined,
@@ -260,7 +260,6 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
 				{
 					$setOnInsert: {cid: photo.cid},
 					$set: {
-						cid: photo.cid,
 						geo: photo.geo,
 						file: photo.file,
 						dir: photo.dir,
@@ -394,6 +393,7 @@ function approvePhoto(iAm, cid, cb) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
 
+		photo.s = 5;
 		photo.adate = photo.sdate = new Date();
 		photo.save(function (err, photoSaved) {
 			if (err) {
