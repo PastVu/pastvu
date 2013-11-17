@@ -59,13 +59,13 @@
 							//ko if: userRibbon().length
 							.userRibbon.photoTiles
 								//ko foreach: userRibbon
-								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
+								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: 's' + $data.s")
 									.photoBox
 										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 										.curtain
-										//ko if: $data.noPublic
-										.status.fringe(data-bind="attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-											span.glyphicon(data-bind="css: {'glyphicon-asterisk': fresh && !ready, 'glyphicon-flag': fresh && ready, 'glyphicon-lock': disabled, 'glyphicon-trash': del}")
+										//ko if: $data.s!==5
+										.status.fringe(data-bind="attr: {title: s<2 ? (s===1 ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (s===7 ? 'Фотография неактивна' : 'Фотография удалена')}")
+											span.glyphicon(data-bind="css: {'glyphicon-asterisk': s===0, 'glyphicon-flag': s===1, 'glyphicon-lock': s===7, 'glyphicon-trash': s===9}")
 										// /ko
 								// /ko
 							// /ko
@@ -85,36 +85,36 @@
 
 	//-ACTIONS VIEW MODE
 	script(id="photoActionsView", type="text/html")
-		button.btn.btn-primary(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+		button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-pencil
 			|  Редактировать
-		//ko if: IOwner() && p.fresh() && !p.ready()
-		button.btn.btn-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
+		//ko if: IOwner() && p.s()===0
+		button.btn.btn-success(type="button", title="Отправить на подтверждение модератору", data-bind="click: setReady, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-check
 			|  Готово
 		// /ko
 		//ko if: canBeApprove()
-		button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
+		button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-ok
 			|  Подтвердить
 		// /ko
 		//ko if: canBeDisable()
-		button.btn(type="button", data-bind="css: {'btn-warning': !p.disabled(), 'btn-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-			span.glyphicon(data-bind="css: {'glyphicon-exclamation-sign': !p.disabled(), 'glyphicon-ok-sign': p.disabled()}")
-			span(data-bind="text: p.disabled() ? ' Активировать' : ' Деактивировать'")
+		button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
+			span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
+			span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
 		// /ko
-		//ko if: !p.del() && can.remove()
-		button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
+		//ko if: p.s()!==9 && can.remove()
+		button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-trash
-			span(data-bind="text: !IOwner() && p.fresh() ? ' Отклонить' : ' Удалить'")
+			span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
 		// /ko
 
 	//-ACTIONS EDIT MODE
 	script(id="photoActionsEdit", type="text/html")
-		button.btn.btn-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
+		button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-ok
 			|  Сохранить
-		button.btn.btn-danger(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
+		button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-remove
 			|  Отмена редактирования
 

@@ -78,10 +78,10 @@ var auth = require('./auth.js'),
 				canModerate = user.role > 5 || photoPermissions.canModerate(photo, user);
 
 				can.edit = canModerate || ownPhoto;
-				can.remove = canModerate || photo.fresh && ownPhoto; //Пока фото новое, её может удалить и владелец
+				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
 				if (canModerate) {
 					can.disable = true;
-					if (photo.fresh) {
+					if (photo.s < 2) {
 						can.approve = true;
 					}
 					if (user.role > 9) {
@@ -458,7 +458,7 @@ function activateDeactivate(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				cb({disabled: makeDisabled});
+				cb({s: photoSaved.s});
 			});
 		});
 	});
@@ -822,9 +822,6 @@ function givePhotosFresh(socket, data, cb) {
 			Photo.find(query, compactFields, {lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, function (err, photos) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
-				}
-				for (var i = photos.length; i--;) {
-					photos[i].fresh = true;
 				}
 				cb({photos: photos || []});
 			});

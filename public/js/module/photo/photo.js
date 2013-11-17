@@ -43,11 +43,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}, this);
 
 			this.canBeApprove = this.co.canBeApprove = ko.computed(function () {
-				return this.p.fresh() && this.can.approve();
+				return this.p.s() < 2 && this.can.approve();
 			}, this);
 
 			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
-				return !this.p.fresh() && !this.p.del() && this.can.disable();
+				return this.p.s() > 1 && this.p.s() !== 9 && this.can.disable();
 			}, this);
 
 			this.edit = ko.observable(undefined);
@@ -60,15 +60,15 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (this.edit()) {
 					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
-				} else if (this.p.fresh()) {
-					if (!this.p.ready()) {
+				} else if (this.p.s() < 2) {
+					if (this.p.s() === 0) {
 						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', '', 'warn'); //Photo is new. Administrator must approve it
 					} else {
 						this.setMessage('Новая фотография. Ожидает подтверждения модератором', '', 'warn'); //Photo is new. Administrator must approve it
 					}
-				} else if (this.p.disabled()) {
+				} else if (this.p.s() === 7) {
 					this.setMessage('Фотография деактивирована модератором', 'Только вы и модераторы можете видеть её и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
-				} else if (this.p.del()) {
+				} else if (this.p.s() === 9) {
 					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
 				} else {
 					this.setMessage('', 'muted');
@@ -279,7 +279,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 						Utils.title.setTitle({title: this.p.title()});
 
-						editModeNew = this.can.edit() && this.IOwner() && this.p.fresh() && !this.p.ready();
+						editModeNew = this.can.edit() && this.IOwner() && this.p.s() === 0;
 
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
@@ -560,7 +560,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						if (!data.error) {
 							this.edit(false);
 
-							if (this.p.fresh() && !this.p.ready()) {
+							if (this.p.s() === 0) {
 								this.notifyReady();
 							}
 							ga('send', 'event', 'photo', 'edit', 'photo edit success');
@@ -596,8 +596,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		setApproveSuccess: function () {
-			this.p.fresh(false);
-			this.originData.fresh = false;
+			this.p.s(5);
+			this.originData.s = 5;
 			this.commentsActivate({checkTimeout: 100});
 			ga('send', 'event', 'photo', 'approve', 'photo approve success');
 		},
@@ -606,16 +606,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(true);
 				socket.once('disablePhotoResult', function (data) {
 					if (data && !data.error) {
-						this.p.disabled(data.disabled || false);
-						this.originData.disabled = data.disabled || false;
-						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' success');
+						this.p.s(data.s);
+						this.originData.s = data.s;
+						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' success');
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
-						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' error');
+						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' error');
 					}
 					this.exe(false);
 				}.bind(this));
-				socket.emit('disablePhoto', {cid: this.p.cid(), disable: !this.p.disabled()});
+				socket.emit('disablePhoto', {cid: this.p.cid(), disable: this.p.s() !== 7});
 			}
 		},
 
@@ -691,19 +691,18 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+								$noty.$buttons.find('button').attr('disabled', true);
 							}
 
 							socket.once('removePhotoCallback', function (data) {
 								$noty.$buttons.find('.btn-danger').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
-									.removeClass('disabled')
 									.off('click');
 
 								if (data && !data.error) {
-									this.p.del(true);
-									this.originData.del = true;
+									this.p.s(9);
+									this.originData.s = 9;
 
 									$noty.$message.children().html('Photo successfully removed');
 
@@ -720,14 +719,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 											okButton.trigger('click');
 										}
 									);
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' success');
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' success');
 								} else {
 									$noty.$message.children().html(data.message || 'Error occurred');
 									okButton.text('Close').on('click', function () {
 										$noty.close();
 										this.exe(false);
 									}.bind(this));
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' error');
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' error');
 								}
 							}.bind(that));
 							socket.emit('removePhoto', that.p.cid());
@@ -817,7 +816,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			delete this.sourceEditingOrigin;
 		},
 		setReady: function (data, event) {
-			if (this.p.fresh() && !this.p.ready()) {
+			if (this.p.s() === 0) {
 				if (_.isEmpty(this.p.geo())) {
 					this.askForGeo(this.sendReady, this);
 				} else {
@@ -832,8 +831,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					if (data.published) {
 						this.setApproveSuccess();
 					} else {
-						this.p.ready(true);
-						this.originData.ready = true;
+						this.p.s(1);
+						this.originData.s = 1;
 					}
 					ga('send', 'event', 'photo', 'ready', 'photo ready success');
 				} else {
@@ -846,7 +845,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		toConvert: function (data, event) {
-			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a",  "d",  "h",  "m",  "q",  "s",  "x"]);
+			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a", "d", "h", "m", "q", "s", "x"]);
 			if (!this.can.convert() || !convertVarsSel.length) {
 				return false;
 			}
@@ -974,7 +973,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		 */
 		commentsActivate: function (options) {
 			//Активируем, если фото не новое и не редактируется
-			if (!this.edit() && !this.p.fresh()) {
+			if (!this.edit() && this.p.s() > 1) {
 				this.commentsVM.activate(
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
 					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length, checkTimeout: this.p.ccount() > 30 ? 500 : 300}),

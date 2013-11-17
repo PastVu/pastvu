@@ -6,16 +6,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			// Следующие типы включают друг друга по нарастающей
 			base: {
 				cid: '',
+				s: 5,
 
 				file: '',
 				title: '',
 
 				conv: false, //Конвертируется
-				convqueue: false, //В очереди на конвертацию
-
-				fresh: false, //Новое
-				disabled: false, //Не активное
-				del: false //Удаленное
+				convqueue: false //В очереди на конвертацию
 			},
 			compact: {
 				ldate: Date.now(),
@@ -113,9 +110,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				origin.geo = defaults[defType].geo;
 			}
 			User.factory(origin.user, 'base');
-		}
-		if (origin.fresh || origin.disabled || origin.del) {
-			origin.noPublic = true;
 		}
 
 		origin.sfile = P.preaddr + picFormats[picType] + origin.file;

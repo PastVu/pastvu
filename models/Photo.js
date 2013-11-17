@@ -122,19 +122,6 @@ var FragmentSchema = new Schema({
 		}
 	);
 
-PhotoNewSchema.virtual('fresh').get(function () {
-	return this.s === 0 || this.s === 1;
-});
-PhotoNewSchema.virtual('ready').get(function () {
-	return this.s === 1;
-});
-PhotoNewSchema.virtual('disabled').get(function () {
-	return this.s === 7;
-});
-PhotoNewSchema.virtual('del').get(function () {
-	return this.s === 9;
-});
-
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
 //Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoNewSchema.index({g: '2d', year: 1});
