@@ -785,10 +785,10 @@ function giveUserPhotosPrivate(socket, data, cb) {
 
 //Отдаем новые фотографии
 function givePhotosFresh(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user ||
-		(!data.login && user.role < 5) ||
-		(data.login && user.role < 5 && user.login !== data.login)) {
+	var iAm = socket.handshake.session.user;
+	if (!iAm ||
+		(!data.login && iAm.role < 5) ||
+		(data.login && iAm.role < 5 && iAm.login !== data.login)) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!data || !Utils.isType('object', data)) {
@@ -807,24 +807,27 @@ function givePhotosFresh(socket, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			var criteria = {s: 0};
+			var query = {s: 0};
+
+			if (iAm.login !== data.login && iAm.role === 5) {
+				_.assign(query, _session.us[iAm.login].mod_rquery);
+			}
 			if (userid) {
-				criteria.user = userid;
+				query.user = userid;
 			}
 			if (data.after) {
-				criteria.ldate = {$gt: new Date(data.after)};
+				query.ldate = {$gt: new Date(data.after)};
 			}
-			Photo.collection.find(criteria, compactFields, {skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, this);
-		},
-		Utils.cursorExtract,
-		function (err, photos) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			for (var i = photos.length; i--;) {
-				photos[i].fresh = true;
-			}
-			cb({photos: photos || []});
+
+			Photo.find(query, compactFields, {lean: true, skip: data.skip || 0, limit: Math.min(data.limit || 100, 100)}, function (err, photos) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				for (var i = photos.length; i--;) {
+					photos[i].fresh = true;
+				}
+				cb({photos: photos || []});
+			});
 		}
 	);
 }
