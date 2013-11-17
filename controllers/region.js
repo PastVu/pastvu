@@ -414,7 +414,7 @@ function saveUserRegions(socket, data, cb) {
 		i,
 		j;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
@@ -437,7 +437,7 @@ function saveUserRegions(socket, data, cb) {
 				itsOnline = true;
 				this(null, user);
 			} else {
-				User.findOne({login: login}, this());
+				User.findOne({login: login}, this);
 			}
 		},
 		function (err, user) {

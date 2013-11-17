@@ -91,10 +91,7 @@ define([
 						name: 'regions',
 						valueKey: 'title',
 						limit: 7,
-						local: this.regionsTypehead/*[{
-						 title: 'США',
-						 tokens: ['USA', 'США', 'Соединенные Штаты Америки']
-						 }]*/
+						local: this.regionsTypehead/*[{title: 'США', tokens: ['USA', 'США', 'Соединенные Штаты Америки']}]*/
 					}
 				})
 				.on('afterCreateToken', this.onCreateToken.bind(this)) //При создании токена добавляем выбор

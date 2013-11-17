@@ -27,7 +27,7 @@
 					span.glyphicon(data-bind="css: {'glyphicon-minus': $data.opened(), 'glyphicon-plus': !$data.opened()}")
 				// /ko
 				.name(data-bind="click: function() {$parents[$data.level].clickNode($data.title_local)}, attr: {title: $data.selected() ? 'Снять выбор' : ($data.selectable() ? 'Выбрать регион' : '')}")
-					span(data-bind="text: ' ' + $data.title_en")
+					span(data-bind="text: ' ' + $data.title_local")
 			//ko if: $data.childLen && $data.opened()
 			//ko template: {name: 'treeNode', foreach: $data.regions}
 			// /ko

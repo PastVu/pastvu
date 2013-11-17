@@ -45,9 +45,13 @@ var auth = require('./auth.js'),
 				photoRegion,
 				i;
 
-			//Если у пользователя роль модератора регионов, смотрим его регионы,
-			//и если фотография принадлежит одному из них, значит пользователь может её модерировать
+			//Если у пользователя роль модератора регионов, смотрим его регионы
 			if (user && user.role === 5) {
+				if (!user.mod_regions || !user.mod_regions.length) {
+					return true; //Глобальные модераторы могут модерировать всё
+				}
+
+				//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
 				rhash = _session.us[user.login].mod_rhash;
 				for (i = 0; i < 5; i++) {
 					photoRegion = photo['r' + i];
@@ -653,7 +657,6 @@ function giveUserPhotos(iAm, data, cb) {
 			function () {
 				var query = buildPhotosQuery(filter, user._id, iAm);
 				query.user = user._id;
-				//console.log(JSON.stringify(query));
 
 				Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
 				Photo.count(query, this.parallel());
@@ -1320,8 +1323,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		query.geo = null;
 	}
 
-	console.log(query);
-
+	//console.log(JSON.stringify(query));
 	return query;
 }
 
