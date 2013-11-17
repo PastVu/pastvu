@@ -40,6 +40,35 @@ function fillCache(cb) {
 	});
 }
 
+function getRegionsFromCache(cids) {
+	var result = [],
+		region,
+		i = cids.length;
+
+	while (i--) {
+		region = regionCacheHash[cids[i]];
+		if (region !== undefined) {
+			result.unshift(region);
+		}
+	}
+
+	return result;
+}
+function getRegionsHashFromCache(cids) {
+	var result = {},
+		region,
+		i = cids.length;
+
+	while (i--) {
+		region = regionCacheHash[cids[i]];
+		if (region !== undefined) {
+			result[cids[i]] = region;
+		}
+	}
+
+	return result;
+}
+
 function saveRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
@@ -614,13 +643,18 @@ module.exports.loadController = function (app, db, io) {
 
 	return module.exports;
 };
+
 module.exports.fillCache = fillCache;
 module.exports.regionCacheHash = regionCacheHash;
 module.exports.regionCacheArr = regionCacheArr;
+module.exports.getRegionsFromCache = getRegionsFromCache;
+module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
+
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegions = setObjRegions;
 module.exports.clearObjRegions = clearObjRegions;
 module.exports.setUserRegions = setUserRegions;
+
 module.exports.buildQuery = buildQuery;

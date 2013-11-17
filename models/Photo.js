@@ -40,7 +40,7 @@ var FragmentSchema = new Schema({
 		r3: {type: Number, sparse: true},
 		r4: {type: Number, sparse: true},
 
-		s: {type: Number}, //Статус фотографии {0-новая, 1-готовая, 5-публичная, 7-деактивированная, 9-удаленная}
+		s: {type: Number, index: true}, //Статус фотографии {0-новая, 1-готовая, 5-публичная, 7-деактивированная, 9-удаленная}
 
 		dir: {type: String, 'default': ''},
 		title: {type: String, 'default': ''},
@@ -73,16 +73,6 @@ var FragmentSchema = new Schema({
 			year2: {type: Number}
 		},
 		{collection: 'photos_map', strict: true}
-	),
-
-	//Коллекция сквозной сортировки фотографий независимо от статуса фото
-	PhotosSortSchema = new Schema({
-			photo: {type: Schema.Types.ObjectId, ref: 'Photo', index: true},
-			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-			stamp: {type: Date, index: true},
-			state: {type: Number}
-		},
-		{collection: 'photos_sort', strict: true}
 	),
 
 	PhotoConveyerSchema = new Schema(
@@ -132,34 +122,7 @@ PhotoNewSchema.index({r3: 1, sdate: 1});
 PhotoNewSchema.index({r4: 1, sdate: 1});
 
 
-PhotoNewSchema.pre('save', preSave);
-
-
-PhotoNewSchema.statics.getPhotoCompact = function (query, options, cb) {
-	if (!query || !query.cid) {
-		cb({message: 'cid is not specified'});
-	}
-	options = options || {};
-	this.findOne(query, null, options).select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-
-PhotoNewSchema.statics.getPhotosCompact = function (query, options, cb) {
-	if (!query) {
-		cb({message: 'query is not specified'});
-	}
-	options = options || {};
-	this.find(query, null, options).sort('-sdate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-PhotoNewSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
-	if (!query) {
-		cb({message: 'query is not specified'});
-	}
-	options = options || {};
-	this.find(query, null, options).sort('-ldate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-
-
-function preSave(next) {
+PhotoNewSchema.pre('save', function (next) {
 	// check year2
 	if (this.isModified('year') || this.isModified('year2')) {
 		if (this.year < 1826) {
@@ -173,7 +136,7 @@ function preSave(next) {
 	}
 
 	return next();
-}
+});
 
 
 module.exports.makeModel = function (db) {

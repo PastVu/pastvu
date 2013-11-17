@@ -8,10 +8,6 @@ var auth = require('./auth.js'),
 	UserSelfPublishedPhotos,
 	Photo,
 	PhotoMap,
-	PhotoFresh,
-	PhotoDis,
-	PhotoDel,
-	PhotoSort,
 	Comment,
 	Counter,
 	UserSubscr,
@@ -947,7 +943,7 @@ function savePhoto(socket, data, cb) {
 				// Если фото - публичное, у него
 				// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
 				// то запускаем пересчет кластеров этой фотографии
-				if (!photoOldObj.fresh && !photoOldObj.disabled && !photoOldObj.del &&
+				if (photoOldObj.s === 5 &&
 					(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
 					(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
 					photoToMap(photo, oldGeo, photoOldObj.year, finish);
@@ -1190,223 +1186,144 @@ function findPhoto(query, fieldSelect, user, cb) {
  * @param iAm Пользователь сессии
  */
 function buildPhotosQuery(filter, forUserId, iAm) {
-	var query = {},
+	var query, //Результирующий запрос
+		query_pub, //Запрос в рамках публичных регионов
+		query_mod, //Запрос в рамках модерируемых регионов
+		rquery_pub,
+		rquery_mod,
+
+		region,
+		contained,
 		usObj,
 		i,
 		j;
+
+	if (Array.isArray(filter.r) && filter.r.length) {
+		rquery_pub = regionController.buildQuery(regionController.getRegionsFromCache(filter.r)).rquery;
+	}
+
+	if (!iAm) {
+		query_pub = {s: 5};  //Анонимам отдаем только публичные
+	} else if (forUserId && forUserId.equals(iAm._id)) {
+		//Собственную галерею отдаем без удаленных(не админам) и без регионов в настройках, только по filter.r
+		query_pub = iAm.role > 9 ? {} : {s: {$ne: 9}};
+	} else {
+		usObj = _session.us[iAm.login];
+
+		if (filter.r === undefined && iAm.regions.length) {
+			rquery_pub = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
+		}
+
+		if (iAm.role > 9) {
+			//Админам отдаем все статусы
+			query_pub = {};
+		} else if (!iAm.role || iAm.role < 5) {
+			//Ниже чем модераторам региона отдаем только публичные
+			query_pub = {s: 5};
+		} else if (iAm.role === 5) {
+			//Региональным модераторам отдаем в своих регионах без удаленных, в остальных - только публичные
+
+			if (!iAm.mod_regions.length || usObj.mod_regions_equals) {
+				//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
+				//(т.е. область модерирования включает в себя пользовательскую)
+				//отдаем пользовательскую область как модерируемую
+				query_pub = {s: {$ne: 9}};
+			} else if (filter.r === 0 || !iAm.regions.length) {
+				//Если запрашиваются все пользовательские регионы (т.е. весь мир),
+				//то делаем глобальный запрос по публичным, а со статусами по модерируемым
+				query_pub = {s: 5};
+				query_mod = {s: {$ne: 9}};
+				rquery_mod = usObj.mod_rquery;
+			} else {
+				//В случае, когда массив пользовательских и модерируемых регионов различается,
+				//"вычитаем" публичные из модерируемых, получая два новых чистых массива
+
+				var regular_regions,//Пользовательские регионы - из фильтра или из пользователя
+					regular_regions_hash, //Хэш пользовательских регионов - из фильтра или из пользователя
+					regions_pub = [], //Чистый массив пользовательских регионов
+					regions_mod = []; //Чистый массив модерируемых регионов
+
+				if (Array.isArray(filter.r) && filter.r.length) {
+					regular_regions = regionController.getRegionsFromCache(filter.r);
+					regular_regions_hash = regionController.getRegionsHashFromCache(filter.r);
+				} else {
+					regular_regions = regionController.getRegionsFromCache(_.pluck(iAm.regions, 'cid'));
+					regular_regions_hash =  usObj.rhash;
+				}
+
+				//Если сам пользовательский регион или один из его родителей является модерируемым,
+				//то включаем его в массив модерируемых
+				for (i = regular_regions.length; i--;) {
+					region = regular_regions[i];
+					contained = false;
+
+					if (usObj.mod_rhash[region.cid]) {
+						contained = true;
+					} else if (region.parents) {
+						for (j = region.parents.length; j--;) {
+							if (usObj.mod_rhash[region.parents[j]]) {
+								contained = true;
+								break;
+							}
+						}
+					}
+					if (contained) {
+						regions_mod.push(region);
+					} else {
+						regions_pub.push(region);
+					}
+				}
+
+				//Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
+				//то включаем такой модерируемый регион в массив модерируемых,
+				//несмотря на то, что родительский лежит в массиве публичных
+				for (i = iAm.mod_regions.length; i--;) {
+					region = usObj.mod_rhash[iAm.mod_regions[i].cid];
+					if (region.parents) {
+						for (j = region.parents.length; j--;) {
+							if (regular_regions_hash[region.parents[j]]) {
+								regions_mod.push(region);
+							}
+						}
+					}
+				}
+
+				if (regions_pub.length) {
+					query_pub = {s: 5};
+					rquery_pub = regionController.buildQuery(regions_pub).rquery;
+				}
+				if (regions_mod.length) {
+					query_mod = {s: {$ne: 9}};
+					rquery_mod = regionController.buildQuery(regions_mod).rquery;
+				}
+			}
+		}
+	}
+
+	if (query_pub && rquery_pub) {
+		_.assign(query_pub, rquery_pub);
+	}
+	if (query_mod && rquery_mod) {
+		_.assign(query_mod, rquery_mod);
+	}
+
+	if (query_pub && query_mod) {
+		query = {$or: [
+			query_pub,
+			query_mod
+		]};
+	} else {
+		query = query_pub || query_mod || {};
+	}
 
 	if (filter.nogeo) {
 		query.geo = null;
 	}
 
-	if (!iAm) {
-		query.s = 5; //Анонимам отдаем только публичные
-	} else if (iAm.role < 9) {
-		if (forUserId && forUserId.equals(iAm._id)) {
-			//Собственную галерею отдаем без удаленных и если фильтр не указан - всю
-			query.s = {$ne: 9};
-			//if (Array.isArray(filter.r) && filter.r.length) { }
-		} else {
-			usObj = _session.us[iAm.login];
+	console.log(query);
 
-			if (iAm.role < 5) {
-				//Ниже чем модераторам региона отдаем только публичные
-				query.s = 5;
-				//Если фильтр не указан - отдаем по регионам
-				if (filter.r === undefined && iAm.regions.length) {
-					_.assign(query, usObj.rquery);
-				} //else if (Array.isArray(filter.r) && filter.r.length) {}
-			} else if (iAm.role === 5) {
-				if (!iAm.mod_regions.length || usObj.mod_regions_equals) {
-					//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
-					//отдаем фотографии без удаленных
-					query.s = {$ne: 9};
-					//Если фильтр не указан - отдаем по регионам
-					if (filter.r === undefined && iAm.regions.length) {
-						_.assign(query, usObj.rquery);
-					} //else if (Array.isArray(filter.r) && filter.r.length) {}
-				} else {
-					//Региональным модераторам отдаем в своих регионах без удаленных,
-					//в остальных (на которые подписаны) - только публичные
-					var region,
-						contained,
-						regions_pub = [],
-						regions_mod = [],
-						query_pub,
-						query_mod;
-
-					//Если сам регион пользователя или один из его родителей является модерируемым,
-					//то включаем его в массив модерируемых
-					for (i = iAm.regions.length; i--;) {
-						region = usObj.rhash[iAm.regions[i].cid];
-						contained = false;
-
-						if (usObj.mod_rhash[region.cid]) {
-							contained = true;
-						} else if (region.parents) {
-							for (j = region.parents.length; j--;) {
-								if (usObj.mod_rhash[region.parents[j]]) {
-									contained = true;
-									break;
-								}
-							}
-						}
-						if (contained) {
-							regions_mod.push(region);
-						} else {
-							regions_pub.push(region);
-						}
-					}
-
-					//Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
-					//то включаем такой модерируемый регион в массив модерируемых,
-					//несмотря на то, что родительский лежит в массиве публичных
-					for (i = iAm.mod_regions.length; i--;) {
-						region = usObj.mod_rhash[iAm.mod_regions[i].cid];
-						if (region.parents) {
-							for (j = region.parents.length; j--;) {
-								if (usObj.rhash[region.parents[j]]) {
-									regions_mod.push(region);
-								}
-							}
-						}
-					}
-
-					if (regions_pub.length) {
-						query_pub = {s: 5};
-						_.assign(query_pub, regionController.buildQuery(regions_pub).rquery);
-					}
-					if (regions_mod.length) {
-						query_mod = {s: {$ne: 9}};
-						_.assign(query_mod, regionController.buildQuery(regions_mod).rquery);
-					}
-					if (regions_pub.length && regions_mod.length) {
-						query = {$or: [
-							query_pub,
-							query_mod
-						]};
-					} else {
-						query = query_pub || query_mod || {};
-					}
-				}
-			}
-		}
-	}
 	return query;
 }
-
-/**
- * Находим фотографии по сквозной таблице, независимо от статуса
- * @param query
- * @param fieldSelect Выбор полей
- * @param options
- * @param user Пользователь сессии
- * @param cb
- */
-var findPhotosAll = (function () {
-	function findInCollection(model, arr, fieldSelect, cb) {
-		if (arr.length) {
-			model.find({_id: {$in: arr}}, fieldSelect, {lean: true}, cb);
-		} else {
-			cb(null, []);
-		}
-	}
-
-	function stateCheck(source, fresh, pub, dis, del) {
-		var item,
-			i;
-		for (i = source.length; i--;) {
-			item = source[i];
-			if (item.state === 1) {
-				fresh.push(item.photo);
-			} else if (item.state === 5) {
-				pub.push(item.photo);
-			} else if (item.state === 7) {
-				dis.push(item.photo);
-			} else if (item.state === 9) {
-				del.push(item.photo);
-			}
-		}
-	}
-
-	return function (query, fieldSelect, options, user, cb) {
-		var photoSort;
-		step(
-			function () {
-				if (!user.role || user.role < 10) {
-					query.state = {$ne: 9}; //Не обладающие ролью админа не могут видеть удаленные фотографии
-				}
-				options = options || {};
-				options.lean = true;
-				PhotoSort.find(query, {_id: 0, photo: 1, state: 1}, options, this);
-			},
-			function (err, pSort) {
-				if (err) {
-					cb(err);
-				}
-				var fresh = [],
-					pub = [],
-					dis = [],
-					del = [];
-
-				//Если в выборе нет _id, то включаем его, т.к. он нужен для меппинга
-				if (!fieldSelect._id) {
-					fieldSelect = _.clone(fieldSelect);
-					fieldSelect._id = 1;
-				}
-
-				stateCheck(pSort, fresh, pub, dis, del);
-				findInCollection(PhotoFresh, fresh, fieldSelect, this.parallel());
-				findInCollection(Photo, pub, fieldSelect, this.parallel());
-				findInCollection(PhotoDis, dis, fieldSelect, this.parallel());
-				if (user.role > 9) {
-					findInCollection(PhotoDel, del, fieldSelect, this.parallel());
-				}
-				photoSort = pSort;
-			},
-			function (err, fresh, pub, dis, del) {
-				if (err) {
-					cb(err);
-				}
-				var res = [],
-					photosHash = {},
-					item,
-					i;
-
-				for (i = fresh.length; i--;) {
-					item = fresh[i];
-					item.fresh = true;
-					photosHash[item._id] = item;
-				}
-				for (i = pub.length; i--;) {
-					item = pub[i];
-					photosHash[item._id] = item;
-				}
-				for (i = dis.length; i--;) {
-					item = dis[i];
-					item.disabled = true;
-					photosHash[item._id] = item;
-				}
-				if (del && del.length) {
-					for (i = del.length; i--;) {
-						item = del[i];
-						item.del = true;
-						photosHash[item._id] = item;
-					}
-				}
-
-				for (i = photoSort.length; i--;) {
-					item = photosHash[photoSort[i].photo];
-					if (item) {
-						res.unshift(item);
-					}
-				}
-				cb(err, res);
-			}
-		);
-	};
-}());
-
 
 //Обнуляет статистику просмотров за день и неделю
 var planResetDisplayStat = (function () {
@@ -1600,3 +1517,4 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
+module.exports.buildPhotosQuery = buildPhotosQuery;

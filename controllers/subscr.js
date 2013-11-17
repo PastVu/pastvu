@@ -486,7 +486,9 @@ function getUserSubscr(iAm, data, cb) {
 					if (data.type === 'news') {
 						News.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this);
 					} else {
-						photoController.findPhotosAll({photo: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, iAm, this);
+						var query = photoController.buildPhotosQuery({r: 0}, null, iAm);
+						query._id = {$in: objIds};
+						Photo.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, this);
 					}
 				},
 				function (err, objs) {
