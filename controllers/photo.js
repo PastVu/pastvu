@@ -701,7 +701,7 @@ function giveUserPhotosAround(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {_id: 0, user: 1, sdate: 1, s: 1}, iAm, function (err, photo) {
+	findPhoto({cid: cid}, null, iAm, function (err, photo) {
 		if (err || !photo || !photo.user) {
 			return cb({message: msg.notExists, error: true});
 		}
@@ -1163,18 +1163,21 @@ function convertPhotosAll(socket, data, cb) {
 }
 
 /**
- * Находим фотографию
+ * Находим фотографию с учетом прав пользователя
  * @param query
- * @param fieldSelect Выбор полей (обязательно должен присутствовать s)
+ * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-4)
  * @param user Пользователь сессии
  * @param cb
  */
 function findPhoto(query, fieldSelect, user, cb) {
+	if (!user) {
+		query.s = 5; //Анонимам ищем только публичные
+	}
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
-		if (photoPermissions.canSee(photo, user)) {
+		if (photo && photoPermissions.canSee(photo, user)) {
 			cb(null, photo);
 		} else {
 			cb(null, null);
