@@ -217,7 +217,7 @@ define([
 
 			//Сортируем массим по уровням и названиям в пределах одного уровня
 			arr.sort(function (a, b) {
-				return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_en < b.title_en ? -1 : 1;
+				return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
 			});
 
 			function incrementParentsChildLen(region, deepestLevel) {

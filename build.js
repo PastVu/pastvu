@@ -108,6 +108,10 @@ var start = Date.now(),
 			{
 				name: "m/user/manage",
 				exclude: ['commonExcludes', 'bs/collapse']
+			},
+			{
+				name: "m/region/select",
+				exclude: ['commonExcludes']
 			}
 		]
 	},
