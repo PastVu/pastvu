@@ -497,14 +497,14 @@ function givePhoto(socket, data, cb) {
 						paralellUser = this.parallel();
 
 					if (user) {
-						photo = photo.toObject({getters: true});
+						photo = photo.toObject();
 						photo.user = {
 							login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
 						};
 						paralellUser(null, photo);
 					} else {
 						photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
-							paralellUser(err, photo && photo.toObject({getters: true}));
+							paralellUser(err, photo && photo.toObject());
 						});
 					}
 					regionController.getObjRegionList(photo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, this.parallel());
@@ -876,7 +876,7 @@ function savePhoto(socket, data, cb) {
 			return cb({message: msg.deny, error: true});
 		}
 
-		photoOldObj = photo.toObject({getters: true});
+		photoOldObj = photo.toObject();
 
 		//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
 		if (data.desc) {
