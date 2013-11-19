@@ -48,6 +48,13 @@ module.exports.loadController = function (app, db) {
 			db.photos.update({cid: photo.cid}, {$set: {sdate: sdate}});
 		});
 
+		//Очищаем подписки и время просмотра комментариев у всех удаленных фотографий
+		print('Clearing subscriptions for ' + db.photos.count({s: 9}) + ' removed photos');
+		db.photos.find({s: 9}, {_id: 1, cid: 1}).forEach(function (photo) {
+			db.users_subscr.remove({obj: photo._id});
+			db.users_comments_view.remove({obj: photo._id});
+		});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
