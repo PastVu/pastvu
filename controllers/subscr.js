@@ -454,7 +454,7 @@ function getUserSubscr(iAm, data, cb) {
 	if (!data || !Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
+	if (!iAm || (iAm.login !== data.login && !iAm.role && iAm.role < 10)) {
 		return cb({message: msg.deny, error: true});
 	}
 	User.findOne({login: data.login}, {_id: 1}, function (err, user) {
@@ -488,7 +488,7 @@ function getUserSubscr(iAm, data, cb) {
 					} else {
 						var query = photoController.buildPhotosQuery({r: 0}, null, iAm);
 						query._id = {$in: objIds};
-						Photo.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, this);
+						Photo.find(query, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, this);
 					}
 				},
 				function (err, objs) {
