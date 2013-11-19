@@ -14,6 +14,9 @@ var auth = require('./auth.js'),
 	regionController = require('./region.js'),
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
+	subscrController = require('./subscr.js'),
+	commentController = require('./comment.js'),
+
 	_ = require('lodash'),
 	fs = require('fs'),
 	ms = require('ms'), // Tiny milisecond conversion utility
@@ -28,8 +31,6 @@ var auth = require('./auth.js'),
 	publicDir = global.appVar.storePath + 'public/photos/',
 	imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
 
-	subscrController = require('./subscr.js'),
-	commentController = require('./comment.js'),
 	msg = {
 		deny: 'You do not have permission for this action',
 		notExists: 'Requested photo does not exist',
@@ -326,6 +327,10 @@ function removePhoto(socket, cid, cb) {
 			return cb({message: err && err.message || 'No such photo', error: true});
 		}
 
+		if (!photoPermissions.getCan(photo, iAm).remove) {
+			return cb({message: msg.deny, error: true});
+		}
+
 		if (photo.s === 0 || photo.s === 1) {
 			//Неподтвержденную фотографию удаляем безвозвратно
 			photo.remove(function (err) {
@@ -362,14 +367,23 @@ function removePhoto(socket, cid, cb) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				if (isPublic) {
-					changePublicPhotoExternality(socket, photoSaved, iAm, false, function (err) {
+				step(
+					function () {
+						//Отписываем всех пользователей
+						subscrController.unSubscribeObj(photoSaved._id, null, this.parallel());
+						//Удаляем время просмотра комментариев у пользователей
+						commentController.dropCommentsView(photoSaved._id, null, this.parallel());
+						if (isPublic) {
+							changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
+						}
+					},
+					function (err) {
 						if (err) {
-							return cb({message: err && err.message, error: true});
+							return cb({message: 'Removed ok, but: ' + (err && err.message || 'other changes error'), error: true});
 						}
 						cb({message: 'ok'});
-					});
-				}
+					}
+				);
 			});
 		}
 	});
@@ -1254,7 +1268,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 					regular_regions_hash = regionController.getRegionsHashFromCache(filter.r);
 				} else {
 					regular_regions = regionController.getRegionsFromCache(_.pluck(iAm.regions, 'cid'));
-					regular_regions_hash =  usObj.rhash;
+					regular_regions_hash = usObj.rhash;
 				}
 
 				//Если сам пользовательский регион или один из его родителей является модерируемым,

@@ -34,11 +34,11 @@ var fs = require('fs'),
 		commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
 	},
 
-	sendFreq = 2000, //Частота шага конвейера отправки в ms
-	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
+	sendFreq = 1500, //Частота шага конвейера отправки в ms
+	sendPerStep = 10; //Кол-во отправляемых уведомлений за шаг конвейера
 
 /**
- * Подписка объекта (внешняя, для текущего пользователя по cid объекта)
+ * Подписка/Отписка объекта (внешняя, для текущего пользователя по cid объекта)
  * @param user
  * @param data
  * @param cb
@@ -105,7 +105,56 @@ function subscribeUserByIds(userId, objId, type, cb) {
 			}
 		}
 	);
+}
 
+/**
+ * Отписать всех от объекта
+ * @param iAm
+ * @param data
+ * @param cb
+ */
+function unSubscribeObjForAll(iAm, data, cb) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!data || !Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	var cid = Number(data.cid);
+
+	step(
+		function findObj() {
+			if (data.type === 'news') {
+				News.findOne({cid: cid}, {_id: 1}, this);
+			} else {
+				photoController.findPhoto({cid: cid}, null, iAm, this);
+			}
+		},
+		function (err, obj) {
+			unSubscribeObj(obj._id, null, function (err) {
+				if (err) {
+					logger.error(err.message);
+				}
+				if (cb) {
+					cb(err);
+				}
+			});
+		}
+	);
+}
+/**
+ * Удаляет подписки на объект, если указан _id пользователя, то только его подписку
+ * @param objId
+ * @param userId Опционально. Без этого параметра удалит подписки на объект у всех пользователей
+ * @param cb
+ */
+function unSubscribeObj(objId, userId, cb) {
+	var query = {obj: objId};
+	if (userId) {
+		query.user = userId;
+	}
+	UserSubscr.remove(query, cb);
 }
 
 /**
@@ -558,6 +607,7 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.subscribeUserByIds = subscribeUserByIds;
+module.exports.unSubscribeObj = unSubscribeObj;
 module.exports.commentAdded = commentAdded;
 module.exports.commentViewed = commentViewed;
 module.exports.userThrottleChange = userThrottleChange;

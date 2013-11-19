@@ -899,6 +899,19 @@ function hideObjComments(oid, hide, iAm, cb) {
 function upsertCommentsView(objId, userId, cb) {
 	UserCommentsView.update({obj: objId, user: userId}, {$setOnInsert: {stamp: new Date()}}, {upsert: true}).exec(cb);
 }
+/**
+ * Удаляет время просмотра объекта, если указан _id пользователя, то только у него
+ * @param objId
+ * @param userId Опционально. Без этого параметра удалит время просмотра у всех пользователей
+ * @param cb
+ */
+function dropCommentsView(objId, userId, cb) {
+	var query = {obj: objId};
+	if (userId) {
+		query.user = userId;
+	}
+	UserCommentsView.remove(query, cb);
+}
 
 /**
  * Находим количество новых комментариев для списка объектов для пользователя
@@ -1161,6 +1174,7 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
+module.exports.dropCommentsView = dropCommentsView;
 module.exports.getNewCommentsCount = getNewCommentsCount;
 module.exports.fillNewCommentsCount = fillNewCommentsCount;
 module.exports.getNewCommentsBrief = getNewCommentsBrief;
