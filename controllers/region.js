@@ -18,6 +18,7 @@ var auth = require('./auth.js'),
 	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
 	regionCacheArr = []; //Массив-кэш регионов из базы [{_id, cid, parents}]
 
+//Заполняем кэш (массив и хэш) регионов в память
 function fillCache(cb) {
 	Region.find({}, {_id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1}, {lean: true}, function (err, regions) {
 		if (err) {
@@ -76,7 +77,7 @@ function saveRegion(socket, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !data.title_en) {
+	if (!Utils.isType('object', data) || !data.title_en || !data.title_local) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -149,23 +150,30 @@ function saveRegion(socket, data, cb) {
 				if (err || !region) {
 					return cb({message: err && err.message || 'Save error', error: true});
 				}
-				region = region.toObject();
 
-				getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
+				//Обновляем кэш регионов
+				fillCache(function (err) {
 					if (err) {
 						return cb({message: 'Saved, but: ' + err.message, error: true});
 					}
-					if (parentsSortedArr) {
-						region.parents = parentsSortedArr;
-					}
+					region = region.toObject();
 
-					if (data.geo) {
-						region.geo = JSON.stringify(region.geo);
-					} else {
-						delete region.geo;
-					}
+					getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
+						if (err) {
+							return cb({message: 'Saved, but: ' + err.message, error: true});
+						}
+						if (parentsSortedArr) {
+							region.parents = parentsSortedArr;
+						}
 
-					cb({childLenArr: childLenArr, region: region});
+						if (data.geo) {
+							region.geo = JSON.stringify(region.geo);
+						} else {
+							delete region.geo;
+						}
+
+						cb({childLenArr: childLenArr, region: region});
+					});
 				});
 			});
 		}
