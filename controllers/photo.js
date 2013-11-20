@@ -870,6 +870,7 @@ function savePhoto(socket, data, cb) {
 		newValues,
 		oldGeo,
 		newGeo,
+		geoToNull,
 		sendingBack = {regions: []};
 
 	if (!user) {
@@ -912,7 +913,11 @@ function savePhoto(socket, data, cb) {
 		if (newValues.geo) {
 			Utils.geo.geoToPrecisionRound(newValues.geo);
 		} else if (newValues.geo === null) {
-			newValues.geo = undefined;
+			//Значит обнуляем координату
+			geoToNull = true;
+			newValues.geo = undefined; //Удаляем координату
+			sendingBack.regions = [];
+			regionController.clearObjRegions(photo); //Очищаем привязку к регионам
 		}
 		if (newValues.desc !== undefined) {
 			sendingBack.desc = newValues.desc;
@@ -924,19 +929,19 @@ function savePhoto(socket, data, cb) {
 		oldGeo = photoOldObj.geo;
 		newGeo = newValues.geo;
 
-		if (!_.isEqual(oldGeo, newGeo)) {
-			if (newGeo) {
-				regionController.setObjRegions(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-					sendingBack.regions = regionsArr;
-					save();
-				});
-			} else {
-				regionController.clearObjRegions(photo);
+		if (geoToNull && photo.s === 5) {
+			//Если обнуляем координату и фото публичное, значит оно было на карте. Удаляем с карты.
+			//Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
+			photoFromMap(photo, save);
+		} else if (newGeo) {
+			//Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
+			regionController.setObjRegions(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				sendingBack.regions = regionsArr;
 				save();
-			}
+			});
 		} else {
 			save();
 		}
@@ -957,13 +962,10 @@ function savePhoto(socket, data, cb) {
 					oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
 				}
 
-				// Если фото - публичное, у него
-				// есть старая или новая координаты и (они не равны или есть чем обновить постер кластера),
-				// то запускаем пересчет кластеров этой фотографии
-				if (photoOldObj.s === 5 &&
-					(!_.isEmpty(oldGeo) || !_.isEmpty(newGeo)) &&
-					(!_.isEqual(oldGeo, newGeo) || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-					photoToMap(photo, oldGeo, photoOldObj.year, finish);
+				if (photoSaved.s === 5 && !_.isEmpty(photoSaved.geo) && (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+					//Если фото публичное, добавилась/изменилась координата или есть чем обновить постер кластера, то пересчитываем на карте
+					//Здесь координата должна проверятся именно photoSaved.geo, а не newGeo, так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
+					photoToMap(photoSaved, oldGeo, photoOldObj.year, finish);
 				} else {
 					finish();
 				}
@@ -1085,7 +1087,7 @@ function getBounds(data, cb) {
 					if (year) {
 						criteria.year = yearCriteria;
 					}
-					PhotoMap.collection.find(criteria, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this.parallel());
+					PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
 				}
 			},
 			function cursors(err) {
