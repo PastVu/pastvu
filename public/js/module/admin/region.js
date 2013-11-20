@@ -24,6 +24,7 @@ define([
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/common/auth'];
 			this.createMode = ko.observable(true);
+			this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			this.showGeo = ko.observable(false);
 
@@ -76,6 +77,7 @@ define([
 			}
 		},
 		routeHandler: function () {
+			this.exe(true);
 			var cid = globalVM.router.params().cid;
 
 			if (cid === 'create') {
@@ -86,13 +88,16 @@ define([
 					this.haveParent('1');
 				}
 				this.createMap();
+				this.exe(false);
 			} else {
 				cid = Number(cid);
 				if (!cid) {
 					return globalVM.router.navigateToUrl('/admin/region');
 				}
 				this.createMode(false);
-				this.getOneRegion(cid);
+				this.getOneRegion(cid, function () {
+					this.exe(false);
+				}, this);
 			}
 		},
 		resetData: function () {
@@ -188,6 +193,11 @@ define([
 			socket.emit('giveRegion', {cid: cid});
 		},
 		save: function () {
+			if (this.exe()) {
+				return false;
+			}
+			this.exe(true);
+
 			var saveData = ko_mapping.toJS(this.region);
 
 			if (!saveData.geo) {
@@ -224,6 +234,7 @@ define([
 						this.fillData(data);
 					}
 				}
+				this.exe(false);
 			}.bind(this));
 			socket.emit('saveRegion', saveData);
 			return false;

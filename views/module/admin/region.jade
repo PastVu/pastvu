@@ -64,11 +64,11 @@
 				textarea.form-control(wrap="soft", rows="5", data-bind="value: region.geo, valueUpdate: 'keyup'", placeholder="{ type: 'Polygon | MultiPolygon', coordinates: [[ [] ]] }", required="required")
 		// /ko
 		.form-group
-			button.btn.btn-success(type="submit")
+			button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-ok
 				|  Сохранить
 			//ko if: !createMode()
-			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}")
+			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-th-list
 				span(data-bind="text: showGeo() ? ' Скрыть координаты' : ' Показать координаты'")
 			// /ko
