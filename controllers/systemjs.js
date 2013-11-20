@@ -137,21 +137,29 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
-	saveSystemJSFunc(function assignToRegions(variants) {
+	saveSystemJSFunc(function assignToRegions() {
 		var startTime = Date.now();
 
+		//Очищаем принадлежность к регионам у всех фотографий
+		print('Clearing current regions assignment\n');
+		db.photos.update({}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1}}, {multi: true});
+		//Для каждого региона находим фотографии
 		print('Start to assign for ' + db.regions.count() + ' regions..\n');
 		db.regions.find({}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {
 			var startTime = Date.now(),
+				count,
 				queryObject = {},
 				setObject = {$set: {}};
 
-			print('Assigning for [r' + region.parents.length + '] ' + region.cid + ' '+ region.title_en + ' region');
 
 			queryObject.geo = {$geoWithin: {$geometry: region.geo}};
 			setObject.$set['r' + region.parents.length] = region.cid;
 
-			db.photos.update(queryObject, setObject, {multi: true});
+			count = db.photos.count(queryObject);
+			print('Assigning ' + count + ' photos for [r' + region.parents.length + '] ' + region.cid + ' '+ region.title_en + ' region');
+			if (count) {
+				db.photos.update(queryObject, setObject, {multi: true});
+			}
 
 			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
 		});

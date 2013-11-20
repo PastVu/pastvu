@@ -4,8 +4,10 @@ var auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	Settings,
 	User,
-	Counter,
+	Photo,
 	Region,
+	Counter,
+	dbNative,
 	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
@@ -68,6 +70,87 @@ function getRegionsHashFromCache(cids) {
 	}
 
 	return result;
+}
+
+/**
+ * Пересчет входящих объектов в переданный регион.
+ * Сначала очищается текущее присвоение всех объектов данному региону, затем заново ищутся объекты, входящие в полигон региона
+ * @param cid
+ * @param cb
+ */
+function calcRegionIncluses(cid, cb) {
+	Region.findOne({cid: cid}, {_id: 0, parents: 1, geo: 1}, {lean: true}, function (err, region) {
+		if (err || !region) {
+			return cb({message: ('Region [' + cid + '] error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
+		}
+		var level = 'r' + region.parents.length;
+
+		step (
+			function () {
+				//Сначала очищаем присвоение текущего региона, чтобы убрать те объекты, которые больше не будут в него входить
+				var queryObject = {},
+					setObject = {$unset: {}};
+
+				queryObject[level] = cid;
+				setObject.$unset[level] = 1;
+				Photo.update(queryObject, setObject, {multi: true}, this);
+			},
+			function (err) {
+				//Теперь присваиваем этот регион всем, входящим в его полигон
+				if (err || !region) {
+					return cb({message: ('Region [' + cid + '] error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
+				}
+				var setObject = {$set: {}};
+
+				setObject.$set[level] = cid;
+				Photo.update({$geoWithin: {$geometry: region.geo}}, setObject, {multi: true}, cb);
+			}
+		);
+
+	});
+}
+/**
+ * Пересчет входящих объектов в переданный список регионов. Если список пуст - пересчет всех регионов
+ * @param iAm
+ * @param cids Массив cid регионов
+ * @param cb
+ */
+function calcRegionsIncluses(iAm, cids, cb) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Array.isArray(cids)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	if (!cids.length) {
+		//Если массив пуст - пересчитываем все фотографии
+		dbNative['eval']('function () {assignToRegions()', [], {nolock:true}, function (err, ret) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			if (ret && ret.error) {
+				return cb({message: ret.message || '', error: true});
+			}
+
+			cb(ret);
+		});
+	} else {
+		//Проходим по каждому региону и пересчитываем
+		(function iterate(i) {
+			calcRegionIncluses(cids[i], function (err) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+
+				if (++i < cids.length) {
+					iterate();
+				} else {
+					cb({message: 'ok'});
+				}
+			});
+		}(0));
+	}
 }
 
 function saveRegion(socket, data, cb) {
@@ -592,7 +675,10 @@ module.exports.loadController = function (app, db, io) {
 	Settings = db.model('Settings');
 	Counter = db.model('Counter');
 	User = db.model('User');
+	Photo = db.model('Photo');
 	Region = db.model('Region');
+
+	dbNative = db.db;
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
