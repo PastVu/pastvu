@@ -78,10 +78,13 @@ function getRegionsHashFromCache(cids) {
  * @param cid
  * @param cb
  */
-function calcRegionIncluses(cid, cb) {
+function calcRegionIncludes(cid, cb) {
+	if (!cb) {
+		cb = Utils.dummyFn;
+	}
 	Region.findOne({cid: cid}, {_id: 0, parents: 1, geo: 1}, {lean: true}, function (err, region) {
 		if (err || !region) {
-			return cb({message: ('Region [' + cid + '] error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
+			return cb({message: ('Region [' + cid + '] find for calc error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
 		}
 		var level = 'r' + region.parents.length;
 
@@ -103,7 +106,7 @@ function calcRegionIncluses(cid, cb) {
 				var setObject = {$set: {}};
 
 				setObject.$set[level] = cid;
-				Photo.update({$geoWithin: {$geometry: region.geo}}, setObject, {multi: true}, cb);
+				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, cb);
 			}
 		);
 
@@ -115,7 +118,7 @@ function calcRegionIncluses(cid, cb) {
  * @param cids Массив cid регионов
  * @param cb
  */
-function calcRegionsIncluses(iAm, cids, cb) {
+function calcRegionsIncludes(iAm, cids, cb) {
 	if (!iAm || !iAm.role || iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
@@ -138,7 +141,7 @@ function calcRegionsIncluses(iAm, cids, cb) {
 	} else {
 		//Проходим по каждому региону и пересчитываем
 		(function iterate(i) {
-			calcRegionIncluses(cids[i], function (err) {
+			calcRegionIncludes(cids[i], function (err) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
@@ -233,31 +236,39 @@ function saveRegion(socket, data, cb) {
 				if (err || !region) {
 					return cb({message: err && err.message || 'Save error', error: true});
 				}
+				region = region.toObject();
+				if (data.geo) {
+					region.geo = JSON.stringify(region.geo);
+				} else {
+					delete region.geo;
+				}
 
-				//Обновляем кэш регионов
-				fillCache(function (err) {
-					if (err) {
-						return cb({message: 'Saved, but: ' + err.message, error: true});
-					}
-					region = region.toObject();
-
-					getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
+				step (
+					function () {
+						fillCache(this); //Обновляем кэш регионов
+					},
+					function (err) {
 						if (err) {
 							return cb({message: 'Saved, but: ' + err.message, error: true});
 						}
-						if (parentsSortedArr) {
-							region.parents = parentsSortedArr;
-						}
 
-						if (data.geo) {
-							region.geo = JSON.stringify(region.geo);
-						} else {
-							delete region.geo;
-						}
+						getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
+							if (err) {
+								return cb({message: 'Saved, but: ' + err.message, error: true});
+							}
+							if (parentsSortedArr) {
+								region.parents = parentsSortedArr;
+							}
 
-						cb({childLenArr: childLenArr, region: region});
-					});
-				});
+							cb({childLenArr: childLenArr, region: region});
+
+							//Если изменились координаты, отправляем на пересчет входящие объекты
+							if (data.geo) {
+								calcRegionIncludes(region.cid);
+							}
+						});
+					}
+				);
 			});
 		}
 	}
