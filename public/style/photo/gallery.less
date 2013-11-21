@@ -14,11 +14,36 @@
 		margin-right: 8px;
 	}
 
-	.pageHeader {
+	.filter, .pageHeader {
 		margin-top: 4px;
 		margin-bottom: 6px;
+		line-height: 22px;
+	}
+	.pageHeader {
 		font-size: 20px;
 		text-align: center;
+	}
+
+	.filter {
+		.title {
+			padding: 0 4px 2px 3px;
+			font-weight: bold;
+			line-height: 20px;
+			text-align: center;
+			background-color: @input-group-addon-bg;
+			border: 1px solid @input-group-addon-border-color;
+			.user-select(none);
+
+			> .glyphicon {
+				float: left;
+				margin-top: 3px;
+			}
+		}
+		.titlechk {
+			margin-left: 2px;
+			margin-right: 2px;
+		}
+
 	}
 
 	.topcol {

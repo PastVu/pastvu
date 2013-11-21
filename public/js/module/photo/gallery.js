@@ -223,9 +223,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.feed(false);
 				this.scrollDeActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: preTitle + 'Фотографии - '});
+					Utils.title.setTitle({pre: preTitle + 'Галерея - '});
 				} else {
-					Utils.title.setTitle({title: preTitle + 'Все фотографии'});
+					Utils.title.setTitle({title: preTitle + 'Галерея'});
 				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы

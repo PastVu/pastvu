@@ -247,7 +247,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
-			socket.emit('givePhotosForApprove', {skip: 0, limit: 30});
+			socket.emit('givePhotosForApprove', {skip: 0, limit: 42});
 		},
 		getRatings: function (cb, ctx, scroll) {
 			var success = false;
