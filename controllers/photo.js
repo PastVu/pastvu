@@ -582,15 +582,61 @@ var givePhotosPublicNoGeoIndex = (function () {
 	}, ms('30s'));
 }());
 
+var filterProps = {nogeo: true, r: []};
+function parseFilter(filterString) {
+	var filterParams = filterString && filterString.split(';'),
+		filterParam,
+		filterVal,
+		result = {},
+		i, j;
+
+	if (filterParams) {
+		for (i = filterParams.length; i--;) {
+			filterParam = filterParams[i];
+			if (filterParam.indexOf('_') > 0) {
+				filterVal = filterParam.substr(filterParam.indexOf('_') + 1);
+				filterParam = filterParam.substring(0, filterParam.indexOf('_'));
+			}
+			if (filterProps[filterParam] !== undefined) {
+				if (typeof filterProps[filterParam] === 'boolean') {
+					result[filterParam] = true;
+				} else if (filterParam === 'r') {
+					if (filterVal === '0') {
+						result.r = 0;
+					} else {
+						filterVal = filterVal.split(',').map(Number);
+						if (Array.isArray(filterVal) && filterVal.length) {
+							result.r = [];
+							for (j = filterVal.length; j--;) {
+								if (filterVal[j]) {
+									result.r.push(filterVal[j]);
+								}
+							}
+							if (!result.r.length) {
+								delete result.r;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
 //Отдаем полную публичную галерею в компактном виде
 function givePhotosPublic(iAm, data, cb) {
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
+	console.log(data.filter);
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
-		filter = data.filter || {};
+		filter = data.filter ? parseFilter(data.filter) : {};
+
+	console.log(filter);
 
 	step(
 		function () {

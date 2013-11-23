@@ -21,7 +21,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.u = this.options.userVM;
 			this.topTitle = ko.observable(this.options.topTitle);
 
-			this.filter = {};
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
 
@@ -32,9 +31,22 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.scrollActive = false;
 			this.scrollHandler = function () {
 				if ($window.scrollTop() >= $(document).height() - $window.height() - 140) {
-					this.getNextPage();
+					this.getNextFeedPhotos();
 				}
 			}.bind(this);
+
+			this.filter = {
+				//Параметры фильтра для запросов
+				origin: '',
+				//Значения фильтра для отображения
+				disp: {
+					r: ko.observableArray(),
+					nogeo: ko.observable(!!this.options.filter.nogeo)
+				}
+			};
+			this.filter.active = this.co.filterActive = ko.computed(function () {
+				return this.filter.disp.r().length;
+			}, this);
 
 			this.panelW = ko.observable('0px');
 			this.w = ko.observable('0px');
@@ -158,14 +170,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				filterParams = params.f && params.f.split(';'),
-				newFilter = {},
-				filterChange = false,
 				page = params.page,
+				filterString = params.f,
+				filterChange = false,
 				currPhotoLength = this.photos().length,
 				needRecieve = true,
-				preTitle = '',
-				i;
+				preTitle = '';
 
 			// Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
 			// Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
@@ -180,29 +190,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				return;
 			}
 
-			//Параметры фильтров
-			if (filterParams) {
-				for (i = filterParams.length; i--;) {
-					newFilter[filterParams[i]] = true;
-					if (!this.filter[filterParams[i]]) {
-						filterChange = true; //Если нового параметра нет в текущих, говорим об изменении
-					}
-				}
-				for (i in this.filter) {
-					if (this.filter[i] !== undefined && !newFilter[i]) {
-						filterChange = true; //Если старого параметра нет в новых, говорим об изменении
-					}
-				}
-				this.filter = newFilter;
-
-				if (this.filter.nogeo) {
-					preTitle = 'Где это? - ';
-					if (this.options.topTitle) {
-						this.topTitle = ko.observable('Где это? ' + this.options.topTitle);
-					}
-				}
+			//Переданные параметры фильтров
+			if (filterString !== this.filter.origin) {
+				this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
 				this.pageQuery(location.search);
+				filterChange = true;
 			}
+
 
 			if (page === 'feed') {
 				page = 1;
@@ -262,7 +256,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 
-		getNextPage: function () {
+		getNextFeedPhotos: function () {
 			if (!this.loading()) {
 				this.getPhotos(this.photos().length, this.limit);
 			}
@@ -305,13 +299,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		receivePhotos: function (skip, limit, cb, ctx) {
 			var reqName = this.u ? 'giveUserPhotos' : 'givePhotosPublic',
 				resName = this.u ? 'takeUserPhotos' : 'takePhotosPublic',
-				params = {skip: skip, limit: limit};
+				params = {skip: skip, limit: limit, filter: this.filter.origin};
 
 			if (this.u) {
 				params.login = this.u.login();
-			}
-			if (this.filter && !Utils.isObjectEmpty(this.filter)) {
-				params.filter = this.filter;
 			}
 
 			socket.once(resName, function (data) {
