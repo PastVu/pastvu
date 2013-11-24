@@ -197,7 +197,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				filterChange = true;
 			}
 
-
 			if (page === 'feed') {
 				page = 1;
 				this.feed(true);

@@ -587,15 +587,17 @@ function parseFilter(filterString) {
 	var filterParams = filterString && filterString.split(';'),
 		filterParam,
 		filterVal,
+		dividerIndex,
 		result = {},
 		i, j;
 
 	if (filterParams) {
 		for (i = filterParams.length; i--;) {
 			filterParam = filterParams[i];
-			if (filterParam.indexOf('_') > 0) {
-				filterVal = filterParam.substr(filterParam.indexOf('_') + 1);
-				filterParam = filterParam.substring(0, filterParam.indexOf('_'));
+			dividerIndex = filterParam.indexOf('_');
+			if (dividerIndex > 0) {
+				filterVal = filterParam.substr(dividerIndex + 1);
+				filterParam = filterParam.substring(0, dividerIndex);
 			}
 			if (filterProps[filterParam] !== undefined) {
 				if (typeof filterProps[filterParam] === 'boolean') {
@@ -631,25 +633,21 @@ function givePhotosPublic(iAm, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	console.log(data.filter);
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
 		filter = data.filter ? parseFilter(data.filter) : {};
 
-	console.log(filter);
+	if (!filter.s) {
+		filter.s = [5];
+	}
 
 	step(
 		function () {
-			var query = {s: 5},
+			var query = buildPhotosQuery(filter, null, iAm),
 				fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
 
-			if (filter.nogeo) {
-				query.geo = null;
-			} else {
-				if (iAm) {
-					_.assign(query, _session.us[iAm.login].rquery);
-				}
-			}
+			console.log(filter);
+			console.log(query);
 
 			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
 			Photo.count(query, this.parallel());
@@ -1260,34 +1258,43 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		rquery_pub,
 		rquery_mod,
 
+		usObj = iAm && _session.us[iAm.login],
+
+		squery_public_only = !iAm || filter.s && filter.s.length === 1 && filter.s[0] === 5,
 		region,
 		contained,
-		usObj,
 		i,
 		j;
 
-	if (Array.isArray(filter.r) && filter.r.length) {
-		rquery_pub = regionController.buildQuery(regionController.getRegionsFromCache(filter.r)).rquery;
+	if (!squery_public_only && filter.s && filter.s.length) {
+		//Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
+		filter.s = _.without(filter.s, 5, !iAm || !iAm.role || iAm.role < 10 ? 9 : undefined);
 	}
 
-	if (!iAm) {
-		query_pub = {s: 5};  //Анонимам отдаем только публичные
+	if (Array.isArray(filter.r) && filter.r.length) {
+		rquery_pub = rquery_mod = regionController.buildQuery(regionController.getRegionsFromCache(filter.r)).rquery;
+	}
+
+	if (squery_public_only) {
+		query_pub = {};  //Анонимам или при фильтрации для публичных отдаем только публичные
+
+		if (filter.r === undefined && iAm && iAm.regions.length) {
+			rquery_pub = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
+		}
 	} else if (forUserId && forUserId.equals(iAm._id)) {
 		//Собственную галерею отдаем без удаленных(не админам) и без регионов в настройках, только по filter.r
-		query_pub = iAm.role > 9 ? {} : {s: {$ne: 9}};
+		query_mod = {};
 	} else {
-		usObj = _session.us[iAm.login];
-
 		if (filter.r === undefined && iAm.regions.length) {
 			rquery_pub = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
 		}
 
 		if (iAm.role > 9) {
 			//Админам отдаем все статусы
-			query_pub = {};
+			query_mod = {};
 		} else if (!iAm.role || iAm.role < 5) {
 			//Ниже чем модераторам региона отдаем только публичные
-			query_pub = {s: 5};
+			query_pub = {};
 		} else if (iAm.role === 5) {
 			//Региональным модераторам отдаем в своих регионах без удаленных, в остальных - только публичные
 
@@ -1295,12 +1302,12 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 				//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
 				//(т.е. область модерирования включает в себя пользовательскую)
 				//отдаем пользовательскую область как модерируемую
-				query_pub = {s: {$ne: 9}};
+				query_mod = {};
 			} else if (filter.r === 0 || !iAm.regions.length) {
 				//Если запрашиваются все пользовательские регионы (т.е. весь мир),
 				//то делаем глобальный запрос по публичным, а со статусами по модерируемым
-				query_pub = {s: 5};
-				query_mod = {s: {$ne: 9}};
+				query_pub = {};
+				query_mod = {};
 				rquery_mod = usObj.mod_rquery;
 			} else {
 				//В случае, когда массив пользовательских и модерируемых регионов различается,
@@ -1357,22 +1364,37 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 				}
 
 				if (regions_pub.length) {
-					query_pub = {s: 5};
+					query_pub = {};
 					rquery_pub = regionController.buildQuery(regions_pub).rquery;
 				}
 				if (regions_mod.length) {
-					query_mod = {s: {$ne: 9}};
+					query_mod = {};
 					rquery_mod = regionController.buildQuery(regions_mod).rquery;
 				}
 			}
 		}
 	}
 
-	if (query_pub && rquery_pub) {
-		_.assign(query_pub, rquery_pub);
+	if (query_pub) {
+		query_pub.s = 5;
+		if (rquery_pub) {
+			_.assign(query_pub, rquery_pub);
+		}
 	}
-	if (query_mod && rquery_mod) {
-		_.assign(query_mod, rquery_mod);
+	if (query_mod) {
+		if (filter.s && filter.s.length) {
+			if (filter.s.length === 1) {
+				query_mod.s = filter.s[0];
+			} else {
+				query_mod.s = {$in: filter.s};
+			}
+		} else if (iAm.role < 10) {
+			query_mod.s = {$ne: 9};
+		}
+
+		if (rquery_mod) {
+			_.assign(query_mod, rquery_mod);
+		}
 	}
 
 	if (query_pub && query_mod) {
