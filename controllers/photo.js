@@ -696,12 +696,12 @@ function givePhotosPublic(iAm, data, cb) {
 							delete photos[i]._id;
 						}
 					}
-					cb({photos: photos, count: count, skip: skip});
+					cb({photos: photos, r: buildQueryResult.rarr, s: buildQueryResult.s, count: count, skip: skip});
 				}
 			}
 		);
 	} else {
-		cb({photos: [], count: 0, skip: skip});
+		cb({photos: [], r: buildQueryResult.rarr, s: buildQueryResult.s, count: 0, skip: skip});
 	}
 }
 

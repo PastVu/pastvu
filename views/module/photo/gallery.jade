@@ -11,10 +11,18 @@
 						span.glyphicon.glyphicon-filter
 						input.titlechk(type="checkbox")
 						| Фильтр:
-					//ko foreach: filter.r
+					//ko if: !filter.disp.r().length
 					span.region
-						span(data-bind="text: $data.title_local()")
+						span.glyphicon.glyphicon-globe
+						|  Весь мир
 					// /ko
+					//ko foreach: filter.disp.r
+					span.region
+						span(data-bind="text: $data.title_local")
+					// /ko
+					span.regionEdit(data-bind="click: regionSelect")
+						span.glyphicon.glyphicon-pencil
+						| Изменить
 		.row.rowoffset
 			.col-xs-6.col-md-3.topcol
 				span.brief(data-bind="css: {pageLoading: !feed() && loading()}, text: briefText")

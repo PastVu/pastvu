@@ -310,6 +310,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
 					this.processPhotos(data.photos);
+					this.filter.disp.r(data.r || []);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -498,6 +499,71 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 			$photoBox.find('.curtain').after(content);
 			parent.classList.add('showPrv');
+		},
+
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								min: 0,
+								max: 5,
+								selectedInit: this.filter.disp.r()
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Изменение списка регионов для отслеживания',
+								closeTxt: 'Сохранить',
+								closeFunc: function (evt) {
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+
+									if (regions.length > 5) {
+										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
+									}
+
+									this.saveRegions(_.pluck(regions, 'cid'), function (err) {
+										if (!err) {
+											User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+											this.closeRegionSelect();
+											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
+										}
+									}, this);
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		saveRegions: function (regions, cb, ctx) {
+			socket.once('saveUserRegionsResult', function (data) {
+				var error = !data || data.error || !data.saved;
+				if (error) {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				}
+				cb.call(ctx, error);
+			}.bind(this));
+			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
+		},
+		closeRegionSelect: function () {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+				delete this.regselectVM;
+			}
 		}
 	});
 });
