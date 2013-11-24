@@ -587,6 +587,7 @@ function parseFilter(filterString) {
 	var filterParams = filterString && filterString.split(';'),
 		filterParam,
 		filterVal,
+		filterValItem,
 		dividerIndex,
 		result = {},
 		i, j;
@@ -610,8 +611,9 @@ function parseFilter(filterString) {
 						if (Array.isArray(filterVal) && filterVal.length) {
 							result.r = [];
 							for (j = filterVal.length; j--;) {
-								if (filterVal[j]) {
-									result.r.push(filterVal[j]);
+								filterValItem = filterVal[j];
+								if (filterValItem) {
+									result.r.push(filterValItem);
 								}
 							}
 							if (!result.r.length) {
@@ -620,12 +622,16 @@ function parseFilter(filterString) {
 						}
 					}
 				} else if (filterParam === 's') {
-					filterVal = filterVal.split(',').map(Number);
+					filterVal = filterVal.split(',');
 					if (Array.isArray(filterVal) && filterVal.length) {
 						result.s = [];
 						for (j = filterVal.length; j--;) {
-							if (!isNaN(filterVal[j])) { //0 должен входить, поэтому проверка на NaN
-								result.s.push(filterVal[j]);
+							filterValItem = filterVal[j];
+							if (filterValItem) {
+								filterValItem = Number(filterValItem);
+								if (!isNaN(filterValItem)) { //0 должен входить, поэтому проверка на NaN
+									result.s.push(filterValItem);
+								}
 							}
 						}
 						if (!result.s.length) {
@@ -649,14 +655,16 @@ function givePhotosPublic(iAm, data, cb) {
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
 		filter = data.filter ? parseFilter(data.filter) : {},
+		buildQueryResult,
 		query;
 
 	if (!filter.s) {
 		filter.s = [5];
 	}
-	query = buildPhotosQuery(filter, null, iAm);
 	console.log(filter);
-	console.log(query);
+	buildQueryResult = buildPhotosQuery(filter, null, iAm);
+	query = buildQueryResult.query;
+	console.log(buildQueryResult);
 
 	if (query) {
 		step(
@@ -1273,12 +1281,19 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		rquery_pub,
 		rquery_mod,
 
-		usObj = iAm && _session.us[iAm.login],
+		regions_cids = [],
+		regions_arr = [],
+		regions_hash = {},
 
 		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
 		squery_public_only = !iAm || filter.s && filter.s.length === 1 && filter.s[0] === 5,
+
+		usObj = iAm && _session.us[iAm.login],
 		region,
 		contained,
+		result = {query: null, s: [], rcids: [], rarr: []},
+
+		someVar,
 		i,
 		j;
 
@@ -1288,7 +1303,16 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
-		rquery_pub = rquery_mod = regionController.buildQuery(regionController.getRegionsFromCache(filter.r)).rquery;
+		someVar = regionController.buildQuery(regionController.getRegionsArrFromCache(filter.r));
+		rquery_pub = rquery_mod = someVar.rquery;
+		regions_hash = someVar.rhash;
+	} else if (filter.r === undefined && iAm && iAm.regions.length) {
+		regions_hash = usObj.rhash;
+	}
+	regions_cids = Object.keys(regions_hash);
+	if (regions_cids.length) {
+		regions_arr = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
+		regions_cids = regions_cids.map(Number);
 	}
 
 	if (squery_public_only) {
@@ -1329,23 +1353,13 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 				//В случае, когда массив пользовательских и модерируемых регионов различается,
 				//"вычитаем" публичные из модерируемых, получая два новых чистых массива
 
-				var regular_regions,//Пользовательские регионы - из фильтра или из пользователя
-					regular_regions_hash, //Хэш пользовательских регионов - из фильтра или из пользователя
-					regions_pub = [], //Чистый массив пользовательских регионов
+				var regions_pub = [], //Чистый массив публичных регионов
 					regions_mod = []; //Чистый массив модерируемых регионов
-
-				if (Array.isArray(filter.r) && filter.r.length) {
-					regular_regions = regionController.getRegionsFromCache(filter.r);
-					regular_regions_hash = regionController.getRegionsHashFromCache(filter.r);
-				} else {
-					regular_regions = regionController.getRegionsFromCache(_.pluck(iAm.regions, 'cid'));
-					regular_regions_hash = usObj.rhash;
-				}
 
 				//Если сам пользовательский регион или один из его родителей является модерируемым,
 				//то включаем его в массив модерируемых
-				for (i = regular_regions.length; i--;) {
-					region = regular_regions[i];
+				for (i = regions_arr.length; i--;) {
+					region = regions_arr[i];
 					contained = false;
 
 					if (usObj.mod_rhash[region.cid]) {
@@ -1372,7 +1386,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 					region = usObj.mod_rhash[iAm.mod_regions[i].cid];
 					if (region.parents) {
 						for (j = region.parents.length; j--;) {
-							if (regular_regions_hash[region.parents[j]]) {
+							if (regions_hash[region.parents[j]]) {
 								regions_mod.push(region);
 							}
 						}
@@ -1381,11 +1395,13 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 				if (regions_pub.length) {
 					query_pub = {};
-					rquery_pub = regionController.buildQuery(regions_pub).rquery;
+					someVar = regionController.buildQuery(regions_pub);
+					rquery_pub = someVar.rquery;
 				}
 				if (regions_mod.length) {
 					query_mod = {};
-					rquery_mod = regionController.buildQuery(regions_mod).rquery;
+					someVar = regionController.buildQuery(regions_mod);
+					rquery_mod = someVar.rquery;
 				}
 			}
 		}
@@ -1396,19 +1412,25 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		if (rquery_pub) {
 			_.assign(query_pub, rquery_pub);
 		}
+		result.s.push(5);
 	}
 	if (!squery_public_have) {
 		//Если указан фильтр и в нем нет публичных, удаляем запрос по ним
 		query_pub = undefined;
 	}
-
 	if (query_mod) {
 		if (filter.s && filter.s.length) {
+			if (!query_pub && squery_public_have) {
+				//Если запроса по публичным нет, но должен, то добавляем публичные в модерируемые
+				//Это произойдет с админами и глобальными модераторами, так как у них один query_mod
+				filter.s.push(5);
+			}
 			if (filter.s.length === 1) {
 				query_mod.s = filter.s[0];
 			} else {
 				query_mod.s = {$in: filter.s};
 			}
+			Array.prototype.push.apply(result.s, filter.s);
 		} else if (iAm.role < 10) {
 			query_mod.s = {$ne: 9};
 		}
@@ -1424,15 +1446,21 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			query_mod
 		]};
 	} else {
-		query = query_pub || query_mod || null;
+		query = query_pub || query_mod;
 	}
 
-	if (filter.nogeo) {
-		query.geo = null;
+	if (query) {
+		result.query = query;
+		result.rcids = regions_cids;
+		result.rarr = regions_arr;
+
+		if (filter.nogeo) {
+			query.geo = null;
+		}
 	}
 
 	//console.log(JSON.stringify(query));
-	return query;
+	return result;
 }
 
 //Обнуляет статистику просмотров за день и неделю

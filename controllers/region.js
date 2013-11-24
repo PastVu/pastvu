@@ -43,7 +43,7 @@ function fillCache(cb) {
 	});
 }
 
-function getRegionsFromCache(cids) {
+function getRegionsArrFromCache(cids) {
 	var result = [],
 		region,
 		i = cids.length;
@@ -66,6 +66,24 @@ function getRegionsHashFromCache(cids) {
 		region = regionCacheHash[cids[i]];
 		if (region !== undefined) {
 			result[cids[i]] = region;
+		}
+	}
+
+	return result;
+}
+function getRegionsArrFromHash(hash, cids) {
+	var result = [],
+		i;
+
+	if (cids) {
+		for (i = 0; i < cids.length; i++) {
+			result.push(hash[cids[i]]);
+		}
+	} else {
+		for (i in hash) {
+			if (hash[i] !== undefined) {
+				result.push(hash[i]);
+			}
 		}
 	}
 
@@ -752,8 +770,9 @@ module.exports.loadController = function (app, db, io) {
 module.exports.fillCache = fillCache;
 module.exports.regionCacheHash = regionCacheHash;
 module.exports.regionCacheArr = regionCacheArr;
-module.exports.getRegionsFromCache = getRegionsFromCache;
+module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
 module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
+module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
