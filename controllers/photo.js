@@ -582,7 +582,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 	}, ms('30s'));
 }());
 
-var filterProps = {nogeo: true, r: []};
+var filterProps = {nogeo: true, r: [], s: []};
 function parseFilter(filterString) {
 	var filterParams = filterString && filterString.split(';'),
 		filterParam,
@@ -619,6 +619,19 @@ function parseFilter(filterString) {
 							}
 						}
 					}
+				} else if (filterParam === 's') {
+					filterVal = filterVal.split(',').map(Number);
+					if (Array.isArray(filterVal) && filterVal.length) {
+						result.s = [];
+						for (j = filterVal.length; j--;) {
+							if (!isNaN(filterVal[j])) { //0 должен входить, поэтому проверка на NaN
+								result.s.push(filterVal[j]);
+							}
+						}
+						if (!result.s.length) {
+							delete result.s;
+						}
+					}
 				}
 			}
 		}
@@ -635,50 +648,52 @@ function givePhotosPublic(iAm, data, cb) {
 
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
-		filter = data.filter ? parseFilter(data.filter) : {};
+		filter = data.filter ? parseFilter(data.filter) : {},
+		query;
 
 	if (!filter.s) {
 		filter.s = [5];
 	}
+	query = buildPhotosQuery(filter, null, iAm);
+	console.log(filter);
+	console.log(query);
 
-	step(
-		function () {
-			var query = buildPhotosQuery(filter, null, iAm),
-				fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
+	if (query) {
+		step(
+			function () {
+				var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
 
-			console.log(filter);
-			console.log(query);
+				Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
+				Photo.count(query, this.parallel());
+			},
+			function finishOrNewCommentsCount(err, photos, count) {
+				if (err || !photos) {
+					return cb({message: err && err.message || 'Photos does not exist', error: true});
+				}
 
-			Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
-			Photo.count(query, this.parallel());
-		},
-		finishOrNewCommentsCount
-	);
+				if (!iAm || !photos.length) {
+					//Если аноним или фотографий нет, сразу возвращаем
+					finish(null, photos);
+				} else {
+					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+					commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
+				}
 
-	function finishOrNewCommentsCount(err, photos, count) {
-		if (err || !photos) {
-			return cb({message: err && err.message || 'Photos does not exist', error: true});
-		}
-
-		if (!iAm || !photos.length) {
-			//Если аноним или фотографий нет, сразу возвращаем
-			finish(null, photos);
-		} else {
-			//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-			commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
-		}
-
-		function finish(err, photos) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			if (iAm) {
-				for (var i = photos.length; i--;) {
-					delete photos[i]._id;
+				function finish(err, photos) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					if (iAm) {
+						for (var i = photos.length; i--;) {
+							delete photos[i]._id;
+						}
+					}
+					cb({photos: photos, count: count, skip: skip});
 				}
 			}
-			cb({photos: photos, count: count, skip: skip});
-		}
+		);
+	} else {
+		cb({photos: [], count: 0, skip: skip});
 	}
 }
 
@@ -1260,6 +1275,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 		usObj = iAm && _session.us[iAm.login],
 
+		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
 		squery_public_only = !iAm || filter.s && filter.s.length === 1 && filter.s[0] === 5,
 		region,
 		contained,
@@ -1286,7 +1302,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		query_mod = {};
 	} else {
 		if (filter.r === undefined && iAm.regions.length) {
-			rquery_pub = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
+			rquery_pub = rquery_mod = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
 		}
 
 		if (iAm.role > 9) {
@@ -1381,6 +1397,11 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			_.assign(query_pub, rquery_pub);
 		}
 	}
+	if (!squery_public_have) {
+		//Если указан фильтр и в нем нет публичных, удаляем запрос по ним
+		query_pub = undefined;
+	}
+
 	if (query_mod) {
 		if (filter.s && filter.s.length) {
 			if (filter.s.length === 1) {
@@ -1403,7 +1424,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			query_mod
 		]};
 	} else {
-		query = query_pub || query_mod || {};
+		query = query_pub || query_mod || null;
 	}
 
 	if (filter.nogeo) {
