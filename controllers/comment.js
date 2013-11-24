@@ -250,7 +250,7 @@ function getCommentsUser(data, cb) {
  * @param cb Коллбэк
  */
 var getCommentsFeed = (function () {
-	var query = {hidden: {$exists: false}},
+	var query = {hidden: null},
 		selector = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
 		options = {lean: true, limit: 30, sort: {stamp: -1}};
 
@@ -288,10 +288,9 @@ var getCommentsFeed = (function () {
 				}
 
 				commentsArr = comments;
-				Photo.collection.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, this.parallel());
-				User.collection.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, this.parallel());
+				Photo.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, {lean: true}, this.parallel());
+				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
 			},
-			Utils.cursorsExtract,
 			function (err, photos, users) {
 				if (err || !photos || !users) {
 					return handler({message: err && err.message || 'Cursor extract error', error: true});
@@ -1169,8 +1168,8 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('takeCommentsFeed', result);
 			});
 		});
-
 	});
+
 };
 module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
