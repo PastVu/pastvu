@@ -27,6 +27,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.count = ko.observable(0);
 			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
 			this.loading = ko.observable(false);
+			this.loadedFirst = ko.observable(false); //Говорит, что данные были загружены, хотя бы раз
 
 			this.scrollActive = false;
 			this.scrollHandler = function () {
@@ -234,8 +235,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			if (needRecieve || filterChange) {
+				this.makeBinding();
 				this.getPhotos((page - 1) * this.limit, this.limit, function () {
-					this.makeBinding();
+					this.loadedFirst(true);
 				}, this);
 			}
 		},

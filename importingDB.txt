@@ -12,7 +12,16 @@
 		\n ->> \\n или <br> если надо сохранить пробелы в html
 		\t ->>  (пробел)
 		}, { --> }\n{
-		
+
+Просмотр дубликатов по полю title_en
+	Через aggregate
+		db.regions.aggregate({$group: {_id: "$title_en", total: {$sum: 1} }}, {$match: { total: {$gte: 2} }}, {$sort: {total: -1}}, {$limit : 10});
+	Через mapReduce
+		Немедленный вывод:
+		db.regions.mapReduce(function () {emit(this.title_en, 1)}, function (k, vals) {return Array.sum(vals);}, {out : {inline: 1}}).results.filter(function (item) {return item.value > 1})
+		Вывод в таблицу с сортировкой:
+		db.regions.mapReduce(function () {emit(this.title_en, 1)}, function (k, vals) {return Array.sum(vals);}, {out : "myDupesCollection"});	
+		db.myDupesCollection.find().sort({value: -1})	
 		
 ПЕРЕНОС ДАМПА Mongo
 	1. Делаем полный дамп (bson)
