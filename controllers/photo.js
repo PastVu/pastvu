@@ -613,7 +613,7 @@ function parseFilter(filterString) {
 							for (j = filterVal.length; j--;) {
 								filterValItem = filterVal[j];
 								if (filterValItem) {
-									result.r.push(filterValItem);
+									result.r.unshift(filterValItem);
 								}
 							}
 							if (!result.r.length) {
@@ -630,7 +630,7 @@ function parseFilter(filterString) {
 							if (filterValItem) {
 								filterValItem = Number(filterValItem);
 								if (!isNaN(filterValItem)) { //0 должен входить, поэтому проверка на NaN
-									result.s.push(filterValItem);
+									result.s.unshift(filterValItem);
 								}
 							}
 						}
@@ -1306,15 +1306,17 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
-		someVar = regionController.buildQuery(regionController.getRegionsArrFromCache(filter.r));
+		regions_cids = filter.r;
+		regions_arr = regionController.getRegionsArrFromCache(regions_cids);
+		someVar = regionController.buildQuery(regions_arr);
 		rquery_pub = rquery_mod = someVar.rquery;
 		regions_hash = someVar.rhash;
 	} else if (filter.r === undefined && iAm && iAm.regions.length) {
 		regions_hash = usObj.rhash;
-	}
-	regions_cids = Object.keys(regions_hash);
-	if (regions_cids.length) {
+		regions_cids = _.pluck(iAm.regions, 'cid');
 		regions_arr = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
+	}
+	if (regions_cids.length) {
 		regions_cids = regions_cids.map(Number);
 	}
 
