@@ -2,7 +2,7 @@
 /**
  * Модель галереи фотографий
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, Uri, jade) {
 	'use strict';
 	var $window = $(window),
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -251,6 +251,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				for (i = 1; i < r.length; i++) {
 					filterString += ',' + r[i].cid;
 				}
+			} else {
+				if (this.auth.iAm && this.auth.iAm.regions().length) {
+					filterString += (filterString ? ';' : '') + 'r_0';
+				}
 			}
 			if (s.length) {
 				filterString += (filterString ? ';' : '') + 's_' + s[0];
@@ -260,8 +264,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			console.log(filterString);
-			this.filter.origin = filterString;
+			return filterString;
 		},
+		updateFilterUrl: function (filterString) {
+			var uri = new Uri(location.pathname + location.search);
+			uri.deleteQueryParam('f');
+			if (filterString) {
+				uri.replaceQueryParam('f', filterString);
+			}
+			globalVM.router.navigateToUrl(uri.toString());
+		},
+
 		feedSelect: function (feed) {
 			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : ''));
 		},
@@ -518,8 +531,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 									}
 
 									this.filter.disp.r(regions);
-									this.buildFilterString();
-									this.refreshPhotos();
+									this.updateFilterUrl(this.buildFilterString());
 									this.closeRegionSelect();
 								}.bind(this)},
 							callback: function (vm) {
