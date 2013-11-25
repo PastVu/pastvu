@@ -667,6 +667,9 @@ function givePhotosPublic(iAm, data, cb) {
 	console.log(buildQueryResult);
 
 	if (query) {
+		if (filter.nogeo) {
+			query.geo = null;
+		}
 		step(
 			function () {
 				var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
@@ -696,12 +699,12 @@ function givePhotosPublic(iAm, data, cb) {
 							delete photos[i]._id;
 						}
 					}
-					cb({photos: photos, r: buildQueryResult.rarr, s: buildQueryResult.s, count: count, skip: skip});
+					cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, nogeo: filter.nogeo}, count: count, skip: skip});
 				}
 			}
 		);
 	} else {
-		cb({photos: [], r: buildQueryResult.rarr, s: buildQueryResult.s, count: 0, skip: skip});
+		cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, nogeo: filter.nogeo}, count: 0, skip: skip});
 	}
 }
 
@@ -1453,10 +1456,6 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		result.query = query;
 		result.rcids = regions_cids;
 		result.rarr = regions_arr;
-
-		if (filter.nogeo) {
-			query.geo = null;
-		}
 	}
 
 	//console.log(JSON.stringify(query));

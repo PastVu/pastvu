@@ -156,7 +156,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								topic: 'Изменение списка регионов для отслеживания',
+								topic: 'Изменение списка регионов для фильтрации по умолчанию',
 								closeTxt: 'Сохранить',
 								closeFunc: function (evt) {
 									evt.stopPropagation();

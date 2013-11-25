@@ -41,6 +41,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				origin: '',
 				//Значения фильтра для отображения
 				disp: {
+					s: ko.observableArray(),
 					r: ko.observableArray(),
 					nogeo: ko.observable(!!this.options.filter.nogeo)
 				}
@@ -146,15 +147,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 		loggedInHandler: function () {
-			// После логина перезапрашиваем фотографии пользователя
-			if (this.feed()) {
-				//В режиме ленты также перезапрашиваем всё, а не только приватные,
-				//т.к. необходимо обновить по регионам пользователя
-				this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
-			} else {
-				//В постраничном режиме просто перезапрашиваем страницу
-				this.getPhotos((this.page() - 1) * this.limit, this.limit);
-			}
+			//После логина перезапрашиваем фотографии пользователя
+			//В режиме ленты также перезапрашиваем всё, а не только приватные,
+			//т.к. необходимо обновить по регионам пользователя
+			this.refreshPhotos();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -241,6 +237,31 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}, this);
 			}
 		},
+		buildFilterString: function () {
+			var filterString = '',
+				r = this.filter.disp.r(),
+				s = this.filter.disp.s(),
+				i;
+
+			if (this.filter.disp.nogeo()) {
+				filterString += (filterString ? ';' : '') + 'nogeo';
+			}
+			if (r.length) {
+				filterString += (filterString ? ';' : '') + 'r_' + r[0].cid;
+				for (i = 1; i < r.length; i++) {
+					filterString += ',' + r[i].cid;
+				}
+			}
+			if (s.length) {
+				filterString += (filterString ? ';' : '') + 's_' + s[0];
+				for (i = 1; i < s.length; i++) {
+					filterString += ',' + s[i];
+				}
+			}
+
+			console.log(filterString);
+			this.filter.origin = filterString;
+		},
 		feedSelect: function (feed) {
 			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : ''));
 		},
@@ -257,6 +278,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 
+		refreshPhotos: function () {
+			if (this.feed()) {
+				//В режиме ленты перезапрашиваем всё
+				this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
+			} else {
+				//В постраничном режиме просто перезапрашиваем страницу
+				this.getPhotos((this.page() - 1) * this.limit, this.limit);
+			}
+		},
 		getNextFeedPhotos: function () {
 			if (!this.loading()) {
 				this.getPhotos(this.photos().length, this.limit);
@@ -312,58 +342,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
 					this.processPhotos(data.photos);
-					this.filter.disp.r(data.r || []);
+					this.filter.disp.r(data.filter.r || []);
+					this.filter.disp.s(data.filter.s || []);
+					this.filter.disp.nogeo(!!data.filter.nogeo);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
 			}.bind(this));
 			socket.emit(reqName, params);
-		},
-		//Запрос непубличных фотографий, использовался при логине
-		receivePhotosPrivate: function (cb, ctx) {
-			var params = {login: this.u.login()};
-
-			if (this.photos().length) {
-				params.startTime = _.last(this.photos()).sdate;
-			}
-
-			socket.once('takeUserPhotosPrivate', function (data) {
-				if (data && !data.error && data.photos && data.photos.length) {
-					var currPhotos = this.photos(),
-						photo,
-						newPhotosFresh = [],
-						newPhotosNotFresh = [],
-						i = data.photos.length;
-
-					this.processPhotos(data.photos);
-
-					while (i--) {
-						photo = data.photos[i];
-						if (photo.s < 2) {
-							newPhotosFresh.unshift(photo);
-						} else {
-							newPhotosNotFresh.unshift(photo);
-						}
-					}
-
-					Array.prototype.push.apply(currPhotos, newPhotosNotFresh);
-					currPhotos.sort(function (a, b) {
-						return a.sdate < b.sdate ? 1 : (a.sdate > b.sdate ? -1 : 0);
-					});
-
-					//Неподтвержденные всегда вначале списка
-					if (newPhotosFresh.length) {
-						Array.prototype.unshift.apply(currPhotos, newPhotosFresh);
-					}
-
-					this.photos(currPhotos);
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', params);
 		},
 		processPhotos: function (arr) {
 			for (var i = arr.length; i--;) {
@@ -519,8 +506,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								topic: 'Изменение списка регионов для отслеживания',
-								closeTxt: 'Сохранить',
+								topic: 'Выбор регионов для фильтрации',
+								closeTxt: 'Применить',
 								closeFunc: function (evt) {
 									evt.stopPropagation();
 									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
@@ -530,13 +517,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 										return;
 									}
 
-									this.saveRegions(_.pluck(regions, 'cid'), function (err) {
-										if (!err) {
-											User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
-											this.closeRegionSelect();
-											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
-										}
-									}, this);
+									this.filter.disp.r(regions);
+									this.buildFilterString();
+									this.refreshPhotos();
+									this.closeRegionSelect();
 								}.bind(this)},
 							callback: function (vm) {
 								this.regselectVM = vm;
@@ -550,16 +534,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}
 				);
 			}
-		},
-		saveRegions: function (regions, cb, ctx) {
-			socket.once('saveUserRegionsResult', function (data) {
-				var error = !data || data.error || !data.saved;
-				if (error) {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				}
-				cb.call(ctx, error);
-			}.bind(this));
-			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
 		},
 		closeRegionSelect: function () {
 			if (this.regselectVM) {

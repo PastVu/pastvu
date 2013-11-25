@@ -25,7 +25,10 @@
 	}
 
 	.filter {
-		.title {
+		> .title {
+			display: block;
+			float: left;
+			width: 95px;
 			padding: 0 4px 2px 3px;
 			font-weight: bold;
 			line-height: 20px;
@@ -44,21 +47,25 @@
 			margin-left: 2px;
 			margin-right: 2px;
 		}
+		> .fvals {
+			margin-left: 94px;
+			padding: 0 1px 0 3px;
+			border: 1px solid #cccccc;
+		}
 
 		.region {
-			margin-right: 5px;
-			padding: 3px 5px;
-			line-height: 24px;
+			display: inline-block;
+			margin: 1px 5px 1px 0;
+			padding: 0 5px;
+			line-height: 20px;
 			cursor: default;
-			background-color: #ddd;
+			background-color: #E4E4E4;
 		}
 		.regionEdit {
-			margin-left: 3px;
-			padding: 3px 0 0;
 			color: @gray;
 			font-size: @font-size-small;
 			font-style: italic;
-			line-height: 24px;
+			line-height: 20px;
 			cursor: pointer;
 			border-width:  0 0 1px 0;
 			border-style: dashed;
