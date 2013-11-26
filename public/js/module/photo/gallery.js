@@ -26,6 +26,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
+			this.exe = ko.observable(false);
 			this.topTitle = ko.observable(this.options.topTitle);
 
 			this.photos = ko.observableArray();
@@ -76,9 +77,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.filter.active = this.co.filterActive = ko.computed(function () {
 				return this.filter.disp.r().length;
 			}, this);
-			this.filter.active = this.co.filterActive = ko.computed(function () {
-				return this.filter.disp.r().length;
-			}, this);
+			this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
+			this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
+			this.filterChangeHandleBlock = false;
+
 
 			this.panelW = ko.observable('0px');
 			this.w = ko.observable('0px');
@@ -277,8 +279,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				geo = this.filter.disp.geo(),
 				i;
 
-			if (r.length === 1) {
-				filterString += (filterString ? '_' : '') + 'geo!' + r[0];
+			if (geo.length === 1) {
+				filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
 			}
 			if (r.length) {
 				filterString += (filterString ? '_' : '') + 'r';
@@ -299,6 +301,31 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			console.log(filterString);
 			return filterString;
+		},
+		filterChangeHandle: function () {
+			if (this.filterChangeHandleBlock) {
+				return;
+			}
+			console.log(99);
+			var newFilter = this.buildFilterString();
+			if (newFilter !== this.filter.origin) {
+				this.updateFilterUrl(newFilter);
+			}
+		},
+		fgeoclk: function (data, event) {
+			var currDispGeo = data.filter.disp.geo(),
+				clickedGeo = event.target.value;
+
+			if (!currDispGeo.length) {
+				if (clickedGeo === '0') {
+					data.filter.disp.geo(['1']);
+				} else {
+					data.filter.disp.geo(['0']);
+				}
+			}
+			this.filterChangeHandle();
+
+			return true; // Чтобы галка снялась
 		},
 		updateFilterUrl: function (filterString) {
 			var uri = new Uri(location.pathname + location.search);
@@ -389,10 +416,15 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
+					this.filterChangeHandleBlock = true;
 					this.processPhotos(data.photos);
 					this.filter.disp.r(data.filter.r || []);
 					this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
-					this.filter.disp.geo(data.filter.geo || []);
+					if (!data.filter.geo || !data.filter.geo.length) {
+						data.filter.geo = ['0', '1'];
+					}
+					this.filter.disp.geo(data.filter.geo);
+					this.filterChangeHandleBlock = false;
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -567,10 +599,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 									}
 
 									this.filter.disp.r(regions);
-									newFilter = this.buildFilterString();
-									if (newFilter !== this.filter.origin) {
-										this.updateFilterUrl(newFilter);
-									}
 									this.closeRegionSelect();
 								}.bind(this)},
 							callback: function (vm) {

@@ -682,6 +682,7 @@ function givePhotosPublic(iAm, data, cb) {
 				query.geo = {$size: 2};
 			}
 		}
+		console.log(query);
 		step(
 			function () {
 				var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
@@ -1424,7 +1425,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		}
 	}
 
-	if (query_pub) {
+	if (query_pub && squery_public_have) {
 		query_pub.s = 5;
 		if (rquery_pub) {
 			_.assign(query_pub, rquery_pub);
@@ -1578,7 +1579,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
 			if (hs.session.user) {
-				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: {geo: ['0']}}, function (resultData) {
+				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: 'geo!0'}, function (resultData) {
 					socket.emit('takePhotosPublicNoGeoIndex', resultData);
 				});
 			} else {
