@@ -27,7 +27,7 @@
 	.filter {
 		margin-top: -23px;
 
-		> .title {
+		.title {
 			display: inline-block;
 			width: 95px;
 			margin-right: 5px;
@@ -68,12 +68,16 @@
 		}
 
 		> .fvals {
-			padding: 0 1px 0 3px;
-			border: 1px solid #cccccc;
+			display: inline-block;
+			padding-right: 5px;
+			border: 1px solid #ccc;
+			background-color: #fff;
 
+			.frow {
+			 	margin-top: 1px;
+			}
 			> .others {
-				height: 0;
-				overflow: hidden;
+				display: none;
 			}
 		}
 
@@ -81,7 +85,11 @@
 			> .fvals {
 
 				> .others {
-					height: auto;
+					display: block;
+
+					> .row {
+					   margin-top: 1px;
+					}
 				}
 			}
 		}
@@ -90,9 +98,14 @@
 			display: block;
 			float: left;
 			width: 70px;
+			padding-left: 3px;
+			border-color: #EEE;
+			border-style: solid;
+			border-width: 0 1px 0 0;
+			background-color: #F5F5F5;
 		}
 		.filterVars {
-			margin-left: 70px;
+			margin-left: 73px;
 
 			> label.checkbox-inline {
 				margin-left: 0;

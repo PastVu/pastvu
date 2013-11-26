@@ -7,13 +7,14 @@
 				// /ko
 
 		.row.rowoffset
-			.col-xs-6.col-md-3.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
+			.col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
 				.filter(data-bind="css: {opened: filter.open()}")
-					label.checkbox-inline.title
-						span.glyphicon.glyphicon-filter
-						input.titlechk(type="checkbox")
-						| Фильтр
-					span.fopen(data-bind="text: filter.open() ? 'Свернуть' : 'Развернуть', click: function () {filter.open(!filter.open())}")
+					.ftop
+						label.checkbox-inline.title
+							span.glyphicon.glyphicon-filter
+							input.titlechk(type="checkbox")
+							| Фильтр
+						span.fopen(data-bind="text: filter.open() ? 'Свернуть' : 'Развернуть', click: function () {filter.open(!filter.open())}")
 					.fvals
 						.row.regions
 							.filterName Регионы:
@@ -48,7 +49,7 @@
 									label.checkbox-inline
 										input(type="checkbox", value="0", data-bind="checked: filter.disp.geo, click: fgeoclk")
 										span Нет (Где это?)
-			.col-xs-6.col-md-3.col-md-push-6.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
+			.col-xs-12.col-sm-5.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
 				span.brief(data-bind="text: briefText")
 				//ko if: photos().length
 				.btn-group
@@ -57,7 +58,8 @@
 					button.btn.btn-primary(title="Лента", data-bind="click: function () {feedSelect(true)}, css: {active: feed()}")
 						span.glyphicon.glyphicon-th-list
 				// /ko
-			.col-xs-12.col-md-6.col-md-pull-3.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
+			.clearfix.hidden-lg
+			.col-xs-12.col-lg-4.col-lg-pull-4.pag(data-bind="css: {loading: !feed() && loading(), hasPag: paginationShow()}")
 				//ko if: paginationShow()
 				//ko template: {name: 'photoPagerTpl'}
 				// /ko

@@ -239,7 +239,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
-						this.moreLink('');
+						this.moreLink('/ps?f=r!0_s!1');
 						success = true;
 					}
 				}
