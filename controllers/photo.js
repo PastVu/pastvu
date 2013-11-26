@@ -653,8 +653,14 @@ function parseFilter(filterString) {
 	return result;
 }
 
-//Отдаем полную публичную галерею в компактном виде
-function givePhotosPublic(iAm, data, cb) {
+/**
+ * Отдаем полную галерею с учетом прав и фильтров в компактном виде
+ * @param iAm Пользователь сессии
+ * @param data Объект параметров, включая фильтр
+ * @param user_id _id пользователя, если хотим галерею только для него получить
+ * @param cb
+ */
+function givePhotos(iAm, data, user_id, cb) {
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
@@ -668,7 +674,7 @@ function givePhotosPublic(iAm, data, cb) {
 	if (!filter.s) {
 		filter.s = [5];
 	}
-	buildQueryResult = buildPhotosQuery(filter, null, iAm);
+	buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
 	query = buildQueryResult.query;
 
 	if (query) {
@@ -680,6 +686,10 @@ function givePhotosPublic(iAm, data, cb) {
 				query.geo = {$size: 2};
 			}
 		}
+		if (user_id) {
+			query.user = user_id;
+		}
+
 		console.log(query);
 		step(
 			function () {
@@ -719,69 +729,13 @@ function givePhotosPublic(iAm, data, cb) {
 	}
 }
 
-//Отдаем галерею пользователя в компактном виде
+//Отдаем галерею пользователя
 function giveUserPhotos(iAm, data, cb) {
-	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
-		if (err || !user) {
+	User.getUserID(data.login, function (err, user_id) {
+		if (err || !user_id) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
-		var skip = data.skip || 0,
-			limit = Math.min(data.limit || 20, 100),
-			filter = data.filter ? parseFilter(data.filter) : {},
-			buildQueryResult,
-			query;
-
-		buildQueryResult = buildPhotosQuery(filter, user._id, iAm);
-		query = buildQueryResult.query;
-
-		if (query) {
-			if (filter.geo) {
-				if (filter.geo[0] === '0') {
-					query.geo = null;
-				}
-				if (filter.geo[0] === '1') {
-					query.geo = {$size: 2};
-				}
-			}
-			query.user = user._id;
-			console.log(query);
-
-			step(
-				function () {
-					var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
-
-					Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
-					Photo.count(query, this.parallel());
-				},
-				function (err, photos, count) {
-					if (err || !photos) {
-						return cb({message: err && err.message || msg.notExists, error: true});
-					}
-
-					if (!iAm || !photos.length) {
-						//Если аноним или фотографий нет, сразу возвращаем
-						finish(null, photos);
-					} else {
-						//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-						commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
-					}
-
-					function finish(err, photos) {
-						if (err) {
-							return cb({message: err.message, error: true});
-						}
-						if (iAm) {
-							for (var i = photos.length; i--;) {
-								delete photos[i]._id;
-							}
-						}
-						cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
-					}
-				}
-			);
-		}  else {
-			cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
-		}
+		givePhotos(iAm, data, user_id, cb);
 	});
 }
 
@@ -1582,7 +1536,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicIndex', function () {
 			if (hs.session.user) {
-				givePhotosPublic(hs.session.user, {skip: 0, limit: 29}, function (resultData) {
+				givePhotos(hs.session.user, {skip: 0, limit: 29}, null, function (resultData) {
 					socket.emit('takePhotosPublicIndex', resultData);
 				});
 			} else {
@@ -1594,7 +1548,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
 			if (hs.session.user) {
-				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: 'geo!0'}, function (resultData) {
+				givePhotos(hs.session.user, {skip: 0, limit: 29, filter: 'geo!0'}, null, function (resultData) {
 					socket.emit('takePhotosPublicNoGeoIndex', resultData);
 				});
 			} else {
@@ -1604,21 +1558,21 @@ module.exports.loadController = function (app, db, io) {
 			}
 		});
 
-		socket.on('givePhotosPublic', function (data) {
-			givePhotosPublic(hs.session.user, data, function (resultData) {
-				socket.emit('takePhotosPublic', resultData);
-			});
-		});
-
-		socket.on('givePhotosForApprove', function (data) {
-			givePhotosForApprove(hs.session.user, data, function (err, photos) {
-				socket.emit('takePhotosForApprove', err ? {message: err.message, error: true} : {photos: photos});
+		socket.on('givePhotos', function (data) {
+			givePhotos(hs.session.user, data, null, function (resultData) {
+				socket.emit('takePhotos', resultData);
 			});
 		});
 
 		socket.on('giveUserPhotos', function (data) {
 			giveUserPhotos(hs.session.user, data, function (resultData) {
 				socket.emit('takeUserPhotos', resultData);
+			});
+		});
+
+		socket.on('givePhotosForApprove', function (data) {
+			givePhotosForApprove(hs.session.user, data, function (err, photos) {
+				socket.emit('takePhotosForApprove', err ? {message: err.message, error: true} : {photos: photos});
 			});
 		});
 

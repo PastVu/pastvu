@@ -223,7 +223,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			if (filterString !== this.filter.origin) {
 				this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
 				this.pageQuery(location.search);
-				if (this.filter.origin) {
+				if (this.filter.origin && !this.loadedFirst()) {
 					this.filter.open(true);
 				}
 				filterChange = true;
@@ -401,8 +401,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 		},
 		receivePhotos: function (skip, limit, cb, ctx) {
-			var reqName = this.u ? 'giveUserPhotos' : 'givePhotosPublic',
-				resName = this.u ? 'takeUserPhotos' : 'takePhotosPublic',
+			var reqName = this.u ? 'giveUserPhotos' : 'givePhotos',
+				resName = this.u ? 'takeUserPhotos' : 'takePhotos',
 				params = {skip: skip, limit: limit, filter: this.filter.origin};
 
 			if (this.u) {
