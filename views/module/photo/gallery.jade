@@ -12,20 +12,33 @@
 					label.checkbox-inline.title
 						span.glyphicon.glyphicon-filter
 						input.titlechk(type="checkbox")
-						| Фильтр:
+						| Фильтр
 					.fvals
-						//ko if: !filter.disp.r().length
-						span.region
-							span.glyphicon.glyphicon-globe
-							|  Весь мир
+						.row.regions
+							.filterName Регионы:
+							.filterVars
+								//ko if: !filter.disp.r().length
+								span.region
+									span.glyphicon.glyphicon-globe
+									|  Весь мир
+								// /ko
+								//ko foreach: filter.disp.r
+								span.region
+									span(data-bind="text: $data.title_local")
+								// /ko
+								span.regionEdit(data-bind="click: regionSelect")
+									span.glyphicon.glyphicon-pencil
+									| Изменить
+						.more
+						.geovars
+						//ko if: filter.can.s()
+						.row.svars
+							.filterName Статусы:
+							.filterVars(data-bind="foreach: filter.available.s")
+								label.checkbox-inline.s
+									input(type="checkbox", data-bind="attr: {value: $data.cid}, checked: $parent.filter.disp.s")
+									span(data-bind="text: $data.title")
 						// /ko
-						//ko foreach: filter.disp.r
-						span.region
-							span(data-bind="text: $data.title_local")
-						// /ko
-						span.regionEdit(data-bind="click: regionSelect")
-							span.glyphicon.glyphicon-pencil
-							| Изменить
 			.col-xs-6.col-md-3.col-md-push-6.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
 				span.brief(data-bind="text: briefText")
 				//ko if: photos().length

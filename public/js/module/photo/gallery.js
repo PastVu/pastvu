@@ -5,7 +5,14 @@
 define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, Uri, jade) {
 	'use strict';
 	var $window = $(window),
-		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
+		filter_s = [
+			{cid: '0', title: 'Новые'},
+			{cid: '1', title: 'Готовые'},
+			{cid: '5', title: 'Публичные'},
+			{cid: '7', title: 'Неактивные'},
+			{cid: '9', title: 'Удаленные'}
+		];
 
 	return Cliche.extend({
 		jade: jade,
@@ -44,8 +51,30 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					s: ko.observableArray(),
 					r: ko.observableArray(),
 					nogeo: ko.observable(!!this.options.filter.nogeo)
+				},
+				can: {
+					s: this.co.filtercans = ko.computed(function () {
+						return this.auth.iAm && this.auth.iAm.role() > 4;
+					}, this)
+				},
+				available: {
+					s: this.co.filteravailables = ko.computed(function () {
+						if (this.auth.iAm) {
+							if (this.auth.iAm.role() > 9) {
+								return filter_s;
+							} else if (this.auth.iAm.role() > 4) {
+								return filter_s.filter(function (item) {
+									return item.cid !== '9';
+								});
+							}
+						}
+						return [];
+					}, this)
 				}
 			};
+			this.filter.active = this.co.filterActive = ko.computed(function () {
+				return this.filter.disp.r().length;
+			}, this);
 			this.filter.active = this.co.filterActive = ko.computed(function () {
 				return this.filter.disp.r().length;
 			}, this);
@@ -356,7 +385,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				} else if (data.skip === skip) {
 					this.processPhotos(data.photos);
 					this.filter.disp.r(data.filter.r || []);
-					this.filter.disp.s(data.filter.s || []);
+					this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
 					this.filter.disp.nogeo(!!data.filter.nogeo);
 				}
 				if (Utils.isType('function', cb)) {
@@ -523,7 +552,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								closeTxt: 'Применить',
 								closeFunc: function (evt) {
 									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']),
+										newFilter;
 
 									if (regions.length > 5) {
 										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -531,7 +561,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 									}
 
 									this.filter.disp.r(regions);
-									this.updateFilterUrl(this.buildFilterString());
+									newFilter = this.buildFilterString();
+									if (newFilter !== this.filter.origin) {
+										this.filter.origin = newFilter;
+										this.refreshPhotos();
+									}
 									this.closeRegionSelect();
 								}.bind(this)},
 							callback: function (vm) {
