@@ -1,14 +1,14 @@
 .gallery(data-bind="with: repository[M!M]")
 	.thumbs(data-bind="style: {width: panelW()}")
+		//ko if: topTitle()
 		.row.rowoffset
 			.col-xs-12.topcol
-				//ko if: topTitle()
 				.pageHeader(data-bind="text: topTitle()")
-				// /ko
+		// /ko
 
 		.row.rowoffset
 			.col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
-				.filter(data-bind="css: {opened: filter.open()}")
+				.filter(data-bind="css: {opened: filter.open()}, style: {marginTop: topTitle() ? '-23px' : 'auto'}")
 					.ftop
 						label.checkbox-inline.title
 							span.glyphicon.glyphicon-filter

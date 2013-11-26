@@ -668,10 +668,8 @@ function givePhotosPublic(iAm, data, cb) {
 	if (!filter.s) {
 		filter.s = [5];
 	}
-	console.log(filter);
 	buildQueryResult = buildPhotosQuery(filter, null, iAm);
 	query = buildQueryResult.query;
-	console.log(buildQueryResult);
 
 	if (query) {
 		if (filter.geo) {
@@ -721,6 +719,71 @@ function givePhotosPublic(iAm, data, cb) {
 	}
 }
 
+//Отдаем галерею пользователя в компактном виде
+function giveUserPhotos(iAm, data, cb) {
+	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
+		if (err || !user) {
+			return cb({message: err && err.message || 'Such user does not exist', error: true});
+		}
+		var skip = data.skip || 0,
+			limit = Math.min(data.limit || 20, 100),
+			filter = data.filter ? parseFilter(data.filter) : {},
+			buildQueryResult,
+			query;
+
+		buildQueryResult = buildPhotosQuery(filter, user._id, iAm);
+		query = buildQueryResult.query;
+
+		if (query) {
+			if (filter.geo) {
+				if (filter.geo[0] === '0') {
+					query.geo = null;
+				}
+				if (filter.geo[0] === '1') {
+					query.geo = {$size: 2};
+				}
+			}
+			query.user = user._id;
+			console.log(query);
+
+			step(
+				function () {
+					var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
+
+					Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
+					Photo.count(query, this.parallel());
+				},
+				function (err, photos, count) {
+					if (err || !photos) {
+						return cb({message: err && err.message || msg.notExists, error: true});
+					}
+
+					if (!iAm || !photos.length) {
+						//Если аноним или фотографий нет, сразу возвращаем
+						finish(null, photos);
+					} else {
+						//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+						commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
+					}
+
+					function finish(err, photos) {
+						if (err) {
+							return cb({message: err.message, error: true});
+						}
+						if (iAm) {
+							for (var i = photos.length; i--;) {
+								delete photos[i]._id;
+							}
+						}
+						cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
+					}
+				}
+			);
+		}  else {
+			cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
+		}
+	});
+}
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
@@ -737,54 +800,6 @@ function givePhotosForApprove(iAm, data, cb) {
 	}
 
 	Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
-}
-
-//Отдаем галерею пользователя в компактном виде
-function giveUserPhotos(iAm, data, cb) {
-	User.collection.findOne({login: data.login}, {_id: 1, pcount: 1}, function (err, user) {
-		if (err || !user) {
-			return cb({message: err && err.message || 'Such user does not exist', error: true});
-		}
-		var skip = data.skip || 0,
-			limit = Math.min(data.limit || 20, 100),
-			filter = data.filter || {},
-			fieldsSelect = iAm ? compactFieldsId : compactFields;
-
-		step(
-			function () {
-				var query = buildPhotosQuery(filter, user._id, iAm);
-				query.user = user._id;
-
-				Photo.find(query, fieldsSelect, {lean: true, sort: {sdate: -1}, skip: skip, limit: limit}, this.parallel());
-				Photo.count(query, this.parallel());
-			},
-			function (err, photos, count) {
-				if (err || !photos) {
-					return cb({message: err && err.message || msg.notExists, error: true});
-				}
-
-				if (!iAm || !photos.length) {
-					//Если аноним или фотографий нет, сразу возвращаем
-					finish(null, photos);
-				} else {
-					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-					commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
-				}
-
-				function finish(err, photos) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-					if (iAm) {
-						for (var i = photos.length; i--;) {
-							delete photos[i]._id;
-						}
-					}
-					cb({photos: photos, count: count, skip: skip});
-				}
-			}
-		);
-	});
 }
 
 //Берем массив до и после указанной фотографии пользователя указанной длины
@@ -1324,7 +1339,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		someVar = regionController.buildQuery(regions_arr);
 		rquery_pub = rquery_mod = someVar.rquery;
 		regions_hash = someVar.rhash;
-	} else if (filter.r === undefined && iAm && iAm.regions.length) {
+	} else if (filter.r === undefined && iAm && iAm.regions.length && (!forUserId || !forUserId.equals(iAm._id))) {
 		regions_hash = usObj.rhash;
 		regions_cids = _.pluck(iAm.regions, 'cid');
 		regions_arr = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
