@@ -299,14 +299,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 			}
 
-			console.log(filterString);
 			return filterString;
 		},
 		filterChangeHandle: function () {
 			if (this.filterChangeHandleBlock) {
 				return;
 			}
-			console.log(99);
 			var newFilter = this.buildFilterString();
 			if (newFilter !== this.filter.origin) {
 				this.updateFilterUrl(newFilter);
@@ -338,7 +336,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 
 		feedSelect: function (feed) {
-			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : ''));
+			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
 		},
 		scrollActivate: function () {
 			if (!this.scrollActive) {
@@ -377,7 +375,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (this.page() > this.pageLast()) {
 					//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
 					return window.setTimeout(function () {
-						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast());
+						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast() + this.pageQuery());
 					}.bind(this), 200);
 				}
 
