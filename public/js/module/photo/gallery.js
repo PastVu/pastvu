@@ -50,8 +50,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				disp: {
 					s: ko.observableArray(),
 					r: ko.observableArray(),
-					nogeo: ko.observable(!!this.options.filter.nogeo)
+					geo: ko.observableArray()
 				},
+				open: ko.observable(false),
 				can: {
 					s: this.co.filtercans = ko.computed(function () {
 						return this.auth.iAm && this.auth.iAm.role() > 4;
@@ -220,6 +221,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			if (filterString !== this.filter.origin) {
 				this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
 				this.pageQuery(location.search);
+				if (this.filter.origin) {
+					this.filter.open(true);
+				}
 				filterChange = true;
 			}
 
@@ -270,25 +274,26 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			var filterString = '',
 				r = this.filter.disp.r(),
 				s = this.filter.disp.s(),
+				geo = this.filter.disp.geo(),
 				i;
 
-			if (this.filter.disp.nogeo()) {
-				filterString += (filterString ? ';' : '') + 'nogeo';
+			if (r.length === 1) {
+				filterString += (filterString ? '_' : '') + 'geo!' + r[0];
 			}
 			if (r.length) {
-				filterString += (filterString ? ';' : '') + 'r_' + r[0].cid;
-				for (i = 1; i < r.length; i++) {
-					filterString += ',' + r[i].cid;
+				filterString += (filterString ? '_' : '') + 'r';
+				for (i = 0; i < r.length; i++) {
+					filterString += '!' + r[i].cid;
 				}
 			} else {
 				if (this.auth.iAm && this.auth.iAm.regions().length) {
-					filterString += (filterString ? ';' : '') + 'r_0';
+					filterString += (filterString ? '_' : '') + 'r!0';
 				}
 			}
 			if (s.length) {
-				filterString += (filterString ? ';' : '') + 's_' + s[0];
-				for (i = 1; i < s.length; i++) {
-					filterString += ',' + s[i];
+				filterString += (filterString ? '_' : '') + 's';
+				for (i = 0; i < s.length; i++) {
+					filterString += '!' + s[i];
 				}
 			}
 
@@ -297,9 +302,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		updateFilterUrl: function (filterString) {
 			var uri = new Uri(location.pathname + location.search);
-			uri.deleteQueryParam('f');
 			if (filterString) {
 				uri.replaceQueryParam('f', filterString);
+			} else {
+				uri.deleteQueryParam('f');
 			}
 			globalVM.router.navigateToUrl(uri.toString());
 		},
@@ -386,7 +392,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					this.processPhotos(data.photos);
 					this.filter.disp.r(data.filter.r || []);
 					this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
-					this.filter.disp.nogeo(!!data.filter.nogeo);
+					this.filter.disp.geo(data.filter.geo || []);
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
@@ -563,8 +569,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 									this.filter.disp.r(regions);
 									newFilter = this.buildFilterString();
 									if (newFilter !== this.filter.origin) {
-										this.filter.origin = newFilter;
-										this.refreshPhotos();
+										this.updateFilterUrl(newFilter);
 									}
 									this.closeRegionSelect();
 								}.bind(this)},

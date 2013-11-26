@@ -220,7 +220,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
-						this.moreLink('/ps?f=nogeo');
+						this.moreLink('/ps?f=geo!0');
 						success = true;
 					}
 				}

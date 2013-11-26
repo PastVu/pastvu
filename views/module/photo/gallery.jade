@@ -8,11 +8,12 @@
 
 		.row.rowoffset
 			.col-xs-6.col-md-3.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
-				.filter
+				.filter(data-bind="css: {opened: filter.open()}")
 					label.checkbox-inline.title
 						span.glyphicon.glyphicon-filter
 						input.titlechk(type="checkbox")
 						| Фильтр
+					span.fopen(data-bind="text: filter.open() ? 'Свернуть' : 'Развернуть', click: function () {filter.open(!filter.open())}")
 					.fvals
 						.row.regions
 							.filterName Регионы:
@@ -29,16 +30,24 @@
 								span.regionEdit(data-bind="click: regionSelect")
 									span.glyphicon.glyphicon-pencil
 									| Изменить
-						.more
-						.geovars
-						//ko if: filter.can.s()
-						.row.svars
-							.filterName Статусы:
-							.filterVars(data-bind="foreach: filter.available.s")
-								label.checkbox-inline.s
-									input(type="checkbox", data-bind="attr: {value: $data.cid}, checked: $parent.filter.disp.s")
-									span(data-bind="text: $data.title")
-						// /ko
+						.row.others
+							//ko if: filter.can.s()
+							.row.svars
+								.filterName Статусы:
+								.filterVars(data-bind="foreach: filter.available.s")
+									label.checkbox-inline.s
+										input(type="checkbox", data-bind="attr: {value: $data.cid}, checked: $parent.filter.disp.s")
+										span(data-bind="text: $data.title")
+							// /ko
+							.row.geovars
+								.filterName Точка:
+								.filterVars
+									label.checkbox-inline
+										input(type="checkbox", value="1", data-bind="checked: filter.disp.geo")
+										span Есть
+									label.checkbox-inline
+										input(type="checkbox", value="0", data-bind="checked: filter.disp.geo")
+										span Нет (Где это?)
 			.col-xs-6.col-md-3.col-md-push-6.col-lg-4.col-lg-push-4.topcol.switch(data-bind="css: {invisible: !loadedFirst()}")
 				span.brief(data-bind="text: briefText")
 				//ko if: photos().length

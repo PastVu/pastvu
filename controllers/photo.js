@@ -582,9 +582,11 @@ var givePhotosPublicNoGeoIndex = (function () {
 	}, ms('30s'));
 }());
 
-var filterProps = {nogeo: true, r: [], s: []};
+var filterProps = {geo: [], r: [], s: []},
+	delimeterParam = '_',
+	delimeterVal = '!';
 function parseFilter(filterString) {
-	var filterParams = filterString && filterString.split(';'),
+	var filterParams = filterString && filterString.split(delimeterParam),
 		filterParam,
 		filterVal,
 		filterValItem,
@@ -595,7 +597,7 @@ function parseFilter(filterString) {
 	if (filterParams) {
 		for (i = filterParams.length; i--;) {
 			filterParam = filterParams[i];
-			dividerIndex = filterParam.indexOf('_');
+			dividerIndex = filterParam.indexOf(delimeterVal);
 			if (dividerIndex > 0) {
 				filterVal = filterParam.substr(dividerIndex + 1);
 				filterParam = filterParam.substring(0, dividerIndex);
@@ -607,7 +609,7 @@ function parseFilter(filterString) {
 					if (filterVal === '0') {
 						result.r = 0;
 					} else {
-						filterVal = filterVal.split(',').map(Number);
+						filterVal = filterVal.split(delimeterVal).map(Number);
 						if (Array.isArray(filterVal) && filterVal.length) {
 							result.r = [];
 							for (j = filterVal.length; j--;) {
@@ -622,7 +624,7 @@ function parseFilter(filterString) {
 						}
 					}
 				} else if (filterParam === 's') {
-					filterVal = filterVal.split(',');
+					filterVal = filterVal.split(delimeterVal);
 					if (Array.isArray(filterVal) && filterVal.length) {
 						result.s = [];
 						for (j = filterVal.length; j--;) {
@@ -637,6 +639,11 @@ function parseFilter(filterString) {
 						if (!result.s.length) {
 							delete result.s;
 						}
+					}
+				} else if (filterParam === 'geo') {
+					filterVal = filterVal.split(delimeterVal);
+					if (Array.isArray(filterVal) && filterVal.length === 1) {
+						result.geo = filterVal;
 					}
 				}
 			}
@@ -667,8 +674,13 @@ function givePhotosPublic(iAm, data, cb) {
 	console.log(buildQueryResult);
 
 	if (query) {
-		if (filter.nogeo) {
-			query.geo = null;
+		if (filter.geo) {
+			if (filter.geo[0] === '0') {
+				query.geo = null;
+			}
+			if (filter.geo[0] === '1') {
+				query.geo = {$size: 2};
+			}
 		}
 		step(
 			function () {
@@ -699,12 +711,12 @@ function givePhotosPublic(iAm, data, cb) {
 							delete photos[i]._id;
 						}
 					}
-					cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, nogeo: filter.nogeo}, count: count, skip: skip});
+					cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
 				}
 			}
 		);
 	} else {
-		cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, nogeo: filter.nogeo}, count: 0, skip: skip});
+		cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
 	}
 }
 
@@ -1566,7 +1578,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
 			if (hs.session.user) {
-				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: {nogeo: true}}, function (resultData) {
+				givePhotosPublic(hs.session.user, {skip: 0, limit: 29, filter: {geo: ['0']}}, function (resultData) {
 					socket.emit('takePhotosPublicNoGeoIndex', resultData);
 				});
 			} else {
