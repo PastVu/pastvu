@@ -656,24 +656,21 @@ function parseFilter(filterString) {
 /**
  * Отдаем полную галерею с учетом прав и фильтров в компактном виде
  * @param iAm Пользователь сессии
- * @param data Объект параметров, включая фильтр
+ * @param filter Объект фильтра (распарсенный)
+ * @param data Объект параметров, включая стринг фильтра
  * @param user_id _id пользователя, если хотим галерею только для него получить
  * @param cb
  */
-function givePhotos(iAm, data, user_id, cb) {
+function givePhotos(iAm, filter, data, user_id, cb) {
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
-		filter = data.filter ? parseFilter(data.filter) : {},
 		buildQueryResult,
 		query;
 
-	if (!filter.s) {
-		filter.s = [5];
-	}
 	buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
 	query = buildQueryResult.query;
 
@@ -729,13 +726,31 @@ function givePhotos(iAm, data, user_id, cb) {
 	}
 }
 
+//Отдаем общую галерею
+function givePhotosPS(iAm, data, cb) {
+	if (!Utils.isType('object', data)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	var filter = data.filter ? parseFilter(data.filter) : {};
+	if (!filter.s) {
+		filter.s = [5];
+	}
+
+	givePhotos(iAm, filter, data, null, cb);
+}
 //Отдаем галерею пользователя
 function giveUserPhotos(iAm, data, cb) {
+	if (!Utils.isType('object', data) || !data.login) {
+		return cb({message: 'Bad params', error: true});
+	}
+
 	User.getUserID(data.login, function (err, user_id) {
 		if (err || !user_id) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
-		givePhotos(iAm, data, user_id, cb);
+		var filter = data.filter ? parseFilter(data.filter) : {};
+		givePhotos(iAm, filter, data, user_id, cb);
 	});
 }
 
@@ -1537,7 +1552,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicIndex', function () {
 			if (hs.session.user) {
-				givePhotos(hs.session.user, {skip: 0, limit: 29}, null, function (resultData) {
+				givePhotos(hs.session.user, {}, {skip: 0, limit: 29}, null, function (resultData) {
 					socket.emit('takePhotosPublicIndex', resultData);
 				});
 			} else {
@@ -1549,7 +1564,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
 			if (hs.session.user) {
-				givePhotos(hs.session.user, {skip: 0, limit: 29, filter: 'geo!0'}, null, function (resultData) {
+				givePhotos(hs.session.user, {}, {skip: 0, limit: 29, filter: 'geo!0'}, null, function (resultData) {
 					socket.emit('takePhotosPublicNoGeoIndex', resultData);
 				});
 			} else {
@@ -1560,7 +1575,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotos', function (data) {
-			givePhotos(hs.session.user, data, null, function (resultData) {
+			givePhotosPS(hs.session.user, data, function (resultData) {
 				socket.emit('takePhotos', resultData);
 			});
 		});
