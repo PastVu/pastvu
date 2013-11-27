@@ -531,8 +531,7 @@ function saveUserRegions(socket, data, cb) {
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
 		itsOnline,
-		i,
-		j;
+		i;
 
 	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
 		return cb({message: msg.deny, error: true});
