@@ -44,6 +44,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 			}.bind(this);
 
+			this.itsMine = this.co.itsMine = ko.computed(function () {
+				return this.u && this.auth.iAm && this.u.login() === this.auth.iAm.login();
+			}, this);
+
 			this.filter = {
 				//Параметры фильтра для запросов
 				origin: '',
@@ -56,7 +60,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				open: ko.observable(false),
 				can: {
 					s: this.co.filtercans = ko.computed(function () {
-						return this.auth.iAm && this.auth.iAm.role() > 4;
+						return this.itsMine() || this.auth.iAm && this.auth.iAm.role() > 4;
 					}, this)
 				},
 				available: {
@@ -64,7 +68,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						if (this.auth.iAm) {
 							if (this.auth.iAm.role() > 9) {
 								return filter_s;
-							} else if (this.auth.iAm.role() > 4) {
+							} else if (this.itsMine() || this.auth.iAm.role() > 4) {
 								return filter_s.filter(function (item) {
 									return item.cid !== '9';
 								});
@@ -170,7 +174,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		userModeAdditions: function () {
 			this.canAdd = this.co.canAdd = ko.computed(function () {
-				return this.options.addPossible && this.u.login() === this.auth.iAm.login() && (this.feed() || this.page() === 1);
+				return this.options.addPossible && this.itsMine() && (this.feed() || this.page() === 1);
 			}, this);
 
 			this.subscriptions.login = this.u.login.subscribe(this.changeUserHandler, this); //Срабатывает при смене пользователя
