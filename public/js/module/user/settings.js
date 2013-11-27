@@ -62,6 +62,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		autoReply: function (data, evt) {
 			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);
 		},
+		regionPhotoUserGal: function (data, evt) {
+			this.changeSetting('r_f_photo_user_gal', !!evt.target.classList.contains('yes'), true);
+		},
 		subscr_throttleHandler: function (val) {
 			//Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
 			//Соответственно нам нужно отправлять на изменение только когда строка

@@ -14,7 +14,7 @@ module.exports.loadController = function (app, db) {
 			sdate;
 
 		//Заполняем новую коллекцию для карты публичными фотографиями
-		print('Filling photos_map with ' + db.photos.count() + ' public photos');
+		/*print('Filling photos_map with ' + db.photos.count() + ' public photos');
 		db.photos.find({}, {cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).forEach(function (photo) {
 			db.photos_map.insert(photo);
 		});
@@ -53,7 +53,10 @@ module.exports.loadController = function (app, db) {
 		db.photos.find({s: 9}, {_id: 1, cid: 1}).forEach(function (photo) {
 			db.users_subscr.remove({obj: photo._id});
 			db.users_comments_view.remove({obj: photo._id});
-		});
+		});*/
+
+		//Добавляем настройку "Фильтровать галерею пользователя на странице фото"
+		db.user_settings.save({key: 'r_f_photo_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя на странице фото'});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});

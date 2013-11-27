@@ -58,6 +58,19 @@
 							span.regionEdit(data-bind="click: regionSelect")
 								span.glyphicon.glyphicon-pencil
 								|  Изменить
+					dl.dl-horizontal
+						dt.helpexists(style="font-weight: bold;")
+							| Автоматически фильтровать:
+						dd
+					dl.dl-horizontal.dl-tight
+						dt.helpexists
+							abbr(title="Фильтровать фотографии, находящиеся рядом с именем пользователя, или показывать все, независимо от ваших регионов")
+								span.glyphicon.glyphicon-info-sign
+								|  Галерею пользователя на странице фото
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Нет
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title

@@ -774,7 +774,8 @@ function giveUserPhotosAround(socket, data, cb) {
 
 		step(
 			function () {
-				var query = buildPhotosQuery({}, photo.user, iAm);
+				var filter = iAm && iAm.settings && !iAm.settings.r_f_photo_user_gal ? {r: 0} : {},
+					query = buildPhotosQuery(filter, photo.user, iAm).query;
 				query.user = photo.user;
 
 				if (limitL) {
