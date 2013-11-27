@@ -506,14 +506,14 @@ function getUserSubscr(iAm, data, cb) {
 	if (!iAm || (iAm.login !== data.login && !iAm.role && iAm.role < 10)) {
 		return cb({message: msg.deny, error: true});
 	}
-	User.findOne({login: data.login}, {_id: 1}, function (err, user) {
-		if (err || !user) {
+	User.getUserID(data.login, function (err, user_id) {
+		if (err || !user_id) {
 			return cb({message: err && err.message || msg.nouser, error: true});
 		}
 		var page = (Math.abs(Number(data.page)) || 1) - 1,
 			skip = page * subscrPerPage;
 
-		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1, cdate: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage, sort: {cdate: -1}}, function (err, subscrs) {
+		UserSubscr.find({user: user_id, type: data.type}, {_id: 0, obj: 1, cdate: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage, sort: {cdate: -1}}, function (err, subscrs) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -549,10 +549,10 @@ function getUserSubscr(iAm, data, cb) {
 					}
 
 					//Ищем кол-во новых комментариев для каждого объекта
-					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
-					UserSubscr.count({user: user._id, type: 'photo'}, this.parallel());
-					UserSubscr.count({user: user._id, type: 'news'}, this.parallel());
-					UserSubscrNoty.findOne({user: user._id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1}, {lean: true}, this.parallel());
+					commentController.fillNewCommentsCount(objs, user_id, data.type, this.parallel());
+					UserSubscr.count({user: user_id, type: 'photo'}, this.parallel());
+					UserSubscr.count({user: user_id, type: 'news'}, this.parallel());
+					UserSubscrNoty.findOne({user: user_id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1}, {lean: true}, this.parallel());
 				},
 				function (err, objs, countPhoto, countNews, nextNoty) {
 					if (err) {

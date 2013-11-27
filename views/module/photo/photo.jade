@@ -127,7 +127,7 @@
 			//ko if: p.regions().length
 			.row.regions(data-bind="foreach: p.regions")
 				.region
-					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/admin/region/' + $data.cid()}")
+					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
 					//ko if: $index() < $parent.p.regions().length - 1
 					| ,&nbsp;
 					// /ko

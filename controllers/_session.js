@@ -359,6 +359,11 @@ function regetUser(u, cb) {
 			if (usObj) {
 				//Присваиваем новый объект пользователя usObj
 				usObj.user = user;
+				//Заново присваиваем настройки
+				if (!user.settings) {
+					user.settings = {};
+				}
+				_.defaults(user.settings, settings.getUserSettingsDef());
 				//Присваиваем новый объект пользователя всем его открытым сессиям
 				for (s in usObj.sessions) {
 					if (usObj.sessions.hasOwnProperty(s)) {
