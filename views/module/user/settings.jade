@@ -42,9 +42,9 @@
 				.panel-body
 					dl.dl-horizontal
 						dt.helpexists
-							abbr(title="Интересующие вас регионы мира, по которым будет производится автоматическая фильтрация контента. Допустимо иметь до 5 регионов")
+							abbr(title="Регионы мира, по которым может производится автоматическая фильтрация контента. Допустимо иметь до 5 регионов")
 								span.glyphicon.glyphicon-info-sign
-								|  Мои регионы по умолчанию
+								|  Мои регионы
 						dd
 							//ko if: !u.regions().length
 							span.region
@@ -60,13 +60,22 @@
 								|  Изменить
 					dl.dl-horizontal
 						dt.helpexists(style="color: #27578d;")
-							| Автоматически фильтровать:
+							| По умолчанию фильтровать по выбранным регионам:
 						dd
 					dl.dl-horizontal.dl-tight
 						dt.helpexists
-							abbr(title="Фильтровать фотографии, находящиеся рядом с именем пользователя, или показывать все, независимо от выбранных вами регионов")
+							abbr(title="Фотографии пользователей, доступые соответствующих профилях")
 								span.glyphicon.glyphicon-info-sign
-								|  Галерею пользователя на странице фото
+								|  Галереи пользователей
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") Нет
+					dl.dl-horizontal.dl-tight
+						dt.helpexists
+							abbr(title="Полоса фотографий, находящаяся рядом с именем пользователя, на странице просмотра загруженной им фотогафии")
+								span.glyphicon.glyphicon-info-sign
+								|  Полосу других фотографий пользователя
 						dd
 							.btn-group.btn-group-sm
 								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да

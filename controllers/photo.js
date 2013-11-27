@@ -662,10 +662,6 @@ function parseFilter(filterString) {
  * @param cb
  */
 function givePhotos(iAm, filter, data, user_id, cb) {
-	if (!Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
-	}
-
 	var skip = Math.abs(Number(data.skip)) || 0,
 		limit = Math.min(data.limit || 40, 100),
 		buildQueryResult,
@@ -750,6 +746,11 @@ function giveUserPhotos(iAm, data, cb) {
 			return cb({message: err && err.message || 'Such user does not exist', error: true});
 		}
 		var filter = data.filter ? parseFilter(data.filter) : {};
+		//Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
+		//и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
+		if (filter.r === undefined && iAm && iAm.login !== data.login && iAm.regions && iAm.regions.length && iAm.settings && !iAm.settings.r_f_user_gal) {
+			filter.r = 0;
+		}
 		givePhotos(iAm, filter, data, user_id, cb);
 	});
 }

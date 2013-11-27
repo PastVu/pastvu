@@ -53,10 +53,12 @@ module.exports.loadController = function (app, db) {
 		db.photos.find({s: 9}, {_id: 1, cid: 1}).forEach(function (photo) {
 			db.users_subscr.remove({obj: photo._id});
 			db.users_comments_view.remove({obj: photo._id});
-		});*/
+		});
 
 		//Добавляем настройку "Фильтровать галерею пользователя на странице фото"
 		db.user_settings.save({key: 'r_f_photo_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя на странице фото'});
+		*///Добавляем настройку "Фильтровать галерею пользователя"
+		db.user_settings.save({key: 'r_f_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя в его профиле'});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
