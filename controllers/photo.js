@@ -683,7 +683,7 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 			query.user = user_id;
 		}
 
-		console.log(query);
+		//console.log(query);
 		step(
 			function () {
 				var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
@@ -1553,7 +1553,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicIndex', function () {
 			if (hs.session.user) {
-				givePhotos(hs.session.user, {}, {skip: 0, limit: 29}, null, function (resultData) {
+				givePhotos(hs.session.user, {s: [5]}, {skip: 0, limit: 29}, null, function (resultData) {
 					socket.emit('takePhotosPublicIndex', resultData);
 				});
 			} else {
@@ -1565,7 +1565,7 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
 			if (hs.session.user) {
-				givePhotos(hs.session.user, {}, {skip: 0, limit: 29, filter: 'geo!0'}, null, function (resultData) {
+				givePhotos(hs.session.user, {geo: ['0'], s: [5]}, {skip: 0, limit: 29}, null, function (resultData) {
 					socket.emit('takePhotosPublicNoGeoIndex', resultData);
 				});
 			} else {
