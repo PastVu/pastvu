@@ -58,6 +58,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					geo: ko.observableArray()
 				},
 				active: ko.observable(true),
+				inactivateString: '',
 				open: ko.observable(false),
 				can: {
 					s: this.co.filtercans = ko.computed(function () {
@@ -81,6 +82,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			};
 			this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
 			this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
+			this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
 			this.filterChangeHandleBlock = false;
 
 
@@ -222,7 +224,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			//Переданные параметры фильтров
-			if (filterString !== this.filter.origin) {
+			if (filterString !== this.filter.origin && this.filter.active()) {
 				this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
 				this.pageQuery(location.search);
 				if (this.filter.origin && !this.loadedFirst()) {
@@ -303,9 +305,28 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			return filterString;
 		},
+		filterActiveChange: function (val) {
+			if (this.filterActiveChangeBlock) {
+				return;
+			}
+			if (val) {
+				this.filter.origin = this.filter.inactivateString;
+				this.filter.inactivateString = '';
+			} else if (!val) {
+				this.filter.inactivateString = this.filter.origin;
+				this.filter.origin = 'r!0';
+			}
+			this.refreshPhotos();
+		},
 		filterChangeHandle: function () {
 			if (this.filterChangeHandleBlock) {
 				return;
+			}
+			//Если фильтр не активен, то "тихо" активируем, без рефреша
+			if(!this.filter.active()) {
+				this.filterActiveChangeBlock = true;
+				this.filter.active(true);
+				this.filterActiveChangeBlock = false;
 			}
 			var newFilter = this.buildFilterString();
 			if (newFilter !== this.filter.origin) {
@@ -416,15 +437,18 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
-					this.filterChangeHandleBlock = true;
 					this.processPhotos(data.photos);
-					this.filter.disp.r(data.filter.r || []);
-					this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
-					if (!data.filter.geo || !data.filter.geo.length) {
-						data.filter.geo = ['0', '1'];
+					//Если фильтр активен - обновляем в нем данные
+					if (this.filter.active()) {
+						this.filterChangeHandleBlock = true;
+						this.filter.disp.r(data.filter.r || []);
+						this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
+						if (!data.filter.geo || !data.filter.geo.length) {
+							data.filter.geo = ['0', '1'];
+						}
+						this.filter.disp.geo(data.filter.geo);
+						this.filterChangeHandleBlock = false;
 					}
-					this.filter.disp.geo(data.filter.geo);
-					this.filterChangeHandleBlock = false;
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
