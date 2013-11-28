@@ -25,50 +25,32 @@
 	}
 
 	.filter {
-
-		.title {
-			display: inline-block;
-			width: 95px;
-			margin-right: 5px;
-			padding: 0 4px 2px 3px;
-			font-weight: bold;
-			line-height: 20px;
+		> .ftitle, > .fopen {
+			float: left;
+			width: 20px;
+			padding: 2px 4px 1px 3px;
+			line-height: 19px;
 			text-align: center;
 			vertical-align: top;
-			background-color: @input-group-addon-bg;
-			border-width: 1px 1px 0 1px;
+			cursor: pointer;
+			border-width: 1px 0 1px 1px;
 			border-color: @input-group-addon-border-color;
 			border-style: solid;
+			background-color: @input-group-addon-bg;
 			.user-select(none);
-
-			> .glyphicon {
-				float: left;
-				margin-top: 3px;
-			}
-		}
-		.titlechk {
-			margin-left: 2px;
-			margin-right: 2px;
-		}
-		.fopen {
-			color: @gray;
-			font-size: @font-size-small;
-			line-height: 20px;
-			cursor: pointer;
-			white-space: nowrap;
-			border-width:  0 0 1px 0;
-			border-style: dashed;
-			border-color: transparent;
 
 			&:hover {
 				color: @gray-darker;
-				border-color: @gray-darker;
 			}
+		}
+		> .ftitle {
+			color: #008805;
 		}
 
 		> .fvals {
-			display: inline-block;
-			padding-right: 5px;
+			position: relative;
+			display: table;
+			margin-left: 40px;
 			border: 1px solid #ccc;
 			background-color: #fff;
 
@@ -77,6 +59,19 @@
 			}
 			> .others {
 				display: none;
+			}
+		}
+
+		&.inactive {
+			> .ftitle {
+				color: #AA4A4A;
+			}
+			> .fvals {
+				color: @gray-light;
+			}
+
+			input[type="checkbox"] {
+				opacity: .7;
 			}
 		}
 
@@ -94,17 +89,19 @@
 		}
 
 		.filterName {
-			display: block;
-			float: left;
-			width: 70px;
-			padding-left: 3px;
+			display: table-cell;
+			min-width: 65px;
+			padding-left: 5px;
+			vertical-align: middle;
+			cursor: default;
 			border-color: #EEE;
 			border-style: solid;
 			border-width: 0 1px 0 0;
 			background-color: #F5F5F5;
 		}
 		.filterVars {
-			margin-left: 73px;
+			display: table-cell;
+			padding: 0 3px;
 
 			> label.checkbox-inline {
 				margin-left: 0;
@@ -123,12 +120,12 @@
 			display: inline-block;
 			margin: 1px 3px 1px 0;
 			padding: 0 5px;
+			font-weight: bold;
 			line-height: 20px;
 			cursor: default;
 			background-color: #E4E4E4;
 		}
 		.regionEdit {
-			color: @gray;
 			font-size: @font-size-small;
 			font-style: italic;
 			line-height: 20px;

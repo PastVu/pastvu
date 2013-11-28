@@ -8,15 +8,13 @@
 
 		.row.rowoffset
 			.col-xs-12.col-sm-7.col-lg-4.topcol(data-bind="css: {invisible: !loadedFirst()}")
-				.filter(data-bind="css: {opened: filter.open()}, style: {marginTop: topTitle() ? '-23px' : 'auto'}")
-					.ftop
-						label.checkbox-inline.title
-							span.glyphicon.glyphicon-filter
-							input.titlechk(type="checkbox")
-							| Фильтр
-						span.fopen(data-bind="text: filter.open() ? 'Свернуть' : 'Развернуть', click: function () {filter.open(!filter.open())}")
+				.filter(data-bind="css: {opened: filter.open(), inactive: !filter.active()}")
+					.ftitle(data-bind="attr: {title: 'Фильтр. ' + (filter.active() ? 'Выключить' : 'Включить')}, click: function () {filter.active(!filter.active())}")
+						span.glyphicon.glyphicon-filter
+					.fopen(data-bind="attr: {title: filter.open() ? 'Свернуть' : 'Развернуть'}, click: function () {filter.open(!filter.open())}")
+						span.glyphicon.glyphicon-list-alt
 					.fvals
-						.row.regions
+						.regions
 							.filterName Регионы:
 							.filterVars
 								//ko if: !filter.disp.r().length

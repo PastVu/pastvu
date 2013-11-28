@@ -57,6 +57,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					r: ko.observableArray(),
 					geo: ko.observableArray()
 				},
+				active: ko.observable(true),
 				open: ko.observable(false),
 				can: {
 					s: this.co.filtercans = ko.computed(function () {
@@ -78,9 +79,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}, this)
 				}
 			};
-			this.filter.active = this.co.filterActive = ko.computed(function () {
-				return this.filter.disp.r().length;
-			}, this);
 			this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
 			this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
 			this.filterChangeHandleBlock = false;
