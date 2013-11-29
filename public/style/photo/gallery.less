@@ -55,7 +55,7 @@
 			background-color: #fff;
 
 			.frow {
-			 	margin-top: 1px;
+				margin-top: 1px;
 			}
 			> .others {
 				display: none;
@@ -73,6 +73,14 @@
 			input[type="checkbox"] {
 				opacity: .7;
 			}
+
+			.region.candrop {
+				&:hover {
+					&::after {
+						color: #d76c66;
+					}
+				}
+			}
 		}
 
 		&.opened {
@@ -82,7 +90,7 @@
 					display: block;
 
 					> .row {
-					   margin-top: 1px;
+						margin-top: 1px;
 					}
 				}
 			}
@@ -117,13 +125,43 @@
 		}
 
 		.region {
+			position: relative;
 			display: inline-block;
 			margin: 1px 3px 1px 0;
-			padding: 0 5px;
+			padding: 0 4px;
 			font-weight: bold;
-			line-height: 20px;
+			line-height: 18px;
 			cursor: default;
+			border: 1px solid transparent;
 			background-color: #E4E4E4;
+
+			&.candrop {
+				cursor: pointer;
+
+				&:hover {
+					color: #b9b9b9;
+					border-color: rgba(233, 142, 142, .3);
+					background-color: rgba(214, 64, 64, .1);
+
+					&::after {
+						position: absolute;
+						display: block;
+						content: '\e014';
+						top: 3px;
+						left: 50%;
+						width: 14px;
+						margin-left: -6px;
+						color: #DA2B2B;
+						font-family: 'Glyphicons Halflings';
+						font-style: normal;
+						font-weight: normal;
+						line-height: 1;
+						text-shadow: 1px 1px rgba(68, 3, 0, 0.75);
+						-webkit-font-smoothing: antialiased;
+						-moz-osx-font-smoothing: grayscale;
+					}
+				}
+			}
 		}
 		.regionEdit {
 			font-size: @font-size-small;
@@ -131,7 +169,7 @@
 			line-height: 20px;
 			cursor: pointer;
 			white-space: nowrap;
-			border-width:  0 0 1px 0;
+			border-width: 0 0 1px 0;
 			border-style: dashed;
 			border-color: transparent;
 
@@ -186,7 +224,7 @@
 	.thumbs {
 		display: inline-block;
 		min-width: 470px;
-	    text-align: left;
+		text-align: left;
 	}
 
 	.photoPreview {
@@ -289,6 +327,7 @@
 		}
 	}
 }
+
 @media (min-width: 900px) and (max-width: 1280px) {
 	.gallery {
 		.photoPreview {
@@ -314,6 +353,7 @@
 		}
 	}
 }
+
 @media (max-width: 899px) {
 	.gallery {
 		.photoPreview {

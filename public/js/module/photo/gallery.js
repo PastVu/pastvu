@@ -26,7 +26,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
-			this.exe = ko.observable(false);
 			this.topTitle = ko.observable(this.options.topTitle);
 
 			this.photos = ko.observableArray();
@@ -323,7 +322,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				return;
 			}
 			//Если фильтр не активен, то "тихо" активируем, без рефреша
-			if(!this.filter.active()) {
+			if (!this.filter.active()) {
 				this.filterActiveChangeBlock = true;
 				this.filter.active(true);
 				this.filterActiveChangeBlock = false;
@@ -331,6 +330,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			var newFilter = this.buildFilterString();
 			if (newFilter !== this.filter.origin) {
 				this.updateFilterUrl(newFilter);
+			}
+		},
+		frdrop: function (cid) {
+			if (cid) {
+				this.filter.disp.r.remove(function (item) {
+					return item.cid === cid;
+				});
 			}
 		},
 		fgeoclk: function (data, event) {
@@ -346,7 +352,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 			this.filterChangeHandle();
 
-			return true; // Чтобы галка снялась
+			return true; // Чтобы галка переключилась
 		},
 		updateFilterUrl: function (filterString) {
 			var uri = new Uri(location.pathname + location.search);
@@ -543,6 +549,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.uploadVM.destroy();
 
 				if (newCount) {
+					this.loading(true);
 					socket.once('takePhotosFresh', function (data) {
 						if (!data || data.error) {
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -564,6 +571,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								}
 							}
 						}
+						this.loading(true);
 					}.bind(this));
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
