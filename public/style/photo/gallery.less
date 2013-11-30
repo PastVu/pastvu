@@ -74,7 +74,7 @@
 				opacity: .7;
 			}
 
-			.region.candrop {
+			.region.candis {
 				&:hover {
 					&::after {
 						color: #d76c66;
@@ -127,7 +127,7 @@
 		.region {
 			position: relative;
 			display: inline-block;
-			min-width: 44px;
+			min-width: 46px;
 			margin: 1px 3px 1px 0;
 			padding: 0 4px;
 			font-weight: bold;
@@ -136,24 +136,25 @@
 			cursor: default;
 			background-color: #E4E4E4;
 
-			&.candrop {
+			&.candis {
 				cursor: pointer;
 
 				> .rtgl {
 					position: absolute;
 					display: none;
 					top: 0;
-					width: 50%;
+					width: 23px;
 					text-align: center;
 					line-height: 18px;
+					font-size: 14px;
 					border-width: 1px;
 					border-style: solid;
+					background-color: rgba(228, 228, 235, 0.94);
 
 					&.only {
-						left: 0;
+						right: 23px;
 						color: #2A9C1A;
 						border-color: rgba(4, 233, 11, 0.30);
-						background-color: rgba(104, 140, 104, 0.30);
 
 						&:hover {
 							color: #31b71e;
@@ -163,10 +164,9 @@
 						right: 0;
 						color: #D19D0D;
 						border-color: rgba(233, 157, 10, .3);
-						background-color: rgba(190, 152, 108, 0.15);
 
 						&:hover {
-							color: #e4900f;
+							color: #f7a900;
 						}
 					}
 
@@ -176,10 +176,22 @@
 				}
 
 				&:hover {
-					color: #D1D1D1;
-
 					> .rtgl {
 						display: block;
+					}
+				}
+			}
+
+			&.dis {
+				color: #D1D1D1;
+				background-color: #f1f1f1;
+
+				&.candis > .rtgl.dis {
+					color: #4f9c41;
+					border-color: rgba(4, 233, 11, 0.30);
+
+					&:hover {
+						color: #31b71e;
 					}
 				}
 			}

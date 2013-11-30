@@ -27,6 +27,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.topTitle = ko.observable(this.options.topTitle);
+			this._ = _;
 
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
@@ -54,6 +55,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				disp: {
 					s: ko.observableArray(),
 					r: ko.observableArray(),
+					rdis: ko.observableArray(), //Массив cid неактивных регионов
 					geo: ko.observableArray()
 				},
 				active: ko.observable(true),
@@ -332,11 +334,30 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.updateFilterUrl(newFilter);
 			}
 		},
-		frdrop: function (cid) {
+		fronly: function (cid) {
 			if (cid) {
-				this.filter.disp.r.remove(function (item) {
-					return item.cid === cid;
+				var diss = [];
+
+				this.filter.disp.r().forEach(function (item) {
+					if (item.cid !== cid) {
+						diss.push(item.cid);
+					}
 				});
+				this.filter.disp.rdis(diss);
+			}
+		},
+		frdis: function (cid) {
+			if (cid) {
+				var region = _.find(this.filter.disp.r(), function (item) {
+					return item.cid === cid;
+				}, this);
+				if (region) {
+					if (_.contains(this.filter.disp.rdis(), cid)) {
+						this.filter.disp.rdis.remove(cid);
+					} else {
+						this.filter.disp.rdis.push(cid);
+					}
+				}
 			}
 		},
 		fgeoclk: function (data, event) {
@@ -622,8 +643,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								closeTxt: 'Применить',
 								closeFunc: function (evt) {
 									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']),
-										newFilter;
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
 									if (regions.length > 5) {
 										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
