@@ -127,38 +127,59 @@
 		.region {
 			position: relative;
 			display: inline-block;
+			min-width: 44px;
 			margin: 1px 3px 1px 0;
 			padding: 0 4px;
 			font-weight: bold;
-			line-height: 18px;
+			line-height: 20px;
+			text-align: center;
 			cursor: default;
-			border: 1px solid transparent;
 			background-color: #E4E4E4;
 
 			&.candrop {
 				cursor: pointer;
 
-				&:hover {
-					color: #b9b9b9;
-					border-color: rgba(233, 142, 142, .3);
-					background-color: rgba(214, 64, 64, .1);
+				> .rtgl {
+					position: absolute;
+					display: none;
+					top: 0;
+					width: 50%;
+					text-align: center;
+					line-height: 18px;
+					border-width: 1px;
+					border-style: solid;
 
-					&::after {
-						position: absolute;
+					&.only {
+						left: 0;
+						color: #2A9C1A;
+						border-color: rgba(4, 233, 11, 0.30);
+						background-color: rgba(104, 140, 104, 0.30);
+
+						&:hover {
+							color: #31b71e;
+						}
+					}
+					&.dis {
+						right: 0;
+						color: #D19D0D;
+						border-color: rgba(233, 157, 10, .3);
+						background-color: rgba(190, 152, 108, 0.15);
+
+						&:hover {
+							color: #e4900f;
+						}
+					}
+
+					&:hover {
+						text-shadow: 1px 1px 1px #222, -1px 1px 1px #999;
+					}
+				}
+
+				&:hover {
+					color: #D1D1D1;
+
+					> .rtgl {
 						display: block;
-						content: '\e014';
-						top: 3px;
-						left: 50%;
-						width: 14px;
-						margin-left: -6px;
-						color: #DA2B2B;
-						font-family: 'Glyphicons Halflings';
-						font-style: normal;
-						font-weight: normal;
-						line-height: 1;
-						text-shadow: 1px 1px rgba(68, 3, 0, 0.75);
-						-webkit-font-smoothing: antialiased;
-						-moz-osx-font-smoothing: grayscale;
 					}
 				}
 			}

@@ -23,8 +23,12 @@
 									|  Весь мир
 								// /ko
 								//ko foreach: filter.disp.r
-								span.region.candrop(title="Убрать из фильтра", data-bind="click: function() {$parent.frdrop($data.cid);}")
+								span.region.candrop
 									span(data-bind="text: $data.title_local")
+									.rtgl.only(title="Оставить активным в фильтре только этот регион", data-bind="click: function() {$parent.frdrop($data.cid);}")
+										span.glyphicon.glyphicon-ok
+									.rtgl.dis(title="Деактивировать в фильтре этот регион", data-bind="click: function() {$parent.frdrop($data.cid);}")
+										span.glyphicon.glyphicon-off
 								// /ko
 								span.regionEdit(data-bind="click: regionSelect")
 									span.glyphicon.glyphicon-pencil
