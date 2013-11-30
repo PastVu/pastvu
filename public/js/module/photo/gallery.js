@@ -280,6 +280,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		buildFilterString: function () {
 			var filterString = '',
 				r = this.filter.disp.r(),
+				rp = this.filter.disp.rdis(),
 				s = this.filter.disp.s(),
 				geo = this.filter.disp.geo(),
 				i;
@@ -291,6 +292,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				filterString += (filterString ? '_' : '') + 'r';
 				for (i = 0; i < r.length; i++) {
 					filterString += '!' + r[i].cid;
+				}
+
+				if (rp.length) {
+					filterString += (filterString ? '_' : '') + 'rp';
+					for (i = 0; i < rp.length; i++) {
+						filterString += '!' + rp[i];
+					}
 				}
 			} else {
 				if (this.auth.iAm && this.auth.iAm.regions().length) {
@@ -335,6 +343,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 		fronly: function (cid) {
+			if (this.loading()) {
+				return false;
+			}
 			if (cid) {
 				var diss = [];
 
@@ -344,9 +355,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}
 				});
 				this.filter.disp.rdis(diss);
+				this.filterChangeHandle();
 			}
 		},
 		frdis: function (cid) {
+			if (this.loading()) {
+				return false;
+			}
 			if (cid) {
 				var region = _.find(this.filter.disp.r(), function (item) {
 					return item.cid === cid;
@@ -357,6 +372,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.filter.disp.rdis.push(cid);
 					}
+					this.filterChangeHandle();
 				}
 			}
 		},
@@ -460,7 +476,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			socket.once(resName, function (data) {
-				var i;
+				var rEquals;
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
@@ -468,7 +484,16 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					//Если фильтр активен - обновляем в нем данные
 					if (this.filter.active()) {
 						this.filterChangeHandleBlock = true;
-						this.filter.disp.r(data.filter.r || []);
+
+						//Если количество регионов равно, они пусты или массивы их cid равны,
+						//то и заменять их не надо, чтобы небыло "прыжка"
+						rEquals =
+							this.filter.disp.r().length === data.filter.r.length &&
+							(!data.filter.r.length || _.isEqual(_.pluck(this.filter.disp.r(), 'cid'), _.pluck(data.filter.r, 'cid')));
+						if (!rEquals) {
+							this.filter.disp.r(data.filter.r || []);
+						}
+						this.filter.disp.rdis(data.filter.rp || []);
 						this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
 						if (!data.filter.geo || !data.filter.geo.length) {
 							data.filter.geo = ['0', '1'];

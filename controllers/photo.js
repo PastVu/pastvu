@@ -582,7 +582,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 	}, ms('30s'));
 }());
 
-var filterProps = {geo: [], r: [], s: []},
+var filterProps = {geo: [], r: [], rp: [], s: []},
 	delimeterParam = '_',
 	delimeterVal = '!';
 function parseFilter(filterString) {
@@ -621,6 +621,21 @@ function parseFilter(filterString) {
 							if (!result.r.length) {
 								delete result.r;
 							}
+						}
+					}
+				} else if (filterParam === 'rp') {
+					//Regions phantom. Неактивные регионы фильтра
+					filterVal = filterVal.split(delimeterVal).map(Number);
+					if (Array.isArray(filterVal) && filterVal.length) {
+						result.rp = [];
+						for (j = filterVal.length; j--;) {
+							filterValItem = filterVal[j];
+							if (filterValItem) {
+								result.rp.unshift(filterValItem);
+							}
+						}
+						if (!result.rp.length) {
+							delete result.rp;
 						}
 					}
 				} else if (filterParam === 's') {
@@ -713,12 +728,12 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 							delete photos[i]._id;
 						}
 					}
-					cb({photos: photos, filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
+					cb({photos: photos, filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
 				}
 			}
 		);
 	} else {
-		cb({photos: [], filter: {r: buildQueryResult.rarr, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
+		cb({photos: [], filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
 	}
 }
 
@@ -1285,6 +1300,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 		regions_cids = [],
 		regions_arr = [],
+		regions_arr_all = [],//Массив объектов регионов, включая неактивные (phantom в фильтре)
 		regions_hash = {},
 
 		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
@@ -1305,15 +1321,24 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
-		regions_cids = filter.r;
-		regions_arr = regionController.getRegionsArrFromCache(regions_cids);
+		regions_arr_all = regionController.getRegionsArrFromCache(filter.r);
+
+		if (Array.isArray(filter.rp) && filter.rp.length) {
+			//Если есть массив неактивных (phantom) регионов фильтра, берем разницу
+			regions_cids = _.difference(filter.r, filter.rp);
+			regions_arr = regionController.getRegionsArrFromCache(regions_cids);
+		} else {
+			regions_cids = filter.r;
+			regions_arr = regions_arr_all;
+		}
+
 		someVar = regionController.buildQuery(regions_arr);
 		rquery_pub = rquery_mod = someVar.rquery;
 		regions_hash = someVar.rhash;
 	} else if (filter.r === undefined && iAm && iAm.regions.length && (!forUserId || !forUserId.equals(iAm._id))) {
 		regions_hash = usObj.rhash;
 		regions_cids = _.pluck(iAm.regions, 'cid');
-		regions_arr = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
+		regions_arr = regions_arr_all = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
 	}
 	if (regions_cids.length) {
 		regions_cids = regions_cids.map(Number);
@@ -1456,7 +1481,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	if (query) {
 		result.query = query;
 		result.rcids = regions_cids;
-		result.rarr = regions_arr;
+		result.rarr = regions_arr_all;
 	}
 
 	//console.log(JSON.stringify(query));
