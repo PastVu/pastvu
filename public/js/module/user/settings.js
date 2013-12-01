@@ -146,6 +146,31 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			}
 		},
 
+
+		saveRegions: function (regions, cb, ctx) {
+			socket.once('saveUserRegionsResult', function (data) {
+				var error = !data || data.error || !data.saved;
+				if (error) {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				}
+				cb.call(ctx, error);
+			}.bind(this));
+			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
+		},
+		regionDrop: function (cid) {
+			if (cid) {
+				this.u.regions.remove(function (item) {
+					return item.cid() === cid;
+				});
+				var regions =  ko_mapping.toJS(this.u.regions);
+				this.saveRegions(_.pluck(regions, 'cid'), function (err) {
+					if (!err) {
+						this.originUser.regions = regions;
+						ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
+					}
+				}, this);
+			}
+		},
 		regionSelect: function () {
 			if (!this.regselectVM) {
 				renderer(
@@ -176,6 +201,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 									this.saveRegions(_.pluck(regions, 'cid'), function (err) {
 										if (!err) {
 											User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+											this.originUser.regions = regions;
 											this.closeRegionSelect();
 											ga('send', 'event', 'region', 'update', 'photo update success', regions.length);
 										}
@@ -193,16 +219,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					}
 				);
 			}
-		},
-		saveRegions: function (regions, cb, ctx) {
-			socket.once('saveUserRegionsResult', function (data) {
-				var error = !data || data.error || !data.saved;
-				if (error) {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-				}
-				cb.call(ctx, error);
-			}.bind(this));
-			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
 		},
 		closeRegionSelect: function () {
 			if (this.regselectVM) {

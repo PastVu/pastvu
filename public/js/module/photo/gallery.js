@@ -342,6 +342,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.updateFilterUrl(newFilter);
 			}
 		},
+		//Делает активным в фильтре только один переданный регион
 		fronly: function (cid) {
 			if (this.loading()) {
 				return false;
@@ -358,6 +359,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.filterChangeHandle();
 			}
 		},
+		//Активирует/деактивирует в фильтре переданный регион
 		frdis: function (cid) {
 			if (this.loading()) {
 				return false;
@@ -376,20 +378,23 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 			}
 		},
+		//Обработка клика вариантов присутствия координат в фильтре
+		//Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний
 		fgeoclk: function (data, event) {
 			var currDispGeo = data.filter.disp.geo(),
 				clickedGeo = event.target.value;
 
 			if (!currDispGeo.length) {
+				//Если все варианты сняты, делаем активным второй вариант
 				if (clickedGeo === '0') {
 					data.filter.disp.geo(['1']);
 				} else {
 					data.filter.disp.geo(['0']);
 				}
 			}
-			this.filterChangeHandle();
+			this.filterChangeHandle(); //Вручную вызываем обработку фильтра
 
-			return true; // Чтобы галка переключилась
+			return true; //Возвращаем true, чтобы галка в браузере переключилась
 		},
 		updateFilterUrl: function (filterString) {
 			var uri = new Uri(location.pathname + location.search);

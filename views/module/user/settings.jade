@@ -41,7 +41,7 @@
 			.panel-collapse.collapse.in#region
 				.panel-body
 					//ko if: u.role() === 5 && u.mod_regions()
-					dl.dl-horizontal
+					dl.dl-horizontal.forMod
 						dt.helpexists
 							abbr(title="Регионы, в которых вы являетесь модератором. Назначаются администратором")
 								span.glyphicon.glyphicon-info-sign
@@ -69,7 +69,7 @@
 								|  Весь мир
 							// /ko
 							//ko foreach: u.regions
-							span.region
+							span.region.candrop(title="Убрать из моих регионов", data-bind="click: function() {$parent.regionDrop($data.cid());}")
 								span(data-bind="text: $data.title_local()")
 							// /ko
 							span.regionEdit(data-bind="click: regionSelect")

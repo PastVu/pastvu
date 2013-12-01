@@ -600,7 +600,6 @@ function getOnline(login, _id) {
 }
 function userToPublicObject(doc, ret, options) {
 	delete ret._id;
-	delete ret.cid;
 	delete ret.pass;
 	delete ret.activatedate;
 	delete ret.loginAttempts;
