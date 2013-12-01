@@ -1,5 +1,5 @@
 /*global define*/
-define(function () {
+define(['module'], function (module) {
 	'use strict';
 
 	return {
