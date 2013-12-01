@@ -25,7 +25,7 @@
 											|  Весь мир
 										// /ko
 										//ko foreach: regions
-										span.region
+										span.region.candrop(title="Убрать регион", data-bind="click: function() {$parent.regionDrop($data.cid);}")
 											span(data-bind="text: $data.title_local")
 										// /ko
 										span.regionEdit(data-bind="click: regionSelect")

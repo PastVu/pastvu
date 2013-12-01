@@ -136,6 +136,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.role(String(this.u_origin.role));
 			this.regions(this.u_origin.mod_regions);
 		},
+
+
+		regionDrop: function (cid) {
+			if (cid) {
+				//Нужна полная замена массива, а не просто удаление элемента,
+				//т.к. this.u_origin.mod_regions и this.regions() - один массив
+				this.regions(_.filter(this.regions(), function (item) {
+					return item.cid !== cid;
+				}));
+			}
+		},
 		regionSelect: function () {
 			if (!this.regselectVM) {
 				renderer(

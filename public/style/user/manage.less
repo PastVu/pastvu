@@ -31,10 +31,39 @@
 	}
 
 	.region {
+		position: relative;
+		display: inline-block;
 		margin-right: 5px;
-		padding: 3px 5px;
+		padding: 0 4px;
+		line-height: 22px;
 		cursor: default;
-		background-color: #ddd;
+		border: 1px solid #E4E4E4;
+		background-color: #E4E4E4;
+
+		&.candrop {
+			cursor: pointer;
+
+			&:hover {
+				color: #b9b9b9;
+				border-color: rgba(233, 142, 142, .3);
+				background-color: rgba(214, 64, 64, .1);
+
+				&::after {
+					position: absolute;
+					display: block;
+					content: '\e014';
+					top: 0;
+					left: 50%;
+					width: 14px;
+					margin-left: -6px;
+					color: #DA2B2B;
+					font: normal normal 14px/22px 'Glyphicons Halflings';
+					text-shadow: 1px 1px rgba(68, 3, 0, 0.75);
+					-webkit-font-smoothing: antialiased;
+					-moz-osx-font-smoothing: grayscale;
+				}
+			}
+		}
 	}
 	.regionEdit {
 		margin-left: 3px;
