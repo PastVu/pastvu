@@ -205,7 +205,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		routeHandler: function () {
 			var params = globalVM.router.params(),
 				page = params.page,
-				filterString = params.f,
+				filterString = params.f || '',
 				filterChange = false,
 				currPhotoLength = this.photos().length,
 				needRecieve = true,
@@ -218,9 +218,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			// Если показывается окно загрузки, но в параметрах его нет,
-			// значит мы вернулись из загрузки в галерею и должны загрузку закрыть
+			// значит мы вернулись из загрузки в галерею и должны загрузку просто закрыть
 			if (this.uploadVM && !params.photoUpload) {
-				this.closeUpload(0);
+				this.closeUpload();
 				return;
 			}
 
@@ -323,7 +323,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.filter.inactivateString = '';
 			} else if (!val) {
 				this.filter.inactivateString = this.filter.origin;
-				this.filter.origin = 'r!0';
+				this.filter.origin = this.itsMine() ? '' : 'r!0'; //Своя галерея всегда отдается по всем по умолчанию
 			}
 			this.refreshPhotos();
 		},
@@ -569,7 +569,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								closeFunc: function (evt) {
 									this.uploadVM.createPhotos(function (data) {
 										if (data && !data.error) {
-											this.closeUpload(data.cids.length);
+											this.getAndCloseUpload(data.cids.length);
 											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
 										} else {
 											ga('send', 'event', 'photo', 'create', 'photo create error');
@@ -590,10 +590,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				);
 			}
 		},
-		closeUpload: function (newCount) {
+		getAndCloseUpload: function (newCount) {
 			if (this.uploadVM) {
-				this.uploadVM.destroy();
-
 				if (newCount) {
 					this.loading(true);
 					socket.once('takePhotosFresh', function (data) {
@@ -605,8 +603,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								this.count(this.count() + data.photos.length);
 								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
 
-								if (this.page() > 1) {
-									//Если в постраничном режиме, не на первой странице, то переходим на первую
+								if (this.page() > 1 || this.filter.origin) {
+									//Если в постраничном режиме не на первой странице или активен фильтр,
+									//то переходим на первую без фильтров
 									globalVM.router.navigateToUrl(this.pageUrl());
 								} else {
 									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
@@ -617,14 +616,19 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								}
 							}
 						}
-						this.loading(true);
+						this.loading(false);
 					}.bind(this));
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
-
+				//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
+				globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : ''))  + this.pageQuery());
+			}
+		},
+		closeUpload: function () {
+			if (this.uploadVM) {
+				this.uploadVM.destroy();
 				delete this.uploadVM;
 				delete this.waitUploadSince;
-				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
 			}
 		},
 

@@ -91,7 +91,9 @@
 		.photoPreview.withTitle.loadingPhoto(data-bind="style: {visibility: loading() ? 'visible' : 'hidden', width: w, height: h}")
 			.loadPhoto Загрузка
 		// /ko
-		.rowoffset.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'photoPagerTpl'}")
+		//ko if: photos().length && paginationShow()
+		.rowoffset.pag(data-bind="template: {name: 'photoPagerTpl'}")
+		// /ko
 	script(id="photoPagerTpl", type="text/html")
 		ul.pagination
 			li.edge(data-bind="css: {disabled: page() === 1}"): a(data-bind="attr: {href: pageUrl() + pageQuery()}", title="Первая страница") &laquo;&laquo;
