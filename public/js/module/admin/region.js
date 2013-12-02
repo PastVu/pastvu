@@ -155,10 +155,12 @@ define([
 
 			this.createMap();
 			this.map.whenReady(function () {
-				if (!mapInit) {
+				if (mapInit) {
+					this.layerSaved.addTo(this.map);
+				} else {
 					this.map.fitBounds(this.layerSaved.getBounds());
+					window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500); //Рисуем после анимации fitBounds
 				}
-				window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), mapInit ? 100 : 500); //Рисуем после анимации fitBounds
 			}, this);
 		},
 		createMap: function () {
@@ -171,7 +173,6 @@ define([
 
 			this.map = new L.map(this.$dom.find('.map')[0], {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false});
 			if (this.layerSaved) {
-				//window.setTimeout(this.map.fitBounds.bind(this.map, this.layerSaved.getBounds()), 200); //В 0.6.4 бывает после создания карты fitBounds её подвешивает (#2085), поэтому вызываем пока в setTimeout
 				this.map.fitBounds(this.layerSaved.getBounds());
 			}
 			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);

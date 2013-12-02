@@ -63,25 +63,25 @@ define([
 							id: 'osmosnimki',
 							desc: 'Kosmosnimki',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.osm.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
-							maxZoom: 19,
-							limitZoom: 18,
+							obj: new L.TileLayer('http://{s}.tile.osm.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20, maxNativeZoom: 18}),
+							maxZoom: 20,
+							limitZoom: 19,
 							maxAfter: 'google.scheme'
 						},
 						{
 							id: 'mapnik',
 							desc: 'Mapnik',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
-							maxZoom: 19,
-							limitZoom: 18,
+							obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20}),
+							maxZoom: 20,
+							limitZoom: 19,
 							maxAfter: 'google.scheme'
 						},
 						{
 							id: 'mapquest',
 							desc: 'Mapquest',
 							selected: ko.observable(false),
-							obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20}),
+							obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20, maxNativeZoom: 18}),
 							maxZoom: 20,
 							limitZoom: 19,
 							maxAfter: 'google.scheme'
@@ -209,7 +209,7 @@ define([
 
 			renderer(
 				[
-					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded}, ctx: this, callback: function (vm) {
+					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom, canOpen: !this.embedded}, ctx: this, callback: function (vm) {
 						this.childModules[vm.id] = vm;
 						this.navSliderVM = vm;
 					}.bind(this)}
@@ -371,9 +371,10 @@ define([
 			this.map.setView(this.mapDefCenter, Locations.current.z, false);
 		},
 		zoomEndCheckLayer: function () {
-			var maxAfter = this.layerActive().type.maxAfter,
+			var limitZoom = this.layerActive().type.limitZoom,
+				maxAfter = this.layerActive().type.maxAfter,
 				layers;
-			if (this.layerActive().type.limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > this.layerActive().type.limitZoom) {
+			if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
 				layers = maxAfter.split('.');
 				if (this.layerActive().sys.id === 'osm') {
 					this.layerActive().type.obj.on('load', function (evt) {
