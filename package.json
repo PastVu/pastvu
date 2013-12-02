@@ -35,7 +35,7 @@
 		"step": "",
 		"socket.io": "~0.9.16",
 		"nodemailer": "~0.5.10",
-		"ua-parser": "~0.3.3",
+		"ua-parser-js": "~0.6.2",
 		"sprintf": "",
 		"optimist": "~0.5.2",
 		"log4js": "~0.6.9",

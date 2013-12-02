@@ -3,7 +3,7 @@
 var Session,
 	User,
 	Utils = require('../commons/Utils.js'),
-	uaParser = require('ua-parser'),
+	UAParser = require('ua-parser-js'),
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
@@ -23,7 +23,7 @@ var Session,
 		'Chrome': 14,
 		'Android': 3,
 		'Safari': 5,
-		'Mobile Safari': 5
+		'Mobile Safari': 4 //Пока определяет так и ios и android
 	},
 
 	settings = require('./settings.js'),
@@ -62,6 +62,8 @@ function addUserSession(session) {
 	return firstAdding; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
 }
 
+
+var uaParser = new UAParser();
 //Обработчик установки соединения сокетом 'authorization'
 function authSocket(handshake, callback) {
 	if (!handshake.headers || !handshake.headers['user-agent']) {
@@ -69,11 +71,12 @@ function authSocket(handshake, callback) {
 	}
 	//console.log(handshake);
 
-	var uaParsed = uaParser.parse(handshake.headers['user-agent']),
+	var uaParsed = uaParser.setUA(handshake.headers['user-agent']).getResult(),
+		browserVersion = Number(uaParsed.browser.major),
 		cookieObj,
 		existsSid;
 
-	if (!uaParsed.family || !uaParsed.major || uaParsed.major < browserSuportFrom[uaParsed.family]) {
+	if (!uaParsed.browser.name || browserSuportFrom[uaParsed.browser.name] !== undefined && (!browserVersion || browserVersion < browserSuportFrom[uaParsed.browser.name])) {
 		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
 	}
 
@@ -141,7 +144,20 @@ function authSocket(handshake, callback) {
 			return callback('Error: ' + err, false);
 		}
 		var ip = handshake.headers['x-real-ip'] || handshake.headers['X-Real-IP'] || (handshake.address && handshake.address.address),
-			data = {ip: ip, headers: handshake.headers, ua: {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family}};
+			device = ((uaParsed.device.type || '') + ' ' + (uaParsed.device.vendor || '') + ' ' + (uaParsed.device.model || '')).trim(),
+			data = {
+				ip: ip,
+				headers: handshake.headers,
+				ua: {
+					b: uaParsed.browser.name,
+					bv: uaParsed.browser.version,
+					os: ((uaParsed.os.name || '') + ' ' + (uaParsed.os.version || '')).trim()
+				}
+			};
+
+		if (device) {
+			data.ua.d = device;
+		}
 
 		if (!session) {
 			session = generate(data); //Если сессии нет, создаем и добавляем её в хеш
