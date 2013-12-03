@@ -30,7 +30,7 @@
  *
  */
 
-define(['require', 'module'], function(require, module) {
+define(function() {
   
   // regular expression for removing double slashes
   // eg http://www.example.com//my///url/here -> http://www.example.com/my/url/here
@@ -40,14 +40,12 @@ define(['require', 'module'], function(require, module) {
   }
 
   // given a relative URI, and two absolute base URIs, convert it from one base to another
-  var protocolRegEx = /[^\:\/]*:\/\/([^\/])*/
+  var protocolRegEx = /[^\:\/]*:\/\/([^\/])*/;
+  var absUrlRegEx = /^(\/|data:)/;
   function convertURIBase(uri, fromBase, toBase) {
-    if(uri.indexOf("data:") === 0)
+    if (uri.match(absUrlRegEx) || uri.match(protocolRegEx))
       return uri;
     uri = removeDoubleSlashes(uri);
-    // absolute urls are left in tact
-    if (uri.match(/^\//) || uri.match(protocolRegEx))
-      return uri;
     // if toBase specifies a protocol path, ensure this is the same protocol as fromBase, if not
     // use absolute path at fromBase
     var toBaseProtocol = toBase.match(protocolRegEx);
@@ -63,7 +61,11 @@ define(['require', 'module'], function(require, module) {
   // given a relative URI, calculate the absolute URI
   function absoluteURI(uri, base) {
     if (uri.substr(0, 2) == './')
-      uri = uri.substr(2);    
+      uri = uri.substr(2);
+
+    // absolute urls are left in tact
+    if (uri.match(absUrlRegEx) || uri.match(protocolRegEx))
+      return uri;
     
     var baseParts = base.split('/');
     var uriParts = uri.split('/');
@@ -109,7 +111,7 @@ define(['require', 'module'], function(require, module) {
     return out.substr(0, out.length - 1);
   };
   
-  var normalizeCSS = function(source, fromBase, toBase, cssBase) {
+  var normalizeCSS = function(source, fromBase, toBase) {
 
     fromBase = removeDoubleSlashes(fromBase);
     toBase = removeDoubleSlashes(toBase);
@@ -120,10 +122,7 @@ define(['require', 'module'], function(require, module) {
     while (result = urlRegEx.exec(source)) {
       url = result[3] || result[2] || result[5] || result[6] || result[4];
       var newUrl;
-      if (cssBase && url.substr(0, 1) == '/')
-        newUrl = cssBase + url;
-      else
-        newUrl = convertURIBase(url, fromBase, toBase);
+      newUrl = convertURIBase(url, fromBase, toBase);
       var quoteLen = result[5] || result[6] ? 1 : 0;
       source = source.substr(0, urlRegEx.lastIndex - url.length - quoteLen - 1) + newUrl + source.substr(urlRegEx.lastIndex - quoteLen - 1);
       urlRegEx.lastIndex = urlRegEx.lastIndex + (newUrl.length - url.length);
@@ -133,6 +132,8 @@ define(['require', 'module'], function(require, module) {
   };
   
   normalizeCSS.convertURIBase = convertURIBase;
+  normalizeCSS.absoluteURI = absoluteURI;
+  normalizeCSS.relativeURI = relativeURI;
   
   return normalizeCSS;
 });

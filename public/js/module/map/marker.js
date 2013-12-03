@@ -623,7 +623,7 @@ define([
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe ' + measure,
 						iconSize: size,
-						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
+						html: '<img class="clusterImg" onload="if (this.parentNode && this.parentNode.classList) {this.parentNode.classList.add(\'show\');}" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
 					});
 					cluster.measure = measure;
 					cluster.marker =
