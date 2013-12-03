@@ -31,7 +31,7 @@ module.exports = function (grunt) {
 				src: [targetDir + '/*'/*, '!' + targetDir + '/node_modules'*/]
 			},
 			publicTpl: {
-				//Очищаем целевую директорию кроме вложенной папки node_modules
+				//Очищаем директорию скомпиленных tpl
 				src: ['public/tpl']
 			}
 		},
