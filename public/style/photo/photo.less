@@ -283,27 +283,8 @@
 				text-rendering: optimizelegibility;
 			}
 
-			&.photoDesc {
-				position: relative;
-
-				&.hasFocus {
-					.descInput {
-						min-height: 60px;
-						background-color: #fdfdfd;
-					}
-				}
-				&.hasFocus, &.hasContent {
-					.descInputLabel {
-						display: none;
-					}
-				}
-			}
-
-			.infoName, .editable {
-				display: inline-block;
-			}
-
 			.infoName {
+				display: inline-block;
 				margin-right: 5px;
 				font-weight: bold;
 			}
@@ -380,20 +361,66 @@
 
 	.photoData {
 		&.editMode {
-			.photoInfoBlock {
-				.photoInfo {
-					&:not(:first-child) {
-						margin-top: 5px;
-					}
-					div.editable {
-						display: block;
-					}
+			.fieldWrap {
+				position: relative;
+				margin-top: 5px;
+				.transition(margin-top .15s ease-in-out);
 
-					.infoName {
-						display: none;
+				> label {
+					position: absolute;
+					top: -11px;
+					left: 0;
+					color: #999;
+					opacity: 0;
+					font-size: @font-size-mini;
+					font-weight: bold;
+					.transition(all .15s ease-in-out);
+
+					&.on {
+						color: #64ace5;
+					}
+				}
+
+				&.hasContent {
+					margin-top: 18px;
+
+					> label {
+						top: -15px;
+						opacity: 1;
+					}
+					> .form-control {
+						.box-shadow(none);
 					}
 				}
 			}
+			.form-control {
+				position: relative;
+				padding: 1px 2px;
+				height: 22px;
+				color: #333;
+				background-color: #F0F0F0;
+
+				&.title {
+					height: 24px;
+					font-weight: bold;
+					font-size: 18px;
+					line-height: 24px;
+				}
+				&.year {
+					display: inline-block;
+					width: 38px;
+					padding: 0;
+					text-align: center;
+				}
+
+				&:focus {
+					background-color: #fdfdfd;
+				}
+			}
+			textarea.hasFocus {
+				min-height: 60px;
+			}
+
 			select {
 				margin-bottom: 4px;
 				background-color: #F0F0F0;
@@ -401,66 +428,13 @@
 					background-color: #fdfdfd;
 				}
 			}
-			.editable {
-				padding: 0 3px;
-				border: 1px solid #BDBDBD;
-				background-color: #F0F0F0;
-				.transition(all .2s);
-
-				&:hover {
-					border-color: rgba(82, 168, 236, .8);
-				}
-				&:focus {
-					outline: 0;
-					outline: thin dotted \9; /* IE6-9 */
-					border-color: rgba(82, 168, 236, .8);
-					background-color: #fdfdfd;
-					.box-shadow(~"0 0 8px rgba(82,168,236,.6)");
-				}
-
-				&.cap {
-					color: #a0a0a0;
-
-					&:hover {
-						color: darken(#8d8d8d, 20%);
-					}
-					&:focus {
-						color: #000;
-					}
-				}
-
-			}
 			.descInput {
-				display: block;
-				width: 100%;
-				max-width: 100%;
 				min-height: 40px;
-				padding: 0 3px;
-				border: 1px solid #BDBDBD;
-				background-color: #F0F0F0;
-				.box-shadow(none);
 				.transition(all .2s);
 
-				&:hover {
-					border-color: rgba(82, 168, 236, .8);
-				}
-				&:focus {
-					outline: 0;
-					outline: thin dotted \9; /* IE6-9 */
-					border-color: rgba(82, 168, 236, .8);
-					background-color: #fdfdfd;
-					.box-shadow(~"0 0 8px rgba(82,168,236,.6)");
-				}
 				&::-webkit-scrollbar-button:decrement {
 					height: 0;
 				}
-			}
-			.descInputLabel {
-				position: absolute;
-				left: 5px;
-				top: 3px;
-				color: #a0a0a0;
-				cursor: text;
 			}
 		}
 	}

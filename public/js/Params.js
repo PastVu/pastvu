@@ -41,15 +41,15 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 				},
 				photoDirsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
 				photoDirsTxt: {
-					n: 'North',
-					ne: 'Northeast',
-					e: 'East',
-					se: 'Southeast',
-					s: 'South',
-					sw: 'Southwest',
-					w: 'West',
-					nw: 'Northwest',
-					aero: 'Aerial photo'
+					n: 'Север',
+					ne: 'Северо-Восток',
+					e: 'Восток',
+					se: 'Юго-Восток',
+					s: 'Юг',
+					sw: 'Юго-Запад',
+					w: 'Запад',
+					nw: 'Северо-Запад',
+					aero: 'Аэро/Спутник'
 				}
 			}
 		);

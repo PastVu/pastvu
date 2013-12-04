@@ -128,9 +128,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.scrollTimeout = null;
 			this.scrollToBind = this.scrollTo.bind(this);
 
-			this.descFocusBind = this.inputFocus.bind(this);
-			this.descLabelClickBind = this.inputLabelClick.bind(this);
-
 			this.fraging = ko.observable(false);
 			this.fragArea = null;
 
@@ -459,98 +456,66 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		descSetEdit: function () {
-			var $root = this.$dom.find('.photoDesc'),
-				$input = $root.find('.descInput'),
-				content = Utils.txtHtmlToInput(this.p.desc());
+			this.descEditOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.p.desc(this.descEditOrigin);
+			this.descCheckHeight(this.$dom.find('.descInput'));
 
-			if (content) {
-				$input.val(Utils.txtHtmlToInput(this.p.desc()));
-				//Задаем высоту textarea под контент
-				$root.addClass('hasContent');
+			this.sourceEditOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.p.source(this.sourceEditOrigin);
+		},
+		inputlblfocus: function (data, event) {
+			var label = event.target && event.target.previousElementSibling;
+
+			if (label && label.classList) {
+				label.classList.add('on');
 			}
-			this.inputCheckHeight($root, $input);
+		},
+		inputlblblur: function (data, event) {
+			var label = event.target && event.target.previousElementSibling;
 
-			this.sourceEditingOrigin = Utils.txtHtmlToInput(this.p.source());
-			this.p.source(this.sourceEditingOrigin);
+			if (label && label.classList) {
+				label.classList.remove('on');
+			}
 		},
-		//Фокус на поле ввода активирует его редактирование
-		inputFocus: function (data, event) {
-			this.descActivate($(event.target).closest('.photoInfo'));
+		descFocus: function (data, event) {
+			this.inputlblfocus(data, event);
+			$(event.target)
+				.addClass('hasFocus')
+				.on('keyup', _.debounce(this.descKeyup.bind(this), 300));
+			this.descCheckInViewport($(event.target));
 		},
-		//Клик на лэйбл активирует редактирование
-		inputLabelClick: function (data, event) {
-			this.descActivate($(event.target).closest('.photoInfo'), null, true);
+		descBlur: function (data, event) {
+			this.inputlblblur(data, event);
+			$(event.target).removeClass('hasFocus').off('keyup');
 		},
-		descActivate: function (root, scrollDuration, focus) {
-			var input = root.find('.descInput');
-
-			root.addClass('hasFocus');
-			input
-				.off('keyup').off('blur')
-				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
-				.on('blur', _.debounce(this.inputBlur.bind(this), 200));
-			this.inputCheckInViewport(root, scrollDuration, function () {
-				if (focus) {
-					input.focus();
-				}
-			});
+		//Отслеживанием ввод, чтобы подгонять desc под высоту текста
+		descKeyup: function (evt) {
+			this.descCheckHeight($(evt.target));
 		},
-		//Отслеживанием ввод, чтобы подгонять input под высоту текста
-		inputKeyup: function (evt) {
-			var $input = $(evt.target),
-				$root = $input.closest('.photoInfo'),
+		//Подгоняем desc под высоту текста
+		descCheckHeight: function ($input) {
+			var height = $input.height(),
+				heightScroll = ($input[0].scrollHeight) || height,
 				content = $.trim($input.val());
 
-			this.descEditingChanged = true;
-			$root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.inputCheckHeight($root, $input);
-		},
-		inputBlur: function (evt) {
-			var $input = $(evt.target),
-				$root = $input.closest('.photoInfo'),
-				content = $.trim($input.val());
-
-			$input.off('keyup').off('blur');
-			if (!content && !this.fraging()) {
-				$root.removeClass('hasContent');
+			if (!content) {
 				$input.height('auto');
-			}
-			if (!content) {
-				$input.val('');
-			}
-			$root.removeClass('hasFocus');
-		},
-		inputCheckHeight: function (root, input) {
-			var content = $.trim(input.val()),
-				height = input.height(),
-				heightScroll = (input[0].scrollHeight) || height;
-
-			if (!content) {
-				input.height('auto');
 			} else if (heightScroll > height) {
-				input.height(heightScroll);
-				this.inputCheckInViewport(input);
+				$input.height(heightScroll);
+				this.descCheckInViewport($input);
 			}
 		},
-		inputCheckInViewport: function (input, scrollDuration, cb) {
+		descCheckInViewport: function (input) {
 			var cBottom = input.offset().top + input.height() + 10,
 				wTop = $window.scrollTop(),
 				wFold = $window.height() + wTop;
 
 			if (wFold < cBottom) {
-				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-					if (Utils.isType('function', cb)) {
-						cb.call(this);
-					}
-				}.bind(this)});
-			} else {
-				if (Utils.isType('function', cb)) {
-					cb.call(this);
-				}
+				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: 200});
 			}
 		},
 
-		editSave: function (/*data, event*/) {
+		editSave: function () {
 			if (this.can.edit()) {
 				if (!this.edit()) {
 					this.edit(true);
@@ -758,11 +723,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				target.geo.reverse();
 			}
 
-			if (this.descEditingChanged) {
-				target.desc = this.$dom.find('.descInput').val();
+			if (this.p.desc() !== this.descEditOrigin) {
+				target.desc = this.p.desc();
 			}
-
-			if (this.p.source() !== this.sourceEditingOrigin) {
+			if (this.p.source() !== this.sourceEditOrigin) {
 				target.source = this.p.source();
 			}
 
@@ -779,14 +743,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
 							}
 						}
-						if (this.descEditingChanged) {
+						if (target.desc) {
 							if (result.data.desc) {
 								target.desc = result.data.desc;
 								this.p.desc(result.data.desc);
 							} else {
-								delete target.desc; //Если desc не вернулся, значит он не был изменен
+								delete target.desc; //Если source не вернулся, значит он не был изменен
 							}
-							delete this.descEditingChanged;
+							delete this.descEditOrigin;
 						}
 						if (target.source) {
 							if (result.data.source) {
@@ -795,7 +759,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							} else {
 								delete target.source; //Если source не вернулся, значит он не был изменен
 							}
-							delete this.sourceEditingOrigin;
+							delete this.sourceEditOrigin;
 						}
 						_.assign(this.originData, target);
 					}
@@ -812,8 +776,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		cancel: function () {
 			ko_mapping.fromJS(this.originData, this.p);
-			delete this.descEditingChanged;
-			delete this.sourceEditingOrigin;
+			delete this.descEditOrigin;
+			delete this.sourceEditOrigin;
 		},
 		setReady: function (data, event) {
 			if (this.p.s() === 0) {

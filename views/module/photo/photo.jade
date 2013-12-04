@@ -168,26 +168,26 @@
 
 	//-EDIT MODE
 	script(id="photoEdit", type="text/html")
-		.row.photoInfoBlock
-			.row.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
-			.row.photoInfo.photoDesc
-				textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
-				label.descInputLabel(data-bind="click: descLabelClickBind") Опишите фотографию
-		.row.photoInfoBlock
-			.row.photoInfo
-				.infoName Адрес снимка:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес снимка?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-			.row.photoInfo
-				.infoName Источник:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Если вам известен источник фотографии, укажите его здесь'}")
-			.row.photoInfo
-				.infoName Автор:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
-		.row.photoInfoBlock
-			.row.photoInfo
-				| Я считаю, что снимок сделан между&nbsp;
-				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
-				| &nbsp;и&nbsp;
-				span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
-				| &nbsp;&nbsp;Направление съемки&nbsp;
-				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+		.fieldWrap(data-bind="css: {hasContent: p.title().length}")
+			label(for="pName") Название фотографии
+			input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+		.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
+			label(for="pDesc") Описание
+			textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
+		.fieldWrap(data-bind="css: {hasContent: p.address().length}")
+			label(for="pAddr") Адрес точки сьемки
+			input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+		.fieldWrap(data-bind="css: {hasContent: p.source().length}")
+			label(for="pSource") Источник
+			input.form-control(name="pSource", type="text", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+		.fieldWrap(data-bind="css: {hasContent: p.author().length}")
+			label(for="pAuthor") Автор
+			input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+
+		.fieldWrap
+			| Я считаю, что снимок сделан между&nbsp;
+			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown'")
+			| &nbsp;и&nbsp;
+			input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown'")
+			| &nbsp;&nbsp;Направление съемки&nbsp;
+			select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
