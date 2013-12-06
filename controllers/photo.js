@@ -984,6 +984,9 @@ function savePhoto(socket, data, cb) {
 		if (data.source) {
 			data.source = Utils.inputIncomingParse(data.source);
 		}
+		if (data.author) {
+			data.author = Utils.inputIncomingParse(data.author);
+		}
 		if (data.geo && !Utils.geoCheck(data.geo)) {
 			delete data.geo;
 		}
@@ -1008,6 +1011,9 @@ function savePhoto(socket, data, cb) {
 		}
 		if (newValues.source !== undefined) {
 			sendingBack.source = newValues.source;
+		}
+		if (newValues.author !== undefined) {
+			sendingBack.author = newValues.author;
 		}
 
 		oldGeo = photoOldObj.geo;

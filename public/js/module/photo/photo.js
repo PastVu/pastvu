@@ -462,17 +462,18 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.sourceEditOrigin = Utils.txtHtmlToInput(this.p.source());
 			this.p.source(this.sourceEditOrigin);
+
+			this.authorEditOrigin = Utils.txtHtmlToInput(this.p.author());
+			this.p.author(this.authorEditOrigin);
 		},
 		inputlblfocus: function (data, event) {
 			var label = event.target && event.target.previousElementSibling;
-
 			if (label && label.classList) {
 				label.classList.add('on');
 			}
 		},
 		inputlblblur: function (data, event) {
 			var label = event.target && event.target.previousElementSibling;
-
 			if (label && label.classList) {
 				label.classList.remove('on');
 			}
@@ -729,6 +730,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (this.p.source() !== this.sourceEditOrigin) {
 				target.source = this.p.source();
 			}
+			if (this.p.author() !== this.authorEditOrigin) {
+				target.author = this.p.author();
+			}
 
 			if (Utils.getObjectPropertyLength(target) > 0) {
 				target.cid = this.p.cid();
@@ -748,7 +752,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								target.desc = result.data.desc;
 								this.p.desc(result.data.desc);
 							} else {
-								delete target.desc; //Если source не вернулся, значит он не был изменен
+								delete target.desc; //Если desc не вернулся, значит он не был изменен
 							}
 							delete this.descEditOrigin;
 						}
@@ -760,6 +764,15 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								delete target.source; //Если source не вернулся, значит он не был изменен
 							}
 							delete this.sourceEditOrigin;
+						}
+						if (target.author) {
+							if (result.data.author) {
+								target.author = result.data.author;
+								this.p.author(result.data.author);
+							} else {
+								delete target.author; //Если author не вернулся, значит он не был изменен
+							}
+							delete this.authorEditOrigin;
 						}
 						_.assign(this.originData, target);
 					}
@@ -778,6 +791,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			ko_mapping.fromJS(this.originData, this.p);
 			delete this.descEditOrigin;
 			delete this.sourceEditOrigin;
+			delete this.authorEditOrigin;
 		},
 		setReady: function (data, event) {
 			if (this.p.s() === 0) {

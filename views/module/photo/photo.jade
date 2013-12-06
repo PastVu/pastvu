@@ -120,12 +120,12 @@
 
 	//-DATA VIEW MODE
 	script(id="photoView", type="text/html")
-		.row.photoInfoBlock
+		.infoBlock
 			//ko if: p.title().length
-			.row.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
+			.info.title(data-bind="text: p.title()")
 			// /ko
 			//ko if: p.regions().length
-			.row.regions(data-bind="foreach: p.regions")
+			.regions(data-bind="foreach: p.regions")
 				.region
 					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
 					//ko if: $index() < $parent.p.regions().length - 1
@@ -133,26 +133,26 @@
 					// /ko
 			// /ko
 			//ko if: p.desc().length
-			.row.photoInfo(data-bind="html: p.desc()")
+			.info(data-bind="html: p.desc()")
 			// /ko
-		.row.photoInfoBlock
-			//ko if: p.address().length
-			.row.photoInfo
-				.infoName Адрес снимка:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес точки съемки?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-			// /ko
+		.infoBlock
 			//ko if: p.source().length
-			.row.photoInfo
-				.infoName Источник:
-				.editable(data-bind="html: p.source()")
+			.info
+				span.infoName Источник:
+				span(data-bind="html: p.source()")
 			// /ko
 			//ko if: p.author().length
-			.row.photoInfo
-				.infoName Автор:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
+			.info
+				span.infoName Автор:
+				span(data-bind="html: p.author()")
 			// /ko
-		.row.photoInfoBlock
-			.row.photoInfo
+			//ko if: p.address().length
+			.info
+				span.infoName Адрес снимка:
+				span(data-bind="text: p.address()")
+			// /ko
+		.infoBlock
+			.info
 				| Мы думаем, что снимок сделан
 				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
 				span(data-bind="html: p.year()")
@@ -160,7 +160,7 @@
 				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
 				//ko if: p.dir && p.dir() && p.dir().length
 				span &nbsp;(направление съемки &minus;&nbsp;
-				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+				span(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
 				| )
 				// /ko
 		a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
@@ -174,16 +174,15 @@
 		.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
 			label(for="pDesc") Описание
 			textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
-		.fieldWrap(data-bind="css: {hasContent: p.address().length}")
-			label(for="pAddr") Адрес точки сьемки
-			input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
 		.fieldWrap(data-bind="css: {hasContent: p.source().length}")
 			label(for="pSource") Источник
 			input.form-control(name="pSource", type="text", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
 		.fieldWrap(data-bind="css: {hasContent: p.author().length}")
 			label(for="pAuthor") Автор
 			input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-
+		.fieldWrap(data-bind="css: {hasContent: p.address().length}")
+			label(for="pAddr") Адрес точки сьемки
+			input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
 		.fieldWrap
 			| Я считаю, что снимок сделан между&nbsp;
 			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown'")
