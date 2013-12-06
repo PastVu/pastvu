@@ -456,7 +456,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		descSetEdit: function () {
-			this.descEditOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.descEditOrigin = Utils.txtHtmlToInput(this.p.desc());
 			this.p.desc(this.descEditOrigin);
 			this.descCheckHeight(this.$dom.find('.descInput'));
 
@@ -747,37 +747,27 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
 							}
 						}
-						if (target.desc) {
-							if (result.data.desc) {
-								target.desc = result.data.desc;
-								this.p.desc(result.data.desc);
-							} else {
-								delete target.desc; //Если desc не вернулся, значит он не был изменен
-							}
-							delete this.descEditOrigin;
-						}
-						if (target.source) {
-							if (result.data.source) {
-								target.source = result.data.source;
-								this.p.source(result.data.source);
-							} else {
-								delete target.source; //Если source не вернулся, значит он не был изменен
-							}
-							delete this.sourceEditOrigin;
-						}
-						if (target.author) {
-							if (result.data.author) {
-								target.author = result.data.author;
-								this.p.author(result.data.author);
-							} else {
-								delete target.author; //Если author не вернулся, значит он не был изменен
-							}
-							delete this.authorEditOrigin;
-						}
-						_.assign(this.originData, target);
+						replaceDataWithHTML('desc', this);
+						replaceDataWithHTML('source', this);
+						replaceDataWithHTML('author', this);
+						_.assign(this.originData, target); //Обновляем originData тем что сохранилось
 					}
 					if (cb) {
 						cb.call(ctx, result);
+					}
+
+					//Замена значени поля, в котором присутствует html-разметка
+					function replaceDataWithHTML(propName, ctx) {
+						if (typeof result.data[propName] === 'string') {
+							ctx.p[propName](result.data[propName]);
+							target[propName] = result.data[propName];
+						} else {
+							//Если свойство не было изменено или не вернулось (тоже значит, что не было изменено),
+							//то возвращаем оригинальное значение, т.к. в нем содержится html разметка
+							ctx.p[propName](ctx.originData[propName]);
+							delete target[propName];
+						}
+						delete ctx[propName + 'EditOrigin'];
 					}
 				}.bind(this));
 				socket.emit('savePhoto', target);
