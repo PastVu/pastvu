@@ -734,7 +734,7 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveRegionsByGeo', function (data) {
 			var iAm = hs.session.user;
 
-			if (!iAm || !iAm.role || iAm.role < 10) {
+			if (!iAm) {
 				return response({message: msg.deny, error: true});
 			}
 			if (!Utils.isType('object', data) || !Utils.geoCheck(data.geo)) {
@@ -742,13 +742,20 @@ module.exports.loadController = function (app, db, io) {
 			}
 			data.geo = data.geo.reverse();
 
-			getRegionsByGeoPoint(data.geo, {_id: 0, cid: 1, title_en: 1}, function (err, regions) {
+			getRegionsByGeoPoint(data.geo, {_id: 0, cid: 1, title_local: 1, parents: 1}, function (err, regions) {
 				if (err || !regions) {
 					response({message: err && err.message || 'No regions', error: true});
-				} else {
-					response({geo: data.geo.reverse(), regions: regions});
+				}
+				var regionsArr = [],
+					i;
+
+				for (i = 0; i < 5; i++) {
+					if (regions[i]) {
+						regionsArr[regions[i].parents.length] = regions[i];
+					}
 				}
 
+				response({geo: data.geo.reverse(), regions: regionsArr});
 			});
 
 			function response(resultData) {

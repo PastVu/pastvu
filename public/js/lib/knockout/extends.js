@@ -73,7 +73,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 	 * Inspired by https://groups.google.com/forum/#!topic/knockoutjs/Mh0w_cEMqOk
 	 * @type {Object}
 	 */
-	ko.bindingHandlers.cEdit = {
+	/*ko.bindingHandlers.cEdit = {
 		init: function (element, valueAccessor, allBindingsAccessor) {
 		},
 		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
@@ -128,5 +128,5 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 				}
 			}
 		}
-	};
+	};*/
 });

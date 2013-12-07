@@ -171,6 +171,24 @@
 		.fieldWrap(data-bind="css: {hasContent: p.title().length}")
 			label(for="pName") Название фотографии
 			input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+		.fieldWrap
+			span.infoName Регион:
+			//ko if: p.regions().length
+			span.regions(data-bind="foreach: p.regions")
+				.region
+					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+					//ko if: $index() < $parent.p.regions().length - 1
+					| ,&nbsp;
+					// /ko
+			// /ko
+			//ko if: !p.regions().length
+			.region.err Не привязан
+			// /ko
+			//ko if: !p.geo()
+			span.regionEdit(data-bind="click: regionSelect")
+				span.glyphicon.glyphicon-pencil
+				| Выбрать
+			// /ko
 		.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
 			label(for="pDesc") Описание
 			textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")

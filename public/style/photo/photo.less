@@ -258,30 +258,6 @@
 	.imgareaselect-selection {
 	}
 
-	.regions {
-		.region {
-			display: inline-block;
-		}
-	}
-
-	.infoBlock {
-		margin-bottom: 6px;
-
-		> .info {
-			&.title {
-				font-weight: bold;
-				font-size: 18px;
-				line-height: 20px;
-				text-rendering: optimizelegibility;
-			}
-
-			> .infoName {
-				margin-right: 5px;
-				font-weight: bold;
-			}
-		}
-	}
-
 	//Правая панель
 	.rightPanel {
 		position: relative;
@@ -350,6 +326,39 @@
 		}
 	}
 
+
+	.infoBlock {
+		margin-bottom: 6px;
+
+		> .info {
+			&.title {
+				font-weight: bold;
+				font-size: 18px;
+				line-height: 20px;
+				text-rendering: optimizelegibility;
+			}
+
+			.infoName {
+				margin-right: 5px;
+				font-weight: bold;
+			}
+		}
+	}
+
+	.region {
+		display: inline-block;
+
+		&.err {
+			color: #be0000;
+		}
+	}
+	.regionEdit {
+		margin-left: 3px;
+		font-size: @font-size-mini;
+		font-weight: bold;
+		padding: 3px 0 0;
+		line-height: 24px;
+	}
 	.photoData {
 		&.editMode {
 			.fieldWrap {
@@ -361,10 +370,9 @@
 					position: absolute;
 					top: -11px;
 					left: 0;
-					color: #999;
+					color: #888;
 					opacity: 0;
 					font-size: @font-size-mini;
-					font-weight: bold;
 					.transition(all .15s ease-in-out);
 
 					&.on {
@@ -382,6 +390,11 @@
 					> .form-control {
 						.box-shadow(none);
 					}
+				}
+
+				> .infoName {
+					margin-right: 5px;
+					font-weight: bold;
 				}
 			}
 			.form-control {

@@ -22,7 +22,7 @@ define([
 				"<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
 				"<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
 				"<tr><td style='vertical-align: top;'>" +
-				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_en}}</a><br>{{~}}" +
+				"{{~it.parr :value:index}}<a target='_blank' href='/admin/region/{{=value.cid}}'>{{=value.title_local}}</a><br>{{~}}" +
 				"</td><td style='vertical-align: top;'>" +
 				"{{~it.garr :value:index}}{{=value}}<br>{{~}}" +
 				"</td></tr>" +
@@ -201,7 +201,7 @@ define([
 				if (err) {
 					tplObj.parr.push(data.message);
 				} else {
-					tplObj.parr = data.regions.reverse();
+					tplObj.parr = data.regions;
 				}
 				if (this.ownRegionsDeffered) {
 					this.ownRegionsDeffered.resolve();

@@ -147,6 +147,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			];
 
+			this.descCheckInViewportDebounced = _.debounce(this.descCheckInViewport, 210, {leading: false, trailing: true});
+
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
 
@@ -338,9 +340,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		mapEditOn: function () {
 			this.mapVM.editPointOn();
+			this.subscriptions.geoChange = this.p.geo.subscribe(this.editGeoChange, this);
 		},
 		mapEditOff: function () {
 			this.mapVM.editPointOff();
+			if (this.subscriptions.geoChange && this.subscriptions.geoChange.dispose) {
+				this.subscriptions.geoChange.dispose();
+			}
 		},
 
 		// Установить фото для точки на карте
@@ -349,6 +355,32 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		genMapPoint: function () {
 			return _.pick(this.p, 'geo', 'year', 'dir', 'title');
+		},
+		editGeoChange: function (val) {
+			this.getRegionsByGeo(val);
+		},
+		getRegionsByGeo: function (geo, cb, ctx) {
+			console.log(geo);
+			socket.removeAllListeners('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
+			socket.on('takeRegionsByGeo', function (data) {
+				//Если вернулись данные для другой(прошлой) точки, то выходим
+				if (data && (!Array.isArray(data.geo) || data.geo[0] !== this.p.geo()[0] || data.geo[1] !== this.p.geo()[1])) {
+					return;
+				}
+
+				var error = !data || !!data.error || !data.regions;
+				if (error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, error, data);
+				}
+			}.bind(this));
+			socket.emit('giveRegionsByGeo', {geo: geo});
+		},
+		regionSelect: function () {
 		},
 
 		//Вызывается после рендеринга шаблона информации фото
@@ -482,8 +514,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.inputlblfocus(data, event);
 			$(event.target)
 				.addClass('hasFocus')
+				.off('keyup') //На всякий случай убираем обработчики keyup, если blur не сработал
 				.on('keyup', _.debounce(this.descKeyup.bind(this), 300));
-			this.descCheckInViewport($(event.target));
+			this.descCheckInViewportDebounced($(event.target));
 		},
 		descBlur: function (data, event) {
 			this.inputlblblur(data, event);
@@ -491,23 +524,32 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		//Отслеживанием ввод, чтобы подгонять desc под высоту текста
 		descKeyup: function (evt) {
-			this.descCheckHeight($(evt.target));
+			var $input = $(evt.target),
+				realHeight = this.descCheckHeight($input);
+
+			//Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
+			//(т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
+			if (realHeight) {
+				this.descCheckInViewport($input, realHeight);
+			}
 		},
-		//Подгоняем desc под высоту текста
+		//Подгоняем desc под высоту текста.
+		//Если высота изменилась, возвращаем её, если нет - false
 		descCheckHeight: function ($input) {
-			var height = $input.height(),
+			var height = $input.height() + 2, //2 - border
 				heightScroll = ($input[0].scrollHeight) || height,
 				content = $.trim($input.val());
 
 			if (!content) {
 				$input.height('auto');
+				return false;
 			} else if (heightScroll > height) {
 				$input.height(heightScroll);
-				this.descCheckInViewport($input);
+				return heightScroll;
 			}
 		},
-		descCheckInViewport: function (input) {
-			var cBottom = input.offset().top + input.height() + 10,
+		descCheckInViewport: function (input, inputHeight) {
+			var cBottom = input.offset().top + (inputHeight || (input.height() + 2)) + 10,
 				wTop = $window.scrollTop(),
 				wFold = $window.height() + wTop;
 
