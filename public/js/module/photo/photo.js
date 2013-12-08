@@ -377,8 +377,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-                    Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
-                }
+					Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
+				}
 
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, error, data);
@@ -389,12 +389,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		regionSelect: function () {
 			if (!this.regselectVM) {
-                var selected = _.last(ko_mapping.toJS(this.p.regions()));
-                if (selected) {
-                    selected = [selected];
-                } else {
-                    selected = undefined;
-                }
+				var selected = _.last(ko_mapping.toJS(this.p.regions()));
+				if (selected) {
+					selected = [selected];
+				} else {
+					selected = undefined;
+				}
 
 				renderer(
 					[
@@ -824,8 +824,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (target.geo) {
 				target.geo.reverse();
-			} else if (this.p.regions().length) {
-				target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
+			} else {
+				if (this.p.regions().length) {
+					target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
+				} else {
+					target.region = 0;
+				}
 			}
 
 			if (this.p.desc() !== this.descEditOrigin) {
@@ -1281,21 +1285,21 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		setMessage: function (text, abbr, type) {
 			var css = '';
 			switch (type) {
-			case 'error':
-				css = 'label-danger';
-				break;
-			case 'warn':
-				css = 'label-warning';
-				break;
-			case 'info':
-				css = 'label-info';
-				break;
-			case 'success':
-				css = 'label-success';
-				break;
-			default:
-				css = 'label-default';
-				break;
+				case 'error':
+					css = 'label-danger';
+					break;
+				case 'warn':
+					css = 'label-warning';
+					break;
+				case 'info':
+					css = 'label-info';
+					break;
+				case 'success':
+					css = 'label-success';
+					break;
+				default:
+					css = 'label-default';
+					break;
 			}
 
 			this.msg(text);

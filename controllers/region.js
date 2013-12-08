@@ -509,6 +509,10 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
 		regionsArr = [];
 
 	if (region) {
+		//Сначала обнуляем все
+		obj.r0 = obj.r1 = obj.r2 = obj.r3 = obj.r4 = undefined;
+
+		//Если есть родители, присваиваем их
 		if (region.parents.length) {
 			region.parents.forEach(function (cid) {
 				var region = regionCacheHash[cid];
@@ -518,8 +522,11 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
 				}
 			});
 		}
+
+		//Присваиваем переданный регион
 		obj['r' + region.parents.length] = cid;
 		regionsArr.push(returnArrFields ? _.pick(region, returnArrFields) : region);
+
 		return regionsArr;
 	} else {
 		return false;
