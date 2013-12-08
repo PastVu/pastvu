@@ -106,7 +106,7 @@ function calcRegionIncludes(cid, cb) {
 		}
 		var level = 'r' + region.parents.length;
 
-		step (
+		step(
 			function () {
 				//Сначала очищаем присвоение текущего региона, чтобы убрать те объекты, которые больше не будут в него входить
 				var queryObject = {},
@@ -146,7 +146,7 @@ function calcRegionsIncludes(iAm, cids, cb) {
 
 	if (!cids.length) {
 		//Если массив пуст - пересчитываем все фотографии
-		dbNative['eval']('function () {assignToRegions()', [], {nolock:true}, function (err, ret) {
+		dbNative['eval']('function () {assignToRegions()', [], {nolock: true}, function (err, ret) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
@@ -261,7 +261,7 @@ function saveRegion(socket, data, cb) {
 					delete region.geo;
 				}
 
-				step (
+				step(
 					function () {
 						fillCache(this); //Обновляем кэш регионов
 					},
@@ -472,7 +472,7 @@ function getObjRegionList(obj, fields, cb) {
  * @param returnArrFields В коллбек вернётся массив регионов с выбранными полями
  * @param cb Коллбек
  */
-function setObjRegions(obj, geo, returnArrFields, cb) {
+function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
 	if (!returnArrFields) {
 		returnArrFields = {_id: 0, cid: 1, parents: 1};
 	} else if (!returnArrFields.cid || !returnArrFields.parents) {
@@ -497,6 +497,33 @@ function setObjRegions(obj, geo, returnArrFields, cb) {
 
 		cb(null, regionsArr);
 	});
+}
+/**
+ * Устанавливает объекту свойства регионов r0-r4 на основе cid региона
+ * @param obj Объект (фото, комментарий и т.д.)
+ * @param cid Координата
+ * @param returnArrFields Массив выбираемых полей. В коллбек вернётся массив регионов с выбранными полями
+ */
+function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
+	var region = regionCacheHash[cid],
+		regionsArr = [];
+
+	if (region) {
+		if (region.parents.length) {
+			region.parents.forEach(function (cid) {
+				var region = regionCacheHash[cid];
+				if (region) {
+					obj['r' + region.parents.length] = cid;
+					regionsArr.push(returnArrFields ? _.pick(region, returnArrFields) : region);
+				}
+			});
+		}
+		obj['r' + region.parents.length] = cid;
+		regionsArr.push(returnArrFields ? _.pick(region, returnArrFields) : region);
+		return regionsArr;
+	} else {
+		return false;
+	}
 }
 /**
  * Очищает все регионы у объекта
@@ -783,7 +810,8 @@ module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
 module.exports.getObjRegionList = getObjRegionList;
-module.exports.setObjRegions = setObjRegions;
+module.exports.setObjRegionsByGeo = setObjRegionsByGeo;
+module.exports.setObjRegionsByRegionCid = setObjRegionsByRegionCid;
 module.exports.clearObjRegions = clearObjRegions;
 module.exports.setUserRegions = setUserRegions;
 

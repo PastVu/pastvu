@@ -34,7 +34,9 @@ var auth = require('./auth.js'),
 	msg = {
 		deny: 'You do not have permission for this action',
 		notExists: 'Requested photo does not exist',
-		anotherStatus: 'Фотография уже в другом статусе, обновите страницу'
+		notExistsRegion: 'Such region does not exist',
+		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
+		mustCoord: 'Фотография должна иметь координату или быть привязанной к региону вручную'
 	},
 
 	shift10y = ms('10y'),
@@ -992,7 +994,7 @@ function savePhoto(socket, data, cb) {
 		}
 
 		//Новые значения действительно изменяемых свойств
-		newValues = Utils.diff(_.pick(data, 'geo', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
+		newValues = Utils.diff(_.pick(data, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
 		if (_.isEmpty(newValues)) {
 			return cb({message: 'Nothing to save'});
 		}
@@ -1000,11 +1002,9 @@ function savePhoto(socket, data, cb) {
 		if (newValues.geo) {
 			Utils.geo.geoToPrecisionRound(newValues.geo);
 		} else if (newValues.geo === null) {
-			//Значит обнуляем координату
+			//Обнуляем координату
 			geoToNull = true;
 			newValues.geo = undefined; //Удаляем координату
-			sendingBack.regions = [];
-			regionController.clearObjRegions(photo); //Очищаем привязку к регионам
 		}
 		if (newValues.desc !== undefined) {
 			sendingBack.desc = newValues.desc;
@@ -1019,13 +1019,33 @@ function savePhoto(socket, data, cb) {
 		oldGeo = photoOldObj.geo;
 		newGeo = newValues.geo;
 
+
+		//Если координата обнулилась или её нет, то должны присвоить регион
+		if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
+			if (Number(newValues.region)) {
+				sendingBack.regions = regionController.setObjRegionsByRegionCid(photo, Number(newValues.region), ['cid', 'title_en', 'title_local']);
+				//Если вернулся false, значит переданного региона не существует
+				if (!sendingBack.regions) {
+					return cb({message: msg.notExistsRegion, error: true});
+				}
+			} else {
+				//Не иметь ни координаты ни региона могут только новые фотографии
+				if (photo.s !== 0) {
+					return cb({message: msg.mustCoord, error: true});
+				}
+				sendingBack.regions = [];
+				regionController.clearObjRegions(photo); //Очищаем привязку к регионам
+			}
+		}
+
 		if (geoToNull && photo.s === 5) {
-			//Если обнуляем координату и фото публичное, значит оно было на карте. Удаляем с карты.
+			//При обнулении координаты
+			//Если фото публичное, значит оно было на карте. Удаляем с карты.
 			//Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
 			photoFromMap(photo, save);
 		} else if (newGeo) {
 			//Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
-			regionController.setObjRegions(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
+			regionController.setObjRegionsByGeo(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}

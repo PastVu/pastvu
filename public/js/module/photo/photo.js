@@ -825,7 +825,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (target.geo) {
 				target.geo.reverse();
 			} else if (this.p.regions().length) {
-				target.region = _.pick(_.last(ko_mapping.toJS(this.p.regions)), 'cid');
+				target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
 			}
 
 			if (this.p.desc() !== this.descEditOrigin) {
@@ -847,9 +847,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							if (Array.isArray(target.geo)) {
 								target.geo.reverse();
 							}
-							if (result.data.regions) {
-								Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
-							}
+						}
+						if (result.data.regions) {
+							Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
 						}
 						replaceDataWithHTML('desc', this);
 						replaceDataWithHTML('source', this);
