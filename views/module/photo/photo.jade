@@ -171,12 +171,12 @@
 		.fieldWrap(data-bind="css: {hasContent: p.title().length}")
 			label(for="pName") Название фотографии
 			input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-		.fieldWrap
+		.fieldWrap.regions(data-bind="css: {loading: exeregion()}")
 			span.infoName Регион:
 			//ko if: p.regions().length
-			span.regions(data-bind="foreach: p.regions")
+			span(data-bind="foreach: p.regions")
 				.region
-					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+					a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
 					//ko if: $index() < $parent.p.regions().length - 1
 					| ,&nbsp;
 					// /ko

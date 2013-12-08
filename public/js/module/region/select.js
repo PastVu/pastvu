@@ -22,7 +22,7 @@ define([
 			this.selectedInit = this.options.selectedInit;
 			this.selectedInitHash = {};
 			this.selectedInitTkns = [];
-			if (this.selectedInit.length) {
+			if (this.selectedInit && this.selectedInit.length) {
 				this.selectedInit.forEach(function (region) {
 					this.selectedInitHash[region.title_local] = region;
 					this.selectedInitTkns.push({value: region.title_local, label: region.title_local});
@@ -32,6 +32,7 @@ define([
 			this.regionsTree = ko.observableArray();
 			this.regionsFlat = [];
 			this.regionsTypehead = [];
+			this.regionsHashByCid = null;
 			this.regionsHashByTitle = {};
 
 			this.getRegions(function () {
@@ -78,6 +79,34 @@ define([
 				}
 			}, this);
 			return result;
+		},
+		getSelectedRegionsFull: function (fields) {
+			var tkn = this.$dom.find('.regionstkn'),
+				tokens = tkn.tokenfield('getTokens'),
+				results = [];
+
+			tokens.forEach(function (item) {
+				var region = this.regionsHashByTitle[item.value],
+                    result;
+
+				if (region) {
+                    result = [];
+
+                    //Если есть родительские, то вставляем и их
+                    if (region.parents && region.parents.length) {
+                        region.parents.forEach(function (cid) {
+                            var region = this.regionsHashByCid[cid];
+                            if (region) {
+                                result.push(fields ? _.pick(region, fields) : region);
+                            }
+                        }, this);
+                    }
+
+                    result.push(fields ? _.pick(region, fields) : region);
+                    results.push(result);
+				}
+			}, this);
+			return results;
 		},
 		createTokenfield: function () {
 			this.$dom.find('.regionstkn')
@@ -269,6 +298,8 @@ define([
 			selectedRegions.forEach(function (region) {
 				this.toggleBranchSelectable(region, false);
 			}, this);
+
+            this.regionsHashByCid = hash;
 
 			return result;
 		},
