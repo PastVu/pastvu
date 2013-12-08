@@ -36,7 +36,7 @@ var auth = require('./auth.js'),
 		notExists: 'Requested photo does not exist',
 		notExistsRegion: 'Such region does not exist',
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
-		mustCoord: 'Фотография должна иметь координату или быть привязанной к региону вручную'
+		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
 	},
 
 	shift10y = ms('10y'),
@@ -407,6 +407,9 @@ function approvePhoto(iAm, cid, cb) {
 		}
 		if (photo.s !== 0 && photo.s !== 1) {
 			return cb({message: msg.anotherStatus, error: true});
+		}
+		if (!photo.r0) {
+			return cb({message: msg.mustCoord, error: true});
 		}
 
 		photo.s = 5;
@@ -1091,7 +1094,7 @@ function savePhoto(socket, data, cb) {
 	});
 }
 
-//Говорим, что фото готово к подтверждению
+//Говорим, что фото готово к премодерации и публикации
 function readyPhoto(socket, data, cb) {
 	var user = socket.handshake.session.user,
 		cid = Number(data);
@@ -1102,52 +1105,50 @@ function readyPhoto(socket, data, cb) {
 	if (!cid) {
 		return cb({message: msg.notExists, error: true});
 	}
-	step(
-		function () {
-			Photo.findOne({cid: cid}, this);
-		},
-		function (err, photo) {
-			if (err || !photo) {
-				return cb({message: err && err.message || msg.notExists, error: true});
-			}
-			if (photo.s !== 0) {
-				return cb({message: msg.anotherStatus, error: true});
-			}
-			if (!photoPermissions.getCan(photo, user).edit) {
-				return cb({message: msg.deny, error: true});
-			}
-
-			if (user.ranks && user.ranks.indexOf('mec_gold') > -1) {
-				//Если пользователь - золотой меценат, значит он сразу публикует фото, если таких действий еще менее 100
-				UserSelfPublishedPhotos.find({user: user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
-					if (obj && obj.photos && obj.photos.length >= 100) {
-						justSetReady();
-					} else {
-						approvePhoto(user, cid, function (result) {
-							if (result.error) {
-								return cb(result);
-							}
-							cb({message: 'Ok', published: true});
-							UserSelfPublishedPhotos.update({user: user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
-						});
-					}
-				});
-			} else {
-				//Если пользователь обычный, то просто ставим флаг готовности
-				justSetReady();
-			}
-
-			function justSetReady() {
-				photo.s = 1;
-				photo.save(function finish(err) {
-					if (err) {
-						return cb({message: err && err.message, error: true});
-					}
-					cb({message: 'Ok'});
-				});
-			}
+	Photo.findOne({cid: cid}, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || msg.notExists, error: true});
 		}
-	);
+		if (photo.s !== 0) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
+		if (!photoPermissions.getCan(photo, user).edit) {
+			return cb({message: msg.deny, error: true});
+		}
+		if (!photo.r0) {
+			return cb({message: msg.mustCoord, error: true});
+		}
+
+		if (user.ranks && user.ranks.indexOf('mec_gold') > -1) {
+			//Если пользователь - золотой меценат, значит он сразу публикует фото, если таких действий еще менее 100
+			UserSelfPublishedPhotos.find({user: user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
+				if (obj && obj.photos && obj.photos.length >= 100) {
+					justSetReady();
+				} else {
+					approvePhoto(user, cid, function (result) {
+						if (result.error) {
+							return cb(result);
+						}
+						cb({message: 'Ok', published: true});
+						UserSelfPublishedPhotos.update({user: user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
+					});
+				}
+			});
+		} else {
+			//Если пользователь обычный, то просто ставим флаг готовности
+			justSetReady();
+		}
+
+		function justSetReady() {
+			photo.s = 1;
+			photo.save(function finish(err) {
+				if (err) {
+					return cb({message: err && err.message, error: true});
+				}
+				cb({message: 'Ok'});
+			});
+		}
+	});
 }
 
 //Фотографии и кластеры по границам

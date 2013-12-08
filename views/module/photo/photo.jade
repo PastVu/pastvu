@@ -89,14 +89,14 @@
 			span.glyphicon.glyphicon-pencil
 			|  Редактировать
 		//ko if: IOwner() && p.s()===0
-		button.btn.btn-success(type="button", title="Отправить на подтверждение модератору", data-bind="click: setReady, attr: {disabled: exe()}")
+		button.btn.btn-success(type="button", title="Отправить премодерацию и дальнейшую публикацию", data-bind="click: setReady, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-check
-			|  Готово
+			|  На публикацию
 		// /ko
 		//ko if: canBeApprove()
 		button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
 			span.glyphicon.glyphicon-ok
-			|  Подтвердить
+			|  Опубликовать
 		// /ko
 		//ko if: canBeDisable()
 		button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")

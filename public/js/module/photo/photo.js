@@ -633,7 +633,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							}
 							ga('send', 'event', 'photo', 'edit', 'photo edit success');
 						} else {
-							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 							ga('send', 'event', 'photo', 'edit', 'photo edit error');
 						}
 						this.exe(false);
@@ -690,7 +690,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		notifyReady: function () {
 			window.noty(
 				{
-					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «Готово»',
+					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
 					type: 'information',
 					layout: 'topRight',
 					force: true,
@@ -708,7 +708,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		askForGeo: function (cb, ctx) {
 			window.noty(
 				{
-					text: 'Вы не указали координаты снимка<br><br>Сделать это можно, кликнув в режиме редактирования по карте справа и перемещая появившийся маркер<br><br>Без координаты фотография попадет в раздел «Где это?»',
+					text: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>Без точки на карте фотография попадет в раздел «Где это?». В этом случае, чтобы сообщество в дальнейшем помогло определить координату, необходимо указать регион, в котором предположительно сделана данная фотография<br><br>',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -720,14 +720,21 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn btn-primary', text: 'Продолжить', onClick: function ($noty) {
-							cb.call(this);
-							$noty.close();
-						}.bind(this)},
-						{addClass: 'btn btn-success', text: 'Указать координату', onClick: function ($noty) {
+						{addClass: 'btn btn-success margBott', text: 'Указать координату', onClick: function ($noty) {
 							this.edit(true);
 							$noty.close();
-						}.bind(this)}
+						}.bind(this)},
+						{addClass: 'btn btn-warning margBott', text: 'Выбрать регион вручную', onClick: function ($noty) {
+							this.edit(true);
+							$noty.close();
+							this.regionSelect();
+						}.bind(this)},
+						{addClass: 'btn btn-danger margBott', text: 'Отмена', onClick: function ($noty) {
+							if (cb) {
+								cb.call(ctx);
+							}
+							$noty.close();
+						}}
 					]
 				}
 			);
@@ -893,8 +900,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		setReady: function (data, event) {
 			if (this.p.s() === 0) {
-				if (_.isEmpty(this.p.geo())) {
-					this.askForGeo(this.sendReady, this);
+				if (_.isEmpty(this.p.geo()) && _.isEmpty(this.p.regions())) {
+					this.askForGeo();
 				} else {
 					this.sendReady();
 				}
