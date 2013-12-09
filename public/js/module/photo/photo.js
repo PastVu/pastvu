@@ -161,39 +161,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.hscaleTumbler = this.hscaleTumbler.subscribe(this.sizesCalcPhoto, this);
-			this.subscriptions.year = this.p.year.subscribe(function (val) {
-				var v = Number(val);
-
-				if (!v || isNaN(v)) {
-					//Если значение не парсится, ставим дефолтное
-					v = Photo.def.full.year;
-				} else {
-					//Убеждаемся, что оно в допустимом интервале
-					v = Math.min(Math.max(v, 1826), 2000);
-				}
-
-				if (String(val) !== String(v)) {
-					//Если мы поправили значение, то перезаписываем его
-					this.p.year(v);
-				} else if (v > parseInt(this.p.year2(), 10)) {
-					this.p.year2(v);
-				}
-			}, this);
-			this.subscriptions.year2 = this.p.year2.subscribe(_.debounce(function (val) {
-				var v = Number(val);
-
-				if (!v || isNaN(v)) {
-					//Если значение не парсится, ставим дефолтное
-					v = Photo.def.full.year;
-				} else {
-					//Убеждаемся, что оно в допустимом интервале и не мене year
-					v = Math.min(Math.max(v, this.p.year()), 2000);
-				}
-
-				if (String(val) !== String(v)) {
-					this.p.year2(v);
-				}
-			}, 400), this);
 		},
 		show: function () {
 			if (this.showing) {
@@ -361,85 +328,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		editGeoChange: function (geo) {
 			if (geo) {
 				this.getRegionsByGeo(geo);
-			}
-		},
-		getRegionsByGeo: function (geo, cb, ctx) {
-			this.exeregion(true);
-			socket.removeAllListeners('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
-			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
-			socket.on('takeRegionsByGeo', function (data) {
-				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
-				if (this.edit() && data && (!Array.isArray(data.geo) || data.geo[0] !== this.p.geo()[0] || data.geo[1] !== this.p.geo()[1])) {
-					return;
-				}
-
-				var error = !data || !!data.error || !data.regions;
-				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
-				} else {
-					Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
-				}
-
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, error, data);
-				}
-				this.exeregion(false);
-			}.bind(this));
-			socket.emit('giveRegionsByGeo', {geo: geo});
-		},
-		regionSelect: function () {
-			if (!this.regselectVM) {
-				var selected = _.last(ko_mapping.toJS(this.p.regions()));
-				if (selected) {
-					selected = [selected];
-				} else {
-					selected = undefined;
-				}
-
-				renderer(
-					[
-						{
-							module: 'm/region/select',
-							options: {
-								min: 0,
-								max: 1,
-								selectedInit: selected
-							},
-							modal: {
-								initWidth: '900px',
-								maxWidthRatio: 0.95,
-								fullHeight: true,
-								withScroll: true,
-								topic: 'Выбор региона принадлежности для фотографии',
-								closeTxt: 'Сохранить',
-								closeFunc: function (evt) {
-									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
-
-									if (regions.length > 1) {
-										window.noty({text: 'Допускается выбирать один регион', type: 'error', layout: 'center', timeout: 3000, force: true});
-										return;
-									}
-									Photo.vm({regions: regions[0] || []}, this.p, true); //Обновляем регионы
-									this.closeRegionSelect();
-								}.bind(this)},
-							callback: function (vm) {
-								this.regselectVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 1
-					}
-				);
-			}
-		},
-		closeRegionSelect: function () {
-			if (this.regselectVM) {
-				this.regselectVM.destroy();
-				delete this.regselectVM;
 			}
 		},
 
@@ -615,6 +503,122 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			if (wFold < cBottom) {
 				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: 200});
+			}
+		},
+		yearCheck: function () {
+			var val = this.p.year(),
+				v = Number(val);
+
+			if (!v || isNaN(v)) {
+				//Если значение не парсится, ставим дефолтное
+				v = Photo.def.full.year;
+			} else {
+				//Убеждаемся, что оно в допустимом интервале
+				v = Math.min(Math.max(v, 1826), 2000);
+			}
+
+			if (String(val) !== String(v)) {
+				//Если мы поправили значение, то перезаписываем его
+				this.p.year(v);
+			}
+			if (this.p.year() > parseInt(this.p.year2(), 10)) {
+				this.p.year2(v);
+			}
+		},
+		year2Check: function () {
+			var val = this.p.year2(),
+				v = Number(val);
+
+			if (!v || isNaN(v)) {
+				//Если значение не парсится, ставим дефолтное
+				v = Photo.def.full.year;
+			} else {
+				//Убеждаемся, что оно в допустимом интервале и не мене year
+				v = Math.min(Math.max(v, this.p.year()), 2000);
+			}
+
+			if (String(val) !== String(v)) {
+				this.p.year2(v);
+			}
+		},
+
+		getRegionsByGeo: function (geo, cb, ctx) {
+			this.exeregion(true);
+			socket.removeAllListeners('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
+			socket.on('takeRegionsByGeo', function (data) {
+				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
+				if (this.edit() && data && (!Array.isArray(data.geo) || data.geo[0] !== this.p.geo()[0] || data.geo[1] !== this.p.geo()[1])) {
+					return;
+				}
+
+				var error = !data || !!data.error || !data.regions;
+				if (error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, error, data);
+				}
+				this.exeregion(false);
+			}.bind(this));
+			socket.emit('giveRegionsByGeo', {geo: geo});
+		},
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				var selected = _.last(ko_mapping.toJS(this.p.regions()));
+				if (selected) {
+					selected = [selected];
+				} else {
+					selected = undefined;
+				}
+
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								min: 0,
+								max: 1,
+								selectedInit: selected
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Выбор региона принадлежности для фотографии',
+								closeTxt: 'Сохранить',
+								closeFunc: function (evt) {
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+
+									if (regions.length > 1) {
+										window.noty({text: 'Допускается выбирать один регион', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
+									}
+									Photo.vm({regions: regions[0] || []}, this.p, true); //Обновляем регионы
+									this.closeRegionSelect();
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 2 //Чтобы не удалился модуль комментариев
+					}
+				);
+			}
+		},
+		closeRegionSelect: function () {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+				delete this.regselectVM;
 			}
 		},
 

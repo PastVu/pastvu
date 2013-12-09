@@ -203,8 +203,8 @@
 			input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
 		.fieldWrap
 			| Я считаю, что снимок сделан между&nbsp;
-			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown'")
+			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
 			| &nbsp;и&nbsp;
-			input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown'")
+			input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
 			| &nbsp;&nbsp;Направление съемки&nbsp;
 			select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
