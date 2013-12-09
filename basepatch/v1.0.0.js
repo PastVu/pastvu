@@ -60,6 +60,12 @@ module.exports.loadController = function (app, db) {
 		//Добавляем настройку "Фильтровать галерею пользователя"
 		db.user_settings.save({key: 'r_f_user_gal', val: true, vars: [true, false], desc: 'Фильтровать галерею пользователя в его профиле'});
 
+		//Присваиваем фотографиям без точки "Где это?" регион
+		//До 112495 - Москва, с 112495 по 140783 - Спб, остальные (на pastvu, не новые) - Россия
+		db.photos.update({r0: null, cid: {$lt: 112495}}, {$set: {r0: 1, r1: 3}}, {multi: true});
+		db.photos.update({r0: null, cid: {$gte: 112495, $lte: 140783}}, {$set: {r0: 1, r1: 5}}, {multi: true});
+		db.photos.update({r0: null, s: {$gt: 0}, cid: {$gt: 140783}}, {$set: {r0: 1}}, {multi: true});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
