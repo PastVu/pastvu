@@ -610,7 +610,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					],
 					{
 						parent: this,
-						level: this.level + 2 //Чтобы не удалился модуль комментариев
+						level: this.level + 3 //Чтобы не удалился модуль комментариев
 					}
 				);
 			}

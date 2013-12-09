@@ -214,7 +214,7 @@ function saveRegion(socket, data, cb) {
 			} catch (err) {
 				return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
 			}
-			if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
+			if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Point' && data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
 				return cb({message: 'It\'s not GeoJSON geometry!'});
 			}
 		} else if (data.geo) {
@@ -544,12 +544,19 @@ function clearObjRegions(obj) {
 
 //Возвращает список регионов, в которые попадает заданая точка
 var getRegionsByGeoPoint = function () {
-	var defFields = {_id: 0, geo: 0, __v: 0};
+	var defRegion = 1000000,//Если регион не найден, возвращаем Открытое море
+		defFields = {_id: 0, geo: 0, __v: 0};
 
 	return function (geo, fields, cb) {
 		Region.find({geo: {$nearSphere: {$geometry: {type: 'Point', coordinates: geo}, $maxDistance: 1}} }, fields || defFields, {lean: true, sort: {parents: -1}}, function (err, regions) {
 			if (err) {
 				return cb(err);
+			}
+			if (!regions) {
+				regions = [];
+			}
+			if (!regions.length && regionCacheHash[defRegion]) {
+				regions.push(regionCacheHash[defRegion]);
 			}
 			cb(null, regions);
 		});
