@@ -45,7 +45,7 @@ var FragmentSchema = new Schema({
 		dir: {type: String, 'default': ''},
 		title: {type: String, 'default': ''},
 		year: {type: Number, 'default': 2000},
-		year2: {type: Number},
+		year2: {type: Number, 'default': 2000},
 		address: {type: String},
 		desc: {type: String},
 		source: {type: String},
@@ -70,7 +70,7 @@ var FragmentSchema = new Schema({
 			dir: {type: String, 'default': ''},
 			title: {type: String, 'default': ''},
 			year: {type: Number, 'default': 2000},
-			year2: {type: Number}
+			year2: {type: Number, 'default': 2000}
 		},
 		{collection: 'photos_map', strict: true}
 	),

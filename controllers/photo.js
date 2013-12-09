@@ -268,7 +268,7 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
 						dir: photo.dir,
 						title: photo.title,
 						year: photo.year,
-						year2: photo.year2
+						year2: photo.year2 || photo.year
 					}
 				},
 				{upsert: true},
