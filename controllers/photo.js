@@ -960,7 +960,7 @@ function savePhoto(socket, data, cb) {
 		oldGeo,
 		newGeo,
 		geoToNull,
-		sendingBack = {regions: []};
+		sendingBack = {};
 
 	if (!user) {
 		return cb({message: msg.deny, error: true});
@@ -1036,8 +1036,8 @@ function savePhoto(socket, data, cb) {
 				if (photo.s !== 0) {
 					return cb({message: msg.mustCoord, error: true});
 				}
-				sendingBack.regions = [];
 				regionController.clearObjRegions(photo); //Очищаем привязку к регионам
+				sendingBack.regions = [];
 			}
 		}
 
