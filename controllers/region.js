@@ -241,6 +241,13 @@ function saveRegion(socket, data, cb) {
 		function fill(region) {
 			//Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
 			if (data.geo) {
+
+				//Если мультиполигон состоит из одного полигона, берем только его и делаем тип Polygon
+				if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
+					data.geo.coordinates = data.geo.coordinates[0];
+					data.geo.type = 'Polygon';
+				}
+
 				region.geo = data.geo;
 				region.markModified('geo');
 			}

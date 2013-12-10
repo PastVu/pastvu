@@ -1,10 +1,16 @@
 .user_photoUpload(data-bind="with: repository[M!M]")
-	.text-danger(style="margin-bottom: 5px;")
+	//-.text-danger(style="margin-bottom: 5px;")
 		| Внимание! Временно принимаются только фотографии в пределах России, Белоруссии и УкраиныСНГ, остальные будут отклонены. Подробности&nbsp;
 		a(target="_blank", href="/news/97") здесь
 	.toptext(data-bind="html: toptext()")
 
 	//ko if: canLoad()
+	.warn(style="font-size: 12px; color: #A57A30;")
+		| Согласно&nbsp;
+		a(href="/news/95", target="_blank") Правилам
+		| , к публикации будут допущены фотографии:
+		br
+		| Снятые до 2000 года включительно, имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени
 	form.uploadForm(method="POST", enctype="multipart/form-data")
 		#addFiles
 			input.fileInput(type="file", name="files[]", multiple)

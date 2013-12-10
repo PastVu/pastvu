@@ -724,7 +724,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn btn-success margBott', text: 'Указать координату', onClick: function ($noty) {
+						{addClass: 'btn btn-success margBott', text: 'Указать координаты', onClick: function ($noty) {
 							this.edit(true);
 							$noty.close();
 						}.bind(this)},
