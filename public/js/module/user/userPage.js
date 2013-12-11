@@ -169,6 +169,11 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 						level: this.level + 1
 					}
 				);
+			} else {
+				this.briefVM.updateUserDepends();
+			}
+			if (this.contentVM && this.contentVM.updateUserDepends) {
+				this.contentVM.updateUserDepends();
 			}
 		},
 		updateSectionDepends: function (section, upload) {
