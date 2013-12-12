@@ -137,15 +137,16 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
+	//Для фотографий с координатой заново расчитываем регионы
 	saveSystemJSFunc(function assignToRegions() {
 		var startTime = Date.now();
 
 		//Очищаем принадлежность к регионам у всех фотографий
 		print('Clearing current regions assignment\n');
-		db.photos.update({}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}}, {multi: true});
+		db.photos.update({geo: null}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}}, {multi: true});
 		//Для каждого региона находим фотографии
 		print('Start to assign for ' + db.regions.count() + ' regions..\n');
-		db.regions.find({}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {
+		db.regions.find({cid: {$ne: 1000000}}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {
 			var startTime = Date.now(),
 				count,
 				queryObject = {},
