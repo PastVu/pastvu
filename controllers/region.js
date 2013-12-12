@@ -17,6 +17,8 @@ var auth = require('./auth.js'),
 	logger = require('log4js').getLogger("region.js"),
 	loggerApp = require('log4js').getLogger("app.js"),
 
+	maxRegionLevel = global.appVar.maxRegionLevel,
+
 	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
 	regionCacheArr = []; //Массив-кэш регионов из базы [{_id, cid, parents}]
 
@@ -344,17 +346,21 @@ function getParentsAndChilds(region, cb) {
 			var childrenLevel = level,
 				childrenQuery = {};
 
-			//Ищем кол-во потомков по уровням
-			//У таких регионов на позиции текущего уровня будет стоять этот регион
-			//и на кажой итераци кол-во уровней будет на один больше текущего
-			//Например, потомки региона 77, имеющего одного родителя, будут найдены так:
-			// {'parents.1': 77, parents: {$size: 2}}
-			// {'parents.1': 77, parents: {$size: 3}}
-			// {'parents.1': 77, parents: {$size: 4}}
-			childrenQuery['parents.' + level] = region.cid;
-			while (childrenLevel++ < 4) {
-				childrenQuery.parents = {$size: childrenLevel};
-				Region.count(childrenQuery, this.parallel());
+			if (level < maxRegionLevel) {
+				//Ищем кол-во потомков по уровням
+				//У таких регионов на позиции текущего уровня будет стоять этот регион
+				//и на кажой итераци кол-во уровней будет на один больше текущего
+				//Например, потомки региона 77, имеющего одного родителя, будут найдены так:
+				// {'parents.1': 77, parents: {$size: 2}}
+				// {'parents.1': 77, parents: {$size: 3}}
+				// {'parents.1': 77, parents: {$size: 4}}
+				childrenQuery['parents.' + level] = region.cid;
+				while (childrenLevel++ < maxRegionLevel) {
+					childrenQuery.parents = {$size: childrenLevel};
+					Region.count(childrenQuery, this.parallel());
+				}
+			} else {
+				this(); //Если уровень максимальный - просто переходим на следующий шаг
 			}
 		},
 		function (err/*, childCounts*/) {
@@ -459,7 +465,7 @@ function getObjRegionList(obj, fields, cb) {
 		rcid,
 		i;
 
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i <= maxRegionLevel; i++) {
 		rcid = obj['r' + i];
 		if (rcid) {
 			cidArr.push(rcid);
@@ -473,7 +479,7 @@ function getObjRegionList(obj, fields, cb) {
 }
 
 /**
- * Устанавливает объекту свойства регионов r0-r4 на основе переданной координаты
+ * Устанавливает объекту свойства регионов r0-rmaxRegionLevel на основе переданной координаты
  * @param obj Объект (фото, комментарий и т.д.)
  * @param geo Координата
  * @param returnArrFields В коллбек вернётся массив регионов с выбранными полями
@@ -493,7 +499,7 @@ function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
 		var regionsArr = [],
 			i;
 
-		for (i = 0; i < 5; i++) {
+		for (i = 0; i <= maxRegionLevel; i++) {
 			if (regions[i]) {
 				obj['r' + regions[i].parents.length] = regions[i].cid;
 				regionsArr[regions[i].parents.length] = regions[i];
@@ -506,18 +512,21 @@ function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
 	});
 }
 /**
- * Устанавливает объекту свойства регионов r0-r4 на основе cid региона
+ * Устанавливает объекту свойства регионов r0-rmaxRegionLevel на основе cid региона
  * @param obj Объект (фото, комментарий и т.д.)
  * @param cid Координата
  * @param returnArrFields Массив выбираемых полей. В коллбек вернётся массив регионов с выбранными полями
  */
 function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
 	var region = regionCacheHash[cid],
-		regionsArr = [];
+		regionsArr = [],
+		i;
 
 	if (region) {
 		//Сначала обнуляем все
-		obj.r0 = obj.r1 = obj.r2 = obj.r3 = obj.r4 = undefined;
+		for (i = 0; i <= maxRegionLevel; i++) {
+			obj['r' + i] = undefined;
+		}
 
 		//Если есть родители, присваиваем их
 		if (region.parents.length) {
@@ -544,7 +553,7 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
  * @param obj Объект (фото, комментарий и т.д.)
  */
 function clearObjRegions(obj) {
-	for (var i = 0; i < 5; i++) {
+	for (var i = 0; i <= maxRegionLevel; i++) {
 		obj['r' + i] = undefined;
 	}
 }
@@ -587,8 +596,8 @@ function saveUserRegions(socket, data, cb) {
 	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
 		return cb({message: msg.badParams, error: true});
 	}
-	if (data.regions.length > 5) {
-		return cb({message: 'Вы можете выбрать до 5 регионов', error: true});
+	if (data.regions.length > maxRegionLevel + 1) {
+		return cb({message: 'Вы можете выбрать до ' + (maxRegionLevel + 1) + ' регионов', error: true});
 	}
 	//Проверяем, что переданы номера регионов
 	for (i = data.regions.length; i--;) {
@@ -797,7 +806,7 @@ module.exports.loadController = function (app, db, io) {
 				var regionsArr = [],
 					i;
 
-				for (i = 0; i < 5; i++) {
+				for (i = 0; i <= maxRegionLevel; i++) {
 					if (regions[i]) {
 						regionsArr[regions[i].parents.length] = regions[i];
 					}

@@ -31,6 +31,8 @@ var auth = require('./auth.js'),
 	publicDir = global.appVar.storePath + 'public/photos/',
 	imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
 
+	maxRegionLevel = global.appVar.maxRegionLevel,
+
 	msg = {
 		deny: 'You do not have permission for this action',
 		notExists: 'Requested photo does not exist',
@@ -56,7 +58,7 @@ var auth = require('./auth.js'),
 
 				//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
 				rhash = _session.us[user.login].mod_rhash;
-				for (i = 0; i < 5; i++) {
+				for (i = 0; i <= maxRegionLevel; i++) {
 					photoRegion = photo['r' + i];
 					if (photoRegion && rhash[photoRegion] !== undefined) {
 						return true;
@@ -541,7 +543,7 @@ function givePhoto(socket, data, cb) {
 						photo.subscr = true;
 					}
 
-					for (var i = 0; i < 5; i++) {
+					for (var i = 0; i <= maxRegionLevel; i++) {
 						delete photo['r' + i];
 					}
 					if (regions.length) {
@@ -1292,7 +1294,7 @@ function convertPhotosAll(socket, data, cb) {
 /**
  * Находим фотографию с учетом прав пользователя
  * @param query
- * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-4)
+ * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
  * @param user Пользователь сессии
  * @param cb
  */
