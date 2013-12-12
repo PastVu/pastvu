@@ -39,6 +39,7 @@ var FragmentSchema = new Schema({
 		r2: {type: Number, sparse: true},
 		r3: {type: Number, sparse: true},
 		r4: {type: Number, sparse: true},
+		r5: {type: Number, sparse: true},
 
 		s: {type: Number, index: true}, //Статус фотографии {0-новая, 1-готовая, 5-публичная, 7-деактивированная, 9-удаленная}
 
@@ -120,6 +121,7 @@ PhotoNewSchema.index({r1: 1, sdate: 1});
 PhotoNewSchema.index({r2: 1, sdate: 1});
 PhotoNewSchema.index({r3: 1, sdate: 1});
 PhotoNewSchema.index({r4: 1, sdate: 1});
+PhotoNewSchema.index({r5: 1, sdate: 1});
 
 
 PhotoNewSchema.pre('save', function (next) {

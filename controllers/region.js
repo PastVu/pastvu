@@ -812,7 +812,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 				}
 
-				response({geo: data.geo.reverse(), regions: regionsArr});
+				response({geo: data.geo.reverse(), regions: _.compact(regionsArr)}); //На случай пропущенных по иерархии регионов (такого бфть не должно) удаляем пустые значения массива
 			});
 
 			function response(resultData) {
