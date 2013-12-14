@@ -56,6 +56,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inputFocusBind = this.inputFocus.bind(this);
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
 			this.inputLabelClickBind = this.inputLabelClick.bind(this);
+			this.inViewportCheckBind = this.inViewportCheck.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragClickBind = this.fragClick.bind(this);
@@ -105,12 +106,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.loading(true);
 			this.addMeToCommentsUsers();
 
+			if (cb) {
+				this.activatorRecieveNotice = {cb: cb, ctx: ctx};
+			}
+
 			if (this.showTree() || options && options.instant) {
 				//Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
-				this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), 100);
+				this.receiveTimeout = window.setTimeout(this.receive.bind(this), 100);
 			} else {
 				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
-				this.inViewportCheckBind = _.debounce(this.inViewportCheck.bind(this, cb || null, ctx || null), 50);
 				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
 			}
 			if (!this.showing) {
@@ -134,8 +138,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		viewScrollOn: function () {
 			if (!this.viewportScrollHandling) {
+				this.inViewportCheckDebounced = _.debounce(this.inViewportCheckBind, 50);
 				this.viewportScrollHandling = function () {
-					this.inViewportCheckBind();
+					this.inViewportCheckDebounced();
 				}.bind(this);
 				$window.on('scroll', this.viewportScrollHandling);
 			}
@@ -144,10 +149,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (this.viewportScrollHandling) {
 				$window.off('scroll', this.viewportScrollHandling);
 				delete this.viewportScrollHandling;
+				delete this.inViewportCheckDebounced;
 			}
-			delete this.inViewportCheckBind;
 		},
+		//Проверяем, что $container находится в видимой области экрана
 		inViewportCheck: function (cb, ctx, force) {
+			window.clearTimeout(this.viewportCheckTimeout);
 			if (!this.inViewport) {
 				var cTop = this.$container.offset().top,
 					wFold = $window.height() + $window.scrollTop();
@@ -155,9 +162,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if (force || cTop < wFold) {
 					this.inViewport = true;
 					this.viewScrollOff();
-					if (force && force.cb) {
+					if (force) {
 						this.receive(function () {
-							force.cb();
+							if (force.cb) {
+								force.cb.call(force.ctx);
+							}
 							if (cb) {
 								cb.call(ctx);
 							}
@@ -166,7 +175,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
 					}
 				} else {
-					//Если после первая проверка отрицательна, вешаем обработчик на скролл
+					//Если после первая проверка отрицательна, вешаем следующую проверку на скроллинг
 					this.viewScrollOn();
 				}
 			}
@@ -219,6 +228,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
+				}
+				//Уведомляем активатор (родительский модуль) о получении данных
+				if (this.activatorRecieveNotice) {
+					this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
+					delete this.activatorRecieveNotice;
 				}
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
@@ -820,16 +834,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		//Сначала проверяет, не навигируется ли сейчас и есть ли дерево, если нет - запросит
 		navCheckBefore: function (dir, onlyFirst) {
-			if (!this.navigating()) {
-				if (!this.showTree()) {
-					this.navigating(true);
-					this.inViewportCheckBind({cb: function () {
-						this.navigating(false);
-						this.nav(dir, onlyFirst);
-					}.bind(this)});
-				} else {
+			if (this.navigating()) {
+				return;
+			}
+			if (this.showTree()) {
+				this.nav(dir, onlyFirst);
+			} else {
+				this.navigating(true);
+				this.inViewportCheck(function () {
+					this.navigating(false);
 					this.nav(dir, onlyFirst);
-				}
+				}, this, true);
 			}
 		},
 		nav: function (dir, onlyFirst) {
@@ -842,7 +857,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				offset,
 				i;
 
-			if (!newComments.length) {
+			if (!newComments || !newComments.length) {
 				return;
 			}
 
@@ -862,10 +877,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			if (elementsArr.length) {
+				this.navigating(true);
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				this.navigating(true);
 				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
 					this.navigating(false);
 				}.bind(this)});
