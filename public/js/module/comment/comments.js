@@ -32,7 +32,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
 			this.touch = Browser.support.touch;
 
-			this.canManage = this.co.canAction = ko.computed(function () {
+			this.canManage = this.co.canManage = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
 			}, this);
 			this.canAction = this.co.canAction = ko.computed(function () {
@@ -237,36 +237,29 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		usersRanks: function (users) {
-			var user,
-				rank,
-				i,
-				r;
-
-			for (i in users) {
-				user = users[i];
-				if (user !== undefined && user.ranks && user.ranks.length) {
-					user.rnks = '';
-					for (r = 0; r < user.ranks.length; r++) {
-						rank = globalVM.ranks[user.ranks[r]];
-						if (rank) {
-							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
-						}
-					}
-				}
-			}
-		},
-		treeBuild: function (arr) {
+		treeBuild: function (arr, lastView) {
 			var i = -1,
 				len = arr.length,
+				loggedIn = this.auth.loggedIn(),
+				myLogin,
+				checkNew,
 				hash = {},
 				comment,
 				results = [];
+
+			if (loggedIn && lastView) {
+				myLogin = this.auth.iAm.login();
+				lastView = new Date(lastView);
+				checkNew = true;
+			}
 
 			while (++i < len) {
 				comment = arr[i];
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
+				if (checkNew && comment.stamp > lastView && comment.user.login !== myLogin) {
+					comment.isnew = true;
+				}
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
@@ -325,13 +318,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			return results;
 		},
+		usersRanks: function (users) {
+			var user,
+				rank,
+				i,
+				r;
+
+			for (i in users) {
+				user = users[i];
+				if (user !== undefined && user.ranks && user.ranks.length) {
+					user.rnks = '';
+					for (r = 0; r < user.ranks.length; r++) {
+						rank = globalVM.ranks[user.ranks[r]];
+						if (rank) {
+							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
+						}
+					}
+				}
+			}
+		},
 
 		scrollTo: function (ccid) {
 			var $element,
 				highlight;
 
 			if (ccid === true) {
-				$element = this.$container;
+				if (this.count_new()) {
+					this.navCheckBefore(0, true);
+				} else {
+					$element = this.$container;
+				}
 			} else if (ccid === 'unread') {
 				if (this.count_new()) {
 					this.navCheckBefore(0, true);

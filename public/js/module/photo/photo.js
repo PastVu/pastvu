@@ -626,6 +626,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (this.can.edit()) {
 				if (!this.edit()) {
 					this.edit(true);
+					//Если включаем редактирования, обнуляем количество новых комментариев,
+					//так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
+					this.p.ccount_new(0);
+					this.originData.ccount_new = 0;
 				} else {
 					this.exe(true);
 					this.save(function (data) {
