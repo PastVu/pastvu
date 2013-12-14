@@ -141,9 +141,9 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function assignToRegions() {
 		var startTime = Date.now();
 
-		//Очищаем принадлежность к регионам у всех фотографий
+		//Очищаем принадлежность к регионам у всех фотографий с проставленной точкой
 		print('Clearing current regions assignment\n');
-		db.photos.update({geo: null}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}}, {multi: true});
+		db.photos.update({geo: {$exists: true}}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}}, {multi: true});
 		//Для каждого региона находим фотографии
 		print('Start to assign for ' + db.regions.count() + ' regions..\n');
 		db.regions.find({cid: {$ne: 1000000}}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {

@@ -18,7 +18,7 @@ var FragmentSchema = new Schema({
 
 		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
 		adate: {type: Date, sparse: true}, // Время активации
-		sdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время сортировки
+		sdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время для сортировки (например, новые должны быть всегда сверху в галерее пользователя)
 
 		type: {type: String}, // like 'image/jpeg'
 		format: {type: String}, // like 'JPEG'
