@@ -182,9 +182,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		loggedInHandler: function () {
-			// После логина добавляем себя в комментаторы
+			// После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
 			this.addMeToCommentsUsers();
-			this.receive();
+
+			if (!this.inViewport) {
+				this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
+			} else {
+				this.receive(); //Если во вьюпорте, просто заново перезапрашиаваем
+			}
+
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -221,7 +227,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					} else {
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
-						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
+
+						//Если общее кол-во изменилось пока получали, то присваиваем заново
+						if (this.count() !== data.comments.length) {
+							this.parentModule.commentCountIncrement(data.comments.length - this.count());
+							this.count(data.comments.length);
+						}
+						this.count_new(data.newCount);
+						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
 						this.showTree(true);
 					}
 				}
@@ -237,29 +250,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		treeBuild: function (arr, lastView) {
+		treeBuild: function (arr) {
 			var i = -1,
 				len = arr.length,
-				loggedIn = this.auth.loggedIn(),
-				myLogin,
-				checkNew,
 				hash = {},
 				comment,
 				results = [];
-
-			if (loggedIn && lastView) {
-				myLogin = this.auth.iAm.login();
-				lastView = new Date(lastView);
-				checkNew = true;
-			}
 
 			while (++i < len) {
 				comment = arr[i];
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
-				if (checkNew && comment.stamp > lastView && comment.user.login !== myLogin) {
-					comment.isnew = true;
-				}
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
@@ -273,7 +274,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			return results;
 		},
-		treeBuildCanCheck: function (arr, lastView) {
+		treeBuildCanCheck: function (arr) {
 			var i,
 				len = arr.length,
 				myLogin = this.auth.iAm.login(),
@@ -283,18 +284,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				comment,
 				results = [];
 
-			if (lastView) {
-				lastView = new Date(lastView);
-			}
-
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				comment.final = true;
-				if (lastView && comment.stamp > lastView && comment.user.login !== myLogin) {
-					comment.isnew = true;
-				}
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
@@ -908,6 +902,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		navCounterHandler: function () {
 			if (this.count_new()) {
 				if (this.showTree()) {
+					this.navTxtRecalc();
 					this.navScrollCounterOn();
 				} else {
 					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже

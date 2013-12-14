@@ -108,6 +108,7 @@ function getCommentsObj(iAm, data, cb) {
 			}
 			var i,
 				comment,
+				newCount = 0,
 				user,
 				userFormatted,
 				userFormattedHash = {},
@@ -143,10 +144,14 @@ function getCommentsObj(iAm, data, cb) {
 				if (comment.level === undefined) {
 					comment.level = 0;
 				}
+				if (lastView && comment.stamp > lastView && comment.user !== iAm.login) {
+					comment.isnew = true;
+					newCount++;
+				}
 			}
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash, lastView: lastView});
+			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash, newCount: newCount, lastView: lastView});
 		}
 	);
 }
