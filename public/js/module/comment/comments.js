@@ -233,9 +233,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.commentCountIncrement(data.comments.length - this.count());
 							this.count(data.comments.length);
 						}
-						this.count_new(data.newCount);
 						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
 						this.showTree(true);
+						this.count_new(data.newCount);
 					}
 				}
 				this.loading(false);

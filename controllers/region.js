@@ -32,9 +32,13 @@ function fillCache(cb) {
 			}
 			return;
 		}
-		for (var i = regions.length; i--;) {
-			regionCacheHash[regions[i].cid] = regions[i];
+		var hash = {},
+			i = regions.length;
+
+		while (i--) {
+			hash[regions[i].cid] = regions[i];
 		}
+		regionCacheHash = hash;
 		regionCacheArr = regions;
 
 		logger.info('Region cache filled with ' + regions.length);
@@ -110,8 +114,9 @@ function calcRegionIncludes(cid, cb) {
 
 		step(
 			function () {
-				//Сначала очищаем присвоение текущего региона, чтобы убрать те объекты, которые больше не будут в него входить
-				var queryObject = {},
+				//Сначала очищаем присвоение текущего региона объектам с координатой,
+				//чтобы убрать те объекты, которые больше не будут в него попадать
+				var queryObject = {geo: {$exists: true}},
 					setObject = {$unset: {}};
 
 				queryObject[level] = cid;
@@ -216,7 +221,7 @@ function saveRegion(socket, data, cb) {
 			} catch (err) {
 				return cb({message: err && err.message || 'GeoJSON parse error!', error: true});
 			}
-			if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Point' && data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
+			if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
 				return cb({message: 'It\'s not GeoJSON geometry!'});
 			}
 		} else if (data.geo) {
@@ -299,6 +304,79 @@ function saveRegion(socket, data, cb) {
 			});
 		}
 	}
+}
+
+/**
+ * Удаление региона администратором
+ * Паравемтр reassignChilds зарезервирован - перемещение дочерних регионов в другой при удалении
+ * @param socket
+ * @param data
+ * @param cb
+ * @returns {*}
+ */
+function removeRegion(socket, data, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data) || !data.cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	step (
+		function () {
+			Region.findOne({cid: data.cid}, this);
+			if (data.reassignChilds) {
+				Region.findOne({cid: data.cid}, {_id: 0, __v: 0}, {lean: true}, this);
+			}
+		},
+		function (err, regionToRemove, regionToReassignChilds) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			if (!regionToRemove) {
+				return cb({message: 'Deleting region does not exists', error: true});
+			}
+			if (data.reassignChilds && !regionToReassignChilds) {
+				return cb({message: 'Region for reassign descendants does not exists', error: true});
+			}
+			var removingLevel = regionToRemove.parents.length,
+				objectsMatchQuery = {},
+				objectsUpdateQuery = {$unset: {}},
+				i;
+
+			objectsMatchQuery['r' + removingLevel] = regionToRemove.cid;
+			if (removingLevel === 0) {
+				//Если удаляем страну, то присваивам все её объекты Открытому морю
+				objectsUpdateQuery.$set = {r0: 1000000};
+				for (i = 1; i <= maxRegionLevel; i++) {
+					objectsUpdateQuery.$unset['r' + i] = 1;
+				}
+			} else {
+				for (i = removingLevel; i <= maxRegionLevel; i++) {
+					objectsUpdateQuery.$unset['r' + i] = 1;
+				}
+			}
+
+			Photo.update(objectsMatchQuery, objectsUpdateQuery, {multi: true}, this.parallel()); //Обновляем входящие фотографии
+			Region.remove({parents: regionToRemove.cid}, this.parallel()); //Удаляем дочерние регионы
+			regionToRemove.remove(this.parallel()); //Удаляем сам регион
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			fillCache(this); //Обновляем кэш регионов
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb({removed: true});
+		}
+	);
 }
 
 function getRegion(socket, data, cb) {
@@ -771,6 +849,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('saveRegion', function (data) {
 			saveRegion(socket, data, function (resultData) {
 				socket.emit('saveRegionResult', resultData);
+			});
+		});
+		socket.on('removeRegion', function (data) {
+			removeRegion(socket, data, function (resultData) {
+				socket.emit('removeRegionResult', resultData);
 			});
 		});
 		socket.on('giveRegion', function (data) {

@@ -67,6 +67,9 @@
 			button.btn.btn-success(type="submit", data-bind="attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-ok
 				|  Сохранить
+			button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-remove
+				|  Удалить
 			//ko if: !createMode()
 			button.btn.btn-primary(type="button", data-bind="click: function () {showGeo(!showGeo())}, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-th-list

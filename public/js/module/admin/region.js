@@ -239,6 +239,100 @@ define([
 			}.bind(this));
 			socket.emit('saveRegion', saveData);
 			return false;
+		},
+		remove: function () {
+			if (this.exe()) {
+				return false;
+			}
+			this.exe(true);
+
+			var cid = this.region.cid(),
+				regionParent,
+				cidParent,
+				that = this,
+				childLenArr = this.childLenArr(),
+				msg = 'Регион <b>' + this.region.title_local() + '</b> будет удален<br>';
+
+			if (childLenArr.length) {
+				msg += '<br>Также будут удалено <b>' + childLenArr.reduce(function (previousValue, currentValue) {
+					return previousValue + currentValue;
+				}) + '</b> дочерних регионов<br>';
+			}
+			msg += 'Все объекты, входящие в этот регион и в дочерние, ';
+			if (!this.region.parents().length) {
+				msg += 'будут присвоены <b>Открытому морю</b><br>';
+			} else {
+				regionParent = _.last(this.region.parents());
+				msg += 'остануться в вышестоящем регионе <b>' + regionParent.title_local() + '</b><br>';
+			}
+			msg += '<br>Подтверждаете?';
+
+			window.noty(
+				{
+					text: msg,
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					animation: {
+						open: {height: 'toggle'},
+						close: {},
+						easing: 'swing',
+						speed: 500
+					},
+					buttons: [
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
+							// this = button element
+							// $noty = $noty element
+							if ($noty.$buttons && $noty.$buttons.find) {
+								$noty.$buttons.find('button').attr('disabled', true);
+							}
+
+							socket.once('removeRegionResult', function (data) {
+								$noty.$buttons.find('.btn-danger').remove();
+								var okButton = $noty.$buttons.find('button')
+									.attr('disabled', false)
+									.off('click');
+
+								if (data && !data.error) {
+									$noty.$message.children().html('Регион успешно удалён');
+
+									okButton.text('Ok (4)').on('click', function () {
+										var href = '/admin/region';
+										if (regionParent) {
+											href += '?hl=' + regionParent.cid();
+										}
+										document.location.href = href;
+									});
+
+									Utils.timer(
+										5000,
+										function (timeleft) {
+											okButton.text('Ok (' + timeleft + ')');
+										},
+										function () {
+											okButton.trigger('click');
+										}
+									);
+								} else {
+									$noty.$message.children().html(data.message || 'Error occurred');
+									okButton.text('Close').on('click', function () {
+										$noty.close();
+										this.exe(false);
+									}.bind(this));
+								}
+							}.bind(that));
+							socket.emit('removeRegion', {cid: cid});
+
+						}},
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
+							$noty.close();
+							that.exe(false);
+						}}
+					]
+				}
+			);
+			return false;
 		}
 	});
 });
