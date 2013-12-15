@@ -308,7 +308,7 @@ function saveRegion(socket, data, cb) {
 
 /**
  * Удаление региона администратором
- * Паравемтр reassignChilds зарезервирован - перемещение дочерних регионов в другой при удалении
+ * Параметр reassignChilds зарезервирован - перемещение дочерних регионов в другой при удалении
  * @param socket
  * @param data
  * @param cb
@@ -325,58 +325,108 @@ function removeRegion(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	step (
-		function () {
-			Region.findOne({cid: data.cid}, this);
-			if (data.reassignChilds) {
-				Region.findOne({cid: data.cid}, {_id: 0, __v: 0}, {lean: true}, this);
-			}
-		},
-		function (err, regionToRemove, regionToReassignChilds) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			if (!regionToRemove) {
-				return cb({message: 'Deleting region does not exists', error: true});
-			}
-			if (data.reassignChilds && !regionToReassignChilds) {
-				return cb({message: 'Region for reassign descendants does not exists', error: true});
-			}
-			var removingLevel = regionToRemove.parents.length,
-				objectsMatchQuery = {},
-				objectsUpdateQuery = {$unset: {}},
-				i;
-
-			objectsMatchQuery['r' + removingLevel] = regionToRemove.cid;
-			if (removingLevel === 0) {
-				//Если удаляем страну, то присваивам все её объекты Открытому морю
-				objectsUpdateQuery.$set = {r0: 1000000};
-				for (i = 1; i <= maxRegionLevel; i++) {
-					objectsUpdateQuery.$unset['r' + i] = 1;
-				}
-			} else {
-				for (i = removingLevel; i <= maxRegionLevel; i++) {
-					objectsUpdateQuery.$unset['r' + i] = 1;
-				}
-			}
-
-			Photo.update(objectsMatchQuery, objectsUpdateQuery, {multi: true}, this.parallel()); //Обновляем входящие фотографии
-			Region.remove({parents: regionToRemove.cid}, this.parallel()); //Удаляем дочерние регионы
-			regionToRemove.remove(this.parallel()); //Удаляем сам регион
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			fillCache(this); //Обновляем кэш регионов
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			cb({removed: true});
+	Region.findOne({cid: data.cid}, function (err, regionToRemove) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
-	);
+		if (!regionToRemove) {
+			return cb({message: 'Deleting region does not exists', error: true});
+		}
+//		if (data.reassignChilds && !regionToReassignChilds) {
+//			return cb({message: 'Region for reassign descendants does not exists', error: true});
+//		}
+
+		var removingLevel = regionToRemove.parents.length,
+			removingRegionsIds, //Номера всех удаляемых регионов
+			modUsersCids, //Номера модераторов, у которых удалятся модерируемые регионы
+			resultData = {};
+
+		step(
+			function () {
+				//Находим все дочерние регионы
+				Region.find({parents: regionToRemove.cid}, {_id: 1}, {lean: true}, this);
+			},
+			function (err, childRegions) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				removingRegionsIds= childRegions ? _.pluck(childRegions, '_id') : [];
+				removingRegionsIds.push(regionToRemove._id);
+
+				//Находим всех модераторов удаляемых регионов
+				User.find({mod_regions: {$in: removingRegionsIds}}, {cid: 1}, {lean: true}, this);
+			},
+			function (err, modUsers) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [];
+
+				//Отписываем ("мои регионы") всех пользователей от удаляемых регионов
+				User.update({regions: {$in: removingRegionsIds}}, {$pull: {regions: {$in: removingRegionsIds}}}, {multi: true},this.parallel());
+
+				//Удаляем регионы у найденных модераторов, в которых они есть
+				if (modUsersCids.length) {
+					User.update({cid: {$in: modUsersCids}}, {$pull: {mod_regions: {$in: removingRegionsIds}}}, {multi: true}, this.parallel());
+				}
+			},
+			function (err, affectedUsers, affectedMods) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				resultData.affectedUsers = affectedUsers;
+				resultData.affectedMods = affectedMods || 0;
+
+				if (modUsersCids.length) {
+					//Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
+					User.update({cid: {$in: modUsersCids}, mod_regions: {$size: 0}}, {$unset: {role: 1, mod_regions: 1}}, {multi: true}, this);
+				} else {
+					this();
+				}
+			},
+			function (err, affectedModsLose) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				resultData.affectedModsLose = affectedModsLose || 0;
+
+				var objectsMatchQuery = {},
+					objectsUpdateQuery = {$unset: {}},
+					i;
+
+				objectsMatchQuery['r' + removingLevel] = regionToRemove.cid;
+				if (removingLevel === 0) {
+					//Если удаляем страну, то присваивам все её объекты Открытому морю
+					objectsUpdateQuery.$set = {r0: 1000000};
+					for (i = 1; i <= maxRegionLevel; i++) {
+						objectsUpdateQuery.$unset['r' + i] = 1;
+					}
+				} else {
+					for (i = removingLevel; i <= maxRegionLevel; i++) {
+						objectsUpdateQuery.$unset['r' + i] = 1;
+					}
+				}
+
+				Photo.update(objectsMatchQuery, objectsUpdateQuery, {multi: true}, this.parallel()); //Обновляем входящие фотографии
+				Region.remove({parents: regionToRemove.cid}, this.parallel()); //Удаляем дочерние регионы
+				regionToRemove.remove(this.parallel()); //Удаляем сам регион
+			},
+			function (err, affectedPhotos) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				resultData.affectedPhotos = affectedPhotos || 0;
+				fillCache(this); //Обновляем кэш регионов
+			},
+			function (err) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				resultData.removed = true;
+				cb(resultData);
+			}
+		);
+	});
 }
 
 function getRegion(socket, data, cb) {

@@ -247,11 +247,11 @@ define([
 			this.exe(true);
 
 			var cid = this.region.cid(),
+				title = this.region.title_local(),
 				regionParent,
-				cidParent,
 				that = this,
 				childLenArr = this.childLenArr(),
-				msg = 'Регион <b>' + this.region.title_local() + '</b> будет удален<br>';
+				msg = 'Регион <b>' + title + '</b> будет удален<br>';
 
 			if (childLenArr.length) {
 				msg += '<br>Также будут удалено <b>' + childLenArr.reduce(function (previousValue, currentValue) {
@@ -265,7 +265,7 @@ define([
 				regionParent = _.last(this.region.parents());
 				msg += 'остануться в вышестоящем регионе <b>' + regionParent.title_local() + '</b><br>';
 			}
-			msg += '<br>Подтверждаете?';
+			msg += '<br>Это может занять несколько минут. Подтверждаете?';
 
 			window.noty(
 				{
@@ -282,48 +282,72 @@ define([
 					},
 					buttons: [
 						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
-							// this = button element
-							// $noty = $noty element
-							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true);
-							}
+							$noty.close();
 
-							socket.once('removeRegionResult', function (data) {
-								$noty.$buttons.find('.btn-danger').remove();
-								var okButton = $noty.$buttons.find('button')
-									.attr('disabled', false)
-									.off('click');
+							window.noty(
+								{
+									text: 'Изменения будут необратимы.<br>Вы действительно хотите удалить регион <b>' + title + '</b>?',
+									type: 'confirm',
+									layout: 'center',
+									modal: true,
+									force: true,
+									buttons: [
+										{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
+											// this = button element
+											// $noty = $noty element
+											if ($noty.$buttons && $noty.$buttons.find) {
+												$noty.$buttons.find('button').attr('disabled', true);
+											}
 
-								if (data && !data.error) {
-									$noty.$message.children().html('Регион успешно удалён');
+											socket.once('removeRegionResult', function (data) {
+												$noty.$buttons.find('.btn-danger').remove();
+												var msg,
+													okButton = $noty.$buttons.find('button')
+														.attr('disabled', false)
+														.off('click');
 
-									okButton.text('Ok (4)').on('click', function () {
-										var href = '/admin/region';
-										if (regionParent) {
-											href += '?hl=' + regionParent.cid();
-										}
-										document.location.href = href;
-									});
+												if (data && !data.error) {
+													msg = 'Регион <b>' + title + '</b> успешно удалён<br>';
+													if (data.affectedPhotos) {
+														msg += '<b>' + data.affectedPhotos + '</b> фотографий сменили региональную принадлежность.<br>';
+													}
+													if (data.affectedUsers) {
+														msg += 'У <b>' + data.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
+													}
+													if (data.affectedMods) {
+														msg += 'У <b>' + data.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.';
+														if (data.affectedModsLose) {
+															msg += 'Из них <b>' + data.affectedModsLose + '</b> пользователей лишились роли модератора.';
+														}
+														msg += '<br>';
+													}
+													$noty.$message.children().html(msg);
 
-									Utils.timer(
-										5000,
-										function (timeleft) {
-											okButton.text('Ok (' + timeleft + ')');
-										},
-										function () {
-											okButton.trigger('click');
-										}
-									);
-								} else {
-									$noty.$message.children().html(data.message || 'Error occurred');
-									okButton.text('Close').on('click', function () {
-										$noty.close();
-										this.exe(false);
-									}.bind(this));
+													okButton.text('Ok').on('click', function () {
+														var href = '/admin/region';
+														if (regionParent) {
+															href += '?hl=' + regionParent.cid();
+														}
+														document.location.href = href;
+													});
+												} else {
+													$noty.$message.children().html(data.message || 'Error occurred');
+													okButton.text('Close').on('click', function () {
+														$noty.close();
+														this.exe(false);
+													}.bind(this));
+												}
+											}.bind(that));
+											socket.emit('removeRegion', {cid: cid});
+
+										}},
+										{addClass: 'btn btn-success', text: 'Нет', onClick: function ($noty) {
+											$noty.close();
+											that.exe(false);
+										}}
+									]
 								}
-							}.bind(that));
-							socket.emit('removeRegion', {cid: cid});
-
+							);
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
