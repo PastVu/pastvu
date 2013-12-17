@@ -137,6 +137,33 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
+	//Расчет количества вершин полигонов
+	saveSystemJSFunc(function regionsCalcPointsNum(cidArr) {
+		var startTime = Date.now(),
+			query = {};
+
+		if (Array.isArray(cidArr) && cidArr.length) {
+			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
+		}
+
+		function calcGeoJSONPointsNumReduce (previousValue, currentValue) {
+			return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
+		}
+
+		print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
+			var startTime = Date.now(),
+				count;
+
+			count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
+			db.regions.update({cid: region.cid}, {$set: {pointsnum: count}});
+			print(count + ': ' + region.cid + ' '+ region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
+		});
+
+		print('\n');
+		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	//Для фотографий с координатой заново расчитываем регионы
 	saveSystemJSFunc(function assignToRegions() {
 		var startTime = Date.now();
@@ -165,7 +192,7 @@ module.exports.loadController = function (app, db) {
 			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
 		});
 
-		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function calcUserStats() {
