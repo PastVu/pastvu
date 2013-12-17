@@ -14,6 +14,7 @@ define([
 		cid: 0,
 		parents: [],
 		geo: '',
+		pointsnum: 0,
 		title_en: '',
 		title_local: ''
 	};
@@ -227,6 +228,7 @@ define([
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
+					this.region.pointsnum(data.region.pointsnum);
 
 					if (this.createMode()) {
 						//Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется

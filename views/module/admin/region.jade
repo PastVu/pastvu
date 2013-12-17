@@ -54,6 +54,13 @@
 					span(data-bind="text: ' ' + $data")
 					// /ko
 		// /ko
+		//ko if: !createMode()
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Количество вершин
+			.col-xs-8.col-sm-9.col-lg-10
+				p.form-control-static
+					span(data-bind="text: region.pointsnum()")=
+		// /ko
 		//ko if: createMode() || showGeo()
 		.form-group
 			label.col-xs-4.col-sm-3.col-lg-2.control-label

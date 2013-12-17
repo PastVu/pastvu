@@ -265,7 +265,7 @@ function saveRegion(socket, data, cb) {
 				}
 
 				//Считаем количество точек
-				region.pointsnum = Utils.calcGeoJSONPointsNum(data.geo.coordinates);
+				region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
 
 				region.geo = data.geo;
 				region.markModified('geo');
