@@ -170,6 +170,26 @@ Utils.inputIncomingParse = (function () {
 	};
 }());
 
+Utils.calcGeoJSONPointsNum = function (arr) {
+	'use strict';
+	var result = 0,
+		i;
+
+	if (Array.isArray(arr[0])) {
+		for (i = arr.length; i--;) {
+			result += Utils.calcGeoJSONPointsNum(arr[i]);
+		}
+	} else {
+		result = 1;
+	}
+	return result;
+};
+
+Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
+	'use strict';
+	return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(Utils.calcGeoJSONPointsNumReduce, 0) : 1);
+};
+
 Utils.copyFile = function (source, target, cb) {
 	'use strict';
 	var cbCalled = false;

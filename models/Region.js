@@ -9,6 +9,8 @@ var RegionSchema = new Schema(
 		parents: [Number], //Родительские регионы, если есть
 		geo: Schema.Types.Mixed,
 
+		pointsnum: {type: Number}, //Количество точек
+
 		cdate: {type: Date, 'default': Date.now, required: true, index: true}, //Дата создания
 		udate: {type: Date, 'default': Date.now, required: true}, //Дата изменения
 

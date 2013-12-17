@@ -228,19 +228,28 @@ function saveRegion(socket, data, cb) {
 			delete data.geo;
 		}
 
+		var parentChange;
+
 		if (!data.cid) {
 			Counter.increment('region', function (err, count) {
 				if (err || !count) {
 					return cb({message: err && err.message || 'Increment comment counter error', error: true});
 				}
-				fill(new Region({cid: count.next}));
+				fill(new Region({cid: count.next, parents: parentsArray}));
 			});
 		} else {
+
 			Region.findOne({cid: data.cid}, function (err, region) {
 				if (err || !region) {
 					return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 				}
 				region.udate = new Date();
+
+				parentChange = !_.isEqual(parentsArray, region.parents);
+				if (parentChange) {
+					region.parents = parentsArray;
+				}
+
 				fill(region);
 			});
 		}
@@ -255,11 +264,12 @@ function saveRegion(socket, data, cb) {
 					data.geo.type = 'Polygon';
 				}
 
+				//Считаем количество точек
+				region.pointsnum = Utils.calcGeoJSONPointsNum(data.geo.coordinates);
+
 				region.geo = data.geo;
 				region.markModified('geo');
 			}
-
-			region.parents = parentsArray;
 
 			region.title_en = String(data.title_en);
 			region.title_local = data.title_local ? String(data.title_local) : undefined;
@@ -350,7 +360,7 @@ function removeRegion(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				removingRegionsIds= childRegions ? _.pluck(childRegions, '_id') : [];
+				removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
 				removingRegionsIds.push(regionToRemove._id);
 
 				//Находим всех модераторов удаляемых регионов
@@ -363,7 +373,7 @@ function removeRegion(socket, data, cb) {
 				modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [];
 
 				//Отписываем ("мои регионы") всех пользователей от удаляемых регионов
-				User.update({regions: {$in: removingRegionsIds}}, {$pull: {regions: {$in: removingRegionsIds}}}, {multi: true},this.parallel());
+				User.update({regions: {$in: removingRegionsIds}}, {$pull: {regions: {$in: removingRegionsIds}}}, {multi: true}, this.parallel());
 
 				//Удаляем регионы у найденных модераторов, в которых они есть
 				if (modUsersCids.length) {
