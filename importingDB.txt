@@ -56,6 +56,12 @@ sudo node app.js --land prod --domain pastvu.com --port 80 --uport 3001
 	   [[0,0],[1,1],[2,2]] - Линия (массив точек)
 	 [ [[0,0],[2,2],[1,3],[-1,3],[0,0]], [[1,1],[1.2,1.2],[1,1.9],[1,1]] ] - Полигон (массив замкнутых линий)
    [ [ [[0,0],[2,2],[1,3],[-1,3],[0,0]], [[1,1],[1.2,1.2],[1,1.9],[1,1]] ], [ [[0,-1],[1,0],[0.1,0],[0,-1]] ] ] - Мультиполигон (массив полигонов)
+   
+   Общее кол-во точек регионов
+   db.regions.find({}, {pointsnum: 1}).toArray().reduce(function(prevValue, currValue) {return prevValue + currValue.pointsnum}, 0)
+   
+   Выгрузить csv определенные поля по запросу
+   mongoexport -d pastvu -c users --csv --fields login,birthdate,sex --query '{"$and":[{"$or":[{"pcount":{"$gt":0}},{"ccount":{"$gt":0}}]},{"$or":[{"birthdate":{"$nin":[null,"1.1.1920"]}},{"sex":{"$ne":null}}]}]}' --out mdump/users.csv
 	
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:

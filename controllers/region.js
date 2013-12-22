@@ -14,6 +14,7 @@ var auth = require('./auth.js'),
 	msg = {
 		deny: 'You do not have permission for this action'
 	},
+	async = require('async'),
 	logger = require('log4js').getLogger("region.js"),
 	loggerApp = require('log4js').getLogger("app.js"),
 
@@ -181,6 +182,68 @@ function calcRegionsIncludes(iAm, cids, cb) {
 	}
 }
 
+function changeRegionParentExternality(region, oldParentsArray, cb) {
+	var moveTo,
+		levelWas = oldParentsArray.length,
+		levelNew = region.parents.length,
+		levelDiff = Math.abs(levelWas - levelNew), //Разница в уровнях
+		regionsDiff = _.difference(oldParentsArray, region.parents), //Массив cid добавляемых/удаляемых регионов
+		queryObj,
+		renameObj,
+		i;
+
+	if (!levelNew ||
+		(levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents))) {
+		moveTo = 'up';
+	} else if (levelNew > levelWas && _.isEqual(region.parents.slice(0, levelWas), oldParentsArray)) {
+		moveTo = 'down';
+	} else {
+		moveTo = 'anotherBranch';
+	}
+
+	if (moveTo === 'up') {
+		step(
+			function () {
+				//Удаляем убранные родительские регионы у потомков текущего региона, т.е. поднимаем их тоже
+				Region.update({parents: region.cid}, {$pull: {parents: {$in: regionsDiff}}}, {multi: true}, this);
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+				//Последовательно поднимаем фотографии на уровни регионов вверх
+				//Для этого сначала переименовываем поле уровня поднимаемого региона по имени нового уровня, а
+				//затем переименовываем дочерние уровни также вверх
+
+				var serialUpdates = [],
+					updateParamsClosure = function (q, r) {
+						//Замыкаем параметры выборки и переименования
+						return function () {
+							var cb = _.last(arguments);
+							//$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
+							Photo.collection.update(q, {$rename: r}, {multi: true}, cb);
+						};
+					};
+
+				queryObj = {};
+				queryObj['r' + levelWas] = region.cid;
+				for (i = levelWas; i <= maxRegionLevel; i++) {
+					if (i === (levelWas + 1)) {
+						//Фотографии, принадлежащие к потомкам по отношению к поднимаемому региону,
+						//должны выбираться уже по принадлежности к новому уровню, т.к. их подвинули на первом шаге
+						queryObj = {};
+						queryObj['r' + levelNew] = region.cid;
+					}
+					renameObj = {};
+					renameObj['r' + i] = 'r' + (i - levelDiff);
+					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+				}
+				async.waterfall(serialUpdates, cb);
+			}
+		);
+	}
+}
+
 function saveRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
@@ -228,7 +291,8 @@ function saveRegion(socket, data, cb) {
 			delete data.geo;
 		}
 
-		var parentChange;
+		var parentChange,
+			parentsArrayOld;
 
 		if (!data.cid) {
 			Counter.increment('region', function (err, count) {
@@ -238,7 +302,6 @@ function saveRegion(socket, data, cb) {
 				fill(new Region({cid: count.next, parents: parentsArray}));
 			});
 		} else {
-
 			Region.findOne({cid: data.cid}, function (err, region) {
 				if (err || !region) {
 					return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
@@ -247,9 +310,9 @@ function saveRegion(socket, data, cb) {
 
 				parentChange = !_.isEqual(parentsArray, region.parents);
 				if (parentChange) {
+					parentsArrayOld = region.parents;
 					region.parents = parentsArray;
 				}
-
 				fill(region);
 			});
 		}
@@ -293,7 +356,17 @@ function saveRegion(socket, data, cb) {
 						if (err) {
 							return cb({message: 'Saved, but: ' + err.message, error: true});
 						}
-
+						if (parentChange) {
+							//Если изменился родитель - пересчитываем все зависимости от уровня
+							changeRegionParentExternality(region, parentsArrayOld, this);
+						} else {
+							this();
+						}
+					},
+					function (err) {
+						if (err) {
+							return cb({message: 'Saved, but: ' + err.message, error: true});
+						}
 						getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
 							if (err) {
 								return cb({message: 'Saved, but: ' + err.message, error: true});
