@@ -190,6 +190,7 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 		regionsDiff = _.difference(oldParentsArray, region.parents), //Массив cid добавляемых/удаляемых регионов
 		queryObj,
 		renameObj,
+		resultData = {affectedPhotos: 0},
 		i;
 
 	if (!levelNew ||
@@ -241,7 +242,113 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				async.waterfall(serialUpdates, cb);
 			}
 		);
+	} else if (moveTo === 'down') {
+		step(
+			function () {
+				//Вставляем добавленные родительские регионы у потомков текущего региона, т.е. опускаем их тоже
+				Region.update({parents: region.cid}, {$push: {parents: {$each: regionsDiff, $position: levelWas}}}, {multi: true}, this);
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+				//Последовательно опускаем фотографии на уровни регионов вниз
+				//Начинаем переименование полей с последнего уровня
+
+				var serialUpdates = [],
+					updateParamsClosure = function (q, r) {
+						//Замыкаем параметры выборки и переименования
+						return function () {
+							Photo.collection.update(q, {$rename: r}, {multi: true}, _.last(arguments));
+						};
+					};
+
+				queryObj = {};
+				queryObj['r' + levelWas] = region.cid;
+				for (i = maxRegionLevel - 1; i >= levelWas; i--) {
+					renameObj = {};
+					renameObj['r' + i] = 'r' + (i + levelDiff);
+					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+				}
+				async.waterfall(serialUpdates, this);
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+				//Находим _id новых родительских регионов
+				Region.find({cid: {$in: region.parents}}, {_id: 1}, {lean: true}, this.parallel());
+				//Находим _id всех регионов, дочерних переносимому
+				Region.find({parents: region.cid}, {_id: 1}, {lean: true}, this.parallel());
+			},
+			function (err, parentRegions, childRegions) {
+				if (err) {
+					return cb(err);
+				}
+				var parentRegionsIds = _.pluck(parentRegions, '_id'), //Массив _id родительских регионов
+					movingRegionsIds = _.pluck(childRegions, '_id'); //Массив _id регионов, переносимой ветки (т.е. сам регион и его потомки)
+				movingRegionsIds.unshift(region.cid);
+
+				//Удаляем подписку тех пользователей на перемещаемые регионы,
+				//у которых есть подписка и на новые родительские регионы, т.к. в этом случае у них автоматическая подписка на дочерние
+				User.update({$and: [
+					{regions: {$in: parentRegionsIds}},
+					{regions: {$in: movingRegionsIds}}
+				]}, {$pull: {regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
+
+				//Удаляем перемещаемые регионы из модерируемых пользователями, есди эти пользователи уже модерируют родительские
+				removeRegionsFromMods({$and: [
+					{mod_regions: {$in: parentRegionsIds}},
+					{mod_regions: {$in: movingRegionsIds}}
+				]}, movingRegionsIds, this.parallel());
+			},
+			function (err, affectedUsers, modsResult) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				resultData.affectedUsers = affectedUsers;
+				_.assign(resultData, modsResult);
+
+				cb(null, resultData);
+			}
+		);
+	} else {
+		cb();
 	}
+}
+
+function removeRegionsFromMods(usersQuery, regionsIds, cb) {
+	//Находим всех модераторов удаляемых регионов
+	User.find(usersQuery, {cid: 1}, {lean: true}, function (err, modUsers) {
+		if (err) {
+			return cb(err);
+		}
+		var modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [],
+			resultData = {};
+
+		if (modUsersCids.length) {
+			//Удаляем регионы у найденных модераторов, в которых они есть
+			User.update({cid: {$in: modUsersCids}}, {$pull: {mod_regions: {$in: regionsIds}}}, {multi: true}, function (err, affectedMods) {
+				if (err) {
+					return cb(err);
+				}
+				resultData.affectedMods = affectedMods || 0;
+
+				//Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
+				User.update({cid: {$in: modUsersCids}, mod_regions: {$size: 0}}, {$unset: {role: 1, mod_regions: 1}}, {multi: true}, function (err, affectedModsLose) {
+					if (err) {
+						return cb(err);
+					}
+					resultData.affectedModsLose = affectedModsLose || 0;
+					cb(null, resultData);
+				});
+			});
+		} else {
+			resultData.affectedMods = 0;
+			resultData.affectedModsLose = 0;
+			cb(null, resultData);
+		}
+	});
 }
 
 function saveRegion(socket, data, cb) {
@@ -421,7 +528,6 @@ function removeRegion(socket, data, cb) {
 
 		var removingLevel = regionToRemove.parents.length,
 			removingRegionsIds, //Номера всех удаляемых регионов
-			modUsersCids, //Номера модераторов, у которых удалятся модерируемые регионы
 			resultData = {};
 
 		step(
@@ -436,42 +542,18 @@ function removeRegion(socket, data, cb) {
 				removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
 				removingRegionsIds.push(regionToRemove._id);
 
-				//Находим всех модераторов удаляемых регионов
-				User.find({mod_regions: {$in: removingRegionsIds}}, {cid: 1}, {lean: true}, this);
-			},
-			function (err, modUsers) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-				modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [];
-
 				//Отписываем ("мои регионы") всех пользователей от удаляемых регионов
 				User.update({regions: {$in: removingRegionsIds}}, {$pull: {regions: {$in: removingRegionsIds}}}, {multi: true}, this.parallel());
 
-				//Удаляем регионы у найденных модераторов, в которых они есть
-				if (modUsersCids.length) {
-					User.update({cid: {$in: modUsersCids}}, {$pull: {mod_regions: {$in: removingRegionsIds}}}, {multi: true}, this.parallel());
-				}
+				//Удаляем регионы из модерируемых пользователями
+				removeRegionsFromMods({mod_regions: {$in: removingRegionsIds}}, removingRegionsIds, this.parallel());
 			},
-			function (err, affectedUsers, affectedMods) {
+			function (err, affectedUsers, modsResult) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
 				resultData.affectedUsers = affectedUsers;
-				resultData.affectedMods = affectedMods || 0;
-
-				if (modUsersCids.length) {
-					//Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
-					User.update({cid: {$in: modUsersCids}, mod_regions: {$size: 0}}, {$unset: {role: 1, mod_regions: 1}}, {multi: true}, this);
-				} else {
-					this();
-				}
-			},
-			function (err, affectedModsLose) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-				resultData.affectedModsLose = affectedModsLose || 0;
+				_.assign(resultData, modsResult);
 
 				var objectsMatchQuery = {},
 					objectsUpdateQuery = {$unset: {}},
