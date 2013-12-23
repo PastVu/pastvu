@@ -331,18 +331,18 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 					{regions: {$in: movingRegionsIds}}
 				]}, {$pull: {regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
 
-				//Удаляем перемещаемые регионы из модерируемых пользователями, есди эти пользователи уже модерируют родительские
-				removeRegionsFromMods({$and: [
+				//Тоже самое с модераторскими регионами
+				User.update({$and: [
 					{mod_regions: {$in: parentRegionsIds}},
 					{mod_regions: {$in: movingRegionsIds}}
-				]}, movingRegionsIds, this.parallel());
+				]}, {$pull: {mod_regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedUsers, modsResult) {
+			function (err, affectedUsers, affectedMods) {
 				if (err) {
 					return cb(err);
 				}
-				resultData.affectedUsers = affectedUsers;
-				_.assign(resultData, modsResult);
+				resultData.affectedUsers = affectedUsers || 0;
+				resultData.affectedUsers = affectedMods || 0;
 
 				cb(null, resultData);
 			}
@@ -452,10 +452,31 @@ function saveRegion(socket, data, cb) {
 
 				parentChange = !_.isEqual(parentsArray, region.parents);
 				if (parentChange) {
-					parentsArrayOld = region.parents;
-					region.parents = parentsArray;
+					var swapRegions = function () {
+						parentsArrayOld = region.parents;
+						region.parents = parentsArray;
+						fill(region);
+					};
+
+					//Проверяем, что при переносе вниз по дереву, будут соблюдена максимальная вложенность
+					if (parentsArray.length > region.parents.length) {
+						var countMaxChildQuery = {$and: [{parents: region.cid}, {parents: {$size: Math.min(region.parents.length + maxRegionLevel - parentsArray.length + 1, maxRegionLevel)}}]};
+
+						Region.count(countMaxChildQuery, function (err, count) {
+							if (err) {
+								return cb({message: err.message, error: true});
+							}
+							if (count) {
+								return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
+							}
+							swapRegions();
+						});
+					} else {
+						swapRegions();
+					}
+				} else {
+					fill(region);
 				}
-				fill(region);
 			});
 		}
 
@@ -490,6 +511,8 @@ function saveRegion(socket, data, cb) {
 					delete region.geo;
 				}
 
+				var moveResult;
+
 				step(
 					function (err) {
 						if (parentChange) {
@@ -499,9 +522,12 @@ function saveRegion(socket, data, cb) {
 							this();
 						}
 					},
-					function (err) {
+					function (err, moveRes) {
 						if (err) {
 							return cb({message: 'Saved, but: ' + err.message, error: true});
+						}
+						if (moveRes) {
+							moveResult = moveRes;
 						}
 						fillCache(this); //Обновляем кэш регионов
 					},
@@ -517,7 +543,7 @@ function saveRegion(socket, data, cb) {
 								region.parents = parentsSortedArr;
 							}
 
-							cb({childLenArr: childLenArr, region: region});
+							cb({childLenArr: childLenArr, region: region, moveResult: moveResult});
 
 							//Если изменились координаты, отправляем на пересчет входящие объекты
 							if (data.geo) {
