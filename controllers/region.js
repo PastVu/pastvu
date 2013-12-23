@@ -460,9 +460,9 @@ function saveRegion(socket, data, cb) {
 
 					//Проверяем, что при переносе вниз по дереву, будут соблюдена максимальная вложенность
 					if (parentsArray.length > region.parents.length) {
-						var countMaxChildQuery = {$and: [{parents: region.cid}, {parents: {$size: Math.min(region.parents.length + maxRegionLevel - parentsArray.length + 1, maxRegionLevel)}}]};
+						var maxParentsCount = Math.min(region.parents.length + maxRegionLevel - parentsArray.length, maxRegionLevel - 1);
 
-						Region.count(countMaxChildQuery, function (err, count) {
+						Region.count({$and: [{parents: region.cid}, {parents: {$size: maxParentsCount}}]}, function (err, count) {
 							if (err) {
 								return cb({message: err.message, error: true});
 							}
