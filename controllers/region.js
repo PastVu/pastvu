@@ -187,35 +187,50 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 		levelWas = oldParentsArray.length,
 		levelNew = region.parents.length,
 		levelDiff = Math.abs(levelWas - levelNew), //Разница в уровнях
-		regionsDiff = _.difference(oldParentsArray, region.parents), //Массив cid добавляемых/удаляемых регионов
+		regionsDiff, //Массив cid добавляемых/удаляемых регионов
 		queryObj,
 		renameObj,
-		resultData = {affectedPhotos: 0},
+		resultData = {},
 		i;
 
 	if (!levelNew ||
 		(levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents))) {
 		moveTo = 'up';
+		regionsDiff = _.difference(oldParentsArray, region.parents);
 	} else if (levelNew > levelWas && _.isEqual(region.parents.slice(0, levelWas), oldParentsArray)) {
 		moveTo = 'down';
+		regionsDiff = _.difference(region.parents, oldParentsArray);
 	} else {
 		moveTo = 'anotherBranch';
+	}
+
+	//Считаем, сколько фотографий принадлежит текущему региону
+	function countAffectedPhotos(cb) {
+		var querycount = {};
+		querycount['r' + levelWas] = region.cid;
+		Photo.count(querycount, cb);
 	}
 
 	if (moveTo === 'up') {
 		step(
 			function () {
+				countAffectedPhotos(this.parallel());
 				//Удаляем убранные родительские регионы у потомков текущего региона, т.е. поднимаем их тоже
-				Region.update({parents: region.cid}, {$pull: {parents: {$in: regionsDiff}}}, {multi: true}, this);
+				Region.update({parents: region.cid}, {$pull: {parents: {$in: regionsDiff}}}, {multi: true}, this.parallel());
 			},
-			function (err) {
+			function (err, affectedPhotos) {
 				if (err) {
 					return cb(err);
 				}
+				resultData.affectedPhotos = affectedPhotos || 0;
+
+				if (!resultData.affectedPhotos) {
+					return cb(null, resultData);
+				}
+
 				//Последовательно поднимаем фотографии на уровни регионов вверх
 				//Для этого сначала переименовываем поле уровня поднимаемого региона по имени нового уровня, а
 				//затем переименовываем дочерние уровни также вверх
-
 				var serialUpdates = [],
 					updateParamsClosure = function (q, r) {
 						//Замыкаем параметры выборки и переименования
@@ -239,22 +254,31 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 					renameObj['r' + i] = 'r' + (i - levelDiff);
 					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
 				}
-				async.waterfall(serialUpdates, cb);
+				async.waterfall(serialUpdates, this);
+			},
+			function (err) {
+				cb(err, resultData);
 			}
 		);
 	} else if (moveTo === 'down') {
 		step(
 			function () {
+				countAffectedPhotos(this.parallel());
 				//Вставляем добавленные родительские регионы у потомков текущего региона, т.е. опускаем их тоже
-				Region.update({parents: region.cid}, {$push: {parents: {$each: regionsDiff, $position: levelWas}}}, {multi: true}, this);
+				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: regionsDiff, $position: levelWas}}}, {multi: true}, this.parallel());
 			},
-			function (err) {
+			function (err, affectedPhotos) {
 				if (err) {
 					return cb(err);
 				}
+				resultData.affectedPhotos = affectedPhotos || 0;
+
+				if (!resultData.affectedPhotos) {
+					return this();
+				}
+
 				//Последовательно опускаем фотографии на уровни регионов вниз
 				//Начинаем переименование полей с последнего уровня
-
 				var serialUpdates = [],
 					updateParamsClosure = function (q, r) {
 						//Замыкаем параметры выборки и переименования
@@ -270,6 +294,17 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 					renameObj['r' + i] = 'r' + (i + levelDiff);
 					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
 				}
+				//Затем вставляем на место сдвинутых новые родительские
+				serialUpdates.push(function () {
+					var qObj = {},
+						setObj = {},
+						i;
+					qObj['r' + levelNew] = region.cid;
+					for (i = levelWas; i < levelNew; i++) {
+						setObj['r' + i] = region.parents[i];
+					}
+					Photo.collection.update(qObj, {$set: setObj}, {multi: true}, _.last(arguments));
+				});
 				async.waterfall(serialUpdates, this);
 			},
 			function (err) {
@@ -287,7 +322,7 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				}
 				var parentRegionsIds = _.pluck(parentRegions, '_id'), //Массив _id родительских регионов
 					movingRegionsIds = _.pluck(childRegions, '_id'); //Массив _id регионов, переносимой ветки (т.е. сам регион и его потомки)
-				movingRegionsIds.unshift(region.cid);
+				movingRegionsIds.unshift(region._id);
 
 				//Удаляем подписку тех пользователей на перемещаемые регионы,
 				//у которых есть подписка и на новые родительские регионы, т.к. в этом случае у них автоматическая подписка на дочерние
@@ -304,7 +339,7 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 			},
 			function (err, affectedUsers, modsResult) {
 				if (err) {
-					return cb({message: err.message, error: true});
+					return cb(err);
 				}
 				resultData.affectedUsers = affectedUsers;
 				_.assign(resultData, modsResult);
@@ -456,19 +491,19 @@ function saveRegion(socket, data, cb) {
 				}
 
 				step(
-					function () {
-						fillCache(this); //Обновляем кэш регионов
-					},
 					function (err) {
-						if (err) {
-							return cb({message: 'Saved, but: ' + err.message, error: true});
-						}
 						if (parentChange) {
 							//Если изменился родитель - пересчитываем все зависимости от уровня
 							changeRegionParentExternality(region, parentsArrayOld, this);
 						} else {
 							this();
 						}
+					},
+					function (err) {
+						if (err) {
+							return cb({message: 'Saved, but: ' + err.message, error: true});
+						}
+						fillCache(this); //Обновляем кэш регионов
 					},
 					function (err) {
 						if (err) {
