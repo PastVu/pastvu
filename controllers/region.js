@@ -204,13 +204,6 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 		moveTo = 'anotherBranch';
 	}
 
-	//Считаем, сколько фотографий принадлежит текущему региону
-	function countAffectedPhotos(cb) {
-		var querycount = {};
-		querycount['r' + levelWas] = region.cid;
-		Photo.count(querycount, cb);
-	}
-
 	if (moveTo === 'up') {
 		step(
 			function () {
@@ -229,32 +222,7 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				}
 
 				//Последовательно поднимаем фотографии на уровни регионов вверх
-				//Для этого сначала переименовываем поле уровня поднимаемого региона по имени нового уровня, а
-				//затем переименовываем дочерние уровни также вверх
-				var serialUpdates = [],
-					updateParamsClosure = function (q, r) {
-						//Замыкаем параметры выборки и переименования
-						return function () {
-							var cb = _.last(arguments);
-							//$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
-							Photo.collection.update(q, {$rename: r}, {multi: true}, cb);
-						};
-					};
-
-				queryObj = {};
-				queryObj['r' + levelWas] = region.cid;
-				for (i = levelWas; i <= maxRegionLevel; i++) {
-					if (i === (levelWas + 1)) {
-						//Фотографии, принадлежащие к потомкам по отношению к поднимаемому региону,
-						//должны выбираться уже по принадлежности к новому уровню, т.к. их подвинули на первом шаге
-						queryObj = {};
-						queryObj['r' + levelNew] = region.cid;
-					}
-					renameObj = {};
-					renameObj['r' + i] = 'r' + (i - levelDiff);
-					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
-				}
-				async.waterfall(serialUpdates, this);
+				pullPhotosRegionsUp(this);
 			},
 			function (err) {
 				cb(err, resultData);
@@ -278,34 +246,14 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				}
 
 				//Последовательно опускаем фотографии на уровни регионов вниз
-				//Начинаем переименование полей с последнего уровня
-				var serialUpdates = [],
-					updateParamsClosure = function (q, r) {
-						//Замыкаем параметры выборки и переименования
-						return function () {
-							Photo.collection.update(q, {$rename: r}, {multi: true}, _.last(arguments));
-						};
-					};
-
-				queryObj = {};
-				queryObj['r' + levelWas] = region.cid;
-				for (i = maxRegionLevel - 1; i >= levelWas; i--) {
-					renameObj = {};
-					renameObj['r' + i] = 'r' + (i + levelDiff);
-					serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+				pushPhotosRegionsDown(this);
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
 				}
-				//Затем вставляем на место сдвинутых новые родительские
-				serialUpdates.push(function () {
-					var qObj = {},
-						setObj = {},
-						i;
-					qObj['r' + levelNew] = region.cid;
-					for (i = levelWas; i < levelNew; i++) {
-						setObj['r' + i] = region.parents[i];
-					}
-					Photo.collection.update(qObj, {$set: setObj}, {multi: true}, _.last(arguments));
-				});
-				async.waterfall(serialUpdates, this);
+				//Вставляем на место сдвинутых новые родительские
+				refillPhotosRegions(levelWas, levelNew, this);
 			},
 			function (err) {
 				if (err) {
@@ -342,13 +290,127 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 					return cb(err);
 				}
 				resultData.affectedUsers = affectedUsers || 0;
-				resultData.affectedUsers = affectedMods || 0;
+				resultData.affectedMods = affectedMods || 0;
 
 				cb(null, resultData);
 			}
 		);
 	} else {
-		cb();
+		step(
+			function () {
+				//Удаляем всех родителей текущего региона у потомков текущего региона
+				Region.update({parents: region.cid}, {$pull: {parents: {$in: oldParentsArray}}}, {multi: true}, this.parallel());
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+				countAffectedPhotos(this.parallel());
+				//Вставляем все родительские регионы переносимого региона его потомкам
+				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: region.parents, $position: 0}}}, {multi: true}, this.parallel());
+			},
+			function (err, affectedPhotos) {
+				if (err) {
+					return cb(err);
+				}
+				resultData.affectedPhotos = affectedPhotos || 0;
+
+				if (!resultData.affectedPhotos || levelNew === levelWas) {
+					return this();
+				}
+
+				if (levelNew < levelWas) {
+					pullPhotosRegionsUp(this);
+				} else if (levelNew > levelWas) {
+					pushPhotosRegionsDown(this);
+				}
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+				if (!resultData.affectedPhotos) {
+					return this();
+				}
+				//Вставляем выше уровня новые родительские
+				refillPhotosRegions(0, levelNew, this);
+			},
+			function (err) {
+				if (err) {
+					return cb(err);
+				}
+			}
+		);
+	}
+
+	//Считаем, сколько фотографий принадлежит текущему региону
+	function countAffectedPhotos(cb) {
+		var querycount = {};
+		querycount['r' + levelWas] = region.cid;
+		Photo.count(querycount, cb);
+	}
+
+	//Последовательно поднимаем фотографии на уровни регионов вверх
+	//Для этого сначала переименовываем поле уровня поднимаемого региона по имени нового уровня, а
+	//затем переименовываем дочерние уровни также вверх
+	function pullPhotosRegionsUp(cb) {
+		var serialUpdates = [],
+			updateParamsClosure = function (q, r) {
+				//Замыкаем параметры выборки и переименования
+				return function () {
+					var cb = _.last(arguments);
+					//$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
+					Photo.collection.update(q, {$rename: r}, {multi: true}, cb);
+				};
+			};
+
+		queryObj = {};
+		queryObj['r' + levelWas] = region.cid;
+		for (i = levelWas; i <= maxRegionLevel; i++) {
+			if (i === (levelWas + 1)) {
+				//Фотографии, принадлежащие к потомкам по отношению к поднимаемому региону,
+				//должны выбираться уже по принадлежности к новому уровню, т.к. их подвинули на первом шаге
+				queryObj = {};
+				queryObj['r' + levelNew] = region.cid;
+			}
+			renameObj = {};
+			renameObj['r' + i] = 'r' + (i - levelDiff);
+			serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+		}
+		async.waterfall(serialUpdates, cb);
+	}
+
+	//Последовательно опускаем фотографии на уровни регионов вниз
+	//Начинаем переименование полей с последнего уровня
+	function pushPhotosRegionsDown(cb) {
+		var serialUpdates = [],
+			updateParamsClosure = function (q, r) {
+				//Замыкаем параметры выборки и переименования
+				return function () {
+					Photo.collection.update(q, {$rename: r}, {multi: true}, _.last(arguments));
+				};
+			};
+
+		queryObj = {};
+		queryObj['r' + levelWas] = region.cid;
+		for (i = maxRegionLevel - 1; i >= levelWas; i--) {
+			renameObj = {};
+			renameObj['r' + i] = 'r' + (i + levelDiff);
+			serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+		}
+		async.waterfall(serialUpdates, cb);
+	}
+
+	//Вставляем на место сдвинутых новые родительские
+	function refillPhotosRegions(levelFrom, levelTo, cb) {
+		var qObj = {},
+			setObj = {},
+			i;
+		qObj['r' + levelTo] = region.cid;
+		for (i = levelFrom; i < levelTo; i++) {
+			setObj['r' + i] = region.parents[i];
+		}
+		Photo.collection.update(qObj, {$set: setObj}, {multi: true}, cb);
 	}
 }
 
@@ -462,7 +524,10 @@ function saveRegion(socket, data, cb) {
 					if (parentsArray.length > region.parents.length) {
 						var maxParentsCount = Math.min(region.parents.length + maxRegionLevel - parentsArray.length, maxRegionLevel - 1);
 
-						Region.count({$and: [{parents: region.cid}, {parents: {$size: maxParentsCount}}]}, function (err, count) {
+						Region.count({$and: [
+							{parents: region.cid},
+							{parents: {$size: maxParentsCount}}
+						]}, function (err, count) {
 							if (err) {
 								return cb({message: err.message, error: true});
 							}
