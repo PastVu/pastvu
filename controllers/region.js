@@ -220,7 +220,6 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				if (!resultData.affectedPhotos) {
 					return cb(null, resultData);
 				}
-
 				//Последовательно поднимаем фотографии на уровни регионов вверх
 				pullPhotosRegionsUp(this);
 			},
@@ -244,7 +243,6 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				if (!resultData.affectedPhotos) {
 					return this();
 				}
-
 				//Последовательно опускаем фотографии на уровни регионов вниз
 				pushPhotosRegionsDown(this);
 			},
@@ -259,43 +257,18 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				if (err) {
 					return cb(err);
 				}
-				//Находим _id новых родительских регионов
-				Region.find({cid: {$in: region.parents}}, {_id: 1}, {lean: true}, this.parallel());
-				//Находим _id всех регионов, дочерних переносимому
-				Region.find({parents: region.cid}, {_id: 1}, {lean: true}, this.parallel());
+				//Удаляем подписки и модерирование дочерних, если есть на родительские
+				dropChildRegionsForUsers(region.parents, region.cid, this);
 			},
-			function (err, parentRegions, childRegions) {
+			function (err, result) {
 				if (err) {
 					return cb(err);
 				}
-				var parentRegionsIds = _.pluck(parentRegions, '_id'), //Массив _id родительских регионов
-					movingRegionsIds = _.pluck(childRegions, '_id'); //Массив _id регионов, переносимой ветки (т.е. сам регион и его потомки)
-				movingRegionsIds.unshift(region._id);
-
-				//Удаляем подписку тех пользователей на перемещаемые регионы,
-				//у которых есть подписка и на новые родительские регионы, т.к. в этом случае у них автоматическая подписка на дочерние
-				User.update({$and: [
-					{regions: {$in: parentRegionsIds}},
-					{regions: {$in: movingRegionsIds}}
-				]}, {$pull: {regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
-
-				//Тоже самое с модераторскими регионами
-				User.update({$and: [
-					{mod_regions: {$in: parentRegionsIds}},
-					{mod_regions: {$in: movingRegionsIds}}
-				]}, {$pull: {mod_regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
-			},
-			function (err, affectedUsers, affectedMods) {
-				if (err) {
-					return cb(err);
-				}
-				resultData.affectedUsers = affectedUsers || 0;
-				resultData.affectedMods = affectedMods || 0;
-
+				_.assign(resultData, result);
 				cb(null, resultData);
 			}
 		);
-	} else {
+	} else if (moveTo === 'anotherBranch') {
 		step(
 			function () {
 				//Удаляем всех родителей текущего региона у потомков текущего региона
@@ -332,16 +305,26 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				if (!resultData.affectedPhotos) {
 					return this();
 				}
-				//Вставляем выше уровня новые родительские
+				//Присваиваем фотографиям новые родительские регионы выше уровня переносимого
 				refillPhotosRegions(0, levelNew, this);
 			},
 			function (err) {
 				if (err) {
 					return cb(err);
 				}
+				//Удаляем подписки и модерирование дочерних, если есть на родительские
+				dropChildRegionsForUsers(region.parents, region.cid, this);
+			},
+			function (err, result) {
+				if (err) {
+					return cb(err);
+				}
+				_.assign(resultData, result);
+				cb(null, resultData);
 			}
 		);
 	}
+
 
 	//Считаем, сколько фотографий принадлежит текущему региону
 	function countAffectedPhotos(cb) {
@@ -411,6 +394,46 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 			setObj['r' + i] = region.parents[i];
 		}
 		Photo.collection.update(qObj, {$set: setObj}, {multi: true}, cb);
+	}
+
+	//Удаляем у пользователей и модераторов подписку на дочерние регионы, если они подписаны на родительские
+	function dropChildRegionsForUsers(parentsCids, childBranchCid, cb) {
+		step (
+			function () {
+				//Находим _id новых родительских регионов
+				Region.find({cid: {$in: region.parents}}, {_id: 1}, {lean: true}, this.parallel());
+				//Находим _id всех регионов, дочерних переносимому
+				Region.find({parents: region.cid}, {_id: 1}, {lean: true}, this.parallel());
+			},
+			function (err, parentRegions, childRegions) {
+				if (err) {
+					return cb(err);
+				}
+				var parentRegionsIds = _.pluck(parentRegions, '_id'), //Массив _id родительских регионов
+					movingRegionsIds = _.pluck(childRegions, '_id'); //Массив _id регионов, переносимой ветки (т.е. сам регион и его потомки)
+				movingRegionsIds.unshift(region._id);
+
+				//Удаляем подписку тех пользователей на перемещаемые регионы,
+				//у которых есть подписка и на новые родительские регионы, т.к. в этом случае у них автоматическая подписка на дочерние
+				User.update({$and: [
+					{regions: {$in: parentRegionsIds}},
+					{regions: {$in: movingRegionsIds}}
+				]}, {$pull: {regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
+
+				//Тоже самое с модераторскими регионами
+				User.update({$and: [
+					{mod_regions: {$in: parentRegionsIds}},
+					{mod_regions: {$in: movingRegionsIds}}
+				]}, {$pull: {mod_regions: {$in: movingRegionsIds}}}, {multi: true}, this.parallel());
+			},
+			function (err, affectedUsers, affectedMods) {
+				if (err) {
+					return cb(err);
+				}
+
+				cb(null, {affectedUsers: affectedUsers || 0, affectedMods: affectedMods || 0});
+			}
+		);
 	}
 }
 
