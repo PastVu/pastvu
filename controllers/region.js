@@ -100,43 +100,59 @@ function getRegionsArrFromHash(hash, cids) {
 /**
  * Пересчет входящих объектов в переданный регион.
  * Сначала очищается текущее присвоение всех объектов данному региону, затем заново ищутся объекты, входящие в полигон региона
- * @param cid
+ * @param cidOrRegion
  * @param cb
  */
-function calcRegionIncludes(cid, cb) {
+function calcRegionIncludes(cidOrRegion, cb) {
 	if (!cb) {
 		cb = Utils.dummyFn;
 	}
-	Region.findOne({cid: cid}, {_id: 0, parents: 1, geo: 1}, {lean: true}, function (err, region) {
-		if (err || !region) {
-			return cb({message: ('Region [' + cid + '] find for calc error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
-		}
-		var level = 'r' + region.parents.length;
+	if (typeof cid === 'number') {
+		Region.findOne({cid: cidOrRegion}, {_id: 0, cid: 1, parents: 1, geo: 1}, {lean: true}, doCalc);
+	} else {
+		doCalc(null, cidOrRegion);
+	}
 
+	function doCalc(err, region) {
+		if (err || !region) {
+			return cb({message: ('Region [' + cidOrRegion + '] find for calcRegionIncludes error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
+		}
+		var level = 'r' + region.parents.length,
+			queryObject = {geo: {$exists: true}},
+			setObject,
+			resultStat = {};
+
+		queryObject[level] = region.cid;
 		step(
 			function () {
 				//Сначала очищаем присвоение текущего региона объектам с координатой,
 				//чтобы убрать те объекты, которые больше не будут в него попадать
-				var queryObject = {geo: {$exists: true}},
-					setObject = {$unset: {}};
+				setObject = {$unset: {}};
 
-				queryObject[level] = cid;
 				setObject.$unset[level] = 1;
 				Photo.update(queryObject, setObject, {multi: true}, this);
 			},
-			function (err) {
-				//Теперь присваиваем этот регион всем, входящим в его полигон
-				if (err || !region) {
-					return cb({message: ('Region [' + cid + '] error: ' + (err && err.message) || 'doesn\'t exists'), error: true});
+			function (err, photosCountBefore) {
+				if (err) {
+					return cb(err);
 				}
-				var setObject = {$set: {}};
+				resultStat.photosCountBeforeGeo = photosCountBefore || 0;
 
-				setObject.$set[level] = cid;
+				//Теперь присваиваем этот регион всем, входящим в его полигон
+				setObject = {$set: {}};
+				setObject.$set[level] = region.cid;
+
 				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, cb);
+			},
+			function (err, photosCountAfter) {
+				if (err) {
+					return cb(err);
+				}
+				resultStat.photosCountAfterGeo = photosCountAfter || 0;
+				cb(null, resultStat);
 			}
 		);
-
-	});
+	}
 }
 /**
  * Пересчет входящих объектов в переданный список регионов. Если список пуст - пересчет всех регионов
@@ -437,40 +453,6 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 	}
 }
 
-function removeRegionsFromMods(usersQuery, regionsIds, cb) {
-	//Находим всех модераторов удаляемых регионов
-	User.find(usersQuery, {cid: 1}, {lean: true}, function (err, modUsers) {
-		if (err) {
-			return cb(err);
-		}
-		var modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [],
-			resultData = {};
-
-		if (modUsersCids.length) {
-			//Удаляем регионы у найденных модераторов, в которых они есть
-			User.update({cid: {$in: modUsersCids}}, {$pull: {mod_regions: {$in: regionsIds}}}, {multi: true}, function (err, affectedMods) {
-				if (err) {
-					return cb(err);
-				}
-				resultData.affectedMods = affectedMods || 0;
-
-				//Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
-				User.update({cid: {$in: modUsersCids}, mod_regions: {$size: 0}}, {$unset: {role: 1, mod_regions: 1}}, {multi: true}, function (err, affectedModsLose) {
-					if (err) {
-						return cb(err);
-					}
-					resultData.affectedModsLose = affectedModsLose || 0;
-					cb(null, resultData);
-				});
-			});
-		} else {
-			resultData.affectedMods = 0;
-			resultData.affectedModsLose = 0;
-			cb(null, resultData);
-		}
-	});
-}
-
 function saveRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
@@ -519,9 +501,11 @@ function saveRegion(socket, data, cb) {
 		}
 
 		var parentChange,
-			parentsArrayOld;
+			parentsArrayOld,
+			resultStat = {};
 
 		if (!data.cid) {
+			//Создаем объект региона
 			Counter.increment('region', function (err, count) {
 				if (err || !count) {
 					return cb({message: err && err.message || 'Increment comment counter error', error: true});
@@ -529,43 +513,46 @@ function saveRegion(socket, data, cb) {
 				fill(new Region({cid: count.next, parents: parentsArray}));
 			});
 		} else {
-			Region.findOne({cid: data.cid}, function (err, region) {
-				if (err || !region) {
-					return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
-				}
-				region.udate = new Date();
+			//Ищем регион по переданному cid
+			var region;
 
-				parentChange = !_.isEqual(parentsArray, region.parents);
-				if (parentChange) {
-					var swapRegions = function () {
-						parentsArrayOld = region.parents;
-						region.parents = parentsArray;
-						fill(region);
-					};
+			step (
+				function () {
+					Region.findOne({cid: data.cid}, this);
+				},
+				function (err, r) {
+					if (err || !r) {
+						return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
+					}
+					region = r;
+					region.udate = new Date();
 
-					//Проверяем, что при переносе вниз по дереву, будут соблюдена максимальная вложенность
-					if (parentsArray.length > region.parents.length) {
-						var maxParentsCount = Math.min(region.parents.length + maxRegionLevel - parentsArray.length, maxRegionLevel - 1);
+					parentChange = !_.isEqual(parentsArray, region.parents);
+					var maxNewParentsCount = parentsArray.length > region.parents.length && Math.min(region.parents.length + maxRegionLevel - parentsArray.length, maxRegionLevel - 1);
 
+					if (typeof maxNewParentsCount === 'number') {
+						//Проверяем, что при переносе вниз по дереву, будут соблюдена максимальная вложенность
 						Region.count({$and: [
 							{parents: region.cid},
-							{parents: {$size: maxParentsCount}}
-						]}, function (err, count) {
-							if (err) {
-								return cb({message: err.message, error: true});
-							}
-							if (count) {
-								return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
-							}
-							swapRegions();
-						});
+							{parents: {$size: maxNewParentsCount}}
+						]}, this);
 					} else {
-						swapRegions();
+						this();
 					}
-				} else {
+				},
+				function (err, countWhoWillExceedMaxLevel) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					if (countWhoWillExceedMaxLevel) {
+						return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
+					}
+					parentsArrayOld = region.parents;
+					region.parents = parentsArray;
 					fill(region);
 				}
-			});
+			);
+
 		}
 
 		function fill(region) {
@@ -599,10 +586,22 @@ function saveRegion(socket, data, cb) {
 					delete region.geo;
 				}
 
-				var moveResult;
-
 				step(
-					function (err) {
+					function () {
+						//Если изменились координаты, отправляем на пересчет входящие объекты
+						if (data.geo) {
+							calcRegionIncludes(region, this);
+						} else {
+							this();
+						}
+					},
+					function (err, geoRecalcRes) {
+						if (err) {
+							return cb({message: 'Saved, but while calculating included photos for the new geojson: ' + err.message, error: true});
+						}
+						if (geoRecalcRes) {
+							_.assign(resultStat, geoRecalcRes);
+						}
 						if (parentChange) {
 							//Если изменился родитель - пересчитываем все зависимости от уровня
 							changeRegionParentExternality(region, parentsArrayOld, this);
@@ -612,32 +611,28 @@ function saveRegion(socket, data, cb) {
 					},
 					function (err, moveRes) {
 						if (err) {
-							return cb({message: 'Saved, but: ' + err.message, error: true});
+							return cb({message: 'Saved, but while change parent externality: ' + err.message, error: true});
 						}
 						if (moveRes) {
-							moveResult = moveRes;
+							_.assign(resultStat, moveRes);
 						}
 						fillCache(this); //Обновляем кэш регионов
 					},
 					function (err) {
 						if (err) {
-							return cb({message: 'Saved, but: ' + err.message, error: true});
+							return cb({message: 'Saved, but while refilling cache: ' + err.message, error: true});
 						}
-						getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
-							if (err) {
-								return cb({message: 'Saved, but: ' + err.message, error: true});
-							}
-							if (parentsSortedArr) {
-								region.parents = parentsSortedArr;
-							}
+						getParentsAndChilds(region, this);
+					},
+					function (err, childLenArr, parentsSortedArr) {
+						if (err) {
+							return cb({message: 'Saved, but while parents populating: ' + err.message, error: true});
+						}
+						if (parentsSortedArr) {
+							region.parents = parentsSortedArr;
+						}
 
-							cb({childLenArr: childLenArr, region: region, moveResult: moveResult});
-
-							//Если изменились координаты, отправляем на пересчет входящие объекты
-							if (data.geo) {
-								calcRegionIncludes(region.cid);
-							}
-						});
+						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
 					}
 				);
 			});
@@ -740,6 +735,41 @@ function removeRegion(socket, data, cb) {
 				cb(resultData);
 			}
 		);
+	});
+}
+
+
+function removeRegionsFromMods(usersQuery, regionsIds, cb) {
+	//Находим всех модераторов удаляемых регионов
+	User.find(usersQuery, {cid: 1}, {lean: true}, function (err, modUsers) {
+		if (err) {
+			return cb(err);
+		}
+		var modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [],
+			resultData = {};
+
+		if (modUsersCids.length) {
+			//Удаляем регионы у найденных модераторов, в которых они есть
+			User.update({cid: {$in: modUsersCids}}, {$pull: {mod_regions: {$in: regionsIds}}}, {multi: true}, function (err, affectedMods) {
+				if (err) {
+					return cb(err);
+				}
+				resultData.affectedMods = affectedMods || 0;
+
+				//Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
+				User.update({cid: {$in: modUsersCids}, mod_regions: {$size: 0}}, {$unset: {role: 1, mod_regions: 1}}, {multi: true}, function (err, affectedModsLose) {
+					if (err) {
+						return cb(err);
+					}
+					resultData.affectedModsLose = affectedModsLose || 0;
+					cb(null, resultData);
+				});
+			});
+		} else {
+			resultData.affectedMods = 0;
+			resultData.affectedModsLose = 0;
+			cb(null, resultData);
+		}
 	});
 }
 

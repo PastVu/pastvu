@@ -105,6 +105,7 @@ define([
 			if (this.layerSaved) {
 				this.map.removeLayer(this.layerSaved);
 			}
+			this.regionOrigin = regionDef;
 			ko_mapping.fromJS(regionDef, this.region);
 			this.haveParent('0');
 			this.parentCid(0);
@@ -113,6 +114,7 @@ define([
 		fillData: function (data) {
 			var region = data.region;
 
+			this.regionOrigin = region;
 			ko_mapping.fromJS(region, this.region);
 
 			this.childLenArr(data.childLenArr || []);
@@ -223,8 +225,53 @@ define([
 				}
 			}
 
+			if (!this.createMode() && saveData.parent !== this.regionOrigin.parent) {
+				this.changeParentWarn(function (confirm) {
+					if (confirm) {
+						processSave(this);
+					}
+				}, this);
+			} else {
+				processSave(this);
+			}
+
+			function processSave(ctx) {
+				ctx.sendSave(saveData, function (data, error) {
+					var resultStat = data && data.resultStat;
+
+					if (!error && resultStat && Object.keys(resultStat).length) {
+						var msg = 'Регион <b>' + this.region.title + '</b> успешно перенесён и сохранен<br>',
+							geoChangePhotosCount;
+
+						if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
+							geoChangePhotosCount = resultStat.photosCountAfterGeo - resultStat.photosCountBeforeGeo;
+
+							if (geoChangePhotosCount) {
+								msg += '<b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.<br>';
+							}
+						}
+						if (resultStat.affectedPhotos) {
+							msg += '<b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.<br>';
+						}
+						if (resultStat.affectedUsers) {
+							msg += 'У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
+						}
+						if (resultStat.affectedMods) {
+							msg += 'У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.<br>';
+						}
+						window.noty({text: msg, type: 'success', layout: 'center', timeout: 4000, force: true});
+					}
+					this.exe(false);
+				}, ctx);
+			}
+
+			return false;
+		},
+		sendSave: function (saveData, cb, ctx) {
 			socket.once('saveRegionResult', function (data) {
-				if (!data || data.error || !data.region) {
+				var error = !data || !!data.error || !data.region;
+
+				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
 					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
@@ -236,11 +283,13 @@ define([
 					} else {
 						this.fillData(data);
 					}
+
+					if (Utils.isType('function', cb)) {
+						cb.call(ctx, data, error);
+					}
 				}
-				this.exe(false);
 			}.bind(this));
 			socket.emit('saveRegion', saveData);
-			return false;
 		},
 		remove: function () {
 			if (this.exe()) {
@@ -267,7 +316,7 @@ define([
 				regionParent = _.last(this.region.parents());
 				msg += 'остануться в вышестоящем регионе <b>' + regionParent.title_local() + '</b><br>';
 			}
-			msg += '<br>Это может занять несколько минут. Подтверждаете?';
+			msg += '<br>Это может занять несколько минут. Подтверждаете?<br><small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
 
 			window.noty(
 				{
@@ -359,6 +408,38 @@ define([
 				}
 			);
 			return false;
+		},
+		changeParentWarn: function (cb, ctx) {
+			var msg = 'Вы хотите поменять положение региона в иерархии.',
+				childLenArr = this.childLenArr();
+
+			if (childLenArr.length) {
+				msg += '<br>При этом также будут перенесены <b>' + childLenArr.reduce(function (previousValue, currentValue) {
+					return previousValue + currentValue;
+				}) + '</b> дочерних регионов<br>';
+			}
+			msg += '<br>У пользователей, одновременно подписанных на переносимые регионы и их новые родительские, подписка на переносимые будет удалена, т.к. подписка родительских включает и дочерние регионы. То же касается региональных модераторских прав.';
+			msg += '<br>Это может занять несколько минут. Подтверждаете?<br><small><i>Операция продолжит выполняться даже при закрытии браузера</i></small>';
+
+			window.noty(
+				{
+					text: msg,
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					buttons: [
+						{addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
+							cb.call(ctx, true);
+							$noty.close();
+						}},
+						{addClass: 'btn btn-success', text: 'Нет', onClick: function ($noty) {
+							cb.call(ctx, false);
+							$noty.close();
+						}}
+					]
+				}
+			);
 		}
 	});
 });
