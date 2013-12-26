@@ -198,12 +198,13 @@ function calcRegionsIncludes(iAm, cids, cb) {
 	}
 }
 
-function changeRegionParentExternality(region, oldParentsArray, cb) {
+function changeRegionParentExternality(region, oldParentsArray, childLenArray, cb) {
 	var moveTo,
 		levelWas = oldParentsArray.length,
 		levelNew = region.parents.length,
 		levelDiff = Math.abs(levelWas - levelNew), //Разница в уровнях
 		regionsDiff, //Массив cid добавляемых/удаляемых регионов
+		childLen = childLenArray.length,
 		queryObj,
 		renameObj,
 		resultData = {},
@@ -354,28 +355,42 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 	//затем переименовываем дочерние уровни также вверх
 	function pullPhotosRegionsUp(cb) {
 		var serialUpdates = [],
-			updateParamsClosure = function (q, r) {
+			setObj,
+			updateParamsClosure = function (q, u) {
 				//Замыкаем параметры выборки и переименования
 				return function () {
 					var cb = _.last(arguments);
 					//$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
-					Photo.collection.update(q, {$rename: r}, {multi: true}, cb);
+					Photo.collection.update(q, u, {multi: true}, cb);
 				};
 			};
 
+		//Переименовываем последовательно
 		queryObj = {};
 		queryObj['r' + levelWas] = region.cid;
-		for (i = levelWas; i <= maxRegionLevel; i++) {
+		for (i = levelWas; i <= levelWas + childLen; i++) {
 			if (i === (levelWas + 1)) {
 				//Фотографии, принадлежащие к потомкам по отношению к поднимаемому региону,
 				//должны выбираться уже по принадлежности к новому уровню, т.к. их подвинули на первом шаге
 				queryObj = {};
 				queryObj['r' + levelNew] = region.cid;
 			}
-			renameObj = {};
-			renameObj['r' + i] = 'r' + (i - levelDiff);
-			serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+			setObj = {$rename: {}};
+			setObj.$rename['r' + i] = 'r' + (i - levelDiff);
+			serialUpdates.push(updateParamsClosure(queryObj, setObj));
 		}
+
+		//Теперь удаляем все поля rX, которые ниже потомков поднятого уровня
+		//Например, если у перемещяемого региона один уровень потомков, а мы его поднимаем на три вверх, то оставшийся третий надо удалить
+		queryObj = {};
+		queryObj['r' + levelNew] = region.cid;
+		setObj = {$unset: {}};
+		for (i = levelNew + childLen + 1; i <= maxRegionLevel; i++) {
+			setObj.$unset['r' + i] = 1;
+		}
+		serialUpdates.push(updateParamsClosure(queryObj, setObj));
+
+		//Запускаем последовательное обновление по подготовленным параметрам
 		async.waterfall(serialUpdates, cb);
 	}
 
@@ -414,7 +429,7 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 
 	//Удаляем у пользователей и модераторов подписку на дочерние регионы, если они подписаны на родительские
 	function dropChildRegionsForUsers(parentsCids, childBranchCid, cb) {
-		step (
+		step(
 			function () {
 				//Находим _id новых родительских регионов
 				Region.find({cid: {$in: region.parents}}, {_id: 1}, {lean: true}, this.parallel());
@@ -446,13 +461,19 @@ function changeRegionParentExternality(region, oldParentsArray, cb) {
 				if (err) {
 					return cb(err);
 				}
-
 				cb(null, {affectedUsers: affectedUsers || 0, affectedMods: affectedMods || 0});
 			}
 		);
 	}
 }
 
+/**
+ * Сохранение/создание региона
+ * @param socket
+ * @param data
+ * @param cb
+ * @returns {*}
+ */
 function saveRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
@@ -502,6 +523,7 @@ function saveRegion(socket, data, cb) {
 
 		var parentChange,
 			parentsArrayOld,
+			childLenArray,
 			resultStat = {};
 
 		if (!data.cid) {
@@ -516,7 +538,7 @@ function saveRegion(socket, data, cb) {
 			//Ищем регион по переданному cid
 			var region;
 
-			step (
+			step(
 				function () {
 					Region.findOne({cid: data.cid}, this);
 				},
@@ -525,34 +547,31 @@ function saveRegion(socket, data, cb) {
 						return cb({message: err && err.message || 'Such region doesn\'t exists', error: true});
 					}
 					region = r;
-					region.udate = new Date();
-
 					parentChange = !_.isEqual(parentsArray, region.parents);
-					var maxNewParentsCount = parentsArray.length > region.parents.length && Math.min(region.parents.length + maxRegionLevel - parentsArray.length, maxRegionLevel - 1);
 
-					if (typeof maxNewParentsCount === 'number') {
-						//Проверяем, что при переносе вниз по дереву, будут соблюдена максимальная вложенность
-						Region.count({$and: [
-							{parents: region.cid},
-							{parents: {$size: maxNewParentsCount}}
-						]}, this);
+					if (parentChange) {
+						getChildsLenByLevel(region, this);
 					} else {
 						this();
 					}
 				},
-				function (err, countWhoWillExceedMaxLevel) {
+				function (err, childLens) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					if (countWhoWillExceedMaxLevel) {
-						return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
+					if (parentChange) {
+						if (parentsArray.length > region.parents.length && (region.parents.length + 1 + childLens.length > maxRegionLevel)) {
+							return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
+						}
+
+						childLenArray = childLens;
+						parentsArrayOld = region.parents;
+						region.parents = parentsArray;
 					}
-					parentsArrayOld = region.parents;
-					region.parents = parentsArray;
+					region.udate = new Date();
 					fill(region);
 				}
 			);
-
 		}
 
 		function fill(region) {
@@ -604,7 +623,7 @@ function saveRegion(socket, data, cb) {
 						}
 						if (parentChange) {
 							//Если изменился родитель - пересчитываем все зависимости от уровня
-							changeRegionParentExternality(region, parentsArrayOld, this);
+							changeRegionParentExternality(region, parentsArrayOld, childLenArray, this);
 						} else {
 							this();
 						}
@@ -810,12 +829,10 @@ function getRegion(socket, data, cb) {
  * @param region Объект региона
  * @param cb
  */
-function getParentsAndChilds(region, cb) {
-	var level = region.parents && region.parents.length || 0; //Уровень региона равен кол-ву родительских
-
+function getChildsLenByLevel(region, cb) {
 	step(
 		function () {
-			var childrenLevel = level,
+			var level = region.parents && region.parents.length || 0, //Уровень региона равен кол-ву родительских
 				childrenQuery = {};
 
 			if (level < maxRegionLevel) {
@@ -827,8 +844,8 @@ function getParentsAndChilds(region, cb) {
 				// {'parents.1': 77, parents: {$size: 3}}
 				// {'parents.1': 77, parents: {$size: 4}}
 				childrenQuery['parents.' + level] = region.cid;
-				while (childrenLevel++ < maxRegionLevel) {
-					childrenQuery.parents = {$size: childrenLevel};
+				while (level++ < maxRegionLevel) {
+					childrenQuery.parents = {$size: level};
 					Region.count(childrenQuery, this.parallel());
 				}
 			} else {
@@ -847,8 +864,22 @@ function getParentsAndChilds(region, cb) {
 					childLenArr.push(arguments[i]);
 				}
 			}
+			cb(null, childLenArr);
+		}
+	);
+}
 
-			this.parallel()(null, childLenArr);
+/**
+ * Возвращает для региона спопулированные parents и кол-во дочерних регионов по уровням
+ * @param region Объект региона
+ * @param cb
+ */
+function getParentsAndChilds(region, cb) {
+	var level = region.parents && region.parents.length || 0; //Уровень региона равен кол-ву родительских
+
+	step(
+		function () {
+			getChildsLenByLevel(region, this.parallel());
 			//Если есть родительские регионы - вручную их "популируем"
 			if (level) {
 				getOrderedRegionList(region.parents, null, this.parallel());

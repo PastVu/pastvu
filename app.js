@@ -310,8 +310,9 @@ async.waterfall([
 			}
 
 			server.listen(listenport, listenhost, function () {
+				logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
 				logger.info('Host for users: [%s]', protocol + '://' + host);
-				logger.info('Server listening [%s:%s] in %s-mode' + (gzip ? ' with gzip' : '') + '\n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
+				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
 			});
 
 		}

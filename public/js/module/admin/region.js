@@ -32,6 +32,7 @@ define([
 			this.region = ko_mapping.fromJS(regionDef);
 			this.haveParent = ko.observable('0');
 			this.parentCid = ko.observable(0);
+			this.parentCidOrigin = 0;
 			this.childLenArr = ko.observableArray();
 			this.geoStringOrigin = null;
 			this.geoObj = null;
@@ -119,12 +120,13 @@ define([
 
 			this.childLenArr(data.childLenArr || []);
 			if (data.region.parents && data.region.parents.length) {
-				this.parentCid(data.region.parents[data.region.parents.length - 1].cid);
+				this.parentCidOrigin = data.region.parents[data.region.parents.length - 1].cid;
 				this.haveParent('1');
 			} else {
 				this.haveParent('0');
-				this.parentCid(0);
+				this.parentCidOrigin = 0;
 			}
+			this.parentCid(this.parentCidOrigin);
 
 			if (region.geo) {
 				this.geoStringOrigin = region.geo;
@@ -200,7 +202,6 @@ define([
 			if (this.exe()) {
 				return false;
 			}
-			this.exe(true);
 
 			var saveData = ko_mapping.toJS(this.region);
 
@@ -218,14 +219,16 @@ define([
 			}
 
 			if (this.haveParent() === '1') {
-				saveData.parent = this.parentCid();
+				saveData.parent = Number(this.parentCid());
 				if (!saveData.parent) {
 					window.noty({text: 'Если уровень региона ниже Страны, необходимо указать номер родительского региона!', type: 'error', layout: 'center', timeout: 5000, force: true});
 					return false;
 				}
+			} else {
+				saveData.parent = 0;
 			}
 
-			if (!this.createMode() && saveData.parent !== this.regionOrigin.parent) {
+			if (!this.createMode() && saveData.parent !== this.parentCidOrigin) {
 				this.changeParentWarn(function (confirm) {
 					if (confirm) {
 						processSave(this);
@@ -236,30 +239,41 @@ define([
 			}
 
 			function processSave(ctx) {
+				ctx.exe(true);
 				ctx.sendSave(saveData, function (data, error) {
 					var resultStat = data && data.resultStat;
 
-					if (!error && resultStat && Object.keys(resultStat).length) {
-						var msg = 'Регион <b>' + this.region.title + '</b> успешно перенесён и сохранен<br>',
-							geoChangePhotosCount;
+					if (!error) {
+						if (resultStat && Object.keys(resultStat).length) {
+							var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно перенесён и сохранен<br>',
+								geoChangePhotosCount;
 
-						if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
-							geoChangePhotosCount = resultStat.photosCountAfterGeo - resultStat.photosCountBeforeGeo;
+							if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
+								geoChangePhotosCount = resultStat.photosCountAfterGeo - resultStat.photosCountBeforeGeo;
 
-							if (geoChangePhotosCount) {
-								msg += '<b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.<br>';
+								if (geoChangePhotosCount) {
+									msg += '<b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.<br>';
+								}
 							}
+							if (resultStat.affectedPhotos) {
+								msg += '<b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.<br>';
+							}
+							if (resultStat.affectedUsers) {
+								msg += 'У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
+							}
+							if (resultStat.affectedMods) {
+								msg += 'У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.<br>';
+							}
+							window.noty({text: msg, type: 'alert', layout: 'center', force: true,
+								buttons: [
+									{addClass: 'btn btn-primary', text: 'Ok', onClick: function ($noty) {
+										$noty.close();
+									}}
+								]
+							});
+						} else {
+							window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
 						}
-						if (resultStat.affectedPhotos) {
-							msg += '<b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.<br>';
-						}
-						if (resultStat.affectedUsers) {
-							msg += 'У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
-						}
-						if (resultStat.affectedMods) {
-							msg += 'У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.<br>';
-						}
-						window.noty({text: msg, type: 'success', layout: 'center', timeout: 4000, force: true});
 					}
 					this.exe(false);
 				}, ctx);
@@ -274,7 +288,6 @@ define([
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
 					this.region.pointsnum(data.region.pointsnum);
 
 					if (this.createMode()) {
@@ -283,10 +296,10 @@ define([
 					} else {
 						this.fillData(data);
 					}
+				}
 
-					if (Utils.isType('function', cb)) {
-						cb.call(ctx, data, error);
-					}
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, data, error);
 				}
 			}.bind(this));
 			socket.emit('saveRegion', saveData);
