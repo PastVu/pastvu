@@ -5,16 +5,16 @@
 	"uport": 3001, /* Application uploader.js will listen this port. @Default 3001 */
 
 	"protocol": "http", /* Protocol for external users. @Default "http" */
-	"domain": "", /* Domain for external users, i.e. site entry point. @Default "127.0.0.1" */
+	"domain": "127.0.0.1", /* Domain for external users, i.e. site entry point. @Default "127.0.0.1" */
 	"projectport": "", /* Port for external users. @Example ":1234". @Default "" */
 	"projectuport": ":3001", /* Upload files port for external users. @Example ":1234". @Default "" */
 
-	"storePath": "", /* Store folder with static user content (avatars, photos, etc). @Default "/../store/" */
-	"noServePublic": false, /* Tell app.js not to serve out its public folder (js, css, etc). @Default false */
-	"noServeStore": false, /* Tell app.js not to serve out store public folder.  @Default false */
+	"storePath": "", /* Store folder with static user content (avatars, photos, etc). @Default "../store/" */
+	"servePublic": true, /* Tell app.js serve out its public folder (js, css, etc). @Default true */
+	"serveStore": true, /* Tell app.js serve out store public folder.  @Default true */
 	"subdomains": "", /* Subdomains for serving store path's public folder divided by _.  @Default "" */
 
-	"logPath": "", /* Folder for logs. @Default "./logss" */
+	"logPath": "", /* Folder for logs. @Default "./logs" */
 	"manualGarbageCollect": 0, /* Manual invoke garbage collector in millisec.
 								  WARN: need to use with node flags --nouse-idle-notification --expose-gc
 								  If 0 - no manual collect. @Default 0 */

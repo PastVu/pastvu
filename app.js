@@ -14,6 +14,7 @@ var express = require('express'),
 	os = require('os'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
+	_ = require('lodash'),
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
@@ -45,31 +46,34 @@ for (var k in interfaces) {
 
 
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
-	conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
+	confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.json', 'utf8'))),
+	confConsole = _.pick(argv, Object.keys(confDefault)),
+	conf = _.defaults(confConsole, argv.conf ? JSON.parse(JSON.minify(fs.readFileSync(argv.conf, 'utf8'))) : {}, confDefault),
 
-	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
-	listenport = argv.port || conf.port || 3000, //Порт прослушки сервера
-	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
+	land = conf.land, //Окружение (dev, test, prod)
+	listenport = conf.port, //Порт прослушки сервера
+	listenhost = conf.hostname, //Слушать хост
 
-	protocol = argv.protocol || conf.protocol || 'http', //Протокол сервера для клинетов
-	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.projectport || conf.projectport || '', //Порт сервера для клиента
-	uport = argv.projectuport || conf.projectuport || '', //Порт сервера загрузки фотографий для клиента
+	protocol = conf.protocol, //Протокол сервера для клинетов
+	domain = conf.domain || addresses[0], //Адрес сервера для клинетов
+	port = conf.projectport, //Порт сервера для клиента
+	uport = conf.projectuport, //Порт сервера загрузки фотографий для клиента
 	host = domain + port, //Имя хоста (адрес+порт)
-	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {
+
+	subdomains = (argv.subdomains || conf.subdomains).split('_').filter(function (item) {
 		return typeof item === 'string' && item.length > 0;
 	}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo.con,
-	moongoPool = argv.mongopool || conf.mongo.pool || 5,
+	moongoPool = argv.mongopool || conf.mongo.pool,
 	mail = conf.mail || {},
 
 	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
-	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
-	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
-	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
+	storePath = path.normalize(conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
+	servePublic = conf.servePublic, //Флаг, что node должен раздавать статику скриптов
+	serveStore = conf.serveStore, //Флаг, что node должен раздавать статику хранилища
 
-	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")), //Путь к папке логов
-	manualGarbageCollect = argv.manualGarbageCollect || conf.manualGarbageCollect || 0; //Интервал самостоятельного вызова gc
+	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), //Путь к папке логов
+	manualGarbageCollect = conf.manualGarbageCollect; //Интервал самостоятельного вызова gc. 0 - выключено
 
 
 /**
@@ -180,10 +184,10 @@ async.waterfall([
 				app.use('/style', require('less-middleware')({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
 				//prod: app.use('/style', require('less-middleware')({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 			}
-			if (!noServePublic) {
+			if (servePublic) {
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
 			}
-			if (!noServeStore) {
+			if (serveStore) {
 				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
 				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
 			}
@@ -191,12 +195,12 @@ async.waterfall([
 
 			//app.get должен быть всегда после app.use, в противном случае следующие app.use не будет использованы
 			//Сначала "законцовываем" пути к статике
-			if (!noServePublic) {
+			if (servePublic) {
 				app.get('/img/*', static404);
 				app.get('/js/*', static404);
 				app.get('/style/*', static404);
 			}
-			if (!noServeStore) {
+			if (serveStore) {
 				app.get('/_a/d/*', function (req, res) {
 					res.redirect(302, '/img/caps/avatar.png');
 				});
