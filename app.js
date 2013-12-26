@@ -71,6 +71,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	storePath = path.normalize(conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	servePublic = conf.servePublic, //Флаг, что node должен раздавать статику скриптов
 	serveStore = conf.serveStore, //Флаг, что node должен раздавать статику хранилища
+	gzip = conf.gzip, //Использовать gzip
 
 	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), //Путь к папке логов
 	manualGarbageCollect = conf.manualGarbageCollect; //Интервал самостоятельного вызова gc. 0 - выключено
@@ -178,7 +179,9 @@ async.waterfall([
 
 			//app.use(express.logger({ immediate: false, format: 'dev' }));
 			app.disable('x-powered-by'); // Disable default X-Powered-By
-			app.use(express.compress());
+			if (gzip) {
+				app.use(express.compress());
+			}
 			app.use(express.favicon(__dirname + pub + 'favicon.ico', { maxAge: ms('1d') }));
 			if (land === 'dev') {
 				app.use('/style', require('less-middleware')({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
@@ -308,7 +311,7 @@ async.waterfall([
 
 			server.listen(listenport, listenhost, function () {
 				logger.info('Host for users: [%s]', protocol + '://' + host);
-				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
+				logger.info('Server listening [%s:%s] in %s-mode' + (gzip ? ' with gzip' : '') + '\n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
 			});
 
 		}
