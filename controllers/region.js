@@ -107,7 +107,7 @@ function calcRegionIncludes(cidOrRegion, cb) {
 	if (!cb) {
 		cb = Utils.dummyFn;
 	}
-	if (typeof cid === 'number') {
+	if (typeof cidOrRegion === 'number') {
 		Region.findOne({cid: cidOrRegion}, {_id: 0, cid: 1, parents: 1, geo: 1}, {lean: true}, doCalc);
 	} else {
 		doCalc(null, cidOrRegion);
@@ -142,7 +142,7 @@ function calcRegionIncludes(cidOrRegion, cb) {
 				setObject = {$set: {}};
 				setObject.$set[level] = region.cid;
 
-				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, cb);
+				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, this);
 			},
 			function (err, photosCountAfter) {
 				if (err) {
@@ -599,11 +599,6 @@ function saveRegion(socket, data, cb) {
 					return cb({message: err && err.message || 'Save error', error: true});
 				}
 				region = region.toObject();
-				if (data.geo) {
-					region.geo = JSON.stringify(region.geo);
-				} else {
-					delete region.geo;
-				}
 
 				step(
 					function () {
@@ -649,6 +644,12 @@ function saveRegion(socket, data, cb) {
 						}
 						if (parentsSortedArr) {
 							region.parents = parentsSortedArr;
+						}
+
+						if (data.geo) {
+							region.geo = JSON.stringify(region.geo);
+						} else {
+							delete region.geo;
 						}
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});

@@ -203,7 +203,8 @@ define([
 				return false;
 			}
 
-			var saveData = ko_mapping.toJS(this.region);
+			var saveData = ko_mapping.toJS(this.region),
+				parentIsChanged;
 
 			if (!saveData.geo) {
 				window.noty({text: 'GeoJSON обязателен!', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -229,6 +230,7 @@ define([
 			}
 
 			if (!this.createMode() && saveData.parent !== this.parentCidOrigin) {
+				parentIsChanged = true;
 				this.changeParentWarn(function (confirm) {
 					if (confirm) {
 						processSave(this);
@@ -244,36 +246,34 @@ define([
 					var resultStat = data && data.resultStat;
 
 					if (!error) {
-						if (resultStat && Object.keys(resultStat).length) {
-							var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно перенесён и сохранен<br>',
-								geoChangePhotosCount;
+						var msg = 'Регион <b>' + this.region.title_local() + '</b> успешно ' + (parentIsChanged ? 'перенесён и ' : '') + 'сохранен<br>',
+							geoChangePhotosCount;
 
+						if (resultStat && Object.keys(resultStat).length) {
 							if (typeof resultStat.photosCountBeforeGeo === 'number' && typeof resultStat.photosCountAfterGeo === 'number') {
 								geoChangePhotosCount = resultStat.photosCountAfterGeo - resultStat.photosCountBeforeGeo;
 
 								if (geoChangePhotosCount) {
-									msg += '<b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.<br>';
+									msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.';
 								}
 							}
 							if (resultStat.affectedPhotos) {
-								msg += '<b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.<br>';
+								msg += '<br><b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.';
 							}
 							if (resultStat.affectedUsers) {
-								msg += 'У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
+								msg += '<br>У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".';
 							}
 							if (resultStat.affectedMods) {
-								msg += 'У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.<br>';
+								msg += '<br>У <b>' + resultStat.affectedMods + '</b> модераторов были сокрашены модерируемые регионы.';
 							}
-							window.noty({text: msg, type: 'alert', layout: 'center', force: true,
-								buttons: [
-									{addClass: 'btn btn-primary', text: 'Ok', onClick: function ($noty) {
-										$noty.close();
-									}}
-								]
-							});
-						} else {
-							window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
 						}
+						window.noty({text: msg, type: 'alert', layout: 'center', force: true,
+							buttons: [
+								{addClass: 'btn btn-primary', text: 'Ok', onClick: function ($noty) {
+									$noty.close();
+								}}
+							]
+						});
 					}
 					this.exe(false);
 				}, ctx);
