@@ -560,7 +560,7 @@ function saveRegion(socket, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 					if (parentChange) {
-						if (parentsArray.length > region.parents.length && (region.parents.length + 1 + childLens.length > maxRegionLevel)) {
+						if (parentsArray.length > region.parents.length && (parentsArray.length + 1 + childLens.length > maxRegionLevel)) {
 							return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
 						}
 

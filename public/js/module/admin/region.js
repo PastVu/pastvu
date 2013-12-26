@@ -286,7 +286,7 @@ define([
 				var error = !data || !!data.error || !data.region;
 
 				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 7000, force: true,  closeWith: ['click']});
 				} else {
 					this.region.pointsnum(data.region.pointsnum);
 
