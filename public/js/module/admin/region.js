@@ -24,6 +24,7 @@ define([
 		create: function () {
 			this.destroy = _.wrap(this.destroy, this.localDestroy);
 			this.auth = globalVM.repository['m/common/auth'];
+			this.formatNum = Utils.format.numberByThousands; //Передаем функцию форматирования числа в шаблон
 			this.createMode = ko.observable(true);
 			this.exe = ko.observable(true); //Указывает, что сейчас идет обработка запроса на действие к серверу
 

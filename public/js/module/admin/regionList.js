@@ -13,6 +13,7 @@ define([
 		jade: jade,
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+			this.formatNum = Utils.format.numberByThousands; //Передаем функцию форматирования числа в шаблон
 			this.regions = ko.observableArray();
 			this.stat = null;
 

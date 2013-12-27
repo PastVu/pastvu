@@ -3,23 +3,23 @@
 	.regionsStat
 		.stat
 			span Всего регионов:
-			b(data-bind="text: ' '+stat.common.regionsCount")
+			b(data-bind="text: ' '+formatNum(stat.common.regionsCount)")
 			span &nbsp;&nbsp;По уровням:
 			//ko foreach: stat.byLevel
 			//ko if: $index() > 0
 			span.glyphicon.glyphicon-play
 			// /ko
-			b(data-bind="text: ' ' + $data.regionsCount + ' '")
+			b(data-bind="text: ' ' + $parent.formatNum($data.regionsCount) + ' '")
 			// /ko
 		.stat
 			span Всего вершин:
-			b(data-bind="text: ' '+stat.common.pointsCount")
+			b(data-bind="text: ' '+formatNum(stat.common.pointsCount)")
 			span &nbsp;&nbsp;По уровням:
 			//ko foreach: stat.byLevel
 			//ko if: $index() > 0
 			span.glyphicon.glyphicon-play
 			// /ko
-			b(data-bind="text: ' ' + $data.pointsCount + ' '")
+			b(data-bind="text: ' ' + $parent.formatNum($data.pointsCount) + ' '")
 			// /ko
 	.regionsHead
 		a.headElem.interact(href="/admin/region/create")

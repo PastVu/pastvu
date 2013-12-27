@@ -368,6 +368,12 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				return (floatValue * 100).toFixed(2) + ' %';
 			}
 
+			//Разделяет число по тысячам переданной строкой(если не передана - пробелом)
+			//http://stackoverflow.com/a/2901298/1309851
+			function numberByThousands(val, divider) {
+				return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
+			}
+
 			var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
 
 			function declOfNum(number, titles) {
@@ -379,6 +385,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				bitrate: formatBitrate,
 				secondsToTime: secondsToTime,
 				percentage: formatPercentage,
+				numberByThousands: numberByThousands,
 				wordEndOfNum: declOfNum
 			};
 		}()),
