@@ -9,7 +9,7 @@
 			//ko if: $index() > 0
 			span.glyphicon.glyphicon-play
 			// /ko
-			b(data-bind="text: ' ' + $parent.formatNum($data.regionsCount) + ' '")
+			b(data-bind="text: ' ' + $parent.formatNum($data.regionsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
 			// /ko
 		.stat
 			span Всего вершин:
@@ -19,7 +19,7 @@
 			//ko if: $index() > 0
 			span.glyphicon.glyphicon-play
 			// /ko
-			b(data-bind="text: ' ' + $parent.formatNum($data.pointsCount) + ' '")
+			b(data-bind="text: ' ' + $parent.formatNum($data.pointsCount) + ' ', attr: {title: ($index() + 1) + ' уровень'}")
 			// /ko
 	.regionsHead
 		a.headElem.interact(href="/admin/region/create")
@@ -43,7 +43,7 @@
 				// /ko
 				a.name(title="Открыть регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
 					span.glyphicon.glyphicon-globe
-					span(data-bind="text: ' ' + $data.title_en")
+					span(data-bind="text: ' ' + $data.title_local")
 					//ko if: $data.childLen
 					.childsCount
 						//ko foreach: childLenArr
