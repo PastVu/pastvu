@@ -63,6 +63,33 @@ sudo node app.js --land prod --domain pastvu.com --port 80 --uport 3001
    Выгрузить csv определенные поля по запросу
    mongoexport -d pastvu -c users --csv --fields login,birthdate,sex --query '{"$and":[{"$or":[{"pcount":{"$gt":0}},{"ccount":{"$gt":0}}]},{"$or":[{"birthdate":{"$nin":[null,"1.1.1920"]}},{"sex":{"$ne":null}}]}]}' --out mdump/users.csv
 	
+	/*Подсчет количества точек по уровням в mongodb 2.2-2.4*/
+	//Считаем количество регионов и точек первого(нулевого) уровня
+	//Его надо считать отдельно, так как в следущем агрегаторе $unwind "раскроет" только те, у кого массив parents не пуст
+	Region.collection.aggregate([
+		{$project: {_id: 0, parents: 1, pointsnum: 1}},
+		{$match: {parents: {$size: 0}}},
+		{$group: {_id: null, total: {$sum: '$pointsnum'}}}
+	], this.parallel());
+	//Считаем количество регионов и точек последующих уровней
+	Region.collection.aggregate([
+		{$project: {_id: 0, cid: 1, parents: 1, pointsnum: 1}},
+		{$unwind: '$parents'}, //"Раскрываем" массив родителей по каждому региону, т.е. будет несколько строк одного региона по количеству его родителей
+		{$group: {_id: '$cid', size: {$sum: 1}, pointsum: {$sum: '$pointsnum'}}}, //Считаем количество каждого раскрытого региона, таки образом получив количество родительских. Также складываем кол-во точек
+		{$project: {size: 1, realpointsum: {$divide: ['$pointsum', '$size']}}}, //Делим количество точек на количество родительских, получая реального кол-во точек региона
+		{$group: {_id: '$size', regionscount: {$sum: 1}, totalpointsum: {$sum: '$realpointsum'}}}, //Складываем количество точек по каждому количеству родительских (уровню)
+		{$project: {size: '$_id', regionscount: 1, totalpointsum: 1, _id: 0}}, //Переименовываем поля в более читаемые
+		{$sort: {size: 1}}
+	], this.parallel());
+	
+	/*Подсчет количества точек по уровням в mongodb 2.6*/
+	Region.collection.aggregate([
+		{$project: {_id: 0, level: {$size: '$parents'}, pointsnum: 1}},
+		{$group: {_id: '$level', regionscount: {$sum: 1}, pointscount: {$sum: '$pointsnum'}}},
+		{$sort: {_id: 1}}, //Сортируем по родительский по возрастанию
+		{$project: {regionscount: 1, pointscount: 1, _id: 0}}
+	], this);
+	
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
 	forfiles /s /m *.* /p \_test\pastvu\photosAll /c "cmd /c move @file \_test\pastvu\result"

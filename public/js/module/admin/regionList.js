@@ -14,6 +14,7 @@ define([
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
 			this.regions = ko.observableArray();
+			this.stat = null;
 
 			this.getRegions(function () {
 				ko.applyBindings(globalVM, this.$dom[0]);
@@ -35,6 +36,7 @@ define([
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
+					this.stat = data.stat;
 					this.regions(this.treeBuild(data.regions));
 					this.regionsFlat = data.regions;
 				}

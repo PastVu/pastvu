@@ -897,6 +897,50 @@ function getParentsAndChilds(region, cb) {
 }
 
 
+//Массив количества всех регионов по уровням
+function getRegionsCountByLevel(cb) {
+	step(
+		function () {
+			for (var i = 0; i < maxRegionLevel; i++) {
+				Region.count({parents: {$size: i}}, this.parallel());
+			}
+		},
+		function (err/*, childCounts*/) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			var childLenArr = [],
+				i;
+
+			for (i = 1; i < arguments.length; i++) {
+				if (arguments[i]) {
+					childLenArr.push(arguments[i]);
+				}
+			}
+			cb(null, childLenArr);
+		}
+	);
+}
+//Статистика регионов по уровням (количество регионов, количество их точек)
+function getRegionsStatByLevel(cb) {
+	step(
+		function () {
+			Region.collection.aggregate([
+				{$project: {_id: 0, level: {$size: '$parents'}, pointsnum: 1}}, //Поля для выборки. level - формируемое поле размера массива родительских, т.е. уровень. Появилось в 2.5.3 https://jira.mongodb.org/browse/SERVER-4899
+				{$group: {_id: '$level', regionsCount: {$sum: 1}, pointsCount: {$sum: '$pointsnum'}}}, //Считаем показатели по каждому уровню
+				{$sort: {_id: 1}}, //Сортируем по родительский по возрастанию
+				{$project: {regionsCount: 1, pointsCount: 1, _id: 0}} //Оставляем только нужные поля
+			], this);
+		},
+		function (err, regionsStat) {
+			if (err) {
+				return cb({message: err.message, error: true});
+			}
+			cb(null, regionsStat);
+		}
+	);
+}
+
 function getRegionsFull(socket, data, cb) {
 	var iAm = socket.handshake.session.user;
 
@@ -908,12 +952,33 @@ function getRegionsFull(socket, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Region.find({}, {_id: 0, geo: 0, __v: 0}, {lean: true}, function (err, regions) {
-		if (err || !regions) {
-			return cb({message: err && err.message || 'No regions', error: true});
+	step(
+		function () {
+			Region.find({}, {_id: 0, geo: 0, __v: 0}, {lean: true}, this.parallel());
+			getRegionsStatByLevel(this.parallel());
+		},
+		function (err, regions, regionsStatByLevel) {
+			if (err || !regions) {
+				return cb({message: err && err.message || 'No regions', error: true});
+			}
+			var regionsStatCommon = {regionsCount: 0, pointsCount: 0},
+				i;
+
+			//Общие показатели (сложенные по уровням)
+			for (i = regionsStatByLevel.length; i--;) {
+				regionsStatCommon.regionsCount += regionsStatByLevel[i].regionsCount;
+				regionsStatCommon.pointsCount += regionsStatByLevel[i].pointsCount;
+			}
+
+			cb({
+				regions: regions,
+				stat: {
+					common: regionsStatCommon,
+					byLevel: regionsStatByLevel
+				}
+			});
 		}
-		cb({regions: regions});
-	});
+	);
 }
 
 function getRegionsPublic(socket, data, cb) {

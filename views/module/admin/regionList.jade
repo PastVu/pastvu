@@ -1,5 +1,26 @@
 .adminRegions(data-bind="with: repository[M!M]")
 	h4 Список регионов
+	.regionsStat
+		.stat
+			span Всего регионов:
+			b(data-bind="text: ' '+stat.common.regionsCount")
+			span &nbsp;&nbsp;По уровням:
+			//ko foreach: stat.byLevel
+			//ko if: $index() > 0
+			span.glyphicon.glyphicon-play
+			// /ko
+			b(data-bind="text: ' ' + $data.regionsCount + ' '")
+			// /ko
+		.stat
+			span Всего вершин:
+			b(data-bind="text: ' '+stat.common.pointsCount")
+			span &nbsp;&nbsp;По уровням:
+			//ko foreach: stat.byLevel
+			//ko if: $index() > 0
+			span.glyphicon.glyphicon-play
+			// /ko
+			b(data-bind="text: ' ' + $data.pointsCount + ' '")
+			// /ko
 	.regionsHead
 		a.headElem.interact(href="/admin/region/create")
 			span.glyphicon.glyphicon-plus
