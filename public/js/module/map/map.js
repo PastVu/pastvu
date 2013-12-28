@@ -200,7 +200,9 @@ define([
 
 		show: function () {
 			var center = this.point && this.point.geo() || this.options.center || null,
-				zoom = this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z);
+				zoom = this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z),
+				system = (this.embedded ? Utils.getLocalStorage('map.embedded.sys') : Utils.getLocalStorage('map.sys')) || defaults.sys,
+				type = (this.embedded ? Utils.getLocalStorage('map.embedded.type') : Utils.getLocalStorage('map.type')) || defaults.type;
 
 			if (!center && localStorage['map.center']) {
 				try {
@@ -218,7 +220,7 @@ define([
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: zoom, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
-			this.selectLayer(Utils.getLocalStorage('map.sys') || defaults.sys, Utils.getLocalStorage('map.type') || defaults.type);
+			this.selectLayer(system, type);
 
 			Locations.subscribe(function (val) {
 				this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -239,11 +241,12 @@ define([
 			);
 
 			this.map
-				.on('moveend', this.moveEnd, this)
 				.on('zoomend', this.zoomEndCheckLayer, this)
 				.whenReady(function () {
 					if (this.embedded) {
 						this.map.addLayer(this.pointLayer);
+					} else {
+						this.map.on('moveend', this.saveCenterZoom, this);
 					}
 					this.editHandler(this.editing());
 
@@ -389,7 +392,7 @@ define([
 		setMapDefCenter: function (forceMoveEvent) {
 			this.map.setView(this.mapDefCenter, Locations.current.z, false);
 		},
-		moveEnd: function () {
+		saveCenterZoom: function () {
 			Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
 			Utils.setLocalStorage('map.zoom', this.map.getZoom());
 		},
@@ -451,8 +454,8 @@ define([
 							this.map.setZoom(type.maxZoom);
 						}
 
-						Utils.setLocalStorage('map.sys', system.id);
-						Utils.setLocalStorage('map.type', type.id);
+						Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', system.id);
+						Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', type.id);
 					}.bind(this);
 
 					if (layerActive.sys && layerActive.type) {
