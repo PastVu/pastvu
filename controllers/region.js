@@ -205,8 +205,6 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 		levelDiff = Math.abs(levelWas - levelNew), //Разница в уровнях
 		regionsDiff, //Массив cid добавляемых/удаляемых регионов
 		childLen = childLenArray.length,
-		queryObj,
-		renameObj,
 		resultData = {},
 		i;
 
@@ -355,6 +353,7 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 	//затем переименовываем дочерние уровни также вверх
 	function pullPhotosRegionsUp(cb) {
 		var serialUpdates = [],
+			queryObj,
 			setObj,
 			updateParamsClosure = function (q, u) {
 				//Замыкаем параметры выборки и переименования
@@ -365,7 +364,21 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				};
 			};
 
-		//Переименовываем последовательно
+		//Удаляем все поля rX, которые выше поднимаего уровня до его нового значения
+		//Это нужно в случае, когда поднимаем на больше чем один уровень,
+		//т.к. фотографии присвоенные только этому региону (а не его потомкам), оставят присвоение верхних,
+		//т.к. $rename работает в случае присутствия поля и не удалит существующее, если переименовываемого нет
+		if (levelDiff > 1) {
+			queryObj = {};
+			queryObj['r' + levelWas] = region.cid;
+			setObj = {$unset: {}};
+			for (i = levelNew; i < levelWas; i++) {
+				setObj.$unset['r' + i] = 1;
+			}
+			serialUpdates.push(updateParamsClosure(queryObj, setObj));
+		}
+
+		//Переименовываем последовательно на уровни вверх, начиная с верхнего переносимого
 		queryObj = {};
 		queryObj['r' + levelWas] = region.cid;
 		for (i = levelWas; i <= levelWas + childLen; i++) {
@@ -380,16 +393,6 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 			serialUpdates.push(updateParamsClosure(queryObj, setObj));
 		}
 
-		//Теперь удаляем все поля rX, которые ниже потомков поднятого уровня
-		//Например, если у перемещяемого региона один уровень потомков, а мы его поднимаем на три вверх, то оставшийся третий надо удалить
-		queryObj = {};
-		queryObj['r' + levelNew] = region.cid;
-		setObj = {$unset: {}};
-		for (i = levelNew + childLen + 1; i <= maxRegionLevel; i++) {
-			setObj.$unset['r' + i] = 1;
-		}
-		serialUpdates.push(updateParamsClosure(queryObj, setObj));
-
 		//Запускаем последовательное обновление по подготовленным параметрам
 		async.waterfall(serialUpdates, cb);
 	}
@@ -398,33 +401,36 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 	//Начинаем переименование полей с последнего уровня
 	function pushPhotosRegionsDown(cb) {
 		var serialUpdates = [],
-			updateParamsClosure = function (q, r) {
+			queryObj,
+			setObj,
+			updateParamsClosure = function (q, u) {
 				//Замыкаем параметры выборки и переименования
 				return function () {
-					Photo.collection.update(q, {$rename: r}, {multi: true}, _.last(arguments));
+					Photo.collection.update(q, u, {multi: true}, _.last(arguments));
 				};
 			};
 
 		queryObj = {};
 		queryObj['r' + levelWas] = region.cid;
-		for (i = maxRegionLevel - 1; i >= levelWas; i--) {
-			renameObj = {};
-			renameObj['r' + i] = 'r' + (i + levelDiff);
-			serialUpdates.push(updateParamsClosure(queryObj, renameObj));
+		for (i = levelWas + childLen; i >= levelWas; i--) {
+			setObj = {$rename: {}};
+			setObj.$rename['r' + i] = 'r' + (i + levelDiff);
+			serialUpdates.push(updateParamsClosure(queryObj, setObj));
 		}
+
 		async.waterfall(serialUpdates, cb);
 	}
 
 	//Вставляем на место сдвинутых новые родительские
 	function refillPhotosRegions(levelFrom, levelTo, cb) {
-		var qObj = {},
+		var queryObj = {},
 			setObj = {},
 			i;
-		qObj['r' + levelTo] = region.cid;
+		queryObj['r' + levelTo] = region.cid;
 		for (i = levelFrom; i < levelTo; i++) {
 			setObj['r' + i] = region.parents[i];
 		}
-		Photo.collection.update(qObj, {$set: setObj}, {multi: true}, cb);
+		Photo.collection.update(queryObj, {$set: setObj}, {multi: true}, cb);
 	}
 
 	//Удаляем у пользователей и модераторов подписку на дочерние регионы, если они подписаны на родительские
