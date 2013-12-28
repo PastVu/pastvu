@@ -104,7 +104,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			origin.sdate = new Date(origin.sdate);
 		}
 		if (defType === 'full') {
-			if (Utils.geoCheck(origin.geo)) {
+			if (Utils.geo.check(origin.geo)) {
 				origin.geo.reverse(); // Stores in mongo like [lng, lat], for api need [lat, lng]
 			} else {
 				origin.geo = defaults[defType].geo;

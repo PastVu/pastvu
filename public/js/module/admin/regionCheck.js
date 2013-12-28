@@ -54,7 +54,7 @@ define([
 				passedGeo = passedGeo.split(',').map(function (element) {
 					return parseFloat(element);
 				});
-				if (Utils.geoCheck(passedGeo)) {
+				if (Utils.geo.check(passedGeo)) {
 					passedZoom = Number(globalVM.router.params().z);
 				} else {
 					passedGeo = null;
@@ -86,7 +86,7 @@ define([
 						this.goToGeo(geo);
 					}, this);
 
-				if (Utils.geoCheck(passedGeo)) {
+				if (Utils.geo.check(passedGeo)) {
 					this.goToGeo(passedGeo);
 				}
 			}, this);
@@ -118,7 +118,7 @@ define([
 					return parseFloat(element);
 				});
 
-			if (Utils.geoCheck(geo)) {
+			if (Utils.geo.check(geo)) {
 				this.map.panTo(geo);
 				this.goToGeo(geo);
 			} else {

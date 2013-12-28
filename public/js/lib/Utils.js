@@ -174,9 +174,21 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return out;
 		},
 
-		//Проверка на валидность geo [lng, lat]
-		geoCheck: function (geo) {
-			return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+		getLocalStorage: function (key) {
+			var result,
+				val = localStorage[key];
+
+			if (val) {
+				try {
+					result = JSON.parse(localStorage[key]);
+				} catch (e) {
+					console.warn('Can not parse ' + key);
+				}
+			}
+			return result;
+		},
+		setLocalStorage: function (key, val) {
+			localStorage[key] = JSON.stringify(val);
 		},
 
 		/**
@@ -707,12 +719,18 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
 			}
 
+			//Проверка на валидность geo [lng, lat]
+			function check(geo) {
+				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+			}
+
 			return {
 				geoToPrecision: geoToPrecision,
 				geoToPrecisionRound: geoToPrecisionRound,
 				getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
 				deg2rad: deg2rad,
-				latlngToArr: latlngToArr
+				latlngToArr: latlngToArr,
+				check: check
 			};
 		}()),
 
