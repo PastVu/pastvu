@@ -61,7 +61,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('clusterAll', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
+				if (!hs.session.user || !hs.session.user.role || hs.session.user.role < 10) {
 					return result({message: 'Not authorized', error: true});
 				}
 				step(
@@ -86,6 +86,12 @@ module.exports.loadController = function (app, db, io) {
 							return result({message: err && err.message, error: true});
 						}
 						dbNative.eval('function (gravity) {clusterPhotosAll(gravity);}', [true], {nolock:true}, this);
+					},
+					function runPhotosOnMapRefill(err, clusters, conditions) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						dbNative.eval('function () {photosToMapAll();}', [], {nolock:true}, this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {
@@ -170,7 +176,7 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 
 			$update.$set.geo = geoCluster;
-			Photo.collection.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
+			Photo.collection.findOne({s: 5, geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
 		},
 		function (err, photo) {
 			if (err) {
@@ -199,7 +205,7 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 		}
 		return;
 	}
-	var start = Date.now();
+	//var start = Date.now();
 	geoPhotoOld = !_.isEmpty(geoPhotoOld) ? geoPhotoOld : undefined;
 
 	step(
@@ -259,7 +265,7 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 			}
 		},
 		function (err) {
-			console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
+			//console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
 			if (Utils.isType('function', cb)) {
 				cb(err);
 			}
@@ -280,7 +286,7 @@ module.exports.declusterPhoto = function (photo, cb) {
 		}
 		return;
 	}
-	var start = Date.now();
+	//var start = Date.now();
 
 	step(
 		function () {
@@ -302,7 +308,7 @@ module.exports.declusterPhoto = function (photo, cb) {
 			}
 		},
 		function (err) {
-			console.log(photo.cid + ' declustered in ' + (Date.now() - start));
+			//console.log(photo.cid + ' declustered in ' + (Date.now() - start));
 			if (Utils.isType('function', cb)) {
 				cb(err);
 			}
@@ -452,12 +458,11 @@ module.exports.getBoundsByYear = function (data, cb) {
 	);
 };
 function getClusterPoster(cluster, yearCriteria, cb) {
-	Photo.collection.findOne({geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
+	Photo.collection.findOne({s: 5, geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
 		cluster.p = photo;
 		cb(null);
 	});
-
 }

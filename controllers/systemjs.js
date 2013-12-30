@@ -12,7 +12,7 @@ module.exports.loadController = function (app, db) {
 		var startFullTime = Date.now(),
 			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
 			clusterZoomsCounter = -1,
-			photosAllCount = db.photos.count({geo: {$exists: true}});
+			photosAllCount = db.photos.count({s: 5, geo: {$exists: true}});
 
 		logByNPhotos = logByNPhotos || ((photosAllCount / 20) >> 0);
 		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
@@ -24,7 +24,7 @@ module.exports.loadController = function (app, db) {
 		function clusterizeZoom(clusterZoom) {
 			var startTime = Date.now(),
 
-				photos = db.photos.find({geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1 }),
+				photos = db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1 }),
 				photoCounter = 0,
 				geoPhoto,
 				geoPhotoCorrection = [0, 0],
@@ -92,7 +92,12 @@ module.exports.loadController = function (app, db) {
 							cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
 							cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
 						}
-						cluster.p = db.photos.findOne({geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
+						if (cluster.geo[0] < -180) {
+							cluster.geo[0] += 360;
+						} else if (cluster.geo[0] > 180) {
+							cluster.geo[0] -= 360;
+						}
+						cluster.p = db.photos.findOne({s: 5, geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 					}
 
 					db.clusters.insert(clustersArrInner);
@@ -106,6 +111,31 @@ module.exports.loadController = function (app, db) {
 
 
 		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photosAllCount, clusters: db.clusters.count()};
+	});
+
+	saveSystemJSFunc(function photosToMapAll() {
+		var startTime = Date.now();
+
+		print('Clearing photos map collection');
+		db.photos_map.remove();
+
+		print('Start to fill conveyer for ' + db.photos.count({s: 5, geo: {$exists: true}}) + ' photos');
+		db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).sort({cid: 1}).forEach(function (photo) {
+			if (photo.geo[0] < -180) {
+				printjson(photo);
+			}
+			db.photos_map.insert({
+				cid: photo.cid,
+				geo: photo.geo,
+				file: photo.file,
+				dir: photo.dir || '',
+				title: photo.title || '',
+				year: photo.year || 2000,
+				year2: photo.year2 || photo.year || 2000
+			});
+		});
+
+		return {message: db.photos_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function convertPhotosAll(variants) {
@@ -146,7 +176,7 @@ module.exports.loadController = function (app, db) {
 			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
 		}
 
-		function calcGeoJSONPointsNumReduce (previousValue, currentValue) {
+		function calcGeoJSONPointsNumReduce(previousValue, currentValue) {
 			return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
 		}
 
@@ -157,7 +187,7 @@ module.exports.loadController = function (app, db) {
 
 			count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
 			db.regions.update({cid: region.cid}, {$set: {pointsnum: count}});
-			print(count + ': ' + region.cid + ' '+ region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
+			print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
 		});
 
 		print('\n');
@@ -184,7 +214,7 @@ module.exports.loadController = function (app, db) {
 			setObject.$set['r' + region.parents.length] = region.cid;
 
 			count = db.photos.count(queryObject);
-			print('Assigning ' + count + ' photos for [r' + region.parents.length + '] ' + region.cid + ' '+ region.title_en + ' region');
+			print('Assigning ' + count + ' photos for [r' + region.parents.length + '] ' + region.cid + ' ' + region.title_en + ' region');
 			if (count) {
 				db.photos.update(queryObject, setObject, {multi: true});
 			}

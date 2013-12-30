@@ -259,7 +259,7 @@ function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
 	step(
 		function () {
-			PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld, this.parallel()); 	//Отправляем на кластеризацию
+			PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld, this.parallel()); //Отправляем на кластеризацию
 			PhotoMap.update(
 				{cid: photo.cid},
 				{
