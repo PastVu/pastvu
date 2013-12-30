@@ -243,9 +243,9 @@ module.exports.loadController = function (app, db) {
 			userCounter = users.length,
 			$set,
 			$unset,
+			updateObj,
 			pcount,
 			pfcount,
-		//bcount,
 			ccount;
 
 		print('Start to calc for ' + userCounter + ' users');
@@ -253,9 +253,11 @@ module.exports.loadController = function (app, db) {
 			user = users[userCounter];
 			$set = {};
 			$unset = {};
+			updateObj = {};
 			pcount = db.photos.count({user: user._id, s: 5});
 			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
 			ccount = db.comments.count({user: user._id}) + db.commentsn.count({user: user._id});
+
 			if (pcount > 0) {
 				$set.pcount = pcount;
 			} else {
@@ -271,7 +273,16 @@ module.exports.loadController = function (app, db) {
 			} else {
 				$unset.ccount = 1;
 			}
-			db.users.update({_id: user._id}, {$set: $set, $unset: $unset}, {upsert: false});
+
+			//Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
+			if (Object.keys($set).length) {
+				updateObj.$set = $set;
+			}
+			if (Object.keys($unset).length) {
+				updateObj.$unset = $unset;
+			}
+
+			db.users.update({_id: user._id}, updateObj, {upsert: false});
 		}
 
 		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -284,6 +295,7 @@ module.exports.loadController = function (app, db) {
 			counter = photos.length,
 			$set,
 			$unset,
+			updateObj,
 			ccount;
 
 		print('Start to calc for ' + counter + ' photos');
@@ -291,13 +303,22 @@ module.exports.loadController = function (app, db) {
 			photo = photos[counter];
 			$set = {};
 			$unset = {};
+			updateObj = {};
 			ccount = db.comments.count({obj: photo._id});
 			if (ccount > 0) {
 				$set.ccount = ccount;
 			} else {
 				$unset.ccount = 1;
 			}
-			db.photos.update({_id: photo._id}, {$set: $set, $unset: $unset}, {upsert: false});
+
+			if (Object.keys($set).length) {
+				updateObj.$set = $set;
+			}
+			if (Object.keys($unset).length) {
+				updateObj.$unset = $unset;
+			}
+
+			db.photos.update({_id: photo._id}, updateObj, {upsert: false});
 		}
 
 		return {message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
