@@ -326,11 +326,20 @@ Utils.geo = (function () {
 		return geo;
 	}
 
+	function spinLng(geo) {
+		if (geo[0] < -180) {
+			geo[0] += 360;
+		} else if (geo[0] > 180) {
+			geo[0] -= 360;
+		}
+	}
+
 	return {
 		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
 		deg2rad: deg2rad,
 		geoToPrecision: geoToPrecision,
-		geoToPrecisionRound: geoToPrecisionRound
+		geoToPrecisionRound: geoToPrecisionRound,
+		spinLng: spinLng
 	};
 }());
 

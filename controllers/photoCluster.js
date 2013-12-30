@@ -85,13 +85,13 @@ module.exports.loadController = function (app, db, io) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						dbNative.eval('function (gravity) {clusterPhotosAll(gravity);}', [true], {nolock:true}, this);
+						dbNative.eval('function (gravity) {clusterPhotosAll(gravity);}', [true], {nolock: true}, this);
 					},
 					function runPhotosOnMapRefill(err, clusters, conditions) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						dbNative.eval('function () {photosToMapAll();}', [], {nolock:true}, this);
+						dbNative.eval('function () {photosToMapAll();}', [], {nolock: true}, this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {
@@ -114,6 +114,10 @@ module.exports.loadController = function (app, db, io) {
 function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 	var $update = {$set: {}};
 
+	if (g[0] < -180 || g[0] > 180) {
+		Utils.geo.spinLng(g);
+	}
+
 	step(
 		function () {
 			Cluster.collection.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this);
@@ -124,8 +128,17 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 			var c = (cluster && cluster.c) || 0,
 				yCluster = (cluster && cluster.y) || {},
-				geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
+				geoCluster,
 				inc = 0;
+
+			if (cluster && cluster.geo) {
+				geoCluster = cluster.geo;
+			} else {
+				geoCluster = [g[0] + zParam.wHalf, g[1] - zParam.hHalf];
+				if (geoCluster[0] < -180 || geoCluster[0] > 180) {
+					Utils.geo.spinLng(geoCluster);
+				}
+			}
 
 			if (geoPhotos.o) {
 				inc -= 1;
@@ -172,6 +185,10 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 				}
 				if (geoPhotos.n) {
 					geoCluster = Utils.geo.geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhotos.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhotos.n[1]) / (c + 2)]);
+				}
+
+				if (geoCluster[0] < -180 || geoCluster[0] > 180) {
+					Utils.geo.spinLng(geoCluster);
 				}
 			}
 

@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, spinLng:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -8,11 +8,17 @@ var log4js = require('log4js'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
+	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos, zooms) {
 		var startFullTime = Date.now(),
-			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
+			clusterparamsQuery = {sgeo: {$exists: false}},
+			clusterZooms,
 			clusterZoomsCounter = -1,
 			photosAllCount = db.photos.count({s: 5, geo: {$exists: true}});
+
+		if (zooms) {
+			clusterparamsQuery.z = {$in: zooms};
+		}
+		clusterZooms = db.clusterparams.find(clusterparamsQuery, {_id: 0}).sort({z: 1}).toArray();
 
 		logByNPhotos = logByNPhotos || ((photosAllCount / 20) >> 0);
 		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
@@ -40,8 +46,13 @@ module.exports.loadController = function (app, db) {
 				clustersArrInner,
 				clustersArrLastIndex = 0,
 				clustCoordId,
+				clustersInserted = 0,
 				clustersCounter,
-				clustersCounterInner;
+				clustersCounterInner,
+
+				sorterByCount = function (a, b) {
+					return a.c === b.c ? 0 : (a.c < b.c ? 1: -1);
+				};
 
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
@@ -61,7 +72,7 @@ module.exports.loadController = function (app, db) {
 				if (cluster === undefined) {
 					clustersCount++;
 					clusters[clustCoordId] = cluster = {g: g, z: clusterZoom.z, geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf], c: 0, y: {}, p: null};
-					if (clustersArr[clustersArrLastIndex].push(cluster) > 499) {
+					if (clustersArr[clustersArrLastIndex].push(cluster) > 249) {
 						clustersArr.push([]);
 						clustersArrLastIndex++;
 					}
@@ -84,6 +95,8 @@ module.exports.loadController = function (app, db) {
 			clustersCounter = clustersArr.length;
 			while (clustersCounter) {
 				clustersArrInner = clustersArr[--clustersCounter];
+				clustersArrInner.sort(sorterByCount);
+
 				clustersCounterInner = clustersArrInner.length;
 				if (clustersCounterInner > 0) {
 					while (clustersCounterInner) {
@@ -92,17 +105,18 @@ module.exports.loadController = function (app, db) {
 							cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
 							cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
 						}
-						if (cluster.geo[0] < -180) {
-							cluster.geo[0] += 360;
-						} else if (cluster.geo[0] > 180) {
-							cluster.geo[0] -= 360;
+						if (cluster.geo[0] < -180 || cluster.geo[0] > 180) {
+							spinLng(cluster.geo);
+						}
+						if (cluster.g[0] < -180 || cluster.g[0] > 180) {
+							spinLng(cluster.g);
 						}
 						cluster.p = db.photos.findOne({s: 5, geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 					}
-
-					db.clusters.insert(clustersArrInner);
-					print(clusterZoom.z + ': Inserted ' + clustersArrInner.length + '/' + clustersCount + ' clusters ok. ' + (Date.now() - startTime) / 1000 + 's');
 				}
+				db.clusters.insert(clustersArrInner);
+				clustersInserted += clustersArrInner.length;
+				print(clusterZoom.z + ': Inserted ' + clustersInserted + '/' + clustersCount + ' clusters ok. ' + (Date.now() - startTime) / 1000 + 's');
 			}
 
 			clusters = clustersArr = clustersArrInner = null;
@@ -121,9 +135,6 @@ module.exports.loadController = function (app, db) {
 
 		print('Start to fill conveyer for ' + db.photos.count({s: 5, geo: {$exists: true}}) + ' photos');
 		db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).sort({cid: 1}).forEach(function (photo) {
-			if (photo.geo[0] < -180) {
-				printjson(photo);
-			}
 			db.photos_map.insert({
 				cid: photo.cid,
 				geo: photo.geo,
@@ -321,6 +332,13 @@ module.exports.loadController = function (app, db) {
 			array[index] = toPrecisionRound(item, precision || 6);
 		});
 		return geo;
+	});
+	saveSystemJSFunc(function spinLng(geo) {
+		if (geo[0] < -180) {
+			geo[0] += 360;
+		} else if (geo[0] > 180) {
+			geo[0] -= 360;
+		}
 	});
 
 	saveSystemJSFunc(function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
