@@ -422,17 +422,28 @@ define([
 			});
 		},
 		showLink: function () {
-			this.linkShow(!this.linkShow());
-			if (this.linkShow()) {
+			if (!this.linkShow()) {
+				var center = Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.map.getCenter())),
+					layerActive = this.layerActive();
+
 				setTimeout(function () {
 					this.$dom.find('.inputLink').focus().select();
 					document.addEventListener('click', this.showLinkBind);
 				}.bind(this), 100);
+
+				this.link('?g=' + center[0] + ',' + center[1] + '&z=' + this.map.getZoom() + '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id);
+				this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
+				this.linkShow(true);
 			} else {
-				this.removeShowLinkListener();
+				this.hideLink();
 			}
 		},
+		hideLink: function () {
+			this.linkShow(false);
+			this.removeShowLinkListener();
+		},
 		removeShowLinkListener: function () {
+			this.map.off('zoomstart', this.hideLink, this);
 			document.removeEventListener('click', this.showLinkBind);
 		},
 		linkClick: function (data, evt) {
