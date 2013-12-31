@@ -33,7 +33,7 @@ define([
 			// Modes
 			this.embedded = this.options.embedded;
 			this.editing = ko.observable(this.options.editing);
-			this.openNewTab = ko.observable(!this.embedded);
+			this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
 
 			// Map objects
 			this.map = null;
@@ -193,28 +193,19 @@ define([
 				if (this.markerManager) {
 					this.markerManager.openNewTab = val;
 				}
+				Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
 			}, this);
 
 			this.show();
 		},
 
 		show: function () {
-			var center = this.point && this.point.geo() || this.options.center || null,
+			var center = this.point && this.point.geo() || this.options.center || Utils.getLocalStorage('map.center') || null,
 				zoom = this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z),
-				system = (this.embedded ? Utils.getLocalStorage('map.embedded.sys') : Utils.getLocalStorage('map.sys')) || defaults.sys,
-				type = (this.embedded ? Utils.getLocalStorage('map.embedded.type') : Utils.getLocalStorage('map.type')) || defaults.type;
+				system = Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
+				type = Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
-			if (!center && localStorage['map.center']) {
-				try {
-					center = JSON.parse(localStorage['map.center']);
-					if (!Utils.geo.check(center)) {
-						center = null;
-					}
-				} catch (e) {
-					console.warn('Can not parse map.center');
-				}
-			}
-			if (!center) {
+			if (!center || !Utils.geo.check(center)) {
 				center = this.mapDefCenter;
 			}
 

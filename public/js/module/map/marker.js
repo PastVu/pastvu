@@ -865,12 +865,10 @@ define([
 		}
 	};
 	MarkerManager.prototype.photoNavigate = function (url) {
-		if (this.embedded) {
-			globalVM.router.navigateToUrl(url);
-		} else if (this.openNewTab) {
+		if (this.openNewTab) {
 			window.open(url, '_blank');
 		} else {
-			location.href = url;
+			globalVM.router.navigateToUrl(url);
 		}
 	};
 

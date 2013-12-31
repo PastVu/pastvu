@@ -30,10 +30,8 @@
 			.yearOuter.L
 			.yearOuter.R
 		.mapNavigation.mContainer.mHidden
-		//-.openModePanel.fringe
-			label.checkbox(title="Открывать фотографии в новом окне")
-				input(type="checkbox", data-bind="checked: openNewTab")
-				span.glyphicon.glyphicon-share
+		.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'}")
+			span.glyphicon.glyphicon-share
 		.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
 			.currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Нажмите, чтобы скрыть варианты' : 'Нажмите, чтобы увидеть доступные варианты карт'}")
 				.currentLayerTxt(data-bind="text: layerActiveDesc()")
