@@ -34,6 +34,8 @@ define([
 			this.embedded = this.options.embedded;
 			this.editing = ko.observable(this.options.editing);
 			this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+			this.linkShow = ko.observable(false); //Показывать ссылку на карту
+			this.link = ko.observable(''); //Ссылка на карту
 
 			// Map objects
 			this.map = null;
@@ -184,6 +186,8 @@ define([
 				});
 			}
 
+			this.showLinkBind = this.showLink.bind(this);
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Subscriptions
@@ -257,6 +261,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			this.removeShowLinkListener();
 			this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
 			this.map.off('moveend');
 			this.map.remove();
@@ -415,6 +420,28 @@ define([
 			return _.find(system.types(), function (item) {
 				return item.id === id;
 			});
+		},
+		showLink: function () {
+			this.linkShow(!this.linkShow());
+			if (this.linkShow()) {
+				setTimeout(function () {
+					this.$dom.find('.inputLink').focus().select();
+					document.addEventListener('click', this.showLinkBind);
+				}.bind(this), 100);
+			} else {
+				this.removeShowLinkListener();
+			}
+		},
+		removeShowLinkListener: function () {
+			document.removeEventListener('click', this.showLinkBind);
+		},
+		linkClick: function (data, evt) {
+			var input = evt.target;
+			if (input) {
+				input.select();
+			}
+			evt.stopPropagation();
+			return false;
 		},
 		selectLayer: function (sys_id, type_id) {
 			var layerActive = this.layerActive(),
