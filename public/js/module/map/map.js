@@ -206,7 +206,7 @@ define([
 		show: function () {
 			var qParams = globalVM.router.params(),
 				center,
-				zoom = Number(qParams.z) || this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z),
+				zoom = Number(qParams.z) || (this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z)),
 				system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
 				type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
