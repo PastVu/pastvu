@@ -204,11 +204,28 @@ define([
 		},
 
 		show: function () {
-			var center = this.point && this.point.geo() || this.options.center || Utils.getLocalStorage('map.center') || null,
-				zoom = this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z),
-				system = Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
-				type = Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
+			var qParams = globalVM.router.params(),
+				center,
+				zoom = Number(qParams.z) || this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z),
+				system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
+				type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
+			if (this.embedded) {
+				center = this.point && this.point.geo() || this.options.center;
+			} else {
+				center = qParams.g;
+				if (center) {
+					center = center.split(',').map(function (element) {
+						return parseFloat(element);
+					});
+					if (!Utils.geo.check(center)) {
+						center = null;
+					}
+				}
+				if (!center) {
+					center = Utils.getLocalStorage('map.center');
+				}
+			}
 			if (!center || !Utils.geo.check(center)) {
 				center = this.mapDefCenter;
 			}

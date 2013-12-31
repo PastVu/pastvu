@@ -46,7 +46,7 @@ require([
 			],
 			handlers: {
 				index: function (qparams) {
-					this.params({_handler: 'index'});
+					this.params(_.assign({_handler: 'index'}, qparams));
 					ga('set', 'page', '/');
 
 					renderer(
