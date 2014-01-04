@@ -284,6 +284,32 @@ Utils.math = (function () {
 Utils.geo = (function () {
 	'use strict';
 
+	//Цетр тяжести полигона. Без учета внутренних выколотых полигонов(дыр)
+	//На вход подаётся массив точек [lng, lat]
+	//http://stackoverflow.com/a/10129983/1309851
+	function polyCentroid(points) {
+		var pointsLen = points.length,
+			i = 0, j = pointsLen - 1,
+			f,
+			x = 0, y = 0,
+			area = 0,
+			p1, p2;
+
+		for (i; i < pointsLen; j = i++) {
+			p1 = points[i];
+			p2 = points[j];
+			f = p1[1] * p2[0] - p2[1] * p1[0];
+			x += (p1[1] + p2[1]) * f;
+			y += (p1[0] + p2[0]) * f;
+
+			area += p1[1] * p2[0];
+			area -= p1[0] * p2[1];
+		}
+		area /= 2;
+		f = area * 6;
+		return [x / f, y / f];
+	}
+
 	/**
 	 * Haversine formula to calculate the distance
 	 * @param lat1
@@ -347,6 +373,7 @@ Utils.geo = (function () {
 		geoToPrecision: geoToPrecision,
 		geoToPrecisionRound: geoToPrecisionRound,
 		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+		polyCentroid: polyCentroid,
 		spinLng: spinLng,
 		latlngToArr: latlngToArr,
 		check: check,

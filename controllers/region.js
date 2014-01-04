@@ -11,6 +11,7 @@ var auth = require('./auth.js'),
 	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
+	gju = require('geojson-utils'),
 	msg = {
 		deny: 'You do not have permission for this action'
 	},
@@ -592,6 +593,10 @@ function saveRegion(socket, data, cb) {
 
 				//Считаем количество точек
 				region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
+
+				if (data.geo.type === 'Polygon') {
+					console.log(Utils.geo.polyCentroid(data.geo.coordinates[0]));
+				}
 
 				region.geo = data.geo;
 				region.markModified('geo');
