@@ -59,8 +59,15 @@
 			label.col-xs-4.col-sm-3.col-lg-2.control-label Количество вершин
 			.col-xs-8.col-sm-9.col-lg-10
 				p.form-control-static
-					span(data-bind="text: formatNum(region.pointsnum())")=
+					span(data-bind="text: formatNum(region.pointsnum())")
 		// /ko
+		.form-group
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Центр региона
+			.col-xs-8.col-sm-9.col-lg-10
+				input.form-control.input-sm.centroid(type="text", readonly, data-bind="attr: {value: region.centroid() || (region.centroidMan() ? 'Не задан' : 'Пока не рассчитан')}")
+				.btn-group.btn-group-sm
+					button.btn.btn-primary.yes(type="button", data-bind="css: {active: !region.centroidMan()}, click: centroidManToggle") Авто
+					button.btn.btn-primary.no(type="button", data-bind="css: {active: region.centroidMan()}, click: centroidManToggle") Вручную
 		//ko if: createMode() || showGeo()
 		.form-group
 			label.col-xs-4.col-sm-3.col-lg-2.control-label

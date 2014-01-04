@@ -9,5 +9,5 @@
 					span.glyphicon.glyphicon-screenshot
 		.extlnk
 			span.infotxt Ссылка на отображаемую точку:
-			input.form-control.input-sm.inputLink(type="text", onclick="this.select();", onkeypress="return false;", data-bind="value: location.host + location.pathname + link()")
+			input.form-control.input-sm.inputLink(type="text", onclick="this.select();", readonly, data-bind="value: location.host + location.pathname + link()")
 	.map(data-bind="style: {height: mh()}")

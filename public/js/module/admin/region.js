@@ -15,6 +15,8 @@ define([
 		parents: [],
 		geo: '',
 		pointsnum: 0,
+		centroid: null,
+		centroidMan: false,
 		title_en: '',
 		title_local: ''
 	};
@@ -39,6 +41,7 @@ define([
 			this.geoObj = null;
 
 			this.map = null;
+			this.markerLayer = L.layerGroup();
 			this.layerSaved = null;
 
 			this.mh = ko.observable('300px'); //Высота карты
@@ -57,6 +60,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			this.centroidMarkerDestroy();
 			this.map.remove();
 			delete this.map;
 
@@ -181,8 +185,59 @@ define([
 			if (this.layerSaved) {
 				this.map.fitBounds(this.layerSaved.getBounds());
 			}
+
+			this.map
+				.addLayer(this.markerLayer)
+				.on('click', function (e) {
+					var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
+
+					this.region.centroid(geo);
+
+					if (this.centroidMarker) {
+						this.centroidMarker.setLatLng(geo);
+					} else {
+						this.centroidMarkerCreate();
+					}
+					this.region.centroidMan(true);
+				}, this);
+
 			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
 		},
+		centroidMarkerCreate: function () {
+			var _this = this;
+			this.centroidMarker = L.marker(this.region.centroid(), {draggable: true, title: 'Центр тяжести региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centroidMarker'})})
+				.on('drag', function () {
+					_this.region.centroid(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
+				})
+				.on('dragend', function () {
+					_this.region.centroidMan(true);
+				})
+				.addTo(this.markerLayer);
+			return this;
+		},
+		centroidMarkerDestroy: function () {
+			if (this.centroidMarker) {
+				this.centroidMarker.off('dragend');
+				this.markerLayer.removeLayer(this.centroidMarker);
+				delete this.centroidMarker;
+			}
+			return this;
+		},
+		//Переключаем задание центра Авто/Вручную
+		centroidManToggle: function () {
+			var newCentroidMan = !this.region.centroidMan();
+			this.region.centroidMan(newCentroidMan);
+
+			//Если ставим Авто, то возвращаем оригинальное значение центра
+			if (!newCentroidMan) {
+				this.region.centroid(this.regionOrigin.centroid || null);
+				//Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
+				if (!this.regionOrigin.centroid) {
+					this.centroidMarkerDestroy();
+				}
+			}
+		},
+
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {
 				var error = !data || !!data.error || !data.region;
@@ -287,7 +342,7 @@ define([
 				var error = !data || !!data.error || !data.region;
 
 				if (error) {
-					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 7000, force: true,  closeWith: ['click']});
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 7000, force: true, closeWith: ['click']});
 				} else {
 					this.region.pointsnum(data.region.pointsnum);
 
