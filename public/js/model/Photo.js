@@ -104,9 +104,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			origin.sdate = new Date(origin.sdate);
 		}
 		if (defType === 'full') {
-			if (Utils.geo.check(origin.geo)) {
-				origin.geo.reverse(); // Stores in mongo like [lng, lat], for api need [lat, lng]
-			} else {
+			if (!Utils.geo.checkLatLng(origin.geo)) {
 				origin.geo = defaults[defType].geo;
 			}
 			User.factory(origin.user, 'base');

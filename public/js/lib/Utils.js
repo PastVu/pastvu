@@ -715,6 +715,14 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				return geo;
 			}
 
+			function spinLng(geo) {
+				if (geo[0] < -180) {
+					geo[0] += 360;
+				} else if (geo[0] > 180) {
+					geo[0] -= 360;
+				}
+			}
+
 			function latlngToArr(ll, lngFirst) {
 				return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
 			}
@@ -723,14 +731,20 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			function check(geo) {
 				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 			}
+			//Проверка на валидность geo [lat, lng]
+			function checkLatLng(geo) {
+				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+			}
 
 			return {
+				deg2rad: deg2rad,
 				geoToPrecision: geoToPrecision,
 				geoToPrecisionRound: geoToPrecisionRound,
 				getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
-				deg2rad: deg2rad,
+				spinLng: spinLng,
 				latlngToArr: latlngToArr,
-				check: check
+				check: check,
+				checkLatLng: checkLatLng
 			};
 		}()),
 

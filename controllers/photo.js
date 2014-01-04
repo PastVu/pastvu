@@ -241,7 +241,7 @@ function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 			}
 
 			//Если у фото есть координаты, значит надо провести действие с картой
-			if (Utils.geoCheck(photo.geo)) {
+			if (Utils.geo.check(photo.geo)) {
 				if (makePublic) {
 					photoToMap(photo, null, null, this.parallel());
 				} else {
@@ -422,7 +422,7 @@ function approvePhoto(iAm, cid, cb) {
 			}
 			cb({message: 'Photo approved successfully'});
 
-			if (Utils.geoCheck(photoSaved.geo)) {
+			if (Utils.geo.check(photoSaved.geo)) {
 				photoToMap(photoSaved);
 			}
 
@@ -548,6 +548,9 @@ function givePhoto(socket, data, cb) {
 					}
 					if (regions.length) {
 						photo.regions = regions;
+					}
+					if (photo.geo) {
+						photo.geo = photo.geo.reverse();
 					}
 
 					if (!iAm || !photo.ccount) {
@@ -842,7 +845,7 @@ function giveUserPhotosAround(socket, data, cb) {
 
 //Берем массив ближайших фотографий
 function giveNearestPhotos(data, cb) {
-	if (!data || !Utils.geoCheck(data.geo)) {
+	if (!data || !Utils.geo.checkLatLng(data.geo)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -994,8 +997,12 @@ function savePhoto(socket, data, cb) {
 		if (data.author) {
 			data.author = Utils.inputIncomingParse(data.author);
 		}
-		if (data.geo && !Utils.geoCheck(data.geo)) {
-			delete data.geo;
+		if (data.geo) {
+			if(Utils.geo.checkLatLng(data.geo)) {
+				data.geo = Utils.geo.geoToPrecisionRound(data.geo.reverse());
+			} else {
+				delete data.geo;
+			}
 		}
 
 		//Новые значения действительно изменяемых свойств
@@ -1004,9 +1011,7 @@ function savePhoto(socket, data, cb) {
 			return cb({message: 'Nothing to save'});
 		}
 
-		if (newValues.geo) {
-			Utils.geo.geoToPrecisionRound(newValues.geo);
-		} else if (newValues.geo === null) {
+		if (newValues.geo === null) {
 			//Обнуляем координату
 			geoToNull = true;
 			newValues.geo = undefined; //Удаляем координату
@@ -1023,7 +1028,6 @@ function savePhoto(socket, data, cb) {
 
 		oldGeo = photoOldObj.geo;
 		newGeo = newValues.geo;
-
 
 		//Если координата обнулилась или её нет, то должны присвоить регион
 		if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {

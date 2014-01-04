@@ -218,7 +218,7 @@ define([
 					center = center.split(',').map(function (element) {
 						return parseFloat(element);
 					});
-					if (!Utils.geo.check(center)) {
+					if (!Utils.geo.checkLatLng(center)) {
 						center = null;
 					}
 				}
@@ -226,7 +226,7 @@ define([
 					center = Utils.getLocalStorage('map.center');
 				}
 			}
-			if (!center || !Utils.geo.check(center)) {
+			if (!center || !Utils.geo.checkLatLng(center)) {
 				center = this.mapDefCenter;
 			}
 

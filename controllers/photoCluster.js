@@ -297,7 +297,7 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
  * @return {Boolean}
  */
 module.exports.declusterPhoto = function (photo, cb) {
-	if (!Utils.geoCheck(photo.geo) || !photo.year) {
+	if (!Utils.geo.check(photo.geo) || !photo.year) {
 		if (Utils.isType('function', cb)) {
 			cb({message: 'Bad params to decluster photo'});
 		}

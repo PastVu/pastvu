@@ -1374,7 +1374,7 @@ module.exports.loadController = function (app, db, io) {
 			if (!iAm) {
 				return response({message: msg.deny, error: true});
 			}
-			if (!Utils.isType('object', data) || !Utils.geoCheck(data.geo)) {
+			if (!Utils.isType('object', data) || !Utils.geo.checkLatLng(data.geo)) {
 				return response({message: 'Bad params', error: true});
 			}
 			data.geo = data.geo.reverse();
@@ -1392,7 +1392,7 @@ module.exports.loadController = function (app, db, io) {
 					}
 				}
 
-				response({geo: data.geo.reverse(), regions: _.compact(regionsArr)}); //На случай пропущенных по иерархии регионов (такого бфть не должно) удаляем пустые значения массива
+				response({geo: data.geo.reverse(), regions: _.compact(regionsArr)}); //На случай пропущенных по иерархии регионов (такого быть не должно) удаляем пустые значения массива
 			});
 
 			function response(resultData) {

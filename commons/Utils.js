@@ -237,11 +237,6 @@ Utils.cursorsExtract = function cursorsExtract(err) {
 	}
 };
 
-//Проверка на валидность geo [lng, lat]
-Utils.geoCheck = function (geo) {
-	return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
-};
-
 //Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
 	var res = {},
@@ -334,12 +329,28 @@ Utils.geo = (function () {
 		}
 	}
 
+	function latlngToArr(ll, lngFirst) {
+		return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
+	}
+
+	//Проверка на валидность geo [lng, lat]
+	function check(geo) {
+		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+	}
+	//Проверка на валидность geo [lat, lng]
+	function checkLatLng(geo) {
+		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+	}
+
 	return {
-		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
 		deg2rad: deg2rad,
 		geoToPrecision: geoToPrecision,
 		geoToPrecisionRound: geoToPrecisionRound,
-		spinLng: spinLng
+		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+		spinLng: spinLng,
+		latlngToArr: latlngToArr,
+		check: check,
+		checkLatLng: checkLatLng
 	};
 }());
 

@@ -548,7 +548,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
 			socket.on('takeRegionsByGeo', function (data) {
 				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
-				if (this.edit() && data && (!Array.isArray(data.geo) || data.geo[0] !== this.p.geo()[0] || data.geo[1] !== this.p.geo()[1])) {
+				if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
 					return;
 				}
 
@@ -837,9 +837,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}
 
-			if (target.geo) {
-				target.geo.reverse();
-			} else {
+			if (!target.geo) {
 				if (this.p.regions().length) {
 					target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
 				} else {
@@ -861,11 +859,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				target.cid = this.p.cid();
 				socket.once('savePhotoResult', function (result) {
 					if (result && !result.error && result.saved) {
-						if (target.geo !== undefined) {
+						if (target.geo) {
 							this.getNearestRibbon(8, this.applyNearestRibbon, this);
-							if (Array.isArray(target.geo)) {
-								target.geo.reverse();
-							}
 						}
 						if (result.data.regions) {
 							Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
@@ -1009,7 +1004,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			} else {
 				//Если у фото нет координат - берем ближайшие к центру карты
 				$.when(this.mapModulePromise).done(function () {
-					//Сразу берем, если зашли в первый раз
+					//Сразу берем, если зашли первый раз
 					this.nearestForCenter(limit, cb, ctx);
 					//Дебаунс для moveend карты
 					this.nearestForCenterDebounced = _.debounce(function () {
@@ -1021,8 +1016,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		nearestForCenter: function (limit, cb, ctx) {
-			var latlng = this.mapVM.map.getCenter();
-			this.receiveNearestRibbon([latlng.lat, latlng.lng], limit, cb, ctx);
+			this.receiveNearestRibbon(Utils.geo.latlngToArr(this.mapVM.map.getCenter()), limit, cb, ctx);
 		},
 		receiveNearestRibbon: function (geo, limit, cb, ctx) {
 			socket.once('takeNearestPhotos', function (data) {
@@ -1270,11 +1264,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
-			data = event = null;
 		},
 		onAvatarError: function (data, event) {
 			event.target.setAttribute('src', '/img/caps/avatar.png');
-			data = event = null;
 		},
 
 		onPreviewLoad: function (data, event) {
@@ -1320,8 +1312,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.msg(text);
 			this.msgCss(css);
 			this.msgTitle(abbr);
-
-			text = type = css = null;
 		}
 	});
 });
