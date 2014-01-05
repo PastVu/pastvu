@@ -299,8 +299,8 @@ Utils.geo = (function () {
 			p1 = points[i];
 			p2 = points[j];
 			f = p1[1] * p2[0] - p2[1] * p1[0];
-			x += (p1[1] + p2[1]) * f;
-			y += (p1[0] + p2[0]) * f;
+			y += (p1[1] + p2[1]) * f;
+			x += (p1[0] + p2[0]) * f;
 
 			area += p1[1] * p2[0];
 			area -= p1[0] * p2[1];

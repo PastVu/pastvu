@@ -584,7 +584,6 @@ function saveRegion(socket, data, cb) {
 		function fill(region) {
 			//Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
 			if (data.geo) {
-
 				//Если мультиполигон состоит из одного полигона, берем только его и делаем тип Polygon
 				if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
 					data.geo.coordinates = data.geo.coordinates[0];
@@ -594,12 +593,18 @@ function saveRegion(socket, data, cb) {
 				//Считаем количество точек
 				region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
 
-				if (data.geo.type === 'Polygon') {
-					console.log(Utils.geo.polyCentroid(data.geo.coordinates[0]));
-				}
-
 				region.geo = data.geo;
 				region.markModified('geo');
+			}
+
+			if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
+				if (data.geo || !region.centerAuto) {
+					region.centerAuto = true;
+					region.center = Utils.geo.geoToPrecision(Utils.geo.polyCentroid(region.geo.type === 'MultiPolygon' ? region.geo.coordinates[0][0] : region.geo.coordinates[0]));
+				}
+			} else {
+				region.centerAuto = false;
+				region.center = Utils.geo.geoToPrecision(data.center.reverse());
 			}
 
 			region.title_en = String(data.title_en);
@@ -661,6 +666,9 @@ function saveRegion(socket, data, cb) {
 							region.geo = JSON.stringify(region.geo);
 						} else {
 							delete region.geo;
+						}
+						if (region.center) {
+							region.center.reverse();
 						}
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
@@ -830,6 +838,10 @@ function getRegion(socket, data, cb) {
 
 			//Клиенту отдаем стрингованный geojson
 			region.geo = JSON.stringify(region.geo);
+
+			if (region.center) {
+				region.center.reverse();
+			}
 
 			cb({childLenArr: childLenArr, region: region});
 		});
