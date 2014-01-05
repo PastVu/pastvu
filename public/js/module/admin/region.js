@@ -60,7 +60,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
-			this.centroidMarkerDestroy();
+			this.centerMarkerDestroy();
 			this.map.remove();
 			delete this.map;
 
@@ -108,11 +108,14 @@ define([
 			}
 		},
 		resetData: function () {
+			this.centerMarkerDestroy();
 			if (this.layerSaved) {
 				this.map.removeLayer(this.layerSaved);
 			}
+
 			this.regionOrigin = regionDef;
 			ko_mapping.fromJS(regionDef, this.region);
+
 			this.haveParent('0');
 			this.parentCid(0);
 			this.childLenArr([]);
@@ -144,6 +147,14 @@ define([
 					return false;
 				}
 				this.drawData();
+			}
+
+			if (region.center) {
+				if (this.centerMarker) {
+					this.centerMarker.setLatLng(region.center);
+				} else {
+					this.centerMarkerCreate();
+				}
 			}
 
 			return true;
@@ -193,19 +204,20 @@ define([
 
 					this.region.center(geo);
 
-					if (this.centroidMarker) {
-						this.centroidMarker.setLatLng(geo);
+					if (this.centerMarker) {
+						this.centerMarker.setLatLng(geo);
 					} else {
-						this.centroidMarkerCreate();
+						this.centerMarkerCreate();
 					}
 					this.region.centerAuto(false);
 				}, this);
 
 			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
 		},
-		centroidMarkerCreate: function () {
+		//Создание маркера центра региона
+		centerMarkerCreate: function () {
 			var _this = this;
-			this.centroidMarker = L.marker(this.region.center(), {draggable: true, title: 'Центр тяжести региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centroidMarker'})})
+			this.centerMarker = L.marker(this.region.center(), {draggable: true, title: 'Центр региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centerMarker'})})
 				.on('drag', function () {
 					_this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
 				})
@@ -215,11 +227,12 @@ define([
 				.addTo(this.markerLayer);
 			return this;
 		},
-		centroidMarkerDestroy: function () {
-			if (this.centroidMarker) {
-				this.centroidMarker.off('dragend');
-				this.markerLayer.removeLayer(this.centroidMarker);
-				delete this.centroidMarker;
+		//Удаление маркера центра
+		centerMarkerDestroy: function () {
+			if (this.centerMarker) {
+				this.centerMarker.off('dragend');
+				this.markerLayer.removeLayer(this.centerMarker);
+				delete this.centerMarker;
 			}
 			return this;
 		},
@@ -228,12 +241,16 @@ define([
 			var newCenterAuto = !this.region.centerAuto();
 			this.region.centerAuto(newCenterAuto);
 
-			//Если ставим Авто, то возвращаем оригинальное значение центра
 			if (newCenterAuto) {
+				//Если ставим Авто, то возвращаем оригинальное значение центра
 				this.region.center(this.regionOrigin.center || null);
-				//Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
-				if (!this.regionOrigin.center) {
-					this.centroidMarkerDestroy();
+
+				if (this.regionOrigin.center) {
+					//Если есть предрасчитанный центр, то ставим маркер в него
+					this.centerMarker.setLatLng(this.regionOrigin.center);
+				} else {
+					//Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
+					this.centerMarkerDestroy();
 				}
 			}
 		},
