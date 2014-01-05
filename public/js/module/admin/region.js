@@ -15,8 +15,8 @@ define([
 		parents: [],
 		geo: '',
 		pointsnum: 0,
-		centroid: null,
-		centroidMan: false,
+		center: null,
+		centerAuto: true,
 		title_en: '',
 		title_local: ''
 	};
@@ -191,26 +191,26 @@ define([
 				.on('click', function (e) {
 					var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
-					this.region.centroid(geo);
+					this.region.center(geo);
 
 					if (this.centroidMarker) {
 						this.centroidMarker.setLatLng(geo);
 					} else {
 						this.centroidMarkerCreate();
 					}
-					this.region.centroidMan(true);
+					this.region.centerAuto(false);
 				}, this);
 
 			L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 15}).addTo(this.map);
 		},
 		centroidMarkerCreate: function () {
 			var _this = this;
-			this.centroidMarker = L.marker(this.region.centroid(), {draggable: true, title: 'Центр тяжести региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centroidMarker'})})
+			this.centroidMarker = L.marker(this.region.center(), {draggable: true, title: 'Центр тяжести региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centroidMarker'})})
 				.on('drag', function () {
-					_this.region.centroid(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
+					_this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
 				})
 				.on('dragend', function () {
-					_this.region.centroidMan(true);
+					_this.region.centerAuto(false);
 				})
 				.addTo(this.markerLayer);
 			return this;
@@ -224,15 +224,15 @@ define([
 			return this;
 		},
 		//Переключаем задание центра Авто/Вручную
-		centroidManToggle: function () {
-			var newCentroidMan = !this.region.centroidMan();
-			this.region.centroidMan(newCentroidMan);
+		centerAutoToggle: function () {
+			var newCenterAuto = !this.region.centerAuto();
+			this.region.centerAuto(newCenterAuto);
 
 			//Если ставим Авто, то возвращаем оригинальное значение центра
-			if (!newCentroidMan) {
-				this.region.centroid(this.regionOrigin.centroid || null);
+			if (newCenterAuto) {
+				this.region.center(this.regionOrigin.center || null);
 				//Если в оригинале центр еще не расчитан (регион новый), то удаляем маркер
-				if (!this.regionOrigin.centroid) {
+				if (!this.regionOrigin.center) {
 					this.centroidMarkerDestroy();
 				}
 			}
