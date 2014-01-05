@@ -171,7 +171,7 @@ function calcRegionsIncludes(iAm, cids, cb) {
 
 	if (!cids.length) {
 		//Если массив пуст - пересчитываем все фотографии
-		dbNative['eval']('function () {assignToRegions()', [], {nolock: true}, function (err, ret) {
+		dbNative['eval']('function () {regionsAssignObjects()', [], {nolock: true}, function (err, ret) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}

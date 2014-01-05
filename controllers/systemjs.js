@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true, spinLng:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -178,35 +178,8 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
-	//Расчет количества вершин полигонов
-	saveSystemJSFunc(function regionsCalcPointsNum(cidArr) {
-		var startTime = Date.now(),
-			query = {};
-
-		if (Array.isArray(cidArr) && cidArr.length) {
-			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
-		}
-
-		function calcGeoJSONPointsNumReduce(previousValue, currentValue) {
-			return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
-		}
-
-		print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
-		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
-			var startTime = Date.now(),
-				count;
-
-			count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
-			db.regions.update({cid: region.cid}, {$set: {pointsnum: count}});
-			print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
-		});
-
-		print('\n');
-		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
-	});
-
 	//Для фотографий с координатой заново расчитываем регионы
-	saveSystemJSFunc(function assignToRegions() {
+	saveSystemJSFunc(function regionsAssignObjects() {
 		var startTime = Date.now();
 
 		//Очищаем принадлежность к регионам у всех фотографий с проставленной точкой
@@ -234,6 +207,79 @@ module.exports.loadController = function (app, db) {
 		});
 
 		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет центров регионов
+	//withManual - Всех регионов, включая тех, у кого центр установлен вручную
+	saveSystemJSFunc(function regionsCalcCenter(withManual) {
+		var startTime = Date.now(),
+			query = {cid: {$ne: 1000000}};
+
+		if (!withManual) {
+			query.$or = [{centerAuto: true}, {centerAuto: null}];
+		}
+
+		//Для каждого региона находим фотографии
+		print('Start to assign for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
+			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
+				db.regions.update({cid: region.cid}, {$set: {center: geoToPrecision(polyCentroid(region.geo.type === 'MultiPolygon' ? region.geo.coordinates[0][0] : region.geo.coordinates[0])), centerAuto: true}});
+			} else {
+				print('Error with ' + region.cid + ' region');
+			}
+		});
+
+		function polyCentroid(points) {
+			var pointsLen = points.length,
+				i = 0, j = pointsLen - 1,
+				f,
+				x = 0, y = 0,
+				area = 0,
+				p1, p2;
+
+			for (i; i < pointsLen; j = i++) {
+				p1 = points[i];
+				p2 = points[j];
+				f = p1[1] * p2[0] - p2[1] * p1[0];
+				y += (p1[1] + p2[1]) * f;
+				x += (p1[0] + p2[0]) * f;
+
+				area += p1[1] * p2[0];
+				area -= p1[0] * p2[1];
+			}
+			area /= 2;
+			f = area * 6;
+			return [x / f, y / f];
+		}
+
+		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет количества вершин полигонов
+	saveSystemJSFunc(function regionsCalcPointsNum(cidArr) {
+		var startTime = Date.now(),
+			query = {};
+
+		if (Array.isArray(cidArr) && cidArr.length) {
+			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
+		}
+
+		function calcGeoJSONPointsNumReduce(previousValue, currentValue) {
+			return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
+		}
+
+		print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
+			var startTime = Date.now(),
+				count;
+
+			count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
+			db.regions.update({cid: region.cid}, {$set: {pointsnum: count}});
+			print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
+		});
+
+		print('\n');
+		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function calcUserStats() {
@@ -348,12 +394,6 @@ module.exports.loadController = function (app, db) {
 		return geo;
 	});
 
-	saveSystemJSFunc(function geoToPrecisionRound(geo, precision) {
-		geo.forEach(function (item, index, array) {
-			array[index] = toPrecisionRound(item, precision || 6);
-		});
-		return geo;
-	});
 	saveSystemJSFunc(function spinLng(geo) {
 		if (geo[0] < -180) {
 			geo[0] += 360;
