@@ -13,6 +13,9 @@ var RegionSchema = new Schema(
 		center: {type: [Number], index: '2d'}, //Координаты центра региона
 		centerAuto: {type: Boolean, 'default': true, required: true}, //Центр расчитывается автоматически или устанавливается вручную(false)
 
+		bbox: {type: [Number]}, //Bounding box региона http://geojson.org/geojson-spec.html#bounding-boxes
+		bboxview: {type: [Number]}, //Bounding box для выбора зума на карте пользователя. Если равен bbox - значит установлен автоматически, если нет - вручную
+
 		cdate: {type: Date, 'default': Date.now, required: true, index: true}, //Дата создания
 		udate: {type: Date, 'default': Date.now, required: true}, //Дата изменения
 

@@ -16,6 +16,8 @@
 					strong(data-bind="text: ' ' + region.cid()")
 					| ; Уровень:
 					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+					| ; Вершин:
+					strong(data-bind="text: ' ' + formatNum(region.pointsnum())")
 					| ;&nbsp;
 					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Показать в дереве регионов
 		// /ko
@@ -54,20 +56,28 @@
 					span(data-bind="text: ' ' + $data")
 					// /ko
 		// /ko
-		//ko if: !createMode()
 		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Количество вершин
-			.col-xs-8.col-sm-9.col-lg-10
-				p.form-control-static
-					span(data-bind="text: formatNum(region.pointsnum())")
-		// /ko
-		.form-group
-			label.col-xs-4.col-sm-3.col-lg-2.control-label Центр региона
-			.col-xs-8.col-sm-9.col-lg-10
-				input.form-control.input-sm.center(type="text", readonly, data-bind="attr: {value: region.center() || (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
-				.btn-group.btn-group-sm
-					button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
-					button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
+			label.col-xs-4.col-sm-3.col-lg-2.control-label Доп. параметры
+			.col-xs-8.col-sm-9.col-lg-10(style="padding-top: 3px")
+				.dopparam
+					abbr(title="Центральная точка региона в его домашнем положении") Центр
+					| :
+					input.form-control.input-sm.center(type="text", readonly, data-bind="attr: {value: region.center() || (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
+					.btn-group.btn-group-sm
+						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
+						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
+				br
+				.dopparam
+					abbr(title="Bounding box - прямоугольник, в который целиком вписан регион") Bbox
+					| :
+					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: '-142.546504, -82.002257, 179.002257, 82.002257' || (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
+				.dopparam
+					abbr(title="Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба") Bbox дом
+					| .:
+					.btn-group.btn-group-sm
+						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: bboxHomeToggle") Как bbox
+						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: bboxHomeToggle") Вручную
+					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.center() || (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
 		//ko if: createMode() || showGeo()
 		.form-group
 			label.col-xs-4.col-sm-3.col-lg-2.control-label

@@ -254,6 +254,9 @@ define([
 				}
 			}
 		},
+		//Переключаем вид домашнего положения bbox
+		bboxHomeToggle: function () {
+		},
 
 		getOneRegion: function (cid, cb, ctx) {
 			socket.once('takeRegion', function (data) {

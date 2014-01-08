@@ -33,12 +33,30 @@
 		margin: 2px 0 8px;
 	}
 
-	input.center {
+	.dopparam {
 		display: inline-block;
-		width: 148px;
-		margin-right: 8px;
+		margin: 0 6px 6px 0;
+
+		> input[type="text"] {
+			margin-left: 4px;
+			margin-right: 2px;
+		}
+		> .btn-group {
+			margin-left: 6px;
+			margin-right: 4px;
+		}
+	}
+
+	input.center, input.bbox {
+		display: inline-block;
 		text-align: center;
 		cursor: default;
+	}
+	input.center {
+		width: 150px;
+	}
+	input.bbox {
+		width: 290px;
 	}
 }
 
