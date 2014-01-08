@@ -34,30 +34,31 @@
 	.tree.well.well-sm
 		ul(data-bind="template: {name: 'treeNode', foreach: regions}")
 
-	script(id="treeNode", type="text/html")
-		li(data-bind="css: {isparent: $data.childLen}")
-			.lirow(data-bind="css: {hl: $data.hl}")
+	| <script id="treeNode" type="text/html">
+	li(data-bind="css: {isparent: $data.childLen}")
+		.lirow(data-bind="css: {hl: $data.hl}")
+			//ko if: $data.childLen
+			.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
+				span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
+			// /ko
+			a.name(title="Открыть регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
+				span.glyphicon.glyphicon-globe
+				span(data-bind="text: ' ' + $data.title_local")
 				//ko if: $data.childLen
-				.chevron(data-bind="click: $parents[$data.level].collapseToggle, attr: {title: ($data.opened() ? 'Скрыть' : 'Показать') + ' дочерние регионы'}")
-					span.glyphicon(data-bind="css: {'glyphicon-chevron-up': $data.opened(), 'glyphicon-chevron-down': !$data.opened()}")
-				// /ko
-				a.name(title="Открыть регион", data-bind="attr: {href: '/admin/region/' + $data.cid}")
-					span.glyphicon.glyphicon-globe
-					span(data-bind="text: ' ' + $data.title_local")
-					//ko if: $data.childLen
-					.childsCount
-						//ko foreach: childLenArr
-						| &nbsp;
-						span.glyphicon.glyphicon-play
-						span(data-bind="text: ' ' + $data")
-						// /ko
+				.childsCount
+					//ko foreach: childLenArr
+					| &nbsp;
+					span.glyphicon.glyphicon-play
+					span(data-bind="text: ' ' + $data")
 					// /ko
-				//ko if: $data.level < 5
-				a.addChild(title="Создать дочерний регион", data-bind="attr: {href: '/admin/region/create?parent=' + $data.cid}")
-					span.glyphicon.glyphicon-plus
-					|  Добавить потомка
 				// /ko
-			//ko if: $data.childLen && $data.opened()
-			//ko template: {name: 'treeNode', foreach: $data.regions}
+			//ko if: $data.level < 5
+			a.addChild(title="Создать дочерний регион", data-bind="attr: {href: '/admin/region/create?parent=' + $data.cid}")
+				span.glyphicon.glyphicon-plus
+				|  Добавить потомка
 			// /ko
-			// /ko
+		//ko if: $data.childLen && $data.opened()
+		//ko template: {name: 'treeNode', foreach: $data.regions}
+		// /ko
+		// /ko
+	| </script>

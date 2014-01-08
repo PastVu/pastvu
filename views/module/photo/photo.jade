@@ -84,127 +84,131 @@
 		.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
 
 	//-ACTIONS VIEW MODE
-	script(id="photoActionsView", type="text/html")
-		button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-pencil
-			|  Редактировать
-		//ko if: IOwner() && p.s()===0
-		button.btn.btn-success(type="button", title="Отправить премодерацию и дальнейшую публикацию", data-bind="click: setReady, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-check
-			|  На публикацию
-		// /ko
-		//ko if: canBeApprove()
-		button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-ok
-			|  Опубликовать
-		// /ko
-		//ko if: canBeDisable()
-		button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
-			span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
-			span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
-		// /ko
-		//ko if: p.s()!==9 && can.remove()
-		button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-trash
-			span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
-		// /ko
+	| <script id="photoActionsView" type="text/html">
+	button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-pencil
+		|  Редактировать
+	//ko if: IOwner() && p.s()===0
+	button.btn.btn-success(type="button", title="Отправить премодерацию и дальнейшую публикацию", data-bind="click: setReady, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-check
+		|  На публикацию
+	// /ko
+	//ko if: canBeApprove()
+	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-ok
+		|  Опубликовать
+	// /ko
+	//ko if: canBeDisable()
+	button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
+		span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
+		span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
+	// /ko
+	//ko if: p.s()!==9 && can.remove()
+	button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-trash
+		span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
+	// /ko
+	| </script>
 
 	//-ACTIONS EDIT MODE
-	script(id="photoActionsEdit", type="text/html")
-		button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-ok
-			|  Сохранить
-		button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
-			span.glyphicon.glyphicon-remove
-			|  Отмена редактирования
+	| <script id="photoActionsEdit" type="text/html">
+	button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-ok
+		|  Сохранить
+	button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-remove
+		|  Отмена редактирования
+	| </script>
 
 	//-DATA VIEW MODE
-	script(id="photoView", type="text/html")
-		.infoBlock
-			//ko if: p.title().length
-			.info.title(data-bind="text: p.title()")
-			// /ko
-			//ko if: p.regions().length
-			.regions(data-bind="foreach: p.regions")
-				.region
-					a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
-					//ko if: $index() < $parent.p.regions().length - 1
-					| ,&nbsp;
-					// /ko
-			// /ko
-			//ko if: p.desc().length
-			.info(data-bind="html: p.desc()")
-			// /ko
-		.infoBlock
-			//ko if: p.source().length
-			.info
-				span.infoName Источник:
-				span(data-bind="html: p.source()")
-			// /ko
-			//ko if: p.author().length
-			.info
-				span.infoName Автор:
-				span(data-bind="html: p.author()")
-			// /ko
-			//ko if: p.address().length
-			.info
-				span.infoName Адрес снимка:
-				span(data-bind="text: p.address()")
-			// /ko
-		.infoBlock
-			.info
-				| Мы думаем, что снимок сделан
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
-				span(data-bind="html: p.year()")
-				span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
-				//ko if: p.dir && p.dir() && p.dir().length
-				span &nbsp;(направление съемки &minus;&nbsp;
-				span(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
-				| )
+	| <script id="photoView" type="text/html">
+	.infoBlock
+		//ko if: p.title().length
+		.info.title(data-bind="text: p.title()")
+		// /ko
+		//ko if: p.regions().length
+		.regions(data-bind="foreach: p.regions")
+			.region
+				a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+				//ko if: $index() < $parent.p.regions().length - 1
+				| ,&nbsp;
 				// /ko
-		a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
-			img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
+		// /ko
+		//ko if: p.desc().length
+		.info(data-bind="html: p.desc()")
+		// /ko
+	.infoBlock
+		//ko if: p.source().length
+		.info
+			span.infoName Источник:
+			span(data-bind="html: p.source()")
+		// /ko
+		//ko if: p.author().length
+		.info
+			span.infoName Автор:
+			span(data-bind="html: p.author()")
+		// /ko
+		//ko if: p.address().length
+		.info
+			span.infoName Адрес снимка:
+			span(data-bind="text: p.address()")
+		// /ko
+	.infoBlock
+		.info
+			| Мы думаем, что снимок сделан
+			span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
+			span(data-bind="html: p.year()")
+			span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
+			span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
+			//ko if: p.dir && p.dir() && p.dir().length
+			span &nbsp;(направление съемки &minus;&nbsp;
+			span(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+			| )
+			// /ko
+	a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
+		img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
+	| </script>
 
 	//-EDIT MODE
-	script(id="photoEdit", type="text/html")
-		.fieldWrap(data-bind="css: {hasContent: p.title().length}")
-			label(for="pName") Название фотографии
-			input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-		.fieldWrap.regions(data-bind="css: {loading: exeregion()}")
-			span.infoName Регион:
-			//ko if: p.regions().length
-			span(data-bind="foreach: p.regions")
-				.region
-					a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
-					//ko if: $index() < $parent.p.regions().length - 1
-					| ,&nbsp;
-					// /ko
-			// /ko
-			//ko if: !p.regions().length
-			.region.err Не привязан
-			// /ko
-			//ko if: !p.geo()
-			span.regionEdit(data-bind="click: regionSelect")
-				span.glyphicon.glyphicon-pencil
-				| Выбрать
-			// /ko
-		.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
-			label(for="pDesc") Описание
-			textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
-		.fieldWrap(data-bind="css: {hasContent: p.source().length}")
-			label(for="pSource") Источник
-			input.form-control(name="pSource", type="text", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-		.fieldWrap(data-bind="css: {hasContent: p.author().length}")
-			label(for="pAuthor") Автор
-			input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-		.fieldWrap(data-bind="css: {hasContent: p.address().length}")
-			label(for="pAddr") Адрес точки сьемки
-			input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-		.fieldWrap
-			| Я считаю, что снимок сделан между&nbsp;
-			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
-			| &nbsp;и&nbsp;
-			input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
-			| &nbsp;&nbsp;Направление съемки&nbsp;
-			select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+	| <script id="photoEdit" type="text/html">
+	.fieldWrap(data-bind="css: {hasContent: p.title().length}")
+		label(for="pName") Название фотографии
+		input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap.regions(data-bind="css: {loading: exeregion()}")
+		span.infoName Регион:
+		//ko if: p.regions().length
+		span(data-bind="foreach: p.regions")
+			.region
+				a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+				//ko if: $index() < $parent.p.regions().length - 1
+				| ,&nbsp;
+				// /ko
+		// /ko
+		//ko if: !p.regions().length
+		.region.err Не привязан
+		// /ko
+		//ko if: !p.geo()
+		span.regionEdit(data-bind="click: regionSelect")
+			span.glyphicon.glyphicon-pencil
+			| Выбрать
+		// /ko
+	.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
+		label(for="pDesc") Описание
+		textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
+	.fieldWrap(data-bind="css: {hasContent: p.source().length}")
+		label(for="pSource") Источник
+		input.form-control(name="pSource", type="text", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap(data-bind="css: {hasContent: p.author().length}")
+		label(for="pAuthor") Автор
+		input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap(data-bind="css: {hasContent: p.address().length}")
+		label(for="pAddr") Адрес точки сьемки
+		input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap
+		| Я считаю, что снимок сделан между&nbsp;
+		input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
+		| &nbsp;и&nbsp;
+		input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
+		| &nbsp;&nbsp;Направление съемки&nbsp;
+		select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+	| </script>

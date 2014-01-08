@@ -1,4 +1,4 @@
-doctype 5
+doctype html
 html
 	include includes/head_meta
 		if appLand === 'prod'
@@ -14,10 +14,18 @@ html
 		if appLand === 'dev'
 			link(rel="stylesheet", href="/style/appstart.css")
 		else
+			| <style type="text/css">
 			include ../public/style/appstart.css
+			| </style>
+
+		| <script type="text/javascript">
 		include ../public/js/appstart.js
+		| </script>
+
 		if appLand === 'dev'
+			| <script type="text/javascript">
 			include ../public/js/lib/require/require.js
 			include ../public/js/_mainConfig.js
+			| </script>
 
 	body

@@ -172,7 +172,10 @@ async.waterfall([
 			}
 
 			app.locals({
-				pretty: false,
+				pretty: false, //Adds whitespace to the resulting html to make it easier for a human to read
+				debug: false, //If set to true, the tokens and function body is logged to stdout
+				compileDebug: false, //Include the function source in the compiled template for better error messages (sometimes useful in development).
+
 				appLand: land, //Решает какие скрипты вставлять в head
 				appHash: app.hash //Вставляется в head страниц
 			});
