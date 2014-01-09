@@ -359,7 +359,6 @@ Utils.geo = (function () {
 			for (i; i < pointsLen - 1; j = i++) {
 				p1 = points[j]; //prev
 				x1 = p1[0];
-				y1 = p1[1];
 				p2 = points[i]; //current
 				x2 = p2[0];
 				y2 = p2[1];

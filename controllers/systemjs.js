@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -219,7 +219,6 @@ module.exports.loadController = function (app, db) {
 			query.$or = [{centerAuto: true}, {centerAuto: null}];
 		}
 
-		//Для каждого региона находим фотографии
 		print('Start to assign for ' + db.regions.count(query) + ' regions..\n');
 		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
 			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
@@ -252,7 +251,101 @@ module.exports.loadController = function (app, db) {
 			return [x / f, y / f];
 		}
 
-		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
+		return {message: 'All finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет bbox регионов
+	saveSystemJSFunc(function regionsCalcBBOX() {
+		var startTime = Date.now(),
+			query = {cid: {$ne: 1000000}};
+
+		print('Start to calc bbox for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
+			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
+				db.regions.update({cid: region.cid}, {$set: {bbox: polyBBOX(region.geo).map(toPrecision6)}});
+			} else {
+				print('Error with ' + region.cid + ' region');
+			}
+		});
+
+		function polyBBOX(geometry) {
+			var i, resultbbox, polybbox, multipolycoords;
+
+			if (geometry.type === 'Polygon') {
+				resultbbox = getbbox(geometry.coordinates[0]);
+			} else if (geometry.type === 'MultiPolygon') {
+				i = geometry.coordinates.length;
+				multipolycoords = [];
+
+				while (i--) {
+					polybbox = getbbox(geometry.coordinates[i][0]);
+
+					multipolycoords.push([polybbox[0], polybbox[1]]); //SouthWest
+					multipolycoords.push([polybbox[2], polybbox[1]]); //NorthWest
+					multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
+					multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
+				}
+				multipolycoords.sort(function (a, b) {
+					return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
+				});
+				multipolycoords.push(multipolycoords[0]);
+				resultbbox = getbbox(multipolycoords);
+			}
+
+			function getbbox(points) {
+				var pointsLen = points.length,
+					i = 0, j = pointsLen - 1,
+					x1 = points[j][0], x2,
+					y1 = points[j][1], y2,
+					p1, p2,
+					bbox;
+
+				if (x1 === -180) {
+					x1 = 180;
+				}
+				bbox = [x1, y1, x1, y1];
+
+				for (i; i < pointsLen - 1; j = i++) {
+					p1 = points[j]; //prev
+					x1 = p1[0];
+					p2 = points[i]; //current
+					x2 = p2[0];
+					y2 = p2[1];
+
+					if (x1 === -180) {
+						x1 = 180;
+					}
+					if (x2 === -180) {
+						x2 = 180;
+					}
+
+					if (Math.abs(x2 - x1) <= 180) {
+						if (x2 > x1 && x2 > bbox[2] && Math.abs(x2 - bbox[2]) <= 180) {
+							bbox[2] = x2;
+						} else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
+							bbox[0] = x2;
+						}
+					} else {
+						if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+							bbox[2] = x2;
+						} else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+							bbox[0] = x2;
+						}
+					}
+
+					if (y2 < bbox[1]) {
+						bbox[1] = y2;
+					} else if (y2 > bbox[3]) {
+						bbox[3] = y2;
+					}
+				}
+				return bbox;
+			}
+
+			return resultbbox;
+		}
+
+		return {message: 'All bbox finished in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	//Расчет количества вершин полигонов
@@ -373,6 +466,9 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function toPrecision(number, precision) {
 		var divider = Math.pow(10, precision || 6);
 		return ~~(number * divider) / divider;
+	});
+	saveSystemJSFunc(function toPrecision6(number) {
+		return toPrecision(number, 6);
 	});
 
 	saveSystemJSFunc(function toPrecisionRound(number, precision) {

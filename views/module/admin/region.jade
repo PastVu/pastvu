@@ -62,7 +62,7 @@
 				.dopparam
 					abbr(title="Центральная точка региона в его домашнем положении") Центр
 					| :
-					input.form-control.input-sm.center(type="text", readonly, data-bind="attr: {value: region.center().join(', ') || (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
+					input.form-control.input-sm.center(type="text", readonly, data-bind="attr: {value: region.center() ? region.center().join(', ') : (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
 					.btn-group.btn-group-sm
 						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
 						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
@@ -70,7 +70,7 @@
 				.dopparam
 					abbr(title="Bounding box - прямоугольник, в который целиком вписан регион") Bbox
 					| :
-					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox().join(', ') || 'Пока не рассчитан'}")
+					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : 'Пока не рассчитан'}")
 				.dopparam
 					abbr(title="Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба") Bbox дом
 					| .:
