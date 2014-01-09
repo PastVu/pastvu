@@ -277,7 +277,13 @@ Utils.math = (function () {
 
 	return {
 		toPrecision: toPrecision,
-		toPrecisionRound: toPrecisionRound
+		toPrecisionRound: toPrecisionRound,
+		toPrecision6: function (number) {
+			return toPrecision(number, 6);
+		},
+		toPrecisionRound6: function (number) {
+			return toPrecisionRound(number, 6);
+		}
 	};
 }());
 
@@ -308,6 +314,87 @@ Utils.geo = (function () {
 		area /= 2;
 		f = area * 6;
 		return [x / f, y / f];
+	}
+
+	//BBOX полигона/мультиполигона. По первой замкнутой линии полигона, т.к. она должна быть exterior ring для следующих
+	//На вход подаётся объект geometry полигона
+	//Возвращает [WestLng, SouthLat, EastLng, NorthLat]
+	function polyBBOX(geometry) {
+		var i, resultbbox, polybbox, multipolycoords;
+
+		if (geometry.type === 'Polygon') {
+			resultbbox = getbbox(geometry.coordinates[0]);
+		} else if (geometry.type === 'MultiPolygon') {
+			i = geometry.coordinates.length;
+			multipolycoords = [];
+
+			while (i--) {
+				polybbox = getbbox(geometry.coordinates[i][0]);
+
+				multipolycoords.push([polybbox[0], polybbox[1]]); //SouthWest
+				multipolycoords.push([polybbox[2], polybbox[1]]); //NorthWest
+				multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
+				multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
+			}
+			multipolycoords.sort(function (a, b) {
+				return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
+			});
+			multipolycoords.push(multipolycoords[0]);
+			resultbbox = getbbox(multipolycoords);
+		}
+
+		function getbbox(points) {
+			var pointsLen = points.length,
+				i = 0, j = pointsLen - 1,
+				x1 = points[j][0], x2,
+				y1 = points[j][1], y2,
+				p1, p2,
+				bbox;
+
+			if (x1 === -180) {
+				x1 = 180;
+			}
+			bbox = [x1, y1, x1, y1];
+
+			for (i; i < pointsLen - 1; j = i++) {
+				p1 = points[j]; //prev
+				x1 = p1[0];
+				y1 = p1[1];
+				p2 = points[i]; //current
+				x2 = p2[0];
+				y2 = p2[1];
+
+				if (x1 === -180) {
+					x1 = 180;
+				}
+				if (x2 === -180) {
+					x2 = 180;
+				}
+
+				if (Math.abs(x2 - x1) <= 180) {
+					if (x2 > x1 && x2 > bbox[2] && Math.abs(x2 - bbox[2]) <= 180) {
+						bbox[2] = x2;
+					} else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
+						bbox[0] = x2;
+					}
+				} else {
+					if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+						bbox[2] = x2;
+					} else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+						bbox[0] = x2;
+					}
+				}
+
+				if (y2 < bbox[1]) {
+					bbox[1] = y2;
+				} else if (y2 > bbox[3]) {
+					bbox[3] = y2;
+				}
+			}
+			return bbox;
+		}
+
+		return resultbbox;
 	}
 
 	/**
@@ -363,6 +450,7 @@ Utils.geo = (function () {
 	function check(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 	}
+
 	//Проверка на валидность geo [lat, lng]
 	function checkLatLng(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
@@ -374,6 +462,7 @@ Utils.geo = (function () {
 		geoToPrecisionRound: geoToPrecisionRound,
 		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
 		polyCentroid: polyCentroid,
+		polyBBOX: polyBBOX,
 		spinLng: spinLng,
 		latlngToArr: latlngToArr,
 		check: check,

@@ -17,6 +17,8 @@ define([
 		pointsnum: 0,
 		center: null,
 		centerAuto: true,
+		bbox: null,
+		bboxhome: null,
 		title_en: '',
 		title_local: ''
 	};
@@ -39,6 +41,12 @@ define([
 			this.childLenArr = ko.observableArray();
 			this.geoStringOrigin = null;
 			this.geoObj = null;
+			this.bboxAuto = this.co.bboxAuto = ko.computed({
+				read: function () {
+					return _.isEqual(this.region.bbox(), this.region.bboxhome());
+				},
+				owner: this
+			});
 
 			this.map = null;
 			this.markerLayer = L.layerGroup();
@@ -256,6 +264,11 @@ define([
 		},
 		//Переключаем вид домашнего положения bbox
 		bboxHomeToggle: function () {
+			if (this.bboxAuto()) {
+				this.region.bboxhome([]);
+			} else {
+				this.region.bboxhome(this.region.bbox());
+			}
 		},
 
 		getOneRegion: function (cid, cb, ctx) {

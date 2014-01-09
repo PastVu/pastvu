@@ -592,6 +592,8 @@ function saveRegion(socket, data, cb) {
 
 				//Считаем количество точек
 				region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
+				//Вычисляем bbox
+				region.bbox = Utils.geo.polyBBOX(data.geo).map(Utils.math.toPrecision6);
 
 				region.geo = data.geo;
 				region.markModified('geo');
