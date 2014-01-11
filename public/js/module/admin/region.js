@@ -41,6 +41,7 @@ define([
 			this.childLenArr = ko.observableArray();
 			this.geoStringOrigin = null;
 			this.geoObj = null;
+			this.bboxLBound = null;
 			this.bboxAuto = this.co.bboxAuto = ko.computed({
 				read: function () {
 					return _.isEqual(this.region.bbox(), this.region.bboxhome());
@@ -50,7 +51,8 @@ define([
 
 			this.map = null;
 			this.markerLayer = L.layerGroup();
-			this.layerSaved = null;
+			this.layerGeo = null;
+			this.layerBBOX = null;
 
 			this.mh = ko.observable('300px'); //Высота карты
 
@@ -116,10 +118,8 @@ define([
 			}
 		},
 		resetData: function () {
-			this.centerMarkerDestroy();
-			if (this.layerSaved) {
-				this.map.removeLayer(this.layerSaved);
-			}
+			this.removeLayers();
+			this.bboxLBound = null;
 
 			this.regionOrigin = regionDef;
 			ko_mapping.fromJS(regionDef, this.region);
@@ -128,11 +128,30 @@ define([
 			this.parentCid(0);
 			this.childLenArr([]);
 		},
+		removeLayers: function () {
+			this.centerMarkerDestroy();
+			if (this.layerGeo) {
+				this.map.removeLayer(this.layerGeo);
+				this.layerGeo = null;
+			}
+			if (this.layerBBOX) {
+				this.map.removeLayer(this.layerBBOX);
+				this.layerBBOX = null;
+			}
+		},
+
 		fillData: function (data) {
 			var region = data.region;
 
 			this.regionOrigin = region;
 			ko_mapping.fromJS(region, this.region);
+
+			if (region.bbox) {
+				this.bboxLBound = [
+					[region.bbox[1], region.bbox[0]],
+					[region.bbox[3], region.bbox[2]]
+				];
+			}
 
 			this.childLenArr(data.childLenArr || []);
 			if (data.region.parents && data.region.parents.length) {
@@ -154,41 +173,39 @@ define([
 					this.geoObj = null;
 					return false;
 				}
-				this.drawData();
 			}
-
-			if (region.center) {
-				if (this.centerMarker) {
-					this.centerMarker.setLatLng(region.center);
-				} else {
-					this.centerMarkerCreate();
-				}
-			}
+			this.drawData();
 
 			return true;
 		},
 		drawData: function () {
 			var mapInit = !this.map;
 
-			if (this.layerSaved) {
-				this.map.removeLayer(this.layerSaved);
-			}
-			this.layerSaved = L.geoJson(this.geoObj, {
-				style: {
-					color: "#F00",
-					weight: 3,
-					opacity: 0.6,
-					clickable: false
-				}
-			});
-
 			this.createMap();
+			this.removeLayers();
+
 			this.map.whenReady(function () {
+				var addLayers = function () {
+					if (this.bboxLBound) {
+						this.layerBBOX = L.rectangle(this.bboxLBound,
+							{color: "#F70", weight: 1, opacity: 0.9, fillOpacity: 0.1, clickable: false}
+						).addTo(this.map);
+					}
+
+					if (this.geoObj) {
+						this.layerGeo = L.geoJson(this.geoObj, {
+							style: {color: "#F00", weight: 2, opacity: 0.8, clickable: false}
+						}).addTo(this.map);
+					}
+
+					this.centerMarkerCreate();
+				}.bind(this);
+
 				if (mapInit) {
-					this.layerSaved.addTo(this.map);
+					addLayers();
 				} else {
-					this.map.fitBounds(this.layerSaved.getBounds());
-					window.setTimeout(this.layerSaved.addTo.bind(this.layerSaved, this.map), 500); //Рисуем после анимации fitBounds
+					this.map.fitBounds(this.bboxLBound);
+					window.setTimeout(addLayers, 500); //Рисуем после анимации fitBounds
 				}
 			}, this);
 		},
@@ -201,8 +218,8 @@ define([
 			}
 
 			this.map = new L.map(this.$dom.find('.map')[0], {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false});
-			if (this.layerSaved) {
-				this.map.fitBounds(this.layerSaved.getBounds());
+			if (this.bboxLBound) {
+				this.map.fitBounds(this.bboxLBound);
 			}
 
 			this.map
