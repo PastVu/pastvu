@@ -10,6 +10,7 @@ var RegionSchema = new Schema(
 		geo: Schema.Types.Mixed,
 
 		pointsnum: {type: Number, index: true}, //Количество точек
+		polynum: {type: Schema.Types.Mixed, 'default': {}}, //Кол-во полигонов {exterior: N, interior: N}
 		center: {type: [Number], index: '2d'}, //Координаты центра региона
 		centerAuto: {type: Boolean, 'default': true, required: true}, //Центр расчитывается автоматически или устанавливается вручную(false)
 

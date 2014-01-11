@@ -16,8 +16,15 @@
 					strong(data-bind="text: ' ' + region.cid()")
 					| ; Уровень:
 					strong(data-bind="text: ' ' + (Number(haveParent()) ? region.parents().length + 1 : 1)")
+					| ; Полигонов:
+					strong(data-bind="text: ' ' + formatNum(region.polynum.exterior())")
+					//ko if: region.polynum.interior()
+					|  (+
+					strong(data-bind="text: formatNum(region.polynum.interior())")
+					|  выколотых)
+					// /ko
 					| ; Вершин:
-					strong(data-bind="text: ' ' + formatNum(region.pointsnum())")
+					strong(data-bind="text: ' ' + (formatNum(region.pointsnum() - region.polynum.exterior() - region.polynum.interior()))")
 					| ;&nbsp;
 					a(data-bind="attr: {href: '/admin/region?hl=' + region.cid()}") Показать в дереве регионов
 		// /ko

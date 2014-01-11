@@ -15,6 +15,7 @@ define([
 		parents: [],
 		geo: '',
 		pointsnum: 0,
+		polynum: {exterior: 0, interior: 0},
 		center: null,
 		centerAuto: true,
 		bbox: null,

@@ -184,6 +184,28 @@ Utils.calcGeoJSONPointsNum = function (arr) {
 	}
 	return result;
 };
+Utils.calcGeoJSONPolygonsNum = function (geometry) {
+	'use strict';
+	var result,
+		res,
+		i;
+
+	if (geometry.type === 'MultiPolygon') {
+		result = {exterior: 0, interior: 0};
+		for (i = geometry.coordinates.length; i--;) {
+			res = polyNum(geometry.coordinates[i]);
+			result.exterior += res.exterior;
+			result.interior += res.interior;
+		}
+	} else if (geometry.type === 'Polygon') {
+		result = polyNum(geometry.coordinates);
+	}
+
+	function polyNum (polygons) {
+		return {exterior: 1, interior: polygons.length - 1};
+	}
+	return result;
+};
 
 Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
 	'use strict';

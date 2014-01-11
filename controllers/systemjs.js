@@ -375,6 +375,54 @@ module.exports.loadController = function (app, db) {
 		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
+	//Расчет количества полигонов в регионе {exterior: 0, interior: 0}
+	saveSystemJSFunc(function regionsCalcPolygonsNum(cidArr) {
+		var startTime = Date.now(),
+			query = {};
+
+		if (Array.isArray(cidArr) && cidArr.length) {
+			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
+		}
+
+		print('Start to calculate polynum for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
+			var polynum;
+
+			if (region.geo.type === 'Polygon' || region.geo.type === 'MultiPolygon') {
+				polynum = calcGeoJSONPolygonsNum(region.geo);
+			} else {
+				polynum = {exterior: 0, interior: 0};
+			}
+
+			db.regions.update({cid: region.cid}, {$set: {polynum: polynum}});
+		});
+
+		function calcGeoJSONPolygonsNum(geometry) {
+			var result,
+				res,
+				i;
+
+			if (geometry.type === 'MultiPolygon') {
+				result = {exterior: 0, interior: 0};
+				for (i = geometry.coordinates.length; i--;) {
+					res = polyNum(geometry.coordinates[i]);
+					result.exterior += res.exterior;
+					result.interior += res.interior;
+				}
+			} else if (geometry.type === 'Polygon') {
+				result = polyNum(geometry.coordinates);
+			}
+
+			function polyNum (polygons) {
+				return {exterior: 1, interior: polygons.length - 1};
+			}
+			return result;
+		}
+
+		print('\n');
+		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	saveSystemJSFunc(function calcUserStats() {
 		var startTime = Date.now(),
 			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),
