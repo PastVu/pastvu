@@ -69,7 +69,7 @@
 				.dopparam
 					abbr(title="Центральная точка региона в его домашнем положении") Центр
 					| :
-					input.form-control.input-sm.center(type="text", readonly, data-bind="attr: {value: region.center() ? region.center().join(', ') : (region.centerAuto() ? 'Пока не рассчитан' : 'Не задан')}")
+					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto()}, css: {invalid: !region.centerAuto() && !centerValid()}")
 					.btn-group.btn-group-sm
 						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
 						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
@@ -85,7 +85,7 @@
 						button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") Как bbox
 						button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Вручную
 					//ko if: !bboxAuto()
-					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: _.isEmpty(region.bbox()) ? 'Не задан' : region.bbox().join(', ')}")
+					input.form-control.input-sm.bbox(type="text", data-bind="attr: {value: _.isEmpty(region.bboxhome()) ? 'Не задан' : region.bboxhome().join(', ')}")
 					// /ko
 		//ko if: createMode() || showGeo()
 		.form-group

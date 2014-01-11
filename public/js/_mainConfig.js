@@ -68,6 +68,7 @@ requirejs.config({
 		'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
 		'leaflet': 'lib/leaflet/leaflet',
+		'leaflet-plugins': 'lib/leaflet/plugins',
 
 		'highstock': 'lib/highstock',
 

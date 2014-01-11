@@ -6,7 +6,7 @@
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
 	'leaflet', 'model/storage',
-	'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet'
+	'text!tpl/admin/region.jade', 'leaflet-plugins/draw/draw', 'css!style/admin/region', 'css!style/leaflet/leaflet', 'css!style/leaflet/draw'
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, storage, jade) {
 	'use strict';
 
@@ -22,6 +22,52 @@ define([
 		bboxhome: null,
 		title_en: '',
 		title_local: ''
+	};
+
+	ko.bindingHandlers.centerInput = {
+		init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+			var $element = $(element);
+
+			setFromObserve(viewModel.region.center());
+			subscrObserve();
+
+			$(element)
+				.on('focus', function () {
+					if (!viewModel.region.centerAuto()) {
+						viewModel.subscriptions.centerInput.dispose();
+						$(element).on('keyup', function () {
+							var geo = '[' + $element.val() + ']';
+							try {
+								geo = JSON.parse(geo);
+							} catch (err) {
+							}
+
+							if (Utils.geo.checkLatLng(geo)) {
+								viewModel.centerValid(true);
+								viewModel.centerSet(geo);
+							} else {
+								viewModel.centerValid(false);
+							}
+						});
+					}
+				})
+				.on('blur', function () {
+					if (!viewModel.region.centerAuto()) {
+						$(element).off('keyup');
+						subscrObserve();
+					}
+				});
+
+			function subscrObserve() {
+				viewModel.subscriptions.centerInput = viewModel.region.center.subscribe(setFromObserve, viewModel);
+			}
+
+			function setFromObserve(val) {
+				$element.val(val ? val.join(', ') : (viewModel.centerAuto() ? 'Пока не рассчитан' : 'Не задан'));
+			}
+		},
+		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+		}
 	};
 
 	return Cliche.extend({
@@ -54,6 +100,8 @@ define([
 			this.markerLayer = L.layerGroup();
 			this.layerGeo = null;
 			this.layerBBOX = null;
+
+			this.centerValid = ko.observable(true);
 
 			this.mh = ko.observable('300px'); //Высота карты
 
@@ -228,13 +276,7 @@ define([
 				.on('click', function (e) {
 					var geo = Utils.geo.geoToPrecision([e.latlng.lat, e.latlng.lng]);
 
-					this.region.center(geo);
-
-					if (this.centerMarker) {
-						this.centerMarker.setLatLng(geo);
-					} else {
-						this.centerMarkerCreate();
-					}
+					this.centerSet(geo);
 					this.region.centerAuto(false);
 				}, this);
 
@@ -244,11 +286,11 @@ define([
 		centerMarkerCreate: function () {
 			var _this = this;
 			this.centerMarker = L.marker(this.region.center(), {draggable: true, title: 'Центр региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centerMarker'})})
+				.on('dragstart', function () {
+					_this.region.centerAuto(false);
+				})
 				.on('drag', function () {
 					_this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
-				})
-				.on('dragend', function () {
-					_this.region.centerAuto(false);
 				})
 				.addTo(this.markerLayer);
 			return this;
@@ -261,6 +303,14 @@ define([
 				delete this.centerMarker;
 			}
 			return this;
+		},
+		centerSet: function (geo) {
+			this.region.center(geo);
+			if (this.centerMarker) {
+				this.centerMarker.setLatLng(geo);
+			} else {
+				this.centerMarkerCreate();
+			}
 		},
 		//Переключаем задание центра Авто/Вручную
 		centerAutoToggle: function () {
