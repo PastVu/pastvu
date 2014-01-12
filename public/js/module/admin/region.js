@@ -6,7 +6,7 @@
 define([
 	'underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
 	'leaflet', 'model/storage',
-	'text!tpl/admin/region.jade', 'leaflet-plugins/draw/draw', 'css!style/admin/region', 'css!style/leaflet/leaflet', 'css!style/leaflet/draw'
+	'text!tpl/admin/region.jade', 'css!style/admin/region', 'css!style/leaflet/leaflet'
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, L, storage, jade) {
 	'use strict';
 

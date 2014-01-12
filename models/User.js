@@ -27,10 +27,11 @@ var UserScheme = new mongoose.Schema({
 	role: {type: Number},
 
 	settings: {type: Schema.Types.Mixed},
-	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}],
 	ranks: [String],
 
-	mod_regions: [{type: Schema.Types.ObjectId, ref: 'Region'}],
+	regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
+	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы для фильтрации по умолчанию
+	mod_regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы модерируемые
 
 	//Profile
 	avatar: {type: String},

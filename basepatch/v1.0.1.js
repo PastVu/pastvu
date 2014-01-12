@@ -17,6 +17,20 @@ module.exports.loadController = function (app, db) {
 		regionsCalcPointsNum();
 		regionsCalcPolygonsNum();
 
+		//Назначит всем пользователям домашний регион (_id региона в поле regionHome)
+		//Если у пользователя есть регионы для фильтрации по умолчанию - берем оттуда первый. Если нет - Москву
+		var mskId = db.regions.findOne({cid: 3}, {_id: 1})._id,
+			setId;
+		print('Filling regionHome for ' + db.users.count() + ' users');
+		db.users.find({}, {_id: 0, cid: 1, regions: 1}).forEach(function (user) {
+			if (user.regions && user.regions.length) {
+				setId = user.regions[0];
+			} else {
+				setId = mskId;
+			}
+			db.users.update({cid: user.cid}, {$set: {regionHome: setId}});
+		});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
