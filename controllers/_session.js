@@ -290,6 +290,7 @@ var checkWaitingSess = (function () {
 //Пупулируем регионы пользователя и строим запросы для них
 function popUserRegions(user, cb) {
 	var paths = [
+			{path: 'regionHome', select: {_id: 0, cid: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
 			{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
 		],
 		mod_regions_equals; //Регионы интересов и модерирования равны
