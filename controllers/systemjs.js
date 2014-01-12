@@ -219,7 +219,7 @@ module.exports.loadController = function (app, db) {
 			query.$or = [{centerAuto: true}, {centerAuto: null}];
 		}
 
-		print('Start to assign for ' + db.regions.count(query) + ' regions..\n');
+		print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
 		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
 			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
 				db.regions.update({cid: region.cid}, {$set: {center: geoToPrecision(polyCentroid(region.geo.type === 'MultiPolygon' ? region.geo.coordinates[0][0] : region.geo.coordinates[0])), centerAuto: true}});
