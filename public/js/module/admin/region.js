@@ -18,8 +18,8 @@ define([
 		polynum: {exterior: 0, interior: 0},
 		center: null,
 		centerAuto: true,
-		bbox: null,
-		bboxhome: null,
+		bbox: undefined,
+		bboxhome: undefined,
 		title_en: '',
 		title_local: ''
 	};
@@ -43,7 +43,6 @@ define([
 							}
 
 							if (Utils.geo.checkLatLng(geo)) {
-								viewModel.centerValid(true);
 								viewModel.centerSet(geo);
 							} else {
 								viewModel.centerValid(false);
@@ -63,10 +62,50 @@ define([
 			}
 
 			function setFromObserve(val) {
-				$element.val(val ? val.join(', ') : (viewModel.centerAuto() ? 'Пока не рассчитан' : 'Не задан'));
+				$element.val(Utils.geo.checkLatLng(val) ? val.join(', ') : '');
 			}
-		},
-		update: function (element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+		}
+	};
+	ko.bindingHandlers.bboxhomeInput = {
+		init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+			var $element = $(element);
+
+			setFromObserve(viewModel.region.bboxhome());
+			subscrObserve();
+
+			$(element)
+				.on('focus', function () {
+					if (!viewModel.bboxAuto()) {
+						viewModel.subscriptions.bboxhomeInput.dispose();
+						$(element).on('keyup', function () {
+							var bbox = '[' + $element.val() + ']';
+							try {
+								bbox = JSON.parse(bbox);
+							} catch (err) {
+							}
+
+							if (Utils.geo.checkbboxLatLng(bbox)) {
+								viewModel.bboxhomeSet(bbox);
+							} else {
+								viewModel.bboxhomeValid(false);
+							}
+						});
+					}
+				})
+				.on('blur', function () {
+					if (!viewModel.bboxAuto()) {
+						$(element).off('keyup');
+						subscrObserve();
+					}
+				});
+
+			function subscrObserve() {
+				viewModel.subscriptions.bboxhomeInput = viewModel.region.bboxhome.subscribe(setFromObserve, viewModel);
+			}
+
+			function setFromObserve(val) {
+				$element.val(Utils.geo.checkbboxLatLng(val) ? val.join(', ') : '');
+			}
 		}
 	};
 
@@ -91,7 +130,7 @@ define([
 			this.bboxLBound = null;
 			this.bboxAuto = this.co.bboxAuto = ko.computed({
 				read: function () {
-					return _.isEqual(this.region.bbox(), this.region.bboxhome());
+					return !this.region.bboxhome();
 				},
 				owner: this
 			});
@@ -102,6 +141,7 @@ define([
 			this.layerBBOX = null;
 
 			this.centerValid = ko.observable(true);
+			this.bboxhomeValid = ko.observable(true);
 
 			this.mh = ko.observable('300px'); //Высота карты
 
@@ -178,7 +218,7 @@ define([
 			this.childLenArr([]);
 		},
 		removeLayers: function () {
-			this.centerMarkerDestroy();
+			this.centerMarkerDestroy().bboxhomeLayerDestroy();
 			if (this.layerGeo) {
 				this.map.removeLayer(this.layerGeo);
 				this.layerGeo = null;
@@ -197,8 +237,8 @@ define([
 
 			if (region.bbox) {
 				this.bboxLBound = [
-					[region.bbox[1], region.bbox[0]],
-					[region.bbox[3], region.bbox[2]]
+					[region.bbox[0], region.bbox[1]],
+					[region.bbox[2], region.bbox[3]]
 				];
 			}
 
@@ -224,6 +264,10 @@ define([
 				}
 			}
 			this.drawData();
+
+			if (region.bboxhome) {
+				this.bboxhomeSet(region.bboxhome);
+			}
 
 			return true;
 		},
@@ -288,6 +332,7 @@ define([
 			this.centerMarker = L.marker(this.region.center(), {draggable: true, title: 'Центр региона', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'centerMarker'})})
 				.on('dragstart', function () {
 					_this.region.centerAuto(false);
+					_this.centerValid(true);
 				})
 				.on('drag', function () {
 					_this.region.center(Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.getLatLng())));
@@ -306,6 +351,7 @@ define([
 		},
 		centerSet: function (geo) {
 			this.region.center(geo);
+			this.centerValid(true);
 			if (this.centerMarker) {
 				this.centerMarker.setLatLng(geo);
 			} else {
@@ -320,6 +366,7 @@ define([
 			if (newCenterAuto) {
 				//Если ставим Авто, то возвращаем оригинальное значение центра
 				this.region.center(this.regionOrigin.center || null);
+				this.centerValid(true);
 
 				if (this.regionOrigin.center) {
 					//Если есть предрасчитанный центр, то ставим маркер в него
@@ -330,12 +377,46 @@ define([
 				}
 			}
 		},
+
+		//Создание прямоугольника bboxhome
+		bboxhomeLayerCreate: function () {
+			this.layerBBOXHome = L.rectangle(this.bboxhomeLBound,
+				{color: "#070", weight: 1, dashArray: [5, 3], opacity: 1, fillColor: '#F70', fillOpacity: 0.1, clickable: false}
+			).addTo(this.map);
+			return this;
+		},
+		//Удаление прямоугольника bboxhome
+		bboxhomeLayerDestroy: function () {
+			if (this.layerBBOXHome) {
+				this.map.removeLayer(this.layerBBOXHome);
+				this.layerBBOXHome = null;
+			}
+			return this;
+		},
+		bboxhomeSet: function (bbox) {
+			this.region.bboxhome(bbox);
+			this.bboxhomeLBound = [
+				[bbox[0], bbox[1]],
+				[bbox[2], bbox[3]]
+			];
+			this.bboxhomeValid(true);
+			if (this.layerBBOXHome) {
+				this.layerBBOXHome.setBounds(this.bboxhomeLBound);
+			} else {
+				this.bboxhomeLayerCreate();
+			}
+		},
+		bboxhomeUnSet: function (bbox) {
+			this.bboxhomeLayerDestroy();
+			this.region.bboxhome(undefined);
+			this.bboxhomeLBound = null;
+		},
 		//Переключаем вид домашнего положения bbox
 		bboxHomeToggle: function () {
 			if (this.bboxAuto()) {
-				this.region.bboxhome([]);
+				this.bboxhomeSet(this.regionOrigin.bboxhome || this.region.bbox() || []);
 			} else {
-				this.region.bboxhome(this.region.bbox());
+				this.bboxhomeUnSet();
 			}
 		},
 
@@ -395,6 +476,10 @@ define([
 				}, this);
 			} else {
 				processSave(this);
+			}
+
+			if (!saveData.bboxhome && this.regionOrigin.bboxhome) {
+				saveData.bboxhome = null; //Если bboxhome был и ставим auto, то надо передать на сервер null, чтобы обнулить его
 			}
 
 			function processSave(ctx) {

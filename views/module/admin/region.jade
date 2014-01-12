@@ -69,7 +69,7 @@
 				.dopparam
 					abbr(title="Центральная точка региона в его домашнем положении") Центр
 					| :
-					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto()}, css: {invalid: !region.centerAuto() && !centerValid()}")
+					input.form-control.input-sm.center(type="text", data-bind="centerInput: true, attr: {readonly: region.centerAuto(), placeholder: region.centerAuto() ? 'Пока не рассчитан' : 'Не задан'}, css: {invalid: !region.centerAuto() && !centerValid()}")
 					.btn-group.btn-group-sm
 						button.btn.btn-primary.yes(type="button", data-bind="css: {active: region.centerAuto()}, click: centerAutoToggle") Авто
 						button.btn.btn-primary.no(type="button", data-bind="css: {active: !region.centerAuto()}, click: centerAutoToggle") Вручную
@@ -77,7 +77,7 @@
 				.dopparam
 					abbr(title="Bounding box - прямоугольник, в который целиком вписан регион") Bbox
 					| :
-					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : 'Пока не рассчитан'}")
+					input.form-control.input-sm.bbox(type="text", readonly, data-bind="attr: {value: region.bbox() ? region.bbox().join(', ') : ''}", placeholder="Пока не рассчитан")
 				.dopparam
 					abbr(title="Прямоугольник, который должен быть виден в домашнем положении карты для данного региона. Нужен для расчета масштаба") Bbox дом
 					| .:
@@ -85,7 +85,7 @@
 						button.btn.btn-primary.yes(type="button", data-bind="css: {active: bboxAuto()}, click: bboxHomeToggle") Как bbox
 						button.btn.btn-primary.no(type="button", data-bind="css: {active: !bboxAuto()}, click: bboxHomeToggle") Вручную
 					//ko if: !bboxAuto()
-					input.form-control.input-sm.bbox(type="text", data-bind="attr: {value: _.isEmpty(region.bboxhome()) ? 'Не задан' : region.bboxhome().join(', ')}")
+					input.form-control.input-sm.bbox(type="text", data-bind="bboxhomeInput: true, attr: {readonly: bboxAuto()}, css: {invalid: !bboxAuto() && !bboxhomeValid()}", placeholder="Не задан")
 					// /ko
 		//ko if: createMode() || showGeo()
 		.form-group

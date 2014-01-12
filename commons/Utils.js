@@ -471,10 +471,22 @@ Utils.geo = (function () {
 	function check(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 	}
-
 	//Проверка на валидность geo [lat, lng]
 	function checkLatLng(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+	}
+
+	//Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
+	function checkbbox(bbox) {
+		return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[0] < bbox[2] && bbox[1] < bbox[3];
+	}
+	//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
+	function checkbboxLatLng(bbox) {
+		return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2] && bbox[1] < bbox[3];
+	}
+	//Переставляет местами lat и lng в bbox
+	function bboxReverse(bbox) {
+		return [bbox[1], bbox[0], bbox[3], bbox[2]];
 	}
 
 	return {
@@ -487,7 +499,10 @@ Utils.geo = (function () {
 		spinLng: spinLng,
 		latlngToArr: latlngToArr,
 		check: check,
-		checkLatLng: checkLatLng
+		checkLatLng: checkLatLng,
+		checkbbox: checkbbox,
+		checkbboxLatLng: checkbboxLatLng,
+		bboxReverse: bboxReverse
 	};
 }());
 

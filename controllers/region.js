@@ -606,6 +606,12 @@ function saveRegion(socket, data, cb) {
 				region.markModified('polynum');
 			}
 
+			if (Utils.geo.checkbboxLatLng(data.bboxhome)) {
+				region.bboxhome = Utils.geo.bboxReverse(data.bboxhome).map(Utils.math.toPrecision6);
+			} else if (data.bboxhome === null) {
+				region.bboxhome = undefined; //Если пришел null - надо обнулить, т.е. bbox будет авто
+			}
+
 			if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
 				if (data.geo || !region.centerAuto) {
 					region.centerAuto = true;
@@ -678,6 +684,12 @@ function saveRegion(socket, data, cb) {
 						}
 						if (region.center) {
 							region.center.reverse();
+						}
+						if (region.bbox) {
+							region.bbox = Utils.geo.bboxReverse(region.bbox);
+						}
+						if (region.bboxhome) {
+							region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
 						}
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
@@ -850,6 +862,12 @@ function getRegion(socket, data, cb) {
 
 			if (region.center) {
 				region.center.reverse();
+			}
+			if (region.bbox) {
+				region.bbox = Utils.geo.bboxReverse(region.bbox);
+			}
+			if (region.bboxhome) {
+				region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
 			}
 
 			cb({childLenArr: childLenArr, region: region});
