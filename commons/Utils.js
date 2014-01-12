@@ -478,11 +478,11 @@ Utils.geo = (function () {
 
 	//Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
 	function checkbbox(bbox) {
-		return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[0] < bbox[2] && bbox[1] < bbox[3];
+		return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
 	}
 	//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
 	function checkbboxLatLng(bbox) {
-		return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2] && bbox[1] < bbox[3];
+		return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
 	}
 	//Переставляет местами lat и lng в bbox
 	function bboxReverse(bbox) {

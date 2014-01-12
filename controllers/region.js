@@ -685,11 +685,19 @@ function saveRegion(socket, data, cb) {
 						if (region.center) {
 							region.center.reverse();
 						}
-						if (region.bbox) {
-							region.bbox = Utils.geo.bboxReverse(region.bbox);
+						if (region.bbox !== undefined) {
+							if (Utils.geo.checkbbox(region.bbox)) {
+								region.bbox = Utils.geo.bboxReverse(region.bbox);
+							} else {
+								delete region.bbox;
+							}
 						}
-						if (region.bboxhome) {
-							region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+						if (region.bboxhome !== undefined) {
+							if (Utils.geo.checkbbox(region.bboxhome)) {
+								region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+							} else {
+								delete region.bboxhome;
+							}
 						}
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
@@ -863,11 +871,19 @@ function getRegion(socket, data, cb) {
 			if (region.center) {
 				region.center.reverse();
 			}
-			if (region.bbox) {
-				region.bbox = Utils.geo.bboxReverse(region.bbox);
+			if (region.bbox !== undefined) {
+				if (Utils.geo.checkbbox(region.bbox)) {
+					region.bbox = Utils.geo.bboxReverse(region.bbox);
+				} else {
+					delete region.bbox;
+				}
 			}
-			if (region.bboxhome) {
-				region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+			if (region.bboxhome !== undefined) {
+				if (Utils.geo.checkbbox(region.bboxhome)) {
+					region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+				} else {
+					delete region.bboxhome;
+				}
 			}
 
 			cb({childLenArr: childLenArr, region: region});

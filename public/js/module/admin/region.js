@@ -127,7 +127,9 @@ define([
 			this.childLenArr = ko.observableArray();
 			this.geoStringOrigin = null;
 			this.geoObj = null;
+
 			this.bboxLBound = null;
+			this.bboxhomeLBound = null;
 			this.bboxAuto = this.co.bboxAuto = ko.computed({
 				read: function () {
 					return !this.region.bboxhome();
@@ -139,6 +141,7 @@ define([
 			this.markerLayer = L.layerGroup();
 			this.layerGeo = null;
 			this.layerBBOX = null;
+			this.layerBBOXHome = null;
 
 			this.centerValid = ko.observable(true);
 			this.bboxhomeValid = ko.observable(true);
@@ -209,6 +212,7 @@ define([
 		resetData: function () {
 			this.removeLayers();
 			this.bboxLBound = null;
+			this.bboxhomeLBound = null;
 
 			this.regionOrigin = regionDef;
 			ko_mapping.fromJS(regionDef, this.region);
@@ -229,7 +233,7 @@ define([
 			}
 		},
 
-		fillData: function (data) {
+		fillData: function (data, needRedraw) {
 			var region = data.region;
 
 			this.regionOrigin = region;
@@ -240,6 +244,8 @@ define([
 					[region.bbox[0], region.bbox[1]],
 					[region.bbox[2], region.bbox[3]]
 				];
+			} else {
+				this.bboxLBound = null;
 			}
 
 			this.childLenArr(data.childLenArr || []);
@@ -263,10 +269,8 @@ define([
 					return false;
 				}
 			}
-			this.drawData();
-
-			if (region.bboxhome) {
-				this.bboxhomeSet(region.bboxhome);
+			if (needRedraw) {
+				this.drawData();
 			}
 
 			return true;
@@ -290,6 +294,9 @@ define([
 							style: {color: "#F00", weight: 2, opacity: 0.8, clickable: false}
 						}).addTo(this.map);
 					}
+					if (this.region.bboxhome()) {
+						this.bboxhomeSet(this.region.bboxhome());
+					}
 
 					this.centerMarkerCreate();
 				}.bind(this);
@@ -310,7 +317,7 @@ define([
 				return;
 			}
 
-			this.map = new L.map(this.$dom.find('.map')[0], {center: [36, -25], zoom: 2, minZoom: 2, maxZoom: 15, trackResize: false});
+			this.map = new L.map(this.$dom.find('.map')[0], {center: [36, -25], zoom: 3, minZoom: 2, maxZoom: 15, trackResize: false});
 			if (this.bboxLBound) {
 				this.map.fitBounds(this.bboxLBound);
 			}
@@ -394,6 +401,16 @@ define([
 			return this;
 		},
 		bboxhomeSet: function (bbox) {
+			if (bbox[1] < -180) {
+				bbox[1] += 360;
+			} else if (bbox[1] > 180) {
+				bbox[1] -= 360;
+			}
+			if (bbox[3] < -180) {
+				bbox[3] += 360;
+			} else if (bbox[3] > 180) {
+				bbox[3] -= 360;
+			}
 			this.region.bboxhome(bbox);
 			this.bboxhomeLBound = [
 				[bbox[0], bbox[1]],
@@ -414,7 +431,9 @@ define([
 		//Переключаем вид домашнего положения bbox
 		bboxHomeToggle: function () {
 			if (this.bboxAuto()) {
-				this.bboxhomeSet(this.regionOrigin.bboxhome || this.region.bbox() || []);
+				//Если было оригинальное значение, возвращаем его. Если его не было нет - значение bbox
+				//Если нет и bbox(режим создания), то берем ученьшенный bounds экрана карты
+				this.bboxhomeSet(this.regionOrigin.bboxhome || this.region.bbox() || Utils.geo.bboxReverse(this.map.getBounds().pad(-0.2).toBBoxString().split(',')).map(Utils.math.toPrecision6));
 			} else {
 				this.bboxhomeUnSet();
 			}
@@ -427,7 +446,9 @@ define([
 				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					error = !this.fillData(data);
+					//Выборке региона подставляем дефолтные значения
+					_.defaults(data.region, regionDef);
+					error = !this.fillData(data, true);
 				}
 
 				if (Utils.isType('function', cb)) {
@@ -442,6 +463,7 @@ define([
 			}
 
 			var saveData = ko_mapping.toJS(this.region),
+				needRedraw,
 				parentIsChanged;
 
 			if (!saveData.geo) {
@@ -456,6 +478,13 @@ define([
 				window.noty({text: 'Нужно заполнить английское название', type: 'error', layout: 'center', timeout: 2000, force: true});
 				return false;
 			}
+
+			if (!saveData.bboxhome && this.regionOrigin.bboxhome) {
+				saveData.bboxhome = null; //Если bboxhome был и ставим auto, то надо передать на сервер null, чтобы обнулить его
+			}
+
+			//Перерисовка будет нужна, если изменился geojson(сл-во и bbox) или расчет центра поставили auto
+			needRedraw = !!saveData.geo || (saveData.centerAuto && !this.regionOrigin.centerAuto);
 
 			if (this.haveParent() === '1') {
 				saveData.parent = Number(this.parentCid());
@@ -478,13 +507,9 @@ define([
 				processSave(this);
 			}
 
-			if (!saveData.bboxhome && this.regionOrigin.bboxhome) {
-				saveData.bboxhome = null; //Если bboxhome был и ставим auto, то надо передать на сервер null, чтобы обнулить его
-			}
-
 			function processSave(ctx) {
 				ctx.exe(true);
-				ctx.sendSave(saveData, function (data, error) {
+				ctx.sendSave(saveData, needRedraw, function (data, error) {
 					var resultStat = data && data.resultStat;
 
 					if (!error) {
@@ -523,7 +548,7 @@ define([
 
 			return false;
 		},
-		sendSave: function (saveData, cb, ctx) {
+		sendSave: function (saveData, needRedraw, cb, ctx) {
 			socket.once('saveRegionResult', function (data) {
 				var error = !data || !!data.error || !data.region;
 
@@ -536,7 +561,7 @@ define([
 						//Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
 						globalVM.router.navigateToUrl('/admin/region/' + data.region.cid);
 					} else {
-						this.fillData(data);
+						this.fillData(data, needRedraw);
 					}
 				}
 
