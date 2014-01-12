@@ -615,7 +615,8 @@ function saveRegion(socket, data, cb) {
 			if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
 				if (data.geo || !region.centerAuto) {
 					region.centerAuto = true;
-					region.center = Utils.geo.geoToPrecision(Utils.geo.polyCentroid(region.geo.type === 'MultiPolygon' ? region.geo.coordinates[0][0] : region.geo.coordinates[0]));
+					//Если Polygon - то в качестве центра берется его центр тяжести, если MultiPolygon - центр bbox
+					region.center = Utils.geo.geoToPrecision(region.geo.type === 'MultiPolygon' ? [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] : Utils.geo.polyCentroid(region.geo.coordinates[0]));
 				}
 			} else {
 				region.centerAuto = false;
