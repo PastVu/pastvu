@@ -118,7 +118,9 @@ module.exports = function (grunt) {
 				options: {
 					archive: upperDir + 'app<%= pkg.version %>.zip',
 					mode: 'zip',
-					level: 9
+					level: 9,
+					forceUTC: true,
+					comment: 'This PastVu application builded and compressed with Grunt'
 				},
 				files: [
 					{expand: true, cwd: targetDir, src: ['**/*'/*, '!node_modules*//**//**'*/], dest: 'app'}

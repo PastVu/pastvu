@@ -701,9 +701,11 @@ function saveRegion(socket, data, cb) {
 							}
 						}
 
-						//Обновляем онлайн-пользователей, у которых установлен данный домашний регион
+						//Обновляем онлайн-пользователей, у которых данный регион установлен как домашний или фильтруемый по умолчанию или модерируемый
 						_session.regetUsers(function (user) {
-							return user.user.regionHome && user.user.regionHome.cid === region.cid;
+							return user.rhash && user.rhash[region.cid] ||
+								user.mod_rhash && user.mod_rhash[region.cid] ||
+								user.user.regionHome && user.user.regionHome.cid === region.cid;
 						}, true);
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
