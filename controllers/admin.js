@@ -244,7 +244,7 @@ function saveUserCredentials(socket, data, cb) {
 							return cb({message: err.message, error: true});
 						}
 						if (itsOnline) {
-							_session.regetUser(user, function (err) {
+							_session.regetUser(user, false, null, function (err) {
 								if (err) {
 									return cb({message: err.message, error: true});
 								}

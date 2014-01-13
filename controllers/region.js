@@ -701,6 +701,11 @@ function saveRegion(socket, data, cb) {
 							}
 						}
 
+						//Обновляем онлайн-пользователей, у которых установлен данный домашний регион
+						_session.regetUsers(function (user) {
+							return user.user.regionHome && user.user.regionHome.cid === region.cid;
+						}, true);
+
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
 					}
 				);
@@ -1268,12 +1273,11 @@ function saveUserRegions(socket, data, cb) {
 				//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
 				//Поэтому полностью заново берем юзера из базы
 				if (itsOnline) {
-					_session.regetUser(user, function (err, user) {
+					_session.regetUser(user, true, socket, function (err, user) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
 
-						_session.emitUser(user.login, socket);
 						cb({message: 'ok', saved: 1});
 					});
 				} else {

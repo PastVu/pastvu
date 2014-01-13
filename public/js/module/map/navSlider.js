@@ -105,7 +105,7 @@ define([
 				if (this.auth.iAm.regionHome.center) {
 					center = this.auth.iAm.regionHome.center();
 					if (Utils.geo.check(center)) {
-						latlng = center.reverse();
+						latlng = [center[1], center[0]];
 					}
 				}
 				if (this.auth.iAm.regionHome.bboxhome || this.auth.iAm.regionHome.bbox) {

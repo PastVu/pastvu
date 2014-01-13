@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], function ($, _, ko, ko_mapping, P) {
+define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params'], function ($, _, Utils, ko, ko_mapping, P) {
 	'use strict';
 
 	var defaults = {
@@ -23,7 +23,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			role: 0,
 
 			settings: {},
-			regionHome: {}, //Спопулированный домашний регион
+
+			//Спопулированный домашний регион
+			regionHome: null,
 			regions: [], //Спопулированные регионы
 			mod_regions: [], //Спопулированные регионы модератора
 
@@ -49,6 +51,15 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			dateFormat: 'dd.mm.yyyy',
 
 			_v_: 0
+		},
+
+		region: {
+			cid: 0,
+			center: null,
+			bbox: null,
+			bboxhome: null,
+			title_en: '',
+			title_local: ''
 		}
 	};
 
@@ -71,6 +82,19 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 		}
 		if (!origin.disp) {
 			origin.disp = origin.login;
+		}
+
+		if (origin.regionHome && origin.regionHome.bboxhome) {
+			if (!Utils.geo.checkbbox(origin.regionHome.bboxhome)) {
+				delete origin.regionHome.bboxhome;
+			}
+		}
+
+		//Т.к. defaults не deep, надо его отдельно вызвать по региону
+		if (origin.regionHome) {
+			_.defaults(origin.regionHome, defaults.region);
+		} else {
+			origin.regionHome = defaults.region;
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

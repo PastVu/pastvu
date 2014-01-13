@@ -362,12 +362,14 @@ function regetSession(sessionCurrent, cb) {
 }
 
 //Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-function regetUser(u, cb) {
+function regetUser(u, emitHim, emitExcludeSocket, cb) {
 	User.findOne({login: u.login}, function (err, user) {
 		popUserRegions(user, function (err) {
 			if (err || !user) {
 				console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
-				cb(err || {message: 'No such user for reget'});
+				if (cb) {
+					cb(err || {message: 'No such user for reget'});
+				}
 			}
 
 			var usObj = us[user.login],
@@ -387,10 +389,32 @@ function regetUser(u, cb) {
 						usObj.sessions[s].user = user;
 					}
 				}
+
+				if (emitHim) {
+					emitUser(user.login, emitExcludeSocket);
+				}
 			}
-			cb(null, user);
+			if (cb) {
+				cb(null, user);
+			}
 		});
 	});
+}
+//Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
+//Принимает на вход функцию фильтра пользователей
+//Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
+function regetUsers(filterFn, emitThem, cb) {
+	var usersToReget = _.filter(us, filterFn),
+		i = usersToReget.length;
+
+	while (i--) {
+		regetUser(usersToReget[i].user, emitThem);
+	}
+
+	if (cb) {
+		cb(null, usersToReget.length);
+	}
+	return usersToReget.length;
 }
 
 function generate(data, cb) {
@@ -437,7 +461,7 @@ function destroy(socket, cb) {
 }
 
 /**
- * Добавляеи в сессию новые данные, продлевает действие и сохраняет в базу
+ * Добавляет в сессию новые данные, продлевает действие и сохраняет в базу
  * @param session Сессия
  * @param data Свойства для вставки в data сессии
  * @param keyRegen Менять ли ключ сессии
@@ -641,6 +665,7 @@ module.exports.sess = sess;
 module.exports.sessWaitingConnect = sessWaitingConnect;
 module.exports.regetSession = regetSession;
 module.exports.regetUser = regetUser;
+module.exports.regetUsers = regetUsers;
 module.exports.userToPublicObject = userToPublicObject;
 
 module.exports.loadController = function (a, db, io) {
