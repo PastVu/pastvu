@@ -702,10 +702,10 @@ function saveRegion(socket, data, cb) {
 						}
 
 						//Обновляем онлайн-пользователей, у которых данный регион установлен как домашний или фильтруемый по умолчанию или модерируемый
-						_session.regetUsers(function (user) {
-							return user.rhash && user.rhash[region.cid] ||
-								user.mod_rhash && user.mod_rhash[region.cid] ||
-								user.user.regionHome && user.user.regionHome.cid === region.cid;
+						_session.regetUsers(function (usObj) {
+							return usObj.rhash && usObj.rhash[region.cid] ||
+								usObj.mod_rhash && usObj.mod_rhash[region.cid] ||
+								usObj.user.regionHome && usObj.user.regionHome.cid === region.cid;
 						}, true);
 
 						cb({childLenArr: childLenArr, region: region, resultStat: resultStat});
@@ -752,15 +752,30 @@ function removeRegion(socket, data, cb) {
 
 		step(
 			function () {
+				var parentQuery;
+
 				//Находим все дочерние регионы
-				Region.find({parents: regionToRemove.cid}, {_id: 1}, {lean: true}, this);
+				Region.find({parents: regionToRemove.cid}, {_id: 1}, {lean: true}, this.parallel());
+
+				//Находим родительский регион для замены домашнего региона пользователей, если он попадает в удаляемый
+				//Если родительского нет (удаляем страну) - берем любую другую страну
+				if (removingLevel) {
+					parentQuery = {cid: regionToRemove.parents[regionToRemove.parents.length - 1]};
+				} else {
+					parentQuery = {cid: {$ne: regionToRemove.cid}, parents: {$size: 0}};
+				}
+				Region.findOne(parentQuery, {_id: 1, cid: 1, title_en: 1}, {lean: true}, this.parallel());
 			},
-			function (err, childRegions) {
-				if (err) {
-					return cb({message: err.message, error: true});
+			function (err, childRegions, parentRegion) {
+				if (err || !parentRegion) {
+					return cb({message: err && err.message || "Can't find parent", error: true});
 				}
 				removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
 				removingRegionsIds.push(regionToRemove._id);
+
+				//Заменяем домашние регионы
+				User.update({regionHome: {$in: removingRegionsIds}}, {$set: {regionHome: parentRegion._id}}, {multi: true}, this.parallel());
+				resultData.homeReplacedWith = parentRegion;
 
 				//Отписываем ("мои регионы") всех пользователей от удаляемых регионов
 				User.update({regions: {$in: removingRegionsIds}}, {$pull: {regions: {$in: removingRegionsIds}}}, {multi: true}, this.parallel());
@@ -768,10 +783,11 @@ function removeRegion(socket, data, cb) {
 				//Удаляем регионы из модерируемых пользователями
 				removeRegionsFromMods({mod_regions: {$in: removingRegionsIds}}, removingRegionsIds, this.parallel());
 			},
-			function (err, affectedUsers, modsResult) {
+			function (err, homeAffectedUsers, affectedUsers, modsResult) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
+				resultData.homeAffectedUsers = homeAffectedUsers;
 				resultData.affectedUsers = affectedUsers;
 				_.assign(resultData, modsResult);
 
@@ -808,6 +824,11 @@ function removeRegion(socket, data, cb) {
 					return cb({message: err.message, error: true});
 				}
 				resultData.removed = true;
+
+				//Если задеты какие-то пользователи, обновляем всех онлайн-пользователей, т.к. конкретных мы не знаем
+				if (resultData.homeAffectedUsers || resultData.affectedUsers || resultData.affectedMods) {
+					_session.regetUsers('all', true);
+				}
 				cb(resultData);
 			}
 		);

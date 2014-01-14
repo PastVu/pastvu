@@ -401,20 +401,21 @@ function regetUser(u, emitHim, emitExcludeSocket, cb) {
 	});
 }
 //Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
-//Принимает на вход функцию фильтра пользователей
+//Принимает на вход 'all' или функцию фильтра пользователей
 //Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
 function regetUsers(filterFn, emitThem, cb) {
-	var usersToReget = _.filter(us, filterFn),
-		i = usersToReget.length;
+	var usersToReget = filterFn === 'all' ? us : _.filter(us, filterFn),
+		usersCount = _.size(usersToReget);
 
-	while (i--) {
-		regetUser(usersToReget[i].user, emitThem);
-	}
+	//_.forEach, потому что usersToReget может быть как объектом (us), так и массивом (результат filter)
+	_.forEach(usersToReget, function (usObj) {
+		regetUser(usObj.user, emitThem);
+	});
 
 	if (cb) {
-		cb(null, usersToReget.length);
+		cb(null, usersCount);
 	}
-	return usersToReget.length;
+	return usersCount;
 }
 
 function generate(data, cb) {

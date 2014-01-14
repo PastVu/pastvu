@@ -642,6 +642,9 @@ define([
 													if (data.affectedPhotos) {
 														msg += '<b>' + data.affectedPhotos + '</b> фотографий сменили региональную принадлежность.<br>';
 													}
+													if (data.homeAffectedUsers) {
+														msg += 'У <b>' + data.homeAffectedUsers + '</b> пользователей домашние регионы были заменены на ' + data.homeReplacedWith.title_en + ' (номер ' + data.homeReplacedWith.cid + ').<br>';
+													}
 													if (data.affectedUsers) {
 														msg += 'У <b>' + data.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".<br>';
 													}
