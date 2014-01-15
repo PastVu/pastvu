@@ -220,9 +220,9 @@ module.exports.loadController = function (app, db) {
 		}
 
 		print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
-		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
+		db.regions.find(query, {_id: 0, cid: 1, geo: 1, bbox: 1}).forEach(function (region) {
 			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
-				db.regions.update({cid: region.cid}, {$set: {center: geoToPrecision(polyCentroid(region.geo.type === 'MultiPolygon' ? region.geo.coordinates[0][0] : region.geo.coordinates[0])), centerAuto: true}});
+				db.regions.update({cid: region.cid}, {$set: {center: geoToPrecision(region.geo.type === 'MultiPolygon' ? [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] : polyCentroid(region.geo.coordinates[0])), centerAuto: true}});
 			} else {
 				print('Error with ' + region.cid + ' region');
 			}

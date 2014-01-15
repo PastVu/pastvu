@@ -12,8 +12,8 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now();
 
 		//Расчет новых параметров регионов
-		regionsCalcCenter(true);
 		regionsCalcBBOX();
+		regionsCalcCenter(true);
 		regionsCalcPointsNum();
 		regionsCalcPolygonsNum();
 

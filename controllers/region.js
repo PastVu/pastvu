@@ -13,7 +13,10 @@ var auth = require('./auth.js'),
 	Utils = require('../commons/Utils.js'),
 	gju = require('geojson-utils'),
 	msg = {
-		deny: 'You do not have permission for this action'
+		badParams: 'Bad params',
+		deny: 'You do not have permission for this action',
+		nouser: 'Requested user does not exist',
+		noregion: 'Requested region does not exist'
 	},
 	async = require('async'),
 	logger = require('log4js').getLogger("region.js"),
@@ -1245,6 +1248,53 @@ var getRegionsByGeoPoint = function () {
 
 
 /**
+ * Сохраняет домашний регион пользователя
+ */
+function saveUserHomeRegion(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline,
+		i;
+
+	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || !Number(data.cid)) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this.parallel()(null, user);
+			} else {
+				User.findOne({login: login}, this.parallel());
+			}
+			Region.findOne({cid: Number(data.cid)}, {_id: 1, cid: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}, this.parallel());
+		},
+		function (err, user, region) {
+			if (err || !user || !region) {
+				return cb({message: err && err.message || (!user ? msg.nouser : msg.noregion), error: true});
+			}
+			user.regionHome = region;
+			user.save(function (err, user) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				if (itsOnline) {
+					_session.emitUser(user.login, socket);
+				}
+				var regionHome = user.regionHome.toObject();
+				delete regionHome._id;
+				cb({message: 'ok', saved: 1, region: regionHome});
+			});
+		}
+	);
+}
+/**
  * Сохраняет регионы пользователю
  */
 function saveUserRegions(socket, data, cb) {
@@ -1488,6 +1538,11 @@ module.exports.loadController = function (app, db, io) {
 			}
 		});
 
+		socket.on('saveUserHomeRegion', function (data) {
+			saveUserHomeRegion(socket, data, function (resultData) {
+				socket.emit('saveUserHomeRegionResult', resultData);
+			});
+		});
 		socket.on('saveUserRegions', function (data) {
 			saveUserRegions(socket, data, function (resultData) {
 				socket.emit('saveUserRegionsResult', resultData);
