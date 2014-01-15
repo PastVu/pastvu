@@ -2,7 +2,7 @@
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse' ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Region, User, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -194,7 +194,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 					this.saveHomeRegion(regions[0].cid, function (err, data) {
 						if (!err) {
-							User.vm({regionHome: data.region}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+							User.vm({regionHome: Region.factory(data.region, 'home')}, this.u, true); //Обновляем регионы в текущей вкладке вручную
 							this.originUser.regionHome = data.region;
 
 							this.regHomeselectVM.destroy();

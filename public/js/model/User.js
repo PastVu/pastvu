@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params'], function ($, _, Utils, ko, ko_mapping, P) {
+define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params', 'model/Region'], function ($, _, Utils, ko, ko_mapping, P, Region) {
 	'use strict';
 
 	var defaults = {
@@ -84,17 +84,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			origin.disp = origin.login;
 		}
 
-		if (origin.regionHome && origin.regionHome.bboxhome) {
-			if (!Utils.geo.checkbbox(origin.regionHome.bboxhome)) {
-				delete origin.regionHome.bboxhome;
-			}
-		}
-
-		//Т.к. defaults не deep, надо его отдельно вызвать по региону
-		if (origin.regionHome) {
-			_.defaults(origin.regionHome, defaults.region);
-		} else {
-			origin.regionHome = defaults.region;
+		if (defType === 'full') {
+			Region.factory(origin.regionHome, 'home');
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);
