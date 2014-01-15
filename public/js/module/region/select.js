@@ -238,13 +238,14 @@ define([
 		treeBuild: function (arr) {
 			var i = 0,
 				len = arr.length,
+				firstCountryCid = this.auth.loggedIn() && (this.auth.iAm.regionHome.parents()[0] || this.auth.iAm.regionHome.cid()),
 				hash = {},
 				region,
 				selected,
 				selectedRegions = [],
 				result = [];
 
-			//Сортируем массим по уровням и названиям в пределах одного уровня
+			//Сортируем массив по уровням и названиям в пределах одного уровня
 			arr.sort(function (a, b) {
 				return a.parents.length < b.parents.length || a.parents.length === b.parents.length && a.title_local < b.title_local ? -1 : 1;
 			});
@@ -286,7 +287,11 @@ define([
 					region.parent.childLen += 1;
 					incrementParentsChildLen(region, region.level);
 				} else {
-					result.push(region);
+					if (firstCountryCid && firstCountryCid === region.cid) {
+						result.unshift(region);
+					} else {
+						result.push(region);
+					}
 				}
 
 				hash[region.cid] = region;

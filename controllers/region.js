@@ -1273,7 +1273,7 @@ function saveUserHomeRegion(socket, data, cb) {
 			} else {
 				User.findOne({login: login}, this.parallel());
 			}
-			Region.findOne({cid: Number(data.cid)}, {_id: 1, cid: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}, this.parallel());
+			Region.findOne({cid: Number(data.cid)}, {_id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}, this.parallel());
 		},
 		function (err, user, region) {
 			if (err || !user || !region) {
@@ -1285,7 +1285,7 @@ function saveUserHomeRegion(socket, data, cb) {
 					return cb({message: err.message, error: true});
 				}
 				if (itsOnline) {
-					_session.emitUser(user.login, socket);
+					_session.emitUser(user.login);
 				}
 				var regionHome = user.regionHome.toObject();
 				delete regionHome._id;
