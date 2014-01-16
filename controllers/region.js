@@ -1284,12 +1284,111 @@ function saveUserHomeRegion(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				if (itsOnline) {
-					_session.emitUser(user.login);
-				}
 				var regionHome = user.regionHome.toObject();
 				delete regionHome._id;
-				cb({message: 'ok', saved: 1, region: regionHome});
+
+				if (user.regionsAsHome) {
+					setUserRegions(login, [regionHome.cid], 'regions', function (err) {
+						if (err) {
+							return cb({message: err.message, error: true});
+						}
+						//Нелья просто присвоить массив объектов регионов и сохранить
+						//https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes#prevent-potentially-destructive-operations-on-populated-arrays
+						//Надо сделать user.update({$set: regionsIds}), затем user.regions = regionsIds; а затем populate по новому массиву
+						//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
+						//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
+						//Поэтому полностью заново берем юзера из базы
+						if (itsOnline) {
+							_session.regetUser(user, true, null, function (err, user) {
+								if (err) {
+									return cb({message: err.message, error: true});
+								}
+
+								cb({message: 'ok', saved: 1, region: regionHome});
+							});
+						} else {
+							cb({message: 'ok', saved: 1, region: regionHome});
+						}
+					});
+				} else {
+					if (itsOnline) {
+						_session.emitUser(user.login);
+					}
+					cb({message: 'ok', saved: 1, region: regionHome});
+				}
+			});
+		}
+	);
+}
+/**
+ * Сохраняет флаг, что регион фильтрации по умолчанию берётся из домашнего региона
+ */
+function saveRegionsAsHome(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline;
+
+	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !login || typeof data.flag !== 'boolean') {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	if (!data.flag) {
+		delete data.flag;
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this.parallel()(null, user);
+			} else {
+				User.findOne({login: login}, this.parallel());
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			if (user.regionsAsHome === data.flag) {
+				cb({message: 'ok'});
+			}
+			var regions = [];
+			if (data.flag) {
+				regions.push(user.regionHome.cid);
+			}
+
+			user.regionsAsHome = data.flag;
+			user.save(function (err, user) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				setUserRegions(login, regions, 'regions', function (err) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+					//Нелья просто присвоить массив объектов регионов и сохранить
+					//https://github.com/LearnBoost/mongoose/wiki/3.6-Release-Notes#prevent-potentially-destructive-operations-on-populated-arrays
+					//Надо сделать user.update({$set: regionsIds}), затем user.regions = regionsIds; а затем populate по новому массиву
+					//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
+					//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
+					//Поэтому полностью заново берем юзера из базы
+					if (itsOnline) {
+						_session.regetUser(user, true, socket, function (err, user) {
+							if (err) {
+								return cb({message: err.message, error: true});
+							}
+
+							cb({message: 'ok', saved: 1});
+						});
+					} else {
+						cb({message: 'ok', saved: 1});
+					}
+				});
 			});
 		}
 	);
@@ -1541,6 +1640,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('saveUserHomeRegion', function (data) {
 			saveUserHomeRegion(socket, data, function (resultData) {
 				socket.emit('saveUserHomeRegionResult', resultData);
+			});
+		});
+		socket.on('saveRegionsAsHome', function (data) {
+			saveRegionsAsHome(socket, data, function (resultData) {
+				socket.emit('saveRegionsAsHomeResult', resultData);
 			});
 		});
 		socket.on('saveUserRegions', function (data) {

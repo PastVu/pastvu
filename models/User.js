@@ -30,6 +30,7 @@ var UserScheme = new mongoose.Schema({
 	ranks: [String],
 
 	regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
+	regionsAsHome: {type: Boolean}, //Регион для фильтрации по умолчанию берётся из домашнего региона
 	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы для фильтрации по умолчанию
 	mod_regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы модерируемые
 

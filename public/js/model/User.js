@@ -24,9 +24,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
 			settings: {},
 
-			//Спопулированный домашний регион
-			regionHome: null,
-			regions: [], //Спопулированные регионы
+			regionHome: null, //Спопулированный домашний регион
+			regionsAsHome: false, //Регион для фильтрации по умолчанию берётся из домашнего региона
+			regions: [], //Спопулированные регионы для фильтрации по умолчанию
 			mod_regions: [], //Спопулированные регионы модератора
 
 			//profile

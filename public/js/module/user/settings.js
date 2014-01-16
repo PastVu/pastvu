@@ -26,6 +26,39 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					return this.u.disp() !== this.u.login();
 				}, this);
 
+				this.regfiltercheck = this.co.regfiltercheck = ko.computed({
+					read: function () {
+						if (this.u.regionsAsHome()) {
+							return 'home';
+						} else if (!this.u.regions().length) {
+							return 'all';
+						} else {
+							return 'list';
+						}
+					},
+					write: function (val) {
+						var regions;
+						if (this.regfiltercheck() === 'home') {
+							this.saveRegionsAsHome(false);
+						}
+						if (val === 'all') {
+							regions = [];
+							this.saveFilterRegions(regions, function (err) {
+								if (!err) {
+									User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+									this.originUser.regions = regions;
+									ga('send', 'event', 'region', 'update', 'region update success', regions.length);
+								}
+							}, this);
+						} else if (val === 'home') {
+							this.saveRegionsAsHome(true);
+						} else if (val === 'list') {
+							this.regionFilterSelect();
+						}
+					},
+					owner: this
+				});
+
 				this.getSettingsVars(function () {
 					this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
 
@@ -155,6 +188,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				cb.call(ctx, error, data);
 			}.bind(this));
 			socket.emit('saveUserHomeRegion', {login: this.u.login(), cid: cid});
+		},
+		saveRegionsAsHome: function (flag, cb, ctx) {
+			socket.once('saveRegionsAsHomeResult', function (data) {
+				var error = !data || data.error || !data.saved;
+				if (error) {
+					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
+				} else {
+					this.originUser.regions = flag ? ko.toJS(this.u.regionHome) : [];
+					this.originUser.regionsAsHome = flag;
+					User.vm({regionsAsHome: flag, regions: this.originUser.regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+					ga('send', 'event', 'region', 'update', 'region update success', 1);
+				}
+				if (cb) {
+					cb.call(ctx, error, data);
+				}
+			}.bind(this));
+			socket.emit('saveRegionsAsHome', {login: this.u.login(), flag: flag});
 		},
 		saveFilterRegions: function (regions, cb, ctx) {
 			socket.once('saveUserRegionsResult', function (data) {

@@ -72,25 +72,42 @@
 					// /ko
 					dl.dl-horizontal
 						dt.helpexists
-							abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента. Допустимо иметь до 5 регионов")
+							abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента")
 								span.glyphicon.glyphicon-info-sign
+								| &nbsp;
+								span.glyphicon.glyphicon-filter
 								|  Фильтрация данных по умолчанию
 						dd
-							//ko if: !u.regions().length
-							span.region
-								span.glyphicon.glyphicon-globe
-								|  Весь мир
-							// /ko
-							//ko foreach: u.regions
-							span.region.candrop(title="Убрать из моих регионов", data-bind="click: function() {$parent.regionDrop($data.cid());}")
-								span(data-bind="text: $data.title_local()")
-							// /ko
-							span.regionEdit(data-bind="click: regionFilterSelect")
-								span.glyphicon.glyphicon-pencil
-								|  Изменить
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-globe
+									|  Весь мир (без фильтра)
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="home", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-home
+									|  Домашний регион
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="list", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-list
+									span  Список
+									//ko if: regfiltercheck() === 'list'
+									| &nbsp;:
+									//ko foreach: u.regions
+									span.region.candrop(title="Убрать из моих регионов", data-bind="click: function() {$parent.regionDrop($data.cid());}")
+										span(data-bind="text: $data.title_local()")
+									// /ko
+									//ko if: u.regions().length
+									span.regionEdit(data-bind="click: regionFilterSelect")
+										span.glyphicon.glyphicon-pencil
+										| Изменить
+									// /ko
+									// /ko
 					dl.dl-horizontal
 						dt.helpexists(style="color: #27578d;")
-							| По умолчанию фильтровать по моим регионам:
+							| По умолчанию фильтровать по выбранным регионам:
 						dd
 					dl.dl-horizontal.dl-tight
 						dt.helpexists

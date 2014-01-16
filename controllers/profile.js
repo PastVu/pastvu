@@ -56,6 +56,7 @@ function giveUser(socket, data, cb) {
 			} else {
 				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true})
 					.populate([
+						{path: 'regionHome', select: {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
 						{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}},
 						{path: 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
 					])
