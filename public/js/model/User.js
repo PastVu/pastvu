@@ -85,7 +85,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 		}
 
 		if (defType === 'full') {
-			Region.factory(origin.regionHome, 'home');
+			origin.regionHome = Region.factory(origin.regionHome, 'home'); //Надо имено присваивать на случай, если origin.regionHome - undefined, у анонимов
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

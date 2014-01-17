@@ -11,7 +11,6 @@ var auth = require('./auth.js'),
 	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
-	gju = require('geojson-utils'),
 	msg = {
 		badParams: 'Bad params',
 		deny: 'You do not have permission for this action',
