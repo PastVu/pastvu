@@ -31,6 +31,9 @@ module.exports.loadController = function (app, db) {
 			db.users.update({cid: user.cid}, {$set: {regionHome: setId}});
 		});
 
+		//Добавляем настройку "Регион для фильтрации по умолчанию берётся из домашнего региона"
+		db.user_settings.save({key: 'r_as_home', val: false, vars: [true, false], desc: 'Регион для фильтрации по умолчанию берётся из домашнего региона'});
+
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 

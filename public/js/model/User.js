@@ -25,7 +25,6 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			settings: {},
 
 			regionHome: null, //Спопулированный домашний регион
-			regionsAsHome: false, //Регион для фильтрации по умолчанию берётся из домашнего региона
 			regions: [], //Спопулированные регионы для фильтрации по умолчанию
 			mod_regions: [], //Спопулированные регионы модератора
 
@@ -51,15 +50,6 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			dateFormat: 'dd.mm.yyyy',
 
 			_v_: 0
-		},
-
-		region: {
-			cid: 0,
-			center: null,
-			bbox: null,
-			bboxhome: null,
-			title_en: '',
-			title_local: ''
 		}
 	};
 
