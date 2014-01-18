@@ -14,7 +14,7 @@ define([
 
 	var defaults = {
 		sys: 'osm',
-		type: 'mapnik'
+		type: 'osmosnimki'
 	};
 
 	return Cliche.extend({

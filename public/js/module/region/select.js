@@ -67,6 +67,7 @@ define([
 			}.bind(this));
 			socket.emit('giveRegions', {});
 		},
+		//Возвращает массив выбранных регионов с переданными полями
 		getSelectedRegions: function (fields) {
 			var tkn = this.$dom.find('.regionstkn'),
 				tokens = tkn.tokenfield('getTokens'),
@@ -80,6 +81,7 @@ define([
 			}, this);
 			return result;
 		},
+		//Возвращает массив выбранных регионов с родителями с переданными полями
 		getSelectedRegionsFull: function (fields) {
 			var tkn = this.$dom.find('.regionstkn'),
 				tokens = tkn.tokenfield('getTokens'),

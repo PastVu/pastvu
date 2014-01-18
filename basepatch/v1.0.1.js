@@ -11,7 +11,7 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function pastvuPatch() {
 		var startTime = Date.now();
 
-		//Расчет новых параметров регионов
+		/*//Расчет новых параметров регионов
 		regionsCalcBBOX();
 		regionsCalcCenter(true);
 		regionsCalcPointsNum();
@@ -32,7 +32,13 @@ module.exports.loadController = function (app, db) {
 		});
 
 		//Добавляем настройку "Регион для фильтрации по умолчанию берётся из домашнего региона"
-		db.user_settings.save({key: 'r_as_home', val: false, vars: [true, false], desc: 'Регион для фильтрации по умолчанию берётся из домашнего региона'});
+		db.user_settings.save({key: 'r_as_home', val: false, vars: [true, false], desc: 'Регион для фильтрации по умолчанию берётся из домашнего региона'});*/
+
+		//Trim названий всех регионов
+		print('Trim ' + db.regions.count() + ' regions titles ');
+		db.regions.find({}, {_id: 0, cid: 1, title_en: 1, title_local: 1}).forEach(function (region) {
+			db.regions.update({cid: region.cid}, {$set: {title_en: region.title_en.trim(), title_local: region.title_local.trim()}});
+		});
 
 		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's'};
 	});

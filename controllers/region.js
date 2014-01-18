@@ -9,6 +9,7 @@ var auth = require('./auth.js'),
 	Counter,
 	dbNative,
 	_ = require('lodash'),
+	_s = require('underscore.string'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	msg = {
@@ -168,7 +169,7 @@ function calcRegionsIncludes(iAm, cids, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Array.isArray(cids)) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	if (!cids.length) {
@@ -491,7 +492,13 @@ function saveRegion(socket, data, cb) {
 	}
 
 	if (!Utils.isType('object', data) || !data.title_en || !data.title_local) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
+	}
+
+	data.title_en = data.title_en.trim();
+	data.title_local = data.title_local.trim();
+	if (!data.title_en || !data.title_local) {
+		return cb({message: msg.badParams, error: true});
 	}
 
 	data.parent = data.parent && Number(data.parent);
@@ -734,7 +741,7 @@ function removeRegion(socket, data, cb) {
 	}
 
 	if (!Utils.isType('object', data) || !data.cid) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	Region.findOne({cid: data.cid}, function (err, regionToRemove) {
@@ -880,7 +887,7 @@ function getRegion(socket, data, cb) {
 	}
 
 	if (!Utils.isType('object', data) || !data.cid) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	Region.findOne({cid: data.cid}, {_id: 0, __v: 0}, {lean: true}, function (err, region) {
@@ -1046,7 +1053,7 @@ function getRegionsFull(socket, data, cb) {
 	}
 
 	if (!Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
@@ -1080,7 +1087,7 @@ function getRegionsFull(socket, data, cb) {
 
 function getRegionsPublic(socket, data, cb) {
 	if (!Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
+		return cb({message: msg.badParams, error: true});
 	}
 
 	cb({regions: regionCacheArr});
@@ -1533,7 +1540,7 @@ module.exports.loadController = function (app, db, io) {
 				return response({message: msg.deny, error: true});
 			}
 			if (!Utils.isType('object', data) || !Utils.geo.checkLatLng(data.geo)) {
-				return response({message: 'Bad params', error: true});
+				return response({message: msg.badParams, error: true});
 			}
 			data.geo = data.geo.reverse();
 
