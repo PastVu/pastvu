@@ -1,11 +1,10 @@
-@MainBlueColor: #285991;
-@bodyBackground: #f9f9f9;
-
-@import "prereset.less"; // Это reset.css из bootstrap, только без less функций - они погрузятся с основным стилем
+@import "_vars.less";
+@import "bs/variables.less";
+@import "bs/normalize.less"; //Сразу вставляем normalize из bootstrap
+@import "bs/print.less";
 
 body {
-	margin: 0;
-	background-color: @bodyBackground;
+	background-color: @body-bg;
 	overflow-y: scroll; // Для правильного подсчета ширины страницы всегда показываем вертикалььный скролл
 }
 
@@ -13,7 +12,7 @@ body {
 	height: 16px;
 	width: 16px;
 	overflow: visible;
-	background-color: @bodyBackground;
+	background-color: @body-bg;
 }
 ::-webkit-scrollbar-button {
 	height: 0;

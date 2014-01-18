@@ -1,6 +1,6 @@
 .commentsFeed(data-bind="with: repository[M!M]")
-	a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
-		img.helpimg(data-bind="attr: {src: '/img/misc/fund2/bn_right_' + _.random(1,4) + '.jpg'}", alt="Помогите PastVu")
+	//-a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
+		img.img-responsive.helpimg(data-bind="attr: {src: '/img/misc/fund2/bn_right_' + _.random(1,4) + '.jpg'}", alt="Помогите PastVu")
 	.ribbonHead.lineBehind
 		span Новые комментарии
 	div(data-bind="foreach: pComments")

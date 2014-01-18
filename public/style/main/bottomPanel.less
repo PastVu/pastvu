@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .bottomPanel {
 	position: relative;
@@ -8,14 +8,14 @@
 	.newsHeader {
 		margin: 3px 0 1px 0;
 		font-size: 20px;
+		line-height: 1;
 		text-align: center;
 	}
 
 	.news {
 		position: relative;
 		padding: 2px 0 0 0;
-		background-color: darken(@bodyBackground, 2%);
-		.box-sizing(border-box);
+		background-color: darken(@body-bg, 2%);
 
 		hr {
 			margin: 0;
@@ -70,6 +70,7 @@
 			margin-bottom: 2px;
 			font-weight: bold;
 			font-size: 16px;
+			line-height: 19px;
 		}
 		.newsNotice {
 			line-height: 19px;
@@ -88,7 +89,6 @@
 			margin: 0;
 			padding: 5px 10px 6px 8px;
 			cursor: default;
-			.box-sizing(border-box);
 
 			&:hover {
 				background-color: #FFF;
@@ -110,52 +110,42 @@
 
 	.catMenu {
 		margin: 0 0 12px 0;
+		text-align: center;
+		line-height: 1; //Чтобы был по высоте центрируемого navbar-nav
+		border-width: 0 0 1px 0;
+		background: darken(@navbar-default-bg, 1%);
+		.box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
 
-		.navbar-inner {
-			height: 28px;
-			padding: 0;
-			text-align: center;
-			border-width: 0 0 1px 0;
-			background: darken(@navbarBackground, 1%);
-			.box-shadow(~'0 1px 0 0 #000, -2px 2px 6px 0 #222');
+		> .navbar-nav {
+			display: inline-block;
+			float: none;
 
-			.nav {
-				display: inline-block;
-				float: none;
+			> li {
+				cursor: pointer;
 
-				li {
+				&.loading {
+					cursor: wait;
+
+					> a {
+						cursor: wait;
+					}
+
 					&::after {
 						position: absolute;
-						display: none;
+						display: block;
 						content: '';
 						width: 0%;
 						height: 1px;
 						left: 17%;
 						bottom: 4px;
 						background-color: #c2c1c9;
-					}
-					&.loading {
-						position: relative;
-						cursor: wait;
-
-						> a {
-							cursor: wait;
-						}
-
-						&::after {
-							display: block;
-							-webkit-animation: navLoad .8s ease .2s infinite;
-							-moz-animation: navLoad .8s ease .2s infinite;
-							-ms-animation: navLoad .8s ease .2s infinite;
-							-o-animation: navLoad .8s ease .2s infinite;
-							animation: navLoad .8s ease .2s infinite;
-						}
+						.animation(navLoad .8s ease .2s infinite);
 					}
 				}
+			}
 
-				.icon-share {
-					margin-left: 3px;
-				}
+			.glyphicon-share {
+				margin-left: 3px;
 			}
 		}
 	}
@@ -208,7 +198,7 @@
 
 				.comm {
 					bottom: @PhotoTitleHeight + 4 - 4;
-					font-size: @fontSizeSmall;
+					font-size: @font-size-small;
 					line-height: 14px;
 				}
 				.photoTitle {
@@ -224,7 +214,6 @@
 			max-width: 1400px;
 			margin: 0 auto;
 			padding: 0 0 0 6px;
-			.box-sizing(border-box);
 
 			.catHead {
 				padding-left: 2px;
@@ -237,6 +226,7 @@
 			}
 
 			.btn-group {
+				margin-bottom: 3px;
 				padding-left: 2px;
 			}
 
@@ -269,7 +259,7 @@
 				.ratAmount {
 					display: block;
 					font-size: 12px;
-					color: @textColor;
+					color: @text-color;
 				}
 			}
 		}
@@ -278,7 +268,6 @@
 			max-width: 700px;
 			margin: 0 auto;
 			padding: 0 0 0 6px;
-			.box-sizing(border-box);
 
 			.statsFast {
 				margin-bottom: 10px;

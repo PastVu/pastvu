@@ -61,7 +61,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('clusterAll', function (data) {
-				if (!hs.session.user || hs.session.user.role < 10) {
+				if (!hs.session.user || !hs.session.user.role || hs.session.user.role < 10) {
 					return result({message: 'Not authorized', error: true});
 				}
 				step(
@@ -85,7 +85,13 @@ module.exports.loadController = function (app, db, io) {
 						if (err) {
 							return result({message: err && err.message, error: true});
 						}
-						dbNative.eval('clusterPhotosAll(true)', this);
+						dbNative.eval('function (gravity) {clusterPhotosAll(gravity);}', [true], {nolock: true}, this);
+					},
+					function runPhotosOnMapRefill(err, clusters, conditions) {
+						if (err) {
+							return result({message: err && err.message, error: true});
+						}
+						dbNative.eval('function () {photosToMapAll();}', [], {nolock: true}, this);
 					},
 					function recalcResult(err, ret) {
 						if (err) {
@@ -108,6 +114,10 @@ module.exports.loadController = function (app, db, io) {
 function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 	var $update = {$set: {}};
 
+	if (g[0] < -180 || g[0] > 180) {
+		Utils.geo.spinLng(g);
+	}
+
 	step(
 		function () {
 			Cluster.collection.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this);
@@ -118,8 +128,17 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 			var c = (cluster && cluster.c) || 0,
 				yCluster = (cluster && cluster.y) || {},
-				geoCluster = (cluster && cluster.geo) || [g[0] + zParam.wHalf, g[1] - zParam.hHalf],
+				geoCluster,
 				inc = 0;
+
+			if (cluster && cluster.geo) {
+				geoCluster = cluster.geo;
+			} else {
+				geoCluster = [g[0] + zParam.wHalf, g[1] - zParam.hHalf];
+				if (geoCluster[0] < -180 || geoCluster[0] > 180) {
+					Utils.geo.spinLng(geoCluster);
+				}
+			}
 
 			if (geoPhotos.o) {
 				inc -= 1;
@@ -167,10 +186,14 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 				if (geoPhotos.n) {
 					geoCluster = Utils.geo.geoToPrecisionRound([(geoCluster[0] * (c + 1) + geoPhotos.n[0]) / (c + 2), (geoCluster[1] * (c + 1) + geoPhotos.n[1]) / (c + 2)]);
 				}
+
+				if (geoCluster[0] < -180 || geoCluster[0] > 180) {
+					Utils.geo.spinLng(geoCluster);
+				}
 			}
 
 			$update.$set.geo = geoCluster;
-			Photo.collection.findOne({geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
+			Photo.collection.findOne({s: 5, geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
 		},
 		function (err, photo) {
 			if (err) {
@@ -199,7 +222,7 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 		}
 		return;
 	}
-	var start = Date.now();
+	//var start = Date.now();
 	geoPhotoOld = !_.isEmpty(geoPhotoOld) ? geoPhotoOld : undefined;
 
 	step(
@@ -259,7 +282,7 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
 			}
 		},
 		function (err) {
-			console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
+			//console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
 			if (Utils.isType('function', cb)) {
 				cb(err);
 			}
@@ -274,13 +297,13 @@ module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
  * @return {Boolean}
  */
 module.exports.declusterPhoto = function (photo, cb) {
-	if (!Utils.geoCheck(photo.geo) || !photo.year) {
+	if (!Utils.geo.check(photo.geo) || !photo.year) {
 		if (Utils.isType('function', cb)) {
 			cb({message: 'Bad params to decluster photo'});
 		}
 		return;
 	}
-	var start = Date.now();
+	//var start = Date.now();
 
 	step(
 		function () {
@@ -302,7 +325,7 @@ module.exports.declusterPhoto = function (photo, cb) {
 			}
 		},
 		function (err) {
-			console.log(photo.cid + ' declustered in ' + (Date.now() - start));
+			//console.log(photo.cid + ' declustered in ' + (Date.now() - start));
 			if (Utils.isType('function', cb)) {
 				cb(err);
 			}
@@ -322,7 +345,7 @@ module.exports.getBounds = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $geoWithin: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {
@@ -377,7 +400,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 		function () {
 			var i = data.bounds.length;
 			while (i--) {
-				Cluster.collection.find({g: { $within: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this.parallel());
+				Cluster.collection.find({g: { $geoWithin: {$box: data.bounds[i]} }, z: data.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this.parallel());
 			}
 		},
 		function cursors(err) {
@@ -452,12 +475,11 @@ module.exports.getBoundsByYear = function (data, cb) {
 	);
 };
 function getClusterPoster(cluster, yearCriteria, cb) {
-	Photo.collection.findOne({geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
+	Photo.collection.findOne({s: 5, geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
 		cluster.p = photo;
 		cb(null);
 	});
-
 }

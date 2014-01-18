@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecisionRound:true, geoToPrecisionRound:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -8,11 +8,17 @@ var log4js = require('log4js'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
-	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos) {
+	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos, zooms) {
 		var startFullTime = Date.now(),
-			clusterZooms = db.clusterparams.find({sgeo: {$exists: false}}, {_id: 0}).sort({z: 1}).toArray(),
+			clusterparamsQuery = {sgeo: {$exists: false}},
+			clusterZooms,
 			clusterZoomsCounter = -1,
-			photosAllCount = db.photos.count({geo: {$exists: true}});
+			photosAllCount = db.photos.count({s: 5, geo: {$exists: true}});
+
+		if (zooms) {
+			clusterparamsQuery.z = {$in: zooms};
+		}
+		clusterZooms = db.clusterparams.find(clusterparamsQuery, {_id: 0}).sort({z: 1}).toArray();
 
 		logByNPhotos = logByNPhotos || ((photosAllCount / 20) >> 0);
 		print('Start to clusterize ' + photosAllCount + ' photos with log for every ' + logByNPhotos + '. Gravity: ' + withGravity);
@@ -24,7 +30,7 @@ module.exports.loadController = function (app, db) {
 		function clusterizeZoom(clusterZoom) {
 			var startTime = Date.now(),
 
-				photos = db.photos.find({geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1 }),
+				photos = db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, geo: 1, year: 1, year2: 1 }),
 				photoCounter = 0,
 				geoPhoto,
 				geoPhotoCorrection = [0, 0],
@@ -40,8 +46,13 @@ module.exports.loadController = function (app, db) {
 				clustersArrInner,
 				clustersArrLastIndex = 0,
 				clustCoordId,
+				clustersInserted = 0,
 				clustersCounter,
-				clustersCounterInner;
+				clustersCounterInner,
+
+				sorterByCount = function (a, b) {
+					return a.c === b.c ? 0 : (a.c < b.c ? 1: -1);
+				};
 
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
 			clusterZoom.hHalf = toPrecisionRound(clusterZoom.h / 2);
@@ -61,7 +72,7 @@ module.exports.loadController = function (app, db) {
 				if (cluster === undefined) {
 					clustersCount++;
 					clusters[clustCoordId] = cluster = {g: g, z: clusterZoom.z, geo: [g[0] + clusterZoom.wHalf, g[1] - clusterZoom.hHalf], c: 0, y: {}, p: null};
-					if (clustersArr[clustersArrLastIndex].push(cluster) > 499) {
+					if (clustersArr[clustersArrLastIndex].push(cluster) > 249) {
 						clustersArr.push([]);
 						clustersArrLastIndex++;
 					}
@@ -84,6 +95,8 @@ module.exports.loadController = function (app, db) {
 			clustersCounter = clustersArr.length;
 			while (clustersCounter) {
 				clustersArrInner = clustersArr[--clustersCounter];
+				clustersArrInner.sort(sorterByCount);
+
 				clustersCounterInner = clustersArrInner.length;
 				if (clustersCounterInner > 0) {
 					while (clustersCounterInner) {
@@ -92,12 +105,18 @@ module.exports.loadController = function (app, db) {
 							cluster.geo[0] = Math.round(divider * (cluster.geo[0] / (cluster.c + 1))) / divider;
 							cluster.geo[1] = Math.round(divider * (cluster.geo[1] / (cluster.c + 1))) / divider;
 						}
-						cluster.p = db.photos.findOne({geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
+						if (cluster.geo[0] < -180 || cluster.geo[0] > 180) {
+							spinLng(cluster.geo);
+						}
+						if (cluster.g[0] < -180 || cluster.g[0] > 180) {
+							spinLng(cluster.g);
+						}
+						cluster.p = db.photos.findOne({s: 5, geo: {$near: cluster.geo}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1});
 					}
-
-					db.clusters.insert(clustersArrInner);
-					print(clusterZoom.z + ': Inserted ' + clustersArrInner.length + '/' + clustersCount + ' clusters ok. ' + (Date.now() - startTime) / 1000 + 's');
 				}
+				db.clusters.insert(clustersArrInner);
+				clustersInserted += clustersArrInner.length;
+				print(clusterZoom.z + ': Inserted ' + clustersInserted + '/' + clustersCount + ' clusters ok. ' + (Date.now() - startTime) / 1000 + 's');
 			}
 
 			clusters = clustersArr = clustersArrInner = null;
@@ -106,6 +125,28 @@ module.exports.loadController = function (app, db) {
 
 
 		return {message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photosAllCount, clusters: db.clusters.count()};
+	});
+
+	saveSystemJSFunc(function photosToMapAll() {
+		var startTime = Date.now();
+
+		print('Clearing photos map collection');
+		db.photos_map.remove();
+
+		print('Start to fill conveyer for ' + db.photos.count({s: 5, geo: {$exists: true}}) + ' photos');
+		db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).sort({cid: 1}).forEach(function (photo) {
+			db.photos_map.insert({
+				cid: photo.cid,
+				geo: photo.geo,
+				file: photo.file,
+				dir: photo.dir || '',
+				title: photo.title || '',
+				year: photo.year || 2000,
+				year2: photo.year2 || photo.year || 2000
+			});
+		});
+
+		return {message: db.photos_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function convertPhotosAll(variants) {
@@ -123,17 +164,8 @@ module.exports.loadController = function (app, db) {
 				);
 			};
 
-		print('Start to fill conveyer for ' + db.photos.count() + ' public photos');
-		db.photos.find({}, selectFields).sort({adate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_fresh.count() + ' new photos');
-		db.photos_fresh.find({}, selectFields).sort({adate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_disabled.count() + ' disabled photos');
-		db.photos_disabled.find({}, selectFields).sort({adate: 1}).forEach(iterator);
-
-		print('Start to fill conveyer for ' + db.photos_del.count() + ' deleted photos');
-		db.photos_del.find({}, selectFields).sort({adate: 1}).forEach(iterator);
+		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
+		db.photos.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
 
 		if (Array.isArray(variants) && variants.length > 0) {
 			photoCounter = conveyer.length;
@@ -146,6 +178,251 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
 	});
 
+	//Для фотографий с координатой заново расчитываем регионы
+	saveSystemJSFunc(function regionsAssignObjects() {
+		var startTime = Date.now();
+
+		//Очищаем принадлежность к регионам у всех фотографий с проставленной точкой
+		print('Clearing current regions assignment\n');
+		db.photos.update({geo: {$exists: true}}, {$unset: {r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}}, {multi: true});
+		//Для каждого региона находим фотографии
+		print('Start to assign for ' + db.regions.count() + ' regions..\n');
+		db.regions.find({cid: {$ne: 1000000}}, {cid: 1, parents: 1, geo: 1, title_en: 1}).forEach(function (region) {
+			var startTime = Date.now(),
+				count,
+				queryObject = {},
+				setObject = {$set: {}};
+
+
+			queryObject.geo = {$geoWithin: {$geometry: region.geo}};
+			setObject.$set['r' + region.parents.length] = region.cid;
+
+			count = db.photos.count(queryObject);
+			print('Assigning ' + count + ' photos for [r' + region.parents.length + '] ' + region.cid + ' ' + region.title_en + ' region');
+			if (count) {
+				db.photos.update(queryObject, setObject, {multi: true});
+			}
+
+			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
+		});
+
+		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет центров регионов
+	//withManual - Всех регионов, включая тех, у кого центр установлен вручную
+	saveSystemJSFunc(function regionsCalcCenter(withManual) {
+		var startTime = Date.now(),
+			query = {cid: {$ne: 1000000}};
+
+		if (!withManual) {
+			query.$or = [{centerAuto: true}, {centerAuto: null}];
+		}
+
+		print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {_id: 0, cid: 1, geo: 1, bbox: 1}).forEach(function (region) {
+			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
+				db.regions.update({cid: region.cid}, {$set: {center: geoToPrecision(region.geo.type === 'MultiPolygon' ? [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] : polyCentroid(region.geo.coordinates[0])), centerAuto: true}});
+			} else {
+				print('Error with ' + region.cid + ' region');
+			}
+		});
+
+		function polyCentroid(points) {
+			var pointsLen = points.length,
+				i = 0, j = pointsLen - 1,
+				f,
+				x = 0, y = 0,
+				area = 0,
+				p1, p2;
+
+			for (i; i < pointsLen; j = i++) {
+				p1 = points[i];
+				p2 = points[j];
+				f = p1[1] * p2[0] - p2[1] * p1[0];
+				y += (p1[1] + p2[1]) * f;
+				x += (p1[0] + p2[0]) * f;
+
+				area += p1[1] * p2[0];
+				area -= p1[0] * p2[1];
+			}
+			area /= 2;
+			f = area * 6;
+			return [x / f, y / f];
+		}
+
+		return {message: 'All finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет bbox регионов
+	saveSystemJSFunc(function regionsCalcBBOX() {
+		var startTime = Date.now(),
+			query = {cid: {$ne: 1000000}};
+
+		print('Start to calc bbox for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {_id: 0, cid: 1, geo: 1}).forEach(function (region) {
+			if (region.geo && (region.geo.type === 'MultiPolygon' || region.geo.type === 'Polygon')) {
+				db.regions.update({cid: region.cid}, {$set: {bbox: polyBBOX(region.geo).map(toPrecision6)}});
+			} else {
+				print('Error with ' + region.cid + ' region');
+			}
+		});
+
+		function polyBBOX(geometry) {
+			var i, resultbbox, polybbox, multipolycoords;
+
+			if (geometry.type === 'Polygon') {
+				resultbbox = getbbox(geometry.coordinates[0]);
+			} else if (geometry.type === 'MultiPolygon') {
+				i = geometry.coordinates.length;
+				multipolycoords = [];
+
+				while (i--) {
+					polybbox = getbbox(geometry.coordinates[i][0]);
+
+					multipolycoords.push([polybbox[0], polybbox[1]]); //SouthWest
+					multipolycoords.push([polybbox[2], polybbox[1]]); //NorthWest
+					multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
+					multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
+				}
+				multipolycoords.sort(function (a, b) {
+					return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
+				});
+				multipolycoords.push(multipolycoords[0]);
+				resultbbox = getbbox(multipolycoords);
+			}
+
+			function getbbox(points) {
+				var pointsLen = points.length,
+					i = 0, j = pointsLen - 1,
+					x1 = points[j][0], x2,
+					y1 = points[j][1], y2,
+					p1, p2,
+					bbox;
+
+				if (x1 === -180) {
+					x1 = 180;
+				}
+				bbox = [x1, y1, x1, y1];
+
+				for (i; i < pointsLen - 1; j = i++) {
+					p1 = points[j]; //prev
+					x1 = p1[0];
+					p2 = points[i]; //current
+					x2 = p2[0];
+					y2 = p2[1];
+
+					if (x1 === -180) {
+						x1 = 180;
+					}
+					if (x2 === -180) {
+						x2 = 180;
+					}
+
+					if (Math.abs(x2 - x1) <= 180) {
+						if (x2 > x1 && x2 > bbox[2] && Math.abs(x2 - bbox[2]) <= 180) {
+							bbox[2] = x2;
+						} else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
+							bbox[0] = x2;
+						}
+					} else {
+						if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+							bbox[2] = x2;
+						} else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+							bbox[0] = x2;
+						}
+					}
+
+					if (y2 < bbox[1]) {
+						bbox[1] = y2;
+					} else if (y2 > bbox[3]) {
+						bbox[3] = y2;
+					}
+				}
+				return bbox;
+			}
+
+			return resultbbox;
+		}
+
+		return {message: 'All bbox finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет количества вершин полигонов
+	saveSystemJSFunc(function regionsCalcPointsNum(cidArr) {
+		var startTime = Date.now(),
+			query = {};
+
+		if (Array.isArray(cidArr) && cidArr.length) {
+			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
+		}
+
+		function calcGeoJSONPointsNumReduce(previousValue, currentValue) {
+			return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(calcGeoJSONPointsNumReduce, 0) : 1);
+		}
+
+		print('Start to calculate points number for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
+			var startTime = Date.now(),
+				count;
+
+			count = region.geo.type === 'Point' ? 1 : region.geo.coordinates.reduce(calcGeoJSONPointsNumReduce, 0);
+			db.regions.update({cid: region.cid}, {$set: {pointsnum: count}});
+			print(count + ': ' + region.cid + ' ' + region.title_en + ' in ' + (Date.now() - startTime) / 1000 + 's');
+		});
+
+		print('\n');
+		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Расчет количества полигонов в регионе {exterior: 0, interior: 0}
+	saveSystemJSFunc(function regionsCalcPolygonsNum(cidArr) {
+		var startTime = Date.now(),
+			query = {};
+
+		if (Array.isArray(cidArr) && cidArr.length) {
+			query.cid = cidArr.length === 1 ? cidArr[0] : {$in: cidArr};
+		}
+
+		print('Start to calculate polynum for ' + db.regions.count(query) + ' regions..\n');
+		db.regions.find(query, {cid: 1, geo: 1, title_en: 1}).sort({cid: 1}).forEach(function (region) {
+			var polynum;
+
+			if (region.geo.type === 'Polygon' || region.geo.type === 'MultiPolygon') {
+				polynum = calcGeoJSONPolygonsNum(region.geo);
+			} else {
+				polynum = {exterior: 0, interior: 0};
+			}
+
+			db.regions.update({cid: region.cid}, {$set: {polynum: polynum}});
+		});
+
+		function calcGeoJSONPolygonsNum(geometry) {
+			var result,
+				res,
+				i;
+
+			if (geometry.type === 'MultiPolygon') {
+				result = {exterior: 0, interior: 0};
+				for (i = geometry.coordinates.length; i--;) {
+					res = polyNum(geometry.coordinates[i]);
+					result.exterior += res.exterior;
+					result.interior += res.interior;
+				}
+			} else if (geometry.type === 'Polygon') {
+				result = polyNum(geometry.coordinates);
+			}
+
+			function polyNum (polygons) {
+				return {exterior: 1, interior: polygons.length - 1};
+			}
+			return result;
+		}
+
+		print('\n');
+		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
 	saveSystemJSFunc(function calcUserStats() {
 		var startTime = Date.now(),
 			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),
@@ -153,9 +430,9 @@ module.exports.loadController = function (app, db) {
 			userCounter = users.length,
 			$set,
 			$unset,
+			updateObj,
 			pcount,
 			pfcount,
-		//bcount,
 			ccount;
 
 		print('Start to calc for ' + userCounter + ' users');
@@ -163,9 +440,11 @@ module.exports.loadController = function (app, db) {
 			user = users[userCounter];
 			$set = {};
 			$unset = {};
-			pcount = db.photos.count({user: user._id});
-			pfcount = db.photos_fresh.count({user: user._id});
+			updateObj = {};
+			pcount = db.photos.count({user: user._id, s: 5});
+			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
 			ccount = db.comments.count({user: user._id}) + db.commentsn.count({user: user._id});
+
 			if (pcount > 0) {
 				$set.pcount = pcount;
 			} else {
@@ -181,7 +460,16 @@ module.exports.loadController = function (app, db) {
 			} else {
 				$unset.ccount = 1;
 			}
-			db.users.update({_id: user._id}, {$set: $set, $unset: $unset}, {upsert: false});
+
+			//Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
+			if (Object.keys($set).length) {
+				updateObj.$set = $set;
+			}
+			if (Object.keys($unset).length) {
+				updateObj.$unset = $unset;
+			}
+
+			db.users.update({_id: user._id}, updateObj, {upsert: false});
 		}
 
 		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -194,6 +482,7 @@ module.exports.loadController = function (app, db) {
 			counter = photos.length,
 			$set,
 			$unset,
+			updateObj,
 			ccount;
 
 		print('Start to calc for ' + counter + ' photos');
@@ -201,13 +490,22 @@ module.exports.loadController = function (app, db) {
 			photo = photos[counter];
 			$set = {};
 			$unset = {};
+			updateObj = {};
 			ccount = db.comments.count({obj: photo._id});
 			if (ccount > 0) {
 				$set.ccount = ccount;
 			} else {
 				$unset.ccount = 1;
 			}
-			db.photos.update({_id: photo._id}, {$set: $set, $unset: $unset}, {upsert: false});
+
+			if (Object.keys($set).length) {
+				updateObj.$set = $set;
+			}
+			if (Object.keys($unset).length) {
+				updateObj.$unset = $unset;
+			}
+
+			db.photos.update({_id: photo._id}, updateObj, {upsert: false});
 		}
 
 		return {message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -216,6 +514,9 @@ module.exports.loadController = function (app, db) {
 	saveSystemJSFunc(function toPrecision(number, precision) {
 		var divider = Math.pow(10, precision || 6);
 		return ~~(number * divider) / divider;
+	});
+	saveSystemJSFunc(function toPrecision6(number) {
+		return toPrecision(number, 6);
 	});
 
 	saveSystemJSFunc(function toPrecisionRound(number, precision) {
@@ -237,11 +538,12 @@ module.exports.loadController = function (app, db) {
 		return geo;
 	});
 
-	saveSystemJSFunc(function geoToPrecisionRound(geo, precision) {
-		geo.forEach(function (item, index, array) {
-			array[index] = toPrecisionRound(item, precision || 6);
-		});
-		return geo;
+	saveSystemJSFunc(function spinLng(geo) {
+		if (geo[0] < -180) {
+			geo[0] += 360;
+		} else if (geo[0] > 180) {
+			geo[0] -= 360;
+		}
 	});
 
 	saveSystemJSFunc(function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
@@ -310,699 +612,6 @@ module.exports.loadController = function (app, db) {
 		}
 	});
 
-
-	/**
-	 * Функции импорта конвертации старой базы олдмос
-	 */
-	saveSystemJSFunc(function oldConvertUsers(sourceCollectionName, spbMode, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'users';
-		byNumPerPackage = byNumPerPackage || 1000;
-
-		if (dropExisting) {
-			print('Clearing target collection...');
-			db.users.remove({login: {$nin: ['init', 'neo']}});
-		}
-
-		var db_old = db.getSiblingDB('old'),
-			startTime = Date.now(),
-			insertBy = byNumPerPackage, // Вставляем по N документов
-			insertArr = [],
-			newUser,
-			existsOnStart = db.users.count(),
-			cidShift = 0,
-			maxCid,
-			okCounter = 0,
-			noactiveCounter = 0,
-			allCounter = 0,
-			allCount = db_old[sourceCollectionName].count(),
-			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({id: 1}),
-
-		//Размазываем даты регистрации пользователей по периоду с 1 марта 2009 до текущей даты
-			expectingUsersCount = db_old[sourceCollectionName].count({activated: 'yes'}),
-			firstUserStamp = (spbMode ? new Date("Sat, 1 Aug 2009 12:00:00 GMT") : new Date("Sun, 1 Mar 2009 12:00:00 GMT")).getTime(),
-			stepUserStamp = (startTime - firstUserStamp) / expectingUsersCount >> 0,
-
-			usersArr,
-			usersLogin = {},
-			usersEmail = {},
-			userValid,
-			userMergeCounter = 0,
-			userLoginChangedCounter = 0,
-			usersSpbMapping,
-			i;
-
-		if (spbMode) {
-			db.usersSpbMap.drop();
-			cidShift = db.counters.findOne({_id: 'user'}).next;
-			usersSpbMapping = [];
-			print('Filling users hash...');
-			usersArr = db.users.find({}, {_id: 1, login: 1, email: 1}).sort({cid: -1}).toArray();
-			i = usersArr.length;
-			while (i--) {
-				usersEmail[usersArr[i].email] = usersArr[i]._id;
-				usersLogin[usersArr[i].login] = usersArr[i]._id;
-			}
-			print('Filled users hash with ' + usersArr.length + ' values');
-			usersArr = null;
-		}
-
-		print('Start to convert ' + allCount + ' docs with cid delta ' + cidShift + ' by ' + insertBy + ' in one package');
-		cursor.forEach(function (user) {
-			allCounter++;
-			userValid = false;
-
-			if (user.activated !== 'yes') {
-				noactiveCounter++;
-			} else if (user.id && user.username && user.email) {
-				if (spbMode) {
-					if (usersEmail[user.email]) {
-						userMergeCounter++;
-						usersSpbMapping.push({cidOld: Number(user.id), id: usersEmail[user.email]});
-					} else {
-						if (usersLogin[user.username]) {
-							user.username += 'Spb';
-							userLoginChangedCounter++;
-						}
-						userValid = true;
-					}
-				} else {
-					userValid = true;
-				}
-			}
-			if (userValid) {
-				okCounter++;
-				newUser = {
-					_id: ObjectId(),
-					cid: Number(user.id) + cidShift,
-					login: user.username,
-					email: user.email,
-					pass: 'init',
-
-					firstName: user.first_name || undefined,
-					lastName: user.last_name || undefined,
-					birthdate: user.birthday || undefined,
-					sex: user.sex || undefined,
-					country: user.country || undefined,
-					city: user.city || undefined,
-					work: user.work_field || undefined,
-					www: user.website || undefined,
-					icq: user.icq || undefined,
-					skype: user.skype || undefined,
-					aim: user.aim || undefined,
-					lj: user.lj || undefined,
-					flickr: user.flickr || undefined,
-					blogger: user.blogger || undefined,
-					aboutme: user.about || undefined,
-
-					regdate: new Date(firstUserStamp + (okCounter - 1) * stepUserStamp),
-					active: true,
-					activatedate: new Date(firstUserStamp + okCounter * stepUserStamp)
-				};
-
-				// Удаляем undefined значения
-				for (var i in newUser) {
-					if (newUser.hasOwnProperty(i) && newUser[i] === undefined) {
-						delete newUser[i];
-					}
-				}
-				if (user.ava && user.ava !== '0.png') {
-					newUser.avatar = user.ava;
-				}
-				if (user.role_id === 2) {
-					newUser.role = 5; //Администраторы становятся модераторами
-					if (newUser.cid === 1 || newUser.cid === 6 || newUser.cid === 75 || newUser.cid === 6023) {
-						newUser.role = 11;
-					} else if (newUser.cid === 5209) {
-						newUser.role = 10;
-					}
-				}
-
-				//printjson(newUser);
-				insertArr.push(newUser);
-				if (spbMode) {
-					usersSpbMapping.push({cidOld: Number(user.id), cidNew: newUser.cid, id: newUser._id});
-				}
-			}
-
-			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0) {
-					db.users.insert(insertArr);
-					if (spbMode) {
-						db.usersSpbMap.insert(usersSpbMapping);
-						usersSpbMapping = [];
-					}
-				}
-				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.users.count() !== (okCounter + existsOnStart)) {
-					printjson(insertArr[0]);
-					print('<...>');
-					printjson(insertArr[insertArr.length - 1]);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.users.count() + '. Some error inserting data packet. Stop imports');
-				}
-				insertArr = [];
-			}
-		});
-
-		maxCid = db.users.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
-		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
-		print('Setting next user counter to ' + maxCid + ' + 1');
-		db.counters.update({_id: 'user'}, {$set: {next: maxCid + 1}}, {upsert: true});
-
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', usersAllNow: db.users.count(), usersInserted: okCounter, noActive: noactiveCounter, merged: userMergeCounter, loginChanged: userLoginChangedCounter};
-	});
-
-	saveSystemJSFunc(function oldConvertPhotos(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'photos';
-		byNumPerPackage = byNumPerPackage || 2000;
-
-		if (dropExisting) {
-			print('Clearing target collection...');
-			db.photos.remove();
-		}
-
-		var startTime = Date.now(),
-			db_old = db.getSiblingDB('old'),
-		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
-			importedTimezoneOffset = -4,
-			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
-			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
-
-			insertBy = byNumPerPackage, // Вставляем по N документов
-			insertArr = [],
-			newPhoto,
-			lat,
-			lng,
-			noGeoCounter = 0,
-			noUserCounter = 0,
-			existsOnStart = db.photos.count(),
-			maxCid,
-			cidShift = 0,
-			okCounter = 0,
-			allCounter = 0,
-			allCount = db_old[sourceCollectionName].count(),
-			cursor = db_old[sourceCollectionName].find({}, {_id: 0}),//.sort({id: 1}),
-			usersArr,
-			users = {},
-			userOid,
-			photosSpbMapping,
-			i;
-
-		if (spbMode) {
-			db.photosSpbMap.drop();
-			cidShift = db.counters.findOne({_id: 'photo'}).next;
-			photosSpbMapping = [];
-			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
-			for (i = usersArr.length; i--;) {
-				users[usersArr[i].cidOld] = usersArr[i].id;
-			}
-		} else {
-			usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
-			for (i = usersArr.length; i--;) {
-				users[usersArr[i].cid] = usersArr[i]._id;
-			}
-		}
-		print('Filled users hash with ' + usersArr.length + ' values');
-		usersArr = null;
-
-		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
-		cursor.forEach(function (photo) {
-			var i;
-
-			allCounter++;
-			userOid = users[photo.user_id];
-			if (userOid === undefined) {
-				noUserCounter++;
-			}
-			if (photo.id && (userOid !== undefined) && photo.file) {
-				lng = Number(photo.long || 'Empty should be NaN');
-				lat = Number(photo.lat || 'Empty should be NaN');
-				okCounter++;
-
-				newPhoto = {
-					_id: ObjectId(),
-					cid: Number(photo.id) + cidShift,
-					user: userOid,
-					album: photo.album_id || undefined,
-					stack: photo.stack_id || undefined,
-					stack_order: photo.stack_order || undefined,
-
-					file: photo.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1"),
-					ldate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
-					adate: new Date((photo.date || 0) * 1000 + resultDateCorrection),
-					w: photo.width,
-					h: photo.height,
-
-					dir: photo.direction || '',
-
-					title: photo.title || '',
-					year: Math.min(Math.max(Number(photo.year_from) || 2000, 1826), 2000),
-					address: photo.address || undefined,
-					desc: photo.description && typeof photo.description === 'string' ? inputIncomingParse(photo.description, spbPhotoShift) : undefined,
-					source: photo.source && typeof photo.source === 'string' ? inputIncomingParse(photo.source) : undefined,
-					author: photo.author || undefined,
-
-					vdcount: parseInt(photo.stats_day, 10) || 0,
-					vwcount: parseInt(photo.stats_week, 10) || 0,
-					vcount: parseInt(photo.stats_all, 10) || 0
-				};
-				if (!isNaN(lng) && !isNaN(lat)) {
-					newPhoto.geo = [toPrecisionRound(lng), toPrecisionRound(lat)];
-				} else {
-					noGeoCounter++;
-				}
-				if (photo.year_to !== undefined && photo.year_to >= newPhoto.year) {
-					newPhoto.year2 = photo.year_to;
-				} else {
-					newPhoto.year2 = newPhoto.year;
-				}
-
-				// Удаляем undefined значения
-				for (i in newPhoto) {
-					if (newPhoto.hasOwnProperty(i) && newPhoto[i] === undefined) {
-						delete newPhoto[i];
-					}
-				}
-
-				//printjson(newPhoto);
-				insertArr.push(newPhoto);
-				if (spbMode) {
-					photosSpbMapping.push({cidOld: Number(photo.id), cidNew: newPhoto.cid, id: newPhoto._id});
-				}
-			}
-			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0) {
-					db.photos.insert(insertArr);
-				}
-				if (spbMode) {
-					db.photosSpbMap.insert(photosSpbMapping);
-					photosSpbMapping = [];
-				}
-				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.photos.count() !== okCounter + existsOnStart) {
-					//printjson(insertArr);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.photos.count() + '. Some error inserting data packet. Stop imports');
-				}
-				insertArr = [];
-			}
-		});
-
-		maxCid = db.photos.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
-		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
-		print('Setting next photo counter to ' + maxCid + ' + 1');
-		db.counters.update({_id: 'photo'}, {$set: {next: maxCid + 1}}, {upsert: true});
-
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', photosAll: db.photos.count(), photosInserted: okCounter, noUsers: noUserCounter, noGeo: noGeoCounter};
-	});
-
-	saveSystemJSFunc(function oldConvertComments(sourceCollectionName, spbMode, spbPhotoShift, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'comments';
-		byNumPerPackage = byNumPerPackage || 5000;
-
-		if (dropExisting) {
-			print('Clearing target collection...');
-			db.comments.remove();
-		}
-
-		print('Ensuring old index...');
-		var db_old = db.getSiblingDB('old');
-		db_old[sourceCollectionName].ensureIndex({date: 1});
-
-		var startTime = Date.now(),
-
-			importedTimezoneOffset = -4, //В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
-			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
-			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
-
-			insertBy = byNumPerPackage, // Вставляем по N документов
-			insertArr = [],
-			newComment,
-			existsOnStart = db.comments.count(),
-			maxCid,
-			cidShift = 0,
-			okCounter = 0,
-			fragCounter = 0,
-			fragCounterError = 0,
-			flattenedCounter = 0,
-			noUserCounter = 0,
-			noPhotoCounter = 0,
-			noParentCounter = 0,
-			allCounter = 0,
-			allCount = db_old[sourceCollectionName].count(),
-			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
-			usersArr,
-			users = {},
-			userOid,
-			photos = {},
-			photoOid,
-			photosFragment = {},
-			fragmentArr,
-			i,
-
-			commentsRelationsHash = {},
-			relationFlattenLevel = 9,
-			relationParent,
-			relation,
-			relationParentBroken;
-
-		if (spbMode) {
-			db.photosSpbMap.ensureIndex({cidOld: 1});
-			cidShift = db.counters.findOne({_id: 'comment'}).next;
-			usersArr = db.usersSpbMap.find({}, {_id: 0, id: 1, cidOld: 1}).toArray();
-			for (i = usersArr.length; i--;) {
-				users[usersArr[i].cidOld] = usersArr[i].id;
-			}
-		} else {
-			usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
-			for (i = usersArr.length; i--;) {
-				users[usersArr[i].cid] = usersArr[i]._id;
-			}
-		}
-		print('Filled users hash with ' + usersArr.length + ' values');
-		usersArr = null;
-
-		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
-		cursor.forEach(function (comment) {
-
-			allCounter++;
-			userOid = users[comment.user_id];
-			if (userOid === undefined) {
-				noUserCounter++;
-			}
-			if (comment.id && (userOid !== undefined) && (typeof comment.photo_id === 'number' && comment.photo_id > 0) && comment.date) {
-
-				photoOid = photos[comment.photo_id];
-				if (photoOid === undefined) {
-					if (spbMode) {
-						photoOid = db.photosSpbMap.findOne({cidOld: comment.photo_id}, {_id: 0, id: 1});
-						photoOid = photoOid && photoOid.id;
-					} else {
-						photoOid = db.photos.findOne({cid: comment.photo_id}, {_id: 1});
-						photoOid = photoOid && photoOid._id;
-					}
-					if (photoOid) {
-						photos[comment.photo_id] = photoOid;
-					}
-				}
-
-				if (photoOid) {
-					relation = {level: 0, parent: 0};
-					relationParent = undefined;
-					relationParentBroken = false;
-					if (typeof comment.sub === 'number' && comment.sub > 0) {
-						relationParent = commentsRelationsHash[comment.sub + cidShift];
-						if (relationParent !== undefined) {
-							if (relationParent.level > relationFlattenLevel) {
-								print('ERROR WITH RELATIONS FLATTEN LEVEL');
-							} else if (relationParent.level === relationFlattenLevel) {
-								//print('FLATTENED ' + comment.photo_id + ': ' + newComment.cid);
-								relation = relationParent;
-								flattenedCounter++;
-							} else {
-								relation.parent = comment.sub + cidShift;
-								relation.level = relationParent.level + 1;
-							}
-						} else {
-							relationParentBroken = true;
-							noParentCounter++;
-							//print('!NON PARENT! ' + comment.photo_id + ': ' + newComment.cid);
-						}
-					}
-
-					if (!relationParentBroken) {
-						okCounter++;
-						newComment = {
-							cid: Number(comment.id) + cidShift,
-							obj: photoOid,
-							user: userOid,
-							stamp: new Date((comment.date || 0) * 1000 + resultDateCorrection),
-							txt: inputIncomingParse(comment.text, spbPhotoShift)
-						};
-						if (comment.fragment) {
-							fragmentArr = comment.fragment.split(';').map(parseFloat);
-							if (fragmentArr.length === 4) {
-								if (photosFragment[comment.photo_id] === undefined) {
-									photosFragment[comment.photo_id] = [];
-								}
-								photosFragment[comment.photo_id].push({
-									_id: ObjectId(),
-									cid: newComment.cid,
-									l: fragmentArr[0],
-									t: fragmentArr[1],
-									w: toPrecisionRound(fragmentArr[2] - fragmentArr[0], 2),
-									h: toPrecisionRound(fragmentArr[3] - fragmentArr[1], 2)
-								});
-								newComment.frag = true;
-								fragCounter++;
-							} else {
-								fragCounterError++;
-							}
-						}
-						if (relation.level > 0) {
-							newComment.parent = relation.parent;
-							newComment.level = relation.level;
-						}
-						commentsRelationsHash[newComment.cid] = relation;
-						insertArr.push(newComment);
-					}
-				} else {
-					noPhotoCounter++;
-				}
-			}
-			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0) {
-					db.comments.insert(insertArr);
-				}
-				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.comments.count() !== okCounter + existsOnStart) {
-					printjson(insertArr[0]);
-					print('<...>');
-					printjson(insertArr[insertArr.length - 1]);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.comments.count() + '. Some error inserting data packet. Stop imports');
-				}
-				insertArr = [];
-			}
-		});
-
-
-		for (i in photosFragment) {
-			if (photosFragment[i] !== undefined) {
-				db.photos.update({_id: photos[Number(i)]}, {$set: {frags: photosFragment[i]}}, {upsert: false});
-			}
-		}
-		print('Inserted ' + fragCounter + ' fragments to ' + Object.keys(photosFragment).length + ' photos');
-
-		maxCid = db.comments.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
-		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
-		print('Setting next comment counter to ' + maxCid + ' + 1');
-		db.counters.update({_id: 'comment'}, {$set: {next: maxCid + 1}}, {upsert: true});
-
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', commentsAllNow: db.comments.count(), commentsInserted: okCounter, withFragment: fragCounter, fragErrors: fragCounterError, flattened: flattenedCounter, noUsers: noUserCounter, noPhoto: noPhotoCounter, noParent: noParentCounter};
-	});
-
-
-	saveSystemJSFunc(function oldConvertNews(sourceCollectionName, byNumPerPackage, dropExisting) {
-		sourceCollectionName = sourceCollectionName || 'news';
-		byNumPerPackage = byNumPerPackage || 10;
-
-		if (dropExisting) {
-			print('Clearing target collection...');
-			db.news.remove();
-		}
-
-		var startTime = Date.now(),
-			db_old = db.getSiblingDB('old'),
-
-
-		//В старой базе время хранилось в московской зоне (-4), поэтому надо скорректировать её на зону сервера
-			importedTimezoneOffset = -4,
-			serverTimezoneOffset = (new Date()).getTimezoneOffset() / 60,
-			resultDateCorrection = (importedTimezoneOffset - serverTimezoneOffset) * 60 * 60 * 1000,
-
-			insertBy = byNumPerPackage, // Вставляем по N документов
-			insertArr = [],
-			newNovel,
-			existsOnStart = db.news.count(),
-			maxCid,
-			okCounter = 0,
-			noUserCounter = 0,
-			allCounter = 0,
-			allCount = db_old[sourceCollectionName].count(),
-			cursor = db_old[sourceCollectionName].find({}, {_id: 0}).sort({date: 1}),
-			usersArr,
-			users = {},
-			userOid,
-			i;
-
-		print('Filling users hash...');
-		usersArr = db.users.find({cid: {$exists: true}}, {_id: 1, cid: 1}).sort({cid: -1}).toArray();
-		i = usersArr.length;
-		while (i--) {
-			users[usersArr[i].cid] = usersArr[i]._id;
-		}
-		print('Filled users hash with ' + usersArr.length + ' values');
-		usersArr = null;
-
-		print('Start to convert ' + allCount + ' docs by ' + insertBy + ' in one package');
-		cursor.forEach(function (novel) {
-
-			allCounter++;
-			userOid = users[novel.user_id];
-			if (userOid === undefined) {
-				noUserCounter++;
-			}
-			if (novel.id && (userOid !== undefined) && novel.date) {
-				okCounter++;
-				newNovel = {
-					cid: novel.id,
-					user: userOid,
-					cdate: new Date((novel.date || 0) * 1000 + resultDateCorrection),
-					pdate: new Date((novel.date || 0) * 1000 + resultDateCorrection),
-					tdate: new Date(((novel.date || 0) + 3 * 24 * 60 * 60) * 1000 + resultDateCorrection),
-					title: novel.title,
-					txt: novel.text || novel.pre_text
-				};
-				if (novel.text && (novel.text !== novel.pre_text)) {
-					newNovel.notice = novel.pre_text;
-				}
-				insertArr.push(newNovel);
-			}
-			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0) {
-					db.news.insert(insertArr);
-				}
-				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.news.count() !== okCounter + existsOnStart) {
-					printjson(insertArr[0]);
-					print('<...>');
-					printjson(insertArr[insertArr.length - 1]);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.news.count() + '. Some error inserting data packet. Stop imports');
-				}
-				insertArr = [];
-			}
-		});
-
-		maxCid = db.news.find({}, {_id: 0, cid: 1}).sort({cid: -1}).limit(1).toArray();
-		maxCid = maxCid && maxCid.length > 0 && maxCid[0].cid ? maxCid[0].cid : 1;
-		print('Setting next news counter to ' + maxCid + ' + 1');
-		db.counters.update({_id: 'news'}, {$set: {next: maxCid + 1}}, {upsert: true});
-
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', newsInserted: okCounter, noUsers: noUserCounter};
-	});
-
-	saveSystemJSFunc(function fillPhotosSort(byNumPerPackage) {
-		byNumPerPackage = byNumPerPackage || 2000;
-
-		print('Clearing target collection...');
-		db.photos_sort.remove();
-
-		var startTime = Date.now(),
-			shift10y = 315576000000,
-			insertArr = [],
-			okCounter = 0,
-			allCounter = 0,
-			allCount = db.photos_fresh.count() + db.photos.count() + db.photos_disabled.count() + db.photos_del.count(),
-			stampName,
-			state,
-			i;
-
-		print('Start to fill ' + db.photos_fresh.count() + ' fresh photos');
-		stampName = 'ldate';
-		state = 1;
-		db.photos_fresh.find({}, {_id: 1, user: 1, ldate: 1}).forEach(iterator);
-
-		print('Start to fill ' + db.photos.count() + ' public photos');
-		stampName = 'adate';
-		state = 5;
-		db.photos.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
-
-		print('Start to fill ' + db.photos_disabled.count() + ' disabled photos');
-		state = 7;
-		db.photos_disabled.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
-
-		print('Start to fill ' + db.photos_del.count() + ' del photos');
-		state = 9;
-		db.photos_del.find({}, {_id: 1, user: 1, adate: 1}).forEach(iterator);
-
-		function iterator(photo) {
-			var stamp = photo[stampName];
-			allCounter++;
-			okCounter++;
-
-			if (stampName === 'ldate') {
-				stamp = new Date(stamp.getTime() + shift10y);
-			}
-
-			insertArr.push({
-				photo: photo._id,
-				user: photo.user,
-				stamp: stamp,
-				state: state
-			});
-			if (allCounter % byNumPerPackage === 0 || allCounter >= allCount) {
-				if (insertArr.length > 0) {
-					db.photos_sort.insert(insertArr);
-				}
-				print('Inserted ' + insertArr.length + '/' + okCounter + '/' + allCounter + '/' + allCount + ' in ' + (Date.now() - startTime) / 1000 + 's');
-				if (db.photos_sort.count() !== okCounter) {
-					printjson(insertArr[0]);
-					print('<...>');
-					printjson(insertArr[insertArr.length - 1]);
-					throw ('Total in target not equal inserted. Inserted: ' + okCounter + ' Exists: ' + db.photos_sort.count() + '. Some error inserting data packet. Stop imports');
-				}
-				insertArr = [];
-			}
-		}
-
-		return {message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's', inserted: okCounter};
-	});
-
-	saveSystemJSFunc(function oldConvertAll() {
-		var start = Date.now(),
-			spbPhotoShift;
-		print('Removing exists data..');
-		db.users.remove();
-		db.photos.remove();
-		db.comments.remove();
-		db.news.remove();
-
-		print('~~~~~~~');
-		print('oldConvertUsers()');
-		printjson(oldConvertUsers());
-		print('~~~~~~~');
-		print('oldConvertPhotos()');
-		printjson(oldConvertPhotos());
-		print('~~~~~~~');
-		print('oldConvertComments()');
-		printjson(oldConvertComments());
-		print('~~~~~~~');
-		print('oldConvertNews()');
-		printjson(oldConvertNews());
-		print('~~~~~~~');
-		spbPhotoShift = db.counters.findOne({_id: 'photo'}).next;
-		print("oldConvertUsers('usersSpb', true)");
-		printjson(oldConvertUsers('usersSpb', true));
-		print('~~~~~~~');
-		print("oldConvertPhotos('photosSpb', true, " + spbPhotoShift + ")");
-		printjson(oldConvertPhotos('photosSpb', true, spbPhotoShift));
-		print('~~~~~~~');
-		print("oldConvertComments('commentsSpb', true, " + spbPhotoShift + ")");
-		printjson(oldConvertComments('commentsSpb', true, spbPhotoShift));
-		print('~~~~~~~');
-		print('fillPhotosSort()');
-		printjson(fillPhotosSort());
-		print('~~~~~~~');
-		print('calcUserStats()');
-		printjson(calcUserStats());
-		print('~~~~~~~');
-		print('calcPhotoStats()');
-		printjson(calcPhotoStats());
-
-		print('~~~~~~~');
-		db.usersSpbMap.drop();
-		db.photosSpbMap.drop();
-		print('SPB photo shift: ' + spbPhotoShift);
-		print('OK, FINISH in ' + ((Date.now() - start) / 1000) + 's');
-	});
 
 	/**
 	 * Save function to db.system.js

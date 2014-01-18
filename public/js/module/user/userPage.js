@@ -2,7 +2,7 @@
 /**
  * Модель содержимого страницы пользователя
  */
-define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.jade', 'css!style/user/userPage'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, jade) {
+define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/user/userPage.jade', 'css!style/user/userPage', 'bs/affix'], function (_, Utils, P, renderer, ko, ko_mapping, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -16,6 +16,8 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 			this.section = null;
 			this.menuItems = null;
 
+			this.briefW = ko.observable('auto');
+
 			// Subscriptions
 			this.subscriptions.userChange = undefined;
 			if (!this.auth.loggedIn()) {
@@ -27,6 +29,15 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 		show: function () {
 			if (!this.showing) {
 				globalVM.func.showContainer(this.$container);
+
+				this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
+				this.sizesCalc();
+				this.$dom.find('.userBrief').affix({
+					offset: {
+						top: this.$dom.find('.userBrief').parent().offset().top
+					}
+				});
+
 				this.showing = true;
 			}
 		},
@@ -61,6 +72,9 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				ko.applyBindings(globalVM, this.$dom[0]);
 				this.userInited = true;
 			}
+		},
+		sizesCalc: function () {
+			this.briefW(this.$dom.find('.userBrief').parent().width() + 'px');
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
@@ -144,7 +158,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				renderer(
 					[
 						{
-							module: 'm/user/brief', container: '#user_brief', options: {affix: true, userVM: this.user},
+							module: 'm/user/brief', container: '.userBrief', options: {userVM: this.user},
 							callback: function (vm) {
 								this.briefVM = this.childModules[vm.id] = vm;
 							}.bind(this)
@@ -155,6 +169,11 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 						level: this.level + 1
 					}
 				);
+			} else {
+				this.briefVM.updateUserDepends();
+			}
+			if (this.contentVM && this.contentVM.updateUserDepends) {
+				this.contentVM.updateUserDepends();
 			}
 		},
 		updateSectionDepends: function (section, upload) {

@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .commentHist {
 	padding: 8px 0;
@@ -18,8 +18,7 @@
 			height: 50px;
 		}
 		.histHead {
-			height: 14px;
-			margin-bottom: 3px;
+			margin-bottom: 2px;
 			line-height: 14px;
 		}
 		.author {
@@ -28,16 +27,20 @@
 		}
 		.histStamp {
 			display: inline-block;
-			font-size: @fontSizeSmall;
+			font-size: @font-size-mini;
 			color: #888;
 			cursor: default;
 		}
 		.histText, .histFrag {
 			line-height: 18px;
-			color: @textColor;
+		}
+		.histFrag {
+			font-size: @font-size-small;
+			color: @gray;
 		}
 		.histText {
 			max-width: 1000px;
+			color: @text-color;
 		}
 	}
 }

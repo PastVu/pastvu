@@ -35,12 +35,12 @@ var UserSubscrSchema = new mongoose.Schema(
 );
 UserSubscrSchema.index({obj: 1, user: 1}); //Составной индекс для запроса stamp по объекту и юзеру
 
-//Подписка пользователя на комментарии
+//Время отправки уведомления пользователю
 var UserSubscrNotySchema = new mongoose.Schema(
 	{
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-		lastnoty: {type: Date},
-		nextnoty: {type: Date, index: true} //Индексирование для сортировки
+		lastnoty: {type: Date}, //Предыдущая отправка
+		nextnoty: {type: Date, index: true} //Следующая отправка. Индексирование для сортировки
 	},
 	{
 		strict: true,
@@ -48,7 +48,7 @@ var UserSubscrNotySchema = new mongoose.Schema(
 	}
 );
 
-//Подписка пользователя на комментарии
+//Список "самоопубликованных" снимков без модератора
 var UserSelfPublishedPhotosSchema = new mongoose.Schema(
 	{
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: { unique: true }},

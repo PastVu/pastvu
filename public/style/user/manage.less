@@ -1,73 +1,73 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .user_manage {
-	.accordion-inner {
-		padding: 11px 10px 11px 25px;
+	padding: 0 5px;
 
-		input {
-			margin-bottom: 0;
-			padding-top: 2px;
-			padding-bottom: 1px;
+	.panel-body {
+		padding: 11px 10px 11px 22px;
+	}
+
+	.radio-inline {
+		margin-left: 0;
+		margin-right: 15px;
+		padding-left: 0;
+
+		> input[type="radio"] {
+			margin-top: 2px;
+			margin-left: 0px;
+			margin-right: 3px;
 		}
-		span.add-on {
-			margin: 1px 0 0 0px;
-			padding: 1px 2px 0px 3px;
-			border: 1px solid #C3C7DD;
-			background-color: @MainBlueColor;
+	}
+	label.checkbox-inline {
+		margin-right: 10px;
+		padding-left: 17px;
+
+		> input[type="checkbox"] {
+			margin-top: 3px;
+			margin-left: -17px;
+		}
+	}
+
+	.region {
+		position: relative;
+		display: inline-block;
+		margin-right: 5px;
+		padding: 0 4px;
+		line-height: 22px;
+		cursor: default;
+		border: 1px solid #E4E4E4;
+		background-color: #E4E4E4;
+
+		&.candrop {
 			cursor: pointer;
-			.box-shadow(~'0px -1px 0 0 #000, 1px 0px 0 0 #000, 0px 1px 0 0 #000');
 
-			&.save {
-				background-color: #439B43;
-			}
-			&.cancel {
-				background-color: #D12A14;
-			}
-		}
+			&:hover {
+				color: #b9b9b9;
+				border-color: rgba(233, 142, 142, .3);
+				background-color: rgba(214, 64, 64, .1);
 
-		.helpico {
-			position: absolute;
-			top: 4px;
-			left: -18px;
-			cursor: help;
-		}
-
-		label.checkbox {
-			margin: 0 18px 0 0;
-
-			input.thr {
-				margin-top: 3px;
-			}
-		}
-
-		dl.dl-horizontal {
-			position: relative; //Для позиционирования helpico
-			margin: 10px 0 0 0;
-
-			&:first-child {
-				margin: 0;
-			}
-
-			dt {
-				width: 300px;
-				padding: 3px 0;
-				text-align: left;
-				font-weight: normal;
-			}
-			dd {
-				margin-left: 305px;
-				text-align: left;
-
-				.input-append {
-					margin-bottom: 0;
-				}
-
-				&.throttle {
-					padding-top: 4px;
+				&::after {
+					position: absolute;
+					display: block;
+					content: '\e014';
+					top: 0;
+					left: 50%;
+					width: 14px;
+					margin-left: -6px;
+					color: #DA2B2B;
+					font: normal normal 14px/22px 'Glyphicons Halflings';
+					text-shadow: 1px 1px rgba(68, 3, 0, 0.75);
+					-webkit-font-smoothing: antialiased;
+					-moz-osx-font-smoothing: grayscale;
 				}
 			}
 		}
+	}
+	.regionEdit {
+		margin-left: 3px;
+		padding: 3px 0 0;
+		line-height: 24px;
 	}
 }

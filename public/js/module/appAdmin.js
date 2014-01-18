@@ -8,7 +8,7 @@ require([
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'text!tpl/appAdmin.jade', 'css!style/common', 'css!style/appAdmin',
-	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu'
+	'backbone.queryparams', 'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
 	"use strict";
 
@@ -44,7 +44,8 @@ require([
 			routes: [
 				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
 				{route: "map(/)(:section)(/)", handler: "map"},
-				{route: "photo(/)(:section)(/)", handler: "photo"}
+				{route: "photo(/)(:section)(/)", handler: "photo"},
+				{route: "region(/)(:param1)(/)", handler: "region"}
 			],
 			handlers: {
 				index: function (section, param1, param2, qparams) {
@@ -109,6 +110,31 @@ require([
 					if (section === 'conveyer') {
 						modules.push({module: 'm/admin/conveyer', container: '#bodyContainer'});
 					}
+					renderer(modules);
+				},
+				region: function (param1, qparams) {
+					var auth = globalVM.repository['m/common/auth'],
+						params,
+						modules = [];
+
+					if (!auth.loggedIn()) {
+						location.href = '/';
+						return;
+					}
+					if (param1) {
+						if (param1 === 'check') {
+							params = {section: 'regionCheck'};
+							modules.push({module: 'm/admin/regionCheck', container: '#bodyContainer'});
+						} else {
+							params = {section: 'region', cid: param1};
+							modules.push({module: 'm/admin/region', container: '#bodyContainer'});
+						}
+					} else {
+						params = {section: 'region', cid: param1};
+						modules.push({module: 'm/admin/regionList', container: '#bodyContainer'});
+					}
+
+					this.params(_.assign(params, {_handler: 'region'}, qparams));
 					renderer(modules);
 				}
 			}

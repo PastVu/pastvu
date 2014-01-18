@@ -1,30 +1,41 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 /**
  * User Brief
  */
 .user_brief {
 	position: relative;
-	margin-top: 40px;
-
-	&.affix {
-		position: fixed;
-		margin-top: 0;
-	}
-
 	text-align: center;
-	> .row-fluid {
-		margin-top: 10px;
-	}
-	> .row-fluid > div {
-		position: relative;
+
+	.briefBlock {
 		display: inline-block;
+		min-width: 170px;
+		width: 240px;
+		max-width: 100%;
+		margin-bottom: 10px;
+		padding: 0 0 0 5px;
+		text-align: center;
+		vertical-align: top;
+	}
+
+	.briefTable {
+		width: 100%;
+
+		tr {
+			> td:first-child {
+				text-align: left;
+			}
+			> td:last-child {
+				text-align: right;
+			}
+		}
 	}
 
 	.avatar {
 		position: relative;
+		display: inline-block;
 
 		img {
 			width: 100px;
@@ -37,24 +48,20 @@
 			left: 0;
 			width: 100px;
 			height: 100px;
-			background: fade(@bodyBackground, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
+			background: fade(@body-bg, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
 		}
 		.avaEdit {
 			position: absolute;
 			top: -1px;
-			left: 101px;
-			height: 23px;
+			left: 102px;
+			height: 22px;
 			padding-left: 5px;
 			padding-right: 5px;
-
-			.icon-white {
-				margin: 0;
-			}
 		}
 		.avaAction {
 			position: absolute;
-			left: 101px;
-			top: 23px;
+			left: 102px;
+			top: 22px;
 			width: 92px;
 
 			.avaInput {
@@ -67,7 +74,7 @@
 				opacity: 0;
 				overflow: hidden;
 			}
-			.btn-strict {
+			.btn {
 				display: block;
 				width: 100%;
 				margin-bottom: 1px;
@@ -77,27 +84,8 @@
 		}
 	}
 
-
-
-	> .row-fluid > .block {
-		display: block;
-		padding: 0 3px;
-
-		.head {
-			color: rgb(5, 63, 126);
-		}
-		dl.dl-horizontal {
-			margin-top: 8px;
-			padding: 0 10px;
-
-			dt {
-				text-align: left;
-				font-weight: normal;
-			}
-			dd {
-				text-align: right;
-			}
-		}
+	.head {
+		color: rgb(5, 63, 126);
 	}
 
 	.userName, .roleName {
@@ -109,54 +97,10 @@
 	.roleName {
 		margin-top: 1px;
 		&.adm {
-			color: #7d0000;
+			color: @ColorAdmin;
 		}
 		&.mod {
-			color: #B87800;
-		}
-	}
-
-	#leftSideDash {
-		display: none;
-		filter: none;
-		background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzA3NWFiMyIgc3RvcC1vcGFjaXR5PSIwLjUiLz4KICAgIDxzdG9wIG9mZnNldD0iMTAlIiBzdG9wLWNvbG9yPSIjMDc1YWIzIiBzdG9wLW9wYWNpdHk9IjAuOSIvPgogICAgPHN0b3Agb2Zmc2V0PSI0OSUiIHN0b3AtY29sb3I9IiMwNTNmN2UiIHN0b3Atb3BhY2l0eT0iMSIvPgogICAgPHN0b3Agb2Zmc2V0PSI4NSUiIHN0b3AtY29sb3I9IiMwNzVhYjMiIHN0b3Atb3BhY2l0eT0iMC44Ii8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmMmYyZjIiIHN0b3Atb3BhY2l0eT0iMCIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
-		background: -moz-linear-gradient(top, rgba(7, 90, 179, 0.5) 0%, rgba(7, 90, 179, 0.9) 10%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 85%, rgba(242, 242, 242, 0) 100%); /* FF3.6+ */
-		background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(7, 90, 179, 0.5)), color-stop(10%, rgba(7, 90, 179, 0.9)), color-stop(49%, rgba(5, 63, 126, 1)), color-stop(85%, rgba(7, 90, 179, 0.8)), color-stop(100%, rgba(242, 242, 242, 0))); /* Chrome,Safari4+ */
-		background: -webkit-linear-gradient(top, rgba(7, 90, 179, 0.5) 0%, rgba(7, 90, 179, 0.9) 10%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 85%, rgba(242, 242, 242, 0) 100%); /* Chrome10+,Safari5.1+ */
-		background: -o-linear-gradient(top, rgba(7, 90, 179, 0.5) 0%, rgba(7, 90, 179, 0.9) 10%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 85%, rgba(242, 242, 242, 0) 100%); /* Opera 11.10+ */
-		background: -ms-linear-gradient(top, rgba(7, 90, 179, 0.5) 0%, rgba(7, 90, 179, 0.9) 10%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 85%, rgba(242, 242, 242, 0) 100%); /* IE10+ */
-		background: linear-gradient(top, rgba(7, 90, 179, 0.5) 0%, rgba(7, 90, 179, 0.9) 10%, rgba(5, 63, 126, 1) 49%, rgba(7, 90, 179, 0.8) 85%, rgba(242, 242, 242, 0) 100%); /* W3C */
-		height: 120%;
-		position: absolute;
-		top: -40px;
-		right: -13px;
-		width: 1px;
-	}
-}
-
-@media (max-width: 1520px) {
-}
-
-@media (max-width: 1200px) {
-}
-
-@media (max-width: 950px) {
-}
-
-@media (max-width: 767px) {
-	.user_brief {
-		&.affix {
-			position: relative;
-			width: auto;
-			margin-top: 40px;
-		}
-		#leftSideDash {
-			display: none !important;
-		}
-		.statBlock {
-			display: inline-block;
-			width: 49%;
-			vertical-align: top;
+			color: @ColorMod;
 		}
 	}
 }

@@ -1,4 +1,4 @@
-doctype 5
+doctype html
 html
 	include includes/head_meta
 		if appLand === 'prod'
@@ -8,12 +8,24 @@ html
 				m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 				})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 				ga('create', 'UA-42731294-1', 'pastvu.com');
-		include ../public/style/appstart.css
-		include ../public/js/appstart.js
-		if appLand === 'dev'
-			include ../public/js/lib/require/require.js
-			include ../public/js/_mainConfig.js
+		else
 			script.
 				function ga() {}
+		if appLand === 'dev'
+			link(rel="stylesheet", href="/style/appstart.css")
+		else
+			| <style type="text/css">
+			include ../public/style/appstart.css
+			| </style>
+
+		| <script type="text/javascript">
+		include ../public/js/appstart.js
+		| </script>
+
+		if appLand === 'dev'
+			| <script type="text/javascript">
+			include ../public/js/lib/require/require.js
+			include ../public/js/_mainConfig.js
+			| </script>
 
 	body

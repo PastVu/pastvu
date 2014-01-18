@@ -2,7 +2,7 @@
 /**
  * Модель списка комментариев пользователя
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/user/comments.jade', 'css!style/user/comments'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -15,7 +15,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.u = this.options.userVM;
 			this.comments = ko.observableArray();
 			this.commentsPhotos = {};
-			this.paginationShow = ko.observable(false);
 			this.loadingComments = ko.observable(false);
 
 			this.page = ko.observable(1);
@@ -52,10 +51,23 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 				return result;
 			}, this);
+			this.paginationShow = this.co.paginationShow = ko.computed(function () {
+				return this.pageLast() > 1;
+			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				return this.u.ccount() > 0 ? 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.u.ccount() : 'Пользователь пока не оставил ни одного комментария';
+				var count = this.u.ccount(),
+					txt = '';
+				if (count) {
+					txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
+				} else {
+					txt = 'Пользователь пока не оставил комментариев в данной категории';
+				}
+				return txt;
 			}, this);
+
+			this.pageUrl = ko.observable('/u/' + this.u.login() + '/comments');
+			this.pageQuery = ko.observable('');
 
 			ko.applyBindings(globalVM, this.$dom[0]);
 
@@ -106,14 +118,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					for (i in data.photos) {
 						if (data.photos[i] !== undefined) {
 							photo = data.photos[i];
-							photo.sfile = Photo.picFormats.s + photo.file;
+							photo.sfile = Photo.picFormats.q + photo.file;
 							photo.link = '/p/' + photo.cid;
 							photo.time = '(' + photo.year + (photo.year2 && photo.year2 !== photo.year ? '-' + photo.year2 : '') + ')';
 							photo.name = photo.title + ' <span class="photoYear">' + photo.time + '</span>';
 							if (P.preaddrs.length > 1) {
-								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.s + photo.file;
+								photo.sfile = P.preaddrs[i % P.preaddrs.length] + Photo.picFormats.q + photo.file;
 							} else {
-								photo.sfile = P.preaddr + Photo.picFormats.s + photo.file;
+								photo.sfile = P.preaddr + Photo.picFormats.q + photo.file;
 							}
 						}
 					}
@@ -128,9 +140,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						}
 					}
 					this.comments(commentsToInsert);
-					if (this.pageLast() > 1) {
-						this.paginationShow(true);
-					}
 				}
 				this.loadingComments(false);
 				if (Utils.isType('function', cb)) {

@@ -1,17 +1,17 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 @toolColor: #677A8F;
 @toolColorHover: @MainBlueColor;
 
 .photo {
 	position: relative;
-	margin-top: 40px;
+	padding: 7px .2% 0 .5%;
 
 	.help {
 		display: block;
-		margin-top: 6px;
+		margin-bottom: 5px;
 		opacity: 0.8;
 		transition: opacity .2s linear;
 
@@ -20,32 +20,26 @@
 		}
 	}
 
-	.photoTop {
-		display: none;
+	.topInfo {
 		position: relative;
-		min-height: 37px;
-		margin-top: -37px;
 
-		.photoAction {
+		> .photoAction {
 			display: inline-block;
 
-			button {
+			.btn {
 				min-width: 110px;
-				margin-top: 3px;
-				margin-bottom: 5px;
+				margin-bottom: 4px;
 			}
 		}
-		.convertAction {
-			.btn-strict.btnConvert {
+		> .convertAction {
+			> .btnConvert {
+				position: relative;
 				min-width: 45px;
-				margin-left: 0;
+				margin-left: 0px;
+				z-index: 2;
 				.box-shadow(~'1px 0 0 0 #000, 1px 1px 0 0 #000, 1px -1px 0 0 #000, 1px 2px 6px 0px #222');
 			}
-			.btn-strict.multiselect {
-				min-width: 138px;
-				margin-right: 0;
-			}
-			&.disabled .btn-strict {
+			&.disabled > .btn {
 				cursor: default;
 				.opacity(65);
 				.box-shadow(~'0 0 0 1px #000');
@@ -53,27 +47,29 @@
 		}
 		.photoMsg {
 			display: inline-block;
-			vertical-align: middle;
+			margin: 0 0 3px 0;
+			font-size: @font-size-small;
+			font-weight: normal;
+			cursor: default;
 		}
 	}
 
-	.photoData {
-		width: auto;
-		margin: 0 .5% 0 1.2%;
+	.photoPanel {
+		padding-right: 2px;
+		margin-bottom: 3px;
 	}
 
-	.photoImgRow {
+	.imgRow {
 		text-align: center;
 	}
 
-	.photoImgSuperWrap {
+	.imgSuperWrap {
 		position: relative;
 		display: inline-block;
 		max-width: 100%;
 		padding-right: 24px;
-		box-sizing: border-box;
 	}
-	.photoImgWrap {
+	.imgWrap {
 		position: relative;
 		max-width: 100%;
 
@@ -84,7 +80,7 @@
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background: fade(@bodyBackground, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
+			background: fade(@body-bg, 85) url(/img/misc/load.gif) 50% 50% no-repeat;
 		}
 
 		.photoFrag {
@@ -93,7 +89,6 @@
 			text-decoration: none;
 			cursor: pointer;
 			border: 1px solid transparent;
-			.box-sizing(border-box);
 		}
 		&.fragSensitive {
 			.photoFrag {
@@ -155,7 +150,7 @@
 		}
 	}
 
-	.tools {
+	.toolsRht {
 		position: absolute;
 		top: 0;
 		right: 0;
@@ -167,7 +162,7 @@
 			opacity: 1;
 		}
 
-		.tool {
+		> .tool {
 			position: relative;
 		 	display: inline-block;
 			width: 100%;
@@ -190,37 +185,40 @@
 				}
 			}
 		}
-		.watch {
-			cursor: help;
+		.watched  {
+			padding-top: 1px;
+
+			> .watch, > .glyphicon {
+				padding: 1px 0;
+				cursor: help;
+
+				&:hover {
+					color: #fff;
+				}
+			}
 		}
 	}
 
 
-	.photoTools {
-		//position: relative;
-		display: block;
-		margin-top: 2px;
-		height: 19px;
-		line-height: 19px;
+	.toolsBtm {
+		margin-top: 0;
+		height: 17px;
+		line-height: 17px;
 		text-align: right;
 
 		.toolsTxt {
 			margin: 0 1px;
-			vertical-align: text-top;
-			font-size: @fontSizeSmall;
-			line-height: 16px;
+			vertical-align: middle;
+			font-size: @font-size-mini;
+			line-height: 17px;
 			cursor: default;
 		}
 		.sizeThis, .sizeStandard, .sizeOrigin {
 			display: inline-block;
-		 	white-space: nowrap;
 		}
 
-		.photoHeight {
-			display: inline-block;
-			margin: 0 0 0 7px;
-			width: 14px;
-			height: 15px;
+		> .btn {
+			margin: 0 1px 0px 4px;
 		}
 	}
 
@@ -244,102 +242,49 @@
 			background: url(/img/misc/border-anim-h.gif) repeat-x left bottom;
 		}
 	}
-
 	.imgareaselect-border1, .imgareaselect-border2,
 	.imgareaselect-border3, .imgareaselect-border4 {
 		opacity: 0.6;
 	}
-
 	.imgareaselect-handle {
 		background-color: #fff;
 		border: solid 1px #000;
 		opacity: 0.6;
 	}
-
 	.imgareaselect-outer {
 		background-color: #000;
 		opacity: 0.6;
 	}
-
 	.imgareaselect-selection {
 	}
 
-	.photoInfoBlock {
-		&:nth-child(n+3) {
-			margin-top: 7px;
-		}
-
-		.photoInfo {
-			margin-top: 0;
-			margin-bottom: 0;
-			text-align: justify;
-
-			&.photoTitle {
-				font-weight: bold;
-				font-size: 18px;
-				line-height: 20px;
-				text-rendering: optimizelegibility;
-			}
-
-			&.photoDesc {
-				position: relative;
-
-				&.hasFocus {
-					.descInput {
-						min-height: 60px;
-						background-color: #fdfdfd;
-					}
-				}
-				&.hasFocus, &.hasContent {
-					.descInputLabel {
-						display: none;
-					}
-				}
-			}
-
-			.infoName, .editable {
-				display: inline-block;
-			}
-
-			.infoName {
-				margin-right: 5px;
-				font-weight: bold;
-			}
-		}
-	}
-
-	.h_separator {
-		margin: 5px 0 12px 0;
-	}
-
+	//Правая панель
 	.rightPanel {
 		position: relative;
 		float: right;
-		zoom: 1;
 		z-index: 2; //Чтобы был "сверху" комментариев
+	}
+	.rightrow {
+		margin: 0 0 5px 0;
 
-		.row-fluid {
-			margin-bottom: 5px;
-
-			&.photoMap {
-				height: 500px;
-				margin-bottom: 1px;
-			}
-		}
-		.row-fluid:last-child {
+		&:last-child {
 			margin-bottom: 0;
 		}
 		.lineBehind {
 			margin-bottom: 1px;
 		}
 	}
-
+	.tableUser {
+		width: 100%;
+		margin-top: 0px;
+		border-width: 0px;
+	}
 	.avatar {
 		display: inline-block;
 		vertical-align: top;
 		cursor: pointer;
 
-		img {
+		> img {
 			width: 75px;
 			height: 75px;
 			opacity: 0;
@@ -355,7 +300,10 @@
 			margin: 0px 0 3px 5px;
 		}
 	}
-
+	.photoMap {
+		height: 500px;
+		margin-bottom: 1px;
+	}
 	.userRibbon {
 		height: 60px;
 		overflow: hidden;
@@ -365,7 +313,6 @@
 	.photoTiles {
 		height: auto;
 		overflow: hidden;
-		text-align: center;
 		white-space: nowrap;
 
 		.photoPreview {
@@ -374,26 +321,119 @@
 			}
 			.status {
 				bottom: 2px;
+				font-size: @font-size-small;
 			}
 		}
 	}
 
+
+	.infoBlock {
+		margin-bottom: 6px;
+
+		> .info {
+			&.title {
+				font-weight: bold;
+				font-size: 18px;
+				line-height: 20px;
+				text-rendering: optimizelegibility;
+			}
+
+			.infoName {
+				margin-right: 5px;
+				font-weight: bold;
+			}
+		}
+	}
+
+	.region {
+		display: inline-block;
+
+		&.err {
+			color: #be0000;
+		}
+	}
+	.regionEdit {
+		margin-left: 3px;
+		font-size: @font-size-mini;
+		font-weight: bold;
+		line-height: 19px;
+	}
 	.photoData {
 		&.editMode {
-			.photoInfoBlock {
-				.photoInfo {
-					&:not(:first-child) {
-						margin-top: 5px;
-					}
-					div.editable {
-						display: block;
-					}
+			.fieldWrap {
+				position: relative;
+				margin-top: 5px;
+				.transition(margin-top .15s ease-in-out);
 
-					.infoName {
-						display: none;
+				> label {
+					position: absolute;
+					top: -11px;
+					left: 0;
+					color: #888;
+					opacity: 0;
+					font-size: @font-size-mini;
+					.transition(all .15s ease-in-out);
+
+					&.on {
+						color: #64ace5;
 					}
 				}
+
+				&.hasContent {
+					margin-top: 18px;
+
+					> label {
+						top: -15px;
+						opacity: 1;
+					}
+					> .form-control {
+						.box-shadow(none);
+					}
+				}
+
+				&.regions {
+					display: inline-block;
+					line-height: 19px;
+
+					&.loading {
+						padding-right: 72px;
+						background: url(/img/misc/load.gif) 100% 50% no-repeat;
+					}
+				}
+
+				> .infoName {
+					margin-right: 5px;
+					font-weight: bold;
+				}
 			}
+			.form-control {
+				position: relative;
+				padding: 1px 2px;
+				height: 22px;
+				color: #333;
+				background-color: #F0F0F0;
+
+				&.title {
+					height: 24px;
+					font-weight: bold;
+					font-size: 18px;
+					line-height: 24px;
+				}
+				&.year {
+					display: inline-block;
+					width: 38px;
+					padding: 0;
+					text-align: center;
+				}
+
+				&:focus {
+					background-color: #fdfdfd;
+				}
+			}
+			textarea.hasFocus {
+				min-height: 60px;
+			}
+
 			select {
 				margin-bottom: 4px;
 				background-color: #F0F0F0;
@@ -401,66 +441,13 @@
 					background-color: #fdfdfd;
 				}
 			}
-			.editable {
-				padding: 0 3px;
-				border: 1px solid #BDBDBD;
-				background-color: #F0F0F0;
-				.transition(all .2s);
-
-				&:hover {
-					border-color: rgba(82, 168, 236, .8);
-				}
-				&:focus {
-					outline: 0;
-					outline: thin dotted \9; /* IE6-9 */
-					border-color: rgba(82, 168, 236, .8);
-					background-color: #fdfdfd;
-					.box-shadow(~"0 0 8px rgba(82,168,236,.6)");
-				}
-
-				&.cap {
-					color: #a0a0a0;
-
-					&:hover {
-						color: darken(#8d8d8d, 20%);
-					}
-					&:focus {
-						color: #000;
-					}
-				}
-
-			}
 			.descInput {
-				display: block;
-				width: 100%;
-				max-width: 100%;
 				min-height: 40px;
-				padding: 0 3px;
-				border: 1px solid #BDBDBD;
-				background-color: #F0F0F0;
-				.box-shadow(none);
 				.transition(all .2s);
 
-				&:hover {
-					border-color: rgba(82, 168, 236, .8);
-				}
-				&:focus {
-					outline: 0;
-					outline: thin dotted \9; /* IE6-9 */
-					border-color: rgba(82, 168, 236, .8);
-					background-color: #fdfdfd;
-					.box-shadow(~"0 0 8px rgba(82,168,236,.6)");
-				}
 				&::-webkit-scrollbar-button:decrement {
 					height: 0;
 				}
-			}
-			.descInputLabel {
-				position: absolute;
-				left: 5px;
-				top: 3px;
-				color: #a0a0a0;
-				cursor: text;
 			}
 		}
 	}
@@ -469,17 +456,12 @@
 		clear: left;
 		z-index: 1;
 	}
-
-	.heightExpander {
-		height: 20px;
-	}
 }
 
-@media (max-width: 767px) {
+@media (max-width: @screen-xs-max) {
 	.photo {
-		.photoData {
-			margin: 0 3px;
-		}
+		padding: 5px 2px 0 2px;
+
 		.rightPanel {
 			float: none;
 		}

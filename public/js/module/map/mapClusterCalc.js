@@ -157,7 +157,7 @@ define([
 				}.bind(this));
 
 				this.map.whenReady(function () {
-					this.selectLayer('osm', 'osmosnimki');
+					this.selectLayer('google', 'scheme');
 					if (this.options.deferredWhenReady && Utils.isType('function', this.options.deferredWhenReady.resolve)) {
 						this.options.deferredWhenReady.resolve();
 					}
@@ -261,7 +261,7 @@ define([
 			var _this = this;
 			window.noty(
 				{
-					text: 'Новые размеры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br> Отправить данные на сервер для формирования новой кластерной сетки для всех фотографий?',
+					text: 'Новые параметры кластера посчитаны для всех ' + arr.length + ' уровней зума. <br> Отправить данные на сервер для формирования новой кластерной сетки всех фотографий? <br> Это может занять несколько минут',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -273,38 +273,42 @@ define([
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-warning', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-warning', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
-							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
-							}
 
 							socket.once('clusterAllResult', function (data) {
-								$noty.$buttons.find('.btn-strict-warning').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
 									.removeClass('disabled')
 									.off('click');
 
-								if (data && !data.error) {
-									$noty.$message.children().html('Данные успешно отправлены на сервер для пересчета');
-
-									okButton.text('Ok').on('click', function () {
-										$noty.close();
-										_this.finish();
-									}.bind(this));
-								} else {
+								if (data && data.error) {
 									$noty.$message.children().html(data.message || 'Error occurred');
 									okButton.text('Close').on('click', function () {
 										$noty.close();
 										_this.cancel();
 									}.bind(this));
+								} else {
+									$noty.$message.children().html('Новая кластерная сетка сформированна');
+
+									okButton.text('Ok').removeClass('btn-primary').addClass('btn-success').on('click', function () {
+										$noty.close();
+										_this.finish();
+									}.bind(this));
 								}
 							}.bind(_this));
 							socket.emit('clusterAll', {params: arr, conditions: _this.saveParams});
+
+							$noty.$message.children().html('Данные отправлены на сервер для пересчета.<br>Вы можете закрыть это окно - данные расчитываются на сервере.<br>Этот диалог "отлипнет" при получении результата расчета с сервера');
+							if ($noty.$buttons && $noty.$buttons.find) {
+								$noty.$buttons.find('.btn-warning').remove();
+								$noty.$buttons.find('button')
+									.attr('disabled', true)
+									.addClass('disabled');
+							}
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							_this.cancel();
 						}}

@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 @headColor: #677A8F;
 @headColorHover: @MainBlueColor;
@@ -15,9 +15,9 @@
 			position: relative;
 			display: inline-block;
 			margin: 0 1px 8px 0;
-			padding: 0 7px 1px 7px;
+			padding: 1px 7px 0 7px;
 			vertical-align: top;
-			font-size: 12px;
+			font-size: @font-size-small;
 			line-height: 18px;
 			color: #F5F5F5;
 			cursor: default;
@@ -64,6 +64,22 @@
 				font-weight: bold;
 			}
 		}
+
+		.headElem.commSubscr {
+			&.isSubscr {
+				> .glyphicon {
+					color: #63FC5B;
+				}
+
+				&:hover {
+					> .glyphicon {
+						color: #ffbb05;
+					}
+
+				}
+			}
+
+		}
 		.cantComment {
 			margin-left: 6px;
 			color: #f00;
@@ -84,14 +100,10 @@
 		min-height: 53px;
 	}
 	.commentHead {
-		line-height: 13px;
-		margin-bottom: 2px;
+		line-height: 14px;
+		margin-bottom: 1px;
 	}
-	.author {
-		display: inline-block;
-		cursor: pointer;
-	}
-	.ranks {
+	.author, .ranks {
 		display: inline-block;
 	}
 	.rank {
@@ -102,16 +114,11 @@
 	}
 	.frag {
 		display: inline-block;
-		font-size: 12px;
-
-		.icon-picture {
-			margin-top: 0;
-			margin-right: 1px;
-		}
+		font-size: @font-size-small;
 	}
 	.stamp, .changed {
 		display: inline-block;
-		font-size: @fontSizeSmall;
+		font-size: @font-size-mini;
 		cursor: pointer;
 		color: #888;
 	}
@@ -128,7 +135,7 @@
 	.commentActions {
 		display: none;
 		margin-top: 2px;
-		font-size: 12px;
+		font-size: @font-size-small;
 		line-height: 14px;
 		color: #888;
 
@@ -147,11 +154,12 @@
 		position: relative;
 
 		.commentInput {
-			display: block;
 			width: 860px;
 			max-width: 95%;
-			min-height: 42px;
+			min-height: 52px;
 			margin-top: 0px;
+			margin-bottom: 9px;
+			padding: 4px 6px;
 
 			&::-webkit-scrollbar-button:decrement {
 				height: 0;
@@ -164,23 +172,19 @@
 			color: #777;
 			cursor: text;
 		}
-		.replySubscr .chkSubscr {
-			margin-top: -2px;
-		}
 		.btnCommentSend, .btnCommentCancel, .btnCommentFrag, .btnCommentFragDel, .replySubscr {
 			display: none;
 			min-width: 100px;
-			margin-bottom: 2px;
+			margin-left: 2px;
+			margin-bottom: 5px;
 		}
-		.btnCommentFrag {
-			.icon-picture {
-				margin-top: 0;
-			}
+		.chkSubscr {
+			margin-top: 3px;
 		}
 
 		&.hasFocus, &.hasContent {
 			.commentInput {
-				min-height: 77px;
+				min-height: 87px;
 			}
 			.commentInputLabel {
 				display: none;
@@ -195,6 +199,9 @@
 		.media,
 		.media .media {
 			margin-top: 14px;
+		}
+		> .media {
+			margin-top: 8px; //Первый элемент первого уровня
 		}
 		.media > .pull-left {
 			margin-top: 1px;
@@ -269,10 +276,9 @@
 		cursor: default;
 		border-width: 1px 1px 1px 0;
 		border-style: solid;
-		border-color: #C3C7DD;
+		border-color: @FringeBorder;
 		.transition(width .1s linear);
 		.box-shadow(~'0 0 0 1px #000, 1px 2px 3px 0px #222');
-		.box-sizing(border-box);
 		.user-select(none);
 
 		&:hover, &.touch {
@@ -289,7 +295,7 @@
 				transform: rotate(0) translate(0, 0);
 			}
 			.arrow {
-				right: -@popoverArrowOuterWidth;
+				right: -@popover-arrow-outer-width;
 			}
 
 		}
@@ -313,20 +319,19 @@
 		.arrow {
 			top: 50%;
 			right: 1px;
-			margin-top: -@popoverArrowOuterWidth;
-			border-width: @popoverArrowOuterWidth;
+			margin-top: -@popover-arrow-outer-width;
+			border-width: @popover-arrow-outer-width;
 			border-right-width: 0;
-			border-left-color: #999; // IE8 fallback
-			border-left-color: @popoverArrowOuterColor;
+			border-left-color: @popover-arrow-outer-color;
 			.transition(right .1s linear);
 		}
 		.arrow::after {
 			content: "";
 			right: 2px;
-			border-width: @popoverArrowWidth;
+			border-width: @popover-arrow-width;
 			border-right-width: 0;
-			border-left-color: @popoverArrowColor;
-			bottom: -@popoverArrowWidth;
+			border-left-color: @popover-arrow-color;
+			bottom: -@popover-arrow-width;
 		}
 
 		.up, .down {
@@ -335,15 +340,16 @@
 			width: 100%;
 			line-height: 18px;
 			text-align: center;
-			opacity: .5;
+			color: #bbb;
 			cursor: default;
 
 			&.active {
-				opacity: 1;
+				color: @MainLigthColor;
 				cursor: pointer;
 				-webkit-tap-highlight-color: rgba(0, 0, 0, .2);
 
 				&:hover, &:active {
+					color: #fff;
 					background-color: rgba(0, 0, 0, .2);
 				}
 			}

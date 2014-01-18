@@ -14,6 +14,7 @@ var express = require('express'),
 	os = require('os'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
+	_ = require('lodash'),
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
@@ -21,6 +22,7 @@ var express = require('express'),
 	Utils;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
+global.appVar.maxRegionLevel = 6; //6 уровней регионов: 0..5
 
 /**
  * Включаем "наши" расширения js
@@ -44,31 +46,35 @@ for (var k in interfaces) {
 
 
 var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
-	conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8'))),
+	confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.json', 'utf8'))),
+	confConsole = _.pick(argv, Object.keys(confDefault)),
+	conf = _.defaults(confConsole, argv.conf ? JSON.parse(JSON.minify(fs.readFileSync(argv.conf, 'utf8'))) : {}, confDefault),
 
-	land = argv.land || conf.land || 'dev', //Окружение (dev, test, prod)
-	listenport = argv.port || conf.port || 3000, //Порт прослушки сервера
-	listenhost = argv.hostname || conf.hostname || undefined, //Слушать хост
+	land = conf.land, //Окружение (dev, test, prod)
+	listenport = conf.port, //Порт прослушки сервера
+	listenhost = conf.hostname, //Слушать хост
 
-	protocol = argv.protocol || conf.protocol || 'http', //Протокол сервера для клинетов
-	domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1', //Адрес сервера для клинетов
-	port = argv.projectport || conf.projectport || '', //Порт сервера для клиента
-	uport = argv.projectuport || conf.projectuport || '', //Порт сервера загрузки фотографий для клиента
+	protocol = conf.protocol, //Протокол сервера для клинетов
+	domain = conf.domain || addresses[0], //Адрес сервера для клинетов
+	port = conf.projectport, //Порт сервера для клиента
+	uport = conf.projectuport, //Порт сервера загрузки фотографий для клиента
 	host = domain + port, //Имя хоста (адрес+порт)
-	subdomains = (argv.subdomains || conf.subdomains || '').split('_').filter(function (item) {
+
+	subdomains = (argv.subdomains || conf.subdomains).split('_').filter(function (item) {
 		return typeof item === 'string' && item.length > 0;
 	}), //Поддомены для раздачи статики из store
 	moongoUri = argv.mongo || conf.mongo.con,
-	moongoPool = argv.mongopool || conf.mongo.pool || 5,
+	moongoPool = argv.mongopool || conf.mongo.pool,
 	mail = conf.mail || {},
 
 	buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8')),
-	storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
-	noServePublic = argv.noServePublic || conf.noServePublic || false, //Флаг, что node не должен раздавать статику скриптов
-	noServeStore = argv.noServeStore || conf.noServeStore || false, //Флаг, что node не должен раздавать статику хранилища
+	storePath = path.normalize(conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
+	servePublic = conf.servePublic, //Флаг, что node должен раздавать статику скриптов
+	serveStore = conf.serveStore, //Флаг, что node должен раздавать статику хранилища
+	gzip = conf.gzip, //Использовать gzip
 
-	logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + "/logs")), //Путь к папке логов
-	manualGarbageCollect = argv.manualGarbageCollect || conf.manualGarbageCollect || 0; //Интервал самостоятельного вызова gc
+	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), //Путь к папке логов
+	manualGarbageCollect = conf.manualGarbageCollect; //Интервал самостоятельного вызова gc. 0 - выключено
 
 
 /**
@@ -128,6 +134,7 @@ async.waterfall([
 		require(__dirname + '/models/Photo.js').makeModel(db);
 		require(__dirname + '/models/Comment.js').makeModel(db);
 		require(__dirname + '/models/Cluster.js').makeModel(db);
+		require(__dirname + '/models/Region.js').makeModel(db);
 		require(__dirname + '/models/News.js').makeModel(db);
 		require(__dirname + '/models/_initValues.js').makeModel(db);
 		Session = db.model('Session');
@@ -165,23 +172,28 @@ async.waterfall([
 			}
 
 			app.locals({
-				pretty: false,
+				pretty: false, //Adds whitespace to the resulting html to make it easier for a human to read
+				debug: false, //If set to true, the tokens and function body is logged to stdout
+				compileDebug: false, //Include the function source in the compiled template for better error messages (sometimes useful in development).
+
 				appLand: land, //Решает какие скрипты вставлять в head
 				appHash: app.hash //Вставляется в head страниц
 			});
 
 			//app.use(express.logger({ immediate: false, format: 'dev' }));
 			app.disable('x-powered-by'); // Disable default X-Powered-By
-			app.use(express.compress());
+			if (gzip) {
+				app.use(express.compress());
+			}
 			app.use(express.favicon(__dirname + pub + 'favicon.ico', { maxAge: ms('1d') }));
 			if (land === 'dev') {
 				app.use('/style', require('less-middleware')({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
 				//prod: app.use('/style', require('less-middleware')({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
 			}
-			if (!noServePublic) {
+			if (servePublic) {
 				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
 			}
-			if (!noServeStore) {
+			if (serveStore) {
 				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
 				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
 			}
@@ -189,12 +201,12 @@ async.waterfall([
 
 			//app.get должен быть всегда после app.use, в противном случае следующие app.use не будет использованы
 			//Сначала "законцовываем" пути к статике
-			if (!noServePublic) {
+			if (servePublic) {
 				app.get('/img/*', static404);
 				app.get('/js/*', static404);
 				app.get('/style/*', static404);
 			}
-			if (!noServeStore) {
+			if (serveStore) {
 				app.get('/_a/d/*', function (req, res) {
 					res.redirect(302, '/img/caps/avatar.png');
 				});
@@ -231,24 +243,27 @@ async.waterfall([
 		callback(null);
 	},
 	function loadingControllers(callback) {
+		var regionController;
+
 		require('./controllers/settings.js').loadController(app, db, io);
 		require('./controllers/mail.js').loadController(app);
 		require('./controllers/auth.js').loadController(app, db, io);
 		require('./controllers/index.js').loadController(app, db, io);
+		regionController = require('./controllers/region.js').loadController(app, db, io);
 		require('./controllers/photo.js').loadController(app, db, io);
 		require('./controllers/subscr.js').loadController(app, db, io);
 		require('./controllers/comment.js').loadController(app, db, io);
 		require('./controllers/profile.js').loadController(app, db, io);
 		require('./controllers/admin.js').loadController(app, db, io);
-		if (land !== 'prod') {
+		if (land === 'dev') {
 			require('./controllers/tpl.js').loadController(app);
 		}
 		require('./controllers/registerRoutes.js').loadController(app);
 		require('./controllers/systemjs.js').loadController(app, db);
 		require('./controllers/errors.js').registerErrorHandling(app);
-		require('./basepatch/v0.9.4.2.js').loadController(app, db);
+		require('./basepatch/v1.0.1.js').loadController(app, db);
 
-		callback(null);
+		regionController.fillCache(callback);
 	}
 ],
 	function finish(err) {
@@ -298,6 +313,7 @@ async.waterfall([
 			}
 
 			server.listen(listenport, listenhost, function () {
+				logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
 				logger.info('Host for users: [%s]', protocol + '://' + host);
 				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
 			});

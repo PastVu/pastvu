@@ -34,11 +34,11 @@ var fs = require('fs'),
 		commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
 	},
 
-	sendFreq = 2000, //Частота шага конвейера отправки в ms
-	sendPerStep = 4; //Кол-во отправляемых уведомлений за шаг конвейера
+	sendFreq = 1500, //Частота шага конвейера отправки в ms
+	sendPerStep = 10; //Кол-во отправляемых уведомлений за шаг конвейера
 
 /**
- * Подписка объекта (внешняя, для текущего пользователя по cid объекта)
+ * Подписка/Отписка объекта (внешняя, для текущего пользователя по cid объекта)
  * @param user
  * @param data
  * @param cb
@@ -58,7 +58,7 @@ function subscribeUser(user, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, {_id: 1, user: 1}, user, true, this);
+				photoController.findPhoto({cid: cid}, null, user, this);
 			}
 		},
 		function (err, obj) {
@@ -105,7 +105,56 @@ function subscribeUserByIds(userId, objId, type, cb) {
 			}
 		}
 	);
+}
 
+/**
+ * Отписать всех от объекта
+ * @param iAm
+ * @param data
+ * @param cb
+ */
+function unSubscribeObjForAll(iAm, data, cb) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!data || !Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	var cid = Number(data.cid);
+
+	step(
+		function findObj() {
+			if (data.type === 'news') {
+				News.findOne({cid: cid}, {_id: 1}, this);
+			} else {
+				photoController.findPhoto({cid: cid}, null, iAm, this);
+			}
+		},
+		function (err, obj) {
+			unSubscribeObj(obj._id, null, function (err) {
+				if (err) {
+					logger.error(err.message);
+				}
+				if (cb) {
+					cb(err);
+				}
+			});
+		}
+	);
+}
+/**
+ * Удаляет подписки на объект, если указан _id пользователя, то только его подписку
+ * @param objId
+ * @param userId Опционально. Без этого параметра удалит подписки на объект у всех пользователей
+ * @param cb
+ */
+function unSubscribeObj(objId, userId, cb) {
+	var query = {obj: objId};
+	if (userId) {
+		query.user = userId;
+	}
+	UserSubscr.remove(query, cb);
 }
 
 /**
@@ -454,17 +503,17 @@ function getUserSubscr(iAm, data, cb) {
 	if (!data || !Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
+	if (!iAm || (iAm.login !== data.login && !iAm.role && iAm.role < 10)) {
 		return cb({message: msg.deny, error: true});
 	}
-	User.findOne({login: data.login}, {_id: 1}, function (err, user) {
-		if (err || !user) {
+	User.getUserID(data.login, function (err, user_id) {
+		if (err || !user_id) {
 			return cb({message: err && err.message || msg.nouser, error: true});
 		}
 		var page = (Math.abs(Number(data.page)) || 1) - 1,
 			skip = page * subscrPerPage;
 
-		UserSubscr.find({user: user._id, type: data.type}, {_id: 0, obj: 1, cdate: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage, sort: {cdate: -1}}, function (err, subscrs) {
+		UserSubscr.find({user: user_id, type: data.type}, {_id: 0, obj: 1, cdate: 1, noty: 1}, {lean: true, skip: skip, limit: subscrPerPage, sort: {cdate: -1}}, function (err, subscrs) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
@@ -486,7 +535,9 @@ function getUserSubscr(iAm, data, cb) {
 					if (data.type === 'news') {
 						News.find({_id: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1}, {lean: true}, this);
 					} else {
-						photoController.findPhotosAll({photo: {$in: objIds}}, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, iAm, this);
+						var query = photoController.buildPhotosQuery({r: 0}, null, iAm).query;
+						query._id = {$in: objIds};
+						Photo.find(query, {_id: 1, cid: 1, title: 1, ccount: 1, file: 1}, {lean: true}, this);
 					}
 				},
 				function (err, objs) {
@@ -498,10 +549,10 @@ function getUserSubscr(iAm, data, cb) {
 					}
 
 					//Ищем кол-во новых комментариев для каждого объекта
-					commentController.fillNewCommentsCount(objs, user._id, data.type, this.parallel());
-					UserSubscr.count({user: user._id, type: 'photo'}, this.parallel());
-					UserSubscr.count({user: user._id, type: 'news'}, this.parallel());
-					UserSubscrNoty.findOne({user: user._id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1}, {lean: true}, this.parallel());
+					commentController.fillNewCommentsCount(objs, user_id, data.type, this.parallel());
+					UserSubscr.count({user: user_id, type: 'photo'}, this.parallel());
+					UserSubscr.count({user: user_id, type: 'news'}, this.parallel());
+					UserSubscrNoty.findOne({user: user_id, nextnoty: {$exists: true}}, {_id: 0, nextnoty: 1}, {lean: true}, this.parallel());
 				},
 				function (err, objs, countPhoto, countNews, nextNoty) {
 					if (err) {
@@ -556,6 +607,7 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.subscribeUserByIds = subscribeUserByIds;
+module.exports.unSubscribeObj = unSubscribeObj;
 module.exports.commentAdded = commentAdded;
 module.exports.commentViewed = commentViewed;
 module.exports.userThrottleChange = userThrottleChange;

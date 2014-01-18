@@ -1,0 +1,13 @@
+.adminRegionCheck(data-bind="with: repository[M!M]")
+	h4 Поиск регионов по точке
+	.topinfo
+		span.infotxt Кликните на карту или введите координаты через запятую:
+		.inputGeoWrap
+			.input-group
+				input.form-control.input-sm.inputGeo(type="text", data-bind="event: {keyup: inputEnter}", placeholder="Широта, долгота")
+				span.input-group-addon(data-bind="click: inputGeo")
+					span.glyphicon.glyphicon-screenshot
+		.extlnk
+			span.infotxt Ссылка на отображаемую точку:
+			input.form-control.input-sm.inputLink(type="text", onclick="this.select();", readonly, data-bind="value: location.host + location.pathname + link()")
+	.map(data-bind="style: {height: mh()}")

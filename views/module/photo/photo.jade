@@ -1,17 +1,24 @@
 .photo(data-bind="with: repository[M!M]")
-	.indentLogo.photoTop(data-bind="style: {display: can.edit() ? 'block' : 'none'}")
-		.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
-		.photoAction.convertAction(data-bind="style: {display: !edit() && can.convert() ? 'inline-block' : 'none'}, css: {disabled: exe()}")
-			select.multiSelect#convertSelect(multiple="multiple", data-bind="multiselect: true, options: convertOptions, selectedOptions: selectedOpt, optionsValue: 'vId', optionsText: 'vName'")
-			button.btn-strict.btnConvert(type="button", data-bind="click: toConvert, attr: {disabled: exe()}")
-				span start
-		.photoMsg(data-bind="text: msg(), css: msgCss(), style: {display: msg().length > 0 ? '' : 'none'}")
-
-	.row-fluid.photoData(data-bind="css: {editMode: edit()}")
-		.span8-9.photoPanel
-			.row-fluid.photoImgRow
-				.photoImgSuperWrap
-					.photoImgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
+	.row.photoData(data-bind="css: {editMode: edit()}")
+		.col-xs-12.col-sm-8.col-lg-8.photoPanel
+			//ko if: can.edit()
+			.topInfo
+				.photoAction(data-bind="template: {name: edit() ? 'photoActionsEdit' : 'photoActionsView'}")
+				//ko if: !edit() && can.convert()
+				.photoAction.convertAction(data-bind="css: {disabled: exe()}")
+					select.multiselect(multiple="multiple", data-bind="options: convertVars, optionsValue: 'vId', optionsText: 'vName', selectedOptions: convertVarsSel, multiselect: convertOptions")
+					button.btn.btn-primary.btnConvert(data-bind="click: toConvert, attr: {disabled: exe()}")
+						| start
+				// /ko
+				//ko if: msg().length
+				.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle}")
+					span.glyphicon.glyphicon-warning-sign
+					span(data-bind="text: ' ' + msg()")
+				// /ko
+			// /ko
+			.imgRow
+				.imgSuperWrap
+					.imgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 						img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
 						.photoLoading
 						//ko if: !edit()
@@ -19,164 +26,189 @@
 						a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
 						// /ko
 						// /ko
-					.tools
+					.toolsRht
 						.tool.watched
-							i.icon-eye-open.icon-white(title="Количество просмотров фотографии")
+							span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров фотографии")
 							.watch(data-bind="text: toolsNumFormat(p.vdcount()), attr: {title: p.vdcount()+ ' раз смотрели сегодня'}")
 							.watch(data-bind="text: toolsNumFormat(p.vwcount()), attr: {title: p.vwcount()+ ' раз смотрели за неделю'}")
 							.watch(data-bind="text: toolsNumFormat(p.vcount()), attr: {title: p.vcount()+ ' раз смотрели всего'}")
-					.photoTools(data-bind="style: {width: ws() + 'px'}")
+					.toolsBtm(data-bind="style: {width: ws() + 'px'}")
 						span.toolsTxt
 							//ko if: ws() !== p.ws() && hs() !== p.hs()
-							span.sizeThis(data-bind="text: 'Текущий размер: ' + ws() + '×' + hs()")
-							span &nbsp;|&nbsp;
+							.sizeThis(data-bind="text: (ws()>390 ? 'Текущий размер: ' : '') + ws() + '×' + hs()")
+							| &nbsp;|&nbsp;
 							// /ko
-							a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: 'Стандарт: ' + p.ws() + '×' + p.hs()")
-							span &nbsp;|&nbsp;
-							a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: 'Оригинал: ' + p.w() + '×' + p.h()")
+							a.sizeStandard(target="_blank", data-bind="attr:{href: '/_p/d/' + p.file()}, text: (ws()>390 ? 'Стандарт: ' : '') + p.ws() + '×' + p.hs()")
+							| &nbsp;|&nbsp;
+							a.sizeOrigin(target="_blank", data-bind="attr:{href: '/_p/a/' + p.file()}, text: (ws()>390 ? 'Оригинал: ' : '') + p.w() + '×' + p.h()")
 						//ko if: hscalePossible()
-						.photoHeight.state(data-state="hscaleTumbler", data-bind="tooltip: {title: 'Подгонять по высоте видимой области', trigger: 'click hover'}, css: {on: hscaleTumbler()}, click: stateChange")
-							i.icon-resize-vertical.icon-white
+						button.btn.btn-xxs.btn-primary(data-state="hscaleTumbler", data-bind="css: {active: hscaleTumbler()}, click: stateChange", title="Подгонять по высоте видимой области")
+							span.glyphicon.glyphicon-resize-vertical
 						// /ko
 			//ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
 			// /ko
-		.span3-4.rightPanel
-			.row-fluid.photoUser
-				table(style="width: 100%; margin-top: 0px; border-width: 0px;", border="0", cellspacing="0", cellpadding="0")
-					tbody
-						tr
-							td(style="width: 85px; min-width: 85px;")
-								a.avatar.fringe(data-bind="attr: {href: '/u/' + p.user.login()}")
-									img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
-							td
-								.userInfo(data-bind="html: userInfo() + rnks()")
-								//ko if: userRibbon().length
-								.userRibbon
-									//ko foreach: userRibbon
-									a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: {'pFresh': $data.fresh, 'pDis': $data.disabled, 'pDel': $data.del}")
-										.photoBox
-											img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-											.curtain
-											//ko if: $data.noPublic
-											i.icon-white.fringe.status(data-bind="css: {'icon-asterisk': fresh && !ready, 'icon-flag': fresh && ready, 'icon-lock': disabled, 'icon-trash': del}, attr: {title: fresh ? (ready ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (disabled ? 'Фотография неактивна' : 'Фотография удалена')}")
-											// /ko
-									// /ko
+		.col-xs-12.col-sm-4.col-lg-4.rightPanel
+			table.rightrow.tableUser(cellpadding="0")
+				tbody
+					tr
+						td(style="width: 85px; min-width: 85px;")
+							a.avatar.fringe.plain(data-bind="attr: {href: '/u/' + p.user.login()}")
+								img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+						td
+							.userInfo(data-bind="html: userInfo() + rnks()")
+							//ko if: userRibbon().length
+							.userRibbon.photoTiles
+								//ko foreach: userRibbon
+								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: 's' + $data.s")
+									.photoBox
+										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+										.curtain
+										//ko if: $data.s!==5
+										.status.fringe(data-bind="attr: {title: s<2 ? (s===1 ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (s===7 ? 'Фотография неактивна' : 'Фотография удалена')}")
+											span.glyphicon(data-bind="css: {'glyphicon-asterisk': s===0, 'glyphicon-flag': s===1, 'glyphicon-lock': s===7, 'glyphicon-trash': s===9}")
+										// /ko
 								// /ko
-			.row-fluid.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
+							// /ko
+			.rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
 			//ko if: nearestRibbon().length
-			.row-fluid.photoTiles
+			.rightrow.photoTiles(style="text-align: center;")
 				.lineBehind
 					span(data-bind="html: 'Ближайшие фотографии'")
 				//ko foreach: nearestRibbon
-				a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
+				a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
 					.photoBox
 						img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain
 				// /ko
 			// /ko
-		.row-fluid.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
-	.row-fluid.heightExpander
-
+		.commentsContainer.mContainer.mNoDisplay(data-bind="allowBindings: false")
 
 	//-ACTIONS VIEW MODE
-	script(id="photoActionsView", type="text/html")
-		button.btn-strict(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-			i.icon-pencil.icon-white
-			span Редактировать
-		//ko if: IOwner() && p.fresh() && !p.ready()
-		button.btn-strict.btn-strict-success(type="button", title="Отправить на подтверждение модератору", data-bind="css: {disabled: exe()}, click: setReady, attr: {disabled: exe()}")
-			i.icon-check.icon-white
-			span Готово
-		// /ko
-		div(style="display:inline-block")
-			//ko if: canBeApprove()
-			button.btn-strict.btn-strict-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="css: {disabled: exe()}, click: setApprove, attr: {disabled: exe()}")
-				i.icon-ok.icon-white
-				span Подтвердить
-			// /ko
-			//ko if: canBeDisable()
-			button.btn-strict(type="button", data-bind="css: {'btn-strict-warning': !p.disabled(), 'btn-strict-success': p.disabled(), disabled: exe()}, click: toggleDisable, attr: {disabled: exe()}")
-				i.icon-white(data-bind="css: {'icon-exclamation-sign': !p.disabled(), 'icon-ok-sign': p.disabled()}")
-				span(data-bind="text: p.disabled() ? 'Активировать' : 'Деактивировать'")
-			// /ko
-			//ko if: !p.del() && can.remove()
-			button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()}, click: remove, attr: {disabled: exe()}")
-				i.icon-trash.icon-white
-				span(data-bind="text: !IOwner() && p.fresh() ? 'Отклонить' : 'Удалить'")
-			// /ko
+	| <script id="photoActionsView" type="text/html">
+	button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-pencil
+		|  Редактировать
+	//ko if: IOwner() && p.s()===0
+	button.btn.btn-success(type="button", title="Отправить премодерацию и дальнейшую публикацию", data-bind="click: setReady, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-check
+		|  На публикацию
+	// /ko
+	//ko if: canBeApprove()
+	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-ok
+		|  Опубликовать
+	// /ko
+	//ko if: canBeDisable()
+	button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
+		span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
+		span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
+	// /ko
+	//ko if: p.s()!==9 && can.remove()
+	button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-trash
+		span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
+	// /ko
+	| </script>
 
 	//-ACTIONS EDIT MODE
-	script(id="photoActionsEdit", type="text/html")
-		button.btn-strict.btn-strict-success(type="button", data-bind="css: {disabled: exe()}, click: editSave, attr: {disabled: exe()}")
-			i.icon-ok.icon-white
-			span Сохранить
-		button.btn-strict.btn-strict-danger(type="button", data-bind="css: {disabled: exe()},click: editCancel, attr: {disabled: exe()}")
-			i.icon-remove.icon-white
-			span Отмена редактирования
+	| <script id="photoActionsEdit" type="text/html">
+	button.btn.btn-success(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-ok
+		|  Сохранить
+	button.btn.btn-danger(type="button", data-bind="click: editCancel, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-remove
+		|  Отмена редактирования
+	| </script>
 
 	//-DATA VIEW MODE
-	script(id="photoView", type="text/html")
-		.row-fluid.photoInfoBlock
-			//ko if: p.title().length > 0
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
-			// /ko
-			//ko if: p.desc().length > 0
-			.row-fluid.photoInfo(data-bind="html: p.desc()")
-			// /ko
-		.row-fluid.photoInfoBlock
-			//ko if: p.address().length > 0
-			.row-fluid.photoInfo
-				.infoName Адрес снимка:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес точки съемки?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-			// /ko
-			//ko if: p.source().length > 0
-			.row-fluid.photoInfo
-				.infoName Источник:
-				.editable(data-bind="html: p.source()")
-			// /ko
-			//ko if: p.author().length > 0
-			.row-fluid.photoInfo
-				.infoName Автор:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
-			// /ko
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
-				| Мы думаем, что снимок сделан
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
-				span(data-bind="html: p.year()")
-				span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
-				span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
-				//ko if: p.dir && p.dir() && p.dir().length > 0
-				span &nbsp;(направление съемки &minus;&nbsp;
-				span.editable(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
-				| )
+	| <script id="photoView" type="text/html">
+	.infoBlock
+		//ko if: p.title().length
+		.info.title(data-bind="text: p.title()")
+		// /ko
+		//ko if: p.regions().length
+		.regions(data-bind="foreach: p.regions")
+			.region
+				a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+				//ko if: $index() < $parent.p.regions().length - 1
+				| ,&nbsp;
 				// /ko
-		a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
-			img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
-		.h_separator
+		// /ko
+		//ko if: p.desc().length
+		.info(data-bind="html: p.desc()")
+		// /ko
+	.infoBlock
+		//ko if: p.source().length
+		.info
+			span.infoName Источник:
+			span(data-bind="html: p.source()")
+		// /ko
+		//ko if: p.author().length
+		.info
+			span.infoName Автор:
+			span(data-bind="html: p.author()")
+		// /ko
+		//ko if: p.address().length
+		.info
+			span.infoName Адрес снимка:
+			span(data-bind="text: p.address()")
+		// /ko
+	.infoBlock
+		.info
+			| Мы думаем, что снимок сделан
+			span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'между' : 'в') + '&nbsp;'")
+			span(data-bind="html: p.year()")
+			span(data-bind="html: '&minus;' + p.year2(), style: {display: p.year() !== p.year2() ? '' : 'none'}")
+			span(data-bind="html: '&nbsp;' + (p.year() !== p.year2() ? 'годами' : 'году') + '&nbsp;'")
+			//ko if: p.dir && p.dir() && p.dir().length
+			span &nbsp;(направление съемки &minus;&nbsp;
+			span(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+			| )
+			// /ko
+	//-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
+		img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
+	| </script>
 
 	//-EDIT MODE
-	script(id="photoEdit", type="text/html")
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo.photoTitle.editable(data-bind="cEdit: {edit: edit(), val: p.title, cap: 'Введите название фотографии'}")
-			.row-fluid.photoInfo.photoDesc
-				textarea.descInput(wrap="soft", data-bind="event: {focus: descFocusBind}")
-				label.descInputLabel(data-bind="click: descLabelClickBind") Опишите фотографию
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
-				.infoName Адрес снимка:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.address, cap: 'Вы знаете адрес снимка?', readPrefix: 'Adress:', readPrefixCss: 'infoName'}")
-			.row-fluid.photoInfo
-				.infoName Источник:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.source, cap: 'Если вам известен источник фотографии, укажите его здесь'}")
-			.row-fluid.photoInfo
-				.infoName Автор:
-				.editable(data-bind="cEdit: {edit: edit(), val: p.author, cap: 'Возможно вы знаете автора фотографии?'}")
-		.row-fluid.photoInfoBlock
-			.row-fluid.photoInfo
-				| Я считаю, что снимок сделан между&nbsp;
-				span.editable(data-bind="cEdit: {edit: edit(), val: p.year}")
-				| &nbsp;и&nbsp;
-				span.editable(data-bind="cEdit: {edit: edit(), val: p.year2}")
-				| &nbsp;&nbsp;Направление съемки&nbsp;
-				select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+	| <script id="photoEdit" type="text/html">
+	.fieldWrap(data-bind="css: {hasContent: p.title().length}")
+		label(for="pName") Название фотографии
+		input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap.regions(data-bind="css: {loading: exeregion()}")
+		span.infoName Регион:
+		//ko if: p.regions().length
+		span(data-bind="foreach: p.regions")
+			.region
+				a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+				//ko if: $index() < $parent.p.regions().length - 1
+				| ,&nbsp;
+				// /ko
+		// /ko
+		//ko if: !p.regions().length
+		.region.err Не привязан
+		// /ko
+		//ko if: !p.geo()
+		span.regionEdit(data-bind="click: regionSelect")
+			span.glyphicon.glyphicon-pencil
+			| Выбрать
+		// /ko
+	.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
+		label(for="pDesc") Описание
+		textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
+	.fieldWrap(data-bind="css: {hasContent: p.source().length}")
+		label(for="pSource") Источник
+		input.form-control(name="pSource", type="text", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap(data-bind="css: {hasContent: p.author().length}")
+		label(for="pAuthor") Автор
+		input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap(data-bind="css: {hasContent: p.address().length}")
+		label(for="pAddr") Адрес точки сьемки
+		input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+	.fieldWrap
+		| Я считаю, что снимок сделан между&nbsp;
+		input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
+		| &nbsp;и&nbsp;
+		input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
+		| &nbsp;&nbsp;Направление съемки&nbsp;
+		select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+	| </script>

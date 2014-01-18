@@ -1,6 +1,6 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .user_photoUpload {
 	padding-top: 15px;
@@ -8,9 +8,15 @@
 
 	.toptext, .canCount {
 		color: lighten(@MainDarkColor, 10%);
-		margin-bottom: 10px;
+		margin-bottom: 5px;
 	}
-	form#fileupload {
+	.warn {
+		display: inline-block;
+		margin-bottom: 5px;
+		font-size: @font-size-small;
+		color: #9b7030;
+	}
+	.uploadForm {
 		margin-bottom: 11px;
 	}
 
@@ -18,40 +24,35 @@
 		position: relative;
 		margin: 7px 0;
 
-		#fileinput-btn {
-			position: relative;
+		.fileInput {
+			position: absolute;
+			display: block;
+			width: 0;
+			height: 0;
+			border: 0;
+			padding: 0;
+			opacity: 0;
 			overflow: hidden;
-			width: 140px;
-			.box-sizing(border-box);
-
-			input[type='file'] {
-				position: absolute;
-				display: block;
-				top: 0;
-				left: 0;
-				bottom: 0;
-				margin: 0;
-				padding: 0 0 0 110px; // Для курсора pointer в chrome
-				.opacity(0);
-				direction: ltr;
-				cursor: pointer;
-			}
 		}
+		.fileSelect {
+			width: 130px;
+		}
+
 		.addfiles_area {
 			position: absolute;
-			border: 1px dashed @grayDarker;
-			.opacity(60);
+			border: 1px dashed @gray-darker;
 			left: 170px;
 			top: 0;
 			right: 0;
 			bottom: 0;
+			opacity: .7;
 			text-align: center;
 
 			&:hover, &.dragover {
-				.opacity(100);
-				top: -5px;
-				bottom: -5px;
-				background-color: @grayLighter;
+				top: -8px;
+				bottom: -8px;
+				opacity: 1;
+				background-color: @gray-lighter;
 			}
 
 			span {
@@ -60,7 +61,7 @@
 
 			#or {
 				position: absolute;
-				left: -25px;
+				left: -30px;
 				width: 25px;
 				top: 0;
 				bottom: 0;
@@ -83,11 +84,11 @@
 		}
 	}
 
-	.allprogress .bar {
+	.allprogress .progress-bar {
 		background-color: #2171CC;
 	}
 
-	table.filesTable {
+	.filesTable {
 		td.preview {
 			width: 210px;
 

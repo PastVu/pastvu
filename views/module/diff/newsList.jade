@@ -1,11 +1,12 @@
 .newsWrapper(data-bind="with: repository[M!M]")
-	.indentLogo.newsHeader Новости проекта
+	.newsHeader Новости проекта
 	//ko if: canEdit()
-	.row-fluid
+	.row
 		a.addNews(href="/admin/news/create")
-			| Добавить новость
+			span.glyphicon.glyphicon-plus
+			|  Добавить новость
 	// /ko
-	.row-fluid.news
+	.news
 		//ko foreach: news
 		hr
 		.novel.clearfix
@@ -24,8 +25,8 @@
 					//ko if: $parent.canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + $data.cid}")
-						i.icon-pencil
-						| &nbsp;Редактировать
+						span.glyphicon.glyphicon-pencil
+						|  Редактировать
 					// /ko
 				.newsNotice(data-bind="html: $data.notice, css: {expandable: $data.expand}")
 				//ko if: $data.expand

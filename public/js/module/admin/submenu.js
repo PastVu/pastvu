@@ -16,10 +16,14 @@ define(['underscore', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'global
 					{name: 'Новости', href: "/admin/news", section: 'news'}
 				],
 				map: [
-					{name: 'Clusters', href: "/admin/map/cluster", section: 'cluster'}
+					{name: 'Кластеры', href: "/admin/map/cluster", section: 'cluster'}
 				],
 				photo: [
-					{name: 'Conveyer', href: "/admin/photo/conveyer", section: 'conveyer'}
+					{name: 'Конвейер конвертаций', href: "/admin/photo/conveyer", section: 'conveyer'}
+				],
+				region: [
+					{name: 'Список и просмотр', href: "/admin/region", section: 'region'},
+					{name: 'Проверка по точке', href: "/admin/region/check", section: 'regionCheck'}
 				]
 			};
 

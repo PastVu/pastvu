@@ -6,20 +6,20 @@
 		//ko if: editing()
 		.mapInfo.info
 			//ko if: point.geo()
-			button.btn-strict.btn-strict-small(type="button", data-bind="click: delPointGeo")
-				i.icon-remove-circle.icon-white
-				span Обнулить кооринаты
+			button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
+				span.glyphicon.glyphicon-remove-circle
+				|  Обнулить кооринаты
 			// /ko
 			//ko ifnot: point.geo()
-			i.icon-map-marker
+			span.glyphicon.glyphicon-map-marker
 			| Для установки координаты кликните по карте
 			// /ko
 		// /ko
 
 		//ko if: !editing() && !point.geo()
 		.mapInfo.warn
-			i.icon-warning-sign
-			| Координаты фотографии не указаны
+			span.glyphicon.glyphicon-warning-sign
+			|  Координаты фотографии не указаны
 		// /ko
 		// /ko
 
@@ -30,19 +30,26 @@
 			.yearOuter.L
 			.yearOuter.R
 		.mapNavigation.mContainer.mHidden
-		label.checkbox.linkOpenMode
-			input(type="checkbox", data-bind="checked: openNewTab")
-			| Open links in new tab
-		.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
-			.currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Нажмите, чтобы скрыть варианты' : 'Нажмите, чтобы увидеть доступные варианты карт'}")
-				.currentLayerTxt(data-bind="text: layerActiveDesc()")
-				img.layerImg(src='/img/map/layers.png')
-			.layerSystems(data-bind="style: {width: (layersOpen() ? 104 * layers().length : 64) + 'px'}")
-				.h_separator
-				//ko foreach: {data: $data.layers, as: 'system'}
-				.layerSystem(data-bind="css: {selected: system.selected()}")
-					.layerHead(data-bind="text: system.desc")
-					//ko foreach: {data:system.types, as: 'type'}
-					.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
-					// /ko
+		.trtools
+			.trtool.trtoolbutt.openModePanel.fringe(data-bind="css: {no: !openNewTab()}, click: function () {openNewTab(!openNewTab())}, attr: {title: (openNewTab() ? 'Выключить' : 'Включить') + ' открытие фотографий в новом окне'}")
+				span.glyphicon.glyphicon-share
+			//ko if: !embedded
+			.trtool.trtoolbutt.link.fringe(data-bind="click: showLink", title="Ссылка на текущую позицию карты")
+				span.glyphicon.glyphicon-link
+				//ko if: linkShow()
+				input.inputLink(type="url", readonly, data-bind="click: linkClick, value: location.host + location.pathname + link()", autocorrect="off", autocapitalize="off")
 				// /ko
+			// /ko
+			.trtool.layersPanel.fringe(data-bind="css: {open: layersOpen()}")
+				.currentLayer(data-bind="click: toggleLayers, attr: {title: layersOpen() ? 'Нажмите, чтобы скрыть варианты' : 'Нажмите, чтобы увидеть доступные варианты карт'}")
+					.currentLayerTxt(data-bind="text: layerActiveDesc()")
+					img.layerImg(src='/img/map/layers.png')
+				.layerSystems(data-bind="style: {width: (layersOpen() ? 104 * layers().length : 64) + 'px'}")
+					.h_separator
+					//ko foreach: {data: $data.layers, as: 'system'}
+					.layerSystem(data-bind="css: {selected: system.selected()}")
+						.layerHead(data-bind="text: system.desc")
+						//ko foreach: {data:system.types, as: 'type'}
+						.layerType(data-bind="css: {selected: type.selected()}, text: type.desc, click: function () {$parents[1].selectLayer(system.id, type.id)}")
+						// /ko
+					// /ko

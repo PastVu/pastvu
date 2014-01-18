@@ -3,8 +3,8 @@
  * Класс управления маркерами
  */
 define([
-	'underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
-], function (_, Browser, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
+	'underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'globalVM', 'leaflet', 'model/Photo'
+], function (_, Utils, socket, P, ko, ko_mapping, globalVM, L, Photo) {
 	'use strict';
 
 	function MarkerManager(map, options) {
@@ -623,7 +623,7 @@ define([
 					divIcon = L.divIcon({
 						className: 'clusterIcon fringe ' + measure,
 						iconSize: size,
-						html: '<img class="clusterImg" onload="this.parentNode.classList.add(\'show\')" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
+						html: '<img class="clusterImg" onload="if (this.parentNode && this.parentNode.classList) {this.parentNode.classList.add(\'show\');}" src="' + cluster.p.sfile + '"/><div class="clusterFoot"><span class="clusterCount">' + cluster.c + '</span></div>'
 					});
 					cluster.measure = measure;
 					cluster.marker =
@@ -865,12 +865,10 @@ define([
 		}
 	};
 	MarkerManager.prototype.photoNavigate = function (url) {
-		if (this.embedded) {
-			globalVM.router.navigateToUrl(url);
-		} else if (this.openNewTab) {
+		if (this.openNewTab) {
 			window.open(url, '_blank');
 		} else {
-			location.href = url;
+			globalVM.router.navigateToUrl(url);
 		}
 	};
 

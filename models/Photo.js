@@ -10,13 +10,16 @@ var FragmentSchema = new Schema({
 		w: {type: Number}, //Width
 		h: {type: Number}  //Height
 	}),
-	commonStructure = {
-		cid: {type: Number, index: { unique: true }},
+	PhotoNewSchema = new Schema({
+		cid: {type: Number, index: {unique: true}},
 		user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 
 		file: {type: String, required: true}, //Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
 
 		ldate: {type: Date, 'default': Date.now, required: true, index: true}, // Время загрузки
+		adate: {type: Date, sparse: true}, // Время активации
+		sdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время для сортировки (например, новые должны быть всегда сверху в галерее пользователя)
+
 		type: {type: String}, // like 'image/jpeg'
 		format: {type: String}, // like 'JPEG'
 		sign: {type: String},
@@ -27,21 +30,30 @@ var FragmentSchema = new Schema({
 		hs: {type: Number}, //Стандартная высота
 
 		geo: {type: [Number], index: '2d'}, //Индексированный массив [lng, lat]
-		dir: {type: String, 'default': ''},
 
+		//Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
+		//http://docs.mongodb.org/manual/faq/indexes/#can-i-use-a-multi-key-index-to-support-a-query-for-a-whole-array
+		//Поэтому делаем избыточные поля на каждый уровень региона, со sparse индексом
+		r0: {type: Number, sparse: true},
+		r1: {type: Number, sparse: true},
+		r2: {type: Number, sparse: true},
+		r3: {type: Number, sparse: true},
+		r4: {type: Number, sparse: true},
+		r5: {type: Number, sparse: true},
+
+		s: {type: Number, index: true}, //Статус фотографии {0-новая, 1-готовая, 5-публичная, 7-деактивированная, 9-удаленная}
+
+		dir: {type: String, 'default': ''},
 		title: {type: String, 'default': ''},
 		year: {type: Number, 'default': 2000},
-		year2: {type: Number},
+		year2: {type: Number, 'default': 2000},
 		address: {type: String},
 		desc: {type: String},
 		source: {type: String},
 		author: {type: String},
 
 		conv: {type: Boolean}, //Конвертируется
-		convqueue: {type: Boolean} //В очереди на конвертацию
-	},
-	additionalStructure = {
-		adate: {type: Date, index: true}, // Время активации
+		convqueue: {type: Boolean}, //В очереди на конвертацию
 
 		vdcount: {type: Number, index: true}, //Кол-во просмотров за день
 		vwcount: {type: Number, index: true}, //Кол-во просмотров за неделю
@@ -50,21 +62,18 @@ var FragmentSchema = new Schema({
 		frags: [FragmentSchema], //Фрагменты с комментариями
 
 		nocomments: {type: Boolean} //Запретить комментирование
-	},
-
-	PhotoSchema_Fresh = new Schema(commonStructure, {collection: 'photos_fresh', strict: true}),
-	PhotoSchema_Disabled = new Schema(commonStructure, {collection: 'photos_disabled', strict: true}),
-	PhotoSchema_Del = new Schema(commonStructure, {collection: 'photos_del', strict: true}),
-	PhotoSchema = new Schema(commonStructure, {strict: true}),
-
-	//Коллекция сквозной сортировки фотографий независимо от статуса фото
-	PhotosSortSchema = new Schema({
-			photo: {type: Schema.Types.ObjectId, ref: 'Photo', index: true},
-			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
-			stamp: {type: Date, index: true},
-			state: {type: Number}
+	}),
+	PhotoMapSchema = new Schema(
+		{
+			cid: {type: Number, index: {unique: true}},
+			geo: {type: [Number], index: '2d'},
+			file: {type: String, required: true},
+			dir: {type: String, 'default': ''},
+			title: {type: String, 'default': ''},
+			year: {type: Number, 'default': 2000},
+			year2: {type: Number, 'default': 2000}
 		},
-		{collection: 'photos_sort', strict: true}
+		{collection: 'photos_map', strict: true}
 	),
 
 	PhotoConveyerSchema = new Schema(
@@ -104,60 +113,18 @@ var FragmentSchema = new Schema({
 		}
 	);
 
-
-PhotoSchema_Fresh.add({
-	ready: {type: Boolean, 'default': false, required: true} //Новое фото готово к просмотру модераторами
-});
-PhotoSchema.add(additionalStructure);
-PhotoSchema_Disabled.add(additionalStructure);
-PhotoSchema_Del.add(additionalStructure);
-
-PhotoSchema_Fresh.virtual('fresh').get(function () {
-	return true;
-});
-PhotoSchema_Disabled.virtual('disabled').get(function () {
-	return true;
-});
-PhotoSchema_Del.virtual('del').get(function () {
-	return true;
-});
-
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
 //Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
-PhotoSchema.index({ g: '2d', year: 1});
+PhotoNewSchema.index({g: '2d', year: 1});
+PhotoNewSchema.index({r0: 1, sdate: 1});
+PhotoNewSchema.index({r1: 1, sdate: 1});
+PhotoNewSchema.index({r2: 1, sdate: 1});
+PhotoNewSchema.index({r3: 1, sdate: 1});
+PhotoNewSchema.index({r4: 1, sdate: 1});
+PhotoNewSchema.index({r5: 1, sdate: 1});
 
 
-PhotoSchema.pre('save', preSave);
-PhotoSchema_Fresh.pre('save', preSave);
-PhotoSchema_Disabled.pre('save', preSave);
-PhotoSchema_Del.pre('save', preSave);
-
-
-PhotoSchema.statics.getPhotoCompact = function (query, options, cb) {
-	if (!query || !query.cid) {
-		cb({message: 'cid is not specified'});
-	}
-	options = options || {};
-	this.findOne(query, null, options).select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-
-PhotoSchema.statics.getPhotosCompact = function (query, options, cb) {
-	if (!query) {
-		cb({message: 'query is not specified'});
-	}
-	options = options || {};
-	this.find(query, null, options).sort('-adate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-PhotoSchema.statics.getPhotosFreshCompact = function (query, options, cb) {
-	if (!query) {
-		cb({message: 'query is not specified'});
-	}
-	options = options || {};
-	this.find(query, null, options).sort('-ldate').select('-_id cid file ldate adate title year ccount fresh disabled conv convqueue del').exec(cb);
-};
-
-
-function preSave(next) {
+PhotoNewSchema.pre('save', function (next) {
 	// check year2
 	if (this.isModified('year') || this.isModified('year2')) {
 		if (this.year < 1826) {
@@ -171,15 +138,12 @@ function preSave(next) {
 	}
 
 	return next();
-}
+});
 
 
 module.exports.makeModel = function (db) {
-	db.model('Photo', PhotoSchema);
-	db.model('PhotoFresh', PhotoSchema_Fresh);
-	db.model('PhotoDisabled', PhotoSchema_Disabled);
-	db.model('PhotoDel', PhotoSchema_Del);
-	db.model('PhotoSort', PhotosSortSchema);
+	db.model('Photo', PhotoNewSchema);
+	db.model('PhotoMap', PhotoMapSchema);
 
 	db.model('PhotoConveyer', PhotoConveyerSchema);
 	db.model('PhotoConveyerError', PhotoConveyerErrorSchema);

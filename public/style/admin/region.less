@@ -1,0 +1,66 @@
+@import "../_vars.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
+
+.adminRegion {
+	position: relative;
+	height: 100%;
+
+	.form-group {
+		margin-bottom: 5px;
+	}
+	.control-label {
+		padding-right: 10px;
+	}
+	.map {
+		position: relative;
+		min-height: 300px;
+		max-height: 1200px;
+		background-color: #eee;
+	}
+
+	.regionInfo {
+		margin-top: 8px;
+	}
+
+	.regions {
+		.current {
+			color: #0ea300;
+			cursor: default;
+		}
+	}
+	.childs {
+		margin: 2px 0 8px;
+	}
+
+	.dopparam {
+		display: inline-block;
+		margin: 0 6px 6px 0;
+
+		> input[type="text"] {
+			margin-left: 4px;
+			margin-right: 2px;
+		}
+		> .btn-group {
+			margin-left: 6px;
+			margin-right: 4px;
+		}
+	}
+
+	input.center, input.bbox {
+		display: inline-block;
+		text-align: center;
+		cursor: default;
+	}
+	input.center {
+		width: 150px;
+	}
+	input.bbox {
+		width: 290px;
+	}
+	input.invalid {
+		border-color: #f00;
+	}
+}
+
+

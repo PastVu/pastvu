@@ -2,10 +2,17 @@
 /**
  * Модель галереи фотографий
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, Uri, jade) {
 	'use strict';
 	var $window = $(window),
-		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
+		filter_s = [
+			{cid: '0', title: 'Новые'},
+			{cid: '1', title: 'Готовые'},
+			{cid: '5', title: 'Публичные'},
+			{cid: '7', title: 'Неактивные'},
+			{cid: '9', title: 'Удаленные'}
+		];
 
 	return Cliche.extend({
 		jade: jade,
@@ -20,21 +27,65 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.topTitle = ko.observable(this.options.topTitle);
+			this._ = _;
 
-			this.filter = {};
 			this.photos = ko.observableArray();
 			this.feed = ko.observable(false);
 
 			this.count = ko.observable(0);
 			this.limit = 30; //Стараемся подобрать кол-во, чтобы выводилось по-строчного. Самое популярное - 6 на строку
 			this.loading = ko.observable(false);
+			this.loadedFirst = ko.observable(false); //Говорит, что данные были загружены, хотя бы раз
 
 			this.scrollActive = false;
 			this.scrollHandler = function () {
 				if ($window.scrollTop() >= $(document).height() - $window.height() - 140) {
-					this.getNextPage();
+					this.getNextFeedPhotos();
 				}
 			}.bind(this);
+
+			this.itsMine = this.co.itsMine = ko.computed(function () {
+				return this.u && this.auth.iAm && this.u.login() === this.auth.iAm.login();
+			}, this);
+
+			this.filter = {
+				//Параметры фильтра для запросов
+				origin: '',
+				//Значения фильтра для отображения
+				disp: {
+					s: ko.observableArray(),
+					r: ko.observableArray(),
+					rdis: ko.observableArray(), //Массив cid неактивных регионов
+					geo: ko.observableArray()
+				},
+				active: ko.observable(true),
+				inactivateString: '',
+				open: ko.observable(false),
+				can: {
+					s: this.co.filtercans = ko.computed(function () {
+						return this.itsMine() || this.auth.iAm && this.auth.iAm.role() > 4;
+					}, this)
+				},
+				available: {
+					s: this.co.filteravailables = ko.computed(function () {
+						if (this.auth.iAm) {
+							if (this.auth.iAm.role() > 9) {
+								return filter_s;
+							} else if (this.itsMine() || this.auth.iAm.role() > 4) {
+								return filter_s.filter(function (item) {
+									return item.cid !== '9';
+								});
+							}
+						}
+						return [];
+					}, this)
+				}
+			};
+			this.subscriptions.filter_disp_r = this.filter.disp.r.subscribe(this.filterChangeHandle, this);
+			this.subscriptions.filter_disp_s = this.filter.disp.s.subscribe(this.filterChangeHandle, this);
+			this.subscriptions.filter_active = this.filter.active.subscribe(this.filterActiveChange, this);
+			this.filterChangeHandleBlock = false;
+
 
 			this.panelW = ko.observable('0px');
 			this.w = ko.observable('0px');
@@ -79,12 +130,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 
 			this.briefText = this.co.briefText = ko.computed(function () {
-				var txt = '';
-				if (this.count()) {
+				var count = this.count(),
+					txt = '';
+				if (count) {
 					if (this.feed()) {
-						txt = 'Всего ' + this.count() + ' фотографий';
+						txt = 'Всего ' + count + ' фотографий';
 					} else {
-						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + this.count();
+						txt = 'Показаны ' + this.pageFirstItem() + ' - ' + this.pageLastItem() + ' из ' + count;
 					}
 				} else {
 					txt = 'Пока нет ни одной фотографии';
@@ -123,7 +175,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		userModeAdditions: function () {
 			this.canAdd = this.co.canAdd = ko.computed(function () {
-				return this.options.addPossible && this.u.login() === this.auth.iAm.login() && (this.feed() || this.page() === 1);
+				return this.options.addPossible && this.itsMine() && (this.feed() || this.page() === 1);
 			}, this);
 
 			this.subscriptions.login = this.u.login.subscribe(this.changeUserHandler, this); //Срабатывает при смене пользователя
@@ -132,24 +184,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 		loggedInHandler: function () {
-			// После логина перезапрашиваем фотографии пользователя
-			if (this.auth.iAm.login() === this.u.login() || this.auth.iAm.role()) {
-				if (this.feed()) {
-					if (!this.filter.nogeo) {
-						//В режиме ленты запрашиваем приватные и подмешиваем в текущие
-						this.loading(true);
-						this.receivePhotosPrivate(function (data) {
-							this.loading(false);
-							if (data && !data.error && data.len > 0 && this.photos().length < this.limit * 1.5) {
-								this.getNextPage();
-							}
-						}, this);
-					}
-				} else {
-					//В постраничном режиме просто перезапрашиваем страницу
-					this.getPhotos((this.page() - 1) * this.limit, this.limit);
-				}
-			}
+			//После логина перезапрашиваем фотографии пользователя
+			//В режиме ленты также перезапрашиваем всё, а не только приватные,
+			//т.к. необходимо обновить по регионам пользователя
+			this.refreshPhotos();
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -166,14 +204,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		routeHandler: function () {
 			var params = globalVM.router.params(),
-				filterParams = params.f && params.f.split(';'),
-				newFilter = {},
-				filterChange = false,
 				page = params.page,
+				filterString = params.f || '',
+				filterChange = false,
 				currPhotoLength = this.photos().length,
 				needRecieve = true,
-				preTitle = '',
-				i;
+				preTitle = '';
 
 			// Если сразу открываем загрузку, то обрабатываем галерею как обычный запуск, т.е. page будет 1
 			// Если галерея уже загружена и затем открываем загрузку, то ничего делать не надо
@@ -182,34 +218,20 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			// Если показывается окно загрузки, но в параметрах его нет,
-			// значит мы вернулись из загрузки в галерею и должны загрузку закрыть
+			// значит мы вернулись из загрузки в галерею и должны загрузку просто закрыть
 			if (this.uploadVM && !params.photoUpload) {
-				this.closeUpload(0);
+				this.closeUpload();
 				return;
 			}
 
-			//Параметры фильтров
-			if (filterParams) {
-				for (i = filterParams.length; i--;) {
-					newFilter[filterParams[i]] = true;
-					if (!this.filter[filterParams[i]]) {
-						filterChange = true; //Если нового параметра нет в текущих, говорим об изменении
-					}
-				}
-				for (i in this.filter) {
-					if (this.filter[i] !== undefined && !newFilter[i]) {
-						filterChange = true; //Если старого параметра нет в новых, говорим об изменении
-					}
-				}
-				this.filter = newFilter;
-
-				if (this.filter.nogeo) {
-					preTitle = 'Где это? - ';
-					if (this.options.topTitle) {
-						this.topTitle = ko.observable('Где это? ' + this.options.topTitle);
-					}
-				}
+			//Переданные параметры фильтров
+			if (filterString !== this.filter.origin && this.filter.active()) {
+				this.filter.origin = filterString && filterString.length < 512 ? filterString : '';
 				this.pageQuery(location.search);
+				if (this.filter.origin && !this.loadedFirst()) {
+					this.filter.open(true);
+				}
+				filterChange = true;
 			}
 
 			if (page === 'feed') {
@@ -231,9 +253,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				this.feed(false);
 				this.scrollDeActivate();
 				if (this.u) {
-					Utils.title.setTitle({pre: preTitle + 'Фотографии - '});
+					Utils.title.setTitle({pre: preTitle + 'Галерея - '});
 				} else {
-					Utils.title.setTitle({title: preTitle + 'Все фотографии'});
+					Utils.title.setTitle({title: preTitle + 'Галерея'});
 				}
 				if (page === 1 && this.page() === 1 && currPhotoLength) {
 					needRecieve = false; //Если переключаемся на страницы с ленты, то оставляем её данные для первой страницы
@@ -249,13 +271,143 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 
 			if (needRecieve || filterChange) {
+				this.makeBinding();
 				this.getPhotos((page - 1) * this.limit, this.limit, function () {
-					this.makeBinding();
+					this.loadedFirst(true);
 				}, this);
 			}
 		},
+		buildFilterString: function () {
+			var filterString = '',
+				r = this.filter.disp.r(),
+				rp = this.filter.disp.rdis(),
+				s = this.filter.disp.s(),
+				geo = this.filter.disp.geo(),
+				i;
+
+			if (geo.length === 1) {
+				filterString += (filterString ? '_' : '') + 'geo!' + geo[0];
+			}
+			if (r.length) {
+				filterString += (filterString ? '_' : '') + 'r';
+				for (i = 0; i < r.length; i++) {
+					filterString += '!' + r[i].cid;
+				}
+
+				if (rp.length) {
+					filterString += (filterString ? '_' : '') + 'rp';
+					for (i = 0; i < rp.length; i++) {
+						filterString += '!' + rp[i];
+					}
+				}
+			} else {
+				if (this.auth.iAm && this.auth.iAm.regions().length) {
+					filterString += (filterString ? '_' : '') + 'r!0';
+				}
+			}
+			if (s.length) {
+				filterString += (filterString ? '_' : '') + 's';
+				for (i = 0; i < s.length; i++) {
+					filterString += '!' + s[i];
+				}
+			}
+
+			return filterString;
+		},
+		filterActiveChange: function (val) {
+			if (this.filterActiveChangeBlock) {
+				return;
+			}
+			if (val) {
+				this.filter.origin = this.filter.inactivateString;
+				this.filter.inactivateString = '';
+			} else if (!val) {
+				this.filter.inactivateString = this.filter.origin;
+				this.filter.origin = this.itsMine() ? '' : 'r!0'; //Своя галерея всегда отдается по всем по умолчанию
+			}
+			this.refreshPhotos();
+		},
+		filterChangeHandle: function () {
+			if (this.filterChangeHandleBlock) {
+				return;
+			}
+			//Если фильтр не активен, то "тихо" активируем, без рефреша
+			if (!this.filter.active()) {
+				this.filterActiveChangeBlock = true;
+				this.filter.active(true);
+				this.filterActiveChangeBlock = false;
+			}
+			var newFilter = this.buildFilterString();
+			if (newFilter !== this.filter.origin) {
+				this.updateFilterUrl(newFilter);
+			}
+		},
+		//Делает активным в фильтре только один переданный регион
+		fronly: function (cid) {
+			if (this.loading()) {
+				return false;
+			}
+			if (cid) {
+				var diss = [];
+
+				this.filter.disp.r().forEach(function (item) {
+					if (item.cid !== cid) {
+						diss.push(item.cid);
+					}
+				});
+				this.filter.disp.rdis(diss);
+				this.filterChangeHandle();
+			}
+		},
+		//Активирует/деактивирует в фильтре переданный регион
+		frdis: function (cid) {
+			if (this.loading()) {
+				return false;
+			}
+			if (cid) {
+				var region = _.find(this.filter.disp.r(), function (item) {
+					return item.cid === cid;
+				}, this);
+				if (region) {
+					if (_.contains(this.filter.disp.rdis(), cid)) {
+						this.filter.disp.rdis.remove(cid);
+					} else {
+						this.filter.disp.rdis.push(cid);
+					}
+					this.filterChangeHandle();
+				}
+			}
+		},
+		//Обработка клика вариантов присутствия координат в фильтре
+		//Чтобы постаыить вторую галку, если обе сняты, т.к. должно быть хотя-бы одно из состояний
+		fgeoclk: function (data, event) {
+			var currDispGeo = data.filter.disp.geo(),
+				clickedGeo = event.target.value;
+
+			if (!currDispGeo.length) {
+				//Если все варианты сняты, делаем активным второй вариант
+				if (clickedGeo === '0') {
+					data.filter.disp.geo(['1']);
+				} else {
+					data.filter.disp.geo(['0']);
+				}
+			}
+			this.filterChangeHandle(); //Вручную вызываем обработку фильтра
+
+			return true; //Возвращаем true, чтобы галка в браузере переключилась
+		},
+		updateFilterUrl: function (filterString) {
+			var uri = new Uri(location.pathname + location.search);
+			if (filterString) {
+				uri.replaceQueryParam('f', filterString);
+			} else {
+				uri.deleteQueryParam('f');
+			}
+			globalVM.router.navigateToUrl(uri.toString());
+		},
+
 		feedSelect: function (feed) {
-			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : ''));
+			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
 		},
 		scrollActivate: function () {
 			if (!this.scrollActive) {
@@ -270,12 +422,21 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 		},
 
-		getNextPage: function () {
+		refreshPhotos: function () {
+			if (this.feed()) {
+				//В режиме ленты перезапрашиваем всё
+				this.getPhotos(0, Math.max(this.photos().length, this.limit), null, null, true);
+			} else {
+				//В постраничном режиме просто перезапрашиваем страницу
+				this.getPhotos((this.page() - 1) * this.limit, this.limit);
+			}
+		},
+		getNextFeedPhotos: function () {
 			if (!this.loading()) {
 				this.getPhotos(this.photos().length, this.limit);
 			}
 		},
-		getPhotos: function (skip, limit, cb, ctx) {
+		getPhotos: function (skip, limit, cb, ctx, forceReplace) {
 			this.loading(true);
 			this.receivePhotos(skip, limit, function (data) {
 				if (!data || data.error) {
@@ -285,13 +446,17 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (this.page() > this.pageLast()) {
 					//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
 					return window.setTimeout(function () {
-						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast());
+						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast() + this.pageQuery());
 					}.bind(this), 200);
 				}
 
 				if (this.feed()) {
 					if (data.photos && data.photos.length) {
-						this.photos.concat(data.photos, false);
+						if (forceReplace) {
+							this.photos(data.photos);
+						} else {
+							this.photos.concat(data.photos, false);
+						}
 					}
 					if (this.scrollActive && limit > data.photos.length) {
 						this.scrollDeActivate();
@@ -307,70 +472,46 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 		},
 		receivePhotos: function (skip, limit, cb, ctx) {
-			var reqName = this.u ? 'giveUserPhotos' : 'givePhotosPublic',
-				resName = this.u ? 'takeUserPhotos' : 'takePhotosPublic',
-				params = {skip: skip, limit: limit};
+			var reqName = this.u ? 'giveUserPhotos' : 'givePhotos',
+				resName = this.u ? 'takeUserPhotos' : 'takePhotos',
+				params = {skip: skip, limit: limit, filter: this.filter.origin};
 
 			if (this.u) {
 				params.login = this.u.login();
 			}
-			if (this.filter && !Utils.isObjectEmpty(this.filter)) {
-				params.filter = this.filter;
-			}
 
 			socket.once(resName, function (data) {
-				var i;
+				var rEquals;
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
 					this.processPhotos(data.photos);
+					//Если фильтр активен - обновляем в нем данные
+					if (this.filter.active()) {
+						this.filterChangeHandleBlock = true;
+
+						//Если количество регионов равно, они пусты или массивы их cid равны,
+						//то и заменять их не надо, чтобы небыло "прыжка"
+						rEquals =
+							this.filter.disp.r().length === data.filter.r.length &&
+							(!data.filter.r.length || _.isEqual(_.pluck(this.filter.disp.r(), 'cid'), _.pluck(data.filter.r, 'cid')));
+						if (!rEquals) {
+							this.filter.disp.r(data.filter.r || []);
+						}
+						this.filter.disp.rdis(data.filter.rp || []);
+						this.filter.disp.s(data.filter.s ? data.filter.s.map(String) : []);
+						if (!data.filter.geo || !data.filter.geo.length) {
+							data.filter.geo = ['0', '1'];
+						}
+						this.filter.disp.geo(data.filter.geo);
+						this.filterChangeHandleBlock = false;
+					}
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
 			}.bind(this));
 			socket.emit(reqName, params);
-		},
-		receivePhotosPrivate: function (cb, ctx) {
-			var params = {login: this.u.login(), startTime: this.photos().length > 0 ? _.last(this.photos()).adate : undefined, endTime: undefined};
-
-			socket.once('takeUserPhotosPrivate', function (data) {
-				if (data && !data.error && data.len > 0) {
-					var currArray = this.photos(),
-						needSort,
-						needReplacement;
-
-					if (data.disabled && data.disabled.length) {
-						this.processPhotos(data.disabled);
-						Array.prototype.push.apply(currArray, data.disabled);
-						needReplacement = needSort = true;
-					}
-					if (data.del && data.del.length) {
-						this.processPhotos(data.del);
-						Array.prototype.push.apply(currArray, data.del);
-						needReplacement = needSort = true;
-					}
-					if (needSort) {
-						currArray.sort(function (a, b) {
-							return a.adate < b.adate ? 1 : (a.adate > b.adate ? -1 : 0);
-						});
-					}
-
-					if (data.fresh && data.fresh.length) {
-						this.processPhotos(data.fresh);
-						Array.prototype.unshift.apply(currArray, data.fresh);
-						needReplacement = true;
-					}
-
-					if (needReplacement) {
-						this.photos(currArray);
-					}
-				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
-				}
-			}.bind(this));
-			socket.emit('giveUserPhotosPrivate', params);
 		},
 		processPhotos: function (arr) {
 			for (var i = arr.length; i--;) {
@@ -433,7 +574,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								closeFunc: function (evt) {
 									this.uploadVM.createPhotos(function (data) {
 										if (data && !data.error) {
-											this.closeUpload(data.cids.length);
+											this.getAndCloseUpload(data.cids.length);
 											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
 										} else {
 											ga('send', 'event', 'photo', 'create', 'photo create error');
@@ -454,11 +595,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				);
 			}
 		},
-		closeUpload: function (newCount) {
+		getAndCloseUpload: function (newCount) {
 			if (this.uploadVM) {
-				this.uploadVM.destroy();
-
 				if (newCount) {
+					this.loading(true);
 					socket.once('takePhotosFresh', function (data) {
 						if (!data || data.error) {
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -468,8 +608,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								this.count(this.count() + data.photos.length);
 								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
 
-								if (this.page() > 1) {
-									//Если в постраничном режиме, не на первой странице, то переходим на первую
+								if (this.page() > 1 || this.filter.origin) {
+									//Если в постраничном режиме не на первой странице или активен фильтр,
+									//то переходим на первую без фильтров
 									globalVM.router.navigateToUrl(this.pageUrl());
 								} else {
 									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
@@ -480,13 +621,19 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								}
 							}
 						}
+						this.loading(false);
 					}.bind(this));
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
-
+				//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
+				globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : ''))  + this.pageQuery());
+			}
+		},
+		closeUpload: function () {
+			if (this.uploadVM) {
+				this.uploadVM.destroy();
 				delete this.uploadVM;
 				delete this.waitUploadSince;
-				globalVM.router.navigateToUrl('/u/' + this.u.login() + '/photo');
 			}
 		},
 
@@ -502,12 +649,62 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			if (data.conv) {
 				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: 'margin-top:7px;', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
 			} else {
 				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Превью недоступно'});
 			}
 			$photoBox.find('.curtain').after(content);
 			parent.classList.add('showPrv');
+		},
+
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								min: 0,
+								max: 5,
+								selectedInit: this.filter.disp.r()
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Выбор регионов для фильтрации',
+								closeTxt: 'Применить',
+								closeFunc: function (evt) {
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+
+									if (regions.length > 5) {
+										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
+									}
+
+									this.filter.disp.r(regions);
+									this.closeRegionSelect();
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		closeRegionSelect: function () {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+				delete this.regselectVM;
+			}
 		}
 	});
 });

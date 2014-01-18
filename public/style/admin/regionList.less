@@ -1,0 +1,163 @@
+@import "../_vars.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
+
+@headColor: #677A8F;
+@headColorHover: @MainBlueColor;
+
+.adminRegions {
+	position: relative;
+	height: 100%;
+
+	.regionsHead {
+		position: relative;
+		.user-select(none);
+	}
+
+	.stat {
+		margin-bottom: 5px;
+		cursor: default;
+
+		> .glyphicon {
+			color: #777;
+			font-size: @font-size-small;
+		}
+	}
+
+	.headElem {
+		position: relative;
+		display: inline-block;
+		margin: 0 1px 8px 0;
+		padding: 0 7px 1px 7px;
+		vertical-align: top;
+		color: #F5F5F5;
+		cursor: default;
+		white-space: nowrap;
+		text-decoration: none;
+		background-color: @headColor;
+
+		&.interact {
+			cursor: pointer;
+
+			&:hover {
+				color: #fff;
+				background-color: @headColorHover;
+			}
+		}
+	}
+
+	.tree {
+		padding: 10px;
+		border: 1px solid #999;
+		.user-select(none);
+
+		> ul {
+			margin: 0;
+			padding: 0;
+
+			> li {
+				margin: 0;
+				padding-left: 0;
+
+				&::before, &::after {
+					border: 0
+				}
+
+				&:first-child {
+					padding-top: 0;
+				}
+			}
+		}
+
+		li {
+			position: relative;
+			margin: 0 0 0 25px;
+			padding: 13px 0 0 5px;
+			cursor: default;
+			list-style-type: none;
+
+			&::before, &::after {
+				position: absolute;
+				left: -14px;
+				right: auto;
+				content: '';
+			}
+			&::before {
+				width: 1px;
+				bottom: 50px;
+				height: 100%;
+				top: 0;
+				border-left: 1px solid #999;
+			}
+			&:last-child::before {
+				height: 26px;
+			}
+			&::after {
+				width: 20px;
+				height: 20px;
+				top: 25px;
+				border-top: 1px solid #999;
+			}
+
+			.chevron {
+				display: inline-block;
+				width: 22px;
+				padding: 2px 0;
+				text-align: center;
+				cursor: pointer;
+				border-width: 1px 0 1px 1px;
+				border-style: solid;
+				border-color: #999;
+			}
+			.name {
+				display: inline-block;
+				padding: 2px 6px;
+				text-decoration: none;
+				border: 1px solid #999;
+				border-left-color: #f2f2f2;
+			}
+			.chevron, .name, .addChild {
+				color: #f2f2f2;
+				background: #6F7080;
+
+				&:hover {
+					color: #fff;
+					background: @MainBlueColor !important;
+				}
+			}
+
+			&.isparent > .name {
+				cursor: pointer;
+
+			}
+
+			.childsCount {
+				display: inline-block;
+			}
+			.addChild {
+				display: none;
+				padding: 2px 6px;
+				text-decoration: none;
+				border-width: 1px 1px 1px 0;
+				border-style: solid;
+				border-color: #999;
+			}
+
+			.lirow {
+				&.hl .chevron, &.hl .name, &.hl .addChild {
+					background: #7276AF;
+				}
+				&:hover {
+					> .name {
+						border-right-color: #f2f2f2;
+					}
+					> .addChild {
+						display: inline-block;
+					}
+				}
+			}
+		}
+	}
+}
+
+

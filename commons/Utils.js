@@ -170,6 +170,48 @@ Utils.inputIncomingParse = (function () {
 	};
 }());
 
+Utils.calcGeoJSONPointsNum = function (arr) {
+	'use strict';
+	var result = 0,
+		i;
+
+	if (Array.isArray(arr[0])) {
+		for (i = arr.length; i--;) {
+			result += Utils.calcGeoJSONPointsNum(arr[i]);
+		}
+	} else {
+		result = 1;
+	}
+	return result;
+};
+Utils.calcGeoJSONPolygonsNum = function (geometry) {
+	'use strict';
+	var result,
+		res,
+		i;
+
+	if (geometry.type === 'MultiPolygon') {
+		result = {exterior: 0, interior: 0};
+		for (i = geometry.coordinates.length; i--;) {
+			res = polyNum(geometry.coordinates[i]);
+			result.exterior += res.exterior;
+			result.interior += res.interior;
+		}
+	} else if (geometry.type === 'Polygon') {
+		result = polyNum(geometry.coordinates);
+	}
+
+	function polyNum (polygons) {
+		return {exterior: 1, interior: polygons.length - 1};
+	}
+	return result;
+};
+
+Utils.calcGeoJSONPointsNumReduce = function (previousValue, currentValue) {
+	'use strict';
+	return previousValue + (Array.isArray(currentValue[0]) ? currentValue.reduce(Utils.calcGeoJSONPointsNumReduce, 0) : 1);
+};
+
 Utils.copyFile = function (source, target, cb) {
 	'use strict';
 	var cbCalled = false;
@@ -217,11 +259,6 @@ Utils.cursorsExtract = function cursorsExtract(err) {
 	}
 };
 
-//Проверка на валидность geo [lng, lat]
-Utils.geoCheck = function (geo) {
-	return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
-};
-
 //Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
 	var res = {},
@@ -262,12 +299,124 @@ Utils.math = (function () {
 
 	return {
 		toPrecision: toPrecision,
-		toPrecisionRound: toPrecisionRound
+		toPrecisionRound: toPrecisionRound,
+		toPrecision6: function (number) {
+			return toPrecision(number, 6);
+		},
+		toPrecisionRound6: function (number) {
+			return toPrecisionRound(number, 6);
+		}
 	};
 }());
 
 Utils.geo = (function () {
 	'use strict';
+
+	//Цетр тяжести полигона. Без учета внутренних выколотых полигонов(дыр)
+	//На вход подаётся массив точек [lng, lat]
+	//http://stackoverflow.com/a/10129983/1309851
+	function polyCentroid(points) {
+		var pointsLen = points.length,
+			i = 0, j = pointsLen - 1,
+			f,
+			x = 0, y = 0,
+			area = 0,
+			p1, p2;
+
+		for (i; i < pointsLen; j = i++) {
+			p1 = points[i];
+			p2 = points[j];
+			f = p1[1] * p2[0] - p2[1] * p1[0];
+			y += (p1[1] + p2[1]) * f;
+			x += (p1[0] + p2[0]) * f;
+
+			area += p1[1] * p2[0];
+			area -= p1[0] * p2[1];
+		}
+		area /= 2;
+		f = area * 6;
+		return [x / f, y / f];
+	}
+
+	//BBOX полигона/мультиполигона. По первой замкнутой линии полигона, т.к. она должна быть exterior ring для следующих
+	//На вход подаётся объект geometry полигона
+	//Возвращает [WestLng, SouthLat, EastLng, NorthLat]
+	function polyBBOX(geometry) {
+		var i, resultbbox, polybbox, multipolycoords;
+
+		if (geometry.type === 'Polygon') {
+			resultbbox = getbbox(geometry.coordinates[0]);
+		} else if (geometry.type === 'MultiPolygon') {
+			i = geometry.coordinates.length;
+			multipolycoords = [];
+
+			while (i--) {
+				polybbox = getbbox(geometry.coordinates[i][0]);
+
+				multipolycoords.push([polybbox[0], polybbox[1]]); //SouthWest
+				multipolycoords.push([polybbox[2], polybbox[1]]); //NorthWest
+				multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
+				multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
+			}
+			multipolycoords.sort(function (a, b) {
+				return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
+			});
+			multipolycoords.push(multipolycoords[0]);
+			resultbbox = getbbox(multipolycoords);
+		}
+
+		function getbbox(points) {
+			var pointsLen = points.length,
+				i = 0, j = pointsLen - 1,
+				x1 = points[j][0], x2,
+				y1 = points[j][1], y2,
+				p1, p2,
+				bbox;
+
+			if (x1 === -180) {
+				x1 = 180;
+			}
+			bbox = [x1, y1, x1, y1];
+
+			for (i; i < pointsLen - 1; j = i++) {
+				p1 = points[j]; //prev
+				x1 = p1[0];
+				p2 = points[i]; //current
+				x2 = p2[0];
+				y2 = p2[1];
+
+				if (x1 === -180) {
+					x1 = 180;
+				}
+				if (x2 === -180) {
+					x2 = 180;
+				}
+
+				if (Math.abs(x2 - x1) <= 180) {
+					if (x2 > x1 && x2 > bbox[2] && Math.abs(x2 - bbox[2]) <= 180) {
+						bbox[2] = x2;
+					} else if (x2 < x1 && x2 < bbox[0] && Math.abs(x2 - bbox[0]) <= 180) {
+						bbox[0] = x2;
+					}
+				} else {
+					if (x2 < 0 && x1 > 0 && (x2 > bbox[2] || bbox[2] > 0)) {
+						bbox[2] = x2;
+					} else if (x2 > 0 && x1 < 0 && (x2 < bbox[0] || bbox[0] < 0)) {
+						bbox[0] = x2;
+					}
+				}
+
+				if (y2 < bbox[1]) {
+					bbox[1] = y2;
+				} else if (y2 > bbox[3]) {
+					bbox[3] = y2;
+				}
+			}
+			return bbox;
+		}
+
+		return resultbbox;
+	}
 
 	/**
 	 * Haversine formula to calculate the distance
@@ -306,11 +455,54 @@ Utils.geo = (function () {
 		return geo;
 	}
 
+	function spinLng(geo) {
+		if (geo[0] < -180) {
+			geo[0] += 360;
+		} else if (geo[0] > 180) {
+			geo[0] -= 360;
+		}
+	}
+
+	function latlngToArr(ll, lngFirst) {
+		return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
+	}
+
+	//Проверка на валидность geo [lng, lat]
+	function check(geo) {
+		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+	}
+	//Проверка на валидность geo [lat, lng]
+	function checkLatLng(geo) {
+		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+	}
+
+	//Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
+	function checkbbox(bbox) {
+		return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
+	}
+	//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
+	function checkbboxLatLng(bbox) {
+		return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
+	}
+	//Переставляет местами lat и lng в bbox
+	function bboxReverse(bbox) {
+		return [bbox[1], bbox[0], bbox[3], bbox[2]];
+	}
+
 	return {
-		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
 		deg2rad: deg2rad,
 		geoToPrecision: geoToPrecision,
-		geoToPrecisionRound: geoToPrecisionRound
+		geoToPrecisionRound: geoToPrecisionRound,
+		getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
+		polyCentroid: polyCentroid,
+		polyBBOX: polyBBOX,
+		spinLng: spinLng,
+		latlngToArr: latlngToArr,
+		check: check,
+		checkLatLng: checkLatLng,
+		checkbbox: checkbbox,
+		checkbboxLatLng: checkbboxLatLng,
+		bboxReverse: bboxReverse
 	};
 }());
 

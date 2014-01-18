@@ -12,6 +12,11 @@ define([
 ], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, User, storage, Locations, L, Map, MarkerManager, jade) {
 	'use strict';
 
+	var defaults = {
+		sys: 'osm',
+		type: 'osmosnimki'
+	};
+
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -28,7 +33,9 @@ define([
 			// Modes
 			this.embedded = this.options.embedded;
 			this.editing = ko.observable(this.options.editing);
-			this.openNewTab = ko.observable(!this.embedded);
+			this.openNewTab = ko.observable(!!Utils.getLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew'));
+			this.linkShow = ko.observable(false); //Показывать ссылку на карту
+			this.link = ko.observable(''); //Ссылка на карту
 
 			// Map objects
 			this.map = null;
@@ -53,42 +60,40 @@ define([
 
 			this.infoShow = ko.observable(true);
 
-			if (P.settings.USE_OSM_API()) {
-				this.layers.push({
-					id: 'osm',
-					desc: 'OSM',
-					selected: ko.observable(false),
-					types: ko.observableArray([
-						{
-							id: 'osmosnimki',
-							desc: 'Osmosnimki',
-							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.osmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
-							maxZoom: 19,
-							limitZoom: 18,
-							maxAfter: 'google.scheme'
-						},
-						{
-							id: 'mapnik',
-							desc: 'Mapnik',
-							selected: ko.observable(false),
-							obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 19}),
-							maxZoom: 19,
-							limitZoom: 18,
-							maxAfter: 'google.scheme'
-						},
-						{
-							id: 'mapquest',
-							desc: 'Mapquest',
-							selected: ko.observable(false),
-							obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20}),
-							maxZoom: 20,
-							limitZoom: 19,
-							maxAfter: 'google.scheme'
-						}
-					])
-				});
-			}
+			this.layers.push({
+				id: 'osm',
+				desc: 'OSM',
+				selected: ko.observable(false),
+				types: ko.observableArray([
+					{
+						id: 'osmosnimki',
+						desc: 'Kosmosnimki',
+						selected: ko.observable(false),
+						obj: new L.TileLayer('http://{s}.tile.osm.kosmosnimki.ru/kosmo/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20, maxNativeZoom: 18}),
+						maxZoom: 20,
+						limitZoom: 19,
+						maxAfter: 'google.scheme'
+					},
+					{
+						id: 'mapnik',
+						desc: 'Mapnik',
+						selected: ko.observable(false),
+						obj: new L.TileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20}),
+						maxZoom: 20,
+						limitZoom: 19,
+						maxAfter: 'google.scheme'
+					},
+					{
+						id: 'mapquest',
+						desc: 'Mapquest',
+						selected: ko.observable(false),
+						obj: new L.TileLayer('http://otile1.mqcdn.com/tiles/1.0.0/osm/{z}/{x}/{y}.png', {updateWhenIdle: false, maxZoom: 20, maxNativeZoom: 18}),
+						maxZoom: 20,
+						limitZoom: 19,
+						maxAfter: 'google.scheme'
+					}
+				])
+			});
 			if (P.settings.USE_GOOGLE_API()) {
 				this.layers.push({
 					id: 'google',
@@ -181,6 +186,8 @@ define([
 				});
 			}
 
+			this.showLinkBind = this.showLink.bind(this);
+
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Subscriptions
@@ -190,17 +197,42 @@ define([
 				if (this.markerManager) {
 					this.markerManager.openNewTab = val;
 				}
+				Utils.setLocalStorage(this.embedded ? 'map.embedded.opennew' : 'map.opennew', val);
 			}, this);
 
 			this.show();
 		},
 
 		show: function () {
-			var center = this.point && this.point.geo() || this.options.center || this.mapDefCenter;
+			var qParams = globalVM.router.params(),
+				center,
+				zoom = Number(qParams.z) || (this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z)),
+				system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
+				type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
-			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: this.embedded ? 18 : Locations.current.z, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+			if (this.embedded) {
+				center = this.point && this.point.geo() || this.options.center;
+			} else {
+				center = qParams.g;
+				if (center) {
+					center = center.split(',').map(function (element) {
+						return parseFloat(element);
+					});
+					if (!Utils.geo.checkLatLng(center)) {
+						center = null;
+					}
+				}
+				if (!center) {
+					center = Utils.getLocalStorage('map.center');
+				}
+			}
+			if (!center || !Utils.geo.checkLatLng(center)) {
+				center = this.mapDefCenter;
+			}
+
+			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: zoom, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
-			this.selectLayer('yandex', 'scheme');
+			this.selectLayer(system, type);
 
 			Locations.subscribe(function (val) {
 				this.mapDefCenter = new L.LatLng(val.lat, val.lng);
@@ -209,7 +241,7 @@ define([
 
 			renderer(
 				[
-					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: 18, canOpen: !this.embedded}, ctx: this, callback: function (vm) {
+					{module: 'm/map/navSlider', container: '.mapNavigation', options: {map: this.map, maxZoom: this.layerActive().type.limitZoom || this.layerActive().type.maxZoom, canOpen: !this.embedded}, ctx: this, callback: function (vm) {
 						this.childModules[vm.id] = vm;
 						this.navSliderVM = vm;
 					}.bind(this)}
@@ -225,6 +257,8 @@ define([
 				.whenReady(function () {
 					if (this.embedded) {
 						this.map.addLayer(this.pointLayer);
+					} else {
+						this.map.on('moveend', this.saveCenterZoom, this);
 					}
 					this.editHandler(this.editing());
 
@@ -244,6 +278,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			this.removeShowLinkListener();
 			this.pointHighlightDestroy().pointEditDestroy().markerManager.destroy();
 			this.map.off('moveend');
 			this.map.remove();
@@ -370,10 +405,15 @@ define([
 		setMapDefCenter: function (forceMoveEvent) {
 			this.map.setView(this.mapDefCenter, Locations.current.z, false);
 		},
+		saveCenterZoom: function () {
+			Utils.setLocalStorage('map.center', Utils.geo.latlngToArr(this.map.getCenter()));
+			Utils.setLocalStorage('map.zoom', this.map.getZoom());
+		},
 		zoomEndCheckLayer: function () {
-			var maxAfter = this.layerActive().type.maxAfter,
+			var limitZoom = this.layerActive().type.limitZoom,
+				maxAfter = this.layerActive().type.maxAfter,
 				layers;
-			if (this.layerActive().type.limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > this.layerActive().type.limitZoom) {
+			if (limitZoom !== undefined && maxAfter !== undefined && this.map.getZoom() > limitZoom) {
 				layers = maxAfter.split('.');
 				if (this.layerActive().sys.id === 'osm') {
 					this.layerActive().type.obj.on('load', function (evt) {
@@ -388,39 +428,82 @@ define([
 		toggleLayers: function (vm, event) {
 			this.layersOpen(!this.layersOpen());
 		},
+		getSysById: function (id) {
+			return _.find(this.layers(), function (item) {
+				return item.id === id;
+			});
+		},
+		getTypeById: function (system, id) {
+			return _.find(system.types(), function (item) {
+				return item.id === id;
+			});
+		},
+		showLink: function () {
+			if (!this.linkShow()) {
+				var center = Utils.geo.geoToPrecision(Utils.geo.latlngToArr(this.map.getCenter())),
+					layerActive = this.layerActive();
+
+				setTimeout(function () {
+					this.$dom.find('.inputLink').focus().select();
+					document.addEventListener('click', this.showLinkBind);
+				}.bind(this), 100);
+
+				this.link('?g=' + center[0] + ',' + center[1] + '&z=' + this.map.getZoom() + '&s=' + layerActive.sys.id + '&t=' + layerActive.type.id);
+				this.map.on('zoomstart', this.hideLink, this); //Скрываем ссылку при начале зуммирования карты
+				this.linkShow(true);
+			} else {
+				this.hideLink();
+			}
+		},
+		hideLink: function () {
+			this.linkShow(false);
+			this.removeShowLinkListener();
+		},
+		removeShowLinkListener: function () {
+			this.map.off('zoomstart', this.hideLink, this);
+			document.removeEventListener('click', this.showLinkBind);
+		},
+		linkClick: function (data, evt) {
+			var input = evt.target;
+			if (input) {
+				input.select();
+			}
+			evt.stopPropagation();
+			return false;
+		},
 		selectLayer: function (sys_id, type_id) {
-			var layers = this.layers(),
-				layerActive = this.layerActive(),
+			var layerActive = this.layerActive(),
 				system,
 				type,
-				setLayer = function (type) {
-					this.map.addLayer(type.obj);
-					this.markerManager.layerChange();
-					this.map.options.maxZoom = type.maxZoom;
-					if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
-						this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
-					}
-					if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
-						this.map.setZoom(type.limitZoom);
-					} else if (this.map.getZoom() > type.maxZoom) {
-						this.map.setZoom(type.maxZoom);
-					}
-				}.bind(this);
+				setLayer;
 
 			if (layerActive.sys && layerActive.sys.id === sys_id && layerActive.type.id === type_id) {
 				return;
 			}
 
-			system = _.find(layers, function (item) {
-				return item.id === sys_id;
-			});
+			system = this.getSysById(sys_id || defaults.sys) || this.getSysById(defaults.sys);
 
 			if (system) {
-				type = _.find(system.types(), function (item) {
-					return item.id === type_id;
-				});
+				type = this.getTypeById(system, type_id || defaults.type) || this.getTypeById(system, defaults.type);
 
 				if (type) {
+					setLayer = function (type) {
+						this.map.addLayer(type.obj);
+						this.markerManager.layerChange();
+						this.map.options.maxZoom = type.maxZoom;
+						if (this.navSliderVM && Utils.isType('function', this.navSliderVM.recalcZooms)) {
+							this.navSliderVM.recalcZooms(type.limitZoom || type.maxZoom, true);
+						}
+						if (type.limitZoom !== undefined && this.map.getZoom() > type.limitZoom) {
+							this.map.setZoom(type.limitZoom);
+						} else if (this.map.getZoom() > type.maxZoom) {
+							this.map.setZoom(type.maxZoom);
+						}
+
+						Utils.setLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys', system.id);
+						Utils.setLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type', type.id);
+					}.bind(this);
+
 					if (layerActive.sys && layerActive.type) {
 						layerActive.sys.selected(false);
 						layerActive.type.selected(false);
@@ -446,8 +529,6 @@ define([
 					}
 				}
 			}
-
-			layers = system = null;
 		},
 
 		yearSliderCreate: function () {

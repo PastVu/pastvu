@@ -1,9 +1,35 @@
 @import "../_vars";
-@import "../bootstrap/variables";
-@import "../bootstrap/mixins";
+@import "../bs/variables";
+@import "../bs/mixins";
 
 .userPage {
+	.userBrief {
+		position: relative;
+		padding-top: 10px;
+
+		&.affix {
+			position: fixed;
+			top: 0;
+		}
+	}
 	.user_menu {
 		margin: -1px 1px 10px 1px;
+	}
+}
+
+@media (min-width: @screen-sm-min) {
+	.userPage {
+		> .userBody {
+			padding-left: 10px
+		}
+	}
+}
+
+@media (max-width: @screen-xs-max) {
+	.userPage {
+		.userBrief.affix {
+			position: relative;
+			top: auto;
+		}
 	}
 }

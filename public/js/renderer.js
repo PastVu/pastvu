@@ -89,9 +89,14 @@ define([
 			if (Utils.isType('object', item.modal)) {
 				item.modal.$containerCurtain = $(modalTpl({
 					initWidth: item.modal.initWidth || 'auto',
+					maxWidthRatio: item.modal.maxWidthRatio || 0.8,
+					fullHeight: item.modal.fullHeight || false,
 					topic: item.modal.topic || '',
 					closeTxt: item.modal.closeTxt || ''
 				}));
+				if (item.modal.withScroll) {
+					item.modal.$containerCurtain.find('.neoModalContainer').addClass('scroll');
+				}
 				if (item.modal.closeFunc) {
 					item.modal.$containerCurtain.find('.closeClick').on('click', item.modal.closeFunc);
 				}

@@ -40,7 +40,7 @@ requirejs.config({
 
 		'm': 'module',
 
-		'jquery': 'lib/jquery/jquery-2.0.3',
+		'jquery': 'lib/jquery/jquery',
 		'jquery-ui': 'lib/jquery/ui',
 		'jquery-plugins': 'lib/jquery/plugins',
 		'bs': 'lib/bootstrap',
@@ -61,13 +61,14 @@ requirejs.config({
 		'backbone': 'lib/backbone/backbone',
 		'backbone.queryparams': 'lib/backbone/queryparams',
 
-		'knockout': 'lib/knockout/knockout-2.3.0',
+		'knockout': 'lib/knockout/knockout',
 		'knockout.extends': 'lib/knockout/extends',
 		'knockout.mapping': 'lib/knockout/knockout.mapping',
 		'knockout.postbox': 'lib/knockout/knockout-postbox',
 		'knockout.bs': 'lib/knockout/knockout-bootstrap',
 
-		'leaflet': 'lib/leaflet/leaflet_0.6.4',
+		'leaflet': 'lib/leaflet/leaflet',
+		'leaflet-plugins': 'lib/leaflet/plugins',
 
 		'highstock': 'lib/highstock',
 

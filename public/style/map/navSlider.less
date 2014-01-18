@@ -1,12 +1,11 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .mapNavigator {
 	position: absolute;
-	width: 71px;
-	box-sizing: content-box;
-	z-index: @zindexPopover;
+	width: 72px;
+	z-index: @zindex-popover;
 	.user-select(none);
 
 	.stateWrap {
@@ -16,114 +15,99 @@
 
 	.butt {
 		position: absolute;
-		height: 26px;
-		width: 27px;
+		height: 28px;
+		width: 30px;
+		color: #e4e4e4;
+		font-size: @font-size-small;
 		cursor: pointer;
 		.transition(all 0.25s ease-out 1s);
 
-		&::after {
-			content: '';
-			position: absolute;
-			width: 13px;
-			height: 14px;
-			opacity: 0.8;
-			background-repeat: no-repeat;
-			background-image: url(/img/misc/tww.png);
-		}
-
 		&:hover {
+			color: #fff;
 			border-color: #EFF2FF;
-
-			&::after {
-				opacity: 1;
-			}
 		}
 
 		&.inout {
 			left: 20px;
-			&::after {
-				left: 7px;
-				top: 6px;
+			line-height: 22px;
+			text-align: center;
+
+			> .glyphicon {
+				vertical-align: middle;
 			}
 		}
 	}
 
 	.mup {
 		display: none;
-		height: 13px;
+		height: 15px;
 		left: 20px;
 		top: 19px;
-		width: 27px;
+		text-align: center;
 		opacity: 0;
-		&::after {
-			left: 7px;
-			top: 0;
-			background-position: -289px -96px;
+
+		> .glyphicon {
+			vertical-align: top;
 		}
 	}
 	.mright {
 		display: none;
-		height: 26px;
-		left: 34px;
+		height: 28px;
+		left: 35px;
 		top: 20px;
-		width: 13px;
+		width: 15px;
+		line-height: 22px;
+		text-align: left;
 		opacity: 0;
-		&::after {
-			left: -1px;
-			top: 6px;
-			background-position: -264px -96px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 	.mdown {
 		display: none;
-		height: 13px;
+		height: 15px;
 		left: 20px;
 		top: 33px;
-		width: 27px;
+		text-align: center;
 		opacity: 0;
-		&::after {
-			left: 7px;
-			top: -1px;
-			background-position: -312px -96px;
+
+		> .glyphicon {
+			vertical-align: top;
 		}
 	}
 	.mleft {
 		display: none;
-		height: 26px;
+		height: 28px;
 		left: 20px;
 		top: 20px;
-		width: 13px;
+		width: 15px;
+		line-height: 22px;
+		text-align: right;
 		opacity: 0;
-		&::after {
-			left: 0;
-			top: 6px;
-			background-position: -240px -96px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 	.mhome {
 		left: 20px;
 		top: 38px;
-		height: 26px;
-		width: 27px;
+		height: 28px;
+		line-height: 22px;
+		text-align: center;
 		.transition(top 0.25s ease-out 1.3s);
-		&::after {
-			left: 7px;
-			top: 6px;
-			background-position: 0 -24px;
+
+		> .glyphicon {
+			vertical-align: middle;
 		}
 	}
 
 	.zoomin {
 		top: 72px;
-		&::after {
-			background-position: -408px -96px;
-		}
 	}
 	.zoomout {
 		bottom: 0;
-		&::after {
-			background-position: -433px -96px;
-		}
 	}
 
 	.stick {
@@ -132,7 +116,7 @@
 		left: 31px;
 		top: 99px;
 		bottom: 29px;
-		width: 5px;
+		width: 7px;
 		border-top-width: 0;
 		border-bottom-width: 0;
 		@shadow: 0 1px 0 0 @MainBlueColor, 1px 1px 0 0 #000, -1px 1px 0 0 #000;
@@ -147,7 +131,7 @@
 			bottom: -2px;
 			border-width: 0 1px;
 			border-style: solid;
-			border-color: #C3C7DD;
+			border-color: @FringeBorder;
 			background-color: @MainBlueColor;
 		}
 	}
@@ -185,9 +169,9 @@
 			position: absolute;
 			bottom: 2px;
 			left: 20px;
-			width: 27px;
-			height: 10px;
-			font-family: @altFontFamily;
+			width: 30px;
+			height: 12px;
+			font-family: @font-family-alt;
 			font-size: 11px;
 			line-height: 11px;
 			text-align: center;
@@ -196,7 +180,7 @@
 
 			&:hover {
 				border-color: #EFF2FF;
-				color: @white;
+				color: #fff;
 			}
 		}
 
@@ -213,7 +197,7 @@
 		}
 	}
 
-	.panel {
+	.navpanel {
 		position: relative;
 		width: 100%;
 		z-index: 2;
@@ -233,8 +217,8 @@
 			position: relative;
 			left: 24px;
 			top: 2px;
-			width: 20px;
-			height: 20px;
+			width: 22px;
+			height: 22px;
 			margin-bottom: 7px;
 			cursor: pointer;
 			background-image: url(/img/map/pin.png);
@@ -251,7 +235,7 @@
 		&.hover, &.pinned {
 			zoom: 1;
 
-			.panel {
+			.navpanel {
 				.transition(height 0.25s ease-out);
 			}
 
@@ -264,7 +248,7 @@
 				opacity: 1;
 			}
 			.mright {
-				left: 53px;
+				left: 54px;
 				opacity: 1;
 			}
 			.mdown {

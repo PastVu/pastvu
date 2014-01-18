@@ -12,7 +12,7 @@
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://pastvu.com/ps?f=nogeo</loc>
+        <loc>https://pastvu.com/ps?f=geo!0</loc>
         <changefreq>daily</changefreq>
         <priority>0.5</priority>
     </url>

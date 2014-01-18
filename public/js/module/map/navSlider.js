@@ -13,6 +13,7 @@ define([
 			canOpen: true
 		},
 		create: function () {
+			this.auth = globalVM.repository['m/common/auth'];
 			this.map = this.options.map;
 			this.dashes = ko.observableArray();
 
@@ -95,8 +96,36 @@ define([
 			}
 		},
 		toHome: function () {
-			var home = Locations.types.home || Locations.types.gpsip || Locations.types._def_;
-			this.map.setView(new L.LatLng(home.lat, home.lng), Locations.current.z, false);
+			var center,
+				bbox,
+				latlng,
+				z;
+
+			if (this.auth.loggedIn() && this.auth.iAm.regionHome) {
+				if (this.auth.iAm.regionHome.center) {
+					center = this.auth.iAm.regionHome.center();
+					if (Utils.geo.check(center)) {
+						latlng = [center[1], center[0]];
+					}
+				}
+				if (this.auth.iAm.regionHome.bboxhome || this.auth.iAm.regionHome.bbox) {
+					bbox = this.auth.iAm.regionHome.bboxhome() || this.auth.iAm.regionHome.bbox();
+					if (Utils.geo.checkbbox(bbox)) {
+						z = this.map.getBoundsZoom([
+							[bbox[1], bbox[0]],
+							[bbox[3], bbox[2]]
+						], false);
+					}
+				}
+			}
+			if (!center) {
+				latlng = [55.751667, 37.617778];
+			}
+			if (!z) {
+				z = 10;
+			}
+
+			this.map.setView(new L.LatLng(latlng[0], latlng[1]), z, {animate: true});
 		},
 		dashClick: function ($e) {
 			var zoom = Number($($e.target).attr('data-zoom'));

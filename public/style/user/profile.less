@@ -1,86 +1,29 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
-.user_profile form.form-horizontal{
-	display: block;
+.user_profile .form-horizontal{
 	padding: 0 0 0 20px;
 
-	span {
-		display: inline-block;
-	}
-
-	.loginName {
-		margin-top: 5px;
+	.control-label {
+		padding-right: 10px;
 	}
 
 	&.canBeEdit {
-		.control-group {
-			margin-bottom: 10px;
-
-			input[type="text"] {
-				vertical-align: top; //В webkit без этого пустое поле падает к нижней границе
-				margin-bottom: 2px;
-			}
-			input[type="text"]:not(:last-of-type) { //Каждому не последнему инпуту ставим отступ справа
-				margin-right: 3px;
-			}
-		}
-
-		textarea {
-			width: 437px;
-		}
 	}
 
 	&.cannotBeEdit {
-		.control-group {
-			margin-bottom: 1px;
-
-			.control-label {
-				text-align: left;
-				width: auto;
-			}
+		.control-label {
+			text-align: left;
 		}
-		input, textarea {
+		.form-control {
 			box-shadow: none;
-			border-color: transparent;
+			border: none;
 			background-color: transparent;
 			cursor: default;
 		}
-		input[type="text"], textarea {
-			width: auto;
-			padding-left: 0;
-			padding-right: 0;
-		}
 		textarea {
 			width: 90%;
-		}
-		input[type="radio"] {
-			display: none;
-		}
-
-	}
-
-	&.edit_mode {
-		label {
-			text-shadow: 0 1px 0 #FFF, 0 -1px 1px #BBBBBB;
-		}
-
-		input#inBirthdate {
-			width: 181px;
-		}
-		.input-append.date {
-			cursor: pointer;
-
-			.add-on {
-				min-width: 13px;
-				padding-top: 5px;
-				padding-bottom: 3px;
-				i {
-					width: 13px;
-				}
-			}
-
 		}
 	}
 }

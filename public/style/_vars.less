@@ -4,38 +4,31 @@
 @MainGreenColor: rgb(10, 109, 4);
 @MainRedColor: rgb(196, 30, 30);
 
+@ColorAdmin: #7d0000;
+@ColorMod: #DD9000;
+
+@FringeBorder: #C3C7DD;
+
 @PhotoTitleHeight: 25px;
 
-@logoW: 62px;
-@logoH: 62px;
+@logoW: 57px;
+@logoH: 57px;
 
 .simple_gradient(@start: #fff, @stop: #000) {
 	background: @start; /* Old browser */
-	background: -moz-linear-gradient(top, @start 0%, @stop 100%); /* FF3.6+ */
-	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, @start), color-stop(100%, @stop)); /* Chrome,Safari4+ */
-	background: -webkit-linear-gradient(top, @start 0%, @stop 100%); /* Chrome10+,Safari5.1+ */
-	background: -o-linear-gradient(top, @start 0%, @stop 100%); /* Opera 11.10+ */
-	background: -ms-linear-gradient(top, @start 0%, @stop 100%); /* IE10+ */
-	background: linear-gradient(to bottom, @start 0%, @stop 100%); /* W3C */
+	background: -webkit-linear-gradient(top, @start 0%, @stop 100%); /* Chrome10+ Safari5.1+ */
+	background: linear-gradient(to bottom, @start 0%, @stop 100%); /* W3C: FF16+ IE10+ Chrome26+ Safari6.1+ Opera12.10+ Android4.4+ */
 }
 
 .triple_gradient(@start: #fff, @middle: #ccc, @stop: #000, @from: top, @to: bottom) {
 	background: @middle;
-	background: -moz-linear-gradient(@from, @start 0%, @middle 50%, @stop 100%);
-	background: -webkit-gradient(linear, left @from, left @to, color-stop(0%,@start), color-stop(50%,@middle), color-stop(100%,@stop));
 	background: -webkit-linear-gradient(@from, @start 0%,@middle 50%,@stop 100%);
-	background: -o-linear-gradient(@from, @start 0%,@middle 50%,@stop 100%);
-	background: -ms-linear-gradient(@from, @start 0%,@middle 50%,@stop 100%);
 	background: linear-gradient(to @to, @start 0%,@middle 50%,@stop 100%);
 }
 
 .five_gradient(@start: #fff, @middle1: #ccc, @middle2: #ccc, @middle3: #ccc, @stop: #000, @from: left, @to: right) {
 	background: @middle2;
-	background: -moz-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
-	background: -webkit-gradient(linear, left @from, left @to, color-stop(0%, @start), color-stop(50%, @middle2), color-stop(100%,@stop));
 	background: -webkit-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
-	background: -o-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
-	background: -ms-linear-gradient(@from, @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
 	background: linear-gradient(to @to,  @start 0%, @middle1 20%, @middle2 50%, @middle3 80%, @stop 100%);
 }
 

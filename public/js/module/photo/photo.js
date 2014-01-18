@@ -2,7 +2,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover', 'bs/bootstrap-dropdown', 'bs/bootstrap-multiselect', 'knockout.bs', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
+define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, storage, jade) {
 	'use strict';
 	var $window = $(window),
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
@@ -29,6 +29,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.rnks = ko.observable(''); //Звания пользователя в виде готового шаблона
 
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
+			this.exeregion = ko.observable(false); //Указывает, что сейчас идет запрос региона по координате
 
 			this.can = ko_mapping.fromJS({
 				edit: false,
@@ -43,31 +44,32 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}, this);
 
 			this.canBeApprove = this.co.canBeApprove = ko.computed(function () {
-				return this.p.fresh() && this.can.approve();
+				return this.p.s() < 2 && this.can.approve();
 			}, this);
 
 			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
-				return !this.p.fresh() && !this.p.del() && this.can.disable();
+				return this.p.s() > 1 && this.p.s() !== 9 && this.can.disable();
 			}, this);
 
 			this.edit = ko.observable(undefined);
 
 			this.msg = ko.observable('');
 			this.msgCss = ko.observable('');
+			this.msgTitle = ko.observable('');
 
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				if (this.edit()) {
-					this.setMessage('Фото в режиме редактирования. Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
+					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
-				} else if (this.p.fresh()) {
-					if (!this.p.ready()) {
-						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', 'warn'); //Photo is new. Administrator must approve it
+				} else if (this.p.s() < 2) {
+					if (this.p.s() === 0) {
+						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', '', 'warn'); //Photo is new. Administrator must approve it
 					} else {
-						this.setMessage('Новая фотография. Ожидает подтверждения модератором', 'warn'); //Photo is new. Administrator must approve it
+						this.setMessage('Новая фотография. Ожидает подтверждения модератором', '', 'warn'); //Photo is new. Administrator must approve it
 					}
-				} else if (this.p.disabled()) {
-					this.setMessage('Фотография деактивирована администрацией. Только вы и модераторы можете видеть ёё и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
-				} else if (this.p.del()) {
+				} else if (this.p.s() === 7) {
+					this.setMessage('Фотография деактивирована модератором', 'Только вы и модераторы можете видеть её и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
+				} else if (this.p.s() === 9) {
 					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
 				} else {
 					this.setMessage('', 'muted');
@@ -92,7 +94,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.thumbN = ko.observable(4);
 			this.thumbNUser = ko.observable(3);
 
-			this.convertOptions = ko.observableArray([
+			this.convertVars = ko.observableArray([
 				{vName: 'Origin', vId: 'a'},
 				{vName: 'Standard', vId: 'd'},
 				{vName: 'Thumb', vId: 'h'},
@@ -101,14 +103,16 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				{vName: 'Micro', vId: 's'},
 				{vName: 'Micros', vId: 'x'}
 			]);
-			this.selectedOpt = ko.observableArray([]);
-			this.$dom.find('#convertSelect').multiselect({
-				buttonClass: 'btn-strict',
-				buttonWidth: 'auto', // Default
-				buttonText: function (options) {
+			this.convertVarsSel = ko.observableArray([]);
+			this.convertOptions = {
+				includeSelectAllOption: true,
+				//buttonContainer: '',
+				buttonClass: 'btn btn-primary',
+				buttonWidth: '150px',
+				buttonText: function (options, select) {
 					if (options.length === 0) {
 						return 'Convert variants <b class="caret"></b>';
-					} else if (options.length === _this.convertOptions().length) {
+					} else if (options.length === _this.convertVars().length) {
 						return 'All variants selected <b class="caret"></b>';
 					} else if (options.length > 2) {
 						return options.length + ' variants selected <b class="caret"></b>';
@@ -120,14 +124,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
 					}
 				}
-			});
-
+			};
 
 			this.scrollTimeout = null;
 			this.scrollToBind = this.scrollTo.bind(this);
-
-			this.descFocusBind = this.inputFocus.bind(this);
-			this.descLabelClickBind = this.inputLabelClick.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragArea = null;
@@ -148,6 +148,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			];
 
+			this.descCheckInViewportDebounced = _.debounce(this.descCheckInViewport, 210, {leading: false, trailing: true});
+
 			// Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
 			this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, {leading: true, trailing: true});
 
@@ -159,39 +161,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 			this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
 			this.subscriptions.hscaleTumbler = this.hscaleTumbler.subscribe(this.sizesCalcPhoto, this);
-			this.subscriptions.year = this.p.year.subscribe(function (val) {
-				var v = Number(val);
-
-				if (!v || isNaN(v)) {
-					//Если значение не парсится, ставим дефолтное
-					v = Photo.def.full.year;
-				} else {
-					//Убеждаемся, что оно в допустимом интервале
-					v = Math.min(Math.max(v, 1826), 2000);
-				}
-
-				if (String(val) !== String(v)) {
-					//Если мы поправили значение, то перезаписываем его
-					this.p.year(v);
-				} else if (v > parseInt(this.p.year2(), 10)) {
-					this.p.year2(v);
-				}
-			}, this);
-			this.subscriptions.year2 = this.p.year2.subscribe(_.debounce(function (val) {
-				var v = Number(val);
-
-				if (!v || isNaN(v)) {
-					//Если значение не парсится, ставим дефолтное
-					v = Photo.def.full.year;
-				} else {
-					//Убеждаемся, что оно в допустимом интервале и не мене year
-					v = Math.min(Math.max(v, this.p.year()), 2000);
-				}
-
-				if (String(val) !== String(v)) {
-					this.p.year2(v);
-				}
-			}, 400), this);
 		},
 		show: function () {
 			if (this.showing) {
@@ -205,7 +174,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.showing = true;
 		},
 		hide: function () {
-			this.$dom.find('.photoImgWrap').off();
+			this.$dom.find('.imgWrap').off();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 			//globalVM.pb.publish('/top/message', ['', 'muted']);
@@ -277,7 +246,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 						Utils.title.setTitle({title: this.p.title()});
 
-						editModeNew = this.can.edit() && this.IOwner() && this.p.fresh() && !this.p.ready();
+						editModeNew = this.can.edit() && this.IOwner() && this.p.s() === 0;
 
 						if (this.photoLoadContainer) {
 							this.photoLoadContainer.off('load').off('error');
@@ -320,6 +289,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			storage.photoCan(this.p.cid(), function (data) {
 				if (!data.error) {
 					this.can = ko_mapping.fromJS(data.can, this.can);
+					this.sizesCalc();
 				}
 			}, this);
 			this.subscriptions.loggedIn.dispose();
@@ -338,9 +308,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		mapEditOn: function () {
 			this.mapVM.editPointOn();
+			//В режиме редактирования подписываемся на изменение координаты, чтобы обновить регион
+			this.subscriptions.geoChange = this.p.geo.subscribe(this.editGeoChange, this);
 		},
 		mapEditOff: function () {
 			this.mapVM.editPointOff();
+			if (this.subscriptions.geoChange && this.subscriptions.geoChange.dispose) {
+				this.subscriptions.geoChange.dispose();
+			}
 		},
 
 		// Установить фото для точки на карте
@@ -349,6 +324,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		genMapPoint: function () {
 			return _.pick(this.p, 'geo', 'year', 'dir', 'title');
+		},
+		editGeoChange: function (geo) {
+			if (geo) {
+				this.getRegionsByGeo(geo);
+			}
 		},
 
 		//Вызывается после рендеринга шаблона информации фото
@@ -405,7 +385,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		//Пересчитывает размер фотографии
 		sizesCalcPhoto: function () {
 			var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0,
-				maxHeight = P.window.h() - this.$dom.find('.photoImgRow').offset().top - 47 >> 0,
+				maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0,
 				ws = this.p.ws(),
 				hs = this.p.hs(),
 				aspect = ws / hs,
@@ -456,113 +436,212 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		descSetEdit: function () {
-			var $root = this.$dom.find('.photoDesc'),
-				$input = $root.find('.descInput'),
-				content = Utils.txtHtmlToInput(this.p.desc());
+			this.descEditOrigin = Utils.txtHtmlToInput(this.p.desc());
+			this.p.desc(this.descEditOrigin);
+			this.descCheckHeight(this.$dom.find('.descInput'));
 
-			if (content) {
-				$input.val(Utils.txtHtmlToInput(this.p.desc()));
-				//Задаем высоту textarea под контент
-				$root.addClass('hasContent');
+			this.sourceEditOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.p.source(this.sourceEditOrigin);
+
+			this.authorEditOrigin = Utils.txtHtmlToInput(this.p.author());
+			this.p.author(this.authorEditOrigin);
+		},
+		inputlblfocus: function (data, event) {
+			var label = event.target && event.target.previousElementSibling;
+			if (label && label.classList) {
+				label.classList.add('on');
 			}
-			this.inputCheckHeight($root, $input);
-
-			this.sourceEditingOrigin = Utils.txtHtmlToInput(this.p.source());
-			this.p.source(this.sourceEditingOrigin);
 		},
-		//Фокус на поле ввода активирует его редактирование
-		inputFocus: function (data, event) {
-			this.descActivate($(event.target).closest('.photoInfo'));
+		inputlblblur: function (data, event) {
+			var label = event.target && event.target.previousElementSibling;
+			if (label && label.classList) {
+				label.classList.remove('on');
+			}
 		},
-		//Клик на лэйбл активирует редактирование
-		inputLabelClick: function (data, event) {
-			this.descActivate($(event.target).closest('.photoInfo'), null, true);
+		descFocus: function (data, event) {
+			this.inputlblfocus(data, event);
+			$(event.target)
+				.addClass('hasFocus')
+				.off('keyup') //На всякий случай убираем обработчики keyup, если blur не сработал
+				.on('keyup', _.debounce(this.descKeyup.bind(this), 300));
+			this.descCheckInViewportDebounced($(event.target));
 		},
-		descActivate: function (root, scrollDuration, focus) {
-			var input = root.find('.descInput');
-
-			root.addClass('hasFocus');
-			input
-				.off('keyup').off('blur')
-				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
-				.on('blur', _.debounce(this.inputBlur.bind(this), 200));
-			this.inputCheckInViewport(root, scrollDuration, function () {
-				if (focus) {
-					input.focus();
-				}
-			});
+		descBlur: function (data, event) {
+			this.inputlblblur(data, event);
+			$(event.target).removeClass('hasFocus').off('keyup');
 		},
-		//Отслеживанием ввод, чтобы подгонять input под высоту текста
-		inputKeyup: function (evt) {
+		//Отслеживанием ввод, чтобы подгонять desc под высоту текста
+		descKeyup: function (evt) {
 			var $input = $(evt.target),
-				$root = $input.closest('.photoInfo'),
+				realHeight = this.descCheckHeight($input);
+
+			//Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
+			//(т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
+			if (realHeight) {
+				this.descCheckInViewport($input, realHeight);
+			}
+		},
+		//Подгоняем desc под высоту текста.
+		//Если высота изменилась, возвращаем её, если нет - false
+		descCheckHeight: function ($input) {
+			var height = $input.height() + 2, //2 - border
+				heightScroll = ($input[0].scrollHeight) || height,
 				content = $.trim($input.val());
 
-			this.descEditingChanged = true;
-			$root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.inputCheckHeight($root, $input);
-		},
-		inputBlur: function (evt) {
-			var $input = $(evt.target),
-				$root = $input.closest('.photoInfo'),
-				content = $.trim($input.val());
-
-			$input.off('keyup').off('blur');
-			if (!content && !this.fraging()) {
-				$root.removeClass('hasContent');
+			if (!content) {
 				$input.height('auto');
-			}
-			if (!content) {
-				$input.val('');
-			}
-			$root.removeClass('hasFocus');
-		},
-		inputCheckHeight: function (root, input) {
-			var content = $.trim(input.val()),
-				height = input.height(),
-				heightScroll = (input[0].scrollHeight) || height;
-
-			if (!content) {
-				input.height('auto');
+				return false;
 			} else if (heightScroll > height) {
-				input.height(heightScroll);
-				this.inputCheckInViewport(input);
+				$input.height(heightScroll);
+				return heightScroll;
 			}
 		},
-		inputCheckInViewport: function (input, scrollDuration, cb) {
-			var cBottom = input.offset().top + input.height() + 10,
+		descCheckInViewport: function (input, inputHeight) {
+			var cBottom = input.offset().top + (inputHeight || (input.height() + 2)) + 10,
 				wTop = $window.scrollTop(),
 				wFold = $window.height() + wTop;
 
 			if (wFold < cBottom) {
-				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-					if (Utils.isType('function', cb)) {
-						cb.call(this);
-					}
-				}.bind(this)});
+				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: 200});
+			}
+		},
+		yearCheck: function () {
+			var val = this.p.year(),
+				v = Number(val);
+
+			if (!v || isNaN(v)) {
+				//Если значение не парсится, ставим дефолтное
+				v = Photo.def.full.year;
 			} else {
-				if (Utils.isType('function', cb)) {
-					cb.call(this);
-				}
+				//Убеждаемся, что оно в допустимом интервале
+				v = Math.min(Math.max(v, 1826), 2000);
+			}
+
+			if (String(val) !== String(v)) {
+				//Если мы поправили значение, то перезаписываем его
+				this.p.year(v);
+			}
+			if (this.p.year() > parseInt(this.p.year2(), 10)) {
+				this.p.year2(v);
+			}
+		},
+		year2Check: function () {
+			var val = this.p.year2(),
+				v = Number(val);
+
+			if (!v || isNaN(v)) {
+				//Если значение не парсится, ставим дефолтное
+				v = Photo.def.full.year;
+			} else {
+				//Убеждаемся, что оно в допустимом интервале и не мене year
+				v = Math.min(Math.max(v, this.p.year()), 2000);
+			}
+
+			if (String(val) !== String(v)) {
+				this.p.year2(v);
 			}
 		},
 
-		editSave: function (/*data, event*/) {
+		getRegionsByGeo: function (geo, cb, ctx) {
+			this.exeregion(true);
+			socket.removeAllListeners('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
+			socket.on('takeRegionsByGeo', function (data) {
+				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
+				if (this.edit() && data && !_.isEqual(data.geo, this.p.geo())) {
+					return;
+				}
+
+				var error = !data || !!data.error || !data.regions;
+				if (error) {
+					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
+				}
+
+				if (Utils.isType('function', cb)) {
+					cb.call(ctx, error, data);
+				}
+				this.exeregion(false);
+			}.bind(this));
+			socket.emit('giveRegionsByGeo', {geo: geo});
+		},
+		regionSelect: function () {
+			if (!this.regselectVM) {
+				var selected = _.last(ko_mapping.toJS(this.p.regions()));
+				if (selected) {
+					selected = [selected];
+				} else {
+					selected = undefined;
+				}
+
+				renderer(
+					[
+						{
+							module: 'm/region/select',
+							options: {
+								min: 0,
+								max: 1,
+								selectedInit: selected
+							},
+							modal: {
+								initWidth: '900px',
+								maxWidthRatio: 0.95,
+								fullHeight: true,
+								withScroll: true,
+								topic: 'Выбор региона принадлежности для фотографии',
+								closeTxt: 'Сохранить',
+								closeFunc: function (evt) {
+									evt.stopPropagation();
+									var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+
+									if (regions.length > 1) {
+										window.noty({text: 'Допускается выбирать один регион', type: 'error', layout: 'center', timeout: 3000, force: true});
+										return;
+									}
+									Photo.vm({regions: regions[0] || []}, this.p, true); //Обновляем регионы
+									this.closeRegionSelect();
+								}.bind(this)},
+							callback: function (vm) {
+								this.regselectVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 3 //Чтобы не удалился модуль комментариев
+					}
+				);
+			}
+		},
+		closeRegionSelect: function () {
+			if (this.regselectVM) {
+				this.regselectVM.destroy();
+				delete this.regselectVM;
+			}
+		},
+
+		editSave: function () {
 			if (this.can.edit()) {
 				if (!this.edit()) {
 					this.edit(true);
+					//Если включаем редактирования, обнуляем количество новых комментариев,
+					//так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
+					this.p.ccount_new(0);
+					this.originData.ccount_new = 0;
 				} else {
 					this.exe(true);
 					this.save(function (data) {
 						if (!data.error) {
 							this.edit(false);
 
-							if (this.p.fresh() && !this.p.ready()) {
+							if (this.p.s() === 0) {
 								this.notifyReady();
 							}
 							ga('send', 'event', 'photo', 'edit', 'photo edit success');
 						} else {
-							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
+							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 							ga('send', 'event', 'photo', 'edit', 'photo edit error');
 						}
 						this.exe(false);
@@ -593,8 +672,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		setApproveSuccess: function () {
-			this.p.fresh(false);
-			this.originData.fresh = false;
+			this.p.s(5);
+			this.originData.s = 5;
 			this.commentsActivate({checkTimeout: 100});
 			ga('send', 'event', 'photo', 'approve', 'photo approve success');
 		},
@@ -603,23 +682,23 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(true);
 				socket.once('disablePhotoResult', function (data) {
 					if (data && !data.error) {
-						this.p.disabled(data.disabled || false);
-						this.originData.disabled = data.disabled || false;
-						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' success');
+						this.p.s(data.s);
+						this.originData.s = data.s;
+						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' success');
 					} else {
 						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
-						ga('send', 'event', 'photo', data.disabled ? 'disabled' : 'enabled', 'photo ' + (data.disabled ? 'disabled' : 'enabled') + ' error');
+						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' error');
 					}
 					this.exe(false);
 				}.bind(this));
-				socket.emit('disablePhoto', {cid: this.p.cid(), disable: !this.p.disabled()});
+				socket.emit('disablePhoto', {cid: this.p.cid(), disable: this.p.s() !== 7});
 			}
 		},
 
 		notifyReady: function () {
 			window.noty(
 				{
-					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «Готово»',
+					text: 'Чтобы фотография была опубликованна, необходимо оповестить об этом модераторов<br>Вы можете сделать это в любое время, нажав кнопку «На публикацию»',
 					type: 'information',
 					layout: 'topRight',
 					force: true,
@@ -637,7 +716,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		askForGeo: function (cb, ctx) {
 			window.noty(
 				{
-					text: 'Вы не указали координаты снимка<br><br>Сделать это можно, кликнув в режиме редактирования по карте справа и перемещая появившийся маркер<br><br>Без координаты фотография попадет в раздел «Где это?»',
+					text: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>Без точки на карте фотография попадет в раздел «Где это?». В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, в котором предположительно сделана данная фотография<br><br>',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -649,14 +728,21 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict', text: 'Продолжить', onClick: function ($noty) {
-							cb.call(this);
-							$noty.close();
-						}.bind(this)},
-						{addClass: 'btn-strict btn-strict-success', text: 'Указать координату', onClick: function ($noty) {
+						{addClass: 'btn btn-success margBott', text: 'Указать координаты', onClick: function ($noty) {
 							this.edit(true);
 							$noty.close();
-						}.bind(this)}
+						}.bind(this)},
+						{addClass: 'btn btn-warning margBott', text: 'Выбрать регион вручную', onClick: function ($noty) {
+							this.edit(true);
+							$noty.close();
+							this.regionSelect();
+						}.bind(this)},
+						{addClass: 'btn btn-danger margBott', text: 'Отмена', onClick: function ($noty) {
+							if (cb) {
+								cb.call(ctx);
+							}
+							$noty.close();
+						}}
 					]
 				}
 			);
@@ -684,23 +770,22 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
+								$noty.$buttons.find('button').attr('disabled', true);
 							}
 
 							socket.once('removePhotoCallback', function (data) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
+								$noty.$buttons.find('.btn-danger').remove();
 								var okButton = $noty.$buttons.find('button')
 									.attr('disabled', false)
-									.removeClass('disabled')
 									.off('click');
 
 								if (data && !data.error) {
-									this.p.del(true);
-									this.originData.del = true;
+									this.p.s(9);
+									this.originData.s = 9;
 
 									$noty.$message.children().html('Photo successfully removed');
 
@@ -717,20 +802,20 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 											okButton.trigger('click');
 										}
 									);
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' success');
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' success');
 								} else {
 									$noty.$message.children().html(data.message || 'Error occurred');
 									okButton.text('Close').on('click', function () {
 										$noty.close();
 										this.exe(false);
 									}.bind(this));
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.fresh() ? 'decline' : 'delete') + ' error');
+									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' error');
 								}
 							}.bind(that));
 							socket.emit('removePhoto', that.p.cid());
 
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							that.exe(false);
 						}}
@@ -752,50 +837,55 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}
 			}
 
-			if (target.geo) {
-				target.geo.reverse();
+			if (!target.geo) {
+				if (this.p.regions().length) {
+					target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
+				} else {
+					target.region = 0;
+				}
 			}
 
-			if (this.descEditingChanged) {
-				target.desc = this.$dom.find('.descInput').val();
+			if (this.p.desc() !== this.descEditOrigin) {
+				target.desc = this.p.desc();
 			}
-
-			if (this.p.source() !== this.sourceEditingOrigin) {
+			if (this.p.source() !== this.sourceEditOrigin) {
 				target.source = this.p.source();
+			}
+			if (this.p.author() !== this.authorEditOrigin) {
+				target.author = this.p.author();
 			}
 
 			if (Utils.getObjectPropertyLength(target) > 0) {
 				target.cid = this.p.cid();
 				socket.once('savePhotoResult', function (result) {
 					if (result && !result.error && result.saved) {
-						if (target.geo !== undefined) {
+						if (target.geo) {
 							this.getNearestRibbon(8, this.applyNearestRibbon, this);
-							if (Array.isArray(target.geo)) {
-								target.geo.reverse();
-							}
 						}
-						if (this.descEditingChanged) {
-							if (result.data.desc) {
-								target.desc = result.data.desc;
-								this.p.desc(result.data.desc);
-							} else {
-								delete target.desc; //Если desc не вернулся, значит он не был изменен
-							}
-							delete this.descEditingChanged;
+						if (result.data.regions) {
+							Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
 						}
-						if (target.source) {
-							if (result.data.source) {
-								target.source = result.data.source;
-								this.p.source(result.data.source);
-							} else {
-								delete target.source; //Если source не вернулся, значит он не был изменен
-							}
-							delete this.sourceEditingOrigin;
-						}
-						_.assign(this.originData, target);
+						replaceDataWithHTML('desc', this);
+						replaceDataWithHTML('source', this);
+						replaceDataWithHTML('author', this);
+						_.assign(this.originData, target); //Обновляем originData тем что сохранилось
 					}
 					if (cb) {
 						cb.call(ctx, result);
+					}
+
+					//Замена значени поля, в котором присутствует html-разметка
+					function replaceDataWithHTML(propName, ctx) {
+						if (typeof result.data[propName] === 'string') {
+							ctx.p[propName](result.data[propName]);
+							target[propName] = result.data[propName];
+						} else {
+							//Если свойство не было изменено или не вернулось (тоже значит, что не было изменено),
+							//то возвращаем оригинальное значение, т.к. в нем содержится html разметка
+							ctx.p[propName](ctx.originData[propName]);
+							delete target[propName];
+						}
+						delete ctx[propName + 'EditOrigin'];
 					}
 				}.bind(this));
 				socket.emit('savePhoto', target);
@@ -807,13 +897,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		cancel: function () {
 			ko_mapping.fromJS(this.originData, this.p);
-			delete this.descEditingChanged;
-			delete this.sourceEditingOrigin;
+			delete this.descEditOrigin;
+			delete this.sourceEditOrigin;
+			delete this.authorEditOrigin;
 		},
 		setReady: function (data, event) {
-			if (this.p.fresh() && !this.p.ready()) {
-				if (_.isEmpty(this.p.geo())) {
-					this.askForGeo(this.sendReady, this);
+			if (this.p.s() === 0) {
+				if (_.isEmpty(this.p.geo()) && _.isEmpty(this.p.regions())) {
+					this.askForGeo();
 				} else {
 					this.sendReady();
 				}
@@ -826,8 +917,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					if (data.published) {
 						this.setApproveSuccess();
 					} else {
-						this.p.ready(true);
-						this.originData.ready = true;
+						this.p.s(1);
+						this.originData.s = 1;
 					}
 					ga('send', 'event', 'photo', 'ready', 'photo ready success');
 				} else {
@@ -840,7 +931,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		toConvert: function (data, event) {
-			if (!this.can.convert() || this.selectedOpt().length === 0) {
+			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a", "d", "h", "m", "q", "s", "x"]);
+			if (!this.can.convert() || !convertVarsSel.length) {
 				return false;
 			}
 			this.exe(true);
@@ -853,7 +945,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.exe(false);
 			}.bind(this));
 			socket.emit('convertPhotos', [
-				{cid: this.p.cid(), variants: this.selectedOpt()}
+				{cid: this.p.cid(), variants: convertVarsSel}
 			]);
 		},
 
@@ -912,7 +1004,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			} else {
 				//Если у фото нет координат - берем ближайшие к центру карты
 				$.when(this.mapModulePromise).done(function () {
-					//Сразу берем, если зашли в первый раз
+					//Сразу берем, если зашли первый раз
 					this.nearestForCenter(limit, cb, ctx);
 					//Дебаунс для moveend карты
 					this.nearestForCenterDebounced = _.debounce(function () {
@@ -924,8 +1016,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		nearestForCenter: function (limit, cb, ctx) {
-			var latlng = this.mapVM.map.getCenter();
-			this.receiveNearestRibbon([latlng.lat, latlng.lng], limit, cb, ctx);
+			this.receiveNearestRibbon(Utils.geo.latlngToArr(this.mapVM.map.getCenter()), limit, cb, ctx);
 		},
 		receiveNearestRibbon: function (geo, limit, cb, ctx) {
 			socket.once('takeNearestPhotos', function (data) {
@@ -967,7 +1058,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		 */
 		commentsActivate: function (options) {
 			//Активируем, если фото не новое и не редактируется
-			if (!this.edit() && !this.p.fresh()) {
+			if (!this.edit() && this.p.s() > 1) {
 				this.commentsVM.activate(
 					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
 					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length, checkTimeout: this.p.ccount() > 30 ? 500 : 300}),
@@ -988,7 +1079,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		scrollToPhoto: function (duration, cb, ctx) {
-			$window.scrollTo(this.$dom.find('.photoImgWrap'), {duration: duration || 400, onAfter: function () {
+			$window.scrollTo(this.$dom.find('.imgWrap'), {duration: duration || 400, onAfter: function () {
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx);
 				}
@@ -1037,7 +1128,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 
 		fragAreasActivate: function () {
-			var $wrap = this.$dom.find('.photoImgWrap');
+			var $wrap = this.$dom.find('.imgWrap');
 			$wrap
 				.on('mouseenter', 'a.photoFrag', function (evt) {
 					var frag = $(evt.target),
@@ -1077,7 +1168,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		fragAreaCreate: function (selections) {
 			if (!this.fragArea) {
-				var $parent = this.$dom.find('.photoImgWrap'),
+				var $parent = this.$dom.find('.imgWrap'),
 					ws = this.p.ws(), hs = this.p.hs(),
 					ws2, hs2;
 
@@ -1173,11 +1264,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 		onImgLoad: function (data, event) {
 			$(event.target).animate({opacity: 1});
-			data = event = null;
 		},
 		onAvatarError: function (data, event) {
 			event.target.setAttribute('src', '/img/caps/avatar.png');
-			data = event = null;
 		},
 
 		onPreviewLoad: function (data, event) {
@@ -1192,7 +1281,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (data.conv) {
 				content = imgFailTpl({style: 'padding-top: 20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: ''});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: '', txt: '<i class="icon-white icon-road"></i>'});
+				content = imgFailTpl({style: '', txt: '<span class="glyphicon glyphicon-road"></span>'});
 			} else {
 				content = imgFailTpl({style: 'width:24px; height:20px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: ''});
 			}
@@ -1200,30 +1289,29 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			parent.classList.add('showPrv');
 		},
 
-		setMessage: function (text, type) {
+		setMessage: function (text, abbr, type) {
 			var css = '';
 			switch (type) {
-			case 'error':
-				css = 'text-error';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
+				case 'error':
+					css = 'label-danger';
+					break;
+				case 'warn':
+					css = 'label-warning';
+					break;
+				case 'info':
+					css = 'label-info';
+					break;
+				case 'success':
+					css = 'label-success';
+					break;
+				default:
+					css = 'label-default';
+					break;
 			}
 
 			this.msg(text);
 			this.msgCss(css);
-
-			text = type = css = null;
+			this.msgTitle(abbr);
 		}
 	});
 });

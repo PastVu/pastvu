@@ -6,8 +6,10 @@ var auth = require('./auth.js'),
 	User,
 	Counter,
 	News,
+	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
+	regionController = require('./region.js'),
 	msg = {
 		deny: 'You do not have permission for this action'
 	};
@@ -186,6 +188,102 @@ function getOnlineStat(socket, cb) {
 	});
 }
 
+//Сохраняем права пользователя
+function saveUserCredentials(socket, data, cb) {
+	var iAm = socket.handshake.session.user,
+		login = data && data.login,
+		itsMe = (iAm && iAm.login) === login,
+		itsOnline,
+		i;
+
+	if (!iAm || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	if (!Utils.isType('object', data) || !login || data.role < 0 || data.role > 11) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	if (itsMe && iAm.role !== data.role) {
+		return cb({message: 'Administrators can not change their role :)', error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
+			} else {
+				User.findOne({login: login}).populate('mod_regions', {_id: 0, cid: 1}).exec(this);
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+
+			if (!itsMe) {
+				if (user.role < 11 && data.role === 11) {
+					return cb({message: 'The role of the super admin can not be assigned through the user management interface', error: true});
+				}
+				if (iAm.role === 10 && user.role < 10 && data.role > 9) {
+					return cb({message: 'Only super administrators can assign other administrators', error: true});
+				}
+			}
+			var existsRegions;
+
+			if (data.role === 5 && data.regions) {
+				existsRegions = [];
+				user.mod_regions.forEach(function (item) {
+					existsRegions.push(item.cid);
+				});
+				if (!_.isEqual(data.regions, existsRegions)) {
+					regionController.setUserRegions(login, data.regions, 'mod_regions', function (err) {
+						if (err) {
+							return cb({message: err.message, error: true});
+						}
+						if (itsOnline) {
+							_session.regetUser(user, false, null, function (err) {
+								if (err) {
+									return cb({message: err.message, error: true});
+								}
+								further();
+							});
+						} else {
+							further();
+						}
+					});
+				} else {
+					further();
+				}
+			} else {
+				further();
+			}
+
+			function further() {
+				if (user.role !== data.role) {
+					user.role = data.role || undefined;
+					if (data.role !== 5) {
+						user.mod_regions = undefined;
+					}
+				}
+
+				user.save(function (err, savedUser) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+
+					if (itsOnline) {
+						_session.emitUser(login);
+					}
+					cb({message: 'ok', saved: true});
+				});
+			}
+		}
+	);
+}
+
 
 module.exports.loadController = function (app, db, io) {
 
@@ -212,6 +310,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('getOnlineStat', function () {
 			getOnlineStat(socket, function (err, resultData) {
 				socket.emit('takeOnlineStat', resultData);
+			});
+		});
+		socket.on('saveUserCredentials', function (data) {
+			saveUserCredentials(socket, data, function (resultData) {
+				socket.emit('saveUserCredentialsResult', resultData);
 			});
 		});
 	});

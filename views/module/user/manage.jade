@@ -1,12 +1,59 @@
 .user_manage(data-bind="with: repository[M!M]")
-	.accordion#accordion2
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#ranks") Присваиваемые звания
-			.accordion-body.collapse.in#ranks
-				.accordion-inner
-					form.form-inline(data-bind="foreach: ranks")
-						label.checkbox
-							input.thr(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
-							| &nbsp;
+	.panel-group#accordion
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a.accordion-toggle(data-toggle="collapse", href="#credentials") Полномочия
+			.panel-collapse.collapse.in#credentials
+				.panel-body
+					form
+						.form-group
+							.col-xs-12(data-bind="foreach: roles")
+								label.radio-inline
+									input(type="radio", name="credent_radios", data-bind="attr: {value: $data.cat}, checked: $parent.roleCategory")
+									span(data-bind="text: $data.name")
+						//ko if: roleCategory() === 'mod'
+						.form-group
+							.col-xs-12
+								.checkbox
+									label
+										input(type="checkbox", value = '5', data-bind="checked: role")
+										| Региональный:&nbsp;
+										//ko if: !regions().length
+										span.region
+											span.glyphicon.glyphicon-globe
+											|  Весь мир
+										// /ko
+										//ko foreach: regions
+										span.region.candrop(title="Убрать регион", data-bind="click: function() {$parent.regionDrop($data.cid);}")
+											span(data-bind="text: $data.title_local")
+										// /ko
+										span.regionEdit(data-bind="click: regionSelect")
+											span.glyphicon.glyphicon-pencil
+											| Изменить
+								.checkbox
+									label
+										input(type="checkbox", disabled)
+										| Языковой
+
+						// /ko
+						//ko if: credentialsChanged()
+						.form-group
+							.col-xs-12
+								button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
+									span.glyphicon.glyphicon-ok
+									|  Сохранить полномочия
+								button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
+									span.glyphicon.glyphicon-remove
+									|  Отмена
+						// /ko
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a.accordion-toggle(data-toggle="collapse", href="#ranks") Присваиваемые звания
+			.panel-collapse.collapse.in#ranks
+				.panel-body
+					form(data-bind="foreach: ranks")
+						label.checkbox-inline
+							input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
 							span(data-bind="text: $data.desc")

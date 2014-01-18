@@ -1,24 +1,35 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .comments {
 	position: relative;
+	padding: 0 5px;
 
-	.commentsBrief {
-		position: absolute;
-		top: 5px;
-		left: 3px;
-		z-index: -1;
+	.topcol {
+		margin-top: 2px;
+		margin-bottom: 4px;
+	}
+	.pag {
+		margin-top: 2px;
+		margin-bottom: 14px;
+		text-align: center;
+	}
+	.brief {
+		line-height: 24px;
+		white-space: nowrap;
 
-		&.commentsLoading {
+		&.pageLoading {
 			padding-right: 75px;
 			background: url(/img/misc/load.gif) 100% 50% no-repeat;;
 		}
 	}
-
 	.pagination {
-		margin: 0 0 5px 0;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+	.brief, .pagination {
+		vertical-align: middle;
 	}
 
 	.comment {
@@ -36,29 +47,29 @@
 			margin: 2px 8px 3px 3px;
 
 			.img {
-				width: 60px;
+				width: 90px;
 				height: 60px;
 			}
 		}
 
 		.commentHead {
 			line-height: 14px;
-			height: 14px;
-			margin-bottom: 3px;
+			margin-bottom: 1px;
 		}
 		.photoName {
-			display: inline-block;
+			display: inline;
 			cursor: pointer;
 		}
 		.photoYear {
-			font-size: @fontSizeSmall;
+			font-size: @font-size-small;
 			white-space: nowrap;
 		}
 		.commentStamp, .commentChanged {
-			display: inline-block;
-			font-size: @fontSizeSmall;
+			display: inline;
+			font-size: @font-size-mini;
 			cursor: pointer;
 			color: #888;
+			white-space: nowrap;
 		}
 		.commentChanged {
 			&:hover {
@@ -67,14 +78,9 @@
 		}
 		.commentText {
 			display: block;
-			min-height: 46px;
-			margin-left: 71px;
-			color: @textColor;
+			margin-left: 101px;
+			color: @text-color;
 			text-decoration: none;
 		}
 	}
-}
-
-@media (max-width: 767px) {
-
 }

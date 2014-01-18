@@ -1,59 +1,160 @@
 .user_settings(data-bind="with: repository[M!M]")
-	.accordion#accordion2
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseOne") Конфиденциальность
-			.accordion-body.collapse.in#collapseOne
-				.accordion-inner
+	.panel-group#accordion
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#privacy") Конфиденциальность
+			.panel-collapse.collapse.in#privacy
+				.panel-body
 					dl.dl-horizontal
 						dt Мой email
 						dd
-							.input-append
-								input(type="email", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
-								span.add-on(data-bind="click: saveEmail, css: {save: editEmail()}")
-									i.icon-white(data-bind="css: {'icon-pencil': !editEmail(), 'icon-ok': editEmail()}")
-								//ko if:editEmail()
-								span.add-on.cancel(data-bind="click: cancelEmail")
-									i.icon-remove.icon-white
-								// /ko
+							.row
+								.col-xs-9.col-sm-10.col-md-7.col-lg-4
+									.input-group
+										input.form-control(type="email", id="inName", data-bind="attr: {size: u.email().length, disabled: !editEmail()}, value: u.email, valueUpdate: 'afterkeydown', executeOnEnter: saveEmail")
+										span.input-group-addon(data-bind="click: saveEmail, css: {save: editEmail()}")
+											span.glyphicon(data-bind="css: {'glyphicon-pencil': !editEmail(), 'glyphicon-ok': editEmail()}")
+										//ko if:editEmail()
+										span.input-group-addon.cancel(data-bind="click: cancelEmail, css: {save: editEmail()}")
+											span.glyphicon.glyphicon-remove
+										// /ko
 					dl.dl-horizontal
 						dt Мой пароль
 						dd
 							//ko if: itsMe()
-							button.btn-strict.btn-strict-small(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
+							button.btn.btn-sm.btn-primary(type="button", title="Сменить текущий пароль", data-bind="event:{click: function(data, evt){auth.show('passChange')}}")
 								span Сменить
 							// /ko
-							button.btn-strict.btn-strict-small(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
+							button.btn.btn-sm.btn-primary(type="button", title="Сменить через почту без ввода текущего", data-bind="event:{click: function(data, evt){auth.showRecallRequest(u.login())}}")
 								span Запросить смену
 					dl.dl-horizontal
 						dt Показывать в обсуждениях реальное имя
 						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
-								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#notice") Подписка и уведомления
-			.accordion-body.collapse.in#notice
-				.accordion-inner
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: showName()}, click: toggleDisp") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !showName()}, click: toggleDisp") Нет
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#region") Регионы
+			.panel-collapse.collapse.in#region
+				.panel-body
 					dl.dl-horizontal
-						dt Автоподписка при комментировании темы
-						dd
-							.btn-group-toggle
-								button.btn-strict.btn-strict-small.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
-								button.btn-strict.btn-strict-small.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
-						i.icon-info-sign.helpico(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
-					dl.dl-horizontal
-						dt Минимальный интервал между отправками
-						dd.throttle(data-bind="foreach: vars.subscr_throttle")
-							label.checkbox
-								input.thr(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
+						dt.helpexists
+							abbr(title="Регион, который определяет некоторые настройки, например, позицию кнопки Домой на карте, первый элемент в списке выбора регионов и т.д.")
+								span.glyphicon.glyphicon-info-sign
 								| &nbsp;
+								span.glyphicon.glyphicon-home
+								|  Домашний регион
+						dd
+							span.region
+								span(data-bind="text: u.regionHome.title_local()")
+							span.regionEdit(data-bind="click: regionHomeSelect")
+								span.glyphicon.glyphicon-pencil
+								| Изменить
+					//ko if: u.role() === 5 && u.mod_regions()
+					dl.dl-horizontal.forMod
+						dt.helpexists
+							abbr(title="Регионы, в которых вы являетесь модератором. Назначаются администратором")
+								span.glyphicon.glyphicon-info-sign
+								|  Модерируемые мной регионы
+						dd
+							//ko if: !u.mod_regions().length
+							span.region
+								span.glyphicon.glyphicon-globe
+								|  Весь мир
+							// /ko
+							//ko foreach: u.mod_regions
+							span.region
+								span(data-bind="text: $data.title_local()")
+							// /ko
+					// /ko
+					dl.dl-horizontal
+						dt.helpexists
+							abbr(title="Регионы, по которым будет производится автоматическая фильтрация контента")
+								span.glyphicon.glyphicon-info-sign
+								| &nbsp;
+								span.glyphicon.glyphicon-filter
+								|  Фильтрация данных по умолчанию
+						dd
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-globe
+									|  Весь мир (без фильтра)
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="home", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-home
+									|  Домашний регион
+							.radio
+								label
+									input(type="radio", name="regfilter_radios", value="list", data-bind="checked: regfiltercheck")
+									span.glyphicon.glyphicon-list
+									span  Список
+									//ko if: regfiltercheck() === 'list'
+									| :&nbsp;
+									//ko foreach: u.regions
+									span.region.candrop(title="Убрать из моих регионов", data-bind="click: function() {$parent.regionDrop($data.cid());}")
+										span(data-bind="text: $data.title_local()")
+									// /ko
+									//ko if: u.regions().length
+									span.regionEdit(data-bind="click: regionFilterSelect")
+										span.glyphicon.glyphicon-pencil
+										| Изменить
+									// /ko
+									// /ko
+					dl.dl-horizontal
+						dt.helpexists(style="color: #27578d;")
+							| По умолчанию фильтровать по выбранным регионам:
+						dd
+					dl.dl-horizontal.dl-tight
+						dt.helpexists
+							abbr(title="Фотографии пользователей, доступые в соответствующих профилях")
+								span.glyphicon.glyphicon-info-sign
+								|  Галереи пользователей
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_user_gal()}, click: regionUserGal") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_user_gal()}, click: regionUserGal") Нет
+					dl.dl-horizontal.dl-tight
+						dt.helpexists
+							abbr(title="Полоса фотографий, находящаяся рядом с именем пользователя, на странице просмотра загруженной им фотогафии")
+								span.glyphicon.glyphicon-info-sign
+								|  Полосу других фотографий пользователя
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.r_f_photo_user_gal()}, click: regionPhotoUserGal") Нет
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#notice") Подписка и уведомления
+			.panel-collapse.collapse.in#notice
+				.panel-body
+					dl.dl-horizontal
+						dt.helpexists
+							abbr(title="Исходное состояние опции «Подписаться на тему» при отправке комментария")
+								span.glyphicon.glyphicon-info-sign
+								|  Автоподписка при комментировании темы
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.subscr_auto_reply()}, click: autoReply") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.subscr_auto_reply()}, click: autoReply") Нет
+					dl.dl-horizontal
+						dt.helpexists
+							abbr(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
+								span.glyphicon.glyphicon-info-sign
+								|  Минимальный интервал между отправками
+						dd.throttle(data-bind="foreach: vars.subscr_throttle")
+							label.radio-inline
+								input(type="radio", name="subscr_throttle_radios", data-bind="attr: {id: 'subscr_throttle_radios_' + $index(), value: ''+$data}, checked: $parent.u.settings.subscr_throttle")
 								span(data-bind="text: ($data/60000 > 59 ? $data/3600000 + 'ч' : $data/60000 + 'мин')")
-						i.icon-info-sign.helpico(title="Минимальное время, которое должно пройти между отправками писем с уведомлением")
 
-		.accordion-group
-			.accordion-heading
-				a.accordion-toggle(data-toggle="collapse", data-parent="#accordion2", href="#collapseTwo") Карта
-			.accordion-body.collapse#collapseTwo
-				.accordion-inner Раздел в процессе разработки...
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
+					a(data-toggle="collapse", href="#collapseTwo") Карта
+			.panel-collapse.collapse#collapseTwo
+				.panel-body Раздел в процессе разработки...

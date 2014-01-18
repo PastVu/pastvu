@@ -5,9 +5,9 @@
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 	var changeFragTexts = {
-		f1: '<b>[</b><i class="icon-plus"></i>Добавлен фрагмент<b>]</b>',
-		f2: '<b>[</b><i class="icon-retweet"></i> Изменен фрагмент<b>]</b>',
-		f3: '<b>[</b><i class="icon-minus"></i>Удален фрагмент<b>]</b>'
+		f1: '<b>[</b><span class="glyphicon glyphicon-plus"></span>Добавлен фрагмент<b>]</b>',
+		f2: '<b>[</b><span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент<b>]</b>',
+		f3: '<b>[</b><span class="glyphicon glyphicon-minus"></span>Удален фрагмент<b>]</b>'
 	};
 
 	return Cliche.extend({

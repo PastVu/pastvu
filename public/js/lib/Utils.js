@@ -174,9 +174,21 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return out;
 		},
 
-		//Проверка на валидность geo [lng, lat]
-		geoCheck: function (geo) {
-			return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+		getLocalStorage: function (key) {
+			var result,
+				val = localStorage[key];
+
+			if (val) {
+				try {
+					result = JSON.parse(localStorage[key]);
+				} catch (e) {
+					console.warn('Can not parse ' + key);
+				}
+			}
+			return result;
+		},
+		setLocalStorage: function (key, val) {
+			localStorage[key] = JSON.stringify(val);
 		},
 
 		/**
@@ -368,6 +380,12 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				return (floatValue * 100).toFixed(2) + ' %';
 			}
 
+			//Разделяет число по тысячам переданной строкой(если не передана - пробелом)
+			//http://stackoverflow.com/a/2901298/1309851
+			function numberByThousands(val, divider) {
+				return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, divider || ' ');
+			}
+
 			var wordEndOfNumCases = [2, 0, 1, 1, 1, 2];
 
 			function declOfNum(number, titles) {
@@ -379,6 +397,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				bitrate: formatBitrate,
 				secondsToTime: secondsToTime,
 				percentage: formatPercentage,
+				numberByThousands: numberByThousands,
 				wordEndOfNum: declOfNum
 			};
 		}()),
@@ -652,7 +671,13 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 
 			return {
 				toPrecision: toPrecision,
-				toPrecisionRound: toPrecisionRound
+				toPrecisionRound: toPrecisionRound,
+				toPrecision6: function (number) {
+					return toPrecision(number, 6);
+				},
+				toPrecisionRound6: function (number) {
+					return toPrecisionRound(number, 6);
+				}
 			};
 		}()),
 
@@ -696,16 +721,52 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				return geo;
 			}
 
+			function spinLng(geo) {
+				if (geo[0] < -180) {
+					geo[0] += 360;
+				} else if (geo[0] > 180) {
+					geo[0] -= 360;
+				}
+			}
+
 			function latlngToArr(ll, lngFirst) {
 				return lngFirst ? [ll.lng, ll.lat] : [ll.lat, ll.lng];
 			}
 
+			//Проверка на валидность geo [lng, lat]
+			function check(geo) {
+				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
+			}
+			//Проверка на валидность geo [lat, lng]
+			function checkLatLng(geo) {
+				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
+			}
+
+			//Проверка на валидность bbox [leftlng, bottomlat, rightlng, toplat]
+			function checkbbox(bbox) {
+				return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
+			}
+			//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
+			function checkbboxLatLng(bbox) {
+				return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
+			}
+			//Переставляет местами lat и lng в bbox
+			function bboxReverse(bbox) {
+				return [bbox[1], bbox[0], bbox[3], bbox[2]];
+			}
+
 			return {
+				deg2rad: deg2rad,
 				geoToPrecision: geoToPrecision,
 				geoToPrecisionRound: geoToPrecisionRound,
 				getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
-				deg2rad: deg2rad,
-				latlngToArr: latlngToArr
+				spinLng: spinLng,
+				latlngToArr: latlngToArr,
+				check: check,
+				checkLatLng: checkLatLng,
+				checkbbox: checkbbox,
+				checkbboxLatLng: checkbboxLatLng,
+				bboxReverse: bboxReverse
 			};
 		}()),
 

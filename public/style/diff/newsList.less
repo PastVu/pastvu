@@ -1,20 +1,19 @@
 @import "../_vars.less";
-@import "../bootstrap/variables.less";
-@import "../bootstrap/mixins.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
 
 .newsWrapper {
 	position: relative;
 	padding: 6px 0 7px 0;
 
 	.newsHeader {
-		margin-top: 1px;
-		margin-bottom: 10px;
+		margin: 7px 0 10px 1%;
 		font-size: 20px;
 	}
 
 	.addNews {
 		display: inline-block;
-		margin: 4px 0 6px 91px;
+		margin: 4px 0 6px 1%;
 	}
 
 	.news {
@@ -84,6 +83,7 @@
 			display: inline-block;
 			font-weight: bold;
 			font-size: 16px;
+			line-height: 19px;
 		}
 		.newsNotice {
 			line-height: 19px;
@@ -100,10 +100,9 @@
 
 		.novel {
 			margin: 0;
-			padding: 12px 21px 12px 21px;
+			padding: 12px 2% 12px 1%;
 			cursor: default;
-			background-color: darken(@bodyBackground, 1%);
-			.box-sizing(border-box);
+			background-color: darken(@body-bg, 1%);
 
 			&:hover {
 				background-color: #FFF;

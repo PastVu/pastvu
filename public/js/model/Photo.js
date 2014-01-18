@@ -6,20 +6,18 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			// Следующие типы включают друг друга по нарастающей
 			base: {
 				cid: '',
+				s: 5,
 
 				file: '',
 				title: '',
 
 				conv: false, //Конвертируется
-				convqueue: false, //В очереди на конвертацию
-
-				fresh: false, //Новое
-				disabled: false, //Не активное
-				del: false //Удаленное
+				convqueue: false //В очереди на конвертацию
 			},
 			compact: {
 				ldate: Date.now(),
 				adate: Date.now(),
+				sdate: Date.now(),
 
 				year: 2000,
 				year2: 2000,
@@ -33,6 +31,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				stack_order: 0,
 
 				geo: null,
+				regions: [],
 				dir: undefined,
 
 				type: 'image/jpeg',
@@ -102,17 +101,13 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 		if (defType === 'compact' || defType === 'full') {
 			origin.ldate = new Date(origin.ldate);
 			origin.adate = new Date(origin.adate);
+			origin.sdate = new Date(origin.sdate);
 		}
 		if (defType === 'full') {
-			if (Utils.geoCheck(origin.geo)) {
-				origin.geo.reverse(); // Stores in mongo like [lng, lat], for api need [lat, lng]
-			} else {
+			if (!Utils.geo.checkLatLng(origin.geo)) {
 				origin.geo = defaults[defType].geo;
 			}
 			User.factory(origin.user, 'base');
-		}
-		if (origin.fresh || origin.disabled || origin.del) {
-			origin.noPublic = true;
 		}
 
 		origin.sfile = P.preaddr + picFormats[picType] + origin.file;

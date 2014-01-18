@@ -220,7 +220,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
-						this.moreLink('/ps?f=nogeo');
+						this.moreLink('/ps?f=geo!0');
 						success = true;
 					}
 				}
@@ -239,7 +239,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.processPhotos(data.photos, Photo.picFormats.m);
 						this.photos(data.photos);
-						this.moreLink('');
+						this.moreLink('/ps?f=r!0_s!1');
 						success = true;
 					}
 				}
@@ -247,7 +247,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					cb.call(ctx, success, scroll);
 				}
 			}.bind(this));
-			socket.emit('givePhotosForApprove', {skip: 0, limit: 30});
+			socket.emit('givePhotosForApprove', {skip: 0, limit: 42});
 		},
 		getRatings: function (cb, ctx, scroll) {
 			var success = false;
@@ -356,7 +356,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			if (data.conv) {
 				content = imgFailTpl({style: 'margin-top:7px;padding-top:20px; background: url(/img/misc/photoConvWhite.png) 50% 0 no-repeat;', txt: 'Превью уже создается<br>пожалуйста, обновите позже'});
 			} else if (data.convqueue) {
-				content = imgFailTpl({style: 'margin-top:7px;', txt: '<i class="icon-white icon-road"></i><br>Превью скоро будет создано<br>пожалуйста, обновите позже'});
+				content = imgFailTpl({style: 'margin-top:7px;', txt: '<span class="glyphicon glyphicon-road"></span><br>Превью скоро будет создано'});
 			} else {
 				content = imgFailTpl({style: 'margin-top:7px;padding-top:25px; background: url(/img/misc/imgw.png) 50% 0 no-repeat;', txt: 'Превью недоступно'});
 			}

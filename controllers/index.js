@@ -211,6 +211,7 @@ var giveRatings = (function () {
  */
 var giveStats = (function () {
 	var aggregateParams = [
+		{$match: {s: 5}},
 		{$group: {_id: '$year', count: {$sum: 1}}},
 		{$sort: {count: -1}},
 		{$group: {
@@ -242,11 +243,11 @@ var giveStats = (function () {
 				}
 				photoYear = pMaxYear[0];
 
-				Photo.count(this.parallel());
+				Photo.count({s: 5}, this.parallel());
 				User.count({active: true}, this.parallel());
 
-				Photo.count({adate: {$gt: dayStart}}, this.parallel());
-				Photo.count({adate: {$gt: weekStart}}, this.parallel());
+				Photo.count({s: 5, adate: {$gt: dayStart}}, this.parallel());
+				Photo.count({s: 5, adate: {$gt: weekStart}}, this.parallel());
 
 				Comment.count(this.parallel());
 				CommentN.count(this.parallel());

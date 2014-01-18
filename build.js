@@ -68,7 +68,7 @@ var start = Date.now(),
 				name: 'commonExcludes',
 				create: true, //set create: true if 'commonExcludes' is not a module that exists before a build
 				include: [
-					'domReady', 'text', 'css',
+					'domReady', 'text', 'css', 'lib/require/plugins/require-css/normalize',
 					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 					'noty', 'noty.layouts', 'noty.themes/pastvu',
 					'Browser', 'Utils', 'socket', 'RouteManager', 'Params', 'globalVM',
@@ -90,11 +90,16 @@ var start = Date.now(),
 					'm/photo/photo', 'm/photo/gallery',
 					'm/diff/newsList', 'm/diff/news',
 					'm/comment/comments', 'm/comment/hist',
-					'm/user/brief', 'm/user/comments', 'm/user/profile', 'm/user/userPage'
-				]
+					'm/user/brief', 'm/user/profile', 'm/user/userPage'
+				],
+				exclude: ['lib/require/plugins/require-css/normalize'] //normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
 			},
 			{
 				name: "m/diff/about",
+				exclude: ['commonExcludes']
+			},
+			{
+				name: "m/user/comments",
 				exclude: ['commonExcludes']
 			},
 			{
@@ -103,11 +108,15 @@ var start = Date.now(),
 			},
 			{
 				name: "m/user/settings",
-				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
+				exclude: ['commonExcludes', 'bs/collapse']
 			},
 			{
 				name: "m/user/manage",
-				exclude: ['commonExcludes', 'bs/bootstrap-collapse']
+				exclude: ['commonExcludes', 'bs/collapse']
+			},
+			{
+				name: "m/region/select",
+				exclude: ['commonExcludes']
 			}
 		]
 	},
@@ -118,7 +127,7 @@ step(
 	function searchLess() {
 		var _this = this;
 
-		Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bootstrap', 'fonts'], function (e, files) {
+		Utils.walkParallel(path.normalize('./' + requireBuildConfig.appDir + 'style'), null, ['bs', 'fonts'], function (e, files) {
 			if (e) {
 				console.dir(e);
 				process.exit(1);

@@ -10,7 +10,7 @@ require([
 	'globalVM', 'Params', 'renderer', 'RouteManager',
 	'model/Photo', 'model/User',
 	'text!tpl/appMain.jade', 'css!style/common', 'css!style/appMain',
-	'backbone.queryparams', 'momentlang/ru', 'bs/bootstrap-transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
+	'backbone.queryparams', 'momentlang/ru', 'bs/transition', 'bs/popover', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
 ], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, Photo, User, jade) {
 	"use strict";
 
@@ -46,7 +46,7 @@ require([
 			],
 			handlers: {
 				index: function (qparams) {
-					this.params({_handler: 'index'});
+					this.params(_.assign({_handler: 'index'}, qparams));
 					ga('set', 'page', '/');
 
 					renderer(
@@ -73,7 +73,7 @@ require([
 					ga('set', 'page', '/ps' + (page ? '/' + page : ''));
 					renderer(
 						[
-							{module: 'm/photo/gallery', container: '#bodyContainer', options: {topTitle: 'Все фотографии'}}
+							{module: 'm/photo/gallery', container: '#bodyContainer', options: {topTitle: 'Галерея'}}
 						]
 					);
 				},
@@ -148,7 +148,7 @@ require([
 											speed: 500
 										},
 										buttons: [
-											{addClass: 'btn-strict btn-strict-success', text: 'Ok (7)', onClick: function ($noty) {
+											{addClass: 'btn btn-success', text: 'Ok (7)', onClick: function ($noty) {
 												// this = $button element
 												// $noty = $noty element
 												$noty.close();
@@ -157,7 +157,7 @@ require([
 										],
 										callback: {
 											afterShow: function () {
-												var okButton = this.$buttons.find('.btn-strict-success');
+												var okButton = this.$buttons.find('.btn-success');
 												Utils.timer(
 													8000,
 													function (timeleft) {

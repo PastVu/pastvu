@@ -2,7 +2,7 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments', 'bs/bootstrap-tooltip', 'bs/bootstrap-popover'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
 	var $window = $(window);
@@ -32,7 +32,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
 			this.touch = Browser.support.touch;
 
-			this.canManage = this.co.canAction = ko.computed(function () {
+			this.canManage = this.co.canManage = ko.computed(function () {
 				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
 			}, this);
 			this.canAction = this.co.canAction = ko.computed(function () {
@@ -56,6 +56,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inputFocusBind = this.inputFocus.bind(this);
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
 			this.inputLabelClickBind = this.inputLabelClick.bind(this);
+			this.inViewportCheckBind = this.inViewportCheck.bind(this);
 
 			this.fraging = ko.observable(false);
 			this.fragClickBind = this.fragClick.bind(this);
@@ -105,12 +106,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.loading(true);
 			this.addMeToCommentsUsers();
 
+			if (cb) {
+				this.activatorRecieveNotice = {cb: cb, ctx: ctx};
+			}
+
 			if (this.showTree() || options && options.instant) {
 				//Если дерево уже показывается или в опциях стоит немедленный показ, то запрашиваем сразу
-				this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), 100);
+				this.receiveTimeout = window.setTimeout(this.receive.bind(this), 100);
 			} else {
 				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
-				this.inViewportCheckBind = _.debounce(this.inViewportCheck.bind(this, cb || null, ctx || null), 50);
 				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
 			}
 			if (!this.showing) {
@@ -134,8 +138,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		viewScrollOn: function () {
 			if (!this.viewportScrollHandling) {
+				this.inViewportCheckDebounced = _.debounce(this.inViewportCheckBind, 50);
 				this.viewportScrollHandling = function () {
-					this.inViewportCheckBind();
+					this.inViewportCheckDebounced();
 				}.bind(this);
 				$window.on('scroll', this.viewportScrollHandling);
 			}
@@ -144,10 +149,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (this.viewportScrollHandling) {
 				$window.off('scroll', this.viewportScrollHandling);
 				delete this.viewportScrollHandling;
+				delete this.inViewportCheckDebounced;
 			}
-			delete this.inViewportCheckBind;
 		},
+		//Проверяем, что $container находится в видимой области экрана
 		inViewportCheck: function (cb, ctx, force) {
+			window.clearTimeout(this.viewportCheckTimeout);
 			if (!this.inViewport) {
 				var cTop = this.$container.offset().top,
 					wFold = $window.height() + $window.scrollTop();
@@ -155,9 +162,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if (force || cTop < wFold) {
 					this.inViewport = true;
 					this.viewScrollOff();
-					if (force && force.cb) {
+					if (force) {
 						this.receive(function () {
-							force.cb();
+							if (force.cb) {
+								force.cb.call(force.ctx);
+							}
 							if (cb) {
 								cb.call(ctx);
 							}
@@ -166,16 +175,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.receiveTimeout = window.setTimeout(this.receive.bind(this, cb || null, ctx || null), this.count() > 50 ? 750 : 400);
 					}
 				} else {
-					//Если после первая проверка отрицательна, вешаем обработчик на скролл
+					//Если после первая проверка отрицательна, вешаем следующую проверку на скроллинг
 					this.viewScrollOn();
 				}
 			}
 		},
 
 		loggedInHandler: function () {
-			// После логина добавляем себя в комментаторы
+			// После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
 			this.addMeToCommentsUsers();
-			this.receive();
+
+			if (!this.inViewport) {
+				this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
+			} else {
+				this.receive(); //Если во вьюпорте, просто заново перезапрашиаваем
+			}
+
 			this.subscriptions.loggedIn.dispose();
 			delete this.subscriptions.loggedIn;
 		},
@@ -212,35 +227,28 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					} else {
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
-						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments, data.lastView));
+
+						//Если общее кол-во изменилось пока получали, то присваиваем заново
+						if (this.count() !== data.comments.length) {
+							this.parentModule.commentCountIncrement(data.comments.length - this.count());
+							this.count(data.comments.length);
+						}
+						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
 						this.showTree(true);
+						this.count_new(data.newCount);
 					}
 				}
 				this.loading(false);
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
+				//Уведомляем активатор (родительский модуль) о получении данных
+				if (this.activatorRecieveNotice) {
+					this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
+					delete this.activatorRecieveNotice;
+				}
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
-		},
-		usersRanks: function (users) {
-			var user,
-				rank,
-				i,
-				r;
-
-			for (i in users) {
-				user = users[i];
-				if (user !== undefined && user.ranks && user.ranks.length) {
-					user.rnks = '';
-					for (r = 0; r < user.ranks.length; r++) {
-						rank = globalVM.ranks[user.ranks[r]];
-						if (rank) {
-							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
-						}
-					}
-				}
-			}
 		},
 		treeBuild: function (arr) {
 			var i = -1,
@@ -266,7 +274,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			return results;
 		},
-		treeBuildCanCheck: function (arr, lastView) {
+		treeBuildCanCheck: function (arr) {
 			var i,
 				len = arr.length,
 				myLogin = this.auth.iAm.login(),
@@ -276,18 +284,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				comment,
 				results = [];
 
-			if (lastView) {
-				lastView = new Date(lastView);
-			}
-
 			for (i = 0; i < len; i++) {
 				comment = arr[i];
 				comment.user = this.users[comment.user];
 				comment.stamp = moment(comment.stamp);
 				comment.final = true;
-				if (lastView && comment.stamp > lastView && comment.user.login !== myLogin) {
-					comment.isnew = true;
-				}
 				if (comment.level < this.commentNestingMax) {
 					comment.comments = ko.observableArray();
 				}
@@ -311,13 +312,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			return results;
 		},
+		usersRanks: function (users) {
+			var user,
+				rank,
+				i,
+				r;
+
+			for (i in users) {
+				user = users[i];
+				if (user !== undefined && user.ranks && user.ranks.length) {
+					user.rnks = '';
+					for (r = 0; r < user.ranks.length; r++) {
+						rank = globalVM.ranks[user.ranks[r]];
+						if (rank) {
+							user.rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
+						}
+					}
+				}
+			}
+		},
 
 		scrollTo: function (ccid) {
 			var $element,
 				highlight;
 
 			if (ccid === true) {
-				$element = this.$container;
+				if (this.count_new()) {
+					this.navCheckBefore(0, true);
+				} else {
+					$element = this.$container;
+				}
 			} else if (ccid === 'unread') {
 				if (this.count_new()) {
 					this.navCheckBefore(0, true);
@@ -720,7 +744,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						speed: 500
 					},
 					buttons: [
-						{addClass: 'btn-strict btn-strict-danger', text: 'Да', onClick: function ($noty) {
+						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
 							// this = button element
 							// $noty = $noty element
 							if ($noty.$buttons && $noty.$buttons.find) {
@@ -728,7 +752,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							}
 
 							socket.once('removeCommentResult', function (result) {
-								$noty.$buttons.find('.btn-strict-danger').remove();
+								$noty.$buttons.find('.btn-danger').remove();
 								var msg,
 									okButton = $noty.$buttons.find('button')
 										.attr('disabled', false)
@@ -743,7 +767,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 									ga('send', 'event', 'comment', 'delete', 'comment delete error');
 								}
 								$noty.$message.children().html(msg);
-								okButton.text('Close').on('click', function () {
+								okButton.text('Закрыть').on('click', function () {
 									$noty.close();
 									if (!result.error) {
 										if (Utils.isType('number', result.countComments)) {
@@ -764,7 +788,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							}.bind(_this));
 							socket.emit('removeComment', {type: _this.type, cid: cid});
 						}},
-						{addClass: 'btn-strict', text: 'Отмена', onClick: function ($noty) {
+						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							root.removeClass('hlRemove');
 							$noty.close();
 						}}
@@ -820,16 +844,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		//Сначала проверяет, не навигируется ли сейчас и есть ли дерево, если нет - запросит
 		navCheckBefore: function (dir, onlyFirst) {
-			if (!this.navigating()) {
-				if (!this.showTree()) {
-					this.navigating(true);
-					this.inViewportCheckBind({cb: function () {
-						this.navigating(false);
-						this.nav(dir, onlyFirst);
-					}.bind(this)});
-				} else {
+			if (this.navigating()) {
+				return;
+			}
+			if (this.showTree()) {
+				this.nav(dir, onlyFirst);
+			} else {
+				this.navigating(true);
+				this.inViewportCheck(function () {
+					this.navigating(false);
 					this.nav(dir, onlyFirst);
-				}
+				}, this, true);
 			}
 		},
 		nav: function (dir, onlyFirst) {
@@ -842,7 +867,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				offset,
 				i;
 
-			if (!newComments.length) {
+			if (!newComments || !newComments.length) {
 				return;
 			}
 
@@ -862,10 +887,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			if (elementsArr.length) {
+				this.navigating(true);
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				this.navigating(true);
 				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
 					this.navigating(false);
 				}.bind(this)});
@@ -877,6 +902,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		navCounterHandler: function () {
 			if (this.count_new()) {
 				if (this.showTree()) {
+					this.navTxtRecalc();
 					this.navScrollCounterOn();
 				} else {
 					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже

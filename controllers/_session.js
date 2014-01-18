@@ -3,7 +3,7 @@
 var Session,
 	User,
 	Utils = require('../commons/Utils.js'),
-	uaParser = require('ua-parser'),
+	UAParser = require('ua-parser-js'),
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
@@ -23,10 +23,11 @@ var Session,
 		'Chrome': 14,
 		'Android': 3,
 		'Safari': 5,
-		'Mobile Safari': 5
+		'Mobile Safari': 4 //Пока определяет так и ios и android
 	},
 
 	settings = require('./settings.js'),
+	regionController = require('./region.js'),
 	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
 	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
 	sess = {},//Sessions. Хэш всех активных сессий, с установленными соединениями
@@ -37,11 +38,13 @@ var Session,
 //Добавляем сессию в хеш пользователей
 function addUserSession(session) {
 	var user = session.user,
-		usObj = us[user.login];
+		usObj = us[user.login],
+		firstAdding = false;
 
 	if (usObj === undefined) {
+		firstAdding = true;
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}, rquery: {}};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
 		if (!user.settings) {
 			user.settings = {};
@@ -56,9 +59,11 @@ function addUserSession(session) {
 
 	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
 
-	return usObj === undefined; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
+	return firstAdding; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
 }
 
+
+var uaParser = new UAParser();
 //Обработчик установки соединения сокетом 'authorization'
 function authSocket(handshake, callback) {
 	if (!handshake.headers || !handshake.headers['user-agent']) {
@@ -66,12 +71,12 @@ function authSocket(handshake, callback) {
 	}
 	//console.log(handshake);
 
-	var uaParsed = uaParser.parse(handshake.headers['user-agent']),
+	var uaParsed = uaParser.setUA(handshake.headers['user-agent']).getResult(),
+		browserVersion = Number(uaParsed.browser.major),
 		cookieObj,
-		existsSid,
-		session;
+		existsSid;
 
-	if (!uaParsed.family || !uaParsed.major || uaParsed.major < browserSuportFrom[uaParsed.family]) {
+	if (!uaParsed.browser.name || browserSuportFrom[uaParsed.browser.name] !== undefined && (!browserVersion || browserVersion < browserSuportFrom[uaParsed.browser.name])) {
 		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
 	}
 
@@ -80,13 +85,14 @@ function authSocket(handshake, callback) {
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
-		session = sessionProcess();
-		sessWaitingConnect[session.key] = session;
-		finishAuthConnection(session);
+		sessionProcess(null, null, function (session) {
+			sessWaitingConnect[session.key] = session;
+			finishAuthConnection(session);
+		});
 	} else {
 		if (sess[existsSid] !== undefined || sessWaitingConnect[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			finishAuthConnection(sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid]));
+			sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid], finishAuthConnection);
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
 			if (sessWaitingSelect[existsSid] !== undefined) {
@@ -99,38 +105,66 @@ function authSocket(handshake, callback) {
 				];
 
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-					session = sessionProcess(err, session); //Переприсваиваем, так как если не выбралась из базы, она создаться
+					sessionProcess(err, session, function (session) {
+						sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
 
-					sessWaitingConnect[session.key] = session; //Добавляем сессию в хеш сессий
+						if (session.user) {
+							//Если есть юзер, добавляем его в хеш пользователей и если он добавлен впервые в хеш,
+							//значит будет использоваться именно новый объект и надо спопулировать у него регионы
+							if (addUserSession(session)) {
+								popUserRegions(session.user, function (err) {
+									if (err) {
+										return callback('Error: ' + err, false);
+									}
+									callWaitings();
+								});
+							} else {
+								callWaitings();
+							}
+						} else {
+							callWaitings();
+						}
 
-					if (session.user) {
-						addUserSession(session); //Если есть юзер, добавляем его в хеш пользователей
-					}
-
-					if (Array.isArray(sessWaitingSelect[existsSid])) {
-						sessWaitingSelect[existsSid].forEach(function (item) {
-							item.cb.call(global, session);
-						});
-						delete sessWaitingSelect[existsSid];
-					}
+						function callWaitings() {
+							if (Array.isArray(sessWaitingSelect[existsSid])) {
+								sessWaitingSelect[existsSid].forEach(function (item) {
+									item.cb.call(global, session);
+								});
+								delete sessWaitingSelect[existsSid];
+							}
+						}
+					});
 				});
 			}
 		}
 	}
 
-	function sessionProcess(err, session) {
+	function sessionProcess(err, session, cb) {
 		if (err) {
 			return callback('Error: ' + err, false);
 		}
 		var ip = handshake.headers['x-real-ip'] || handshake.headers['X-Real-IP'] || (handshake.address && handshake.address.address),
-			data = {ip: ip, headers: handshake.headers, ua: {b: uaParsed.ua.family, bv: uaParsed.ua.toVersionString(), os: uaParsed.os.toString(), d: uaParsed.device.family}};
+			device = ((uaParsed.device.type || '') + ' ' + (uaParsed.device.vendor || '') + ' ' + (uaParsed.device.model || '')).trim(),
+			data = {
+				ip: ip,
+				headers: handshake.headers,
+				ua: {
+					b: uaParsed.browser.name,
+					bv: uaParsed.browser.version,
+					os: ((uaParsed.os.name || '') + ' ' + (uaParsed.os.version || '')).trim()
+				}
+			};
+
+		if (device) {
+			data.ua.d = device;
+		}
 
 		if (!session) {
 			session = generate(data); //Если сессии нет, создаем и добавляем её в хеш
 		} else {
 			regen(session, data);
 		}
-		return session;
+		cb(session);
 	}
 
 	function finishAuthConnection(session) {
@@ -142,7 +176,8 @@ function authSocket(handshake, callback) {
 //Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
 function firstConnection(socket) {
-	var session = socket.handshake.session;
+	var session = socket.handshake.session,
+		userPlain;
 	//console.log('firstConnection');
 
 	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
@@ -154,6 +189,7 @@ function firstConnection(socket) {
 	if (!sess[session.key]) {
 		return; //Если сессии уже нет, выходим
 	}
+	userPlain = session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null;
 
 	if (!session.sockets) {
 		session.sockets = {};
@@ -164,7 +200,7 @@ function firstConnection(socket) {
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
 		cook: emitCookie(socket, true),
-		u: session.user && session.user.toObject ? session.user.toObject({transform: userToPublicObject}) : null
+		u: userPlain
 	});
 
 	socket.on('disconnect', function () {
@@ -251,6 +287,137 @@ var checkWaitingSess = (function () {
 	};
 }());
 
+//Пупулируем регионы пользователя и строим запросы для них
+function popUserRegions(user, cb) {
+	var paths = [
+			{path: 'regionHome', select: {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
+			{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
+		],
+		mod_regions_equals; //Регионы интересов и модерирования равны
+
+	if (user.role === 5) {
+		mod_regions_equals = _.isEqual(user.regions, user.mod_regions) || undefined;
+		paths.push({path: 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}});
+	}
+	user.populate(paths, function (err, user) {
+		if (err) {
+			return cb(err);
+		}
+		var regionsData,
+			usObj = us[user.login];
+
+		if (usObj) {
+			regionsData = regionController.buildQuery(user.regions);
+			usObj.rquery = regionsData.rquery;
+			usObj.rhash = regionsData.rhash;
+
+			if (user.role === 5) {
+				regionsData = regionController.buildQuery(user.mod_regions);
+				usObj.mod_rquery = regionsData.rquery;
+				usObj.mod_rhash = regionsData.rhash;
+			}
+			if (!mod_regions_equals) {
+				delete usObj.mod_regions_equals;
+			} else {
+				usObj.mod_regions_equals = mod_regions_equals;
+			}
+		}
+
+		cb(null);
+	});
+}
+
+//Заново выбирает сессию из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
+function regetSession(sessionCurrent, cb) {
+	Session.findOne({key: sessionCurrent.key}).populate('user').exec(function (err, session) {
+		if (err) {
+			console.log('Error wile regeting session (' + sessionCurrent.key + ')', err.message);
+			cb(err);
+		}
+
+		if (session.user) {
+			popUserRegions(session.user, function (err) {
+				finish(err);
+			});
+		} else {
+			finish();
+		}
+
+		//TODO: Не заменять, а обновлять usObj, и oбновлять user во всех остальных sessions. Переложить новую сессию в socket.handshake
+		function finish(err) {
+			if (err) {
+				cb(err);
+			}
+			//Заменяем текущий объект сессии в хеше на вновь выбранный
+			sess[session.key] = session;
+			//Если есть пользователь, удаляем ссылку на его старый объект из хеша и вызываем функцию добавления нового
+			if (session.user) {
+				delete us[session.user.login];
+				delete usid[session.user._id];
+				addUserSession(session);
+			}
+			cb(null, session);
+		}
+	});
+}
+
+//Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
+function regetUser(u, emitHim, emitExcludeSocket, cb) {
+	User.findOne({login: u.login}, function (err, user) {
+		popUserRegions(user, function (err) {
+			if (err || !user) {
+				console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
+				if (cb) {
+					cb(err || {message: 'No such user for reget'});
+				}
+			}
+
+			var usObj = us[user.login],
+				s;
+
+			if (usObj) {
+				//Присваиваем новый объект пользователя usObj
+				usObj.user = user;
+				//Заново присваиваем настройки
+				if (!user.settings) {
+					user.settings = {};
+				}
+				_.defaults(user.settings, settings.getUserSettingsDef());
+				//Присваиваем новый объект пользователя всем его открытым сессиям
+				for (s in usObj.sessions) {
+					if (usObj.sessions.hasOwnProperty(s)) {
+						usObj.sessions[s].user = user;
+					}
+				}
+
+				if (emitHim) {
+					emitUser(user.login, emitExcludeSocket);
+				}
+			}
+			if (cb) {
+				cb(null, user);
+			}
+		});
+	});
+}
+//Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
+//Принимает на вход 'all' или функцию фильтра пользователей
+//Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
+function regetUsers(filterFn, emitThem, cb) {
+	var usersToReget = filterFn === 'all' ? us : _.filter(us, filterFn),
+		usersCount = _.size(usersToReget);
+
+	//_.forEach, потому что usersToReget может быть как объектом (us), так и массивом (результат filter)
+	_.forEach(usersToReget, function (usObj) {
+		regetUser(usObj.user, emitThem);
+	});
+
+	if (cb) {
+		cb(null, usersCount);
+	}
+	return usersCount;
+}
+
 function generate(data, cb) {
 	var session = new Session({
 		key: Utils.randomString(12),
@@ -295,7 +462,7 @@ function destroy(socket, cb) {
 }
 
 /**
- * Добавляеи в сессию новые данные, продлевает действие и сохраняет в базу
+ * Добавляет в сессию новые данные, продлевает действие и сохраняет в базу
  * @param session Сессия
  * @param data Свойства для вставки в data сессии
  * @param keyRegen Менять ли ключ сессии
@@ -324,9 +491,11 @@ function regen(session, data, keyRegen, userRePop, cb) {
 		//https://github.com/LearnBoost/mongoose/issues/1530
 		if (userRePop && session.user) {
 			session.populate('user', function (err, session) {
-				if (cb) {
-					cb(err, session);
-				}
+				popUserRegions(session.user, function (err) {
+					if (cb) {
+						cb(err, session);
+					}
+				});
 			});
 		} else if (cb) {
 			cb(err, session);
@@ -348,23 +517,42 @@ function authUser(socket, user, data, cb) {
 	session.key = Utils.randomString(12);
 	sess[session.key] = session; //После регена надо опять положить сессию в хеш с новым ключем
 
-	regen(session, {remember: data.remember}, false, true, function (err, session) {
+	regen(session, {remember: data.remember}, false, false, function (err, session) {
+
 		//Здесь объект пользователя в сессии будет уже другим, заново спопулированный
-
-		//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
-		//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
-		addUserSession(session);
-		var user = session.user.toObject({transform: userToPublicObject});
-
-		//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-		for (var i in session.sockets) {
-			if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-				session.sockets[i].emit('youAre', user);
+		session.populate('user', function (err, session) {
+			if (err && cb) {
+				cb(err, session);
 			}
-		}
 
-		emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
-		cb(err, session);
+			//Кладем сессию в хеш сессий пользователя. Здесь пользователь сессии может опять переприсвоиться,
+			//если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере.
+			//Если не переприсвоился, и взялся именно новый, популируем у него регионы
+			if (addUserSession(session)) {
+				popUserRegions(session.user, function (err) {
+					if (err && cb) {
+						cb(err, session);
+					}
+					finish();
+				});
+			} else {
+				finish();
+			}
+
+			function finish() {
+				var user = session.user.toObject({transform: userToPublicObject});
+
+				//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
+				for (var i in session.sockets) {
+					if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
+						session.sockets[i].emit('youAre', user);
+					}
+				}
+
+				emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
+				cb(err, session);
+			}
+		});
 	});
 }
 
@@ -454,7 +642,6 @@ function getOnline(login, _id) {
 }
 function userToPublicObject(doc, ret, options) {
 	delete ret._id;
-	delete ret.cid;
 	delete ret.pass;
 	delete ret.activatedate;
 	delete ret.loginAttempts;
@@ -477,6 +664,9 @@ module.exports.us = us;
 module.exports.usid = usid;
 module.exports.sess = sess;
 module.exports.sessWaitingConnect = sessWaitingConnect;
+module.exports.regetSession = regetSession;
+module.exports.regetUser = regetUser;
+module.exports.regetUsers = regetUsers;
 module.exports.userToPublicObject = userToPublicObject;
 
 module.exports.loadController = function (a, db, io) {

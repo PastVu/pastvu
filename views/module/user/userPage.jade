@@ -1,10 +1,9 @@
-.userPage(data-bind="with: repository[M!M]")
-	.span2-3
-		.mContainer.mNoDisplay.mFadeIn#user_brief
-	.span9-10
-		.navbar.user_menu
-			.navbar-inner
-				ul.nav(data-bind="foreach: menuItems")
-					li(data-bind="css: {active: $data.section === $parent.section()}")
-						a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
-		.row-fluid.mContainer.mHidden.mFadeIn#user_content
+.row.userPage(data-bind="with: repository[M!M]")
+	.col-xs-12.col-sm-3.col-lg-2(style="z-index:2;")
+		.mContainer.mNoDisplay.mFadeIn.affix-top.userBrief(data-bind="style: {width: briefW()}")
+	.col-xs-12.col-sm-9.col-lg-10.userBody
+		nav.navbar.navbar-pastvu.user_menu
+			ul.nav.navbar-nav(data-bind="foreach: menuItems")
+				li(data-bind="css: {active: $data.section === $parent.section()}")
+					a(data-bind="text: $data.name, attr: {href: ($data.disable ? '' : $data.href)}, css: {disabled: $data.disable}")
+		.mContainer.mHidden.mFadeIn#user_content

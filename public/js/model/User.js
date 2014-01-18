@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], function ($, _, ko, ko_mapping, P) {
+define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params', 'model/Region'], function ($, _, Utils, ko, ko_mapping, P, Region) {
 	'use strict';
 
 	var defaults = {
@@ -23,6 +23,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 			role: 0,
 
 			settings: {},
+
+			regionHome: null, //Спопулированный домашний регион
+			regions: [], //Спопулированные регионы для фильтрации по умолчанию
+			mod_regions: [], //Спопулированные регионы модератора
 
 			//profile
 			birthdate: '',
@@ -68,6 +72,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Params'], funct
 		}
 		if (!origin.disp) {
 			origin.disp = origin.login;
+		}
+
+		if (defType === 'full') {
+			origin.regionHome = Region.factory(origin.regionHome, 'home'); //Надо имено присваивать на случай, если origin.regionHome - undefined, у анонимов
 		}
 
 		origin = _.defaults(origin, customDefaults ? _.assign(defaults[defType], customDefaults) : defaults[defType]);

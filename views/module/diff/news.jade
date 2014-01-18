@@ -1,7 +1,7 @@
 .newsApart(data-bind="with: repository[M!M]")
-	.indentLogo.newsHeader Новости проекта
+	.newsHeader Новости проекта
 
-	.row-fluid.news
+	.news
 		.novelAuthor
 			a.avatar.pull-left.fringe(data-bind="attr: {href: '/u/' + news.user.login()}")
 				img(data-bind="attr: {src: news.user.avatar()}, event: {load: onImgLoad}")
@@ -16,8 +16,8 @@
 					//ko if: canEdit()
 					.dotDelimeter ·
 					a.newsEdit(data-bind="attr: {href: '/admin/news/edit/' + news.cid()}")
-						i.icon-pencil
-						| &nbsp;Редактировать
+						span.glyphicon.glyphicon-pencil
+						|  Редактировать
 					// /ko
 				.newsTxt(data-bind="html: news.txt()")
 	hr
