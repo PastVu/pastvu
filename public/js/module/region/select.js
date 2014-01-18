@@ -58,34 +58,45 @@ define([
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+		//Включаем "прилипание" поля ввода при скролле к верхнему краю модального окна
 		affixInputOn: function () {
-			var $input = this.$dom.find('.regionsgroup'),
-				input = $input[0],
-				topShadowBacking = this.$container.parent().find('.tsb')[0], //Подложка под верхнюю тень тулбара модального окна
-				stickAfter = $input.position().top,
+			var topShadowBacking = this.$container.parent().find('.tsb')[0], //Подложка под верхнюю тень тулбара модального окна
+
+				$sticker = this.$dom.find('.inputwrap.origin'),
+				sticker = $sticker[0],
+
+				surrogate = this.$dom.find('.inputwrap.surrogate')[0],
+
+				stickAfter = $sticker.position().top,
 				stickFixedTop = this.$container.offset().top + 5,
-				stickFixedLeft = $input.offset().left - 45,
-				stickFixedWidth = $input.width() + 45 + 23,
+				stickFixedLeft = $sticker.offset().left - 44,
+				stickFixedWidth = $sticker.width() + 21 + 21,
 				isSticked = false;
 
 			this.affixInputOff();
 			this.$container.on('scroll', function () {
-				var scrollTop = $(this).scrollTop();
+				var scrollUnder = $(this).scrollTop() > stickAfter;
 
-				console.log(scrollTop);
-				if (!isSticked && scrollTop > stickAfter) {
-					input.style.top = stickFixedTop + 'px';
-					input.style.left = stickFixedLeft + 'px';
-					input.style.width = stickFixedWidth + 'px';
-					input.classList.add('sticked');
+				if (!isSticked && scrollUnder) {
+					sticker.style.top = stickFixedTop + 'px';
+					sticker.style.left = stickFixedLeft + 'px';
+					sticker.style.width = stickFixedWidth + 'px';
+					surrogate.style.height = $sticker.height() + 10 + 'px';
+
+					sticker.classList.add('sticked');
+					surrogate.classList.add('sticked');
 					topShadowBacking.classList.add('doit');
+
 					isSticked = true;
-				} else if (isSticked && (scrollTop < stickAfter)) {
-					input.style.top = 'auto';
-					input.style.left = 'auto';
-					input.style.width = 'auto';
-					input.classList.remove('sticked');
+				} else if (isSticked && !scrollUnder) {
+					sticker.style.top = 'auto';
+					sticker.style.left = 'auto';
+					sticker.style.width = 'auto';
+
+					sticker.classList.remove('sticked');
+					surrogate.classList.remove('sticked');
 					topShadowBacking.classList.remove('doit');
+
 					isSticked = false;
 				}
 			});

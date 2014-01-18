@@ -26,30 +26,39 @@
 		margin-left: 22px;
 	}
 
-	.regionsgroup {
-		position: relative;
-		top: auto;
-		left: auto;
-		width: auto;
-		margin: 0;
+	.inputwrap {
+		margin-left: 21px;
 		padding: 5px 0;
-		z-index: 1000;
-		background-color: @modal-bg;
 
-		&.sticked {
-			position: fixed;
-			padding: 5px 23px 1px 45px;
+		&.surrogate {
+			display: none;
 
-			&::after {
-				position: absolute;
-				content: "";
-				bottom: 1px;
-				left: 47px;
-				right: 25px;
-				height: 30px;
-				z-index: -1;
-				.box-shadow(0 2px 8px 0px #777);
+			&.sticked {
+				display: block;
 			}
+		}
+		&.origin {
+			top: auto;
+			left: auto;
+			width: auto;
+			z-index: 1000;
+			background-color: @modal-bg;
+
+			&.sticked {
+				position: fixed;
+				margin-left: 23px;
+				padding: 5px 21px 1px 21px;
+
+				> .regionsgroup {
+					.box-shadow(0 3px 8px 0px #888);
+				}
+			}
+		}
+
+		> .regionsgroup {
+			position: relative;
+			margin: 0;
+			transition: box-shadow .1s linear;
 		}
 	}
 

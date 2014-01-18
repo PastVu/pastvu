@@ -13,10 +13,13 @@
 		div(data-bind="text: 'Возможно выбрать ' + (options.min ? 'от ' + options.min: '')+ ' до ' + options.max + ' регионов, они не должны быть вложены друг в друга'")
 		// /ko
 
+	.inputwrap.surrogate
+	.inputwrap.origin
 		.input-group.regionsgroup
 			span.input-group-addon Выбор:
 			input.regionstkn.form-control(type="text", placeholder="Начните вводить имя региона")
 
+	.offsetwrap
 		.regionsHead
 			.headElem.interact(data-bind="click: expandAll")
 				span.glyphicon.glyphicon-plus
