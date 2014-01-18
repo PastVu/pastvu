@@ -20,6 +20,8 @@ define([
 			this.auth = globalVM.repository['m/common/auth'];
 			this.loading = ko.observable(true);
 
+			this.isSticked = false;
+
 			this.selectedInit = this.options.selectedInit;
 			this.selectedInitHash = {};
 			this.selectedInitTkns = [];
@@ -45,6 +47,7 @@ define([
 					this.loading(false);
 					this.createTokenfield();
 
+					this.subscriptions.sizes = P.window.square.subscribe(this.sizeHandler, this);
 					this.affixInputOn();
 				}.bind(this), 100);
 			}, this);
@@ -58,51 +61,69 @@ define([
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
-		//Включаем "прилипание" поля ввода при скролле к верхнему краю модального окна
+		sizeHandler: function () {
+			//При ресайзе надо влючить заново affix, чтобы пересчитать референсные значения
+			this.affixInputOff();
+			window.setTimeout(function () {
+				this.affixInputOn();
+			}.bind(this), 10);
+		},
+		//Включаем "прилипание" поля ввода при скроллинге к верхнему краю модального окна
 		affixInputOn: function () {
-			var topShadowBacking = this.$container.parent().find('.tsb')[0], //Подложка под верхнюю тень тулбара модального окна
-
+			var _this = this,
+				$container = this.$container,
 				$sticker = this.$dom.find('.inputwrap.origin'),
-				sticker = $sticker[0],
-
-				surrogate = this.$dom.find('.inputwrap.surrogate')[0],
 
 				stickAfter = $sticker.position().top,
-				stickFixedTop = this.$container.offset().top + 5,
+				stickFixedTop = $container.offset().top + 5,
 				stickFixedLeft = $sticker.offset().left - 44,
 				stickFixedWidth = $sticker.width() + 21 + 21,
-				isSticked = false;
 
-			this.affixInputOff();
-			this.$container.on('scroll', function () {
-				var scrollUnder = $(this).scrollTop() > stickAfter;
+				calcValues = function () {
+					var scrollUnder = $container.scrollTop() > stickAfter;
 
-				if (!isSticked && scrollUnder) {
-					sticker.style.top = stickFixedTop + 'px';
-					sticker.style.left = stickFixedLeft + 'px';
-					sticker.style.width = stickFixedWidth + 'px';
-					surrogate.style.height = $sticker.height() + 10 + 'px';
+					if (!_this.isSticked && scrollUnder) {
+						_this.sticker.style.top = stickFixedTop + 'px';
+						_this.sticker.style.left = stickFixedLeft + 'px';
+						_this.sticker.style.width = stickFixedWidth + 'px';
+						_this.surrogate.style.height = $sticker.height() + 10 + 'px';
 
-					sticker.classList.add('sticked');
-					surrogate.classList.add('sticked');
-					topShadowBacking.classList.add('doit');
+						_this.sticker.classList.add('sticked');
+						_this.surrogate.classList.add('sticked');
+						_this.topShadowBacking.classList.add('doit');
 
-					isSticked = true;
-				} else if (isSticked && !scrollUnder) {
-					sticker.style.top = 'auto';
-					sticker.style.left = 'auto';
-					sticker.style.width = 'auto';
+						_this.isSticked = true;
+					} else if (_this.isSticked && !scrollUnder) {
+						_this.unstickInput();
+					}
+				};
 
-					sticker.classList.remove('sticked');
-					surrogate.classList.remove('sticked');
-					topShadowBacking.classList.remove('doit');
+			this.sticker = $sticker[0];
+			this.surrogate = this.$dom.find('.inputwrap.surrogate')[0];
+			this.topShadowBacking = $container.parent().find('.tsb')[0]; //Подложка под верхнюю тень тулбара модального окна
 
-					isSticked = false;
-				}
-			});
+			calcValues(); //Считаем при первом вызове, например, чтобы пересчитать после ресайза окна
+			$container.on('scroll', calcValues);
+		},
+		unstickInput: function () {
+			if (this.isSticked) {
+				this.sticker.style.top = 'auto';
+				this.sticker.style.left = 'auto';
+				this.sticker.style.width = 'auto';
+
+				this.sticker.classList.remove('sticked');
+				this.surrogate.classList.remove('sticked');
+				this.topShadowBacking.classList.remove('doit');
+
+				this.isSticked = false;
+			}
 		},
 		affixInputOff: function () {
 			this.$container.off('scroll');
+			this.unstickInput();
+			delete this.sticker;
+			delete this.surrogate;
+			delete this.topShadowBacking;
 		},
 		getRegions: function (cb, ctx) {
 			socket.once('takeRegions', function (data) {
@@ -143,23 +164,23 @@ define([
 
 			tokens.forEach(function (item) {
 				var region = this.regionsHashByTitle[item.value],
-                    result;
+					result;
 
 				if (region) {
-                    result = [];
+					result = [];
 
-                    //Если есть родительские, то вставляем и их
-                    if (region.parents && region.parents.length) {
-                        region.parents.forEach(function (cid) {
-                            var region = this.regionsHashByCid[cid];
-                            if (region) {
-                                result.push(fields ? _.pick(region, fields) : region);
-                            }
-                        }, this);
-                    }
+					//Если есть родительские, то вставляем и их
+					if (region.parents && region.parents.length) {
+						region.parents.forEach(function (cid) {
+							var region = this.regionsHashByCid[cid];
+							if (region) {
+								result.push(fields ? _.pick(region, fields) : region);
+							}
+						}, this);
+					}
 
-                    result.push(fields ? _.pick(region, fields) : region);
-                    results.push(result);
+					result.push(fields ? _.pick(region, fields) : region);
+					results.push(result);
 				}
 			}, this);
 			return results;
@@ -360,7 +381,7 @@ define([
 				this.toggleBranchSelectable(region, false);
 			}, this);
 
-            this.regionsHashByCid = hash;
+			this.regionsHashByCid = hash;
 
 			return result;
 		},
