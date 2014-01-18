@@ -18,6 +18,7 @@ define([
 		},
 		create: function () {
 			this.auth = globalVM.repository['m/common/auth'];
+			this.loading = ko.observable(true);
 
 			this.selectedInit = this.options.selectedInit;
 			this.selectedInitHash = {};
@@ -35,11 +36,15 @@ define([
 			this.regionsHashByCid = null;
 			this.regionsHashByTitle = {};
 
+			ko.applyBindings(globalVM, this.$dom[0]);
+			this.show();
+
 			this.getRegions(function () {
-				ko.applyBindings(globalVM, this.$dom[0]);
-				this.show();
 				//Создавать токены должны после отображения, чтобы появился скроллинг и правильно посчиталась ширина инпута для typehead
-				this.createTokenfield();
+				setTimeout(function () {
+					this.loading(false);
+					this.createTokenfield();
+				}.bind(this), 100);
 			}, this);
 		},
 		show: function (cb, ctx) {

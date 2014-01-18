@@ -1,4 +1,9 @@
 .regsel(data-bind="with: repository[M!M]")
+	//ko if: loading()
+	.loading Загрузка
+	// /ko
+
+	//ko ifnot: loading()
 	h4.namehead
 		span.glyphicon.glyphicon-globe
 		span(data-bind="text: ' Выбор регион' + (options.max > 1 ? 'ов' : 'а')")
@@ -20,6 +25,7 @@
 				|  Свернуть все
 	.tree
 		ul(data-bind="template: {name: 'treeNode', foreach: regionsTree}")
+	// /ko
 
 	| <script id="treeNode" type="text/html">
 	li(data-bind="css: {isparent: $data.childLen}")
