@@ -98,10 +98,10 @@ html, body {
 		z-index: @zindex-modal;
 		border-width: 0 1px 1px 1px;
 		border-color: @MainBlueColor;
-		background-color: darken(@MainLigthColor, 5%);
+		background-color: @modal-bg;
 		.box-shadow(0 2px 30px 1px #666);
 
-		.neoModalTools {
+		> .neoModalTools {
 			position: relative;
 			height: 25px;
 			margin: 0;
@@ -142,7 +142,7 @@ html, body {
 			}
 		}
 
-		.neoModalContainer {
+		> .neoModalContainer {
 			position: relative;
 			min-height: 185px;
 			min-width: 300px;
@@ -176,7 +176,22 @@ html, body {
 			}
 		}
 
-		.neoModalFoot {
+		//Подложка под верхнюю тень тулбара модального окна
+		> .tsb {
+			position: absolute;
+			display: none;
+			top: 25px;
+			left: 0;
+			right: 0;
+			height: 5px;
+			background-color: @modal-bg;
+
+			&.doit {
+				display: block;
+			}
+		}
+
+		> .neoModalFoot {
 			position: relative;
 			height: 29px;
 			padding-top: 3px;

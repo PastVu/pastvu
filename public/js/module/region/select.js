@@ -44,6 +44,8 @@ define([
 				setTimeout(function () {
 					this.loading(false);
 					this.createTokenfield();
+
+					this.affixInputOn();
 				}.bind(this), 100);
 			}, this);
 		},
@@ -52,8 +54,44 @@ define([
 			this.showing = true;
 		},
 		hide: function () {
+			this.affixInputOff();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
+		},
+		affixInputOn: function () {
+			var $input = this.$dom.find('.regionsgroup'),
+				input = $input[0],
+				topShadowBacking = this.$container.parent().find('.tsb')[0], //Подложка под верхнюю тень тулбара модального окна
+				stickAfter = $input.position().top,
+				stickFixedTop = this.$container.offset().top + 5,
+				stickFixedLeft = $input.offset().left - 45,
+				stickFixedWidth = $input.width() + 45 + 23,
+				isSticked = false;
+
+			this.affixInputOff();
+			this.$container.on('scroll', function () {
+				var scrollTop = $(this).scrollTop();
+
+				console.log(scrollTop);
+				if (!isSticked && scrollTop > stickAfter) {
+					input.style.top = stickFixedTop + 'px';
+					input.style.left = stickFixedLeft + 'px';
+					input.style.width = stickFixedWidth + 'px';
+					input.classList.add('sticked');
+					topShadowBacking.classList.add('doit');
+					isSticked = true;
+				} else if (isSticked && (scrollTop < stickAfter)) {
+					input.style.top = 'auto';
+					input.style.left = 'auto';
+					input.style.width = 'auto';
+					input.classList.remove('sticked');
+					topShadowBacking.classList.remove('doit');
+					isSticked = false;
+				}
+			});
+		},
+		affixInputOff: function () {
+			this.$container.off('scroll');
 		},
 		getRegions: function (cb, ctx) {
 			socket.once('takeRegions', function (data) {
