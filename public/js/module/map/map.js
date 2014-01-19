@@ -204,14 +204,37 @@ define([
 		},
 
 		show: function () {
-			var qParams = globalVM.router.params(),
+			var region,
 				center,
+				bbox,
+				fitBounds,
+				qParams = globalVM.router.params(),
 				zoom = Number(qParams.z) || (this.embedded ? 18 : (Utils.getLocalStorage('map.zoom') || Locations.current.z)),
 				system = qParams.s || Utils.getLocalStorage(this.embedded ? 'map.embedded.sys' : 'map.sys') || defaults.sys,
 				type = qParams.t || Utils.getLocalStorage(this.embedded ? 'map.embedded.type' : 'map.type') || defaults.type;
 
 			if (this.embedded) {
-				center = this.point && this.point.geo() || this.options.center;
+				if (this.point) {
+					region = _.last(this.point.regions());
+
+					if (this.point.geo()) {
+						center = this.point.geo();
+					} else if (region && region.center) {
+						center = [region.center()[1], region.center()[0]];
+
+						if (region.bboxhome || region.bbox) {
+							bbox = region.bboxhome() || region.bbox();
+							if (Utils.geo.checkbbox(bbox)) {
+								fitBounds = [
+									[bbox[1], bbox[0]],
+									[bbox[3], bbox[2]]
+								];
+							}
+						}
+					}
+				} else {
+					center = this.options.center;
+				}
 			} else {
 				center = qParams.g;
 				if (center) {
@@ -231,6 +254,9 @@ define([
 			}
 
 			this.map = new L.neoMap(this.$dom.find('.map')[0], {center: center, zoom: zoom, minZoom: 3, zoomAnimation: L.Map.prototype.options.zoomAnimation && true, trackResize: false});
+			if (fitBounds) {
+				this.map.fitBounds(fitBounds, {maxZoom: 18});
+			}
 			this.markerManager = new MarkerManager(this.map, {enabled: false, openNewTab: this.openNewTab(), embedded: this.embedded});
 			this.selectLayer(system, type);
 
@@ -311,7 +337,10 @@ define([
 		},
 
 		setPoint: function (point) {
-			var geo = point.geo();
+			var geo = point.geo(),
+				bbox,
+				zoom,
+				region = _.last(point.regions());
 
 			this.point = point;
 			if (this.editing()) {
@@ -327,8 +356,20 @@ define([
 			} else {
 				this.pointHighlightCreate();
 			}
+
 			if (geo) {
 				this.map.panTo(geo);
+			} else if (region && region.center) {
+				if (region.bboxhome || region.bbox) {
+					bbox = region.bboxhome() || region.bbox();
+					if (Utils.geo.checkbbox(bbox)) {
+						zoom = this.map.getBoundsZoom([
+							[bbox[1], bbox[0]],
+							[bbox[3], bbox[2]]
+						], false);
+					}
+				}
+				this.map.setView([region.center()[1], region.center()[0]], zoom || this.map.getZoom());
 			}
 			return this;
 		},

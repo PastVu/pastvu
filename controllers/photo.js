@@ -515,7 +515,8 @@ function givePhoto(socket, data, cb) {
 			step(
 				function () {
 					var user = _session.getOnline(null, photo.user),
-						paralellUser = this.parallel();
+						paralellUser = this.parallel(),
+						regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
 
 					if (user) {
 						photo = photo.toObject();
@@ -528,7 +529,13 @@ function givePhoto(socket, data, cb) {
 							paralellUser(err, photo && photo.toObject());
 						});
 					}
-					regionController.getObjRegionList(photo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, this.parallel());
+					//Если у фото нет координаты, берем домашнее положение региона
+					if (!photo.geo) {
+						regionFields.center = 1;
+						regionFields.bbox = 1;
+						regionFields.bboxhome = 1;
+					}
+					regionController.getObjRegionList(photo, regionFields, this.parallel());
 
 					if (iAm) {
 						UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());

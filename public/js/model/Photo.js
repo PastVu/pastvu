@@ -1,5 +1,5 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User'], function ($, _, ko, ko_mapping, Utils, P, User) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region'], function ($, _, ko, ko_mapping, Utils, P, User, Region) {
 	'use strict';
 
 	var defaults = {
@@ -106,6 +106,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 		if (defType === 'full') {
 			if (!Utils.geo.checkLatLng(origin.geo)) {
 				origin.geo = defaults[defType].geo;
+			}
+			if (origin.regions.length) {
+				Region.factory(_.last(origin.regions), 'home');
 			}
 			User.factory(origin.user, 'base');
 		}
