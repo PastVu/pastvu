@@ -9,6 +9,8 @@ define([
 ], function (_, $, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
 	'use strict';
 
+	var $window = $(window);
+
 	return Cliche.extend({
 		jade: jade,
 		options: {
@@ -75,8 +77,8 @@ define([
 				$sticker = this.$dom.find('.inputwrap.origin'),
 
 				stickAfter = $sticker.position().top,
-				stickFixedTop = $container.offset().top + 5,
-				stickFixedLeft = $sticker.offset().left - 44,
+				stickFixedTop = $container.offset().top - $window.scrollTop() + 7,
+				stickFixedLeft = $sticker.offset().left - $window.scrollLeft() - 44,
 				stickFixedWidth = $sticker.width() + 21 + 21,
 
 				calcValues = function () {
