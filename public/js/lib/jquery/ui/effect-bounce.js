@@ -1,9 +1,9 @@
 define(['jquery','./effect'], function (jQuery) {
 /*!
- * jQuery UI Effects Bounce 1.10.3
+ * jQuery UI Effects Bounce 1.10.4
  * http://jqueryui.com
  *
- * Copyright 2013 jQuery Foundation and other contributors
+ * Copyright 2014 jQuery Foundation and other contributors
  * Released under the MIT license.
  * http://jquery.org/license
  *
