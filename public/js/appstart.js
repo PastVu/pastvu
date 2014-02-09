@@ -8,7 +8,7 @@
 		};
 	}
 
-	var head = document.head || document.getElementsByTagName('head')[0],
+	var head = document.head,
 		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
 		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 		loadImg,
