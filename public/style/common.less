@@ -30,6 +30,7 @@ html, body {
 		height: 36px;
 	}
 }
+
 #footContainer {
 	height: 36px;
 	padding-top: 10px;
@@ -73,16 +74,7 @@ html, body {
 	opacity: 0;
 	background-color: rgba(0, 0, 0, 0.3);
 	z-index: @zindex-modal-background;
-
-	// Ценрируем форму
-	text-align: center;
-	&::before {
-		content: '';
-		display: inline-block;
-		height: 100%;
-		vertical-align: middle;
-		margin-right: -0.25em; /* Adjusts for spacing */
-	}
+	&:extend(.centering_content all); //Центрируем контент
 
 	&.showModalCurtain {
 		opacity: 1;
@@ -237,6 +229,7 @@ html, body {
 
 /* The ghost, nudged to maintain perfect centering */
 .centering_content {
+	text-align: center;
 	&::before {
 		content: '';
 		display: inline-block;
@@ -407,9 +400,8 @@ html, body {
 		left: 0;
 		right: 0;
 		bottom: 0;
-		text-align: center;
 		background-color: #587086;
-		.centering_content();
+		&:extend(.centering_content all); //Центрируем контент
 
 		.failContent {
 			display: inline-block;
@@ -421,8 +413,7 @@ html, body {
 	&.infoCap {
 		color: #B9B9B9;
 		opacity: 1;
-		text-align: center;
-		.centering_content();
+		&:extend(.centering_content all); //Центрируем контент
 
 		.capTxt {
 			display: inline-block;

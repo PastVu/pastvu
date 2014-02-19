@@ -188,7 +188,11 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return result;
 		},
 		setLocalStorage: function (key, val) {
-			localStorage[key] = JSON.stringify(val);
+			if (val !== undefined) {
+				//undefined не stringify'ется в строку, а вернёт просто undefined,
+				//который localStorage преобразует в строку "localStorage" и затем не парсится и сохранять в localStorage undefined бессмысленно
+				localStorage[key] = JSON.stringify(val);
+			}
 		},
 
 		/**
@@ -464,15 +468,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				result = window.innerWidth;
 			} else {
 				result = (document.compatMode === 'CSS1Compat' && !window.opera ?
-				          document.documentElement.clientWidth : document.body.clientWidth);
+					document.documentElement.clientWidth : document.body.clientWidth);
 			}
 			return result;
 		},
 
 		getClientHeight: function () {
 			return window.opera && window.innerWidth ? window.innerWidth : (document.compatMode === 'CSS1Compat' && !window.opera ?
-			                                                                document.documentElement.clientHeight :
-			                                                                document.body.clientHeight);
+				document.documentElement.clientHeight :
+				document.body.clientHeight);
 		},
 
 		getBodyScrollTop: function () {
@@ -560,19 +564,19 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				var sExpires = "";
 				if (vEnd) {
 					switch (vEnd.constructor) {
-					case Number:
-						if (vEnd === Infinity) {
-							sExpires = "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
-						} else {
-							sExpires = "; expires=" + new Date(Date.now() + vEnd * 1000).toUTCString() + "; max-age=" + vEnd;
-						}
-						break;
-					case String:
-						sExpires = "; expires=" + vEnd;
-						break;
-					case Date:
-						sExpires = "; expires=" + vEnd.toGMTString();
-						break;
+						case Number:
+							if (vEnd === Infinity) {
+								sExpires = "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+							} else {
+								sExpires = "; expires=" + new Date(Date.now() + vEnd * 1000).toUTCString() + "; max-age=" + vEnd;
+							}
+							break;
+						case String:
+							sExpires = "; expires=" + vEnd;
+							break;
+						case Date:
+							sExpires = "; expires=" + vEnd.toGMTString();
+							break;
 					}
 				}
 				document.cookie = escape(sKey) + "=" + escape(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
@@ -737,6 +741,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			function check(geo) {
 				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 			}
+
 			//Проверка на валидность geo [lat, lng]
 			function checkLatLng(geo) {
 				return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
@@ -746,10 +751,12 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			function checkbbox(bbox) {
 				return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
 			}
+
 			//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
 			function checkbboxLatLng(bbox) {
 				return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
 			}
+
 			//Переставляет местами lat и lng в bbox
 			function bboxReverse(bbox) {
 				return [bbox[1], bbox[0], bbox[3], bbox[2]];
@@ -792,15 +799,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 				} else {
 					s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 					switch (max) {
-					case r:
-						h = (g - b) / d + (g < b ? 6 : 0);
-						break;
-					case g:
-						h = (b - r) / d + 2;
-						break;
-					case b:
-						h = (r - g) / d + 4;
-						break;
+						case r:
+							h = (g - b) / d + (g < b ? 6 : 0);
+							break;
+						case g:
+							h = (b - r) / d + 2;
+							break;
+						case b:
+							h = (r - g) / d + 4;
+							break;
 					}
 					h /= 6;
 				}
@@ -868,15 +875,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					h = 0; // achromatic
 				} else {
 					switch (max) {
-					case r:
-						h = (g - b) / d + (g < b ? 6 : 0);
-						break;
-					case g:
-						h = (b - r) / d + 2;
-						break;
-					case b:
-						h = (r - g) / d + 4;
-						break;
+						case r:
+							h = (g - b) / d + (g < b ? 6 : 0);
+							break;
+						case g:
+							h = (b - r) / d + 2;
+							break;
+						case b:
+							h = (r - g) / d + 4;
+							break;
 					}
 					h /= 6;
 				}
@@ -899,36 +906,36 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					t = v * (1 - (1 - f) * s);
 
 				switch (i % 6) {
-				case 0:
-					r = v;
-					g = t;
-					b = p;
-					break;
-				case 1:
-					r = q;
-					g = v;
-					b = p;
-					break;
-				case 2:
-					r = p;
-					g = v;
-					b = t;
-					break;
-				case 3:
-					r = p;
-					g = q;
-					b = v;
-					break;
-				case 4:
-					r = t;
-					g = p;
-					b = v;
-					break;
-				case 5:
-					r = v;
-					g = p;
-					b = q;
-					break;
+					case 0:
+						r = v;
+						g = t;
+						b = p;
+						break;
+					case 1:
+						r = q;
+						g = v;
+						b = p;
+						break;
+					case 2:
+						r = p;
+						g = v;
+						b = t;
+						break;
+					case 3:
+						r = p;
+						g = q;
+						b = v;
+						break;
+					case 4:
+						r = t;
+						g = p;
+						b = v;
+						break;
+					case 5:
+						r = v;
+						g = p;
+						b = q;
+						break;
 				}
 
 				return [r * 255, g * 255, b * 255];
@@ -976,14 +983,14 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 
 				if (!event.relatedTarget && event.fromElement) {
 					event.relatedTarget = event.fromElement === event.target ?
-					                      event.toElement : event.fromElement;
+						event.toElement : event.fromElement;
 				}
 
 				if (!event.which && event.button) {
 					event.which = (event.button & 1 ?
-					               1 : (event.button & 2 ?
-					                    3 : (event.button & 4 ?
-					                         2 : 0)));
+						1 : (event.button & 2 ?
+						3 : (event.button & 4 ?
+						2 : 0)));
 				}
 				return event;
 			}
