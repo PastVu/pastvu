@@ -9,6 +9,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			title_local: ''
 		},
 		home: {
+			parents: [],
 			center: null,
 			bbox: null,
 			bboxhome: null

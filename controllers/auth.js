@@ -28,7 +28,8 @@ var fs = require('fs'),
 
 	msg = {
 		deny: 'You do not have permission for this action'
-	};
+	},
+	regionController = require('./region.js');
 
 var logger = log4js.getLogger("auth.js");
 moment.lang('ru');
@@ -129,6 +130,10 @@ function register(session, data, cb) {
 				if (err || !count) {
 					return cb({message: err && err.message || 'Increment user counter error', error: true});
 				}
+				var regionHome = regionController.getRegionsArrFromCache([3]);
+				if (regionHome.length) {
+					regionHome = regionHome[0]._id;
+				}
 
 				new User({
 					login: data.login,
@@ -136,6 +141,7 @@ function register(session, data, cb) {
 					email: data.email,
 					pass: data.pass,
 					disp: data.login,
+					regionHome: regionHome || undefined, //Домашним регионом пока делаем всем Москву
 					settings: {
 						//Пустой объект settings не сохранится, заполняем его одной из настроек
 						subscr_auto_reply: settings.getUserSettingsDef().subscr_auto_reply || true

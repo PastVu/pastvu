@@ -1,7 +1,6 @@
 'use strict';
 
-var auth = require('./auth.js'),
-	_session = require('./_session.js'),
+var _session = require('./_session.js'),
 	Settings,
 	User,
 	Photo,
@@ -9,7 +8,6 @@ var auth = require('./auth.js'),
 	Counter,
 	dbNative,
 	_ = require('lodash'),
-	_s = require('underscore.string'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	msg = {
@@ -1581,8 +1579,6 @@ module.exports.loadController = function (app, db, io) {
 };
 
 module.exports.fillCache = fillCache;
-module.exports.regionCacheHash = regionCacheHash;
-module.exports.regionCacheArr = regionCacheArr;
 module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
 module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
 module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
