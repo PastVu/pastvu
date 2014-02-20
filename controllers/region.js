@@ -1288,7 +1288,7 @@ function saveUserHomeRegion(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				var regionHome = user.regionHome.toObject();
+				var regionHome = region.toObject(); //Нужно взять именно от region, т.к. user.regionHome будет объектом только в случае спопулированного, например, онлайн пользователя и просто _id в случае просто не онлайн
 				delete regionHome._id;
 
 				if (user.settings.r_as_home) {
