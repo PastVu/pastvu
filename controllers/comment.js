@@ -15,7 +15,6 @@ var auth = require('./auth.js'),
 		return 'http://' + sub + '.' + global.appVar.serverAddr.host;
 	}),
 	_ = require('lodash'),
-	_s = require('underscore.string'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	step = require('step'),
@@ -47,7 +46,7 @@ function getCommentsObj(iAm, data, cb) {
 		commentsArr,
 		commentModel,
 		usersHash = {},
-		lastView;
+		previousView;
 
 	if (!Utils.isType('object', data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
@@ -67,13 +66,15 @@ function getCommentsObj(iAm, data, cb) {
 				photoController.findPhoto({cid: cid}, null, iAm, this);
 			}
 		},
-		function createCursor(err, obj) {
+		function (err, obj) {
 			if (err || !obj) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 
 			if (iAm) {
+				//Если это авторизованный пользователь, берём последнее время просмотра комментариев объекта
+				//и отмечаем в менеджере подписок, что просмотрели комментарии объекта
 				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
 				subscrController.commentViewed(obj._id, iAm);
 			}
@@ -95,63 +96,116 @@ function getCommentsObj(iAm, data, cb) {
 			}
 
 			if (userView) {
-				lastView = userView.stamp;
+				previousView = userView.stamp;
 			}
 
 			commentsArr = comments;
-			User.collection.find({_id: { $in: usersArr }}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, this);
+			User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, {lean: true}, this);
 		},
-		Utils.cursorExtract,
 		function (err, users) {
 			if (err || !users) {
 				return cb({message: err && err.message || 'Cursor users extract error', error: true});
 			}
 			var i,
-				comment,
 				newCount = 0,
 				user,
-				userFormatted,
 				userFormattedHash = {},
-				avatar;
+				commentsTree;
 
 			i = users.length;
-			while (i) {
-				user = users[--i];
-				if (user.avatar) {
-					if (subdl) {
-						avatar = preaddrs[i % subdl] + '/_a/h/' + user.avatar;
-					} else {
-						avatar = '/_a/h/' + user.avatar;
-					}
-				} else {
-					avatar = '/img/caps/avatarth.png';
-				}
-				userFormatted = {
-					login: user.login,
-					avatar: avatar,
-					disp: user.disp || user.login,
-					online: _session.us[user.login] !== undefined, //Для скорости смотрим непосредственно в хеше, без функции isOnline
-					ranks: user.ranks
-				};
-				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
+			while (i--) {
+				user = users[i];
+				user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+				user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+				userFormattedHash[user.login] = usersHash[user._id] = user;
+				delete user._id;
 			}
 
-			i = commentsArr.length;
-			while (i) {
-				comment = commentsArr[--i];
-				comment.user = usersHash[comment.user].login;
-				comment.can = {};
-				if (comment.level === undefined) {
-					comment.level = 0;
-				}
-				if (lastView && comment.stamp > lastView && comment.user !== iAm.login) {
-					comment.isnew = true;
-					newCount++;
-				}
+			if (iAm) {
+				commentsTree = commentsTreeBuildCanAction(commentsArr, usersHash, previousView);
+			} else {
+				commentsTree = commentsTreeBuild(commentsArr, usersHash);
 			}
+
+			function commentsTreeBuild(comments, usersHash) {
+				var i = 0,
+					len = comments.length,
+					hash = {},
+					comment,
+					results = [];
+
+				for (; i < len; i++) {
+					comment = comments[i];
+					comment.user = usersHash[comment.user].login;
+					if (comment.level === undefined) {
+						comment.level = 0;
+					}
+					if (comment.level < 9) {
+						comment.comments = [];
+					}
+					if (comment.level > 0) {
+						hash[comment.parent].comments.push(comment);
+					} else {
+						results.push(comment);
+					}
+					hash[comment.cid] = comment;
+				}
+
+				return results;
+			}
+
+			function commentsTreeBuildCanAction(iAm, comments, usersHash, previousViewStamp, canManage) {
+				var results = [],
+					hash = {},
+					comment,
+					commentParent,
+					myLogin = iAm.login,
+					now = Date.now(),
+					weekAgo = Date.now() - 604800000,
+					len = comments.length,
+					i = 0;
+
+				for (; i < len; i++) {
+					comment = comments[i];
+					comment.user = usersHash[comment.user].login;
+					comment.childs = 0;
+
+					comment.can = {};
+					if (canManage || (comment.user === myLogin && comment.stamp > weekAgo)) {
+						comment.can.edit = comment.can.del = true;
+					}
+
+					if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
+						comment.isnew = true;
+						newCount++;
+					}
+					if (comment.level === undefined) {
+						comment.level = 0;
+					}
+					if (comment.level < 9) {
+						comment.comments = [];
+					}
+					if (comment.level > 0) {
+						commentParent = hash[comment.parent];
+						commentParent.comments.push(comment);
+						if (!commentParent.childs && !canManage && commentParent.can.del) {
+							//Если родителю вставляем первый дочерний комментарий, и пользователь не может управлять комментариями,
+							//а удалить его может (т.е. это его комментарий), отменяем возможность удаления, т.к. пользователь не может удалять свои не последние комментарии
+							delete commentParent.can.del;
+						}
+						commentParent.childs++;
+					} else {
+						results.push(comment);
+					}
+					hash[comment.cid] = comment;
+				}
+
+				return results;
+			}
+
 
 			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: cid, comments: commentsArr, users: userFormattedHash, newCount: newCount, lastView: lastView});
+			cb({message: 'ok', cid: cid, comments: commentsTree, users: userFormattedHash, newCount: newCount, previousView: previousView});
 		}
 	);
 }
