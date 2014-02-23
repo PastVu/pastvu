@@ -50,19 +50,24 @@ var auth = require('./auth.js'),
 				photoRegion,
 				i;
 
-			//Если у пользователя роль модератора регионов, смотрим его регионы
-			if (user && user.role === 5) {
-				if (!user.mod_regions || !user.mod_regions.length) {
-					return true; //Глобальные модераторы могут модерировать всё
-				}
-
-				//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
-				rhash = _session.us[user.login].mod_rhash;
-				for (i = 0; i <= maxRegionLevel; i++) {
-					photoRegion = photo['r' + i];
-					if (photoRegion && rhash[photoRegion] !== undefined) {
-						return true;
+			if (user) {
+				if (user.role === 5) {
+					//Если у пользователя роль модератора регионов, смотрим его регионы
+					if (!user.mod_regions || !user.mod_regions.length) {
+						return true; //Глобальные модераторы могут модерировать всё
 					}
+
+					//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
+					rhash = _session.us[user.login].mod_rhash;
+					for (i = 0; i <= maxRegionLevel; i++) {
+						photoRegion = photo['r' + i];
+						if (photoRegion && rhash[photoRegion] !== undefined) {
+							return true;
+						}
+					}
+				} else if (user.role > 5) {
+					//Если пользователь админ - то может
+					return true;
 				}
 			}
 			return false;
@@ -80,7 +85,7 @@ var auth = require('./auth.js'),
 
 			if (user) {
 				ownPhoto = photo.user && photo.user.equals(user._id);
-				canModerate = user.role > 5 || photoPermissions.canModerate(photo, user);
+				canModerate = photoPermissions.canModerate(photo, user);
 
 				can.edit = canModerate || ownPhoto;
 				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
@@ -103,7 +108,7 @@ var auth = require('./auth.js'),
 				if (photo.s === 9) {
 					return user.role > 9;
 				} else {
-					return photo.user.equals(user._id) || user.role > 5 || photoPermissions.canModerate(photo, user);
+					return photo.user.equals(user._id) || photoPermissions.canModerate(photo, user);
 				}
 			}
 

@@ -110,7 +110,7 @@ var core = {
 				}
 
 				if (iAm) {
-					if (data.type === 'photos' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9) {
+					if (data.type === 'photo' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9) {
 						//Если это модератор данной фотографии или администратор новости
 						canModerate = canReply = true;
 						commentsTree = commentsTreeBuildcanModerate(iAm, commentsArr, usersHash, previousView);

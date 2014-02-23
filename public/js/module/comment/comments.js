@@ -215,7 +215,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		receive: function (cb, ctx) {
 			this.loading(true);
-			this.showTree(false);
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
 					console.error('No comments data received');
@@ -594,7 +593,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
 							//то удаляем всю ветку, меняем свойство del, а затем опять вставляем ветку. Ветку, чтобы сохранялась сортировка
 							//Это сделано потому что del - не observable(чтобы не делать оверхед) и сам не изменится
-							if (data.can.del && this.auth.iAm.role() < 5) {
+							if (!this.canModerate() && data.can.del) {
 								data.can.del = false;
 								parentLevelReenter = data.parent.comments();
 								data.parent.comments([]);
@@ -622,7 +621,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (data, dataSend, cb, ctx) {
-			if (!this.canReply() || !data.can.edit) {
+			if (!this.canModerate() && (!this.canReply() || !data.can.edit)) {
 				return;
 			}
 			var fragExists = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(data.cid));
@@ -702,7 +701,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		remove: function (data, event) {
-			if (!this.canReply() || !data.can.del) {
+			if (!this.canModerate() && (!this.canReply() || !data.can.del)) {
 				return;
 			}
 
