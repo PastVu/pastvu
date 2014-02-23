@@ -10,10 +10,6 @@ var auth = require('./auth.js'),
 	Comment,
 	CommentN,
 	Counter,
-	subdl = global.appVar.serverAddr.subdomains.length,
-	preaddrs = global.appVar.serverAddr.subdomains.map(function (sub) {
-		return 'http://' + sub + '.' + global.appVar.serverAddr.host;
-	}),
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
@@ -34,6 +30,220 @@ var auth = require('./auth.js'),
 	photoController = require('./photo.js'),
 	subscrController = require('./subscr.js');
 
+var core = {
+	getCommentsObj: function (iAm, data, cb) {
+		var commentsArr,
+			commentModel,
+			commentObject,
+			usersHash = {},
+			previousView;
+
+		if (data.type === 'news') {
+			commentModel = CommentN;
+		} else {
+			commentModel = Comment;
+		}
+
+		step(
+			function findObj() {
+				if (data.type === 'news') {
+					News.findOne({cid: data.cid}, {_id: 1, nocomments: 1}, this);
+				} else {
+					photoController.findPhoto({cid: data.cid}, null, iAm, this);
+				}
+			},
+			function (err, obj) {
+				if (err || !obj) {
+					return cb({message: err && err.message || msg.noObject, error: true});
+				}
+				commentObject = obj;
+				commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+
+				if (iAm) {
+					//Если это авторизованный пользователь, берём последнее время просмотра комментариев объекта
+					//и отмечаем в менеджере подписок, что просмотрели комментарии объекта
+					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+					subscrController.commentViewed(obj._id, iAm);
+				}
+			},
+			function (err, comments, userView) {
+				if (err || !comments) {
+					return cb({message: err && err.message || 'Cursor extract error', error: true});
+				}
+				var i = comments.length,
+					userId,
+					usersArr = [];
+
+				while (i) {
+					userId = comments[--i].user;
+					if (usersHash[userId] === undefined) {
+						usersHash[userId] = true;
+						usersArr.push(userId);
+					}
+				}
+
+				if (userView) {
+					previousView = userView.stamp;
+				}
+
+				commentsArr = comments;
+				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, {lean: true}, this);
+			},
+			function (err, users) {
+				if (err || !users) {
+					return cb({message: err && err.message || 'Cursor users extract error', error: true});
+				}
+				var	user,
+					userFormattedHash = {},
+					canModerate,
+					commentsTree,
+					i;
+
+				i = users.length;
+				while (i--) {
+					user = users[i];
+					user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+					user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+					userFormattedHash[user.login] = usersHash[user._id] = user;
+					delete user._id;
+				}
+
+				if (iAm) {
+					canModerate = data.type === 'photos' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9;
+					if (canModerate) {
+						//Если это модератор данной фотографии или администратор новости
+						commentsTree = commentsTreeBuildcanModerate(commentsArr, usersHash, previousView);
+					} else if (commentObject.nocomments) {
+						//Если это зарегистрированный пользователь и комментарии к объекту разрешены
+						commentsTree = commentsTreeBuildCanReply(commentsArr, usersHash, previousView);
+					} else {
+						//В противном случае отдаем простое дерево, как для анонимов
+						commentsTree = commentsTreeBuild(commentsArr, usersHash);
+					}
+				} else {
+					commentsTree = commentsTreeBuild(commentsArr, usersHash);
+				}
+
+				cb(null, {comments: commentsTree.tree, users: userFormattedHash, canModerate: canModerate, newCount: commentsTree.newCount, previousView: previousView});
+			}
+		);
+	}
+};
+
+function commentsTreeBuild(comments, usersHash) {
+	var i = 0,
+		len = comments.length,
+		hash = {},
+		comment,
+		commentParent,
+		tree = [];
+
+	for (; i < len; i++) {
+		comment = comments[i];
+		comment.user = usersHash[comment.user].login;
+		if (comment.level === undefined) {
+			comment.level = 0;
+		}
+		if (comment.level > 0) {
+			commentParent = hash[comment.parent];
+			if (commentParent.comments === undefined) {
+				commentParent.comments = [];
+			}
+			commentParent.comments.push(comment);
+		} else {
+			tree.push(comment);
+		}
+		hash[comment.cid] = comment;
+	}
+
+	return {tree: tree};
+}
+
+function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) {
+	var weekAgo = Date.now() - 604800000,
+		myLogin = iAm.login,
+		commentParent,
+		comment,
+		hash = {},
+		len = comments.length,
+		newCount = 0,
+		tree = [],
+		i = 0;
+
+	for (; i < len; i++) {
+		comment = comments[i];
+		comment.user = usersHash[comment.user].login;
+		comment.childs = 0;
+		comment.can = {};
+		if (comment.user === myLogin && comment.stamp > weekAgo) {
+			comment.can.edit = comment.can.del = true;
+		}
+		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
+			comment.isnew = true;
+			newCount++;
+		}
+		if (comment.level === undefined) {
+			comment.level = 0;
+		}
+		if (comment.level > 0) {
+			commentParent = hash[comment.parent];
+			if (commentParent.comments === undefined) {
+				commentParent.comments = [];
+			}
+			if (commentParent.childs === 0 && commentParent.can.del) {
+				//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
+				//т.е. это его комментарий, отменяем возможность удаления,
+				//т.к. пользователь не может удалять свои не последние комментарии
+				delete commentParent.can.del;
+			}
+			commentParent.comments.push(comment);
+			commentParent.childs++;
+		} else {
+			tree.push(comment);
+		}
+		hash[comment.cid] = comment;
+	}
+
+	return {tree: tree, newCount: newCount};
+}
+function commentsTreeBuildcanModerate(iAm, comments, usersHash, previousViewStamp) {
+	var myLogin = iAm.login,
+		commentParent,
+		comment,
+		hash = {},
+		len = comments.length,
+		newCount = 0,
+		tree = [],
+		i = 0;
+
+	for (; i < len; i++) {
+		comment = comments[i];
+		comment.user = usersHash[comment.user].login;
+		comment.childs = 0;
+
+		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
+			comment.isnew = true;
+			newCount++;
+		}
+		if (comment.level === undefined) {
+			comment.level = 0;
+		}
+		if (comment.level > 0) {
+			commentParent = hash[comment.parent];
+			if (commentParent.comments === undefined) {
+				commentParent.comments = [];
+			}
+			commentParent.comments.push(comment);
+			commentParent.childs++;
+		} else {
+			tree.push(comment);
+		}
+		hash[comment.cid] = comment;
+	}
+
+	return {tree: tree, newCount: newCount};
+}
+
 /**
  * Выбирает комментарии для объекта
  * @param iAm
@@ -41,173 +251,17 @@ var auth = require('./auth.js'),
  * @param cb Коллбэк
  */
 function getCommentsObj(iAm, data, cb) {
-	var //start = Date.now(),
-		cid,
-		commentsArr,
-		commentModel,
-		usersHash = {},
-		previousView;
-
 	if (!Utils.isType('object', data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	if (data.type === 'news') {
-		commentModel = CommentN;
-	} else {
-		commentModel = Comment;
-	}
 
-	cid = Number(data.cid);
-	step(
-		function findObj() {
-			if (data.type === 'news') {
-				News.findOne({cid: cid}, {_id: 1}, this);
-			} else {
-				photoController.findPhoto({cid: cid}, null, iAm, this);
-			}
-		},
-		function (err, obj) {
-			if (err || !obj) {
-				return cb({message: err && err.message || msg.noObject, error: true});
-			}
-			commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
-
-			if (iAm) {
-				//Если это авторизованный пользователь, берём последнее время просмотра комментариев объекта
-				//и отмечаем в менеджере подписок, что просмотрели комментарии объекта
-				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
-				subscrController.commentViewed(obj._id, iAm);
-			}
-		},
-		function (err, comments, userView) {
-			if (err || !comments) {
-				return cb({message: err && err.message || 'Cursor extract error', error: true});
-			}
-			var i = comments.length,
-				userId,
-				usersArr = [];
-
-			while (i) {
-				userId = comments[--i].user;
-				if (usersHash[userId] === undefined) {
-					usersHash[userId] = true;
-					usersArr.push(userId);
-				}
-			}
-
-			if (userView) {
-				previousView = userView.stamp;
-			}
-
-			commentsArr = comments;
-			User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, {lean: true}, this);
-		},
-		function (err, users) {
-			if (err || !users) {
-				return cb({message: err && err.message || 'Cursor users extract error', error: true});
-			}
-			var i,
-				newCount = 0,
-				user,
-				userFormattedHash = {},
-				commentsTree;
-
-			i = users.length;
-			while (i--) {
-				user = users[i];
-				user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
-				user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
-				userFormattedHash[user.login] = usersHash[user._id] = user;
-				delete user._id;
-			}
-
-			if (iAm) {
-				commentsTree = commentsTreeBuildCanAction(commentsArr, usersHash, previousView);
-			} else {
-				commentsTree = commentsTreeBuild(commentsArr, usersHash);
-			}
-
-			function commentsTreeBuild(comments, usersHash) {
-				var i = 0,
-					len = comments.length,
-					hash = {},
-					comment,
-					results = [];
-
-				for (; i < len; i++) {
-					comment = comments[i];
-					comment.user = usersHash[comment.user].login;
-					if (comment.level === undefined) {
-						comment.level = 0;
-					}
-					if (comment.level < 9) {
-						comment.comments = [];
-					}
-					if (comment.level > 0) {
-						hash[comment.parent].comments.push(comment);
-					} else {
-						results.push(comment);
-					}
-					hash[comment.cid] = comment;
-				}
-
-				return results;
-			}
-
-			function commentsTreeBuildCanAction(iAm, comments, usersHash, previousViewStamp, canManage) {
-				var results = [],
-					hash = {},
-					comment,
-					commentParent,
-					myLogin = iAm.login,
-					now = Date.now(),
-					weekAgo = Date.now() - 604800000,
-					len = comments.length,
-					i = 0;
-
-				for (; i < len; i++) {
-					comment = comments[i];
-					comment.user = usersHash[comment.user].login;
-					comment.childs = 0;
-
-					comment.can = {};
-					if (canManage || (comment.user === myLogin && comment.stamp > weekAgo)) {
-						comment.can.edit = comment.can.del = true;
-					}
-
-					if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
-						comment.isnew = true;
-						newCount++;
-					}
-					if (comment.level === undefined) {
-						comment.level = 0;
-					}
-					if (comment.level < 9) {
-						comment.comments = [];
-					}
-					if (comment.level > 0) {
-						commentParent = hash[comment.parent];
-						commentParent.comments.push(comment);
-						if (!commentParent.childs && !canManage && commentParent.can.del) {
-							//Если родителю вставляем первый дочерний комментарий, и пользователь не может управлять комментариями,
-							//а удалить его может (т.е. это его комментарий), отменяем возможность удаления, т.к. пользователь не может удалять свои не последние комментарии
-							delete commentParent.can.del;
-						}
-						commentParent.childs++;
-					} else {
-						results.push(comment);
-					}
-					hash[comment.cid] = comment;
-				}
-
-				return results;
-			}
-
-
-			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', cid: cid, comments: commentsTree, users: userFormattedHash, newCount: newCount, previousView: previousView});
+	data.cid = Number(data.cid);
+	core.getCommentsObj(iAm, data, function (err, result) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
-	);
+		cb(_.assign(result, {message: 'ok', cid: data.cid}));
+	});
 }
 
 
@@ -1213,7 +1267,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCommentsObj', function (data) {
-			getCommentsObj(socket.handshake.session.user, data, function (result) {
+			getCommentsObj(socket.handshake.session.user, data, false, function (result) {
 				socket.emit('takeCommentsObj', result);
 			});
 		});

@@ -1720,4 +1720,5 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
+module.exports.permissions = photoPermissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
