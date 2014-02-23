@@ -44,7 +44,7 @@ var auth = require('./auth.js'),
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
-	photoPermissions = {
+	permissions = {
 		canModerate: function (photo, user) {
 			var rhash,
 				photoRegion,
@@ -85,7 +85,7 @@ var auth = require('./auth.js'),
 
 			if (user) {
 				ownPhoto = photo.user && photo.user.equals(user._id);
-				canModerate = photoPermissions.canModerate(photo, user);
+				canModerate = permissions.canModerate(photo, user);
 
 				can.edit = canModerate || ownPhoto;
 				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
@@ -108,7 +108,7 @@ var auth = require('./auth.js'),
 				if (photo.s === 9) {
 					return user.role > 9;
 				} else {
-					return photo.user.equals(user._id) || photoPermissions.canModerate(photo, user);
+					return photo.user.equals(user._id) || permissions.canModerate(photo, user);
 				}
 			}
 
@@ -336,7 +336,7 @@ function removePhoto(socket, cid, cb) {
 			return cb({message: err && err.message || 'No such photo', error: true});
 		}
 
-		if (!photoPermissions.getCan(photo, iAm).remove) {
+		if (!permissions.getCan(photo, iAm).remove) {
 			return cb({message: msg.deny, error: true});
 		}
 
@@ -507,14 +507,14 @@ function givePhoto(socket, data, cb) {
 			return cb({message: err && err.message, error: true});
 		}
 
-		if (!photo || !photoPermissions.canSee(photo, iAm)) {
+		if (!photo || !permissions.canSee(photo, iAm)) {
 			return cb({message: msg.notExists, error: true});
 		} else {
 			var can;
 
 			if (data.checkCan) {
 				//Права надо проверять до популяции пользователя
-				can = photoPermissions.getCan(photo, iAm);
+				can = permissions.getCan(photo, iAm);
 			}
 
 			step(
@@ -961,7 +961,7 @@ function giveCanPhoto(socket, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			cb({can: photoPermissions.getCan(photo, user)});
+			cb({can: permissions.getCan(photo, user)});
 		});
 	} else {
 		cb({});
@@ -993,7 +993,7 @@ function savePhoto(socket, data, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		if (!photoPermissions.getCan(photo, user).edit) {
+		if (!permissions.getCan(photo, user).edit) {
 			return cb({message: msg.deny, error: true});
 		}
 
@@ -1130,7 +1130,7 @@ function readyPhoto(socket, data, cb) {
 		if (photo.s !== 0) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
-		if (!photoPermissions.getCan(photo, user).edit) {
+		if (!permissions.getCan(photo, user).edit) {
 			return cb({message: msg.deny, error: true});
 		}
 		if (!photo.r0) {
@@ -1322,7 +1322,7 @@ function findPhoto(query, fieldSelect, user, cb) {
 		if (err) {
 			return cb(err);
 		}
-		if (photo && photoPermissions.canSee(photo, user)) {
+		if (photo && permissions.canSee(photo, user)) {
 			cb(null, photo);
 		} else {
 			cb(null, null);
@@ -1725,5 +1725,5 @@ module.exports.loadController = function (app, db, io) {
 	});
 };
 module.exports.findPhoto = findPhoto;
-module.exports.permissions = photoPermissions;
+module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;

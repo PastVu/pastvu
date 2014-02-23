@@ -28,7 +28,19 @@ var auth = require('./auth.js'),
 	},
 
 	photoController = require('./photo.js'),
-	subscrController = require('./subscr.js');
+	subscrController = require('./subscr.js'),
+
+	permissions = {
+		canModerate: function (type, obj, user) {
+			return user && (type === 'photo' && photoController.permissions.canModerate(obj, user) || type === 'news' && user.role > 9);
+		},
+		canEdit: function (comment, obj, user) {
+			return user && !obj.nocomments && comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS);
+		},
+		canReply: function (type, obj, user) {
+			return user && !obj.nocomments && (type === 'photo' && obj.s > 1 || type === 'news');
+		}
+	};
 
 var core = {
 	getCommentsObj: function (iAm, data, cb) {
@@ -93,10 +105,10 @@ var core = {
 				if (err || !users) {
 					return cb({message: err && err.message || 'Cursor users extract error', error: true});
 				}
-				var	user,
+				var user,
 					userFormattedHash = {},
-					canModerate,
-					canReply,
+					canModerate = permissions.canModerate(data.type, commentObject, iAm),
+					canReply = canModerate || permissions.canReply(data.type, commentObject, iAm),
 					commentsTree,
 					i;
 
@@ -109,20 +121,14 @@ var core = {
 					delete user._id;
 				}
 
-				if (iAm) {
-					if (data.type === 'photo' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9) {
-						//Если это модератор данной фотографии или администратор новости
-						canModerate = canReply = true;
-						commentsTree = commentsTreeBuildCanModerate(iAm, commentsArr, usersHash, previousView);
-					} else if (!commentObject.nocomments) {
-						//Если это зарегистрированный пользователь и комментарии к объекту разрешены
-						canReply = true;
-						commentsTree = commentsTreeBuildCanReply(iAm, commentsArr, usersHash, previousView);
-					} else {
-						//В противном случае отдаем простое дерево, как для анонимов
-						commentsTree = commentsTreeBuild(commentsArr, usersHash);
-					}
+				if (canModerate) {
+					//Если это модератор данной фотографии или администратор новости
+					commentsTree = commentsTreeBuildCanModerate(iAm, commentsArr, usersHash, previousView);
+				} else if (canReply) {
+					//Если это зарегистрированный пользователь и комментарии к объекту разрешены
+					commentsTree = commentsTreeBuildCanReply(iAm, commentsArr, usersHash, previousView);
 				} else {
+					//В противном случае отдаем простое дерево
 					commentsTree = commentsTreeBuild(commentsArr, usersHash);
 				}
 
@@ -492,14 +498,11 @@ function createComment(socket, data, cb) {
 			if (err || !o) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
-			if (o.nocomments && (!iAm.role || iAm.role < 10)) {
-				return cb({message: msg.noComments, error: true}); //Operations with comments on this page are prohibited
-			}
-			if (data.type === 'photo' && o.s < 2) {
-				return cb({message: 'Comments for new photo are not allowed', error: true});
+			if (!permissions.canReply(data.type, o, iAm) && !permissions.canModerate(data.type, o, iAm)) {
+				return cb({message: o.nocomments ? msg.noComments : msg.deny, error: true});
 			}
 			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
-				return cb({message: 'Something wrong with parent comment', error: true});
+				return cb({message: 'Что-то не так с родительским комментарием. Возможно его удалили. Пожалуйста, обновите страницу.', error: true});
 			}
 
 			obj = o;
@@ -606,7 +609,7 @@ function removeComment(socket, data, cb) {
 		},
 		function findObj(err, c) {
 			if (err || !c) {
-				return cb({message: err && err.message || 'No such comment', error: true});
+				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
 			}
 			comment = c;
 			if (data.type === 'news') {
@@ -620,17 +623,17 @@ function removeComment(socket, data, cb) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			var can;
-			if (data.type === 'photo' && photoController.permissions.canModerate(o, iAm) || data.type === 'news' && iAm.role > 9) {
+			if (permissions.canModerate(data.type, o, iAm)) {
 				//Если это модератор данной фотографии или администратор новости
 				can = true;
-			} else if (!o.nocomments && comment.user.equals(iAm._id) && comment.stamp > (Date.now() - weekMS)) {
+			} else if (permissions.canEdit(comment, o, iAm)) {
 				//Если это владелец и комментарий моложе недели
 				ownCommentOfRegularUser = true;
 				can = true;
 			}
 
 			if (!can) {
-				return cb({message: msg.deny, error: true});
+				return cb({message: o.nocomments ? msg.noComments : msg.deny, error: true});
 			}
 
 			obj = o;
@@ -740,7 +743,7 @@ function updateComment(socket, data, cb) {
 		},
 		function (err, comment, obj) {
 			if (err || !comment || !obj || data.obj !== obj.cid) {
-				return cb({message: err && err.message || 'No such comment', error: true});
+				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
 			}
 
 			var i,
@@ -751,16 +754,8 @@ function updateComment(socket, data, cb) {
 				fragChangedType,
 				txtChanged;
 
-			if (data.type === 'photo' && photoController.permissions.canModerate(obj, iAm) || data.type === 'news' && iAm.role > 9) {
-				//Если это модератор данной фотографии или администратор новости
-				can = true;
-			} else if (!obj.nocomments && comment.user.equals(iAm._id) && comment.stamp > (Date.now() - weekMS)) {
-				//Если это владелец и комментарий моложе недели
-				can = true;
-			}
-
-			if (!can) {
-				return cb({message: msg.deny, error: true});
+			if (!permissions.canEdit(comment, obj, iAm) && !permissions.canModerate(data.type, obj, iAm)) {
+				return cb({message: obj.nocomments ? msg.noComments : msg.deny, error: true});
 			}
 			content = Utils.inputIncomingParse(data.txt);
 
@@ -869,7 +864,7 @@ function giveCommentHist(data, cb) {
 		},
 		function (err, comment) {
 			if (err || !comment) {
-				return cb({message: err && err.message || 'No such comment', error: true});
+				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
 			}
 			var i,
 				hist,
@@ -920,7 +915,7 @@ function setNoComments(socket, data, cb) {
 	var cid = data && Number(data.cid),
 		iAm = socket.handshake.session && socket.handshake.session.user;
 
-	if (!iAm || !iAm.role || iAm.role < 10) {
+	if (!iAm || !iAm.role) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -936,10 +931,14 @@ function setNoComments(socket, data, cb) {
 				photoController.findPhoto({cid: cid}, null, iAm, this);
 			}
 		},
-		function createCursor(err, obj) {
+		function (err, obj) {
 			if (err || !obj) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
+			if (!permissions.canModerate(data.type, obj, iAm)) {
+				return cb({message: msg.deny, error: true});
+			}
+
 			obj.nocomments = data.val ? true : undefined;
 			obj.save(this);
 		},

@@ -13,12 +13,12 @@
 			span(data-bind="text: subscr() ? ' Отписаться' : ' Подписаться'")
 		// /ko
 		//ko if: canModerate()
-		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: nocomments() ? 'Разрешить дальнейшее комментирование' : 'Запретить дальнейшее комментирование'}")
+		.noComments.headElem.interact(data-bind="click: setNoComments, attr: {title: (nocomments() ? 'Разрешить' : 'Запретить')+' дальнейшее комментирование'}")
 			span.glyphicon(data-bind="css: nocomments() ? 'glyphicon-ok-sign' : 'glyphicon-minus-sign'")
 			span(data-bind="text: nocomments() ? ' Разрешить комментирование' : ' Запретить комментирование'")
-		//ko if: nocomments()
-		span.cantComment Комментарии запрещены
 		// /ko
+		//ko if: auth.loggedIn() && nocomments()
+		span.cantComment Комментирование запрещено
 		// /ko
 		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 		// /ko
