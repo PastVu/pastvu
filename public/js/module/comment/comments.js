@@ -13,7 +13,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		options: {
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
 			count: 0, //Начальное кол-во комментариев
-			count_new: 0, //Начальное кол-во новых комментариев
+			countNew: 0, //Начальное кол-во новых комментариев
 			subscr: false, //Подписан ли пользователь на комментарии
 			autoShowOff: false, //Выключить автоматический show после создания
 			nocomments: false //Запрещено ли писать комментарии
@@ -23,7 +23,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.type = this.options.type;
 			this.cid = null;
 			this.count = ko.observable(this.options.count || 0);
-			this.count_new = ko.observable(this.options.count_new || 0);
+			this.countNew = ko.observable(this.options.countNew || 0);
 			this.subscr = ko.observable(this.options.subscr || false);
 			this.nocomments = ko.observable(this.options.nocomments);
 
@@ -65,7 +65,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.auth.loggedIn()) {
 				this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
 			}
-			this.subscriptions.count_new = this.count_new.subscribe(this.navCounterHandler, this);
+			this.subscriptions.countNew = this.countNew.subscribe(this.navCounterHandler, this);
 			this.subscriptions.showTree = this.showTree.subscribe(this.showTreeHandler, this);
 
 			if (!this.options.autoShowOff) {
@@ -88,7 +88,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (params) {
 				this.cid = params.cid;
 				this.count(params.count);
-				this.count_new(params.count_new);
+				this.countNew(params.countNew);
 				this.subscr(!!params.subscr);
 				this.nocomments(!!params.nocomments);
 			}
@@ -237,7 +237,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canReply(!!data.canReply);
 						this.comments(this[this.canReply() ? 'treePrepareCanReply' : 'treePrepare'](data.comments));
 						this.showTree(true);
-						this.count_new(data.newCount);
+						this.countNew(data.countNew);
 					}
 				}
 				this.loading(false);
@@ -321,13 +321,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				highlight;
 
 			if (ccid === true) {
-				if (this.count_new()) {
+				if (this.countNew()) {
 					this.navCheckBefore(0, true);
 				} else {
 					$element = this.$container;
 				}
 			} else if (ccid === 'unread') {
-				if (this.count_new()) {
+				if (this.countNew()) {
 					this.navCheckBefore(0, true);
 				}
 			} else {
@@ -881,13 +881,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.navCounterHandler();
 		},
 		navCounterHandler: function () {
-			if (this.count_new()) {
+			if (this.countNew()) {
 				if (this.showTree()) {
 					this.navTxtRecalc();
 					this.navScrollCounterOn();
 				} else {
 					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.count_new());
+					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
 					this.navScrollCounterOff();
 				}
 			} else {

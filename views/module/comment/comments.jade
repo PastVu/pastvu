@@ -1,7 +1,7 @@
 .fullComments(data-bind="with: repository[M!M]")
 	.commentsHead
 		//ko if: canReply() || count()
-		a.count.headElem.interact(href="?hl=comments", data-bind="html: count() + (count_new() ? '<span class=\"cnew\"> +' + count_new() + '</span>' : '')", title="Ссылка на область комментариев")
+		a.count.headElem.interact(href="?hl=comments", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Ссылка на область комментариев")
 		//ko if: canReply()
 		.addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
 			span.glyphicon.glyphicon-edit
@@ -38,11 +38,11 @@
 		// /ko
 	// /ko
 
-	//ko if: count_new()
+	//ko if: countNew()
 	.navigator(data-bind="css: {touch: touch}")
 		.arrow
 		.navigatorInn
-			.countAll(data-bind="text: '+' + count_new()")
+			.countAll(data-bind="text: '+' + countNew()")
 			.up(data-bind="click: navUp")
 				span.glyphicon.glyphicon-arrow-up
 				.navTxt
