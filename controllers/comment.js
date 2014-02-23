@@ -96,6 +96,7 @@ var core = {
 				var	user,
 					userFormattedHash = {},
 					canModerate,
+					canReply,
 					commentsTree,
 					i;
 
@@ -109,13 +110,14 @@ var core = {
 				}
 
 				if (iAm) {
-					canModerate = data.type === 'photos' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9;
-					if (canModerate) {
+					if (data.type === 'photos' && photoController.permissions.canModerate(commentObject, iAm) || data.type === 'news' && iAm.role > 9) {
 						//Если это модератор данной фотографии или администратор новости
-						commentsTree = commentsTreeBuildcanModerate(commentsArr, usersHash, previousView);
-					} else if (commentObject.nocomments) {
+						canModerate = canReply = true;
+						commentsTree = commentsTreeBuildcanModerate(iAm, commentsArr, usersHash, previousView);
+					} else if (!commentObject.nocomments) {
 						//Если это зарегистрированный пользователь и комментарии к объекту разрешены
-						commentsTree = commentsTreeBuildCanReply(commentsArr, usersHash, previousView);
+						canReply = true;
+						commentsTree = commentsTreeBuildCanReply(iAm, commentsArr, usersHash, previousView);
 					} else {
 						//В противном случае отдаем простое дерево, как для анонимов
 						commentsTree = commentsTreeBuild(commentsArr, usersHash);
@@ -124,7 +126,7 @@ var core = {
 					commentsTree = commentsTreeBuild(commentsArr, usersHash);
 				}
 
-				cb(null, {comments: commentsTree.tree, users: userFormattedHash, canModerate: canModerate, newCount: commentsTree.newCount, previousView: previousView});
+				cb(null, {comments: commentsTree.tree, countTotal: commentsArr.length, countNew: commentsTree.countNew, users: userFormattedHash, canModerate: canModerate, canReply: canReply, previousView: previousView});
 			}
 		);
 	}
@@ -166,21 +168,20 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 		comment,
 		hash = {},
 		len = comments.length,
-		newCount = 0,
+		countNew = 0,
 		tree = [],
 		i = 0;
 
 	for (; i < len; i++) {
 		comment = comments[i];
 		comment.user = usersHash[comment.user].login;
-		comment.childs = 0;
 		comment.can = {};
 		if (comment.user === myLogin && comment.stamp > weekAgo) {
 			comment.can.edit = comment.can.del = true;
 		}
 		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
 			comment.isnew = true;
-			newCount++;
+			countNew++;
 		}
 		if (comment.level === undefined) {
 			comment.level = 0;
@@ -188,23 +189,22 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 		if (comment.level > 0) {
 			commentParent = hash[comment.parent];
 			if (commentParent.comments === undefined) {
+				if (commentParent.can.del === true) {
+					//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
+					//т.е. это его комментарий, отменяем возможность удаления,
+					//т.к. пользователь не может удалять свои не последние комментарии
+					delete commentParent.can.del;
+				}
 				commentParent.comments = [];
 			}
-			if (commentParent.childs === 0 && commentParent.can.del) {
-				//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
-				//т.е. это его комментарий, отменяем возможность удаления,
-				//т.к. пользователь не может удалять свои не последние комментарии
-				delete commentParent.can.del;
-			}
 			commentParent.comments.push(comment);
-			commentParent.childs++;
 		} else {
 			tree.push(comment);
 		}
 		hash[comment.cid] = comment;
 	}
 
-	return {tree: tree, newCount: newCount};
+	return {tree: tree, countNew: countNew};
 }
 function commentsTreeBuildcanModerate(iAm, comments, usersHash, previousViewStamp) {
 	var myLogin = iAm.login,
@@ -212,18 +212,17 @@ function commentsTreeBuildcanModerate(iAm, comments, usersHash, previousViewStam
 		comment,
 		hash = {},
 		len = comments.length,
-		newCount = 0,
+		countNew = 0,
 		tree = [],
 		i = 0;
 
 	for (; i < len; i++) {
 		comment = comments[i];
 		comment.user = usersHash[comment.user].login;
-		comment.childs = 0;
 
 		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
 			comment.isnew = true;
-			newCount++;
+			countNew++;
 		}
 		if (comment.level === undefined) {
 			comment.level = 0;
@@ -234,14 +233,13 @@ function commentsTreeBuildcanModerate(iAm, comments, usersHash, previousViewStam
 				commentParent.comments = [];
 			}
 			commentParent.comments.push(comment);
-			commentParent.childs++;
 		} else {
 			tree.push(comment);
 		}
 		hash[comment.cid] = comment;
 	}
 
-	return {tree: tree, newCount: newCount};
+	return {tree: tree, countNew: countNew};
 }
 
 /**
@@ -1267,7 +1265,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCommentsObj', function (data) {
-			getCommentsObj(socket.handshake.session.user, data, false, function (result) {
+			getCommentsObj(socket.handshake.session.user, data, function (result) {
 				socket.emit('takeCommentsObj', result);
 			});
 		});

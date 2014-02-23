@@ -5,7 +5,8 @@
 define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
 	'use strict';
 
-	var $window = $(window);
+	var $window = $(window),
+		commentNestingMax = 9;
 
 	return Cliche.extend({
 		jade: jade,
@@ -32,12 +33,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
 			this.touch = Browser.support.touch;
 
-			this.canManage = this.co.canManage = ko.computed(function () {
-				return this.auth.loggedIn() && this.auth.iAm.role() > 9;
-			}, this);
-			this.canAction = this.co.canAction = ko.computed(function () {
-				return this.auth.loggedIn() && (!this.nocomments() || this.auth.iAm.role() > 9);
-			}, this);
+			this.canModeratePlain = false; //Простое свойство для проверки в цикле шаблона ko (для скорости)
+			this.canModerate = ko.observable(this.canModeratePlain);
+			this.canReply = ko.observable(false);
 			this.canFrag = this.type === 'photo';
 
 			this.comments = ko.observableArray();
@@ -46,7 +44,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.dataForZeroReply = {level: 0, comments: this.comments};
 			this.commentReplyingToCid = ko.observable(0);
 			this.commentEditingCid = ko.observable(0);
-			this.commentNestingMax = 9;
 
 			this.replyBind = this.reply.bind(this);
 			this.editBind = this.edit.bind(this);
@@ -104,7 +101,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inViewport = false;
 
 			this.loading(true);
-			this.addMeToCommentsUsers();
+			if (this.auth.loggedIn()) {
+				this.addMeToCommentsUsers();
+			}
 
 			if (cb) {
 				this.activatorRecieveNotice = {cb: cb, ctx: ctx};
@@ -196,7 +195,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		addMeToCommentsUsers: function () {
 			var u, rankObj;
-			if (this.canAction() && this.users[this.auth.iAm.login()] === undefined) {
+			if (this.users[this.auth.iAm.login()] === undefined) {
 				u = {
 					login: this.auth.iAm.login(),
 					avatar: this.auth.iAm.avatarth(),
@@ -216,6 +215,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		receive: function (cb, ctx) {
 			this.loading(true);
+			this.showTree(false);
 			socket.once('takeCommentsObj', function (data) {
 				if (!data) {
 					console.error('No comments data received');
@@ -229,11 +229,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.users = _.assign(data.users, this.users);
 
 						//Если общее кол-во изменилось пока получали, то присваиваем заново
-						if (this.count() !== data.comments.length) {
-							this.parentModule.commentCountIncrement(data.comments.length - this.count());
-							this.count(data.comments.length);
+						if (this.count() !== data.countTotal) {
+							this.parentModule.commentCountIncrement(data.countTotal - this.count());
+							this.count(data.countTotal);
 						}
-						this.comments(this[this.canAction() ? 'treeBuildCanCheck' : 'treeBuild'](data.comments));
+						this.canModeratePlain = !!data.canModerate;
+						this.canModerate(this.canModeratePlain);
+						this.canReply(!!data.canReply);
+						this.comments(this[this.canReply() ? 'treePrepareCanReply' : 'treePrepare'](data.comments));
 						this.showTree(true);
 						this.count_new(data.newCount);
 					}
@@ -250,67 +253,49 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		treeBuild: function (arr) {
-			var i = -1,
-				len = arr.length,
-				hash = {},
-				comment,
-				results = [];
+		treePrepare: function (tree) {
+			var usersHash = this.users;
 
-			while (++i < len) {
-				comment = arr[i];
-				comment.user = this.users[comment.user];
-				comment.stamp = moment(comment.stamp);
-				if (comment.level < this.commentNestingMax) {
-					comment.comments = ko.observableArray();
+			function treeRecursive(tree) {
+				var i = 0,
+					len = tree.length,
+					comment;
+
+				for (; i < len; i++) {
+					comment = tree[i];
+					comment.user = usersHash[comment.user];
+					if (comment.comments) {
+						treeRecursive(comment.comments, comment);
+					}
 				}
-				if (comment.level > 0) {
-					hash[comment.parent].comments.push(comment);
-				} else {
-					results.push(comment);
-				}
-				hash[comment.cid] = comment;
+				return tree;
 			}
 
-			return results;
+			return treeRecursive(tree);
 		},
-		treeBuildCanCheck: function (arr) {
-			var i,
-				len = arr.length,
-				myLogin = this.auth.iAm.login(),
-				myRole = this.auth.iAm.role(),
-				weekAgo = Date.now() - 604800000,
-				hash = {},
-				comment,
-				results = [];
+		treePrepareCanReply: function (tree) {
+			var usersHash = this.users;
 
-			for (i = 0; i < len; i++) {
-				comment = arr[i];
-				comment.user = this.users[comment.user];
-				comment.stamp = moment(comment.stamp);
-				comment.final = true;
-				if (comment.level < this.commentNestingMax) {
-					comment.comments = ko.observableArray();
+			function treeRecursive(tree, commentParent) {
+				var i = 0,
+					len = tree.length,
+					comment;
+
+				for (; i < len; i++) {
+					comment = tree[i];
+					comment.user = usersHash[comment.user];
+					comment.parent = commentParent;
+					if (comment.comments) {
+						treeRecursive(comment.comments, comment);
+					}
+					if (comment.level < commentNestingMax) {
+						comment.comments = ko.observableArray(comment.comments || []);
+					}
 				}
-				if (comment.level > 0) {
-					//Если будут отвечать, то необходима ссылка на родитель
-					comment.parent = hash[comment.parent];
-					comment.parent.final = false;
-					comment.parent.comments.push(comment);
-				} else {
-					comment.parent = this.dataForZeroReply;
-					results.push(comment);
-				}
-				hash[comment.cid] = comment;
+				return tree;
 			}
 
-			for (i = 0; i < len; i++) {
-				comment = arr[i];
-				comment.can.edit = myRole > 4 || (comment.user.login === myLogin && comment.stamp > weekAgo);
-				comment.can.del = myRole > 4 || (comment.user.login === myLogin && comment.final && comment.stamp > weekAgo);
-			}
-
-			return results;
+			return treeRecursive(tree, this.dataForZeroReply);
 		},
 		usersRanks: function (users) {
 			var user,
@@ -395,10 +380,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$media,
 				$root;
 
-			if (data.level < this.commentNestingMax) {
+			if (data.level < commentNestingMax) {
 				$media = $target.closest('li.media');
 				cid = data.cid;
-			} else if (data.level === this.commentNestingMax) {
+			} else if (data.level === commentNestingMax) {
 				$media = $($target.parents('li.media')[1]);
 				cid = Number($media.attr('data-cid')) || 0;
 			}
@@ -410,7 +395,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		inputActivate: function (root, scrollDuration, focus) {
-			if (this.canAction() && (root instanceof jQuery) && root.length === 1) {
+			if (this.canReply() && (root instanceof jQuery) && root.length === 1) {
 				window.clearTimeout(this.blurTimeout);
 				var input = root.find('.commentInput');
 
@@ -533,7 +518,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			delete this.commentEditingFragChanged;
 		},
 		send: function (data, event) {
-			if (!this.canAction()) {
+			if (!this.canReply()) {
 				return;
 			}
 			var create = !this.commentEditingCid(),
@@ -597,18 +582,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
 						comment = result.comment;
-						if (comment.level < this.commentNestingMax) {
+						if (comment.level < commentNestingMax) {
 							comment.comments = ko.observableArray();
 						}
 						comment.user = this.users[comment.user];
-						comment.stamp = moment(comment.stamp);
 						comment.parent = data;
-						comment.final = true;
 						comment.can.edit = true;
 						comment.can.del = true;
 
 						if (comment.level) {
-							data.final = false;
 							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
 							//то удаляем всю ветку, меняем свойство del, а затем опять вставляем ветку. Ветку, чтобы сохранялась сортировка
 							//Это сделано потому что del - не observable(чтобы не делать оверхед) и сам не изменится
@@ -640,7 +622,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (data, dataSend, cb, ctx) {
-			if (!this.canAction() || !data.can.edit) {
+			if (!this.canReply() || !data.can.edit) {
 				return;
 			}
 			var fragExists = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(data.cid));
@@ -687,7 +669,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			socket.emit('updateComment', dataSend);
 		},
 		edit: function (data, event) {
-			if (!this.canAction()) {
+			if (!this.canReply()) {
 				return;
 			}
 			var $media = $(event.target).closest('.media'),
@@ -720,7 +702,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		remove: function (data, event) {
-			if (!this.canAction() || !data.can.del) {
+			if (!this.canReply() || !data.can.del) {
 				return;
 			}
 
