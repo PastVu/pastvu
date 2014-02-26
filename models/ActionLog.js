@@ -16,7 +16,9 @@ var ActionLogSchema = new Schema(
 
 			reason: {type: String}, //Причина действия
 			role: {type: Number}, //Реализуемая на момент действия роль пользователя, если она необходима для действия
-			roleregion: {type: Number} //Регион реализуемой роли
+			roleregion: {type: Number}, //Регион реализуемой роли
+
+			addinfo: {type: Schema.Types.Mixed} //Дополнительная информация, структура которой зависит от объекта и действия
 		},
 		{
 			strict: true,

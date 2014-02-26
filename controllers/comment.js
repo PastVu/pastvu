@@ -27,6 +27,7 @@ var auth = require('./auth.js'),
 		noComments: 'Операции с комментариями на этой странице запрещены'
 	},
 
+	actionLogController = require('./actionlog.js'),
 	photoController = require('./photo.js'),
 	subscrController = require('./subscr.js'),
 
@@ -43,10 +44,78 @@ var auth = require('./auth.js'),
 	};
 
 var core = {
-	getCommentsObj: function (iAm, data, cb) {
+	//Упрощенная отдача комментариев анонимным пользователям
+	getCommentsObjAnonym: function (data, cb) {
+		var commentsArr,
+			commentModel,
+			usersHash = {};
+
+		if (data.type === 'news') {
+			commentModel = CommentN;
+			News.findOne({cid: data.cid}, {_id: 1}, findComments);
+		} else {
+			commentModel = Comment;
+			photoController.findPhoto({cid: data.cid}, null, null, findComments);
+		}
+
+		function findComments(err, obj) {
+			if (err || !obj) {
+				return cb({message: err && err.message || msg.noObject, error: true});
+			}
+
+			step(
+				function (err, obj) {
+					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this);
+				},
+				function (err, comments) {
+					if (err || !comments) {
+						return cb({message: err && err.message || 'Cursor extract error', error: true});
+					}
+					var i = comments.length,
+						userId,
+						usersArr = [];
+
+					while (i) {
+						userId = comments[--i].user;
+						if (usersHash[userId] === undefined) {
+							usersHash[userId] = true;
+							usersArr.push(userId);
+						}
+					}
+
+					commentsArr = comments;
+					User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, {lean: true}, this);
+				},
+				function (err, users) {
+					if (err || !users) {
+						return cb({message: err && err.message || 'Users find error', error: true});
+					}
+					var user,
+						userFormattedHash = {},
+						commentsTree,
+						i;
+
+					i = users.length;
+					while (i--) {
+						user = users[i];
+						user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+						user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+						userFormattedHash[user.login] = usersHash[user._id] = user;
+						delete user._id;
+					}
+					commentsTree = commentsTreeBuild(commentsArr, usersHash);
+
+					cb(null, {comments: commentsTree.tree, countTotal: commentsArr.length, users: userFormattedHash});
+				}
+			);
+		}
+	},
+	getCommentsObjAuth: function (iAm, data, cb) {
 		var commentsArr,
 			commentModel,
 			commentObject,
+			canModerate,
+			canReply,
 			usersHash = {},
 			previousView;
 
@@ -68,15 +137,18 @@ var core = {
 				if (err || !obj) {
 					return cb({message: err && err.message || msg.noObject, error: true});
 				}
-				commentObject = obj;
-				commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+				var query = {obj: obj._id};
 
-				if (iAm) {
-					//Если это авторизованный пользователь, берём последнее время просмотра комментариев объекта
-					//и отмечаем в менеджере подписок, что просмотрели комментарии объекта
-					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
-					subscrController.commentViewed(obj._id, iAm);
-				}
+				canModerate = permissions.canModerate(data.type, obj, iAm);
+				canReply = canModerate || permissions.canReply(data.type, obj, iAm);
+
+				commentModel.find(query, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+
+				//Берём последнее время просмотра комментариев объекта
+				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+				//Отмечаем в менеджере подписок, что просмотрели комментарии объекта
+				subscrController.commentViewed(obj._id, iAm);
+				commentObject = obj;
 			},
 			function (err, comments, userView) {
 				if (err || !comments) {
@@ -86,8 +158,8 @@ var core = {
 					userId,
 					usersArr = [];
 
-				while (i) {
-					userId = comments[--i].user;
+				while (i--) {
+					userId = comments[i].user;
 					if (usersHash[userId] === undefined) {
 						usersHash[userId] = true;
 						usersArr.push(userId);
@@ -103,12 +175,10 @@ var core = {
 			},
 			function (err, users) {
 				if (err || !users) {
-					return cb({message: err && err.message || 'Cursor users extract error', error: true});
+					return cb({message: err && err.message || 'Users find error', error: true});
 				}
 				var user,
 					userFormattedHash = {},
-					canModerate = permissions.canModerate(data.type, commentObject, iAm),
-					canReply = canModerate || permissions.canReply(data.type, commentObject, iAm),
 					commentsTree,
 					i;
 
@@ -182,10 +252,11 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 		comment = comments[i];
 		comment.user = usersHash[comment.user].login;
 		comment.can = {};
-		if (comment.user === myLogin && comment.stamp > weekAgo) {
-			comment.can.edit = comment.can.del = true;
-		}
-		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
+		if (comment.user === myLogin) {
+			if (comment.stamp > weekAgo) {
+				comment.can.edit = comment.can.del = true;
+			}
+		} else if (previousViewStamp && comment.stamp > previousViewStamp) {
 			comment.isnew = true;
 			countNew++;
 		}
@@ -214,6 +285,7 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 }
 function commentsTreeBuildCanModerate(iAm, comments, usersHash, previousViewStamp) {
 	var myLogin = iAm.login,
+		deleted,
 		commentParent,
 		comment,
 		hash = {},
@@ -224,23 +296,34 @@ function commentsTreeBuildCanModerate(iAm, comments, usersHash, previousViewStam
 
 	for (; i < len; i++) {
 		comment = comments[i];
-		comment.user = usersHash[comment.user].login;
+		deleted = comment.del !== undefined;
 
-		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
-			comment.isnew = true;
-			countNew++;
-		}
 		if (comment.level === undefined) {
 			comment.level = 0;
 		}
 		if (comment.level > 0) {
 			commentParent = hash[comment.parent];
+			if (commentParent === undefined || commentParent.del !== undefined) {
+				//Если родитель удаленный или его нет, отбрасываем комментарий
+				continue;
+			}
 			if (commentParent.comments === undefined) {
 				commentParent.comments = [];
 			}
 			commentParent.comments.push(comment);
 		} else {
 			tree.push(comment);
+		}
+
+		comment.user = usersHash[comment.user].login;
+		if (deleted) {
+			delete comment.txt;
+			continue;
+		}
+
+		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myLogin) {
+			comment.isnew = true;
+			countNew++;
 		}
 		hash[comment.cid] = comment;
 	}
@@ -260,12 +343,18 @@ function getCommentsObj(iAm, data, cb) {
 	}
 
 	data.cid = Number(data.cid);
-	core.getCommentsObj(iAm, data, function (err, result) {
+
+	if (iAm) {
+		core.getCommentsObjAuth(iAm, data, finish);
+	} else {
+		core.getCommentsObjAnonym(data, finish);
+	}
+	function finish(err, result) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
 		cb(_.assign(result, {message: 'ok', cid: data.cid}));
-	});
+	}
 }
 
 

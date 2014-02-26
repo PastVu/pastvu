@@ -9,6 +9,13 @@ var histScheme = {
 		frag: {type: Number},
 		txt: {type: String}
 	},
+	delInfo = {
+		user: {type: Schema.Types.ObjectId, ref: 'User'},
+		stamp: {type: Date, 'default': Date.now, required: true},
+		reason: {type: String}, //Причина удаления
+		role: {type: Number}, //Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
+		roleregion: {type: Number} //Регион реализуемой роли
+	},
 	CommentPSchema = new Schema(
 		{
 			cid: {type: Number, index: { unique: true }},
@@ -23,6 +30,7 @@ var histScheme = {
 			lastChanged: {type: Date}, //Время последнего редактирования
 			hist: [new Schema(histScheme)],
 
+			del: delInfo, //Удалённый
 			hidden: {type: Boolean} //Скрытый комментарий, например, у неактивной фотографии. Не отображается в списке пользователя и не участвует в статистике
 		},
 		{
@@ -41,7 +49,9 @@ var histScheme = {
 			level: {type: Number},
 
 			lastChanged: {type: Date}, //Время последнего редактирования
-			hist: [new Schema(histScheme)]
+			hist: [new Schema(histScheme)],
+
+			del: delInfo //Удалённый
 		},
 		{
 			strict: true,
