@@ -8,7 +8,9 @@ var FragmentSchema = new Schema({
 		l: {type: Number}, //Left
 		t: {type: Number}, //Top
 		w: {type: Number}, //Width
-		h: {type: Number}  //Height
+		h: {type: Number},  //Height
+
+		del: {type: Boolean} //Флаг, что комментарий этого фрагмента удалён
 	}),
 	PhotoNewSchema = new Schema({
 		cid: {type: Number, index: {unique: true}},

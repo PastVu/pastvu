@@ -142,7 +142,7 @@ var core = {
 				canModerate = permissions.canModerate(data.type, obj, iAm);
 				canReply = canModerate || permissions.canReply(data.type, obj, iAm);
 
-				commentModel.find(query, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+				commentModel.find(query, {_id: 0, obj: 0, hist: 0, 'del.user': 0, 'del.reason': 0, 'del.role': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 
 				//Берём последнее время просмотра комментариев объекта
 				UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
@@ -240,8 +240,10 @@ function commentsTreeBuild(comments, usersHash) {
 function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) {
 	var weekAgo = Date.now() - weekMS,
 		myLogin = iAm.login,
+		commentsArrMid = [],
 		commentParent,
 		comment,
+		commentDeleted,
 		hash = {},
 		len = comments.length,
 		countNew = 0,
@@ -251,21 +253,35 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 	for (; i < len; i++) {
 		comment = comments[i];
 		comment.user = usersHash[comment.user].login;
-		comment.can = {};
-		if (comment.user === myLogin) {
-			if (comment.stamp > weekAgo) {
-				comment.can.edit = comment.can.del = true;
-			}
-		} else if (previousViewStamp && comment.stamp > previousViewStamp) {
-			comment.isnew = true;
-			countNew++;
+		commentDeleted = comment.del !== undefined;
+
+		if (commentDeleted) {
+			comment.delRoot = comment; //Сначала в качестве корневого удалённого указываем сам удалённый
 		}
+
 		if (comment.level === undefined) {
 			comment.level = 0;
 		}
 		if (comment.level > 0) {
 			commentParent = hash[comment.parent];
-			if (commentParent.comments === undefined) {
+
+			//Чтобы узнать, есть ли в удалённой ветке комментарий текущего пользователя (тогда он должен видеть эту ветку)
+			//надо сохранять ссылку на корневой удалённый комментарий у всех дочерних, пока не встретим комментарий текущего пользователя
+			//и в этом случае помечаем родительский удалённый как сохраняемый и удаляем его потомков (они не передаются)
+			if (commentParent === undefined) {
+				continue;
+			}
+			if (commentParent.del !== undefined) {
+				comment.delRoot = commentParent.delRoot;
+				if (comment.delRoot.delSave === true) {
+					continue; //Если корневой удаляемый уже сохранён, отбрасываем текущий
+				} else {
+					if (comment.user === myLogin) {
+						comment.delRoot.delSave = true;
+						continue;
+					}
+				}
+			} else if (commentParent.comments === undefined) {
 				if (commentParent.can.del === true) {
 					//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
 					//т.е. это его комментарий, отменяем возможность удаления,
@@ -274,11 +290,46 @@ function commentsTreeBuildCanReply(iAm, comments, usersHash, previousViewStamp) 
 				}
 				commentParent.comments = [];
 			}
-			commentParent.comments.push(comment);
+		} else if (commentDeleted && comment.user === myLogin) {
+			comment.delSave = true;
+		}
+
+		if (!commentDeleted) {
+			comment.can = {};
+			if (comment.user === myLogin) {
+				if (comment.stamp > weekAgo) {
+					//Пользователь может удалить свой последний комментарий в течении недели
+					comment.can.edit = comment.can.del = true;
+				}
+			} else if (previousViewStamp && comment.stamp > previousViewStamp) {
+				comment.isnew = true;
+				countNew++;
+			}
+		}
+		hash[comment.cid] = comment;
+		commentsArrMid.push(comment);
+	}
+
+	comments = commentsArrMid;
+	len = comments.length;
+	for (; i < len; i++) {
+		comment = comments[i];
+
+		if (comment.del !== undefined) {
+			if (comment.delRoot.delSave === true) {
+				//Сохранённые удалённые комментарии передаются без текста
+				delete comment.txt;
+				delete comment.frag;
+			} else {
+				continue;
+			}
+		}
+
+		if (comment.level > 0) {
+			hash[comment.parent].comments.push(comment);
 		} else {
 			tree.push(comment);
 		}
-		hash[comment.cid] = comment;
 	}
 
 	return {tree: tree, countNew: countNew};
@@ -304,7 +355,7 @@ function commentsTreeBuildCanModerate(iAm, comments, usersHash, previousViewStam
 		if (comment.level > 0) {
 			commentParent = hash[comment.parent];
 			if (commentParent === undefined || commentParent.del !== undefined) {
-				//Если родитель удаленный или его нет, отбрасываем комментарий
+				//Если родитель удален или его нет (т.е. родитель родителя удален), отбрасываем комментарий
 				continue;
 			}
 			if (commentParent.comments === undefined) {
@@ -315,9 +366,11 @@ function commentsTreeBuildCanModerate(iAm, comments, usersHash, previousViewStam
 			tree.push(comment);
 		}
 
+		hash[comment.cid] = comment;
 		comment.user = usersHash[comment.user].login;
 		if (deleted) {
 			delete comment.txt;
+			delete comment.frag;
 			continue;
 		}
 
@@ -325,7 +378,6 @@ function commentsTreeBuildCanModerate(iAm, comments, usersHash, previousViewStam
 			comment.isnew = true;
 			countNew++;
 		}
-		hash[comment.cid] = comment;
 	}
 
 	return {tree: tree, countNew: countNew};
