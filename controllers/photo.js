@@ -45,6 +45,9 @@ var auth = require('./auth.js'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	permissions = {
+		//Определяет может ли модерировать фотографию пользователь
+		//Если да, то в случае регионального модератора вернёт номер региона,
+		//в случае, глобального модератора и админа - true
 		canModerate: function (photo, user) {
 			var rhash,
 				photoRegion,
@@ -62,7 +65,7 @@ var auth = require('./auth.js'),
 					for (i = 0; i <= maxRegionLevel; i++) {
 						photoRegion = photo['r' + i];
 						if (photoRegion && rhash[photoRegion] !== undefined) {
-							return true;
+							return photoRegion;
 						}
 					}
 				} else if (user.role > 5) {

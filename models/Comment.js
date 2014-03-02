@@ -13,12 +13,13 @@ var histScheme = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},
 		stamp: {type: Date, 'default': Date.now, required: true},
 		reason: {type: String}, //Причина удаления
+		origin: {type: Number}, //Если у удаляемого комментария есть дочерние, проставляем им ссылку (cid) непосредственно удаляемого, в этом случае reason дочерним можно не указывать
 		role: {type: Number}, //Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
 		roleregion: {type: Number} //Регион реализуемой роли
 	},
 	CommentPSchema = new Schema(
 		{
-			cid: {type: Number, index: { unique: true }},
+			cid: {type: Number, index: {unique: true}},
 			obj: {type: Schema.Types.ObjectId, ref: 'Photo', index: true},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 			stamp: {type: Date, 'default': Date.now, required: true, index: true},
@@ -40,7 +41,7 @@ var histScheme = {
 //Комментарии новостей
 	CommentNSchema = new Schema(
 		{
-			cid: {type: Number, index: { unique: true }},
+			cid: {type: Number, index: {unique: true}},
 			obj: {type: Schema.Types.ObjectId, ref: 'News', index: true},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 			stamp: {type: Date, 'default': Date.now, required: true, index: true},

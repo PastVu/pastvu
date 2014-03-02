@@ -452,7 +452,7 @@ function getCommentsUser(data, cb) {
 			var page = (Math.abs(Number(data.page)) || 1) - 1,
 				skip = page * commentsUserPerPage;
 
-			Comment.collection.find({user: userid, hidden: {$exists: false}}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, {sort: [
+			Comment.collection.find({user: userid, del: null, hidden: null}, {_id: 0, lastChanged: 1, cid: 1, obj: 1, stamp: 1, txt: 1}, {sort: [
 				['stamp', 'desc']
 			], skip: skip, limit: commentsUserPerPage}, this);
 		},
@@ -525,7 +525,7 @@ function getCommentsUser(data, cb) {
  * @param cb Коллбэк
  */
 var getCommentsFeed = (function () {
-	var query = {hidden: null},
+	var query = {del: null, hidden: null},
 		selector = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
 		options = {lean: true, limit: 30, sort: {stamp: -1}};
 
@@ -741,17 +741,17 @@ function removeComment(socket, data, cb) {
 	if (!socket.handshake.session.user) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !Number(data.cid)) {
+	if (!Utils.isType('object', data) || !Number(data.cid) || !String(data.reason)) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),
 		iAm = socket.handshake.session.user,
-		ownCommentOfRegularUser,
+		canModerate,
+		canCauseItsOwn,
 		obj,
-		hashComments = {},
+		commentsHash = {},
 		hashUsers = {},
-		arrComments = [],
-		countCommentsRemoved,
+		countCommentsRemoved = 1,
 		comment,
 		commentModel;
 
@@ -763,11 +763,14 @@ function removeComment(socket, data, cb) {
 
 	step(
 		function () {
-			commentModel.findOne({cid: cid}, {_id: 0, obj: 1, user: 1, stamp: 1}, this);
+			commentModel.findOne({cid: cid}, {_id: 0, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1}, {lean: true}, this);
 		},
 		function findObj(err, c) {
 			if (err || !c) {
 				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
+			}
+			if (c.del) {
+				return cb({message: 'Комментарий уже удален', error: true});
 			}
 			comment = c;
 			if (data.type === 'news') {
@@ -780,22 +783,16 @@ function removeComment(socket, data, cb) {
 			if (err || !o) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
-			var can;
-			if (permissions.canModerate(data.type, o, iAm)) {
-				//Если это модератор данной фотографии или администратор новости
-				can = true;
-			} else if (permissions.canEdit(comment, o, iAm)) {
-				//Если это владелец и комментарий моложе недели
-				ownCommentOfRegularUser = true;
-				can = true;
-			}
 
-			if (!can) {
+			canModerate = permissions.canModerate(data.type, o, iAm);
+			canCauseItsOwn = !canModerate && permissions.canEdit(comment, o, iAm);
+
+			if (!canModerate && !canCauseItsOwn) {
 				return cb({message: o.nocomments ? msg.noComments : msg.deny, error: true});
 			}
 
 			obj = o;
-			commentModel.collection.find({obj: o._id}, {_id: 0, obj: 0, stamp: 0, txt: 0}, {sort: [
+			commentModel.collection.find({obj: o._id}, {_id: 0, obj: 0, stamp: 0, txt: 0, hist: 0}, {sort: [
 				['stamp', 'asc']
 			]}, this.parallel());
 		},
@@ -804,30 +801,54 @@ function removeComment(socket, data, cb) {
 			if (err || !comments) {
 				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
-			var i = -1,
+			var commentDelInfo = {user: iAm._id, stamp: Date.now(), reason: 'WOW'},
+				commentChildsDelInfo,
+				commentChildsCid = [],
+				commentChild,
 				len = comments.length,
-				comment;
+				i = 0;
 
-			while (++i < len) {
-				comment = comments[i];
-				if (comment.cid === cid || (comment.level && hashComments[comment.parent] !== undefined)) {
-					hashComments[comment.cid] = comment;
-					//Если комментарий скрыт, то его уже не надо вычитать из статистики пользователя
-					if (!comment.hidden) {
-						hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+			commentsHash[cid] = comment;
+			if (!comment.hidden) {
+				//Если комментарий скрыт (т.е. объект не публичный), его уже не надо вычитать из статистики пользователя
+				hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+			}
+
+			for (; i < len; i++) {
+				commentChild = comments[i];
+				if (commentChild.level && commentsHash[commentChild.parent] !== undefined && !commentChild.del) {
+
+					if (canCauseItsOwn) {
+						//Если обычный пользователь удаляет свой комментарий, у него не должно быть потомков, т.е. он один
+						return cb({message: msg.deny, error: true});
 					}
-					arrComments.push(comment.cid);
+
+					if (!commentChild.hidden) {
+						hashUsers[commentChild.user] = (hashUsers[commentChild.user] || 0) + 1;
+					}
+					commentChildsCid.push(commentChild.cid);
+					commentsHash[commentChild.cid] = commentChild;
 				}
 			}
 
-			//Если обычный пользователь удаляет свой комментарий, то убеждаемся, что у него нет потомков, т.е. он один
-			if (ownCommentOfRegularUser && arrComments.length > 1) {
-				return cb({message: msg.deny, error: true});
+			if (canModerate && iAm.role) {
+				commentDelInfo.role = iAm.role;
+				if (iAm.role === 5) {
+					//В случае с модератором региона, permissions.canModerate возвращает cid роли,
+					//который мы записываем на момент удаления
+					commentDelInfo.roleregion = canModerate;
+				}
 			}
 
-			commentModel.remove({cid: {$in: arrComments}}, this);
+			commentModel.update({cid: cid}, {$set: {del: commentDelInfo}}, this.parallel());
+
+			if (commentChildsCid.length) {
+				countCommentsRemoved += commentChildsCid.length;
+				commentChildsDelInfo = _.assign(_.omit(commentDelInfo, 'reason'), {origin: cid});
+				commentModel.update({cid: {$in: commentChildsCid}}, {$set: {del: commentChildsDelInfo}}, {multi: true}, this.parallel());
+			}
 		},
-		function (err, countRemoved) {
+		function (err) {
 			if (err) {
 				return cb({message: err.message || 'Comment remove error', error: true});
 			}
@@ -838,13 +859,13 @@ function removeComment(socket, data, cb) {
 
 			if (frags) {
 				for (i = frags.length; i--;) {
-					if (hashComments[frags[i].cid] !== undefined) {
-						obj.frags.id(frags[i]._id).remove();
+					if (commentsHash[frags[i].cid] !== undefined) {
+						obj.frags.id(frags[i]._id).del = true;
 					}
 				}
 			}
 
-			obj.ccount -= countRemoved;
+			obj.ccount -= countCommentsRemoved;
 			obj.save(this.parallel());
 
 			for (u in hashUsers) {
@@ -858,8 +879,6 @@ function removeComment(socket, data, cb) {
 					}
 				}
 			}
-
-			countCommentsRemoved = countRemoved;
 		},
 		function (err) {
 			if (err) {
