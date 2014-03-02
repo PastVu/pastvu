@@ -1,0 +1,24 @@
+| {{##def.commentAnonym:
+.c(id="c{{=it.cid}}", class="{{? it.isnew }}isnew{{?}} l{{=it.level}}")
+	a.pull-left(href="{{='/u/'+it.user.login}}"): img.cava(src="{{=it.user.avatar}}")
+	.cbody
+		.chead
+			a.author(class="{{? it.user.online }}online{{?}}", href="{{='/u/'+it.user.login}}") {{=it.user.disp}}
+			| {{? it.user.rnks}}
+			.ranks {{=it.user.rnks}}
+			| {{?}}
+			| {{? it.frag}}
+			.dotDelimeter ·
+			a.frag(href="{{='?hl=frag-'+it.cid}}")
+				span.glyphicon.glyphicon-picture
+				|  Комментируемый фрагмент
+			| {{?}}
+			.dotDelimeter ·
+			a.stamp(href="{{='?hl=comment-'+it.cid}}") {{=moment(it.stamp).calendar()}}
+			| {{? it.lastChanged}}
+			.dotDelimeter ·
+			.changed(title="Показать историю изменений") {{='Изменен '+moment(it.lastChanged).calendar().toLowerCase()}}
+			| {{?}}
+		.ctext {{=it.txt}}
+| #}}
+{{#def.commentAnonym}}

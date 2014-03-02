@@ -69,7 +69,7 @@ var start = Date.now(),
 				create: true, //set create: true if 'commonExcludes' is not a module that exists before a build
 				include: [
 					'domReady', 'text', 'css', 'lib/require/plugins/require-css/normalize',
-					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'backbone', 'knockout', 'knockout.mapping', 'moment',
+					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'lib/doT', 'backbone', 'moment',
 					'noty', 'noty.layouts', 'noty.themes/pastvu',
 					'Browser', 'Utils', 'socket', 'RouteManager', 'Params', 'globalVM',
 					'm/_moduleCliche', 'renderer',
@@ -83,7 +83,7 @@ var start = Date.now(),
 			{
 				name: "module/appMain",
 				include: [
-					'socket.io',
+					'socket.io', 'lib/doT',
 					'm/common/auth', 'm/common/top', 'm/common/foot',
 					'm/main/commentsFeed', 'm/main/mainPage', 'm/main/bottomPanel',
 					'm/map/map', 'm/map/marker', 'm/map/navSlider',

@@ -2,14 +2,15 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'text!tpl/comment/comments.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, jade) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/dot/canonym.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlCAnonym) {
 	'use strict';
 
 	var $window = $(window),
-		commentNestingMax = 9;
+		commentNestingMax = 9,
+		tplCommentAnonym;
 
 	return Cliche.extend({
-		jade: jade,
+		jade: html,
 		options: {
 			type: 'photo', //Тип объекта по умолчанию (фото, новость и т.д.)
 			count: 0, //Начальное кол-во комментариев
@@ -117,6 +118,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
 			}
 			if (!this.showing) {
+				console.time('cc');
+				tplCommentAnonym = doT.template(htmlCAnonym); //Пока данные запрашиваются в первый раз, компилим doT шаблоны
+				console.timeEnd('cc');
 				this.show();
 			}
 		},
@@ -269,6 +273,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}
 				return tree;
 			}
+
+			console.time('ee');
+			tplCommentAnonym(tree[0]);
+			console.timeEnd('ee');
 
 			return treeRecursive(tree);
 		},
