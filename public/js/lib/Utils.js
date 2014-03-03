@@ -336,6 +336,75 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 		},
 
 		format: (function () {
+			var dateFormat = (function (){
+				var months = [
+						'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+					],
+					weekDays = [
+						'Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'
+					],
+					weekDaysIn = [
+						'в воскресенье', 'в понедельник', 'во вторник', 'в среду', 'в четверг', 'в пятницу', 'в субботу'
+					];
+
+				function dMMYYYYhhmm(date) {
+					var hours = date.getHours(),
+						mintues = date.getMinutes();
+					return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+				}
+				function hhmm(date) {
+					var hours = date.getHours(),
+						mintues = date.getMinutes();
+					return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
+				}
+
+				// Takes an ISO time ('2012-12-12T12:00:00.000Z') and returns a string representing how long ago the date represents.
+				// Inspired by Pretty Date 2011 by John Resig (ejohn.org)
+				function relative(time) {
+					var date = new Date((time || "").replace(/-/g, "/").replace(/[TZ]/g, " ")),
+						diff = ((Date.now() - date.getTime()) / 1000),
+						day_diff = Math.floor(diff / 86400),
+						result;
+
+					if (isNaN(day_diff) || day_diff < 0 || day_diff >= 7) {
+						result = dateFormat.dMMYYYYhhmm(date);
+					} else if (day_diff === 0) {
+						result = 'Сегодня в ' + dateFormat.hhmm(date);
+					} else if (day_diff === 1) {
+						result = 'Вчера в ' + dateFormat.hhmm(date);
+					} else {
+						result = weekDays[date.getDay()] + ', в ' + dateFormat.hhmm(date);
+					}
+
+					return result;
+				}
+				function relativeIn(time) {
+					var date = new Date((time || "").replace(/-/g, "/").replace(/[TZ]/g, " ")),
+						diff = ((Date.now() - date.getTime()) / 1000),
+						day_diff = Math.floor(diff / 86400),
+						result;
+
+					if (isNaN(day_diff) || day_diff < 0 || day_diff >= 7) {
+						result = dateFormat.dMMYYYYhhmm(date);
+					} else if (day_diff === 0) {
+						result = 'сегодня в ' + dateFormat.hhmm(date);
+					} else if (day_diff === 1) {
+						result = 'вчера в ' + dateFormat.hhmm(date);
+					} else {
+						result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
+					}
+
+					return result;
+				}
+
+				return {
+					dMMYYYYhhmm: dMMYYYYhhmm,
+					hhmm: hhmm,
+					relative: relative,
+					relativeIn: relativeIn
+				};
+			}());
+
 			function formatFileSize(bytes) {
 				if (typeof bytes !== 'number') {
 					return '';
@@ -397,6 +466,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			}
 
 			return {
+				date: dateFormat,
 				fileSize: formatFileSize,
 				bitrate: formatBitrate,
 				secondsToTime: secondsToTime,
