@@ -6,7 +6,7 @@
  *           engine: string, e_version: string, e_versionN: number,
  *              platform: string, support: Object.<string, boolean>}}
  */
-define(["lib/flash_detect"], function (FlashDetect) {
+define([], function () {
 	'use strict';
 
 	var uA = navigator.userAgent.toUpperCase(),
@@ -24,7 +24,6 @@ define(["lib/flash_detect"], function (FlashDetect) {
 			 * @type Object.<string, boolean>
 			 */
 			support: {
-				flash: FlashDetect && FlashDetect.installed, /*!!navigator.mimeTypes["application/x-shockwave-flash"],*/
 				video: !!document.createElement('video').canPlayType,
 				h264_apple_video: /** @return {boolean|string} */ (function () {
 					var vid = document.createElement('video');
