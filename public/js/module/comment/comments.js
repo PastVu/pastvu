@@ -239,7 +239,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canModeratePlain = !!data.canModerate;
 						this.canModerate(this.canModeratePlain);
 						this.canReply(!!data.canReply);
-						this.comments(this[this.canReply() ? 'treePrepareCanReply' : 'treePrepare'](data.comments));
+
+						this[this.canReply() ? 'treePrepareCanReply' : 'renderComments'](data.comments);
 						this.showTree(true);
 						this.countNew(data.countNew);
 					}
@@ -256,10 +257,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		treePrepare: function (tree) {
-			var usersHash = this.users;
+		renderComments: function (tree) {
+			var usersHash = this.users,
+				commentsPlain = [],
+				tplResult;
 
-			function treeRecursive(tree) {
+			(function treeRecursive(tree) {
 				var i = 0,
 					len = tree.length,
 					comment;
@@ -267,18 +270,19 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				for (; i < len; i++) {
 					comment = tree[i];
 					comment.user = usersHash[comment.user];
+					commentsPlain.push(comment);
 					if (comment.comments) {
 						treeRecursive(comment.comments, comment);
 					}
 				}
-				return tree;
-			}
+			}(tree));
 
-			console.time('ee');
-			tplCommentAnonym(tree[0]);
-			console.timeEnd('ee');
-
-			return treeRecursive(tree);
+			console.time('tplExec');
+			tplResult = tplCommentAnonym({comments: commentsPlain, fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			console.timeEnd('tplExec');
+			console.time('tplInsert');
+			this.$dom[0].querySelector('.cmts').innerHTML = tplResult;
+			console.timeEnd('tplInsert');
 		},
 		treePrepareCanReply: function (tree) {
 			var usersHash = this.users;

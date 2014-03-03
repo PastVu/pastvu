@@ -1,5 +1,5 @@
 .fullComments(data-bind="with: repository[M!M]")
-	.commentsHead
+	.cmtsHead
 		//ko if: canReply() || count()
 		a.count.headElem.interact(href="?hl=comments", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Ссылка на область комментариев")
 		//ko if: canReply()
@@ -28,6 +28,8 @@
 		.commentsLoad(data-bind="style: {display: loading() ? '' : 'none'}") &nbsp;
 		// /ko
 
+	.cmts
+
 	//ko if: showTree()
 	ul.media-list(data-bind="css: {loggedIn: canReply(), canFrag: canFrag}")
 		//ko template: {name: canReply() ? 'tplCommentCanReply' : 'tplComment', foreach: comments}
@@ -37,6 +39,7 @@
 		// /ko
 		// /ko
 	// /ko
+
 
 	//ko if: countNew()
 	.navigator(data-bind="css: {touch: touch}")

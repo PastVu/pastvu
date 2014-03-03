@@ -5,38 +5,18 @@
 @headColor: #677A8F;
 @headColorHover: @MainBlueColor;
 
+.levelLooping(@index, @margin) when (@index < 9) {
+	&.l@{index} { // your resulting css
+		@vall: @index * @margin;
+		margin-left: ~"@{vall}px";
+	}
+	.levelLooping(@index + 1, @margin); // next iteration
+}
+
 .fullComments {
 	position: relative;
 
-	.c {
-		&.isnew {
-			padding-left: 1px;
-			border-width: 0 0 0 1px;
-			border-style: solid;
-			border-color: #81DF7D;
-			background-color: rgba(174, 255, 184, 0.1);
-		}
-		&.l1{
-			margin-left: 58px;
-		}
-
-		> .cbody {
-			min-height: 53px;
-
-			> .chead {
-				line-height: 14px;
-				margin-bottom: 1px;
-			}
-		}
-	}
-
-	.cava {
-		display: block;
-		width: 50px;
-		height: 50px;
-	}
-
-	.commentsHead {
+	.cmtsHead {
 		position: relative;
 
 		.headElem {
@@ -124,13 +104,46 @@
 		}
 	}
 
-	.commentBody {
-		min-height: 53px;
+	> .cmts {
+		> .c {
+			padding: 7px 0;
+
+			&.isnew {
+				padding-left: 1px;
+				border-width: 0 0 0 1px;
+				border-style: solid;
+				border-color: #81DF7D;
+				background-color: rgba(174, 255, 184, 0.1);
+			}
+			.levelLooping(0, 58);
+
+			> .hrefava {
+				float: left;
+				margin-top: 1px;
+				margin-right: 8px;
+
+				> .cava {
+					display: block;
+					width: 50px;
+					height: 50px;
+				}
+			}
+
+			> .cbody {
+				min-height: 53px;
+
+				> .chead {
+					line-height: 14px;
+					margin-bottom: 1px;
+				}
+				> .ctext {
+					max-width: 1024px;
+					word-wrap: break-word; //Переносит разбиением длинные слова, например ссылки
+				}
+			}
+		}
 	}
-	.commentHead {
-		line-height: 14px;
-		margin-bottom: 1px;
-	}
+
 	.author, .ranks {
 		display: inline-block;
 	}
@@ -154,10 +167,6 @@
 		&:hover {
 			color: @MainBlueColor;
 		}
-	}
-	.commentText {
-		max-width: 1024px;
-		word-wrap: break-word; //Переносит разбиением длинные слова, например ссылки
 	}
 
 	.commentActions {

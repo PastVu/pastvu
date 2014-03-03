@@ -8,7 +8,7 @@
 .yearLooping(@index) when (@index < 2001) {
 	.y@{index} { // your resulting css
 		@vall: (@index - 1880) * @spinVal;
-		background-color: spin(@yearBase, @vall); //width: @{vall}px;
+		background-color: spin(@yearBase, @vall);
 	}
 	.yearLooping(@index + 1); // next iteration
 }

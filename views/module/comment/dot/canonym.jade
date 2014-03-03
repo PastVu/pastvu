@@ -1,24 +1,49 @@
 | {{##def.commentAnonym:
-.c(id="c{{=it.cid}}", class="{{? it.isnew }}isnew{{?}} l{{=it.level}}")
-	a.pull-left(href="{{='/u/'+it.user.login}}"): img.cava(src="{{=it.user.avatar}}")
+.c(id="c{{=c.cid}}", class="l{{=c.level}}")
+	a.hrefava(href="{{='/u/'+c.user.login}}"): img.cava(src="{{=c.user.avatar}}")
 	.cbody
 		.chead
-			a.author(class="{{? it.user.online }}online{{?}}", href="{{='/u/'+it.user.login}}") {{=it.user.disp}}
-			| {{? it.user.rnks}}
-			.ranks {{=it.user.rnks}}
+			a.author(class="{{?c.user.online}}online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
+			| {{?c.user.rnks}}
+			.ranks {{=c.user.rnks}}
 			| {{?}}
-			| {{? it.frag}}
+			| {{?c.frag}}
 			.dotDelimeter ·
-			a.frag(href="{{='?hl=frag-'+it.cid}}")
+			a.frag(href="{{='?hl=frag-'+c.cid}}")
 				span.glyphicon.glyphicon-picture
 				|  Комментируемый фрагмент
 			| {{?}}
 			.dotDelimeter ·
-			a.stamp(href="{{='?hl=comment-'+it.cid}}") {{=moment(it.stamp).calendar()}}
-			| {{? it.lastChanged}}
+			a.stamp(href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(c.stamp)}}
+			| {{?c.lastChanged}}
 			.dotDelimeter ·
-			.changed(title="Показать историю изменений") {{='Изменен '+moment(it.lastChanged).calendar().toLowerCase()}}
+			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(c.lastChanged)}}
 			| {{?}}
-		.ctext {{=it.txt}}
+		.ctext {{=c.txt}}
 | #}}
-{{#def.commentAnonym}}
+| {{##def.commentAuth:
+.c(id="c{{=c.cid}}", class="l{{=c.level}}{{?c.isnew}} isnew{{?}}")
+	a.hrefava(href="{{='/u/'+c.user.login}}"): img.cava(src="{{=c.user.avatar}}")
+	.cbody
+		.chead
+			a.author(class="{{?c.user.online}}online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
+			| {{?c.user.rnks}}
+			.ranks {{=c.user.rnks}}
+			| {{?}}
+			| {{?c.frag}}
+			.dotDelimeter ·
+			a.frag(href="{{='?hl=frag-'+c.cid}}")
+				span.glyphicon.glyphicon-picture
+				|  Комментируемый фрагмент
+			| {{?}}
+			.dotDelimeter ·
+			a.stamp(href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(c.stamp)}}
+			| {{?c.lastChanged}}
+			.dotDelimeter ·
+			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(c.lastChanged)}}
+			| {{?}}
+		.ctext {{=c.txt}}
+| #}}
+| {{~it.comments :c:index}}
+| {{#def.commentAnonym}}
+| {{~}}
