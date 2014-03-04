@@ -358,11 +358,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
 
-				// Takes an ISO time ('2012-12-12T12:00:00.000Z') and returns a string representing how long ago the date represents.
+				// Returns a string representing how long ago the date represents.
 				// Inspired by Pretty Date 2011 by John Resig (ejohn.org)
-				function relative(time) {
-					var date = new Date((time || "").replace(/-/g, "/").replace(/[TZ]/g, " ")),
-						diff = ((Date.now() - date.getTime()) / 1000),
+				function relative(date) {
+					var diff = ((Date.now() - date.getTime()) / 1000),
 						day_diff = Math.floor(diff / 86400),
 						result;
 
@@ -378,9 +377,8 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 
 					return result;
 				}
-				function relativeIn(time) {
-					var date = new Date((time || "").replace(/-/g, "/").replace(/[TZ]/g, " ")),
-						diff = ((Date.now() - date.getTime()) / 1000),
+				function relativeIn(date) {
+					var diff = ((Date.now() - date.getTime()) / 1000),
 						day_diff = Math.floor(diff / 86400),
 						result;
 

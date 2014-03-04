@@ -164,6 +164,12 @@ function commentsTreeBuildAnonym(comments, usersHash) {
 	for (; i < len; i++) {
 		comment = comments[i];
 		comment.user = usersHash[String(comment.user)].login;
+		//Время отдаём в ms
+		comment.stamp = comment.stamp.getTime();
+		if (comment.lastChanged !== undefined) {
+			comment.lastChanged = comment.lastChanged.getTime();
+		}
+
 		if (comment.level === undefined) {
 			comment.level = 0;
 		}
@@ -295,6 +301,12 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 			}
 
 			comment.user = usersById[comment.user].login;
+			//Время отдаём в ms
+			comment.stamp = comment.stamp.getTime();
+			if (comment.lastChanged !== undefined) {
+				comment.lastChanged = comment.lastChanged.getTime();
+			}
+
 			if (comment.level > 0) {
 				commentsHash[comment.parent].comments.push(comment);
 			} else {
@@ -371,6 +383,11 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 		for (i = 0; i < len; i++) {
 			comment = comments[i];
 			comment.user = usersById[comment.user].login;
+			//Время отдаём в ms
+			comment.stamp = comment.stamp.getTime();
+			if (comment.lastChanged !== undefined) {
+				comment.lastChanged = comment.lastChanged.getTime();
+			}
 		}
 
 		cb(null, {tree: commentsTree, users: usersByLogin, countTotal: countTotal, countNew: countNew});
