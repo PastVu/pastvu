@@ -75,6 +75,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
+			this.eventsOn();
 			this.showing = true;
 		},
 		hide: function () {
@@ -138,6 +139,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.users = {};
 			this.loading(false);
 			this.showTree(false);
+		},
+		eventsOn: function () {
+			var that = this;
+			$('.cmts', this.$dom).on('click', '.changed', function () {
+				var cid = $(this).parents('.c').attr('id');
+				if (cid) {
+					that.showHistory(cid.substr(1));
+				}
+			});
 		},
 		viewScrollOn: function () {
 			if (!this.viewportScrollHandling) {

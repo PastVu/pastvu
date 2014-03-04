@@ -6,7 +6,7 @@
 @headColorHover: @MainBlueColor;
 
 .levelLooping(@index, @margin) when (@index < 9) {
-	&.l@{index} { // your resulting css
+	&.l@{index} {
 		@vall: @index * @margin;
 		margin-left: ~"@{vall}px";
 	}
@@ -130,7 +130,8 @@
 			}
 
 			> .cbody {
-				min-height: 53px;
+				min-height: 52px;
+				margin-left: 58px;
 
 				> .chead {
 					line-height: 14px;
@@ -413,11 +414,31 @@
 			vertical-align: middle;
 			text-decoration: none;
 			-webkit-transform: rotate(-90deg) translate(-4px, 0);
-			-moz-transform: rotate(-90deg) translate(-4px, 0);
-			-ms-transform: rotate(-90deg) translate(-4px, 0);
-			-o-transform: rotate(-90deg) translate(-4px, 0);
 			transform: rotate(-90deg) translate(-4px, 0);
 			.transition(all .1s linear);
+		}
+	}
+}
+
+@media (max-width: @screen-sm-max) {
+	.fullComments {
+		> .cmts {
+			> .c {
+				.levelLooping(1, 29);
+			}
+		}
+	}
+}
+
+@media (max-width: @screen-xs-max) {
+	.fullComments {
+		> .cmts {
+			> .c {
+				.levelLooping(1, 14);
+				> .cbody {
+					margin-left: 0;
+				}
+			}
 		}
 	}
 }
