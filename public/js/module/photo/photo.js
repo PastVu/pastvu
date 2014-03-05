@@ -1060,7 +1060,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			//Активируем, если фото не новое и не редактируется
 			if (!this.edit() && this.p.s() > 1) {
 				this.commentsVM.activate(
-					{cid: this.p.cid(), count: this.p.ccount(), count_new: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
+					{cid: this.p.cid(), count: this.p.ccount(), countNew: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
 					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length, checkTimeout: this.p.ccount() > 30 ? 500 : 300}),
 					function () {
 						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive

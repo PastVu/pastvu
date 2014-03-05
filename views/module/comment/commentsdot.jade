@@ -44,6 +44,15 @@
 			| {{?}}
 		.ctext {{=c.txt}}
 | #}}
+
+| {{ if ({{#def.mode === 'anonym'}}) { }}
 | {{~it.comments :c:index}}
 | {{#def.commentAnonym}}
 | {{~}}
+
+| {{ } else if ({{#def.mode === 'auth'}}) { }}
+| {{~it.comments :c:index}}
+| {{#def.commentAuth}}
+| {{~}}
+| {{ } }}
+

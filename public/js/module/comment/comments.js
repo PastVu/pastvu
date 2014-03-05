@@ -2,12 +2,15 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/dot/canonym.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlCAnonym) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/commentsdot.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlDoT) {
 	'use strict';
 
 	var $window = $(window),
 		commentNestingMax = 9,
-		tplCommentAnonym;
+		tplCommentAnonym,
+		tplCommentAuth,
+		tplCommentReply,
+		tplCommentModerate;
 
 	return Cliche.extend({
 		jade: html,
@@ -34,8 +37,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.navigating = ko.observable(false); //Флаг, что идет навигация к новому комментарию, чтобы избежать множества нажатий
 			this.touch = Browser.support.touch;
 
-			this.canModeratePlain = false; //Простое свойство для проверки в цикле шаблона ko (для скорости)
-			this.canModerate = ko.observable(this.canModeratePlain);
+			this.canModerate = ko.observable(false);
 			this.canReply = ko.observable(false);
 			this.canFrag = this.type === 'photo';
 
@@ -120,7 +122,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			if (!this.showing) {
 				console.time('cc');
-				tplCommentAnonym = doT.template(htmlCAnonym); //Пока данные запрашиваются в первый раз, компилим doT шаблоны
+				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разный вариантов, если еще не скомпилили их раньше
+				if (this.auth.loggedIn()) {
+					if (!tplCommentAuth) {
+						tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
+						tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
+						tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
+					}
+				} else if (!tplCommentAnonym){
+					tplCommentAnonym = doT.template(htmlDoT, undefined, {mode: 'anonym'});
+				}
 				console.timeEnd('cc');
 				this.show();
 			}
@@ -198,6 +209,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			// После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
 			this.addMeToCommentsUsers();
 
+			//Компилим шаблоны для зарегистрированного пользователя
+			tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
+			tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
+			tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
+
 			if (!this.inViewport) {
 				this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
 			} else {
@@ -238,6 +254,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					} else if (data.cid !== this.cid) {
 						console.info('Comments received for another ' + this.type + ' ' + data.cid);
 					} else {
+						var canModerate = !!data.canModerate,
+							canReply = !!data.canReply,
+							tpl;
+
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
 
@@ -246,13 +266,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.commentCountIncrement(data.countTotal - this.count());
 							this.count(data.countTotal);
 						}
-						this.canModeratePlain = !!data.canModerate;
-						this.canModerate(this.canModeratePlain);
-						this.canReply(!!data.canReply);
-
-						this[this.canReply() ? 'treePrepareCanReply' : 'renderComments'](data.comments);
-						this.showTree(true);
 						this.countNew(data.countNew);
+						this.canModerate(canModerate);
+						this.canReply(canReply);
+
+						if (this.auth.loggedIn()) {
+							tpl = canModerate ? tplCommentModerate : (canReply ? tplCommentReply : tplCommentAuth);
+						} else {
+							tpl = tplCommentAnonym;
+						}
+						this.renderComments(data.comments, tpl);
+						this.showTree(true);
 					}
 				}
 				this.loading(false);
@@ -267,7 +291,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		renderComments: function (tree) {
+		renderComments: function (tree, tpl) {
 			var usersHash = this.users,
 				commentsPlain = [],
 				tplResult;
@@ -288,35 +312,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}(tree));
 
 			console.time('tplExec');
-			tplResult = tplCommentAnonym({comments: commentsPlain, fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			tplResult = tpl({comments: commentsPlain, fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
 			console.timeEnd('tplExec');
 			console.time('tplInsert');
 			this.$dom[0].querySelector('.cmts').innerHTML = tplResult;
 			console.timeEnd('tplInsert');
-		},
-		treePrepareCanReply: function (tree) {
-			var usersHash = this.users;
-
-			function treeRecursive(tree, commentParent) {
-				var i = 0,
-					len = tree.length,
-					comment;
-
-				for (; i < len; i++) {
-					comment = tree[i];
-					comment.user = usersHash[comment.user];
-					comment.parent = commentParent;
-					if (comment.comments) {
-						treeRecursive(comment.comments, comment);
-					}
-					if (comment.level < commentNestingMax) {
-						comment.comments = ko.observableArray(comment.comments || []);
-					}
-				}
-				return tree;
-			}
-
-			return treeRecursive(tree, this.dataForZeroReply);
 		},
 		usersRanks: function (users) {
 			var user,

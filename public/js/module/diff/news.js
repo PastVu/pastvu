@@ -135,7 +135,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		 */
 		commentsActivate: function (options) {
 			this.commentsVM.activate(
-				{cid: this.news.cid(), count: this.news.ccount(), count_new: this.news.ccount_new(), subscr: this.news.subscr(), nocomments: this.news.nocomments()},
+				{cid: this.news.cid(), count: this.news.ccount(), countNew: this.news.ccount_new(), subscr: this.news.subscr(), nocomments: this.news.nocomments()},
 				_.defaults(options || {}, {instant: !!this.toComment, checkTimeout: this.news.ccount() > 30 ? 600 : 410}),
 				function () {
 					//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
