@@ -142,8 +142,8 @@
 	| </script>
 
 	| <script id="tplReplyBody" type="text/html">
-	textarea.form-control.commentInput(wrap="soft", data-bind="event: {focus: $parents[$data.level].inputFocusBind}")
-	.commentInputLabel(data-bind="click: $parents[$data.level].inputLabelClickBind")
+	textarea.form-control.commentInput(wrap="soft")
+	.commentInputLabel
 		//ko if: !!$data.parent || !$data.comments().length
 		| Нажмите, чтобы написать комментарий
 		// /ko

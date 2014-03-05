@@ -1,0 +1,37 @@
+.cadd(class="l{{=it.level}}")
+	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank"): img.cava(src="{{=it.user.avatar}}")
+	.cbody
+		textarea.form-control.cinput(wrap="soft")
+		.cinputLabel
+			| {{?it.level}}
+			| Нажмите, чтобы написать комментарий
+			| {{??}}
+			| Нажмите, чтобы написать комментарий первого уровня
+			br
+			small(style="font-style: italic") Чтобы ответить на существующий комментарий, нажмите под ним кнопку Ответить
+			| {{?}}
+		form.form-inline
+			button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: sendBind, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-comment
+				|  Отправить
+			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancelBind, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-remove
+				| Отмена
+			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClickBind, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-picture
+				| Фрагмент
+			// ko if: fraging()
+			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDeleteBind, attr: {disabled: exe()}")
+				span.glyphicon.glyphicon-remove
+				| Очистить фрагмент
+			// /ko
+			.checkbox.replySubscr
+				// ko if: subscr()
+				| Вы подписаны на новые комментарии в данной теме
+				// /ko
+				// ko ifnot: subscr()
+				//- Устанавливаем checked как атрибут, чтобы его нажатие не изменяло настройку пользователя
+				label
+					input.chkSubscr(type="checkbox", data-bind="attr:{checked: auth.iAm.settings.subscr_auto_reply() ? 'checked' : null}, event: {click: chkSubscrClickBind}")
+					span(style="vertical-align: top;")  Подписаться на тему
+				// /ko

@@ -2,7 +2,7 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/commentsdot.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlDoT) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/commentsdot.jade', 'text!tpl/comment/commentAdd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlDoT, htmlCAddDoT) {
 	'use strict';
 
 	var $window = $(window),
@@ -10,7 +10,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		tplCommentAnonym,
 		tplCommentAuth,
 		tplCommentReply,
-		tplCommentModerate;
+		tplCommentModerate,
+		tplCommentAdd;
 
 	return Cliche.extend({
 		jade: html,
@@ -42,6 +43,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.canFrag = this.type === 'photo';
 
 			this.comments = ko.observableArray();
+			this.commentsHash = {};
 			this.users = {};
 
 			this.dataForZeroReply = {level: 0, comments: this.comments};
@@ -53,9 +55,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.removeBind = this.remove.bind(this);
 			this.sendBind = this.send.bind(this);
 			this.cancelBind = this.cancel.bind(this);
-			this.inputFocusBind = this.inputFocus.bind(this);
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
-			this.inputLabelClickBind = this.inputLabelClick.bind(this);
 			this.inViewportCheckBind = this.inViewportCheck.bind(this);
 
 			this.fraging = ko.observable(false);
@@ -128,8 +128,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
 						tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
 						tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
+						tplCommentAdd = doT.template(htmlCAddDoT);
 					}
-				} else if (!tplCommentAnonym){
+				} else if (!tplCommentAnonym) {
 					tplCommentAnonym = doT.template(htmlDoT, undefined, {mode: 'anonym'});
 				}
 				console.timeEnd('cc');
@@ -152,13 +153,34 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.showTree(false);
 		},
 		eventsOn: function () {
-			var that = this;
-			$('.cmts', this.$dom).on('click', '.changed', function () {
-				var cid = $(this).parents('.c').attr('id');
-				if (cid) {
-					that.showHistory(cid.substr(1));
-				}
-			});
+			var that = this,
+				$comments = $('.cmts', this.$dom),
+				getCid = function ($element) {
+					var cid = $element.parents('.c').attr('id');
+					if (cid) {
+						return cid.substr(1);
+					}
+				};
+
+			$comments
+				.off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
+				.on('click', '.changed', function () {
+					var cid = getCid($(this));
+					if (cid) {
+						that.showHistory(cid);
+					}
+				});
+
+			if (this.auth.loggedIn()) {
+				$comments
+					.on('click', '.reply', function () {
+						var $this = $(this),
+							cid = getCid($this);
+						if (cid) {
+							that.reply(cid, $this);
+						}
+					});
+			}
 		},
 		viewScrollOn: function () {
 			if (!this.viewportScrollHandling) {
@@ -213,6 +235,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
 			tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
 			tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
+			tplCommentAdd = doT.template(htmlCAddDoT);
 
 			if (!this.inViewport) {
 				this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
@@ -294,6 +317,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		renderComments: function (tree, tpl) {
 			var usersHash = this.users,
 				commentsPlain = [],
+				commentsHash = {},
 				tplResult;
 
 			(function treeRecursive(tree) {
@@ -305,11 +329,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					comment = tree[i];
 					comment.user = usersHash[comment.user];
 					commentsPlain.push(comment);
+					commentsHash[comment.cid] = comment;
 					if (comment.comments) {
 						treeRecursive(comment.comments, comment);
 					}
 				}
 			}(tree));
+
+			this.commentsHash = commentsHash;
 
 			console.time('tplExec');
 			tplResult = tpl({comments: commentsPlain, fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
@@ -395,24 +422,45 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600, true);
 		},
 		//Комментарий на комментарий
-		reply: function (data, event) {
-			var cid,
-				$target = $(event.target),
+		reply: function (cid, $comment) {
+			var commentToReply = this.commentsHash[cid],
 				$media,
 				$root;
 
-			if (data.level < commentNestingMax) {
-				$media = $target.closest('li.media');
-				cid = data.cid;
-			} else if (data.level === commentNestingMax) {
-				$media = $($target.parents('li.media')[1]);
-				cid = Number($media.attr('data-cid')) || 0;
+			if (commentToReply) {
+				this.inputCreate(commentToReply, $comment);
+				this.commentReplyingToCid(cid);
 			}
-			this.commentEditingCid(0);
-			this.commentReplyingToCid(cid);
-			$root = $media.find('.commentAdd').last();
+		},
 
-			this.inputActivate($root, 400, true);
+		inputCreate: function (parentComment, $parentComment) {
+			var $html,
+				$insertAfter,
+				level = 0,
+				that = this;
+
+			if (parentComment) {
+				if (parentComment.level === commentNestingMax) {
+					//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
+					parentComment = parentComment.parent;
+				}
+				$insertAfter = $('#c' + (parentComment.comments ? _.last(parentComment.comments).cid : parentComment.cid), this.$dom);
+				level = parentComment.level + 1;
+			} else {
+				$insertAfter = $('.cmts .c:last-child', this.$dom);
+			}
+
+			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], level: level}));
+			$html.find('.cinput').on('focus', function () {
+				that.inputActivate($(this).closest('.cadd'));
+			});
+			$html.find('.cinputLabel').on('click', function () {
+				that.inputActivate($(this).closest('.cadd'));
+			});
+			ko.applyBindings(this, $html[0]);
+			$html.insertAfter($insertAfter);
+
+			this.inputActivate($html, 400, true);
 		},
 
 		inputActivate: function (root, scrollDuration, focus) {
@@ -431,14 +479,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				});
 			}
-		},
-		//Фокус на поле ввода активирует редактирование
-		inputFocus: function (data, event) {
-			this.inputActivate($(event.target).closest('.commentAdd'));
-		},
-		//Клик на лэйбл активирует редактирование
-		inputLabelClick: function (data, event) {
-			this.inputActivate($(event.target).closest('.commentAdd'), null, true);
 		},
 		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputKeyup: function (evt) {

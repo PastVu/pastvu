@@ -21,7 +21,7 @@
 			| {{?}}
 		.ctext {{=c.txt}}
 | #}}
-| {{##def.commentAuth:
+| {{##def.commentCanReply:
 .c(id="c{{=c.cid}}", class="l{{=c.level}}{{?c.isnew}} isnew{{?}}")
 	a.hrefava(href="{{='/u/'+c.user.login}}"): img.cava(src="{{=c.user.avatar}}")
 	.cbody
@@ -43,6 +43,16 @@
 			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}
 			| {{?}}
 		.ctext {{=c.txt}}
+		.cacts
+			span.cact.reply Ответить
+			| {{?c.can.edit}}
+			.dotDelimeter ·
+			span.cact.edit Редактировать
+			| {{?}}
+			| {{?c.can.del}}
+			.dotDelimeter ·
+			span.cact.remove Удалить
+			| {{?}}
 | #}}
 
 | {{ if ({{#def.mode === 'anonym'}}) { }}
@@ -50,9 +60,9 @@
 | {{#def.commentAnonym}}
 | {{~}}
 
-| {{ } else if ({{#def.mode === 'auth'}}) { }}
+| {{ } else if ({{#def.mode === 'reply'}}) { }}
 | {{~it.comments :c:index}}
-| {{#def.commentAuth}}
+| {{#def.commentCanReply}}
 | {{~}}
 | {{ } }}
 
