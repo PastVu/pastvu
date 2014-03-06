@@ -108,6 +108,8 @@
 		> .c {
 			padding: 7px 0;
 
+			.levelLooping(0, 58);
+
 			&.isnew {
 				padding-left: 1px;
 				border-width: 0 0 0 1px;
@@ -115,7 +117,13 @@
 				border-color: #81DF7D;
 				background-color: rgba(174, 255, 184, 0.1);
 			}
-			.levelLooping(0, 58);
+			&.hl {
+				background-color: fade(@MainBlueColor, 10%);
+				.transition(~'background-color .25s linear');
+			}
+			&.hlRemove {
+				background-color: rgba(255, 188, 16, 0.5);
+			}
 
 			> .hrefava {
 				float: left;
@@ -187,100 +195,12 @@
 		}
 	}
 
-	//Блок ответа/редактирования комментария
+	//Комментарий-ответ
 	.cadd {
 		position: relative;
 
-		.cinput {
-			width: 860px;
-			max-width: 95%;
-			min-height: 52px;
-			margin-top: 0px;
-			margin-bottom: 9px;
-			padding: 4px 6px;
-
-			&::-webkit-scrollbar-button:decrement {
-				height: 0;
-			}
-		}
-		.commentInputLabel {
-			position: absolute;
-			left: 65px;
-			top: 6px;
-			color: #777;
-			cursor: text;
-		}
-		.btnCommentSend, .btnCommentCancel, .btnCommentFrag, .btnCommentFragDel, .replySubscr {
-			display: none;
-			min-width: 100px;
-			margin-left: 2px;
-			margin-bottom: 5px;
-		}
-		.chkSubscr {
-			margin-top: 3px;
-		}
-
-		&.hasFocus, &.hasContent {
-			.cinput {
-				min-height: 87px;
-			}
-			.commentInputLabel {
-				display: none;
-			}
-			.btnCommentSend, .btnCommentCancel, .replySubscr {
-				display: inline-block;
-			}
-		}
-	}
-
-
-
-	.media-list {
-		.media,
-		.media .media {
-			margin-top: 14px;
-		}
-		> .media {
-			margin-top: 8px; //Первый элемент первого уровня
-		}
-		.media > .pull-left {
-			margin-top: 1px;
-			margin-right: 8px;
-		}
-		.media-object {
-			width: 50px;
-			height: 50px;
-		}
-		.media {
-			&.hl > .media-body > .commentBody > .commentText {
-				background-color: fade(@MainBlueColor, 10%);
-				.transition(~'background-color .25s linear');
-			}
-			&.hlRemove {
-				background-color: rgba(255, 188, 16, 0.5);
-			}
-
-			&.isnew {
-				padding-left: 1px;
-				border-width: 0 0 0 1px;
-				border-style: solid;
-				border-color: #81DF7D;
-				background-color: rgba(174, 255, 184, 0.1);
-			}
-		}
-
-		&.canFrag {
-			.cadd {
-				&.hasFocus, &.hasContent {
-					.btnCommentFrag, .btnCommentFragDel {
-						display: inline-block;
-					}
-				}
-			}
-		}
-
 		//Выделяем ответ нулевого уровня, если в дереве уже есть комментарии
-		> .cadd:last-of-type:not(:first-of-type) {
+		&:last-of-type:not(:first-of-type) {
 			margin-top: 20px !important;
 			overflow: visible;
 
@@ -295,6 +215,47 @@
 				border: 0;
 				border-top: 1px solid #EEE;
 				border-bottom: 1px solid #FFF;
+			}
+		}
+
+		.cinput {
+			width: 860px;
+			max-width: 95%;
+			min-height: 52px;
+			margin-top: 0px;
+			margin-bottom: 9px;
+			padding: 4px 6px;
+
+			&::-webkit-scrollbar-button:decrement {
+				height: 0;
+			}
+		}
+		.cinputLabel {
+			position: absolute;
+			left: 65px;
+			top: 6px;
+			color: #777;
+			cursor: text;
+		}
+		.btn, .replySubscr {
+			display: none;
+			min-width: 100px;
+			margin-left: 2px;
+			margin-bottom: 5px;
+		}
+		.chkSubscr {
+			margin-top: 3px;
+		}
+
+		&.hasFocus, &.hasContent {
+			.cinput {
+				min-height: 87px;
+			}
+			.cinputLabel {
+				display: none;
+			}
+			.btn, .replySubscr {
+				display: inline-block;
 			}
 		}
 	}

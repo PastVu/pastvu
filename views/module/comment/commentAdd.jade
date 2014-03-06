@@ -1,4 +1,4 @@
-.cadd(class="l{{=it.level}}")
+.c.cadd(class="l{{=it.level}}")
 	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank"): img.cava(src="{{=it.user.avatar}}")
 	.cbody
 		textarea.form-control.cinput(wrap="soft")
@@ -16,14 +16,16 @@
 				|  Отправить
 			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancelBind, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
-				| Отмена
+				|  Отмена
+			// ko if: canFrag
 			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClickBind, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-picture
-				| Фрагмент
+				|  Фрагмент
 			// ko if: fraging()
 			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDeleteBind, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
-				| Очистить фрагмент
+				|  Очистить фрагмент
+			// /ko
 			// /ko
 			.checkbox.replySubscr
 				// ko if: subscr()

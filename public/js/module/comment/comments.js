@@ -419,7 +419,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		//Активирует написание комментария нулевого уровня
 		replyZero: function () {
-			this.inputActivate($('ul.media-list > .media.commentAdd').last(), 600, true);
+			this.inputActivate($('.cmts > .c.cadd').last(), 600, true);
 		},
 		//Комментарий на комментарий
 		reply: function (cid, $comment) {
@@ -466,7 +466,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		inputActivate: function (root, scrollDuration, focus) {
 			if (this.canReply() && (root instanceof jQuery) && root.length === 1) {
 				window.clearTimeout(this.blurTimeout);
-				var input = root.find('.commentInput');
+				var input = root.find('.cinput');
 
 				root.addClass('hasFocus');
 				input
@@ -483,7 +483,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputKeyup: function (evt) {
 			var $input = $(evt.target),
-				$root = $input.closest('.commentAdd'),
+				$root = $input.closest('.cadd'),
 				content = $.trim($input.val());
 
 			$root[content ? 'addClass' : 'removeClass']('hasContent');
@@ -491,12 +491,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		chkSubscrClick: function (data, event) {
 			//После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
-			this.inputActivate($(event.target).closest('.commentAdd'), null, true);
+			this.inputActivate($(event.target).closest('.cadd'), null, true);
 			return true; //Нужно чтобы значение поменялось
 		},
 		inputBlur: function (evt) {
 			var $input = $(evt.target),
-				$root = $input.closest('.commentAdd'),
+				$root = $input.closest('.cadd'),
 				content = $.trim($input.val());
 
 			$input.off('keyup').off('blur');
@@ -547,7 +547,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.canFrag) {
 				return;
 			}
-			var $root = $(event.target).closest('.commentAdd');
+			var $root = $(event.target).closest('.cadd');
 
 			this.fraging(true);
 			if (!data.frag) {
@@ -568,8 +568,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		cancel: function (data, event) {
-			var root = $(event.target).closest('.commentAdd'),
-				input = root.find('.commentInput');
+			var root = $(event.target).closest('.cadd'),
+				input = root.find('.cinput');
 
 			input.off('keyup').off('blur').val('').height('auto');
 			root.removeClass('hasContent').removeClass('hasFocus');
@@ -584,8 +584,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			var create = !this.commentEditingCid(),
 				_this = this,
-				$root = $(event.target).closest('.commentAdd'),
-				$input = $root.find('.commentInput'),
+				$root = $(event.target).closest('.cadd'),
+				$input = $root.find('.cinput'),
 				content = $input.val(), //Операции с текстом сделает сервер
 				dataSend;
 
@@ -742,7 +742,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentEditingCid(cid);
 
 			this.inputActivate($media, null, true);
-			input = $media.find('.commentInput:first');
+			input = $media.find('.cinput:first');
 			input.val(Utils.txtHtmlToInput(data.txt));
 
 			//Задаем высоту textarea под контент
