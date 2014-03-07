@@ -10,7 +10,7 @@
 		//ko if: !auth.loggedIn()
 		.addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Кликните, чтобы войти или зарегистрироваться")
 			span.glyphicon.glyphicon-log-in
-			| &nbsp;&nbsp;sВойдите, чтобы поделиться мнением
+			| &nbsp;&nbsp;Войдите, чтобы поделиться мнением
 		// /ko
 		//ko if: auth.loggedIn()
 		.commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'Вы подписаны на новые комментарии. Нажмите, чтобы отписаться' : 'Подписаться на новые комментарии'}")
@@ -29,17 +29,6 @@
 		// /ko
 
 	.cmts
-
-	//ko if: showTree()
-	ul.media-list(data-bind="css: {loggedIn: canReply(), canFrag: canFrag}")
-		//ko template: {name: canReply() ? 'tplCommentCanReply' : 'tplComment', foreach: comments}
-		// /ko
-		//ko if: canReply()
-		//ko template: {name: 'tplReply', data: dataForZeroReply}
-		// /ko
-		// /ko
-	// /ko
-
 
 	//ko if: countNew()
 	.navigator(data-bind="css: {touch: touch}")

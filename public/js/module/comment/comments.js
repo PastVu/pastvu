@@ -46,13 +46,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentsHash = {};
 			this.users = {};
 
-			this.dataForZeroReply = {level: 0, comments: this.comments};
-			this.commentReplyingToCid = ko.observable(0);
-			this.commentEditingCid = ko.observable(0);
-
-			this.replyBind = this.reply.bind(this);
-			this.editBind = this.edit.bind(this);
-			this.removeBind = this.remove.bind(this);
 			this.sendBind = this.send.bind(this);
 			this.cancelBind = this.cancel.bind(this);
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
@@ -174,10 +167,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (this.auth.loggedIn()) {
 				$comments
 					.on('click', '.reply', function () {
-						var $this = $(this),
-							cid = getCid($this);
+						var cid = getCid($(this));
 						if (cid) {
-							that.reply(cid, $this);
+							that.reply(cid);
 						}
 					});
 			}
@@ -299,6 +291,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							tpl = tplCommentAnonym;
 						}
 						this.renderComments(data.comments, tpl);
+						if (this.auth.loggedIn() && !this.cZeroShow) {
+							this.inputCreate();
+							this.cZeroShow = true;
+						}
 						this.showTree(true);
 					}
 				}
@@ -423,19 +419,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		//Комментарий на комментарий
 		reply: function (cid, $comment) {
-			var commentToReply = this.commentsHash[cid],
-				$media,
-				$root;
+			var commentToReply = this.commentsHash[cid];
 
 			if (commentToReply) {
-				this.inputCreate(commentToReply, $comment);
-				this.commentReplyingToCid(cid);
+				this.inputCreate(commentToReply);
 			}
 		},
 
-		inputCreate: function (parentComment, $parentComment) {
+		inputCreate: function (parentComment) {
 			var $html,
 				$insertAfter,
+				inputCid = 0,
 				level = 0,
 				that = this;
 
@@ -446,36 +440,55 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}
 				$insertAfter = $('#c' + (parentComment.comments ? _.last(parentComment.comments).cid : parentComment.cid), this.$dom);
 				level = parentComment.level + 1;
+				inputCid = parentComment.cid;
 			} else {
 				$insertAfter = $('.cmts .c:last-child', this.$dom);
 			}
 
-			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], level: level}));
+			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], level: level, cid: inputCid}));
 			$html.find('.cinput').on('focus', function () {
 				that.inputActivate($(this).closest('.cadd'));
 			});
 			$html.find('.cinputLabel').on('click', function () {
-				that.inputActivate($(this).closest('.cadd'));
+				that.inputActivate($(this).closest('.cadd'), null, true);
 			});
 			ko.applyBindings(this, $html[0]);
 			$html.insertAfter($insertAfter);
 
-			this.inputActivate($html, 400, true);
+			if (parentComment) {
+				this.inputActivate($html, 400, true);
+			}
+		},
+		//Удаление блока комментария
+		inputRemove: function ($cadd) {
+			this.fragDelete();
+			$cadd.remove();
+			delete this.commentEditingFragChanged;
+		},
+		//Очистка комментария, без удаления
+		inputReset: function ($cadd) {
+			var $input = $('.cinput', $cadd);
+
+			window.clearTimeout(this.blurTimeout);
+			$input.off('keyup').off('blur').val('').height('auto');
+			$cadd.removeClass('hasContent').removeClass('hasFocus');
+			this.fragDelete();
+			delete this.commentEditingFragChanged;
 		},
 
-		inputActivate: function (root, scrollDuration, focus) {
-			if (this.canReply() && (root instanceof jQuery) && root.length === 1) {
+		inputActivate: function ($cadd, scrollDuration, focus) {
+			if (this.canReply() && ($cadd instanceof jQuery) && $cadd.length === 1) {
 				window.clearTimeout(this.blurTimeout);
-				var input = root.find('.cinput');
+				var $input = $cadd.find('.cinput');
 
-				root.addClass('hasFocus');
-				input
+				$cadd.addClass('hasFocus');
+				$input
 					.off('keyup').off('blur')
 					.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
 					.on('blur', this.inputBlur.bind(this));
-				this.checkInViewport(root, scrollDuration, function () {
+				this.checkInViewport($cadd, scrollDuration, function () {
 					if (focus) {
-						input.focus();
+						$input.focus();
 					}
 				});
 			}
@@ -483,11 +496,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputKeyup: function (evt) {
 			var $input = $(evt.target),
-				$root = $input.closest('.cadd'),
+				$cadd = $input.closest('.cadd'),
 				content = $.trim($input.val());
 
-			$root[content ? 'addClass' : 'removeClass']('hasContent');
-			this.inputCheckHeight($root, $input);
+			$cadd[content ? 'addClass' : 'removeClass']('hasContent');
+			this.inputCheckHeight($cadd, $input);
 		},
 		chkSubscrClick: function (data, event) {
 			//После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
@@ -496,20 +509,20 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		inputBlur: function (evt) {
 			var $input = $(evt.target),
-				$root = $input.closest('.cadd'),
+				$cadd = $input.closest('.cadd'),
 				content = $.trim($input.val());
 
 			$input.off('keyup').off('blur');
 
 			this.blurTimeout = window.setTimeout(function () {
 				if (!content && !this.fraging()) {
-					$root.removeClass('hasContent');
+					$cadd.removeClass('hasContent');
 					$input.height('auto');
 				}
 				if (!content) {
 					$input.val('');
 				}
-				$root.removeClass('hasFocus');
+				$cadd.removeClass('hasFocus');
 			}.bind(this), 500);
 		},
 		inputCheckHeight: function (root, input) {
@@ -524,8 +537,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.checkInViewport(root);
 			}
 		},
-		checkInViewport: function (root, scrollDuration, cb) {
-			var btnSend = root.find('.btnCommentSend'),
+		checkInViewport: function ($cadd, scrollDuration, cb) {
+			var btnSend = $cadd.find('.btnCommentSend'),
 				cBottom = btnSend.offset().top + btnSend.height() + 10,
 				wTop = $window.scrollTop(),
 				wFold = $window.height() + wTop;
@@ -547,13 +560,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.canFrag) {
 				return;
 			}
-			var $root = $(event.target).closest('.cadd');
+			var $cadd = $(event.target).closest('.cadd');
 
 			this.fraging(true);
 			if (!data.frag) {
 				this.commentEditingFragChanged = true;
 			}
-			$root.addClass('hasContent');
+			$cadd.addClass('hasContent');
 			this.parentModule.scrollToPhoto(400, function () {
 				this.parentModule.fragAreaCreate();
 			}, this);
@@ -568,24 +581,24 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		cancel: function (data, event) {
-			var root = $(event.target).closest('.cadd'),
-				input = root.find('.cinput');
+			var $cadd = $(event.target).closest('.cadd');
 
-			input.off('keyup').off('blur').val('').height('auto');
-			root.removeClass('hasContent').removeClass('hasFocus');
-			this.fragDelete();
-			this.commentReplyingToCid(0);
-			this.commentEditingCid(0);
-			delete this.commentEditingFragChanged;
+			//TODO: Подтверждение, если заполнен новый или изменён
+			if (!$cadd.data('cid')) {
+				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
+				this.inputReset($cadd);
+			} else {
+				this.inputRemove($cadd);
+			}
 		},
 		send: function (data, event) {
 			if (!this.canReply()) {
 				return;
 			}
-			var create = !this.commentEditingCid(),
+			var create = !this.editingCid(),
 				_this = this,
-				$root = $(event.target).closest('.cadd'),
-				$input = $root.find('.cinput'),
+				$cadd = $(event.target).closest('.cadd'),
+				$input = $cadd.find('.cinput'),
 				content = $input.val(), //Операции с текстом сделает сервер
 				dataSend;
 
@@ -614,7 +627,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				_this.exe(false);
 				if (result && !result.error && result.comment) {
 					//Если установлен checkbox подписки, то подписываемся
-					if (!_this.subscr() && $root.find('input.chkSubscr').prop('checked')) {
+					if (!_this.subscr() && $cadd.find('input.chkSubscr').prop('checked')) {
 						_this.subscribe(null, null, true);
 					}
 					//Закрываем ввод коммента
@@ -737,9 +750,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				cid = Number(data.cid),
 				input,
 				frag = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(cid)); //Выбор фрагмента из this.p.frags, если он есть у комментария
-
-			this.commentReplyingToCid(0);
-			this.commentEditingCid(cid);
 
 			this.inputActivate($media, null, true);
 			input = $media.find('.cinput:first');
