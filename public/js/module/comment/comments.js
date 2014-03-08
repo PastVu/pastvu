@@ -46,8 +46,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentsHash = {};
 			this.users = {};
 
-			this.sendBind = this.send.bind(this);
-			this.cancelBind = this.cancel.bind(this);
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
 			this.inViewportCheckBind = this.inViewportCheck.bind(this);
 
@@ -148,17 +146,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		eventsOn: function () {
 			var that = this,
 				$comments = $('.cmts', this.$dom),
-				getCid = function ($element) {
-					var cid = $element.parents('.c').attr('id');
+				getCid = function (element) {
+					var cid = $(element).closest('.c').attr('id');
 					if (cid) {
-						return cid.substr(1);
+						return Number(cid.substr(1));
 					}
 				};
 
 			$comments
 				.off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
 				.on('click', '.changed', function () {
-					var cid = getCid($(this));
+					var cid = getCid(this);
 					if (cid) {
 						that.showHistory(cid);
 					}
@@ -167,9 +165,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (this.auth.loggedIn()) {
 				$comments
 					.on('click', '.reply', function () {
-						var cid = getCid($(this));
+						var cid = getCid(this);
 						if (cid) {
 							that.reply(cid);
+						}
+					})
+					.on('click', '.edit', function () {
+						var cid = getCid(this);
+						if (cid) {
+							that.edit(cid);
 						}
 					});
 			}
@@ -418,7 +422,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inputActivate($('.cmts > .c.cadd').last(), 600, true);
 		},
 		//Комментарий на комментарий
-		reply: function (cid, $comment) {
+		reply: function (cid) {
 			var commentToReply = this.commentsHash[cid];
 
 			if (commentToReply) {
@@ -426,27 +430,35 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
-		inputCreate: function (parentComment) {
+		inputCreate: function (relatedComment, isEdit) {
 			var $html,
+				$input,
 				$insertAfter,
 				inputCid = 0,
 				level = 0,
+				txt,
 				that = this;
 
-			if (parentComment) {
-				if (parentComment.level === commentNestingMax) {
-					//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
-					parentComment = parentComment.parent;
+			if (relatedComment) {
+				if (isEdit) {
+					$insertAfter = $('#c' + relatedComment.cid, this.$dom);
+					level = relatedComment.level;
+					txt = Utils.txtHtmlToInput(relatedComment.txt);
+				} else {
+					if (relatedComment.level === commentNestingMax) {
+						//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
+						relatedComment = relatedComment.parent;
+					}
+					$insertAfter = $('#c' + (relatedComment.comments ? _.last(relatedComment.comments).cid : relatedComment.cid), this.$dom);
+					level = relatedComment.level + 1;
 				}
-				$insertAfter = $('#c' + (parentComment.comments ? _.last(parentComment.comments).cid : parentComment.cid), this.$dom);
-				level = parentComment.level + 1;
-				inputCid = parentComment.cid;
+				inputCid = relatedComment.cid;
 			} else {
 				$insertAfter = $('.cmts .c:last-child', this.$dom);
 			}
 
-			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], level: level, cid: inputCid}));
-			$html.find('.cinput').on('focus', function () {
+			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], cid: inputCid, level: level, txt: txt}));
+			$input = $('.cinput', $html).on('focus', function () {
 				that.inputActivate($(this).closest('.cadd'));
 			});
 			$html.find('.cinputLabel').on('click', function () {
@@ -455,9 +467,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			ko.applyBindings(this, $html[0]);
 			$html.insertAfter($insertAfter);
 
-			if (parentComment) {
-				this.inputActivate($html, 400, true);
+			if (relatedComment) {
+				this.inputActivate($html, 400, true); //Активируем область ввода
+				if (isEdit) {
+					this.inputCheckHeight($html, $input, txt); //Задаем высоту textarea под контент
+				}
 			}
+			return $html;
 		},
 		//Удаление блока комментария
 		inputRemove: function ($cadd) {
@@ -525,16 +541,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$cadd.removeClass('hasFocus');
 			}.bind(this), 500);
 		},
-		inputCheckHeight: function (root, input) {
-			var content = $.trim(input.val()),
-				height = input.height(),
-				heightScroll = (input[0].scrollHeight - 8) || height;
+		inputCheckHeight: function ($cadd, $input, txt) {
+			var content = txt || $input.val().trim(),
+				height = $input.height(),
+				heightScroll = ($input[0].scrollHeight - 8) || height;
 
 			if (!content) {
-				input.height('auto');
+				$input.height('auto');
 			} else if (heightScroll > height) {
-				input.height(heightScroll);
-				this.checkInViewport(root);
+				$input.height(heightScroll);
+				this.checkInViewport($cadd);
 			}
 		},
 		checkInViewport: function ($cadd, scrollDuration, cb) {
@@ -580,68 +596,69 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentEditingFragChanged = true;
 		},
 
-		cancel: function (data, event) {
+		cancel: function (vm, event) {
 			var $cadd = $(event.target).closest('.cadd');
 
 			//TODO: Подтверждение, если заполнен новый или изменён
 			if (!$cadd.data('cid')) {
 				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
-				this.inputReset($cadd);
+				vm.inputReset($cadd);
 			} else {
-				this.inputRemove($cadd);
+				vm.inputRemove($cadd);
 			}
 		},
-		send: function (data, event) {
-			if (!this.canReply()) {
+		send: function (vm, event) {
+			if (!vm.canReply()) {
 				return;
 			}
-			var create = !this.editingCid(),
-				_this = this,
+			var create = !vm.editingCid(),
 				$cadd = $(event.target).closest('.cadd'),
 				$input = $cadd.find('.cinput'),
 				content = $input.val(), //Операции с текстом сделает сервер
-				dataSend;
+				dataInput,
+				dataToSend;
 
 			if (_s.isBlank(content)) {
 				$input.val('');
 				return;
 			}
 
-			dataSend = {
-				type: this.type,
-				obj: this.cid,
+			dataInput = {
+				cid: $cadd.data('cid'),
+				level: $cadd.data('level')
+			};
+
+			dataToSend = {
+				type: vm.type, //тип объекта
+				obj: vm.cid, //cid объекта
 				txt: content
 			};
 
-			if (this.canFrag) {
-				dataSend.fragObj = this.parentModule.fragAreaObject();
+			if (vm.canFrag) {
+				dataToSend.fragObj = vm.parentModule.fragAreaObject();
 			}
 
-			this.exe(true);
-			if (create) {
-				this.sendCreate(data, dataSend, cb, this);
-			} else {
-				this.sendUpdate(data, dataSend, cb, this);
-			}
-			function cb(result) {
-				_this.exe(false);
+			vm.exe(true);
+			vm[create ? 'sendCreate' : 'sendUpdate'](dataInput, dataToSend, function (result) {
+				vm.exe(false);
 				if (result && !result.error && result.comment) {
 					//Если установлен checkbox подписки, то подписываемся
-					if (!_this.subscr() && $cadd.find('input.chkSubscr').prop('checked')) {
-						_this.subscribe(null, null, true);
+					if (!vm.subscr() && $cadd.find('input.chkSubscr').prop('checked')) {
+						vm.subscribe(null, null, true);
 					}
-					//Закрываем ввод коммента
-					_this.cancel(data, event);
+					//Закрываем ввод комментария
+					vm.cancel(vm, event);
 
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
 				} else {
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
 				}
-			}
+			});
+
 		},
-		sendCreate: function (data, dataSend, cb, ctx) {
-			//Если data.cid, значит создается дочерний комментарий
-			if (Utils.isType('number', data.cid)) {
+		sendCreate: function (data, dataSend, cb) {
+			if (data.cid) {
+				//Если data.cid, значит создается дочерний комментарий
 				dataSend.parent = data.cid;
 				dataSend.level = (data.level || 0) + 1;
 			}
@@ -689,13 +706,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				}
 
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, result);
-				}
+				cb(result);
 			}.bind(this));
 			socket.emit('createComment', dataSend);
 		},
-		sendUpdate: function (data, dataSend, cb, ctx) {
+		sendUpdate: function (data, dataSend, cb) {
 			if (!this.canModerate() && (!this.canReply() || !data.can.edit)) {
 				return;
 			}
@@ -736,28 +751,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				}
 
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, result);
-				}
+				cb(result);
 			}.bind(this));
 			socket.emit('updateComment', dataSend);
 		},
-		edit: function (data, event) {
+		edit: function (cid) {
 			if (!this.canReply()) {
 				return;
 			}
-			var $media = $(event.target).closest('.media'),
-				cid = Number(data.cid),
-				input,
-				frag = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(cid)); //Выбор фрагмента из this.p.frags, если он есть у комментария
+			var commentToEdit = this.commentsHash[cid],
+				frag;
 
-			this.inputActivate($media, null, true);
-			input = $media.find('.cinput:first');
-			input.val(Utils.txtHtmlToInput(data.txt));
-
-			//Задаем высоту textarea под контент
-			$media.addClass('hasContent');
-			this.inputCheckHeight($media, input);
+			if (!commentToEdit) {
+				return;
+			}
+			frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid)); //Выбор фрагмента из this.p.frags, если он есть у комментария
+			this.inputCreate(commentToEdit, true).addClass('hasContent');
 
 			//Если есть фрагмент, делаем его редактирование
 			if (frag) {

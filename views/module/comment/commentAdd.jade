@@ -1,7 +1,7 @@
-.c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}")
+.c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}", data-level="{{=it.level}}")
 	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank"): img.cava(src="{{=it.user.avatar}}")
 	.cbody
-		textarea.form-control.cinput(wrap="soft")
+		textarea.form-control.cinput(wrap="soft") {{=it.txt || ''}}
 		.cinputLabel
 			| {{?it.level}}
 			| Нажмите, чтобы написать комментарий
@@ -11,10 +11,10 @@
 			small(style="font-style: italic") Чтобы ответить на существующий комментарий, нажмите под ним кнопку Ответить
 			| {{?}}
 		form.form-inline
-			button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: sendBind, attr: {disabled: exe()}")
+			button.btn.btn-success.btn-sm.btnCommentSend(type="button", data-bind="click: send, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-comment
 				|  Отправить
-			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancelBind, attr: {disabled: exe()}")
+			button.btn.btn-warning.btn-sm.btnCommentCancel(type="button", data-bind="click: cancel, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
 				|  Отмена
 			// ko if: canFrag
