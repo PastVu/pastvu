@@ -9,8 +9,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		commentNestingMax = 9,
 		tplCommentAnonym,
 		tplCommentAuth,
-		tplCommentReply,
-		tplCommentModerate,
 		tplCommentAdd;
 
 	return Cliche.extend({
@@ -117,8 +115,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if (this.auth.loggedIn()) {
 					if (!tplCommentAuth) {
 						tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
-						tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
-						tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
 						tplCommentAdd = doT.template(htmlCAddDoT);
 					}
 				} else if (!tplCommentAnonym) {
@@ -229,8 +225,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			//Компилим шаблоны для зарегистрированного пользователя
 			tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
-			tplCommentReply = doT.template(htmlDoT, undefined, {mode: 'reply'});
-			tplCommentModerate = doT.template(htmlDoT, undefined, {mode: 'moderate'});
 			tplCommentAdd = doT.template(htmlCAddDoT);
 
 			if (!this.inViewport) {
@@ -274,8 +268,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						console.info('Comments received for another ' + this.type + ' ' + data.cid);
 					} else {
 						var canModerate = !!data.canModerate,
-							canReply = !!data.canReply,
-							tpl;
+							canReply = !!data.canReply;
 
 						this.usersRanks(data.users);
 						this.users = _.assign(data.users, this.users);
@@ -289,12 +282,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canModerate(canModerate);
 						this.canReply(canReply);
 
-						if (this.auth.loggedIn()) {
-							tpl = canModerate ? tplCommentModerate : (canReply ? tplCommentReply : tplCommentAuth);
-						} else {
-							tpl = tplCommentAnonym;
-						}
-						this.renderComments(data.comments, tpl);
+						this.renderComments(data.comments, this.auth.loggedIn() ? tplCommentAuth : tplCommentAnonym);
 						if (this.auth.loggedIn() && !this.cZeroShow) {
 							this.inputCreate();
 							this.cZeroShow = true;
@@ -339,7 +327,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentsHash = commentsHash;
 
 			console.time('tplExec');
-			tplResult = tpl({comments: commentsPlain, fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
 			console.timeEnd('tplExec');
 			console.time('tplInsert');
 			this.$dom[0].querySelector('.cmts').innerHTML = tplResult;
