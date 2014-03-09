@@ -428,6 +428,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				level = 0,
 				txt,
 				that = this,
+				findCommentLastChild,
 				setevents = function () {
 					$input.on('focus', function () {
 						that.inputActivate($(this).closest('.cadd'));
@@ -447,7 +448,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
 						relatedComment = relatedComment.parent;
 					}
-					$insertAfter = $('#c' + (relatedComment.comments ? _.last(relatedComment.comments).cid : relatedComment.cid), this.$dom);
+					findCommentLastChild = function (c) {
+						return c.comments ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
+					};
+					$insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$dom);
 					level = relatedComment.level + 1;
 				}
 				inputCid = relatedComment.cid;
@@ -610,14 +614,20 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		cancel: function (vm, event) {
-			var $cadd = $(event.target).closest('.cadd');
+			var $cadd = $(event.target).closest('.cadd'),
+				cid = $cadd.data('cid'),
+				type = $cadd.data('type');
 
 			//TODO: Подтверждение, если заполнен новый или изменён
-			if (!$cadd.data('cid')) {
+			if (!cid) {
 				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
 				vm.inputReset($cadd);
 			} else {
 				vm.inputRemove($cadd);
+				if (type === 'edit') {
+					//Если комментарий редактировался, опять показываем оригинал
+					$('#c' + cid, this.$dom).removeClass('edit');
+				}
 			}
 		},
 		send: function (vm, event) {
