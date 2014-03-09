@@ -16,7 +16,7 @@
 .fullComments {
 	position: relative;
 
-	.cmtsHead {
+	> .cmtsHead {
 		position: relative;
 
 		.headElem {
@@ -123,6 +123,10 @@
 			}
 			&.hlRemove {
 				background-color: rgba(255, 188, 16, 0.5);
+			}
+			//Редактируемый комментарий скрывается, заменяясь на поле ввода
+			&.edit {
+				display: none;
 			}
 
 			> .hrefava {

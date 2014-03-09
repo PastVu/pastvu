@@ -167,9 +167,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						}
 					})
 					.on('click', '.edit', function () {
-						var cid = getCid(this);
+						var $c = $(this).closest('.c'),
+							cid = getCid($c);
 						if (cid) {
-							that.edit(cid);
+							that.edit(cid, $c);
 						}
 					});
 			}
@@ -195,7 +196,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			window.clearTimeout(this.viewportCheckTimeout);
 			if (!this.inViewport) {
 				var cTop = this.$container.offset().top,
-					wFold = $window.height() + $window.scrollTop();
+					wFold = P.window.h() + (window.pageYOffset || $window.scrollTop());
 
 				if (force || cTop < wFold) {
 					this.inViewport = true;
@@ -407,7 +408,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		//Активирует написание комментария нулевого уровня
 		replyZero: function () {
-			this.inputActivate($('.cmts > .c.cadd').last(), 600, true);
+			this.inputActivate($('.cmts > .c.cadd').last(), 600, true, true);
 		},
 		//Комментарий на комментарий
 		reply: function (cid) {
@@ -418,18 +419,27 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
-		inputCreate: function (relatedComment, isEdit) {
-			var $html,
+		//Создаёт поле ввода комментария. Ответ или редактирование
+		inputCreate: function (relatedComment, $cedit) {
+			var $cadd,
 				$input,
 				$insertAfter,
 				inputCid = 0,
 				level = 0,
 				txt,
-				that = this;
+				that = this,
+				setevents = function () {
+					$input.on('focus', function () {
+						that.inputActivate($(this).closest('.cadd'));
+					});
+					$('.cinputLabel', $cadd).on('click', function () {
+						that.inputActivate($(this).closest('.cadd'), null, false, true);
+					});
+				};
 
 			if (relatedComment) {
-				if (isEdit) {
-					$insertAfter = $('#c' + relatedComment.cid, this.$dom);
+				if ($cedit) {
+					$insertAfter = $cedit;
 					level = relatedComment.level;
 					txt = Utils.txtHtmlToInput(relatedComment.txt);
 				} else {
@@ -445,23 +455,26 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$insertAfter = $('.cmts .c:last-child', this.$dom);
 			}
 
-			$html = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], cid: inputCid, level: level, txt: txt}));
-			$input = $('.cinput', $html).on('focus', function () {
-				that.inputActivate($(this).closest('.cadd'));
-			});
-			$html.find('.cinputLabel').on('click', function () {
-				that.inputActivate($(this).closest('.cadd'), null, true);
-			});
-			ko.applyBindings(this, $html[0]);
-			$html.insertAfter($insertAfter);
+			$cadd = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], cid: inputCid, level: level}));
+			$input = $('.cinput', $cadd);
+			ko.applyBindings(this, $cadd[0]);
+			$cadd.insertAfter($insertAfter);
 
 			if (relatedComment) {
-				this.inputActivate($html, 400, true); //Активируем область ввода
-				if (isEdit) {
-					this.inputCheckHeight($html, $input, txt); //Задаем высоту textarea под контент
+				if ($cedit) {
+					$input.val(txt);
+					$cadd.addClass('hasContent');
+					this.inputCheckHeight($cadd, $input, txt); //Задаем высоту textarea под контент
+					this.inputActivate($cadd, 400, false, true); //Активируем область ввода после inputCheckHeight без проверки вхождения во viewport, так как это тормозит chrome и не нужно в случае редактирования
+					setevents();
+				} else {
+					this.inputActivate($cadd, 400, true, true, setevents); //Активируем область ввода
 				}
+			} else {
+				setevents();
 			}
-			return $html;
+
+			return $cadd;
 		},
 		//Удаление блока комментария
 		inputRemove: function ($cadd) {
@@ -479,36 +492,45 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.fragDelete();
 			delete this.commentEditingFragChanged;
 		},
+		//Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и устанавливает фокус, если переданы соответствующие флаги
+		inputActivate: function ($cadd, scrollDuration, checkViewport, focus, cb, ctx) {
+			var $input = $('.cinput', $cadd);
 
-		inputActivate: function ($cadd, scrollDuration, focus) {
-			if (this.canReply() && ($cadd instanceof jQuery) && $cadd.length === 1) {
-				window.clearTimeout(this.blurTimeout);
-				var $input = $cadd.find('.cinput');
+			window.clearTimeout(this.blurTimeout);
+			$cadd.addClass('hasFocus');
 
-				$cadd.addClass('hasFocus');
-				$input
-					.off('keyup').off('blur')
-					.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
-					.on('blur', this.inputBlur.bind(this));
-				this.checkInViewport($cadd, scrollDuration, function () {
+			$input
+				.off('keyup').off('blur')
+				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
+				.on('blur', this.inputBlur.bind(this));
+			if (checkViewport) {
+				this.inputCheckInViewport($cadd, scrollDuration, function () {
 					if (focus) {
 						$input.focus();
 					}
+					if (cb) {
+						cb.call(ctx || this);
+					}
 				});
+			} else if (focus) {
+				$input.focus();
+				if (cb) {
+					cb.call(ctx || this);
+				}
 			}
 		},
 		//Отслеживанием ввод, чтобы подгонять input под высоту текста
 		inputKeyup: function (evt) {
 			var $input = $(evt.target),
 				$cadd = $input.closest('.cadd'),
-				content = $.trim($input.val());
+				content = $input.val().trim();
 
 			$cadd[content ? 'addClass' : 'removeClass']('hasContent');
-			this.inputCheckHeight($cadd, $input);
+			this.inputCheckHeight($cadd, $input, content, true);
 		},
 		chkSubscrClick: function (data, event) {
 			//После смены значения чекбокса подписки опять фокусируемся на поле ввода комментария
-			this.inputActivate($(event.target).closest('.cadd'), null, true);
+			this.inputActivate($(event.target).closest('.cadd'), null, false, true);
 			return true; //Нужно чтобы значение поменялось
 		},
 		inputBlur: function (evt) {
@@ -529,34 +551,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$cadd.removeClass('hasFocus');
 			}.bind(this), 500);
 		},
-		inputCheckHeight: function ($cadd, $input, txt) {
-			var content = txt || $input.val().trim(),
-				height = $input.height(),
-				heightScroll = ($input[0].scrollHeight - 8) || height;
-
+		//Проверяет что поле ввода включает весь контент по высоте, если нет - подгоняет по высоте
+		//Если checkViewport=true, то после подгонки проверит, влезает ли поле ввода в экран
+		inputCheckHeight: function ($cadd, $input, content, checkViewport) {
 			if (!content) {
 				$input.height('auto');
-			} else if (heightScroll > height) {
-				$input.height(heightScroll);
-				this.checkInViewport($cadd);
+			} else {
+				var height = $input.height(),
+					heightScroll = ($input[0].scrollHeight - 8) || height;
+
+				if (heightScroll > height) {
+					$input.height(heightScroll);
+					if (checkViewport) {
+						this.inputCheckInViewport($cadd);
+					}
+				}
 			}
 		},
-		checkInViewport: function ($cadd, scrollDuration, cb) {
-			var btnSend = $cadd.find('.btnCommentSend'),
-				cBottom = btnSend.offset().top + btnSend.height() + 10,
-				wTop = $window.scrollTop(),
-				wFold = $window.height() + wTop;
+		//Проверяет что поле ввода нижней границей входит в экран, если нет - скроллит до нижней границе
+		inputCheckInViewport: function ($cadd, scrollDuration, cb) {
+			var wFold = P.window.h() + (window.pageYOffset || $window.scrollTop()),
+				caddBottom = $cadd.offset().top + $cadd.outerHeight();
 
-			if (wFold < cBottom) {
-				$window.scrollTo('+=' + (cBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
-					if (Utils.isType('function', cb)) {
+			if (wFold < caddBottom) {
+				$window.scrollTo('+=' + (caddBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+					if (_.isFunction(cb)) {
 						cb.call(this);
 					}
 				}.bind(this)});
-			} else {
-				if (Utils.isType('function', cb)) {
-					cb.call(this);
-				}
+			} else if (_.isFunction(cb)) {
+				cb.call(this);
 			}
 		},
 
@@ -743,7 +767,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('updateComment', dataSend);
 		},
-		edit: function (cid) {
+		edit: function (cid, $c) {
 			if (!this.canReply()) {
 				return;
 			}
@@ -753,10 +777,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!commentToEdit) {
 				return;
 			}
-			frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid)); //Выбор фрагмента из this.p.frags, если он есть у комментария
-			this.inputCreate(commentToEdit, true).addClass('hasContent');
-
-			//Если есть фрагмент, делаем его редактирование
+			//Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
+			frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
 			if (frag) {
 				this.commentEditingFragChanged = false;
 				this.fraging(true);
@@ -768,6 +790,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				);
 			}
+
+			//Создаем поле ввода
+			this.inputCreate(commentToEdit, $c);
+			//Скрываем редактируемый комментарий
+			$c.addClass('edit');
 		},
 		remove: function (data, event) {
 			if (!this.canModerate() && (!this.canReply() || !data.can.del)) {

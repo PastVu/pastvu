@@ -1,7 +1,7 @@
 .c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}", data-level="{{=it.level}}")
 	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank"): img.cava(src="{{=it.user.avatar}}")
 	.cbody
-		textarea.form-control.cinput(wrap="soft") {{=it.txt || ''}}
+		textarea.form-control.cinput(wrap="soft")
 		.cinputLabel
 			| {{?it.level}}
 			| Нажмите, чтобы написать комментарий
