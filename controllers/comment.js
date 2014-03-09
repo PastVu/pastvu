@@ -407,7 +407,9 @@ function getUsersHashForComments (usersArr, cb) {
 
 		while (i--) {
 			user = users[i];
-			user.avatar = user.avatar ? '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
+			if (user.avatar) {
+				user.avatar = '/_a/h/' + user.avatar;
+			}
 			user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
 			hashByLogin[user.login] = hashById[String(user._id)] = user;
 			delete user._id;

@@ -5,7 +5,7 @@
 @headColor: #677A8F;
 @headColorHover: @MainBlueColor;
 
-.levelLooping(@index, @margin) when (@index < 9) {
+.levelLooping(@index, @margin) when (@index < 10) {
 	&.l@{index} {
 		@vall: @index * @margin;
 		margin-left: ~"@{vall}px";
@@ -130,9 +130,22 @@
 			}
 
 			> .hrefava {
+				position: relative;
 				float: left;
 				margin-top: 1px;
 				margin-right: 8px;
+
+				> .overprint {
+					position: absolute;
+					top: 9px;
+					left: 0;
+					right: 4px;
+					color: @MainLigthColor;
+					line-height: 18px;
+					font-size: 18px;
+					font-weight: bold;
+					text-align: center;
+				}
 
 				> .cava {
 					display: block;

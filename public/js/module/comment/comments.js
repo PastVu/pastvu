@@ -455,7 +455,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$insertAfter = $('.cmts .c:last-child', this.$dom);
 			}
 
-			$cadd = $(tplCommentAdd({user: this.users[this.auth.iAm.login()], cid: inputCid, level: level}));
+			$cadd = $(tplCommentAdd({user: $cedit ? relatedComment.user : this.users[this.auth.iAm.login()], cid: inputCid, level: level, type: $cedit ? 'edit' : 'reply'}));
 			$input = $('.cinput', $cadd);
 			ko.applyBindings(this, $cadd[0]);
 			$cadd.insertAfter($insertAfter);
@@ -479,6 +479,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		//Удаление блока комментария
 		inputRemove: function ($cadd) {
 			this.fragDelete();
+			ko.cleanNode($cadd[0]);
 			$cadd.remove();
 			delete this.commentEditingFragChanged;
 		},
@@ -488,7 +489,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			window.clearTimeout(this.blurTimeout);
 			$input.off('keyup').off('blur').val('').height('auto');
-			$cadd.removeClass('hasContent').removeClass('hasFocus');
+			$cadd.removeClass('hasContent hasFocus');
 			this.fragDelete();
 			delete this.commentEditingFragChanged;
 		},

@@ -1,5 +1,9 @@
-.c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}", data-level="{{=it.level}}")
-	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank"): img.cava(src="{{=it.user.avatar}}")
+.c.cadd(class="l{{=it.level}}", data-cid="{{=it.cid}}", data-level="{{=it.level}}", data-type="{{=it.type}}")
+	a.hrefava(href="{{='/u/'+it.user.login}}", target="_blank")
+		| {{?it.user.avatar === undefined}}
+		.overprint {{=it.user.disp[0]}}
+		| {{?}}
+		img.cava(src="{{=it.user.avatar || '/img/caps/avatarth.png'}}")
 	.cbody
 		textarea.form-control.cinput(wrap="soft")
 		.cinputLabel
