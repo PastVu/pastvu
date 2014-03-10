@@ -118,7 +118,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym});
 				}
 				if (loggedIn && !tplCommentAdd) {
-					tplCommentAuth = doT.template(doTCommentAuth);
+					tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings));
 					tplCommentAdd = doT.template(dotCommentAdd);
 				}
 				console.timeEnd('cc');
@@ -227,7 +227,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			//Компилим шаблоны для зарегистрированного пользователя
 			tplComments = doT.template(doTComments, undefined, {comment: doTCommentAuth});
-			tplCommentAuth = doT.template(doTCommentAuth);
+			tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings));
 			tplCommentAdd = doT.template(dotCommentAdd);
 
 			if (!this.inViewport) {
@@ -302,10 +302,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canModerate(canModerate);
 						this.canReply(canReply);
 
+						//Если существует ответ первого уровня, надо вынуть его из dom, и положить после рендеринга заново, т.к. он заменяет innerHTML
+						this.inputZeroDetach();
+
+						//Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
 						this.renderComments(data.comments);
-						if (this.auth.loggedIn() && !this.cZeroShow) {
-							this.inputCreate();
-							this.cZeroShow = true;
+
+						//Если у пользователя есть право отвечать в комментариях этого объекта, сразу добавляем ответ нулевого уровня
+						if (canReply) {
+							this.inputZeroAdd();
 						}
 						this.showTree(true);
 					}
@@ -459,7 +464,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						relatedComment = relatedComment.parent;
 					}
 					findCommentLastChild = function (c) {
-						return c.comments ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
+						return c.comments && c.comments.length ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
 					};
 					$insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$dom);
 					level = relatedComment.level + 1;
@@ -470,10 +475,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			$cadd = $(tplCommentAdd({user: $cedit ? relatedComment.user : this.users[this.auth.iAm.login()], cid: inputCid, level: level, type: $cedit ? 'edit' : 'reply'}));
-			$input = $('.cinput', $cadd);
 			ko.applyBindings(this, $cadd[0]);
-			$cadd.insertAfter($insertAfter);
 
+			if ($insertAfter && $insertAfter.length) {
+				$cadd.insertAfter($insertAfter);
+			} else {
+				//В случае, если комментариев еще нет, $insertAfter будет пуст и надо аппендить
+				$('.cmts', this.$dom).append($cadd);
+			}
+
+			$input = $('.cinput', $cadd);
 			if (relatedComment) {
 				if ($cedit) {
 					$input.val(txt);
@@ -506,6 +517,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			$cadd.removeClass('hasContent hasFocus');
 			this.fragDelete();
 			delete this.commentEditingFragChanged;
+		},
+		//Добавляет комментарий нулевого уровня. Если его еще не существует - создаёт, если он отсоединён - вставляет
+		inputZeroAdd: function () {
+			if (!this.cZeroCreated) {
+				this.inputCreate();
+				this.cZeroCreated = true;
+			} else if (this.cZeroDetached) {
+				$('.cmts', this.$dom).append(this.cZeroDetached);
+				delete this.cZeroDetached;
+			}
+		},
+		//Отсоединяет комментарий нулевого уровня от dom
+		inputZeroDetach: function () {
+			if (this.cZeroCreated && !this.cZeroDetached) {
+				this.cZeroDetached = $('.cadd[data-level="0"]', this.$dom).detach();
+			}
 		},
 		//Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и устанавливает фокус, если переданы соответствующие флаги
 		inputActivate: function ($cadd, scrollDuration, checkViewport, focus, cb, ctx) {
@@ -643,7 +670,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				cid = $cadd.data('cid'),
 				type = $cadd.data('type');
 
-			//TODO: Подтверждение, если заполнен новый или изменён
 			if (!cid) {
 				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
 				vm.inputReset($cadd);
@@ -662,6 +688,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var $cadd = $(event.target).closest('.cadd'),
 				$input = $('.cinput', $cadd),
 				create = $cadd.data('type') === 'reply',
+				cid = Number($cadd.data('cid')),
 				content = $input.val(), //Операции с текстом сделает сервер
 				dataInput,
 				dataToSend;
@@ -671,10 +698,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
-			dataInput = {
-				cid: Number($cadd.data('cid')),
-				level: Number($cadd.data('level'))
-			};
+			if (cid) {
+				dataInput = this.commentsHash[cid];
+			}
 
 			dataToSend = {
 				type: vm.type, //тип объекта
@@ -691,29 +717,29 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				vm.exe(false);
 				if (result && !result.error && result.comment) {
 					//Если установлен checkbox подписки, то подписываемся
-					if (!vm.subscr() && $cadd.find('input.chkSubscr').prop('checked')) {
+					if (!vm.subscr() && $('input.chkSubscr', $cadd).prop('checked')) {
 						vm.subscribe(null, null, true);
 					}
-					//Закрываем ввод комментария
-					vm.cancel(vm, event);
 
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
 				} else {
 					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
 				}
-			});
+			}, $cadd);
 
 		},
-		sendCreate: function (data, dataSend, cb) {
-			if (data.cid) {
-				//Если data.cid, значит создается дочерний комментарий
-				dataSend.parent = data.cid;
-				dataSend.level = (data.level || 0) + 1;
+		sendCreate: function (parent, dataSend, cb, $cadd) {
+			if (parent) {
+				//Значит создается дочерний комментарий
+				dataSend.parent = parent.cid;
+				dataSend.level = ~~parent.level + 1;
 			}
 
 			socket.once('createCommentResult', function (result) {
 				var comment,
-					parentLevelReenter;
+					$c,
+					$cparent;
+
 				if (!result) {
 					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 				} else {
@@ -722,27 +748,37 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					} else {
 						comment = result.comment;
 						if (comment.level < commentNestingMax) {
-							comment.comments = ko.observableArray();
+							comment.comments = [];
 						}
 						comment.user = this.users[comment.user];
-						comment.parent = data;
+						comment.parent = result.parent;
 						comment.can.edit = true;
 						comment.can.del = true;
 
-						if (comment.level) {
-							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
-							//то удаляем всю ветку, меняем свойство del, а затем опять вставляем ветку. Ветку, чтобы сохранялась сортировка
-							//Это сделано потому что del - не observable(чтобы не делать оверхед) и сам не изменится
-							if (!this.canModerate() && data.can.del) {
-								data.can.del = false;
-								parentLevelReenter = data.parent.comments();
-								data.parent.comments([]);
-							}
-						}
+						this.commentsHash[comment.cid] = comment;
+						$c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
 
-						data.comments.push(result.comment);
-						if (parentLevelReenter) {
-							data.parent.comments(parentLevelReenter);
+						if (parent) {
+							if (!parent.comments) {
+								parent.comments = [];
+							}
+							parent.comments.push(comment);
+
+							//Если это комментарий-ответ, заменяем поле ввода новым комментарием
+							$cadd.replaceWith($c);
+
+							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
+							//то отменяем у родителя возможность удалить
+							if (!this.canModerate() && parent.can.del) {
+								parent.can.del = false;
+								$cparent = $('#c' + parent.cid, this.$dom);
+								$('.remove', $cparent).prev('.dotDelimeter').remove();
+								$('.remove', $cparent).remove();
+							}
+						} else {
+							//Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
+							$c.insertBefore($cadd);
+							this.inputReset($cadd);
 						}
 
 						this.auth.setProps({ccount: this.auth.iAm.ccount() + 1}); //Инкрементим комментарии пользователя

@@ -73,27 +73,31 @@ var core = {
 					}
 					var i = comments.length,
 						userId,
-						usersArr = [];
-
-					while (i--) {
-						userId = String(comments[i].user);
-						if (usersHash[userId] === undefined) {
-							usersHash[userId] = true;
-							usersArr.push(userId);
-						}
-					}
-
-					getUsersHashForComments(usersArr, this);
+						usersArr;
 
 					commentsArr = comments;
+
+					if (i) {
+						usersArr = [];
+						while (i--) {
+							userId = String(comments[i].user);
+							if (usersHash[userId] === undefined) {
+								usersHash[userId] = true;
+								usersArr.push(userId);
+							}
+						}
+
+						getUsersHashForComments(usersArr, this);
+					} else {
+						this(null, {}, {});
+					}
+
 				},
 				function (err, usersById, usersByLogin) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					var commentsTree = commentsTreeBuildAnonym(commentsArr, usersById);
-
-					cb(null, {comments: commentsTree.tree, countTotal: commentsArr.length, users: usersByLogin});
+					cb(null, {comments: commentsArr.length ? commentsTreeBuildAnonym(commentsArr, usersById).tree : [], countTotal: commentsArr.length, users: usersByLogin});
 				}
 			);
 		}
@@ -133,12 +137,16 @@ var core = {
 					canModerate = permissions.canModerate(data.type, obj, iAm);
 					canReply = canModerate || permissions.canReply(data.type, obj, iAm);
 
-					if (canModerate) {
-						//Если это модератор данной фотографии или администратор новости
-						commentsTreeBuildCanModerate(String(iAm._id), comments, userView.stamp, this);
+					if (comments.length) {
+						if (canModerate) {
+							//Если это модератор данной фотографии или администратор новости
+							commentsTreeBuildCanModerate(String(iAm._id), comments, userView.stamp, this);
+						} else {
+							//Если это зарегистрированный пользователь
+							commentsTreeBuildAuth(String(iAm._id), comments, userView.stamp, !obj.nocomments, this);
+						}
 					} else {
-						//Если это зарегистрированный пользователь
-						commentsTreeBuildAuth(String(iAm._id), comments, userView.stamp, !obj.nocomments, this);
+						this(null, {tree: [], users: {}, countTotal: 0, countNew: 0});
 					}
 				},
 				function (err, commentsTree) {
@@ -395,7 +403,7 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 }
 
 //Готовим хэш пользователей для комментариев
-function getUsersHashForComments (usersArr, cb) {
+function getUsersHashForComments(usersArr, cb) {
 	User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, avatar: 1, disp: 1, ranks: 1}, {lean: true}, function (err, users) {
 		if (err || !users) {
 			return cb({message: err && err.message || 'Users find error', error: true});
@@ -695,7 +703,9 @@ function createComment(socket, data, cb) {
 				cid: countC.next,
 				obj: obj,
 				user: iAm,
-				txt: Utils.inputIncomingParse(content)
+				stamp: new Date(),
+				txt: Utils.inputIncomingParse(content),
+				del: undefined
 			};
 			if (data.parent) {
 				comment.parent = data.parent;
@@ -820,7 +830,7 @@ function removeComment(socket, data, cb) {
 			if (err || !comments) {
 				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
-			var commentDelInfo = {user: iAm._id, stamp: Date.now(), reason: 'WOW'},
+			var commentDelInfo = {user: iAm._id, stamp: new Date(), reason: 'WOW'},
 				commentChildsDelInfo,
 				commentChildsCid = [],
 				commentChild,

@@ -11,7 +11,7 @@ var histScheme = {
 	},
 	delInfo = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},
-		stamp: {type: Date, 'default': Date.now, required: true},
+		stamp: {type: Date},
 		reason: {type: String}, //Причина удаления
 		origin: {type: Number}, //Если у удаляемого комментария есть дочерние, проставляем им ссылку (cid) непосредственно удаляемого, в этом случае reason дочерним можно не указывать
 		role: {type: Number}, //Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
