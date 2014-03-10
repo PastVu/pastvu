@@ -257,6 +257,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
+		//Подписывается-отписывается от комментариев
+		subscribe: function (data, event, byCommentCreate) {
+			socket.once('subscrResult', function (result) {
+				if (!result || result.error) {
+					window.noty({text: result && result.message || 'Ошибка подписки', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					var subscrFlag = !!result.subscr,
+						subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
+
+					this.parentModule.setSubscr(subscrFlag);
+					this.subscr(subscrFlag);
+					ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
+				}
+			}.bind(this));
+			socket.emit('subscr', {cid: this.cid, type: this.type, do: !this.subscr()});
+		},
+
 		receive: function (cb, ctx) {
 			this.loading(true);
 			socket.once('takeCommentsObj', function (data) {
@@ -356,7 +373,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		scrollTo: function (ccid) {
 			var $element,
-				highlight;
+				highlight,
+				elementHeight,
+				scrollTopOffset,
+				scrollDelta;
 
 			if (ccid === true) {
 				if (this.countNew()) {
@@ -374,11 +394,29 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			if ($element && $element.length === 1) {
 				this.highlightOff();
-				$window.scrollTo($element, {duration: 400, onAfter: function () {
+				
+				//Если высота комментария меньше высоты окна, позиционируем комментарий по центру окна
+				elementHeight = $element.outerHeight();
+				scrollTopOffset = $element.offset().top;
+				if (elementHeight < P.window.h()) {
+					scrollTopOffset += elementHeight / 2 - P.window.h() / 2;
+				}
+
+				//Если скроллировать больше 2сек, т.е. 20тыс.пикс, то устанавливаем скролл без анимации
+				scrollDelta = Math.abs(scrollTopOffset - (window.pageYOffset || $window.scrollTop()));
+				if (scrollDelta > 20000) {
+					$window.scrollTop(scrollTopOffset);
 					if (highlight) {
 						this.highlight(ccid);
 					}
-				}.bind(this)});
+				} else {
+					//Анимация - 1ms на каждые 10px, но не менее 600ms
+					$window.scrollTo(scrollTopOffset, {duration: Math.max(600, scrollDelta / 10 >> 0), onAfter: function () {
+						if (highlight) {
+							this.highlight(ccid);
+						}
+					}.bind(this)});
+				}
 			}
 			return $element;
 		},
@@ -387,62 +425,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		highlightOff: function () {
 			$('.c.hl', this.$dom).removeClass('hl');
-		},
-
-		//Подписывается-отписывается от комментариев
-		subscribe: function (data, event, byCommentCreate) {
-			socket.once('subscrResult', function (result) {
-				if (!result || result.error) {
-					window.noty({text: result && result.message || 'Ошибка подписки', type: 'error', layout: 'center', timeout: 2000, force: true});
-				} else {
-					var subscrFlag = !!result.subscr,
-						subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
-
-					this.parentModule.setSubscr(subscrFlag);
-					this.subscr(subscrFlag);
-					ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
-				}
-			}.bind(this));
-			socket.emit('subscr', {cid: this.cid, type: this.type, do: !this.subscr()});
-		},
-
-		//Активирует написание комментария нулевого уровня
-		replyZero: function () {
-			this.inputActivate($('.cmts > .c.cadd').last(), 600, true, true);
-		},
-		//Комментарий на комментарий
-		reply: function (cid) {
-			var commentToReply = this.commentsHash[cid],
-				$cadd;
-
-			if (commentToReply) {
-				$cadd = $('.cadd[data-cid="' + cid + '"]');
-				if ($cadd.length) {
-					//Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
-					this.inputActivate($cadd, 400, true, true);
-				} else {
-					//Проверяем, что нет других полей ввода в процессе написания
-					this.checkInputExists(cid, function (err) {
-						if (!err) {
-							this.inputCreate(commentToReply);
-						}
-					}, this);
-				}
-			}
-		},
-		checkInputExists: function (cid, cb, ctx) {
-			var $withContent = $('.cadd.hasContent', this.$dom);
-
-			if ($withContent.length) {
-				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'error', layout: 'center', timeout: 2000, force: true});
-				return cb.call(ctx, true);
-			} else {
-				//Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
-				_.forEach($('.cadd:not([data-level="0"])'), function (item) {
-					this.inputRemove($(item));
-				}, this);
-				cb.call(ctx);
-			}
 		},
 
 		//Создаёт поле ввода комментария. Ответ или редактирование
@@ -615,30 +597,45 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 
-		fragClick: function (data, event) {
-			if (!this.canFrag) {
-				return;
-			}
-			var $cadd = $(event.target).closest('.cadd');
+		checkInputExists: function (cid, cb, ctx) {
+			var $withContent = $('.cadd.hasContent', this.$dom);
 
-			this.fraging(true);
-			if (!data.frag) {
-				this.commentEditingFragChanged = true;
+			if ($withContent.length) {
+				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'error', layout: 'center', timeout: 2000, force: true});
+				return cb.call(ctx, true);
+			} else {
+				//Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
+				_.forEach($('.cadd:not([data-level="0"])'), function (item) {
+					this.inputRemove($(item));
+				}, this);
+				cb.call(ctx);
 			}
-			$cadd.addClass('hasContent');
-			this.parentModule.scrollToPhoto(400, function () {
-				this.parentModule.fragAreaCreate();
-			}, this);
-		},
-		fragDelete: function () {
-			if (!this.canFrag) {
-				return;
-			}
-			this.parentModule.fragAreaDelete();
-			this.fraging(false);
-			this.commentEditingFragChanged = true;
 		},
 
+		//Активирует написание комментария нулевого уровня
+		replyZero: function () {
+			this.inputActivate($('.cmts > .c.cadd').last(), 600, true, true);
+		},
+		//Комментарий на комментарий
+		reply: function (cid) {
+			var commentToReply = this.commentsHash[cid],
+				$cadd;
+
+			if (commentToReply) {
+				$cadd = $('.cadd[data-cid="' + cid + '"]');
+				if ($cadd.length) {
+					//Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
+					this.inputActivate($cadd, 400, true, true);
+				} else {
+					//Проверяем, что нет других полей ввода в процессе написания
+					this.checkInputExists(cid, function (err) {
+						if (!err) {
+							this.inputCreate(commentToReply);
+						}
+					}, this);
+				}
+			}
+		},
 		cancel: function (vm, event) {
 			var $cadd = $(event.target).closest('.cadd'),
 				cid = $cadd.data('cid'),
@@ -915,6 +912,29 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					]
 				}
 			);
+		},
+		fragClick: function (data, event) {
+			if (!this.canFrag) {
+				return;
+			}
+			var $cadd = $(event.target).closest('.cadd');
+
+			this.fraging(true);
+			if (!data.frag) {
+				this.commentEditingFragChanged = true;
+			}
+			$cadd.addClass('hasContent');
+			this.parentModule.scrollToPhoto(400, function () {
+				this.parentModule.fragAreaCreate();
+			}, this);
+		},
+		fragDelete: function () {
+			if (!this.canFrag) {
+				return;
+			}
+			this.parentModule.fragAreaDelete();
+			this.fraging(false);
+			this.commentEditingFragChanged = true;
 		},
 
 		//Вызов модального окна с модулем просмотра истории комментария
