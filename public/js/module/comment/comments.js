@@ -2,12 +2,12 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/commentsdot.jade', 'text!tpl/comment/commentAdd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, htmlDoT, htmlCAddDoT) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentAdd) {
 	'use strict';
 
 	var $window = $(window),
 		commentNestingMax = 9,
-		tplCommentAnonym,
+		tplComments,
 		tplCommentAuth,
 		tplCommentAdd;
 
@@ -78,6 +78,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.showing = false;
 		},
 		activate: function (params, options, cb, ctx) {
+			var loggedIn = this.auth.loggedIn();
+
 			if (params) {
 				this.cid = params.cid;
 				this.count(params.count);
@@ -94,7 +96,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.inViewport = false;
 
 			this.loading(true);
-			if (this.auth.loggedIn()) {
+			if (loggedIn) {
 				this.addMeToCommentsUsers();
 			}
 
@@ -112,13 +114,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.showing) {
 				console.time('cc');
 				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разный вариантов, если еще не скомпилили их раньше
-				if (this.auth.loggedIn()) {
-					if (!tplCommentAuth) {
-						tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
-						tplCommentAdd = doT.template(htmlCAddDoT);
-					}
-				} else if (!tplCommentAnonym) {
-					tplCommentAnonym = doT.template(htmlDoT, undefined, {mode: 'anonym'});
+				if (!tplComments) {
+					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym});
+				}
+				if (loggedIn && !tplCommentAdd) {
+					tplCommentAuth = doT.template(doTCommentAuth);
+					tplCommentAdd = doT.template(dotCommentAdd);
 				}
 				console.timeEnd('cc');
 				this.show();
@@ -225,8 +226,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.addMeToCommentsUsers();
 
 			//Компилим шаблоны для зарегистрированного пользователя
-			tplCommentAuth = doT.template(htmlDoT, undefined, {mode: 'auth'});
-			tplCommentAdd = doT.template(htmlCAddDoT);
+			tplComments = doT.template(doTComments, undefined, {comment: doTCommentAuth});
+			tplCommentAuth = doT.template(doTCommentAuth);
+			tplCommentAdd = doT.template(dotCommentAdd);
 
 			if (!this.inViewport) {
 				this.inViewportCheck(null, null, true);	//Если еще не во вьюпорте, форсируем
@@ -300,7 +302,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canModerate(canModerate);
 						this.canReply(canReply);
 
-						this.renderComments(data.comments, this.auth.loggedIn() ? tplCommentAuth : tplCommentAnonym);
+						this.renderComments(data.comments);
 						if (this.auth.loggedIn() && !this.cZeroShow) {
 							this.inputCreate();
 							this.cZeroShow = true;
@@ -320,7 +322,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		renderComments: function (tree, tpl) {
+		renderComments: function (tree) {
 			var usersHash = this.users,
 				commentsPlain = [],
 				commentsHash = {},
@@ -345,7 +347,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentsHash = commentsHash;
 
 			console.time('tplExec');
-			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			tplResult = tplComments({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
 			console.timeEnd('tplExec');
 			console.time('tplInsert');
 			this.$dom[0].querySelector('.cmts').innerHTML = tplResult;
@@ -394,7 +396,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 			if ($element && $element.length === 1) {
 				this.highlightOff();
-				
+
 				//Если высота комментария меньше высоты окна, позиционируем комментарий по центру окна
 				elementHeight = $element.outerHeight();
 				scrollTopOffset = $element.offset().top;
@@ -657,9 +659,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!vm.canReply()) {
 				return;
 			}
-			var create = !vm.editingCid(),
-				$cadd = $(event.target).closest('.cadd'),
-				$input = $cadd.find('.cinput'),
+			var $cadd = $(event.target).closest('.cadd'),
+				$input = $('.cinput', $cadd),
+				create = $cadd.data('type') === 'reply',
 				content = $input.val(), //Операции с текстом сделает сервер
 				dataInput,
 				dataToSend;
@@ -670,8 +672,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			dataInput = {
-				cid: $cadd.data('cid'),
-				level: $cadd.data('level')
+				cid: Number($cadd.data('cid')),
+				level: Number($cadd.data('level'))
 			};
 
 			dataToSend = {
