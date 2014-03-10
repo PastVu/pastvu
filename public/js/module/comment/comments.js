@@ -412,10 +412,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		//Комментарий на комментарий
 		reply: function (cid) {
-			var commentToReply = this.commentsHash[cid];
+			var commentToReply = this.commentsHash[cid],
+				$cadd;
 
 			if (commentToReply) {
-				this.inputCreate(commentToReply);
+				$cadd = $('.cadd[data-cid="' + cid + '"]');
+				if ($cadd.length) {
+					//Если мы уже отвечаем на этот комментарий, просто переходим к этому полю ввода
+					this.inputActivate($cadd, 400, true, true);
+				} else {
+					//Проверяем, что нет других полей ввода в процессе написания
+					this.checkInputExists(cid, function (err) {
+						if (!err) {
+							this.inputCreate(commentToReply);
+						}
+					}, this);
+				}
+			}
+		},
+		checkInputExists: function (cid, cb, ctx) {
+			var $withContent = $('.cadd.hasContent', this.$dom);
+
+			if ($withContent.length) {
+				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'error', layout: 'center', timeout: 2000, force: true});
+				return cb.call(ctx, true);
+			} else {
+				//Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
+				_.forEach($('.cadd:not([data-level="0"])'), function (item) {
+					this.inputRemove($(item));
+				}, this);
+				cb.call(ctx);
 			}
 		},
 
@@ -782,30 +808,36 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.canReply()) {
 				return;
 			}
-			var commentToEdit = this.commentsHash[cid],
-				frag;
 
-			if (!commentToEdit) {
-				return;
-			}
-			//Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
-			frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
-			if (frag) {
-				this.commentEditingFragChanged = false;
-				this.fraging(true);
-				this.parentModule.fragEdit(cid,
-					{
-						onSelectEnd: function () {
-							this.commentEditingFragChanged = true;
-						}.bind(this)
-					}
-				);
-			}
+			this.checkInputExists(cid, function (err) {
+				if (err) {
+					return;
+				}
+				var commentToEdit = this.commentsHash[cid],
+					frag;
 
-			//Создаем поле ввода
-			this.inputCreate(commentToEdit, $c);
-			//Скрываем редактируемый комментарий
-			$c.addClass('edit');
+				if (!commentToEdit) {
+					return;
+				}
+				//Выбор фрагмента из this.p.frags. Если он есть у комментария, делаем его редактирование
+				frag = this.canFrag && commentToEdit.frag && ko.toJS(this.parentModule.fragGetByCid(cid));
+				if (frag) {
+					this.commentEditingFragChanged = false;
+					this.fraging(true);
+					this.parentModule.fragEdit(cid,
+						{
+							onSelectEnd: function () {
+								this.commentEditingFragChanged = true;
+							}.bind(this)
+						}
+					);
+				}
+
+				//Создаем поле ввода
+				this.inputCreate(commentToEdit, $c);
+				//Скрываем редактируемый комментарий
+				$c.addClass('edit');
+			}, this);
 		},
 		remove: function (data, event) {
 			if (!this.canModerate() && (!this.canReply() || !data.can.del)) {
