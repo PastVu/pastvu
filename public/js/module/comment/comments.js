@@ -369,7 +369,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.navCheckBefore(0, true);
 				}
 			} else {
-				$element = this.$dom.find('.media[data-cid="' + ccid + '"]');
+				$element = $('#c' + ccid, this.$dom);
 				highlight = true;
 			}
 			if ($element && $element.length === 1) {
@@ -383,10 +383,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			return $element;
 		},
 		highlight: function (ccid) {
-			this.$dom.find('.media[data-cid="' + ccid + '"]').addClass('hl');
+			$('#c' + ccid, this.$dom).addClass('hl');
 		},
 		highlightOff: function () {
-			this.$dom.find('.media.hl').removeClass('hl');
+			$('.c.hl', this.$dom).removeClass('hl');
 		},
 
 		//Подписывается-отписывается от комментариев
@@ -844,11 +844,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
-			var _this = this,
-				root = $(event.target).closest('.media'),
-				cid = Number(data.cid);
+			var that = this,
+				$cadd = $(event.target).closest('.c'),
+				cid = Number($cadd.data('cid'));
 
-			root.addClass('hlRemove');
+			$cadd.addClass('hlRemove');
 
 			window.noty(
 				{
@@ -900,16 +900,16 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 										}
 										this.receive();
 									} else {
-										root.removeClass('hlRemove');
+										$cadd.removeClass('hlRemove');
 									}
 
 								}.bind(this));
 
-							}.bind(_this));
-							socket.emit('removeComment', {type: _this.type, cid: cid});
+							}.bind(that));
+							socket.emit('removeComment', {type: that.type, cid: cid});
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-							root.removeClass('hlRemove');
+							$cadd.removeClass('hlRemove');
 							$noty.close();
 						}}
 					]

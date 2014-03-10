@@ -1128,24 +1128,24 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 
 		fragAreasActivate: function () {
-			var $wrap = this.$dom.find('.imgWrap');
-			$wrap
-				.on('mouseenter', 'a.photoFrag', function (evt) {
-					var frag = $(evt.target),
-						fragOffset = frag.offset(),
-						fragPosition = frag.position(),
-						fragWidth = frag.width(),
-						$comment = this.$dom.find(".media[data-cid=" + frag.attr('data-cid') + "]"),
+			var $wrap = $('.imgWrap', this.$dom)
+				.on('mouseenter', '.photoFrag', function (evt) {
+					var $frag = $(evt.target),
+						fragOffset = $frag.offset(),
+						fragPosition = $frag.position(),
+						fragWidth = $frag.width(),
+						$comment = $("#c" + $frag.data('cid'), this.$dom),
 						placement;
 
 					if ($comment.length === 1) {
-						$wrap.addClass('fragHover');
-						$wrap.find('.photoImg').imgAreaSelect({
-							classPrefix: 'photoFragAreaShow imgareaselect',
-							x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + frag.height() + 2,
-							zIndex: 1,
-							parent: $wrap, disable: true
-						});
+						$wrap
+							.addClass('fragHover')
+							.find('.photoImg').imgAreaSelect({
+								classPrefix: 'photoFragAreaShow imgareaselect',
+								x1: fragPosition.left, y1: fragPosition.top, x2: fragPosition.left + fragWidth + 2, y2: fragPosition.top + $frag.height() + 2,
+								zIndex: 1,
+								parent: $wrap, disable: true
+							});
 
 						if (fragOffset.left + fragWidth / 2 < 150) {
 							placement = 'right';
@@ -1154,16 +1154,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						} else {
 							placement = 'bottom';
 						}
-						frag
-							.popover({title: $comment.find('.author').html(), content: $comment.find('.commentText').html(), placement: placement, html: true, delay: 0, animation: false, trigger: 'manual'})
+						$frag
+							.popover({title: $('.author', $comment).text(), content: $('.ctext', $comment).text(), placement: placement, html: false, delay: 0, animation: false, trigger: 'manual'})
 							.popover('show');
 					}
 				}.bind(this))
 				.on('mouseleave', '.photoFrag', function (evt) {
-					var frag = $(evt.target);
-					frag.popover('destroy');
-					$wrap.find('.photoImg').imgAreaSelect({remove: true});
-					$wrap.removeClass('fragHover');
+					$(evt.target).popover('destroy');
+					$wrap.removeClass('fragHover').find('.photoImg').imgAreaSelect({remove: true});
 				});
 		},
 		fragAreaCreate: function (selections) {
