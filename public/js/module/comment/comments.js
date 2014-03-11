@@ -22,6 +22,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			nocomments: false //Запрещено ли писать комментарии
 		},
 		create: function () {
+			this.destroy = _.wrap(this.destroy, this.localDestroy);
+
 			this.auth = globalVM.repository['m/common/auth'];
 			this.type = this.options.type;
 			this.cid = null;
@@ -40,7 +42,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.canReply = ko.observable(false);
 			this.canFrag = this.type === 'photo';
 
-			this.comments = ko.observableArray();
 			this.commentsHash = {};
 			this.users = {};
 
@@ -51,6 +52,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.fragClickBind = this.fragClick.bind(this);
 			this.fragDeleteBind = this.fragDelete.bind(this);
 
+			this.$cmts = $('.cmts', this.$dom);
 			ko.applyBindings(globalVM, this.$dom[0]);
 
 			// Subscriptions
@@ -77,6 +79,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
+		localDestroy: function (destroy) {
+			if (this.cZeroDetached) {
+				this.cZeroDetached.remove();
+			}
+			delete this.$cmts;
+			destroy.call(this);
+		},
 		activate: function (params, options, cb, ctx) {
 			var loggedIn = this.auth.loggedIn();
 
@@ -86,6 +95,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.countNew(params.countNew);
 				this.subscr(!!params.subscr);
 				this.nocomments(!!params.nocomments);
+				//Предварительно устанавливаем возможность комментирования, если комментарии не закрыты и пользователь зарегистрирован,
+				//так как скорее всего запрос комментариев вернёт такое же право, чтобы сразу показалась кнопка Добавить
+				this.canReply(loggedIn && !params.nocomments);
+				this.canModerate(false); //Кнопку модерирования наоборот каждый раз прячем
 			}
 
 			//Удаляем ожидание существующей проверки и обработчик скролла,
@@ -111,9 +124,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				//В противном случае запрашиваем только при попадании во вьюпорт с необходимой задержкой
 				this.viewportCheckTimeout = window.setTimeout(this.inViewportCheckBind, options && options.checkTimeout || 10);
 			}
+
 			if (!this.showing) {
 				console.time('cc');
-				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разный вариантов, если еще не скомпилили их раньше
+				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разных вариантов, если еще не скомпилили их раньше
 				if (!tplComments) {
 					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym});
 				}
@@ -135,14 +149,21 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			window.clearTimeout(this.receiveTimeout);
 			this.inViewport = false;
 
-			this.comments([]);
+			if (this.auth.loggedIn() && this.showTree()) {
+				//Если зарегистрированы и уже есть комментарии, надо вынуть ответ первого уровня из dom,
+				//и положить после рендеринга заново, т.к. рендеринг заменяет innerHTML блока комментариев
+				this.inputZeroDetach();
+				//Удаляем через jquery остальные возможные поля ввода, чтобы снять с них события
+				$('.cadd', this.$cmts).remove();
+			}
+			this.$cmts[0].innerHTML = ''; //Просто очищаем контент, чтобы при дестрое модуля jquery не пробегал по всем элеменат в поисках данных для удаления
+
 			this.users = {};
 			this.loading(false);
 			this.showTree(false);
 		},
 		eventsOn: function () {
 			var that = this,
-				$comments = $('.cmts', this.$dom),
 				getCid = function (element) {
 					var cid = $(element).closest('.c').attr('id');
 					if (cid) {
@@ -150,7 +171,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				};
 
-			$comments
+			this.$cmts
 				.off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
 				.on('click', '.changed', function () {
 					var cid = getCid(this);
@@ -160,7 +181,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				});
 
 			if (this.auth.loggedIn()) {
-				$comments
+				this.$cmts
 					.on('click', '.reply', function () {
 						var cid = getCid(this);
 						if (cid) {
@@ -302,9 +323,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canModerate(canModerate);
 						this.canReply(canReply);
 
-						//Если существует ответ первого уровня, надо вынуть его из dom, и положить после рендеринга заново, т.к. он заменяет innerHTML
-						this.inputZeroDetach();
-
 						//Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
 						this.renderComments(data.comments);
 
@@ -355,7 +373,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			tplResult = tplComments({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
 			console.timeEnd('tplExec');
 			console.time('tplInsert');
-			this.$dom[0].querySelector('.cmts').innerHTML = tplResult;
+			this.$cmts[0].innerHTML = tplResult;
 			console.timeEnd('tplInsert');
 		},
 		usersRanks: function (users) {
@@ -396,7 +414,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.navCheckBefore(0, true);
 				}
 			} else {
-				$element = $('#c' + ccid, this.$dom);
+				$element = $('#c' + ccid, this.$cmts);
 				highlight = true;
 			}
 			if ($element && $element.length === 1) {
@@ -428,10 +446,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			return $element;
 		},
 		highlight: function (ccid) {
-			$('#c' + ccid, this.$dom).addClass('hl');
+			$('#c' + ccid, this.$cmts).addClass('hl');
 		},
 		highlightOff: function () {
-			$('.c.hl', this.$dom).removeClass('hl');
+			$('.c.hl', this.$cmts).removeClass('hl');
 		},
 
 		//Создаёт поле ввода комментария. Ответ или редактирование
@@ -466,12 +484,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					findCommentLastChild = function (c) {
 						return c.comments && c.comments.length ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
 					};
-					$insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$dom);
+					$insertAfter = $('#c' + findCommentLastChild(relatedComment).cid, this.$cmts);
 					level = relatedComment.level + 1;
 				}
 				inputCid = relatedComment.cid;
-			} else {
-				$insertAfter = $('.cmts .c:last-child', this.$dom);
 			}
 
 			$cadd = $(tplCommentAdd({user: $cedit ? relatedComment.user : this.users[this.auth.iAm.login()], cid: inputCid, level: level, type: $cedit ? 'edit' : 'reply'}));
@@ -481,7 +497,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$cadd.insertAfter($insertAfter);
 			} else {
 				//В случае, если комментариев еще нет, $insertAfter будет пуст и надо аппендить
-				$('.cmts', this.$dom).append($cadd);
+				this.$cmts.append($cadd);
 			}
 
 			$input = $('.cinput', $cadd);
@@ -524,14 +540,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				this.inputCreate();
 				this.cZeroCreated = true;
 			} else if (this.cZeroDetached) {
-				$('.cmts', this.$dom).append(this.cZeroDetached);
+				this.$cmts.append(this.cZeroDetached);
 				delete this.cZeroDetached;
 			}
 		},
 		//Отсоединяет комментарий нулевого уровня от dom
 		inputZeroDetach: function () {
 			if (this.cZeroCreated && !this.cZeroDetached) {
-				this.cZeroDetached = $('.cadd[data-level="0"]', this.$dom).detach();
+				this.cZeroDetached = $('.cadd[data-level="0"]', this.$cmts).detach();
 			}
 		},
 		//Активирует поле ввода. Навешивает события, проверяет вхождение во вьюпорт и устанавливает фокус, если переданы соответствующие флаги
@@ -627,7 +643,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		checkInputExists: function (cid, cb, ctx) {
-			var $withContent = $('.cadd.hasContent', this.$dom);
+			var $withContent = $('.cadd.hasContent', this.$cmts);
 
 			if ($withContent.length) {
 				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'error', layout: 'center', timeout: 2000, force: true});
@@ -643,7 +659,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		//Активирует написание комментария нулевого уровня
 		replyZero: function () {
-			this.inputActivate($('.cmts > .c.cadd').last(), 600, true, true);
+			this.inputActivate($('.cadd', this.$cmts).last(), 600, true, true);
 		},
 		//Комментарий на комментарий
 		reply: function (cid) {
@@ -677,7 +693,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				vm.inputRemove($cadd);
 				if (type === 'edit') {
 					//Если комментарий редактировался, опять показываем оригинал
-					$('#c' + cid, this.$dom).removeClass('edit');
+					$('#c' + cid, this.$cmts).removeClass('edit');
 				}
 			}
 		},
@@ -747,9 +763,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
 					} else {
 						comment = result.comment;
-						if (comment.level < commentNestingMax) {
-							comment.comments = [];
-						}
 						comment.user = this.users[comment.user];
 						comment.parent = result.parent;
 						comment.can.edit = true;
@@ -771,7 +784,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							//то отменяем у родителя возможность удалить
 							if (!this.canModerate() && parent.can.del) {
 								parent.can.del = false;
-								$cparent = $('#c' + parent.cid, this.$dom);
+								$cparent = $('#c' + parent.cid, this.$cmts);
 								$('.remove', $cparent).prev('.dotDelimeter').remove();
 								$('.remove', $cparent).remove();
 							}
@@ -1036,11 +1049,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 		},
 		nav: function (dir, onlyFirst) {
-			var $navigator = this.$dom.find('.navigator'),
+			var $navigator = $('.navigator', this.$dom),
 				waterlineOffset,
 				elementsArr = [],
 
-				newComments = this.$dom[0].querySelectorAll('.isnew'),
+				newComments = this.$cmts[0].querySelectorAll('.isnew'),
 				$element,
 				offset,
 				i;
@@ -1084,7 +1097,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.navScrollCounterOn();
 				} else {
 					//Если дерево еще скрыто, т.е. receive еще не было, просто пишем сколько новых комментариев ниже
-					this.$dom.find('.navigator .down').addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
+					$('.navigator .down', this.$dom).addClass('active').find('.navTxt').attr('title', 'Следующий непрочитанный комментарий').text(this.countNew());
 					this.navScrollCounterOff();
 				}
 			} else {
@@ -1106,7 +1119,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 
 		navTxtRecalc: function () {
-			var $navigator = this.$dom.find('.navigator');
+			var $navigator = $('.navigator', this.$dom);
 
 			if (!$navigator.length) {
 				return;
@@ -1118,7 +1131,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				upCount = 0,
 				downCount = 0,
 
-				newComments = this.$dom[0].querySelectorAll('.isnew'),
+				newComments = this.$cmts[0].querySelectorAll('.isnew'),
 				$element,
 				offset,
 				i = newComments.length;
