@@ -80,6 +80,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
+			this.hide();
 			if (this.cZeroDetached) {
 				this.cZeroDetached.remove();
 			}

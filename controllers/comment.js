@@ -133,6 +133,7 @@ var core = {
 					if (err || !comments) {
 						return cb({message: err && err.message || 'Cursor extract error', error: true});
 					}
+					var previousViewStamp = userView && userView.stamp && userView.stamp.getTime();
 
 					canModerate = permissions.canModerate(data.type, obj, iAm);
 					canReply = canModerate || permissions.canReply(data.type, obj, iAm);
@@ -140,10 +141,10 @@ var core = {
 					if (comments.length) {
 						if (canModerate) {
 							//Если это модератор данной фотографии или администратор новости
-							commentsTreeBuildCanModerate(String(iAm._id), comments, userView.stamp, this);
+							commentsTreeBuildCanModerate(String(iAm._id), comments, previousViewStamp, this);
 						} else {
 							//Если это зарегистрированный пользователь
-							commentsTreeBuildAuth(String(iAm._id), comments, userView.stamp, !obj.nocomments, this);
+							commentsTreeBuildAuth(String(iAm._id), comments, previousViewStamp, !obj.nocomments, this);
 						}
 					} else {
 						this(null, {tree: [], users: {}, countTotal: 0, countNew: 0});
@@ -222,6 +223,8 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 			usersHash[userId] = true;
 			usersArr.push(userId);
 		}
+
+		comment.stamp = comment.stamp.getTime(); //Время отдаём в ms
 
 		commentIsMine = comment.user === myId; //Мой комментарий
 		commentIsDeleted = comment.del !== undefined; //Комментарий удалён
@@ -309,8 +312,6 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 			}
 
 			comment.user = usersById[comment.user].login;
-			//Время отдаём в ms
-			comment.stamp = comment.stamp.getTime();
 			if (comment.lastChanged !== undefined) {
 				comment.lastChanged = comment.lastChanged.getTime();
 			}
@@ -350,6 +351,8 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 			usersHash[userId] = true;
 			usersArr.push(userId);
 		}
+
+		comment.stamp = comment.stamp.getTime(); //Время отдаём в ms
 
 		if (comment.level === undefined) {
 			comment.level = 0;
@@ -391,8 +394,6 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 		for (i = 0; i < len; i++) {
 			comment = comments[i];
 			comment.user = usersById[comment.user].login;
-			//Время отдаём в ms
-			comment.stamp = comment.stamp.getTime();
 			if (comment.lastChanged !== undefined) {
 				comment.lastChanged = comment.lastChanged.getTime();
 			}
