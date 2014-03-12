@@ -553,7 +553,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			$cadd.addClass('hasFocus');
 
 			$input
-				.off('keyup').off('blur')
+				.off('keyup blur')
 				.on('keyup', _.debounce(this.inputKeyup.bind(this), 300))
 				.on('blur', this.inputBlur.bind(this));
 			if (checkViewport) {
@@ -591,7 +591,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$cadd = $input.closest('.cadd'),
 				content = $.trim($input.val());
 
-			$input.off('keyup').off('blur');
+			$input.off('keyup blur');
 
 			this.blurTimeout = window.setTimeout(function () {
 				if (!content && !this.fraging()) {
@@ -675,179 +675,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}, this);
 				}
 			}
-		},
-		cancel: function (vm, event) {
-			var $cadd = $(event.target).closest('.cadd'),
-				cid = $cadd.data('cid'),
-				type = $cadd.data('type');
-
-			if (!cid) {
-				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
-				vm.inputReset($cadd);
-			} else {
-				vm.inputRemove($cadd);
-				if (type === 'edit') {
-					//Если комментарий редактировался, опять показываем оригинал
-					$('#c' + cid, this.$cmts).removeClass('edit');
-				}
-			}
-		},
-		send: function (vm, event) {
-			if (!vm.canReply()) {
-				return;
-			}
-			var $cadd = $(event.target).closest('.cadd'),
-				$input = $('.cinput', $cadd),
-				create = $cadd.data('type') === 'reply',
-				cid = Number($cadd.data('cid')),
-				content = $input.val(), //Операции с текстом сделает сервер
-				dataInput,
-				dataToSend;
-
-			if (_s.isBlank(content)) {
-				$input.val('');
-				return;
-			}
-
-			if (cid) {
-				dataInput = this.commentsHash[cid];
-			}
-
-			dataToSend = {
-				type: vm.type, //тип объекта
-				obj: vm.cid, //cid объекта
-				txt: content
-			};
-
-			if (vm.canFrag) {
-				dataToSend.fragObj = vm.parentModule.fragAreaObject();
-			}
-
-			vm.exe(true);
-			vm[create ? 'sendCreate' : 'sendUpdate'](dataInput, dataToSend, function (result) {
-				vm.exe(false);
-				if (result && !result.error && result.comment) {
-					//Если установлен checkbox подписки, то подписываемся
-					if (!vm.subscr() && $('input.chkSubscr', $cadd).prop('checked')) {
-						vm.subscribe(null, null, true);
-					}
-
-					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
-				} else {
-					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
-				}
-			}, $cadd);
-
-		},
-		sendCreate: function (parent, dataSend, cb, $cadd) {
-			if (parent) {
-				//Значит создается дочерний комментарий
-				dataSend.parent = parent.cid;
-				dataSend.level = ~~parent.level + 1;
-			}
-
-			socket.once('createCommentResult', function (result) {
-				var comment,
-					$c,
-					$cparent;
-
-				if (!result) {
-					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-				} else {
-					if (result.error || !result.comment) {
-						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-					} else {
-						comment = result.comment;
-						comment.user = this.users[comment.user];
-						comment.parent = result.parent;
-						comment.can.edit = true;
-						comment.can.del = true;
-
-						this.commentsHash[comment.cid] = comment;
-						$c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
-
-						if (parent) {
-							if (!parent.comments) {
-								parent.comments = [];
-							}
-							parent.comments.push(comment);
-
-							//Если это комментарий-ответ, заменяем поле ввода новым комментарием
-							$cadd.replaceWith($c);
-							this.fragDelete();
-							delete this.commentEditingFragChanged;
-
-							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
-							//то отменяем у родителя возможность удалить
-							if (!this.canModerate() && parent.can.del) {
-								parent.can.del = false;
-								$cparent = $('#c' + parent.cid, this.$cmts);
-								$('.remove', $cparent).prev('.dotDelimeter').remove();
-								$('.remove', $cparent).remove();
-							}
-						} else {
-							//Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
-							$c.insertBefore($cadd);
-							this.inputReset($cadd);
-						}
-
-						this.auth.setProps({ccount: this.auth.iAm.ccount() + 1}); //Инкрементим комментарии пользователя
-						this.count(this.count() + 1);
-						this.parentModule.commentCountIncrement(1);
-						if (this.canFrag && Utils.isType('object', result.frag)) {
-							this.parentModule.fragAdd(result.frag); //Если добавили фрагмент вставляем его в фотографию
-						}
-					}
-				}
-
-				cb(result);
-			}.bind(this));
-			socket.emit('createComment', dataSend);
-		},
-		sendUpdate: function (data, dataSend, cb) {
-			if (!this.canModerate() && (!this.canReply() || !data.can.edit)) {
-				return;
-			}
-			var fragExists = this.canFrag && data.frag && ko.toJS(this.parentModule.fragGetByCid(data.cid));
-
-			dataSend.cid = data.cid;
-
-			//Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
-			//потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
-			if (fragExists && !this.commentEditingFragChanged) {
-				dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
-			}
-
-			socket.once('updateCommentResult', function (result) {
-				if (!result) {
-					window.noty({text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-				} else {
-					if (result.error || !result.comment) {
-						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
-					} else {
-						data.txt = result.comment.txt;
-						data.lastChanged = result.comment.lastChanged;
-
-						if (this.canFrag && this.commentEditingFragChanged) {
-							if (Utils.isType('object', result.frag)) {
-								data.frag = true;
-								if (!fragExists) {
-									this.parentModule.fragAdd(result.frag);
-								} else {
-									this.parentModule.fragRemove(data.cid);
-									this.parentModule.fragAdd(result.frag);
-								}
-							} else if (fragExists) {
-								data.frag = false;
-								this.parentModule.fragRemove(data.cid);
-							}
-						}
-					}
-				}
-
-				cb(result);
-			}.bind(this));
-			socket.emit('updateComment', dataSend);
 		},
 		edit: function (cid, $c) {
 			if (!this.canReply()) {
@@ -960,6 +787,182 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					]
 				}
 			);
+		},
+		cancel: function (vm, event) {
+			var $cadd = $(event.target).closest('.cadd'),
+				cid = $cadd.data('cid'),
+				type = $cadd.data('type');
+
+			if (!cid) {
+				//Если data-cid не проставлен, значит это комментарий первого уровня и его надо просто очистить, а не удалять
+				vm.inputReset($cadd);
+			} else {
+				vm.inputRemove($cadd);
+				if (type === 'edit') {
+					//Если комментарий редактировался, опять показываем оригинал
+					$('#c' + cid, this.$cmts).removeClass('edit');
+				}
+			}
+		},
+		send: function (vm, event) {
+			if (!vm.canReply()) {
+				return;
+			}
+			var $cadd = $(event.target).closest('.cadd'),
+				$input = $('.cinput', $cadd),
+				create = $cadd.data('type') === 'reply',
+				cid = Number($cadd.data('cid')),
+				content = $input.val(), //Операции с текстом сделает сервер
+				dataInput,
+				dataToSend;
+
+			if (_s.isBlank(content)) {
+				$input.val('');
+				return;
+			}
+
+			if (cid) {
+				dataInput = this.commentsHash[cid];
+			}
+
+			dataToSend = {
+				type: vm.type, //тип объекта
+				obj: vm.cid, //cid объекта
+				txt: content
+			};
+
+			if (vm.canFrag) {
+				dataToSend.fragObj = vm.parentModule.fragAreaObject();
+			}
+
+			vm.exe(true);
+			vm[create ? 'sendCreate' : 'sendUpdate'](dataInput, dataToSend, function (result) {
+				vm.exe(false);
+				if (result && !result.error && result.comment) {
+					//Если установлен checkbox подписки, то подписываемся
+					if (!vm.subscr() && $('input.chkSubscr', $cadd).prop('checked')) {
+						vm.subscribe(null, null, true);
+					}
+
+					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' success');
+				} else {
+					ga('send', 'event', 'comment', create ? 'create' : 'update', 'comment ' + (create ? 'create' : 'update') + ' error');
+				}
+			}, $cadd);
+		},
+		sendCreate: function (parent, dataSend, cb, $cadd) {
+			if (parent) {
+				//Значит создается дочерний комментарий
+				dataSend.parent = parent.cid;
+				dataSend.level = ~~parent.level + 1;
+			}
+
+			socket.once('createCommentResult', function (result) {
+				var comment,
+					$c,
+					$cparent;
+
+				if (!result) {
+					window.noty({text: 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					if (result.error || !result.comment) {
+						window.noty({text: result.message || 'Ошибка отправки комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					} else {
+						comment = result.comment;
+						comment.user = this.users[comment.user];
+						comment.parent = result.parent;
+						comment.can.edit = true;
+						comment.can.del = true;
+
+						this.commentsHash[comment.cid] = comment;
+						$c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
+
+						if (parent) {
+							if (!parent.comments) {
+								parent.comments = [];
+							}
+							parent.comments.push(comment);
+
+							//Если это комментарий-ответ, заменяем поле ввода новым комментарием
+							$cadd.replaceWith($c);
+							this.fragDelete();
+							delete this.commentEditingFragChanged;
+
+							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
+							//то отменяем у родителя возможность удалить
+							if (!this.canModerate() && parent.can.del) {
+								parent.can.del = false;
+								$cparent = $('#c' + parent.cid, this.$cmts);
+								$('.remove', $cparent).prev('.dotDelimeter').remove();
+								$('.remove', $cparent).remove();
+							}
+						} else {
+							//Если это ответ первого уровня, сбрасываем поле ввода и вставляем перед ним результат
+							$c.insertBefore($cadd);
+							this.inputReset($cadd);
+						}
+
+						this.auth.setProps({ccount: this.auth.iAm.ccount() + 1}); //Инкрементим комментарии пользователя
+						this.count(this.count() + 1);
+						this.parentModule.commentCountIncrement(1);
+						if (this.canFrag && Utils.isType('object', result.frag)) {
+							this.parentModule.fragAdd(result.frag); //Если добавили фрагмент вставляем его в фотографию
+						}
+					}
+				}
+
+				cb(result);
+			}.bind(this));
+			socket.emit('createComment', dataSend);
+		},
+		sendUpdate: function (comment, dataSend, cb, $cadd) {
+			if (!this.canModerate() && (!this.canReply() || !comment.can.edit)) {
+				return;
+			}
+			var fragExists = this.canFrag && comment.frag && ko.toJS(this.parentModule.fragGetByCid(comment.cid));
+
+			dataSend.cid = comment.cid;
+
+			//Если у комментария был фрагмент и он не изменился, то вставляем этот оригинальный фрагмент,
+			//потому что даже если мы не двигали его в интерфейсе, он изменится из-за округления пикселей
+			if (fragExists && !this.commentEditingFragChanged) {
+				dataSend.fragObj = _.pick(fragExists, 'cid', 'w', 'h', 't', 'l');
+			}
+
+			socket.once('updateCommentResult', function (result) {
+				if (!result) {
+					window.noty({text: 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+				} else {
+					if (result.error || !result.comment) {
+						window.noty({text: result.message || 'Ошибка редактирования комментария', type: 'error', layout: 'center', timeout: 2000, force: true});
+					} else {
+						comment.txt = result.comment.txt;
+						comment.lastChanged = result.comment.lastChanged;
+
+						if (this.canFrag && this.commentEditingFragChanged) {
+							if (Utils.isType('object', result.frag)) {
+								comment.frag = true;
+								if (!fragExists) {
+									this.parentModule.fragAdd(result.frag);
+								} else {
+									this.parentModule.fragRemove(comment.cid);
+									this.parentModule.fragAdd(result.frag);
+								}
+							} else if (fragExists) {
+								comment.frag = false;
+								this.parentModule.fragRemove(comment.cid);
+							}
+						}
+
+						var $c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
+						$('#c' + comment.cid, this.$cmts).replaceWith($c); //Заменяем комментарий на новый
+						this.inputRemove($cadd); //Удаляем поле ввода
+					}
+				}
+
+				cb(result);
+			}.bind(this));
+			socket.emit('updateComment', dataSend);
 		},
 		fragClick: function (data, event) {
 			if (!this.canFrag) {
