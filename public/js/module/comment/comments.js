@@ -192,6 +192,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						if (cid) {
 							that.edit(cid, $c);
 						}
+					})
+					.on('click', '.remove', function () {
+						var $c = $(this).closest('.c'),
+							cid = getCid($c);
+						if (cid) {
+							that.remove(cid, $c);
+						}
 					});
 			}
 		},
@@ -477,7 +484,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				} else {
 					if (relatedComment.level === commentNestingMax) {
 						//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский
-						relatedComment = relatedComment.parent;
+						relatedComment = this.commentsHash[relatedComment.parent];
 					}
 					findCommentLastChild = function (c) {
 						return c.comments && c.comments.length ? findCommentLastChild(c.comments[c.comments.length - 1]) : c;
@@ -711,16 +718,26 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				$c.addClass('edit');
 			}, this);
 		},
-		remove: function (data, event) {
-			if (!this.canModerate() && (!this.canReply() || !data.can.del)) {
+		remove: function (cid, $c) {
+			var that = this,
+				comment = this.commentsHash[cid];
+
+			if (!comment || !this.canModerate() && (!this.canReply() || !comment.can.del)) {
 				return;
 			}
 
-			var that = this,
-				$cadd = $(event.target).closest('.c'),
-				cid = Number($cadd.data('cid'));
+			//Берем текущий элемент (добавляем его потом к выборке дочених через add) и элементы, дочерние текущему
+			//Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
+			//затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
+			//так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
+			function getThisAndChildComments() {
+				var regexString = comment.level < commentNestingMax ? ('l[' + (comment.level + 1) + '-' + commentNestingMax + ']') : ('l' + commentNestingMax);
+				return $c.nextUntil('.l' + comment.level).filter(function () {
+					return new RegExp(regexString, 'g').test(this.className);
+				}).add($c);
+			}
 
-			$cadd.addClass('hlRemove');
+			getThisAndChildComments().addClass('hlRemove');
 
 			window.noty(
 				{
@@ -772,7 +789,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 										}
 										this.receive();
 									} else {
-										$cadd.removeClass('hlRemove');
+										$('.hlRemove', this.$cmts).removeClass('hlRemove');
 									}
 
 								}.bind(this));
@@ -781,7 +798,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							socket.emit('removeComment', {type: that.type, cid: cid});
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-							$cadd.removeClass('hlRemove');
+							$('.hlRemove', this.$cmts).removeClass('hlRemove');
 							$noty.close();
 						}}
 					]
