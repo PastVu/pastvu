@@ -47,10 +47,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			this.chkSubscrClickBind = this.chkSubscrClick.bind(this);
 			this.inViewportCheckBind = this.inViewportCheck.bind(this);
-
 			this.fraging = ko.observable(false);
-			this.fragClickBind = this.fragClick.bind(this);
-			this.fragDeleteBind = this.fragDelete.bind(this);
 
 			this.$cmts = $('.cmts', this.$dom);
 			ko.applyBindings(globalVM, this.$dom[0]);
@@ -527,12 +524,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		//Очистка комментария, без удаления
 		inputReset: function ($cadd) {
-			var $input = $('.cinput', $cadd);
-
-			window.clearTimeout(this.blurTimeout);
-			$input.off('keyup').off('blur').val('').height('auto');
-			$cadd.removeClass('hasContent hasFocus');
 			this.fragDelete();
+			window.clearTimeout(this.blurTimeout);
+			$cadd.removeClass('hasContent hasFocus').find('.cinput').off('keyup blur').val('').height('auto');
 			delete this.commentEditingFragChanged;
 		},
 		//Добавляет комментарий нулевого уровня. Если его еще не существует - создаёт, если он отсоединён - вставляет
@@ -647,7 +641,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var $withContent = $('.cadd.hasContent', this.$cmts);
 
 			if ($withContent.length) {
-				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'error', layout: 'center', timeout: 2000, force: true});
+				window.noty({text: 'У вас есть незавершенный комментарий. Отправьте или отмените его и переходите к новому', type: 'warning', layout: 'center', timeout: 3000, force: true});
 				return cb.call(ctx, true);
 			} else {
 				//Удаляем пустые открытые на редактирование поля ввода, кроме первого уровня
@@ -780,6 +774,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 							//Если это комментарий-ответ, заменяем поле ввода новым комментарием
 							$cadd.replaceWith($c);
+							this.fragDelete();
+							delete this.commentEditingFragChanged;
 
 							//Если обычный пользователь отвечает на свой комментарий, пока может его удалить,
 							//то отменяем у родителя возможность удалить
@@ -969,13 +965,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!this.canFrag) {
 				return;
 			}
-			var $cadd = $(event.target).closest('.cadd');
 
-			this.fraging(true);
-			if (!data.frag) {
+			if (!this.fraging()) {
+				this.fraging(true);
 				this.commentEditingFragChanged = true;
+				$(event.target).closest('.cadd').addClass('hasContent');
 			}
-			$cadd.addClass('hasContent');
 			this.parentModule.scrollToPhoto(400, function () {
 				this.parentModule.fragAreaCreate();
 			}, this);

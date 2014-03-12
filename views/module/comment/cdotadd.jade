@@ -22,11 +22,11 @@
 				span.glyphicon.glyphicon-remove
 				|  Отмена
 			// ko if: canFrag
-			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClickBind, attr: {disabled: exe()}")
+			button.btn.btn-primary.btn-sm.btnCommentFrag(type="button", data-bind="click: fragClick, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-picture
 				|  Фрагмент
 			// ko if: fraging()
-			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDeleteBind, attr: {disabled: exe()}")
+			button.btn.btn-primary.btn-sm.btnCommentFragDel(type="button", data-bind="click: fragDelete, attr: {disabled: exe()}")
 				span.glyphicon.glyphicon-remove
 				|  Очистить фрагмент
 			// /ko
