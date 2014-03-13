@@ -1,12 +1,12 @@
 /*global define:true*/
 
 define([
-	'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'text!tpl/neoModal.jade'
-], function ($, Utils, _, Backbone, ko, globalVM, modalJade) {
+	'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.jade'
+], function ($, Utils, _, Backbone, ko, globalVM, doT, dotModal) {
 	"use strict";
 
 	var repository = globalVM.repository,
-		modalTpl = _.template(modalJade),
+		tplModal,
 		defaultOptions = {
 			parent: globalVM,
 			level: 0,
@@ -22,6 +22,37 @@ define([
 			indexToPush = arr.indexOf(moduleName);
 		}
 		arr.splice(indexToPush, +!!moduleName, promise);
+	}
+
+	function createModal(modal) {
+		if (!tplModal) {
+			tplModal = doT.template(dotModal);
+		}
+		var $modal = $(tplModal(modal)),
+			$btns,
+			btn,
+			i,
+			btnClickClosure = function (b) {
+				return function (evt) {
+					b.click.call(b.ctx, $(this), evt);
+				};
+			};
+
+		if (modal.btns) {
+			$btns = $('.neoModalFoot > .btn', $modal);
+			for (i = 0; i < modal.btns; i++) {
+				btn = modal.btns[i];
+				$($btns[i]).on('click', btnClickClosure(btn));
+			}
+		}
+		if (modal.offIcon && modal.offIcon.click) {
+			$('a.off', $modal).on('click', function (evt) {
+				modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
+			});
+		}
+		modal.$containerCurtain = $modal.appendTo('body').addClass('showModalCurtain');
+
+		return $modal;
 	}
 
 	return function render(modules, options) {
@@ -87,29 +118,11 @@ define([
 			//Если передан объект modal, то модуль должен появится в модальном окне.
 			//Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
 			if (Utils.isType('object', item.modal)) {
-				item.modal.$containerCurtain = $(modalTpl({
-					initWidth: item.modal.initWidth || 'auto',
-					maxWidthRatio: item.modal.maxWidthRatio || 0.8,
-					fullHeight: item.modal.fullHeight || false,
-					topic: item.modal.topic || '',
-					closeTxt: item.modal.closeTxt || ''
-				}));
-				if (item.modal.withScroll) {
-					item.modal.$containerCurtain.find('.neoModalContainer').addClass('scroll');
-				}
-				if (item.modal.closeFunc) {
-					item.modal.$containerCurtain.find('.closeClick').on('click', item.modal.closeFunc);
-				}
-				if (item.modal.closeHref) {
-					item.modal.$containerCurtain.find('.closeClick').attr('href', item.modal.closeHref);
-				}
-				item.modal.$containerCurtain
-					.appendTo('body')
-					.addClass('showModalCurtain');
+				var $modal = createModal(item.modal);
 
 				//Для подсчета параметров размера, необходимо забайндить
-				ko.applyBindings(globalVM, item.modal.$containerCurtain[0]);
-				item.container = item.modal.$containerCurtain.find('.neoModalContainer')[0];
+				ko.applyBindings(globalVM, $modal[0]);
+				item.container = $modal[0].querySelector('.neoModalContainer');
 			}
 
 			require([item.module], function (VM) {

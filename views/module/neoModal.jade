@@ -4,12 +4,12 @@
 			span.modalCaption ${ topic }
 			a.off.closeClick(title="${ closeTxt }")
 				span.glyphicon.glyphicon-off
-		<% if ( fullHeight ){ %>
+		| <% if ( fullHeight ){ %>
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px', minHeight: P.window.h() - 120 + 'px'}")
-		<% } %>
-		<% if ( !fullHeight ){ %>
+		| <% } %>
+		| <% if ( !fullHeight ){ %>
 		.neoModalContainer.mContainer.mHidden(data-bind="style: {maxHeight: P.window.h() - 120 + 'px'}")
-		<% } %>
+		| <% } %>
 
 		//-Подложка под верхнюю тень тулбара модального окна
 		.tsb

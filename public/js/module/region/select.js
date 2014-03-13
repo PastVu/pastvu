@@ -54,7 +54,7 @@ define([
 				}.bind(this), 100);
 			}, this);
 		},
-		show: function (cb, ctx) {
+		show: function () {
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
