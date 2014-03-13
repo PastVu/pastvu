@@ -585,23 +585,26 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								selectedInit: selected
 							},
 							modal: {
+								topic: 'Выбор региона принадлежности для фотографии',
 								initWidth: '900px',
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								topic: 'Выбор региона принадлежности для фотографии',
-								closeTxt: 'Сохранить',
-								closeFunc: function (evt) {
-									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+								offIcon: {text: 'Отмена', click: this.closeRegionSelect, ctx: this},
+								btns: [
+									{css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: function () {
+										var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
 
-									if (regions.length > 1) {
-										window.noty({text: 'Допускается выбирать один регион', type: 'error', layout: 'center', timeout: 3000, force: true});
-										return;
-									}
-									Photo.vm({regions: regions[0] || []}, this.p, true); //Обновляем регионы
-									this.closeRegionSelect();
-								}.bind(this)},
+										if (regions.length > 1) {
+											window.noty({text: 'Допускается выбирать один регион', type: 'error', layout: 'center', timeout: 3000, force: true});
+											return;
+										}
+										Photo.vm({regions: regions[0] || []}, this.p, true); //Обновляем регионы
+										this.closeRegionSelect();
+									}, ctx: this},
+									{css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this}
+								]
+							},
 							callback: function (vm) {
 								this.regselectVM = vm;
 								this.childModules[vm.id] = vm;

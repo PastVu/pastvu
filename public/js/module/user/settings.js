@@ -233,57 +233,69 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 		regionHomeSelect: function () {
 			if (!this.regHomeselectVM) {
-				this.regionSelect([ko_mapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона', function (vm) {
-					this.regHomeselectVM = vm;
-				}, function () {
-					var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
+				this.regionSelect([ko_mapping.toJS(this.u.regionHome)], 1, 1, 'Выбор домашнего региона',
+					function (vm) {
+						this.regHomeselectVM = vm;
+					},
+					function () {
+						var regions = this.regHomeselectVM.getSelectedRegions(['cid', 'title_local']);
 
-					if (regions.length !== 1) {
-						window.noty({text: 'Необходимо выбрать один регион', type: 'error', layout: 'center', timeout: 2000, force: true});
-						return;
-					}
-
-					this.saveHomeRegion(regions[0].cid, function (err, data) {
-						if (!err) {
-							User.vm({regionHome: Region.factory(data.region, 'home')}, this.u, true); //Обновляем регионы в текущей вкладке вручную
-							this.originUser.regionHome = data.region;
-
-							this.regHomeselectVM.destroy();
-							delete this.regHomeselectVM;
-
-							ga('send', 'event', 'region', 'update', 'region update success', regions.length);
+						if (regions.length !== 1) {
+							window.noty({text: 'Необходимо выбрать один регион', type: 'error', layout: 'center', timeout: 2000, force: true});
+							return;
 						}
+
+						this.saveHomeRegion(regions[0].cid, function (err, data) {
+							if (!err) {
+								User.vm({regionHome: Region.factory(data.region, 'home')}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+								this.originUser.regionHome = data.region;
+
+								this.regHomeselectVM.destroy();
+								delete this.regHomeselectVM;
+
+								ga('send', 'event', 'region', 'update', 'region update success', regions.length);
+							}
+						}, this);
+					},
+					function () {
+						this.regHomeselectVM.destroy();
+						delete this.regHomeselectVM;
 					}, this);
-				}, this);
 			}
 		},
 		regionFilterSelect: function () {
 			if (!this.regselectVM) {
-				this.regionSelect(ko_mapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию', function (vm) {
-					this.regselectVM = vm;
-				}, function () {
-					var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+				this.regionSelect(ko_mapping.toJS(this.u.regions), 0, 5, 'Изменение списка регионов для фильтрации по умолчанию',
+					function (vm) {
+						this.regselectVM = vm;
+					},
+					function () {
+						var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-					if (regions.length > 5) {
-						window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
-						return;
-					}
-
-					this.saveFilterRegions(_.pluck(regions, 'cid'), function (err) {
-						if (!err) {
-							User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
-							this.originUser.regions = regions;
-
-							this.regselectVM.destroy();
-							delete this.regselectVM;
-
-							ga('send', 'event', 'region', 'update', 'region update success', regions.length);
+						if (regions.length > 5) {
+							window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+							return;
 						}
+
+						this.saveFilterRegions(_.pluck(regions, 'cid'), function (err) {
+							if (!err) {
+								User.vm({regions: regions}, this.u, true); //Обновляем регионы в текущей вкладке вручную
+								this.originUser.regions = regions;
+
+								this.regselectVM.destroy();
+								delete this.regselectVM;
+
+								ga('send', 'event', 'region', 'update', 'region update success', regions.length);
+							}
+						}, this);
+					},
+					function () {
+						this.regselectVM.destroy();
+						delete this.regselectVM;
 					}, this);
-				}, this);
 			}
 		},
-		regionSelect: function (selected, min, max, title, onRender, onClose, ctx) {
+		regionSelect: function (selected, min, max, title, onRender, onApply, onCancel, ctx) {
 			renderer(
 				[
 					{
@@ -294,16 +306,17 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 							selectedInit: selected
 						},
 						modal: {
+							topic: title,
 							initWidth: '900px',
 							maxWidthRatio: 0.95,
 							fullHeight: true,
 							withScroll: true,
-							topic: title,
-							closeTxt: 'Сохранить',
-							closeFunc: function (evt) {
-								evt.stopPropagation();
-								onClose.call(ctx);
-							}.bind(this)},
+							offIcon: {text: 'Отмена', click: onCancel, ctx: ctx},
+							btns: [
+								{css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: onApply, ctx: ctx},
+								{css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx}
+							]
+						},
 						callback: function (vm) {
 							this.childModules[vm.id] = vm;
 							onRender.call(ctx, vm);

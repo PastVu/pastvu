@@ -13,7 +13,7 @@
 				a.commentStamp(data-bind="attr: {href: $data.link}, text: moment($data.stamp).calendar()")
 				//ko if: $data.lastChanged
 				.dotDelimeter ·
-				.commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.commentHist($data.cid)}")
+				.commentChanged(title="Показать историю изменений", data-bind="text: 'Изменен ' + moment($data.lastChanged).calendar().toLowerCase(), click: function () {$parent.showHistory($data.cid)}")
 				// /ko
 			a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
 	.pag(data-bind="style: {visibility: paginationShow() ? 'visible' : 'hidden'}, template: {name: 'pagerTpl'}")

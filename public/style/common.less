@@ -16,6 +16,14 @@
 	0% { opacity: 0; }
 	100% { opacity: 1; }
 }
+@-webkit-keyframes scaleIn {
+	0% { -webkit-transform: scale(0); }
+	100% { -webkit-transform: scale(1); }
+}
+@keyframes scaleIn {
+	0% { transform: scale(0); }
+	100% { transform: scale(1); }
+}
 
 html, body {
 	height: 100%;
@@ -79,9 +87,13 @@ html, body {
 	&.showModalCurtain {
 		opacity: 1;
 		.animation(cssFadeIn .3s ease 1 alternate);
+
+		&.animateScale > .neoModal {
+			.animation(scaleIn .2s ease 1 alternate);
+		}
 	}
 
-	.neoModal {
+	> .neoModal {
 		position: relative;
 		display: inline-block;
 		vertical-align: middle;
@@ -193,6 +205,10 @@ html, body {
 			border-color: #161616;
 			.box-shadow(0 0px 4px 0px #777);
 			#gradient > .vertical(#DFDFDF, #AFAFAF);
+
+			> .btn {
+				margin-right: 10px;
+			}
 		}
 	}
 }

@@ -159,23 +159,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 								selectedInit: this.regions()
 							},
 							modal: {
+								topic: 'Изменение списка регионов для модерирования',
 								initWidth: '900px',
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								topic: 'Изменение списка регионов для отслеживания',
-								closeTxt: 'Сохранить',
-								closeFunc: function (evt) {
-									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+								offIcon: {text: 'Отмена', click: this.closeRegionSelect, ctx: this},
+								btns: [
+									{css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: function () {
+										var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-									if (regions.length > 20) {
-										window.noty({text: 'Допускается выбирать до 20 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
-										return;
-									}
-									this.regions(regions);
-									this.closeRegionSelect();
-								}.bind(this)},
+										if (regions.length > 20) {
+											window.noty({text: 'Допускается выбирать до 20 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+											return;
+										}
+										this.regions(regions);
+										this.closeRegionSelect();
+									}, ctx: this},
+									{css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this}
+								]
+							},
 							callback: function (vm) {
 								this.regselectVM = vm;
 								this.childModules[vm.id] = vm;

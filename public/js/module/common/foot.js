@@ -9,7 +9,9 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 		jade: jade,
 		create: function () {
 			ko.applyBindings(globalVM, this.$dom[0]);
-			window.setTimeout(function () {this.show();}.bind(this), 1500);
+			window.setTimeout(function () {
+				this.show();
+			}.bind(this), 1500);
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -25,11 +27,16 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 					[
 						{
 							module: 'm/diff/about',
-							modal: {topic: 'О проекте', initWidth: '1000px',closeTxt: 'Закрыть', closeFunc: function (evt) {
-								this.aboutVM.destroy();
-								delete this.aboutVM;
-								evt.stopPropagation();
-							}.bind(this)},
+							modal: {
+								topic: 'О проекте',
+								initWidth: '1000px',
+								animateScale: true,
+								curtainClick: {click: this.closeAbout, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closeAbout, ctx: this},
+								btns: [
+									{css: 'btn-primary', text: 'Закрыть', click: this.closeAbout, ctx: this}
+								]
+							},
 							callback: function (vm) {
 								this.aboutVM = this.childModules[vm.id] = vm;
 							}.bind(this)
@@ -40,6 +47,12 @@ define(['underscore', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'rend
 						level: this.level + 2
 					}
 				);
+			}
+		},
+		closeAbout: function () {
+			if (this.aboutVM) {
+				this.aboutVM.destroy();
+				delete this.aboutVM;
 			}
 		}
 	});

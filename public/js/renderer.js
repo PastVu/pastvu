@@ -62,9 +62,7 @@ define([
 					evt.stopPropagation();
 				});
 		}
-		modal.$containerCurtain = $modal.appendTo('body').addClass('showModalCurtain');
-
-		return $modal;
+		return $modal.appendTo('body');
 	}
 
 	return function render(modules, options) {
@@ -130,11 +128,11 @@ define([
 			//Если передан объект modal, то модуль должен появится в модальном окне.
 			//Создаем разметку модального окна с контейнером внутри и передаем этот параметр в клише модуля
 			if (Utils.isType('object', item.modal)) {
-				var $modal = createModal(item.modal);
+				item.modal.$curtain = createModal(item.modal);
 
 				//Для подсчета параметров размера, необходимо забайндить
-				ko.applyBindings(globalVM, $modal[0]);
-				item.container = $modal[0].querySelector('.neoModalContainer');
+				ko.applyBindings(globalVM, item.modal.$curtain[0]);
+				item.container = item.modal.$curtain[0].querySelector('.neoModalContainer');
 			}
 
 			require([item.module], function (VM) {

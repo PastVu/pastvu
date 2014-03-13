@@ -28,6 +28,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
+			if (this.modal) {
+				this.modal.$curtain.addClass('showModalCurtain');
+			}
 			this.showing = true;
 		},
 		hide: function () {

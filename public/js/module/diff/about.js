@@ -12,14 +12,17 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
 		},
 		show: function () {
 			socket.once('takeAbout', function (result) {
+				ga('send', 'event', 'about', 'open', 'about open');
+				//ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
+
 				this.avatars = result || {};
 
 				ko.applyBindings(globalVM, this.$dom[0]);
 				globalVM.func.showContainer(this.$container);
 				this.showing = true;
-
-				ga('send', 'event', 'about', 'open', 'about open');
-				//ga('send', 'pageview', {'page': '/about', 'title': 'О проекте'});
+				if (this.modal) {
+					this.modal.$curtain.addClass('showModalCurtain');
+				}
 			}.bind(this));
 			socket.emit('giveAbout');
 		},

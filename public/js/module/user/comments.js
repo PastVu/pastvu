@@ -148,20 +148,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			}.bind(this));
 			socket.emit('giveCommentsUser', {login: this.u.login(), page: page});
 		},
-		commentHist: function (cid) {
-			if (!this.commentHistVM) {
+		showHistory: function (cid) {
+			if (!this.histVM) {
 				renderer(
 					[
 						{
 							module: 'm/comment/hist',
-							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
-								this.commentHistVM.destroy();
-								delete this.commentHistVM;
-								evt.stopPropagation();
-							}.bind(this)},
+							modal: {
+								topic: 'История изменений комментария',
+								animateScale: true,
+								curtainClick: {click: this.closeHistory, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closeHistory, ctx: this},
+								btns: [
+									{css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this}
+								]
+							},
 							options: {cid: cid},
 							callback: function (vm) {
-								this.commentHistVM = vm;
+								this.histVM = vm;
 								this.childModules[vm.id] = vm;
 							}.bind(this)
 						}
@@ -171,6 +175,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						level: this.level + 2
 					}
 				);
+			}
+		},
+		closeHistory: function () {
+			if (this.histVM) {
+				this.histVM.destroy();
+				delete this.histVM;
 			}
 		},
 

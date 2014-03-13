@@ -1,4 +1,4 @@
-.neoModalCurtain
+.neoModalCurtain(class="{{?it.animateScale}}animateScale{{?}}")
 	.neoModal.fringe(style="width:{{=it.initWidth || 'auto'}};", data-bind="style: {maxWidth: (P.window.w() * {{=it.maxWidthRatio || 0.8}} >> 0) + 'px'}")
 		.neoModalTools.fringe
 			span.modalCaption {{=it.topic || ''}}
@@ -14,10 +14,10 @@
 		| {{?it.btns && it.btns.length}}
 		.neoModalFoot
 			| {{~it.btns :b:index}}
-			button.btn(class="{{=b.css}}")
+			button.btn.btn-xs(class="{{=b.css}}")
 				| {{?b.glyphicon}}
 				span.glyphicon(class="{{=b.glyphicon}}")
 				| {{?}}
-				| {{=b.text}}
+				|  {{=b.text}}
 			| {{~}}
 		| {{?}}

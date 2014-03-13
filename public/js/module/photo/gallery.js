@@ -669,24 +669,27 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								selectedInit: this.filter.disp.r()
 							},
 							modal: {
+								topic: 'Выбор регионов для фильтрации',
 								initWidth: '900px',
 								maxWidthRatio: 0.95,
 								fullHeight: true,
 								withScroll: true,
-								topic: 'Выбор регионов для фильтрации',
-								closeTxt: 'Применить',
-								closeFunc: function (evt) {
-									evt.stopPropagation();
-									var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
+								offIcon: {text: 'Отмена', click: this.closeRegionSelect, ctx: this},
+								btns: [
+									{css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: function () {
+										var regions = this.regselectVM.getSelectedRegions(['cid', 'title_local']);
 
-									if (regions.length > 5) {
-										window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
-										return;
-									}
+										if (regions.length > 5) {
+											window.noty({text: 'Допускается выбирать до 5 регионов', type: 'error', layout: 'center', timeout: 3000, force: true});
+											return;
+										}
 
-									this.filter.disp.r(regions);
-									this.closeRegionSelect();
-								}.bind(this)},
+										this.filter.disp.r(regions);
+										this.closeRegionSelect();
+									}, ctx: this},
+									{css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this}
+								]
+							},
 							callback: function (vm) {
 								this.regselectVM = vm;
 								this.childModules[vm.id] = vm;
