@@ -3,7 +3,7 @@
 		.neoModalTools.fringe
 			span.modalCaption {{=it.topic || ''}}
 			| {{?it.offIcon}}
-			a.off.closeClick(title="{{=it.offIcon.text}}", href="{{=it.offIcon.href || ''}}")
+			.off(title="{{=it.offIcon.text}}")
 				span.glyphicon.glyphicon-off
 			| {{?}}
 		.neoModalContainer.mContainer.mHidden(class="{{?it.withScroll}}scroll{{?}}", data-bind="style: {maxHeight: P.window.h() - 120 + 'px'{{?it.fullHeight}}, minHeight: P.window.h() - 120 + 'px'{{?}}}")

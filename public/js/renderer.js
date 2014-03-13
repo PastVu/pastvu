@@ -34,21 +34,33 @@ define([
 			i,
 			btnClickClosure = function (b) {
 				return function (evt) {
+					evt.stopPropagation();
 					b.click.call(b.ctx, $(this), evt);
 				};
 			};
 
 		if (modal.btns) {
 			$btns = $('.neoModalFoot > .btn', $modal);
-			for (i = 0; i < modal.btns; i++) {
+			for (i = 0; i < modal.btns.length; i++) {
 				btn = modal.btns[i];
 				$($btns[i]).on('click', btnClickClosure(btn));
 			}
 		}
 		if (modal.offIcon && modal.offIcon.click) {
-			$('a.off', $modal).on('click', function (evt) {
+			$('.off', $modal).on('click', function (evt) {
+				evt.stopPropagation();
 				modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
 			});
+		}
+		if (modal.curtainClick) {
+			$modal
+				.on('click', function (evt) {
+					evt.stopPropagation();
+					modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
+				})
+				.find('.neoModal').on('click', function (evt) {
+					evt.stopPropagation();
+				});
 		}
 		modal.$containerCurtain = $modal.appendTo('body').addClass('showModalCurtain');
 

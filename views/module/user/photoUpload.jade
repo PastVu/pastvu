@@ -13,7 +13,7 @@
 		| Снятые до 2000 года включительно, имеющие историческую ценность и отображающие объект съемки в уникальном ракурсе или времени
 	form.uploadForm(method="POST", enctype="multipart/form-data")
 		#addFiles
-			input.fileInput(type="file", name="files[]", multiple)
+			input.fileInput(type="file", name="files[]", accept="image/*", multiple)
 			button.btn.btn-primary.fileSelect(data-bind="click: selectFile")
 				span.glyphicon.glyphicon-plus
 				|  Добавить...
