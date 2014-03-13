@@ -804,6 +804,63 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					]
 				}
 			);
+			this.reasonSelect(function () {
+
+			}, this);
+		},
+		reasonSelect: function (cb, ctx) {
+			var that = this;
+
+			if (!this.reasonVM) {
+				renderer(
+					[
+						{
+							module: 'm/common/reason',
+							options: {
+								select: [
+									{val: '1', name: 'Спам'},
+									{val: '2', name: 'Нарушение пунктов правил'}
+								]
+							},
+							modal: {
+								topic: 'Причина удаления комментария',
+								maxWidthRatio: 0.75,
+								animateScale: true,
+								offIcon: {text: 'Отмена', click: function () {
+									cb.call(ctx, true);
+									this.reasonDestroy();
+								}},
+								btns: [
+									{css: 'btn-primary', text: 'Готово', glyphicon: 'glyphicon-ok', click: function () {
+										var reason = this.reasonVM.getReason();
+										cb.call(ctx, null, reason);
+
+										that.reasonDestroy();
+									}, ctx: this},
+									{css: 'btn-warning', text: 'Отмена', click: function () {
+										cb.call(ctx, true);
+										this.reasonDestroy();
+									}, ctx: this}
+								]
+							},
+							callback: function (vm) {
+								this.reasonVM = vm;
+								this.childModules[vm.id] = vm;
+							}.bind(this)
+						}
+					],
+					{
+						parent: this,
+						level: this.level + 1
+					}
+				);
+			}
+		},
+		reasonDestroy: function () {
+			if (this.reasonVM) {
+				this.reasonVM.destroy();
+				delete this.reasonVM;
+			}
 		},
 		cancel: function (vm, event) {
 			var $cadd = $(event.target).closest('.cadd'),
@@ -1006,19 +1063,23 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 		//Вызов модального окна с модулем просмотра истории комментария
 		showHistory: function (cid) {
-			if (!this.commentHistVM) {
+			if (!this.histVM) {
 				renderer(
 					[
 						{
 							module: 'm/comment/hist',
-							modal: {topic: 'История изменений комментария', closeTxt: 'Закрыть', closeFunc: function (evt) {
-								this.commentHistVM.destroy();
-								delete this.commentHistVM;
-								evt.stopPropagation();
-							}.bind(this)},
 							options: {cid: cid, type: this.type},
+							modal: {
+								topic: 'История изменений комментария',
+								animateScale: true,
+								curtainClick: {click: this.closeHistory, ctx: this},
+								offIcon: {text: 'Закрыть', click: this.closeHistory, ctx: this},
+								btns: [
+									{css: 'btn-primary', text: 'Закрыть', click: this.closeHistory, ctx: this}
+								]
+							},
 							callback: function (vm) {
-								this.commentHistVM = this.childModules[vm.id] = vm;
+								this.histVM = this.childModules[vm.id] = vm;
 								ga('send', 'event', 'comment', 'history');
 							}.bind(this)
 						}
@@ -1028,6 +1089,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						level: this.level + 2
 					}
 				);
+			}
+		},
+		closeHistory: function () {
+			if (this.histVM) {
+				this.histVM.destroy();
+				delete this.histVM;
 			}
 		},
 
