@@ -739,84 +739,53 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			getThisAndChildComments().addClass('hlRemove');
 
-			window.noty(
-				{
-					text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Подтверждаете операцию удаления?',
-					type: 'confirm',
-					layout: 'center',
-					modal: true,
-					force: true,
-					animation: {
-						open: {height: 'toggle'},
-						close: {},
-						easing: 'swing',
-						speed: 500
-					},
-					buttons: [
-						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
-							// this = button element
-							// $noty = $noty element
-							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true).addClass('disabled');
-							}
-
-							socket.once('removeCommentResult', function (result) {
-								$noty.$buttons.find('.btn-danger').remove();
-								var msg,
-									okButton = $noty.$buttons.find('button')
-										.attr('disabled', false)
-										.removeClass('disabled')
-										.off('click');
-
-								if (result && !result.error) {
-									msg = 'Удалено комментариев: ' + result.countComments + ', от ' + result.countUsers + ' пользователя(ей)';
-									ga('send', 'event', 'comment', 'delete', 'comment delete success', result.countComments);
-								} else {
-									msg = result && result.message || '';
-									ga('send', 'event', 'comment', 'delete', 'comment delete error');
-								}
-								$noty.$message.children().html(msg);
-								okButton.text('Закрыть').on('click', function () {
-									$noty.close();
-									if (!result.error) {
-										if (Utils.isType('number', result.countComments)) {
-											this.count(this.count() - result.countComments);
-											this.parentModule.commentCountIncrement(-result.countComments);
-										}
-
-										if (Utils.isType('array', result.frags)) {
-											this.parentModule.fragReplace(result.frags);
-										}
-										this.receive();
-									} else {
-										$('.hlRemove', this.$cmts).removeClass('hlRemove');
-									}
-
-								}.bind(this));
-
-							}.bind(that));
-							socket.emit('removeComment', {type: that.type, cid: cid});
-						}},
-						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-							$('.hlRemove', this.$cmts).removeClass('hlRemove');
-							$noty.close();
-						}}
-					]
+			this.reasonSelect(function (cancel, reason) {
+				if (cancel) {
+					$('.hlRemove', this.$cmts).removeClass('hlRemove');
+					return;
 				}
-			);
-			this.reasonSelect(function () {
+				socket.once('removeCommentResult', function (result) {
+					var msg,
+						count;
 
+					if (result && !result.error) {
+						count = Number(result.countComments);
+						if (!count) {
+							return;
+						}
+						this.count(this.count() - count);
+						this.parentModule.commentCountIncrement(-count);
+
+						if (Utils.isType('array', result.frags)) {
+							this.parentModule.fragReplace(result.frags);
+						}
+
+						if (count > 1) {
+							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
+						}
+						$('.hlRemove', this.$cmts).remove();
+						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
+					} else {
+						msg = result && result.message || '';
+						$('.hlRemove', this.$cmts).removeClass('hlRemove');
+						ga('send', 'event', 'comment', 'delete', 'comment delete error');
+					}
+
+					if (msg) {
+						window.noty({text: msg, type: 'info', layout: 'center', timeout: 2200, force: true});
+					}
+				}.bind(that));
+				socket.emit('removeComment', {type: that.type, cid: cid});
 			}, this);
 		},
 		reasonSelect: function (cb, ctx) {
-			var that = this;
-
 			if (!this.reasonVM) {
 				renderer(
 					[
 						{
 							module: 'm/common/reason',
 							options: {
+								text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Укажите причину и подтвердите операцию',
 								select: [
 									{val: '1', name: 'Спам'},
 									{val: '2', name: 'Нарушение пунктов правил'}
@@ -829,15 +798,14 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 								offIcon: {text: 'Отмена', click: function () {
 									cb.call(ctx, true);
 									this.reasonDestroy();
-								}},
+								}, ctx: this},
 								btns: [
-									{css: 'btn-primary', text: 'Готово', glyphicon: 'glyphicon-ok', click: function () {
+									{css: 'btn-warning', text: 'Удалить', glyphicon: 'glyphicon-ok', click: function () {
 										var reason = this.reasonVM.getReason();
 										cb.call(ctx, null, reason);
-
-										that.reasonDestroy();
+										this.reasonDestroy();
 									}, ctx: this},
-									{css: 'btn-warning', text: 'Отмена', click: function () {
+									{css: 'btn-success', text: 'Отмена', click: function () {
 										cb.call(ctx, true);
 										this.reasonDestroy();
 									}, ctx: this}
