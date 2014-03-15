@@ -787,12 +787,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							options: {
 								text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Укажите причину и подтвердите операцию',
 								select: [
-									{val: '1', name: 'Спам'},
-									{val: '2', name: 'Нарушение пунктов правил'}
+									{key: '0', name: 'Свободное описание причины'},
+									{key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'},
+									{key: '2', name: 'Спам'}
 								]
 							},
 							modal: {
-								topic: 'Причина удаления комментария',
+								topic: 'Причина удаления',
 								maxWidthRatio: 0.75,
 								animateScale: true,
 								offIcon: {text: 'Отмена', click: function () {
@@ -802,8 +803,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 								btns: [
 									{css: 'btn-warning', text: 'Удалить', glyphicon: 'glyphicon-ok', click: function () {
 										var reason = this.reasonVM.getReason();
-										cb.call(ctx, null, reason);
-										this.reasonDestroy();
+										if (reason) {
+											cb.call(ctx, null, reason);
+											this.reasonDestroy();
+										}
 									}, ctx: this},
 									{css: 'btn-success', text: 'Отмена', click: function () {
 										cb.call(ctx, true);

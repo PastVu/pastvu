@@ -2,10 +2,21 @@
 @import "../bs/variables.less";
 @import "../bs/mixins.less";
 
-@headColor: #677A8F;
-@headColorHover: @MainBlueColor;
-
 .reason {
 	position: relative;
+	padding: 5px 0 20px 0;
 
+	#presetoptions {
+		cursor: pointer;
+	}
+	#desc {
+		min-height: 87px;
+	}
+	.desclabel {
+		color: #777;
+	}
+	.error {
+		color: @MainRedColor;
+		font-size: @font-size-small;
+	}
 }
