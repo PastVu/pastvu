@@ -865,12 +865,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			socket.emit('giveCommentsDel', {type: this.type, cid: cid});
 		},
 		delHide: function (cid, $c) {
-			if (!tplCommentDel) {
-				tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
-			}
 			var comment = this.commentsHash[cid];
 			if (!comment) {
 				return;
+			}
+			if (!tplCommentDel) {
+				tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
 			}
 
 			getChildComments(comment, $c).remove();
