@@ -185,7 +185,7 @@ var core = {
 						photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
 					}
 					//Берём все удаленные комментарии, оставленные позже запрашиваемого удалённого, и ниже его уровнем
-					commentModel.find({obj: comment.obj, del: true, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					commentModel.find({obj: comment.obj, del: {$exists: true}, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					delete comment.obj;
 				},
 				function (err, obj, childs) {
@@ -1070,7 +1070,7 @@ function removeComment(socket, data, cb) {
 			var myCountRemoved = hashUsers[iAm._id] || 0; //Кол-во моих комментариев
 			actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, commentDelInfo.stamp, commentDelInfo.reason, commentDelInfo.roleregion, commentChildsCid.length ? {childs: commentChildsCid.length} : undefined);
 
-			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length});
+			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: commentDelInfo.stamp.getTime()});
 		}
 	);
 }

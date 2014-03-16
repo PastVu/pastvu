@@ -7,11 +7,27 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 	var $window = $(window),
 		commentNestingMax = 9,
+
 		tplComments, //Шаблон списка комментариев (для анонимных или авторизованных пользователей)
 		tplCommentsDel, //Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
 		tplCommentAuth, //Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
 		tplCommentDel, //Шаблон свёрнутого удалённого комментария
 		tplCommentAdd, //Шаблон ответа/редактирования. Поле ввода
+
+		formatDateRelative = Utils.format.date.relative,
+		formatDateRelativeIn = Utils.format.date.relativeIn,
+
+	//Берем элементы, дочерние текущему комментарию
+	//Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
+	//затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
+	//так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
+		getChildComments = function (comment, $c) {
+			var regexString = comment.level < commentNestingMax ? ('l[' + (comment.level + 1) + '-' + commentNestingMax + ']') : ('l' + commentNestingMax);
+			return $c.nextUntil('.l' + comment.level).filter(function () {
+				return new RegExp(regexString, 'g').test(this.className);
+			});
+		},
+
 		getCid = function (element) {
 			var cid = $(element).closest('.c').attr('id');
 			if (cid) {
@@ -338,7 +354,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canReply(canReply);
 
 						//Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
-						var tplResult = this.renderComments(data.comments, tplComments);
+						var tplResult = this.renderComments(data.comments, tplComments, true);
 						console.time('tplInsert');
 						this.$cmts[0].innerHTML = tplResult;
 						console.timeEnd('tplInsert');
@@ -362,11 +378,15 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		renderComments: function (tree, tpl) {
+		renderComments: function (tree, tpl, changeHash) {
 			var usersHash = this.users,
 				commentsPlain = [],
-				commentsHash = {},
+				commentsHash,
 				tplResult;
+
+			if (changeHash) {
+				commentsHash = this.commentsHash = {};
+			}
 
 			(function treeRecursive(tree) {
 				var i = 0,
@@ -377,17 +397,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					comment = tree[i];
 					comment.user = usersHash[comment.user];
 					commentsPlain.push(comment);
-					commentsHash[comment.cid] = comment;
+					if (changeHash) {
+						commentsHash[comment.cid] = comment;
+					}
 					if (comment.comments) {
 						treeRecursive(comment.comments, comment);
 					}
 				}
 			}(tree));
 
-			this.commentsHash = commentsHash;
-
 			console.time('tplExec');
-			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: formatDateRelative, fDateIn: formatDateRelativeIn});
 			console.timeEnd('tplExec');
 			return tplResult;
 		},
@@ -736,18 +756,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
-			//Берем текущий элемент (добавляем его потом к выборке дочених через add) и элементы, дочерние текущему
-			//Сначала используем nextUntil для последовательной выборки элементов до достижения уровня текущего,
-			//затем выбранные тестируем, что они уровнем ниже с помощью regexp (/l[n-9]/g),
-			//так как nextUntil может вернуть комментарии уровнем выше текущего, если они встретятся сразу без равного текущему уровню
-			function getThisAndChildComments() {
-				var regexString = comment.level < commentNestingMax ? ('l[' + (comment.level + 1) + '-' + commentNestingMax + ']') : ('l' + commentNestingMax);
-				return $c.nextUntil('.l' + comment.level).filter(function () {
-					return new RegExp(regexString, 'g').test(this.className);
-				}).add($c);
-			}
-
-			getThisAndChildComments().addClass('hlRemove');
+			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
 			this.reasonSelect(function (cancel, reason) {
 				if (cancel) {
@@ -763,6 +772,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						if (!count) {
 							return;
 						}
+
+						comment.lastChanged = result.stamp;
 						this.count(this.count() - count);
 						this.parentModule.commentCountIncrement(-count);
 
@@ -770,10 +781,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.fragReplace(result.frags);
 						}
 
+						//Заменяем корневой удаляемый комментарий за удалённый(схлопнутый)
+						if (!tplCommentDel) {
+							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
+						}
+						$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
+
 						if (count > 1) {
+							//Удаляем все дочерние, если есть
+							$('.hlRemove', this.$cmts).remove();
 							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
 						}
-						$('.hlRemove', this.$cmts).remove();
 						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 					} else {
 						msg = result && result.message || '';
@@ -819,7 +837,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						if (!tplCommentsDel) {
 							tplCommentsDel = doT.template(doTComments, undefined, {comment: doTCommentDelOpen});
 						}
-						if (!that.delopenevents){
+						if (!that.delopenevents) {
 							that.$cmts
 								.on('click', '.hidedel', function () {
 									var $c = $(this).closest('.c'),
@@ -854,7 +872,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (!comment) {
 				return;
 			}
-			$c.replaceWith(tplCommentDel(comment, {fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
+
+			getChildComments(comment, $c).remove();
+			$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 		},
 		reasonSelect: function (cb, ctx) {
 			if (!this.reasonVM) {
@@ -998,7 +1018,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						comment.can.del = true;
 
 						this.commentsHash[comment.cid] = comment;
-						$c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
+						$c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 
 						if (parent) {
 							if (!parent.comments) {
@@ -1077,7 +1097,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							}
 						}
 
-						var $c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
+						var $c = $(tplCommentAuth(comment, {reply: this.canReply(), mod: this.canModerate(), fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 						$('#c' + comment.cid, this.$cmts).replaceWith($c); //Заменяем комментарий на новый
 						this.inputRemove($cadd); //Удаляем поле ввода
 					}

@@ -107,23 +107,16 @@
 
 	> .cmts {
 		> .c {
-			padding: 7px 0;
+			padding: 6px 0 6px 6px;
 
 			.levelLooping(0, 58);
 
 			&.isnew {
-				padding-left: 1px;
+				padding-left: 5px;
 				border-width: 0 0 0 1px;
 				border-style: solid;
 				border-color: #81DF7D;
 				background-color: rgba(174, 255, 184, 0.1);
-			}
-			&.hl {
-				background-color: fade(@MainBlueColor, 10%);
-				.transition(~'background-color .25s linear .1s');
-			}
-			&.hlRemove {
-				background-color: rgba(255, 188, 16, 0.5);
 			}
 			//Редактируемый комментарий скрывается, заменяясь на поле ввода
 			&.edit {
@@ -139,18 +132,22 @@
 					margin-top: 1px;
 					margin-right: 8px;
 					color: @gray;
-					font-size: 11px;
+					font-size: @font-size-mini;
 					line-height: 13px;
-					text-align: center;
 					overflow: hidden;
 					cursor: pointer;
+					border-width: 0 0 0 2px;
+					border-style: solid;
+					border-color: @MainRedColor;
 					background: @gray;
 					&:hover {
 						color: @MainLigthColor;
+						border-color: #f00;
 						background: @MainDarkColor;
 					}
 
 					&.loading {
+						border-width: 0;
 						background: transparent url(/img/misc/load.gif) 0 50% no-repeat;
 					}
 				}
@@ -160,6 +157,20 @@
 				.author {
 					color: #888;
 				}
+			}
+			&.delopen {
+				padding-left: 5px;
+				border-width: 0 0 0 1px;
+				border-style: solid;
+				border-color: @MainRedColor;
+				background-color: rgba(255, 99, 0, 0.10);
+			}
+			&.hl {
+				background-color: fade(@MainBlueColor, 10%);
+				.transition(~'background-color .25s linear .1s');
+			}
+			&.hlRemove {
+				background-color: rgba(255, 188, 16, 0.5);
 			}
 
 			> .hrefava {
@@ -213,6 +224,18 @@
 
 						&:hover {
 							color: @MainBlueColor;
+						}
+						&.hidedel {
+							color: #7B7A0B;
+							&:hover {
+								color: #C3BC0B;
+							}
+						}
+						&.restore {
+							color: @MainGreenColor;
+							&:hover {
+								color: #09c600;
+							}
 						}
 					}
 				}

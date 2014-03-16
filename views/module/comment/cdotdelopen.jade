@@ -1,0 +1,25 @@
+.c.delopen(id="c{{=c.cid}}", class="l{{=c.level}}")
+	a.hrefava(href="{{='/u/'+c.user.login}}", target="_blank")
+		| {{?c.user.avatar === undefined}}
+		.overprint {{=c.user.disp[0]}}
+		| {{?}}
+		img.cava(src="{{=c.user.avatar || '/img/caps/avatarth.png'}}")
+	.cbody
+		.chead
+			a(class="author{{?c.user.online}} online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
+			| {{?c.user.rnks}}
+			.ranks {{=c.user.rnks}}
+			| {{?}}
+			.dotDelimeter ·
+			a.stamp(href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
+			.dotDelimeter ·
+			.changed(title="Показать историю изменений") {{='Удален '+it.fDateIn(new Date(c.lastChanged))}}
+		.ctext {{=c.txt}}
+		| {{?c.delroot===true}}
+		.cacts
+			span.cact.hidedel Свернуть
+			| {{?it.mod}}
+			.dotDelimeter ·
+			span.cact.restore Восстановить
+			| {{?}}
+		| {{?}}
