@@ -14,7 +14,10 @@ var ActionLogSchema = new Schema(
 
 			type: {type: Number, required: true}, //Тип действия. 1 - создал, 9 - удалил
 
-			reason: {type: String}, //Причина действия
+			reason: {
+				key: {type: Number}, //Номер причины из справочника
+				desc: {type: String} //Ручное описание причины. Как основное, так и дополнительное в случае key
+			},
 			role: {type: Number}, //Реализуемая на момент действия роль пользователя, если она необходима для действия
 			roleregion: {type: Number}, //Регион реализуемой роли
 

@@ -775,7 +775,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						window.noty({text: msg, type: 'info', layout: 'center', timeout: 2200, force: true});
 					}
 				}.bind(that));
-				socket.emit('removeComment', {type: that.type, cid: cid});
+				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
 			}, this);
 		},
 		reasonSelect: function (cb, ctx) {

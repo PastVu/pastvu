@@ -771,7 +771,7 @@ function removeComment(socket, data, cb) {
 	if (!socket.handshake.session.user) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !Number(data.cid) || !String(data.reason)) {
+	if (!Utils.isType('object', data) || !Number(data.cid) || !data.reason || (!Number(data.reason.key) && !data.reason.desc)) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),
@@ -783,7 +783,10 @@ function removeComment(socket, data, cb) {
 		hashUsers = {},
 		countCommentsRemoved = 1,
 		comment,
-		commentModel;
+		commentModel,
+
+		commentDelInfo,
+		commentChildsCid;
 
 	if (data.type === 'news') {
 		commentModel = CommentN;
@@ -793,7 +796,7 @@ function removeComment(socket, data, cb) {
 
 	step(
 		function () {
-			commentModel.findOne({cid: cid}, {_id: 0, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1}, {lean: true}, this);
+			commentModel.findOne({cid: cid}, {_id: 1, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1}, {lean: true}, this);
 		},
 		function findObj(err, c) {
 			if (err || !c) {
@@ -831,12 +834,13 @@ function removeComment(socket, data, cb) {
 			if (err || !comments) {
 				return cb({message: err && err.message || 'Cursor extract error', error: true});
 			}
-			var commentDelInfo = {user: iAm._id, stamp: new Date(), reason: 'WOW'},
-				commentChildsDelInfo,
-				commentChildsCid = [],
+			var commentChildsDelInfo,
 				commentChild,
 				len = comments.length,
 				i = 0;
+
+			commentDelInfo = {user: iAm._id, stamp: new Date(), reason: {}};
+			commentChildsCid = [];
 
 			commentsHash[cid] = comment;
 			if (!comment.hidden) {
@@ -870,12 +874,19 @@ function removeComment(socket, data, cb) {
 				}
 			}
 
-			commentModel.update({cid: cid}, {$set: {del: commentDelInfo}}, this.parallel());
+			if (Number(data.reason.key)) {
+				commentDelInfo.reason.key = Number(data.reason.key);
+			}
+			if (data.reason.desc) {
+				commentDelInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc);
+			}
+
+			commentModel.update({cid: cid}, {$set: {lastChanged: commentDelInfo.stamp, del: commentDelInfo}}, this.parallel());
 
 			if (commentChildsCid.length) {
 				countCommentsRemoved += commentChildsCid.length;
 				commentChildsDelInfo = _.assign(_.omit(commentDelInfo, 'reason'), {origin: cid});
-				commentModel.update({cid: {$in: commentChildsCid}}, {$set: {del: commentChildsDelInfo}}, {multi: true}, this.parallel());
+				commentModel.update({cid: {$in: commentChildsCid}}, {$set: {lastChanged: commentDelInfo.stamp, del: commentChildsDelInfo}}, {multi: true}, this.parallel());
 			}
 		},
 		function (err) {
@@ -915,6 +926,7 @@ function removeComment(socket, data, cb) {
 				return cb({message: err.message || 'Object or user update error', error: true});
 			}
 			var myCountRemoved = hashUsers[iAm._id] || 0; //Кол-во моих комментариев
+			actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, commentDelInfo.stamp, commentDelInfo.reason, commentDelInfo.roleregion, commentChildsCid.length ? {childs: commentChildsCid.length} : undefined);
 
 			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length});
 		}
@@ -954,7 +966,6 @@ function updateComment(socket, data, cb) {
 			}
 
 			var i,
-				can,
 				hist = {user: iAm},
 				content,
 				fragExists,

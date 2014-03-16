@@ -45,10 +45,10 @@ define(['underscore', 'jquery', 'Utils', 'Params', 'globalVM', 'knockout', 'm/_m
 		},
 		getReason: function () {
 			var selected = this.selected(),
-				key = selected.key,
+				key = Number(selected.key),
 				desc = this.desc();
 
-			if (selected.desc || key === '0') {
+			if (selected.desc || !key) {
 				if (desc.length < (selected.descmin || 5) ||
 					desc.length > (selected.descmax || 1000)) {
 					this.errMsg('Длина описания должна быть в пределах ' + (selected.descmin || 5) + ' - ' + (selected.descmax || 1000) + ' символов');
