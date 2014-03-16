@@ -12,7 +12,7 @@ var ActionLogSchema = new Schema(
 			obj: {type: Schema.Types.ObjectId, required: true, index: true}, //Объект действия
 			objtype: {type: Number, required: true, index: true}, //Тип объекта. 1 - пользователь, 2 - фото, 3 - комментарий
 
-			type: {type: Number, required: true}, //Тип действия. 1 - создал, 9 - удалил
+			type: {type: Number, required: true}, //Тип действия. 1 - создал, 8 - восстановил, 9 - удалил
 
 			reason: {
 				key: {type: Number}, //Номер причины из справочника

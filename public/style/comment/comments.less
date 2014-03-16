@@ -16,6 +16,17 @@
 .fullComments {
 	position: relative;
 
+	.commentsLoad {
+		position: relative;
+		display: inline-block;
+		width: 70px;
+		height: 20px;
+		margin-left: 10px;
+		background-image: url(/img/misc/load.gif);
+		background-repeat: no-repeat;
+		background-position: 0 50%;
+	}
+
 	> .cmtsHead {
 		position: relative;
 
@@ -92,16 +103,6 @@
 			margin-left: 6px;
 			color: #f00;
 		}
-		.commentsLoad {
-			position: relative;
-			display: inline-block;
-			width: 70px;
-			height: 20px;
-			margin-left: 10px;
-			background-image: url(/img/misc/load.gif);
-			background-repeat: no-repeat;
-			background-position: 0 50%;
-		}
 	}
 
 	> .cmts {
@@ -127,6 +128,38 @@
 			//Редактируемый комментарий скрывается, заменяясь на поле ввода
 			&.edit {
 				display: none;
+			}
+			//Свёрнутый удалённый комментарий
+			&.cdel {
+				> .delico {
+					position: relative;
+					float: left;
+					width: 50px;
+					height: 13px;
+					margin-top: 1px;
+					margin-right: 8px;
+					color: @gray;
+					font-size: 11px;
+					line-height: 13px;
+					text-align: center;
+					overflow: hidden;
+					cursor: pointer;
+					background: @gray;
+					&:hover {
+						color: @MainLigthColor;
+						background: @MainDarkColor;
+					}
+
+					&.loading {
+						background: transparent url(/img/misc/load.gif) 0 50% no-repeat;
+					}
+				}
+				> .cbody {
+					min-height: 15px;
+				}
+				.author {
+					color: #888;
+				}
 			}
 
 			> .hrefava {

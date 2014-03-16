@@ -1,3 +1,6 @@
+| {{?c.del===true}}
+| {{#def.del}}
+| {{??}}
 .c(id="c{{=c.cid}}", class="l{{=c.level}}{{?c.isnew}} isnew{{?}}")
 	a.hrefava(href="{{='/u/'+c.user.login}}", target="_blank")
 		| {{?c.user.avatar === undefined}}
@@ -6,7 +9,7 @@
 		img.cava(src="{{=c.user.avatar || '/img/caps/avatarth.png'}}")
 	.cbody
 		.chead
-			a.author(class="{{?c.user.online}}online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
+			a(class="author{{?c.user.online}} online{{?}}", href="{{='/u/'+c.user.login}}") {{=c.user.disp}}
 			| {{?c.user.rnks}}
 			.ranks {{=c.user.rnks}}
 			| {{?}}
@@ -35,3 +38,4 @@
 			span.cact.remove Удалить
 			| {{?}}
 		| {{?}}
+| {{?}}

@@ -2,14 +2,22 @@
 /**
  * Модель комментариев к объекту
  */
-define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentAdd) {
+define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'lib/doT', 'text!tpl/comment/comments.jade', 'text!tpl/comment/cdot.jade', 'text!tpl/comment/cdotanonym.jade', 'text!tpl/comment/cdotauth.jade', 'text!tpl/comment/cdotdel.jade', 'text!tpl/comment/cdotadd.jade', 'css!style/comment/comments'], function (_, _s, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, doT, html, doTComments, doTCommentAnonym, doTCommentAuth, dotCommentDel, dotCommentAdd) {
 	'use strict';
 
 	var $window = $(window),
 		commentNestingMax = 9,
-		tplComments,
-		tplCommentAuth,
-		tplCommentAdd;
+		tplComments, //Шаблон списка комментариев (для анонимных или авторизованных пользователей)
+		tplCommentsDel, //Шаблон списка удалённых комментариев (при раскрытии ветки удаленных)
+		tplCommentAuth, //Шаблон комментария для авторизованного пользователя. Нужен для вставка результата при добавлении/редактировании комментария
+		tplCommentDel, //Шаблон свёрнутого удалённого комментария
+		tplCommentAdd, //Шаблон ответа/редактирования. Поле ввода
+		getCid = function (element) {
+			var cid = $(element).closest('.c').attr('id');
+			if (cid) {
+				return Number(cid.substr(1));
+			}
+		};
 
 	return Cliche.extend({
 		jade: html,
@@ -127,10 +135,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				console.time('cc');
 				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разных вариантов, если еще не скомпилили их раньше
 				if (!tplComments) {
-					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym});
+					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym, del: dotCommentDel});
 				}
-				if (loggedIn && !tplCommentAdd) {
-					tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings));
+				if (loggedIn && !tplCommentAuth) {
+					tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings), {del: dotCommentDel});
 					tplCommentAdd = doT.template(dotCommentAdd);
 				}
 				console.timeEnd('cc');
@@ -161,13 +169,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.showTree(false);
 		},
 		eventsOn: function () {
-			var that = this,
-				getCid = function (element) {
-					var cid = $(element).closest('.c').attr('id');
-					if (cid) {
-						return Number(cid.substr(1));
-					}
-				};
+			var that = this;
 
 			this.$cmts
 				.off('click') //Отключаем все повешенные события на клик, если вызываем этот метод повторно (например, при логине)
@@ -198,6 +200,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							cid = getCid($c);
 						if (cid) {
 							that.remove(cid, $c);
+						}
+					})
+					.on('click', '.delico', function () {
+						var $c = $(this).closest('.c'),
+							cid = getCid($c);
+						if (cid) {
+							that.delShow(cid, $c);
 						}
 					});
 			}
@@ -252,8 +261,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.addMeToCommentsUsers();
 
 			//Компилим шаблоны для зарегистрированного пользователя
-			tplComments = doT.template(doTComments, undefined, {comment: doTCommentAuth});
-			tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings));
+			tplComments = doT.template(doTComments, undefined, {comment: doTCommentAuth, del: dotCommentDel});
+			tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings), {del: dotCommentDel});
 			tplCommentAdd = doT.template(dotCommentAdd);
 
 			if (!this.inViewport) {
@@ -329,7 +338,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canReply(canReply);
 
 						//Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
-						this.renderComments(data.comments);
+						var tplResult = this.renderComments(data.comments, tplComments);
+						console.time('tplInsert');
+						this.$cmts[0].innerHTML = tplResult;
+						console.timeEnd('tplInsert');
 
 						//Если у пользователя есть право отвечать в комментариях этого объекта, сразу добавляем ответ нулевого уровня
 						if (canReply) {
@@ -350,7 +362,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}.bind(this));
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
-		renderComments: function (tree) {
+		renderComments: function (tree, tpl) {
 			var usersHash = this.users,
 				commentsPlain = [],
 				commentsHash = {},
@@ -375,11 +387,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			this.commentsHash = commentsHash;
 
 			console.time('tplExec');
-			tplResult = tplComments({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
+			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn});
 			console.timeEnd('tplExec');
-			console.time('tplInsert');
-			this.$cmts[0].innerHTML = tplResult;
-			console.timeEnd('tplInsert');
+			return tplResult;
 		},
 		usersRanks: function (users) {
 			var user,
@@ -777,6 +787,74 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}.bind(that));
 				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
 			}, this);
+		},
+		delShow: function (cid, $c) {
+			if (this.loadingDel) {
+				return;
+			}
+			var objCid = this.cid,
+				that = this;
+
+			this.loadingDel = true;
+			$('.delico', $c).addClass('loading').html('');
+
+			socket.once('takeCommentsDel', function (data) {
+				//Если пока запрашивали удалённый, уже перешли на новый объект - ничего не делаем
+				if (objCid !== that.cid) {
+					return;
+				}
+				var error = !data || data.error;
+
+				if (error) {
+					console.error(data && data.message || 'No comments data received');
+					$('.delico', $c).removeClass('loading').html('Показать');
+					that.loadingDel = false;
+				} else {
+					that.usersRanks(data.users);
+					that.users = _.assign(data.users, that.users);
+
+					require(['text!tpl/comment/cdotdelopen.jade'], function (doTCommentDelOpen) {
+						//Чтобы не загружать клиента, только при первом запросе удалённых
+						//реквайрим шаблон, компилим его и вешаем нужные события на блок комментариев
+						if (!tplCommentsDel) {
+							tplCommentsDel = doT.template(doTComments, undefined, {comment: doTCommentDelOpen});
+						}
+						if (!that.delopenevents){
+							that.$cmts
+								.on('click', '.hidedel', function () {
+									var $c = $(this).closest('.c'),
+										cid = getCid($c);
+									if (cid) {
+										that.delHide(cid, $c);
+									}
+								})
+								.on('click', '.restore', function () {
+									var $c = $(this).closest('.c'),
+										cid = getCid($c);
+									if (cid) {
+										that.delRestore(cid, $c);
+									}
+								});
+							that.delopenevents = true;
+						}
+						data.comments[0].delroot = true;
+						$c.replaceWith(that.renderComments(data.comments, tplCommentsDel));
+
+						that.loadingDel = false;
+					});
+				}
+			});
+			socket.emit('giveCommentsDel', {type: this.type, cid: cid});
+		},
+		delHide: function (cid, $c) {
+			if (!tplCommentDel) {
+				tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
+			}
+			var comment = this.commentsHash[cid];
+			if (!comment) {
+				return;
+			}
+			$c.replaceWith(tplCommentDel(comment, {fDate: Utils.format.date.relative, fDateIn: Utils.format.date.relativeIn}));
 		},
 		reasonSelect: function (cb, ctx) {
 			if (!this.reasonVM) {

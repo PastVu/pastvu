@@ -24,7 +24,8 @@ var auth = require('./auth.js'),
 	msg = {
 		deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
 		noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-		noComments: 'Операции с комментариями на этой странице запрещены'
+		noComments: 'Операции с комментариями на этой странице запрещены',
+		noCommentExists: 'Комментария не существует'
 	},
 
 	actionLogController = require('./actionlog.js'),
@@ -65,7 +66,7 @@ var core = {
 
 			step(
 				function () {
-					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this);
+					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this);
 				},
 				function (err, comments) {
 					if (err || !comments) {
@@ -123,7 +124,7 @@ var core = {
 			step(
 				function () {
 					//Берём все комментарии
-					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.user': 0, 'del.reason': 0, 'del.role': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					//Берём последнее время просмотра комментариев объекта
 					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
 					//Отмечаем в менеджере подписок, что просмотрели комментарии объекта
@@ -159,6 +160,50 @@ var core = {
 				}
 			);
 		}
+	},
+	getDelTree: function (iAm, data, cb) {
+		var commentModel;
+
+		if (data.type === 'news') {
+			commentModel = CommentN;
+		} else {
+			commentModel = Comment;
+		}
+
+		commentModel.findOne({cid: data.cid, del: {$exists: true}}, {_id: 0, hist: 0, del: 0}, {lean: true}, function (err, comment) {
+			if (err || !comment) {
+				return cb({message: err && err.message || msg.noCommentExists, error: true});
+			}
+			var canModerate;
+
+			step(
+				function () {
+					//Находим объект, которому принадлежит комментарий
+					if (data.type === 'news') {
+						News.findOne({_id: comment.obj}, {_id: 1, nocomments: 1}, this.parallel());
+					} else {
+						photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
+					}
+					//Берём все удаленные комментарии, оставленные позже запрашиваемого удалённого, и ниже его уровнем
+					commentModel.find({obj: comment.obj, del: true, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					delete comment.obj;
+				},
+				function (err, obj, childs) {
+					if (err || !obj) {
+						return cb({message: err && err.message || msg.noObject, error: true});
+					}
+					canModerate = permissions.canModerate(data.type, obj, iAm);
+					commentsTreeBuildDel(comment, childs, canModerate ? undefined : String(iAm._id), this);
+				},
+				function (err, commentsTree) {
+					if (err) {
+						return cb({message: err.message, error: true});
+					}
+
+					cb(null, {comments: commentsTree.tree, users: commentsTree.users});
+				}
+			);
+		});
 	}
 };
 
@@ -301,7 +346,9 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 
 			if (comment.del !== undefined) {
 				if (comment.delRoot.delSave === true) {
-					//Сохранённые удалённые комментарии передаются без текста
+					//Для просмотра списка просто передаём флаг, что комментарий удалён. Подробности можно посмотреть в истории изменений
+					comment.del = true;
+					//Удалённые комментарии передаются без текста
 					delete comment.txt;
 					delete comment.frag;
 					delete comment.delRoot;
@@ -374,7 +421,9 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 		commentsHash[comment.cid] = comment;
 
 		if (comment.del !== undefined) {
-			//Сохранённые удалённые комментарии передаются без текста
+			//Для просмотра списка просто передаём флаг, что комментарий удалён. Подробности можно посмотреть в истории изменений
+			comment.del = true;
+			//Удалённые комментарии передаются без текста
 			delete comment.txt;
 			delete comment.frag;
 			continue;
@@ -400,6 +449,79 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 		}
 
 		cb(null, {tree: commentsTree, users: usersByLogin, countTotal: countTotal, countNew: countNew});
+	});
+}
+function commentsTreeBuildDel(comment, childs, checkMyId, cb) {
+	var commentsHash = {},
+		commentParent,
+		child,
+
+		canSee = checkMyId ? false : true,//Может ли пользователь видеть ветку комментариев. Если checkMyId не передан - может. Если передан, будем смотреть, является ли он автором одного из удаленных в запрашиваемом дереве
+		len = childs.length,
+		i = 0,
+
+		usersHash = {},
+		usersArr = [],
+		userId;
+
+	//Сначала обрабатываем удалённого родителя, по которому запрашиваем ветку
+	comment.user = String(comment.user);
+	usersHash[comment.user] = true;
+	usersArr.push(comment.user);
+	commentsHash[comment.cid] = comment;
+	comment.stamp = comment.stamp.getTime();
+	comment.lastChanged = comment.lastChanged.getTime();
+	if (comment.level === undefined) {
+		comment.level = 0;
+	}
+
+	//Если обычный пользователь является автором удалённого родителя, значит сразу решаем что может видеть ветку
+	if (checkMyId && comment.user === checkMyId) {
+		canSee = true;
+	}
+
+	//Бежим по дочерним удалённого родителя
+	for (; i < len; i++) {
+		child = childs[i];
+		commentParent = commentsHash[child.parent];
+
+		//Если такого комментария нет в хеше, значит он не дочерний запрашиваемому
+		if (commentParent === undefined) {
+			continue;
+		}
+
+		child.user = userId = String(child.user);
+		if (usersHash[userId] === undefined) {
+			usersHash[userId] = true;
+			usersArr.push(userId);
+		}
+		child.stamp = child.stamp.getTime();
+		child.lastChanged = child.lastChanged.getTime();
+
+		if (commentParent.comments === undefined) {
+			commentParent.comments = [];
+		}
+		commentParent.comments.push(child);
+		commentsHash[child.cid] = child;
+	}
+
+	//Если запрашивает не модератор и не тот, у кого среди комментариев ветки есть комментарии, то он не може видеть их, возвращаем "не существует"
+	if (!canSee) {
+		return cb({message: msg.noCommentExists});
+	}
+
+	getUsersHashForComments(usersArr, function (err, usersById, usersByLogin) {
+		if (err) {
+			return cb(err);
+		}
+		comment.user = usersById[comment.user].login;
+
+		for (i = 0; i < len; i++) {
+			child = childs[i];
+			child.user = usersById[child.user].login;
+		}
+
+		cb(null, {tree: [comment], users: usersByLogin});
 	});
 }
 
@@ -452,6 +574,26 @@ function getCommentsObj(iAm, data, cb) {
 		}
 		cb(_.assign(result, {message: 'ok', cid: data.cid}));
 	}
+}
+
+/**
+ * Выбирает ветку удалённых комментариев начиная с запрошенного
+ * @param iAm
+ * @param data Объект
+ * @param cb Коллбэк
+ */
+function getDelTree(iAm, data, cb) {
+	if (!Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	data.cid = Number(data.cid);
+
+	core.getDelTree(iAm, data, function finish(err, result) {
+		if (err) {
+			return cb({message: err.message, error: true});
+		}
+		cb(_.assign(result, {message: 'ok', cid: data.cid}));
+	});
 }
 
 
@@ -1496,6 +1638,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveCommentsObj', function (data) {
 			getCommentsObj(socket.handshake.session.user, data, function (result) {
 				socket.emit('takeCommentsObj', result);
+			});
+		});
+		socket.on('giveCommentsDel', function (data) {
+			getDelTree(socket.handshake.session.user, data, function (result) {
+				socket.emit('takeCommentsDel', result);
 			});
 		});
 		socket.on('giveCommentsUser', function (data) {

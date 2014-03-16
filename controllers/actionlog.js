@@ -39,5 +39,6 @@ module.exports.OBJTYPES = {
 };
 module.exports.TYPES = {
 	CREATE: 1,
+	RESTORE: 8,
 	REMOVE: 9
 };
