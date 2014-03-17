@@ -55,11 +55,17 @@ define([
 		if (modal.curtainClick) {
 			$modal
 				.on('click', function (evt) {
-					evt.stopPropagation();
-					modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
+					if(!$(evt.target).closest('a').length){
+						//Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+						evt.stopPropagation();
+						modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
+					}
 				})
 				.find('.neoModal').on('click', function (evt) {
-					evt.stopPropagation();
+					if(!$(evt.target).closest('a').length){
+						//Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+						evt.stopPropagation();
+					}
 				});
 		}
 		return $modal.appendTo('body');

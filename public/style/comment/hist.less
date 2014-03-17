@@ -25,15 +25,19 @@
 			display: inline-block;
 			cursor: pointer;
 		}
+		.role {
+			display: inline-block;
+			font-size: @font-size-mini;
+			color: #888;
+			cursor: default;
+		}
 		.histStamp {
 			display: inline-block;
 			font-size: @font-size-mini;
 			color: #888;
 			cursor: default;
 		}
-		.histText, .info {
-			line-height: 18px;
-		}
+
 		.info {
 			display: inline-block;
 			margin-bottom: 2px;
@@ -52,9 +56,15 @@
 				color: @MainGreenColor;
 			}
 		}
+
+		.histCat {
+			display: inline;
+			font-weight: bold;
+		}
 		.histText {
 			max-width: 1000px;
 			color: @text-color;
+			line-height: 18px;
 		}
 		.histDel {
 			max-width: 1000px;

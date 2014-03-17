@@ -7,7 +7,9 @@ var histScheme = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},
 		stamp: {type: Date, 'default': Date.now, required: true},
 		frag: {type: Number},
-		txt: {type: String}
+		txt: {type: String},
+		role: {type: Number}, //Реализуемая на момент операции роль пользователя. Например, если это модератор
+		roleregion: {type: Number} //Регион реализуемой роли
 	},
 	delInfo = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},

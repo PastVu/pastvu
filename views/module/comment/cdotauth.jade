@@ -20,7 +20,7 @@
 				|  Комментируемый фрагмент
 			| {{?}}
 			.dotDelimeter ·
-			a.stamp(href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
+			a.stamp(href="?hl=comment-{{=c.cid}}") {{=it.fDate(new Date(c.stamp))}}
 			| {{?c.lastChanged}}
 			.dotDelimeter ·
 			.changed(title="Показать историю изменений") {{='Изменен '+it.fDateIn(new Date(c.lastChanged))}}

@@ -1387,22 +1387,37 @@ function giveCommentHist(data, cb) {
 			lastTxtIndex = 0, //Позиция последнего изменение текста в стеке событий
 			lastTxtObj = {user: comment.user, stamp: comment.stamp}, //Первое событие изменения текста будет равнятся созданию комментария
 			result = [],
-			formDelRow = function (delInfo) {
-				delInfo = _.omit(delInfo, 'user', 'stamp');
-				if (delInfo.roleregion) {
-					delInfo.roleregion = regionController.getRegionsHashFromCache([delInfo.roleregion])[delInfo.roleregion];
-					if (delInfo.roleregion) {
-						delInfo.roleregion = _.omit(delInfo.roleregion, '_id', 'parents');
+			getregion = function (regionId) {
+				var result;
+				if (regionId) {
+					result = regionController.getRegionsHashFromCache([regionId])[regionId];
+					if (result) {
+						result = _.omit(result, '_id', 'parents');
 					}
 				}
-				return delInfo;
+				return result;
 			};
+
+
+		if (comment.del) {
+			hists.push({
+				user: comment.del.user,
+				stamp: comment.del.stamp,
+				del: comment.del,
+				role: comment.del.role,
+				roleregion: comment.del.roleregion
+			});
+		}
 
 		for (i = 0; i < hists.length; i++) {
 			hist = hists[i];
 
+			if (hist.role && hist.roleregion) {
+				hist.roleregion = getregion(hist.roleregion);
+			}
+
 			if (hist.del) {
-				hist.del = formDelRow(hist.del);
+				hist.del = _.pick(hist.del, 'reason', 'origin');
 				result.push(hist);
 				continue;
 			}
@@ -1433,13 +1448,6 @@ function giveCommentHist(data, cb) {
 			}
 		}
 
-		if (comment.del) {
-			result.push({
-				user: comment.del.user,
-				stamp: comment.del.stamp,
-				del: formDelRow(comment.del)
-			});
-		}
 		cb({hists: result});
 	});
 }

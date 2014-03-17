@@ -8,18 +8,38 @@
 			.media-body
 				.histHead
 					a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
+					| {{?h.role}}
+					| &nbsp;
+					.role
+						| {{?h.role===5}}как модератор{{?h.roleregion}} региона {{=h.roleregion.title_local}}{{?}}
+						| {{??h.role>9}}как администратор{{?}}
+					| {{?}}
 					.dotDelimeter ·
 					.histStamp {{=it.fDate(new Date(h.stamp))}}
+
 				| {{?h.del}}
-				.histDel
-					.info.red
-						span.glyphicon.glyphicon-remove
-						|  Комментарий удален
+				.info.red
+					span.glyphicon.glyphicon-remove
+					|  Комментарий удален
+				.histText
+					| {{?h.del.origin || h.del.reason && h.del.reason.key}}
+					div
+						.histCat Причина:
+						| {{?h.del.origin}} Удаление родительского комментария&nbsp;
+						a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
+						| {{??}} {{=it.reasonKeys[h.del.reason.key]}}{{?}}
+					| {{?}}
+
+					| {{?h.del.reason && h.del.reason.desc}}
+					div
+						.histCat Описание:
+						|  {{=h.del.reason.desc}}
+					| {{?}}
+
 				| {{??h.restored}}
-				.histDel
-					.info.green
-						span.glyphicon.glyphicon-repeat
-						|  Комментарий восстановлен
+				.info.green
+					span.glyphicon.glyphicon-repeat
+					|  Комментарий восстановлен
 				| {{??}}
 
 				| {{?h.frag}}

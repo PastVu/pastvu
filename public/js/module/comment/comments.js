@@ -781,7 +781,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.fragReplace(result.frags);
 						}
 
-						//Заменяем корневой удаляемый комментарий за удалённый(схлопнутый)
+						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
 						if (!tplCommentDel) {
 							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
 						}

@@ -9,6 +9,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
 			f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
 			f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент'
+		},
+		reasonKeys = {
+			'1': 'Нарушение Правил',
+			'2': 'Спам'
 		};
 
 	return Cliche.extend({
@@ -28,7 +32,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			this.getHist(function (err, hists) {
 				if (hists && hists.length) {
-					this.$dom[0].innerHTML = tplHist({hists: hists, fDate: Utils.format.date.relative});
+					this.$dom[0].innerHTML = tplHist({hists: hists, reasonKeys: reasonKeys, fDate: Utils.format.date.relative});
 				}
 				this.show();
 			}, this);
