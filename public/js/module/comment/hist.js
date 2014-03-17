@@ -2,13 +2,14 @@
 /**
  * Модель истории комментария
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'text!tpl/comment/hist.jade', 'css!style/comment/hist', ], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'lib/doT', 'text!tpl/comment/hist.jade', 'css!style/comment/hist'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, doT, jade) {
 	'use strict';
-	var changeFragTexts = {
-		f1: '<b>[</b><span class="glyphicon glyphicon-plus"></span>Добавлен фрагмент<b>]</b>',
-		f2: '<b>[</b><span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент<b>]</b>',
-		f3: '<b>[</b><span class="glyphicon glyphicon-minus"></span>Удален фрагмент<b>]</b>'
-	};
+	var tplHist,
+		changeFragTexts = {
+			f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
+			f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
+			f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент'
+		};
 
 	return Cliche.extend({
 		jade: jade,
@@ -19,12 +20,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		create: function () {
 			this.cid = this.options.cid;
 			this.type = this.options.type;
-			this.hists = ko.observableArray();
-			this.loading = ko.observable(true);
 
 			ko.applyBindings(globalVM, this.$dom[0]);
-			this.show();
-			this.getHist();
+			if (!tplHist) {
+				tplHist = doT.template(document.getElementById('dothist').text);
+			}
+
+			this.getHist(function (err, hists) {
+				if (hists && hists.length) {
+					this.$dom[0].innerHTML = tplHist({hists: hists, fDate: Utils.format.date.relative});
+				}
+				this.show();
+			}, this);
 		},
 		show: function () {
 			globalVM.func.showContainer(this.$container);
@@ -38,14 +45,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.showing = false;
 		},
 		getHist: function (cb, ctx) {
-			this.loading(true);
 			socket.once('takeCommentHist', function (data) {
-				if (!data || data.error || !Array.isArray(data.hists)) {
+				var error = !data || data.error || !Array.isArray(data.hists);
+
+				if (error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
 					var i = data.hists.length,
 						hist,
 						user;
+
 					while (i--) {
 						hist = data.hists[i];
 						if (hist.frag) {
@@ -54,11 +63,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						user = hist.user;
 						user.avatar = user.avatar ? P.preaddr + '/_a/h/' + user.avatar : '/img/caps/avatarth.png';
 					}
-					this.hists(data.hists);
 				}
-				this.loading(false);
 				if (Utils.isType('function', cb)) {
-					cb.call(ctx, data);
+					cb.call(ctx, error, data.hists);
 				}
 			}.bind(this));
 			socket.emit('giveCommentHist', {cid: this.cid, type: this.type});

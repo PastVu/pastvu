@@ -31,14 +31,32 @@
 			color: #888;
 			cursor: default;
 		}
-		.histText, .histFrag {
+		.histText, .info {
 			line-height: 18px;
 		}
-		.histFrag {
-			font-size: @font-size-small;
+		.info {
+			display: inline-block;
+			margin-bottom: 2px;
+			padding-left: 3px;
 			color: @gray;
+			font-size: @font-size-small;
+			line-height: 16px;
+			border-width: 0 0px 1px 1px;
+			border-color: @gray;
+			border-style: solid;
+
+			&.red {
+				color: @MainRedColor;
+			}
+			&.green {
+				color: @MainGreenColor;
+			}
 		}
 		.histText {
+			max-width: 1000px;
+			color: @text-color;
+		}
+		.histDel {
 			max-width: 1000px;
 			color: @text-color;
 		}

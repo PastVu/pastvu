@@ -1,16 +1,35 @@
 .commentHist(data-bind="with: repository[M!M]")
+	| <script id="dothist" type="text/x-dot-template">
 	ul.media-list
-		//ko foreach: hists
+		| {{~it.hists :h:index}}
 		li.media.hist
-			a.pull-left(target="_blank", data-bind="attr: {href: '/u/' + $data.user.login}")
-				img.media-object(data-bind="attr: {src: $data.user.avatar}")
+			a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
+				img.media-object(src="{{=h.user.avatar}}")
 			.media-body
 				.histHead
-					a.author(target="_blank", data-bind="attr: {href: '/u/' +$data.user.login}, text: $data.user.disp")
+					a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
 					.dotDelimeter ·
-					.histStamp(data-bind="text: moment($data.stamp).calendar()")
-				//ko if: $data.frag
-				.histFrag(data-bind="html: $data.frag")
-				// /ko
-				.histText(data-bind="html: $data.txt")
-		// /ko
+					.histStamp {{=it.fDate(new Date(h.stamp))}}
+				| {{?h.del}}
+				.histDel
+					.info.red
+						span.glyphicon.glyphicon-remove
+						|  Комментарий удален
+				| {{??h.restored}}
+				.histDel
+					.info.green
+						span.glyphicon.glyphicon-repeat
+						|  Комментарий восстановлен
+				| {{??}}
+
+				| {{?h.frag}}
+				.info {{=h.frag}}
+				| {{?}}
+				| {{?h.txt}}
+				.histText {{=h.txt}}
+				| {{?}}
+
+				| {{?}}
+
+		| {{~}}
+	| </script>

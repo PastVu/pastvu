@@ -29,6 +29,7 @@ var auth = require('./auth.js'),
 	},
 
 	actionLogController = require('./actionlog.js'),
+	regionController = require('./region.js'),
 	photoController = require('./photo.js'),
 	subscrController = require('./subscr.js'),
 
@@ -942,7 +943,7 @@ function removeComment(socket, data, cb) {
 		},
 		function findObj(err, c) {
 			if (err || !c) {
-				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
+				return cb({message: err && err.message || msg.noCommentExists, error: true});
 			}
 			comment = c;
 			if (data.type === 'news') {
@@ -978,7 +979,7 @@ function removeComment(socket, data, cb) {
 			delInfo = {user: iAm._id, stamp: new Date(), reason: {}};
 			childsCids = [];
 
-			//Операции с корневым удаляемым комментариям
+			//Операции с корневым удаляемым комментарием
 			commentsHash[cid] = comment;
 			if (!comment.hidden) {
 				//Если комментарий скрыт (т.е. объект не публичный), его уже не надо вычитать из статистики пользователя
@@ -1071,6 +1072,167 @@ function removeComment(socket, data, cb) {
 	);
 }
 
+/**
+ * Восстанавливает комментарий и его дочерние комментарии
+ * @param socket Сокет пользователя
+ * @param data
+ * @param cb Коллбэк
+ */
+/*function restoreComment(socket, data, cb) {
+	if (!socket.handshake.session.user) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+	var cid = Number(data.cid),
+		iAm = socket.handshake.session.user,
+		obj,
+		commentsHash = {},
+		hashUsers = {},
+		countCommentsRemoved = 1,
+		comment,
+		commentModel,
+
+		childsCids;
+
+	if (data.type === 'news') {
+		commentModel = CommentN;
+	} else {
+		commentModel = Comment;
+	}
+
+	step(
+		function () {
+			commentModel.findOne({cid: cid, del: null}, {_id: 1, obj: 1, user: 1, stamp: 1, hidden: 1}, {lean: true}, this);
+		},
+		function findObj(err, c) {
+			if (err || !c) {
+				return cb({message: err && err.message || msg.noCommentExists, error: true});
+			}
+			comment = c;
+			if (data.type === 'news') {
+				News.findOne({_id: c.obj}, {_id: 1, ccount: 1}, this.parallel());
+			} else {
+				photoController.findPhoto({_id: c.obj}, null, iAm, this.parallel());
+			}
+		},
+		function (err, o) {
+			if (err || !o) {
+				return cb({message: err && err.message || msg.noObject, error: true});
+			}
+
+			//Только модератор объекта может восстановить комментарий
+			if (!permissions.canModerate(data.type, o, iAm)) {
+				return cb({message: msg.deny, error: true});
+			}
+
+			obj = o;
+			commentModel.find({obj: o._id, del: null, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, stamp: 0, txt: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this);
+		},
+		function (err, childs) {
+			if (err || !childs) {
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
+			}
+			var child,
+				len = childs.length,
+				i = 0;
+
+			childsCids = [];
+
+			//Операции с корневым восстанавливаемым комментарием
+			commentsHash[cid] = comment;
+			if (!comment.hidden) {
+				//Если комментарий скрыт (т.е. объект не публичный), его не надо прибавлять к статистике пользователя
+				hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+			}
+
+			//Операции с потомками удаляемого комментария
+			for (; i < len; i++) {
+				child = childs[i];
+				if (child.level && commentsHash[child.parent] !== undefined && !child.del) {
+
+					if (canCauseItsOwn) {
+						//Если обычный пользователь удаляет свой комментарий, у него не должно быть потомков, т.е. он один
+						return cb({message: msg.deny, error: true});
+					}
+
+					if (!child.hidden) {
+						hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
+					}
+					childsCids.push(child.cid);
+					commentsHash[child.cid] = child;
+				}
+			}
+
+			if (canModerate && iAm.role) {
+				delInfo.role = iAm.role;
+				if (iAm.role === 5) {
+					//В случае с модератором региона, permissions.canModerate возвращает cid роли,
+					//который мы записываем на момент удаления
+					delInfo.roleregion = canModerate;
+				}
+			}
+
+			if (Number(data.reason.key)) {
+				delInfo.reason.key = Number(data.reason.key);
+			}
+			if (data.reason.desc) {
+				delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc);
+			}
+
+			commentModel.update({cid: cid}, {$set: {lastChanged: delInfo.stamp, del: delInfo}}, this.parallel());
+
+			if (childsCids.length) {
+				countCommentsRemoved += childsCids.length;
+				delInfoChilds = _.assign(_.omit(delInfo, 'reason'), {origin: cid});
+				commentModel.update({cid: {$in: childsCids}}, {$set: {lastChanged: delInfo.stamp, del: delInfoChilds}}, {multi: true}, this.parallel());
+			}
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message || 'Comment remove error', error: true});
+			}
+			var frags = obj.frags && obj.frags.toObject(),
+				user,
+				i,
+				u;
+
+			if (frags) {
+				for (i = frags.length; i--;) {
+					if (commentsHash[frags[i].cid] !== undefined) {
+						obj.frags.id(frags[i]._id).del = true;
+					}
+				}
+			}
+
+			obj.ccount -= countCommentsRemoved;
+			obj.save(this.parallel());
+
+			for (u in hashUsers) {
+				if (hashUsers[u] !== undefined) {
+					user = _session.getOnline(null, u);
+					if (user !== undefined) {
+						user.ccount = user.ccount - hashUsers[u];
+						_session.saveEmitUser(user.login, null, null, this.parallel());
+					} else {
+						User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
+					}
+				}
+			}
+		},
+		function (err) {
+			if (err) {
+				return cb({message: err.message || 'Object or user update error', error: true});
+			}
+			var myCountRemoved = hashUsers[iAm._id] || 0; //Кол-во моих комментариев
+			actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
+
+			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: delInfo.stamp.getTime()});
+		}
+	);
+}*/
+
 
 /**
  * Редактирует комментарий
@@ -1101,7 +1263,7 @@ function updateComment(socket, data, cb) {
 		},
 		function (err, comment, obj) {
 			if (err || !comment || !obj || data.obj !== obj.cid) {
-				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
+				return cb({message: err && err.message || msg.noCommentExists, error: true});
 			}
 
 			var i,
@@ -1215,51 +1377,71 @@ function giveCommentHist(data, cb) {
 		commentModel = Comment;
 	}
 
-	step(
-		function counters() {
-			commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1}).populate({path: 'user hist.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(this);
-		},
-		function (err, comment) {
-			if (err || !comment) {
-				return cb({message: err && err.message || 'Такого комментария не существует', error: true});
-			}
-			var i,
-				hist,
-				hists = comment.hist.toObject({ transform: objectDeleteId }),
-				lastTxtIndex = 0, //Позиция последнего изменение текста в стеке событий
-				lastTxtObj = {user: comment.user, stamp: comment.stamp}, //Первое событие изменения текста будет равнятся созданию комментария
-				result = [];
-
-			for (i = 0; i < hists.length; i++) {
-				hist = hists[i];
-				if (hist.txt) {
-					//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
-					lastTxtObj.txt = hist.txt;
-					if (!lastTxtObj.frag) {
-						//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
-						result.splice(lastTxtIndex, 0, lastTxtObj);
-					}
-					//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
-					delete hist.txt;
-					lastTxtIndex = result.length;
-					lastTxtObj = hist;
-				}
-				//Если в записи есть изменение фрагмента, то вставляем её
-				if (hist.frag) {
-					result.push(hist);
-				}
-				//Если это последняя запись в истории и ранее была смена текста,
-				//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
-				if (i === hists.length - 1 && lastTxtIndex > 0) {
-					lastTxtObj.txt = comment.txt;
-					if (!lastTxtObj.frag) {
-						result.splice(lastTxtIndex, 0, lastTxtObj);
-					}
-				}
-			}
-			cb({hists: result});
+	commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1, del: 1}, {lean: true}).populate({path: 'user hist.user del.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, comment) {
+		if (err || !comment) {
+			return cb({message: err && err.message || msg.noCommentExists, error: true});
 		}
-	);
+		var i,
+			hist,
+			hists = comment.hist || [],
+			lastTxtIndex = 0, //Позиция последнего изменение текста в стеке событий
+			lastTxtObj = {user: comment.user, stamp: comment.stamp}, //Первое событие изменения текста будет равнятся созданию комментария
+			result = [],
+			formDelRow = function (delInfo) {
+				delInfo = _.omit(delInfo, 'user', 'stamp');
+				if (delInfo.roleregion) {
+					delInfo.roleregion = regionController.getRegionsHashFromCache([delInfo.roleregion])[delInfo.roleregion];
+					if (delInfo.roleregion) {
+						delInfo.roleregion = _.omit(delInfo.roleregion, '_id', 'parents');
+					}
+				}
+				return delInfo;
+			};
+
+		for (i = 0; i < hists.length; i++) {
+			hist = hists[i];
+
+			if (hist.del) {
+				hist.del = formDelRow(hist.del);
+				result.push(hist);
+				continue;
+			}
+
+			if (hist.txt) {
+				//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
+				lastTxtObj.txt = hist.txt;
+				if (!lastTxtObj.frag) {
+					//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
+					result.splice(lastTxtIndex, 0, lastTxtObj);
+				}
+				//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
+				delete hist.txt;
+				lastTxtIndex = result.length;
+				lastTxtObj = hist;
+			}
+			//Если в записи есть изменение фрагмента, то вставляем её
+			if (hist.frag) {
+				result.push(hist);
+			}
+			//Если это последняя запись в истории и ранее была смена текста,
+			//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
+			if (i === hists.length - 1 && lastTxtIndex > 0) {
+				lastTxtObj.txt = comment.txt;
+				if (!lastTxtObj.frag) {
+					result.splice(lastTxtIndex, 0, lastTxtObj);
+				}
+			}
+		}
+
+		if (comment.del) {
+			result.push({
+				user: comment.del.user,
+				stamp: comment.del.stamp,
+				del: formDelRow(comment.del)
+			});
+		}
+		cb({hists: result});
+	});
 }
 
 /**
@@ -1625,11 +1807,11 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('removeCommentResult', result);
 			});
 		});
-		socket.on('restoreComment', function (data) {
+		/*socket.on('restoreComment', function (data) {
 			restoreComment(socket, data, function (result) {
 				socket.emit('restoreCommentResult', result);
 			});
-		});
+		});*/
 
 		socket.on('setNoComments', function (data) {
 			setNoComments(socket, data, function (result) {
