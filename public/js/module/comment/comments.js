@@ -750,7 +750,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		remove: function (cid, $c) {
 			var that = this,
-				comment = this.commentsHash[cid];
+				comment = this.commentsHash[cid],
+				reasonsselect = true;
 
 			if (!comment || !this.canModerate() && (!this.canReply() || !comment.can.del)) {
 				return;
@@ -758,7 +759,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
-			this.reasonSelect(function (cancel, reason) {
+			//Когда пользователь удаляет свой последний комментарий, независимо от прав, он должен объяснить это просто текстом
+			if (_.isEmpty(comment.comments) && comment.user.login === this.auth.iAm.login()) {
+				reasonsselect = false;
+			}
+
+			this.reasonSelect(reasonsselect, function (cancel, reason) {
 				if (cancel) {
 					$('.hlRemove', this.$cmts).removeClass('hlRemove');
 					return;
@@ -876,19 +882,20 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			getChildComments(comment, $c).remove();
 			$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 		},
-		reasonSelect: function (cb, ctx) {
+		reasonSelect: function (reasonsselect, cb, ctx) {
 			if (!this.reasonVM) {
+				var select = [{key: '0', name: 'Свободное описание причины'}];
+				if (reasonsselect) {
+					select.push({key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'});
+					select.push({key: '2', name: 'Спам'});
+				}
 				renderer(
 					[
 						{
 							module: 'm/common/reason',
 							options: {
 								text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Укажите причину и подтвердите операцию',
-								select: [
-									{key: '0', name: 'Свободное описание причины'},
-									{key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'},
-									{key: '2', name: 'Спам'}
-								]
+								select: select
 							},
 							modal: {
 								topic: 'Причина удаления',
@@ -1013,7 +1020,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					} else {
 						comment = result.comment;
 						comment.user = this.users[comment.user];
-						comment.parent = result.parent;
 						comment.can.edit = true;
 						comment.can.del = true;
 
@@ -1025,6 +1031,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 								parent.comments = [];
 							}
 							parent.comments.push(comment);
+							comment.parent = parent.cid;
 
 							//Если это комментарий-ответ, заменяем поле ввода новым комментарием
 							$cadd.replaceWith($c);
