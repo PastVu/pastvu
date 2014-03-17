@@ -291,15 +291,21 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 			if (commentParent === undefined) {
 				continue;
 			}
-			if (commentParent.del !== undefined) {
-				comment.delRoot = commentParent.delRoot;
-				if (comment.delRoot.delSave === true) {
-					continue; //Если корневой удаляемый уже сохранён, отбрасываем текущий
+			if (commentIsDeleted) {
+				if (commentParent.del !== undefined) {
+					if (commentParent.delRoot.delSave === true) {
+						continue; //Если корневой удаляемый уже сохранён, отбрасываем текущий
+					}
+					comment.delRoot = commentParent.delRoot;
+					if (commentIsMine) {
+						comment.delRoot.delSave = true;
+						continue;
+					}
 				} else if (commentIsMine) {
 					comment.delRoot.delSave = true;
-					continue;
 				}
-			} else if (commentParent.comments === undefined) {
+			}
+			if (commentParent.comments === undefined) {
 				if (canReply && commentParent.can.del === true) {
 					//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
 					//т.е. это его комментарий, отменяем возможность удаления,
@@ -353,7 +359,7 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 					delete comment.txt;
 					delete comment.frag;
 					delete comment.delRoot;
-					delete comment.delSave;
+					delete comment.delSave; //Удаляем delSave, и тогда его потомки не войдут в этот блок
 				} else {
 					continue;
 				}
