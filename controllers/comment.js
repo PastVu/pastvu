@@ -287,21 +287,26 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 
 			//Чтобы узнать, есть ли в удалённой ветке комментарий текущего пользователя (тогда он должен видеть эту ветку)
 			//надо сохранять ссылку на корневой удалённый комментарий у всех дочерних, пока не встретим комментарий текущего пользователя
-			//и в этом случае помечаем родительский удалённый как сохраняемый и удаляем его потомков (они не передаются)
+			//и в этом случае помечаем родительский удалённый как сохраняемый и отбрасываем его потомков (они не передаются)
+
 			if (commentParent === undefined) {
+				//Если родителя нет в хеше, возможно он в сохранённой ветке удаленных комментариев (но не корневой) и
+				//поэтому уже отброшен, значит текущий тоже надо отбросить
 				continue;
 			}
 			if (commentIsDeleted) {
 				if (commentParent.del !== undefined) {
 					if (commentParent.delRoot.delSave === true) {
-						continue; //Если корневой удаляемый уже сохранён, отбрасываем текущий
+						continue; //Если корневой удаляемый родитель уже сохранён, отбрасываем текущий
 					}
-					comment.delRoot = commentParent.delRoot;
+					comment.delRoot = commentParent.delRoot; //Сохраняем ссылку на корневой родительский
 					if (commentIsMine) {
+						//Если это собственный, указываем что корневой нужно сохранить и отбрасываем текущий
 						comment.delRoot.delSave = true;
 						continue;
 					}
 				} else if (commentIsMine) {
+					//Если это собственный корневой удаленный комментарий (нет удалённых родителей), сразу сохраняем его
 					comment.delRoot.delSave = true;
 				}
 			}
@@ -315,6 +320,7 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 				commentParent.comments = [];
 			}
 		} else if (commentIsDeleted && commentIsMine) {
+			//Если это собственный удаленный комментарий первого уровня, сразу сохраняем его
 			comment.delSave = true;
 		}
 
@@ -353,13 +359,14 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 
 			if (comment.del !== undefined) {
 				if (comment.delRoot.delSave === true) {
-					//Для просмотра списка просто передаём флаг, что комментарий удалён. Подробности можно посмотреть в истории изменений
+					//Просто передаём флаг, что комментарий удалён. Подробности можно посмотреть в истории изменений
 					comment.del = true;
-					//Удалённые комментарии передаются без текста
+					//Удалённый корневой комментарий (схлопнутый) передается без текста
 					delete comment.txt;
 					delete comment.frag;
 					delete comment.delRoot;
-					delete comment.delSave; //Удаляем delSave, и тогда его потомки не войдут в этот блок
+					delete comment.delSave; //Удаляем delSave, и тогда его потомки не войдут в эту ветку
+					delete comment.comments;
 				} else {
 					continue;
 				}
@@ -383,6 +390,7 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 
 function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 	var commentsHash = {},
+		commentsPlain = [],
 		commentsTree = [],
 		commentParent,
 		comment,
@@ -399,14 +407,6 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 
 	for (; i < len; i++) {
 		comment = comments[i];
-
-		comment.user = userId = String(comment.user);
-		if (usersHash[userId] === undefined) {
-			usersHash[userId] = true;
-			usersArr.push(userId);
-		}
-
-		comment.stamp = comment.stamp.getTime(); //Время отдаём в ms
 
 		if (comment.level === undefined) {
 			comment.level = 0;
@@ -426,6 +426,19 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 		}
 
 		commentsHash[comment.cid] = comment;
+		commentsPlain.push(comment);
+
+		comment.user = userId = String(comment.user);
+		if (usersHash[userId] === undefined) {
+			usersHash[userId] = true;
+			usersArr.push(userId);
+		}
+
+		//Время отдаём в ms
+		comment.stamp = comment.stamp.getTime();
+		if (comment.lastChanged !== undefined) {
+			comment.lastChanged = comment.lastChanged.getTime();
+		}
 
 		if (comment.del !== undefined) {
 			//Для просмотра списка просто передаём флаг, что комментарий удалён. Подробности можно посмотреть в истории изменений
@@ -433,26 +446,25 @@ function commentsTreeBuildCanModerate(myId, comments, previousViewStamp, cb) {
 			//Удалённые комментарии передаются без текста
 			delete comment.txt;
 			delete comment.frag;
+			delete comment.comments;
 			continue;
-		}
-
-		countTotal++;
-		if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myId) {
+		} else if (previousViewStamp && comment.stamp > previousViewStamp && comment.user !== myId) {
 			comment.isnew = true;
 			countNew++;
 		}
+
+		countTotal++;
 	}
 
 	getUsersHashForComments(usersArr, function (err, usersById, usersByLogin) {
 		if (err) {
 			return cb(err);
 		}
-		for (i = 0; i < len; i++) {
-			comment = comments[i];
-			comment.user = usersById[comment.user].login;
-			if (comment.lastChanged !== undefined) {
-				comment.lastChanged = comment.lastChanged.getTime();
-			}
+		var i = commentsPlain.length, c;
+
+		while (i--) {
+			c = commentsPlain[i];
+			c.user = usersById[c.user].login;
 		}
 
 		cb(null, {tree: commentsTree, users: usersByLogin, countTotal: countTotal, countNew: countNew});
