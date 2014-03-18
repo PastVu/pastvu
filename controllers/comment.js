@@ -311,8 +311,8 @@ function commentsTreeBuildAuth(myId, comments, previousViewStamp, canReply, cb) 
 				}
 			}
 			if (commentParent.comments === undefined) {
-				if (canReply && commentParent.can.del === true) {
-					//Если родителю вставляем первый дочерний комментарий, и пользователь может удалить родительский,
+				if (canReply && commentParent.del === undefined && commentParent.can.del === true) {
+					//Если у не удаленного родителя обнаруживаем первый дочерний комментарий, и пользователь может удалить родительский,
 					//т.е. это его комментарий, отменяем возможность удаления,
 					//т.к. пользователь не может удалять свои не последние комментарии
 					delete commentParent.can.del;
@@ -513,6 +513,9 @@ function commentsTreeBuildDel(comment, childs, checkMyId, cb) {
 		if (usersHash[userId] === undefined) {
 			usersHash[userId] = true;
 			usersArr.push(userId);
+		}
+		if (checkMyId && userId === checkMyId) {
+			canSee = true;
 		}
 		child.stamp = child.stamp.getTime();
 		child.lastChanged = child.lastChanged.getTime();
