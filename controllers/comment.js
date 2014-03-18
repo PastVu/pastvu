@@ -1082,10 +1082,25 @@ function removeComment(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message || 'Object or user update error', error: true});
 			}
-			var myCountRemoved = hashUsers[iAm._id] || 0; //Кол-во моих комментариев
-			actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
+			var myCountRemoved = hashUsers[iAm._id] || 0, //Кол-во моих комментариев
+				frags,
+				frag,
+				i;
 
-			cb({message: 'Ok', frags: obj.frags && obj.frags.toObject(), countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: delInfo.stamp.getTime()});
+			//Не отдаем фрагменты только не удаленных комментариев, для замены на клиенте
+			if (obj.frags) {
+				obj.frags = obj.frags.toObject();
+				frags = [];
+				for (i = 0; i < obj.frags.length; i++) {
+					frag = obj.frags[i];
+					if (!frag.del) {
+						frags.push(frag);
+					}
+				}
+			}
+
+			actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
+			cb({message: 'Ok', frags: frags, countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: delInfo.stamp.getTime()});
 		}
 	);
 }

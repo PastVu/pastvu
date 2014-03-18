@@ -553,12 +553,27 @@ function givePhoto(socket, data, cb) {
 					if (err) {
 						return cb({message: err && err.message, error: true});
 					}
+					var i = 0,
+						frags,
+						frag;
+
+					//Не отдаем фрагменты удаленных комментариев
+					if (photo.frags) {
+						frags = [];
+						for (i = 0; i < photo.frags.length; i++) {
+							frag = photo.frags[i];
+							if (!frag.del) {
+								frags.push(frag);
+							}
+						}
+						photo.frags = frags;
+					}
 
 					if (subscr) {
 						photo.subscr = true;
 					}
 
-					for (var i = 0; i <= maxRegionLevel; i++) {
+					for (i = 0; i <= maxRegionLevel; i++) {
 						delete photo['r' + i];
 					}
 					if (regions.length) {
