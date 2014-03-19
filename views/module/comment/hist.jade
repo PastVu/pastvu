@@ -11,7 +11,9 @@
 					| {{?h.role}}
 					| &nbsp;
 					.role
-						| {{?h.role===5}}как модератор{{?h.roleregion}} региона {{=h.roleregion.title_local}}{{?}}
+						| {{?h.role===5}}как модератор
+						| {{?h.roleregion}} региона&nbsp;
+						a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
 						| {{??h.role>9}}как администратор{{?}}
 					| {{?}}
 					.dotDelimeter ·

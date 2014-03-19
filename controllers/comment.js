@@ -962,15 +962,15 @@ function removeComment(socket, data, cb) {
 		function () {
 			commentModel.findOne({cid: cid, del: null}, {_id: 1, obj: 1, user: 1, stamp: 1, hidden: 1}, {lean: true}, this);
 		},
-		function findObj(err, c) {
+		function (err, c) {
 			if (err || !c) {
 				return cb({message: err && err.message || msg.noCommentExists, error: true});
 			}
 			comment = c;
 			if (data.type === 'news') {
-				News.findOne({_id: c.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
+				News.findOne({_id: c.obj}, {_id: 1, ccount: 1, nocomments: 1}, this);
 			} else {
-				photoController.findPhoto({_id: c.obj}, null, iAm, this.parallel());
+				photoController.findPhoto({_id: c.obj}, null, iAm, this);
 			}
 		},
 		function (err, o) {

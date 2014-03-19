@@ -169,7 +169,7 @@
 				background-color: fade(@MainBlueColor, 10%);
 				.transition(~'background-color .25s linear .1s');
 			}
-			&.hlRemove {
+			&.hlRemove:not(.cdel):not(.delopen) { //Выделения для удаленя не выделяет уже удаленные
 				background-color: rgba(255, 188, 16, 0.5);
 			}
 

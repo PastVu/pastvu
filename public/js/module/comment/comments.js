@@ -757,6 +757,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
+			//TODO: Записывать права в историю при редактировании комментария
+			//TODO: Не работает action модераторов после логина в новости
+			//TODO: Восстановление с фрагментами
+			//TODO: Проверить удаление в новостях
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
 			//Когда пользователь удаляет свой последний комментарий, независимо от прав, он должен объяснить это просто текстом
@@ -787,17 +791,17 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.fragReplace(result.frags);
 						}
 
+						if (count > 1) {
+							//Удаляем все дочерние, если есть
+							//(нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
+							getChildComments(comment, $c).remove();
+							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
+						}
 						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
 						if (!tplCommentDel) {
 							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
 						}
 						$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
-
-						if (count > 1) {
-							//Удаляем все дочерние, если есть
-							$('.hlRemove', this.$cmts).remove();
-							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
-						}
 						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 					} else {
 						msg = result && result.message || '';
