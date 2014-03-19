@@ -275,6 +275,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		loggedInHandler: function () {
 			// После логина добавляем себя в комментаторы и заново запрашиваем комментарии (если есть новые, например)
 			this.addMeToCommentsUsers();
+			//Заново вешаем события на блок комментариев с учетом логина
+			this.eventsOn();
 
 			//Компилим шаблоны для зарегистрированного пользователя
 			tplComments = doT.template(doTComments, undefined, {comment: doTCommentAuth, del: dotCommentDel});
@@ -751,14 +753,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		remove: function (cid, $c) {
 			var that = this,
 				comment = this.commentsHash[cid],
+				parent = comment.parent && this.commentsHash[comment.parent],
 				reasonsselect = true;
 
 			if (!comment || !this.canModerate() && (!this.canReply() || !comment.can.del)) {
 				return;
 			}
 
-			//TODO: Записывать права в историю при редактировании комментария
-			//TODO: Не работает action модераторов после логина в новости
 			//TODO: Восстановление с фрагментами
 			//TODO: Проверить удаление в новостях
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
@@ -774,13 +775,18 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					return;
 				}
 				socket.once('removeCommentResult', function (result) {
-					var msg,
-						count;
+					var i,
+						msg,
+						count,
+						$cparent;
 
 					if (result && !result.error) {
 						count = Number(result.countComments);
 						if (!count) {
 							return;
+						}
+						if (!tplCommentDel) {
+							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
 						}
 
 						comment.lastChanged = result.stamp;
@@ -791,17 +797,32 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							this.parentModule.fragReplace(result.frags);
 						}
 
+						comment.del = result.delInfo;
+						//Очищаем массив дочерних как в delHide
+						delete comment.comments;
+						//Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
+						getChildComments(comment, $c).remove();
+						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
+						$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
+
+						//Если обычный пользователь удаляет свой ответ на свой же комментарий,
+						//пока может тот редактировать, и у того не осталось неудаленных дочерних, то проставляем у родителя кнопку удалить
+						if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
+							parent.can.del = true;
+							for (i = 0; i < parent.comments.length; i++) {
+								if (parent.comments[i].del === undefined) {
+									parent.can.del = false;
+									break;
+								}
+							}
+							if (parent.can.del) {
+								$('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>').insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
+							}
+						}
+
 						if (count > 1) {
-							//Удаляем все дочерние, если есть
-							//(нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
-							getChildComments(comment, $c).remove();
 							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
 						}
-						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-						if (!tplCommentDel) {
-							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
-						}
-						$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
 					} else {
 						msg = result && result.message || '';
@@ -820,7 +841,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			if (this.loadingDel) {
 				return;
 			}
-			var objCid = this.cid,
+			var comment = this.commentsHash[cid],
+				objCid = this.cid,
 				that = this;
 
 			this.loadingDel = true;
@@ -865,6 +887,10 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 								});
 							that.delopenevents = true;
 						}
+						//Присваиваем получаенный дочерние, если они есть, чтобы, например,
+						//createInput ответа на родительский удаленного вставил поле ввода после удаленной ветки
+						comment.comments = data.comments[0].comments;
+						//Указываем, чо первый комментарий - корневой для группы
 						data.comments[0].delroot = true;
 						$c.replaceWith(that.renderComments(data.comments, tplCommentsDel));
 
@@ -883,7 +909,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
 			}
 
-			getChildComments(comment, $c).remove();
+			delete comment.comments; //Обнуляем поддерево дочерних, чтобы, например, createInput ответа на родительский удаленного не искал его дочерние
+			getChildComments(comment, $c).remove(); //Удаляем дочерние элементы dom
 			$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 		},
 		reasonSelect: function (reasonsselect, cb, ctx) {
