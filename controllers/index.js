@@ -57,25 +57,25 @@ var giveRatings = (function () {
 			//Сначала запускаем агрегацию по всем показателем, требующим расчет
 			function aggregation() {
 				Comment.collection.aggregate([
-					{$match: {stamp: {$gt: dayStart}}},
+					{$match: {stamp: {$gt: dayStart}, del: null, hidden: null}},
 					{$group: {_id: '$obj', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Comment.collection.aggregate([
-					{$match: {stamp: {$gt: weekStart}}},
+					{$match: {stamp: {$gt: weekStart}, del: null, hidden: null}},
 					{$group: {_id: '$obj', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Comment.collection.aggregate([
-					{$match: {stamp: {$gt: dayStart}}},
+					{$match: {stamp: {$gt: dayStart}, del: null, hidden: null}},
 					{$group: {_id: '$user', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Comment.collection.aggregate([
-					{$match: {stamp: {$gt: weekStart}}},
+					{$match: {stamp: {$gt: weekStart}, del: null, hidden: null}},
 					{$group: {_id: '$user', ccount: {$sum: 1}}},
 					{$sort: {ccount: -1}},
 					{$limit: limit}
@@ -249,12 +249,12 @@ var giveStats = (function () {
 				Photo.count({s: 5, adate: {$gt: dayStart}}, this.parallel());
 				Photo.count({s: 5, adate: {$gt: weekStart}}, this.parallel());
 
-				Comment.count(this.parallel());
-				CommentN.count(this.parallel());
-				Comment.count({stamp: {$gt: dayStart}}, this.parallel());
-				CommentN.count({stamp: {$gt: dayStart}}, this.parallel());
-				Comment.count({stamp: {$gt: weekStart}}, this.parallel());
-				CommentN.count({stamp: {$gt: weekStart}}, this.parallel());
+				Comment.count({del: null, hidden: null}, this.parallel());
+				CommentN.count({del: null, hidden: null}, this.parallel());
+				Comment.count({stamp: {$gt: dayStart}, del: null, hidden: null}, this.parallel());
+				CommentN.count({stamp: {$gt: dayStart}, del: null, hidden: null}, this.parallel());
+				Comment.count({stamp: {$gt: weekStart}, del: null, hidden: null}, this.parallel());
+				CommentN.count({stamp: {$gt: weekStart}, del: null, hidden: null}, this.parallel());
 			},
 			function (err, pallCount, userCount, pdayCount, pweekCount, callCount, cnallCount, cdayCount, cndayCount, cweekCount, cnweekCount) {
 				if (err) {

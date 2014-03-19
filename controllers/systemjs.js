@@ -443,7 +443,7 @@ module.exports.loadController = function (app, db) {
 			updateObj = {};
 			pcount = db.photos.count({user: user._id, s: 5});
 			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
-			ccount = db.comments.count({user: user._id}) + db.commentsn.count({user: user._id});
+			ccount = db.comments.count({user: user._id, del: null, hidden: null}) + db.commentsn.count({user: user._id, del: null, hidden: null});
 
 			if (pcount > 0) {
 				$set.pcount = pcount;
@@ -491,7 +491,8 @@ module.exports.loadController = function (app, db) {
 			$set = {};
 			$unset = {};
 			updateObj = {};
-			ccount = db.comments.count({obj: photo._id});
+			ccount = db.comments.count({obj: photo._id, del: null});
+
 			if (ccount > 0) {
 				$set.ccount = ccount;
 			} else {

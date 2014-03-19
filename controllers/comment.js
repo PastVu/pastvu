@@ -851,7 +851,7 @@ function createComment(socket, data, cb) {
 			if (!permissions.canReply(data.type, o, iAm) && !permissions.canModerate(data.type, o, iAm)) {
 				return cb({message: o.nocomments ? msg.noComments : msg.deny, error: true});
 			}
-			if (data.parent && (!parent || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
+			if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
 				return cb({message: 'Что-то не так с родительским комментарием. Возможно его удалили. Пожалуйста, обновите страницу.', error: true});
 			}
 
@@ -1335,9 +1335,9 @@ function giveCommentHist(data, cb) {
 			if (hist.frag) {
 				result.push(hist);
 			}
-			//Если это последняя запись в истории и ранее была смена текста,
+			//Если это последняя запись (в случае текущего состояние удаления - предпоследняя) в истории и ранее была смена текста,
 			//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
-			if (i === hists.length - 1 && lastTxtIndex > 0) {
+			if ((i === hists.length - 1 || comment.del && i === hists.length - 2) && lastTxtIndex > 0) {
 				lastTxtObj.txt = comment.txt;
 				if (!lastTxtObj.frag) {
 					result.splice(lastTxtIndex, 0, lastTxtObj);
@@ -1436,7 +1436,9 @@ function hideObjComments(oid, hide, iAm, cb) {
 
 			for (i = 0; i < len; i++) {
 				comment = comments[i];
-				hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+				if (comment.del === undefined) {
+					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+				}
 			}
 			for (i in hashUsers) {
 				if (hashUsers[i] !== undefined) {
@@ -1520,7 +1522,7 @@ function getNewCommentsCount(objIds, userId, type, cb) {
 				stamp = stampsHash[objId];
 				if (stamp !== undefined) {
 					objIdsWithCounts.push(objId);
-					commentModel.count({obj: objId, stamp: {$gt: stamp}, user: {$ne: userId}}, this.parallel());
+					commentModel.count({obj: objId, del: null, stamp: {$gt: stamp}, user: {$ne: userId}}, this.parallel());
 				}
 			}
 			this.parallel()();
@@ -1629,7 +1631,7 @@ function getNewCommentsBrief(objs, newestFromDate, userId, type, cb) {
 				if (stamp !== undefined) {
 					objIdsWithCounts.push(objId);
 					commentModel
-						.find({obj: objId, stamp: {$gt: stamp}, user: {$ne: userId}}, {_id: 0, user: 1, stamp: 1}, {lean: true, sort: {stamp: 1}})
+						.find({obj: objId, del: null, stamp: {$gt: stamp}, user: {$ne: userId}}, {_id: 0, user: 1, stamp: 1}, {lean: true, sort: {stamp: 1}})
 						.populate({path: 'user', select: {_id: 0, login: 1, disp: 1}})
 						.exec(this.parallel());
 				}
@@ -1712,11 +1714,11 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('removeCommentResult', result);
 			});
 		});
-		/*socket.on('restoreComment', function (data) {
-		 restoreComment(socket, data, function (result) {
-		 socket.emit('restoreCommentResult', result);
-		 });
-		 });*/
+//		socket.on('restoreComment', function (data) {
+//			restoreComment(socket, data, function (result) {
+//				socket.emit('restoreCommentResult', result);
+//			});
+//		});
 
 		socket.on('setNoComments', function (data) {
 			setNoComments(socket, data, function (result) {
