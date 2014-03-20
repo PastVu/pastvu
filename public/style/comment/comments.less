@@ -163,14 +163,17 @@
 				border-width: 0 0 0 1px;
 				border-style: solid;
 				border-color: @MainRedColor;
-				background-color: rgba(255, 99, 0, 0.10);
+				background-color: rgba(255, 99, 0, .1);
 			}
 			&.hl {
 				background-color: fade(@MainBlueColor, 10%);
 				.transition(~'background-color .25s linear .1s');
 			}
 			&.hlRemove:not(.cdel):not(.delopen) { //Выделения для удаленя не выделяет уже удаленные
-				background-color: rgba(255, 188, 16, 0.5);
+				background-color: rgba(255, 188, 16, .5);
+			}
+			&.hlRestore {
+				background-color: rgba(169, 240, 152, .5);
 			}
 
 			> .hrefava {

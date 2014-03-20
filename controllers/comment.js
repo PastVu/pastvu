@@ -171,7 +171,7 @@ var core = {
 			commentModel = Comment;
 		}
 
-		commentModel.findOne({cid: data.cid, del: {$exists: true}}, {_id: 0, hist: 0, del: 0}, {lean: true}, function (err, comment) {
+		commentModel.findOne({cid: data.cid, del: {$exists: true}}, {_id: 0, hist: 0, 'del.reason': 0}, {lean: true}, function (err, comment) {
 			if (err || !comment) {
 				return cb({message: err && err.message || msg.noCommentExists, error: true});
 			}
@@ -186,7 +186,7 @@ var core = {
 						photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
 					}
 					//Берём все удаленные комментарии, оставленные позже запрашиваемого удалённого, и ниже его уровнем
-					commentModel.find({obj: comment.obj, del: {$exists: true}, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					commentModel.find({obj: comment.obj, del: {$exists: true}, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					delete comment.obj;
 				},
 				function (err, obj, childs) {
@@ -488,6 +488,7 @@ function commentsTreeBuildDel(comment, childs, checkMyId, cb) {
 	usersHash[comment.user] = true;
 	usersArr.push(comment.user);
 	commentsHash[comment.cid] = comment;
+	comment.del = {origin: comment.del.origin || undefined};
 	comment.stamp = comment.stamp.getTime();
 	comment.lastChanged = comment.lastChanged.getTime();
 	if (comment.level === undefined) {
@@ -517,6 +518,7 @@ function commentsTreeBuildDel(comment, childs, checkMyId, cb) {
 		if (checkMyId && userId === checkMyId) {
 			canSee = true;
 		}
+		child.del = {origin: child.del.origin || undefined};
 		child.stamp = child.stamp.getTime();
 		child.lastChanged = child.lastChanged.getTime();
 
@@ -1016,6 +1018,181 @@ function removeComment(socket, data, cb) {
 				commentsHash[cid] = comment;
 				if (!comment.hidden) {
 					//Если комментарий скрыт (т.е. объект не публичный), его уже не надо вычитать из статистики пользователя
+					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+				}
+
+				//Находим потомков именно удаляемого комментария через заполнение commentsHash
+				for (; i < len; i++) {
+					child = childs[i];
+					if (child.level && commentsHash[child.parent] !== undefined && !child.del) {
+						if (!child.hidden) {
+							hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
+						}
+						childsCids.push(child.cid);
+						commentsHash[child.cid] = child;
+					}
+				}
+
+				if (canModerate && iAm.role) {
+					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
+					delInfo.role = iAm.role;
+					if (iAm.role === 5) {
+						delInfo.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
+					}
+				}
+
+				if (Number(data.reason.key)) {
+					delInfo.reason.key = Number(data.reason.key);
+				}
+				if (data.reason.desc) {
+					delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc);
+				}
+
+				commentModel.update({cid: cid}, {$set: {lastChanged: delInfo.stamp, del: delInfo}}, this.parallel());
+
+				if (childsCids.length) {
+					countCommentsRemoved += childsCids.length;
+					delInfoChilds = _.assign(_.omit(delInfo, 'reason'), {origin: cid});
+					commentModel.update({cid: {$in: childsCids}}, {$set: {lastChanged: delInfo.stamp, del: delInfoChilds}}, {multi: true}, this.parallel());
+				}
+			},
+			function (err) {
+				if (err) {
+					return cb({message: err.message || 'Comment remove error', error: true});
+				}
+				var frags = obj.frags && obj.frags.toObject(),
+					user,
+					i,
+					u;
+
+				if (frags) {
+					for (i = frags.length; i--;) {
+						if (commentsHash[frags[i].cid] !== undefined) {
+							obj.frags.id(frags[i]._id).del = true;
+						}
+					}
+				}
+
+				obj.ccount -= countCommentsRemoved;
+				obj.save(this.parallel());
+
+				for (u in hashUsers) {
+					if (hashUsers[u] !== undefined) {
+						user = _session.getOnline(null, u);
+						if (user !== undefined) {
+							user.ccount = user.ccount - hashUsers[u];
+							_session.saveEmitUser(user.login, null, null, this.parallel());
+						} else {
+							User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
+						}
+					}
+				}
+			},
+			function (err) {
+				if (err) {
+					return cb({message: err.message || 'Object or user update error', error: true});
+				}
+				var myCountRemoved = hashUsers[iAm._id] || 0, //Кол-во моих комментариев
+					frags,
+					frag,
+					i;
+
+				//Не отдаем фрагменты только не удаленных комментариев, для замены на клиенте
+				if (obj.frags) {
+					obj.frags = obj.frags.toObject();
+					frags = [];
+					for (i = 0; i < obj.frags.length; i++) {
+						frag = obj.frags[i];
+						if (!frag.del) {
+							frags.push(frag);
+						}
+					}
+				}
+
+				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
+				cb({message: 'Ok', frags: frags, countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: delInfo.stamp.getTime(), delInfo: delInfo});
+			}
+		);
+	});
+}
+
+/**
+ * Восстанавливает комментарий и его потомков
+ * @param socket Сокет пользователя
+ * @param data
+ * @param cb Коллбэк
+ */
+function restoreComment(socket, data, cb) {
+	var cid = data && Number(data.cid),
+		iAm = socket.handshake.session.user,
+		canEdit,
+		canModerate,
+		obj,
+		commentsHash = {},
+		hashUsers = {},
+		countCommentsRemoved = 1,
+		commentModel,
+
+		restoreInfo,
+		childsCids;
+
+	if (!iAm) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!Utils.isType('object', data) || !Number(data.cid)) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	if (data.type === 'news') {
+		commentModel = CommentN;
+	} else {
+		commentModel = Comment;
+	}
+
+	commentModel.findOne({cid: cid, del: {$exists: true}}, {_id: 1, obj: 1, user: 1, stamp: 1, hidden: 1}, {lean: true}, function (err, comment) {
+		if (err || !comment) {
+			return cb({message: err && err.message || msg.noCommentExists, error: true});
+		}
+		step(
+			function () {
+				if (data.type === 'news') {
+					News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
+				} else {
+					photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
+				}
+			},
+			function (err, o) {
+				if (err || !o) {
+					return cb({message: err && err.message || msg.noObject, error: true});
+				}
+				obj = o;
+
+				//Нужны права модератора/администратора
+				canModerate = permissions.canModerate(data.type, obj, iAm);
+				if (!canModerate) {
+					return cb({message: msg.deny, error: true});
+				}
+
+				//Находим все комментарии, дочерние восстанавливаемому, которые были удалены вместе с ним,
+				//т.е. у которых origin указывает на текущий
+				commentModel.find({obj: obj._id, 'del.origin': cid, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, stamp: 0, txt: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this);
+			},
+			function (err, childs) {
+				if (err || !childs) {
+					return cb({message: err && err.message || 'Cursor extract error', error: true});
+				}
+				var delInfoChilds,
+					child,
+					len = childs.length,
+					i = 0;
+
+				restoreInfo = {user: iAm._id, stamp: new Date(), reason: {}};
+				childsCids = [];
+
+				//Операции с корневым удаляемым комментарием
+				commentsHash[cid] = comment;
+				if (!comment.hidden) {
+					//Если комментарий скрыт (т.е. объект не публичный), его не надо прибавлять к статистике пользователя
 					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
 				}
 
@@ -1714,11 +1891,11 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('removeCommentResult', result);
 			});
 		});
-//		socket.on('restoreComment', function (data) {
-//			restoreComment(socket, data, function (result) {
-//				socket.emit('restoreCommentResult', result);
-//			});
-//		});
+		socket.on('restoreComment', function (data) {
+			restoreComment(socket, data, function (result) {
+				socket.emit('restoreCommentResult', result);
+			});
+		});
 
 		socket.on('setNoComments', function (data) {
 			setNoComments(socket, data, function (result) {

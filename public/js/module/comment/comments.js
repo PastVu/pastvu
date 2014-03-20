@@ -388,6 +388,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			if (changeHash) {
 				commentsHash = this.commentsHash = {};
+			} else {
+				commentsHash = this.commentsHash;
 			}
 
 			(function treeRecursive(tree) {
@@ -399,9 +401,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					comment = tree[i];
 					comment.user = usersHash[comment.user];
 					commentsPlain.push(comment);
-					if (changeHash) {
-						commentsHash[comment.cid] = comment;
-					}
+					commentsHash[comment.cid] = comment;
 					if (comment.comments) {
 						treeRecursive(comment.comments, comment);
 					}
@@ -762,6 +762,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 			//TODO: Восстановление с фрагментами
 			//TODO: Проверить удаление в новостях
+			//TODO: Почистить console
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
 			//Когда пользователь удаляет свой последний комментарий, независимо от прав, он должен объяснить это просто текстом
@@ -793,7 +794,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.count(this.count() - count);
 						this.parentModule.commentCountIncrement(-count);
 
-						if (Utils.isType('array', result.frags)) {
+						if (Array.isArray(result.frags)) {
 							this.parentModule.fragReplace(result.frags);
 						}
 
@@ -837,15 +838,76 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
 			}, this);
 		},
+		restore: function (cid, $c) {
+			var that = this,
+				comment = that.commentsHash[cid];
+
+			if (!comment || !that.canModerate()) {
+				return;
+			}
+
+			$('[data-origin="' + cid + '"]', that.$cmts).add($c).addClass('hlRestore');
+
+			window.noty({
+				text: 'Восстановить комментарий и его потомков, которые были удалены вместе с ним<br>(подсвечены зеленым)?',
+				type: 'confirm',
+				layout: 'center',
+				modal: true,
+				force: true,
+				animation: {
+					open: {height: 'toggle'},
+					close: {},
+					easing: 'swing',
+					speed: 500
+				},
+				buttons: [
+					{addClass: 'btn btn-success', text: 'Да', onClick: function ($noty) {
+						socket.once('restoreCommentResult', function (result) {
+							var count;
+
+							if (result && !result.error) {
+								count = Number(result.countComments);
+								if (!count) {
+									return;
+								}
+
+								comment.lastChanged = result.stamp;
+								that.count(that.count() + count);
+								that.parentModule.commentCountIncrement(count);
+
+								if (Array.isArray(result.frags)) {
+									that.parentModule.fragReplace(result.frags);
+								}
+
+								delete comment.del;
+								comment.comments = result.comments[0].comments;
+								//Удаляем дочерние, если есть (нельзя просто удалить все .hlRestore, т.к. могут быть дочерние удалённые по жругой причине)
+								getChildComments(comment, $c).remove();
+								//Заменяем корневой восстанавливаемый комментарий
+								$c.replaceWith(that.renderComments(result.comments, tplComments));
+							} else {
+								window.noty({text: result && result.message || '', type: 'warning', layout: 'center', timeout: 2200, force: true});
+								$('.hlRestore', that.$cmts).removeClass('hlRestore');
+							}
+						});
+						socket.emit('restoreComment', {type: that.type, cid: cid});
+					}},
+					{addClass: 'btn btn-warning', text: 'Отмена', onClick: function ($noty) {
+						$('.hlRestore', that.$cmts).removeClass('hlRestore');
+						$noty.close();
+					}}
+				]
+			});
+		},
 		delShow: function (cid, $c) {
 			if (this.loadingDel) {
 				return;
 			}
-			var comment = this.commentsHash[cid],
-				objCid = this.cid,
-				that = this;
+			var that = this,
+				comment = that.commentsHash[cid],
+				objCid = that.cid;
 
-			this.loadingDel = true;
+			that.loadingDel = true;
 			$('.delico', $c).addClass('loading').html('');
 
 			socket.once('takeCommentsDel', function (data) {
@@ -882,7 +944,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 									var $c = $(this).closest('.c'),
 										cid = getCid($c);
 									if (cid) {
-										that.delRestore(cid, $c);
+										that.restore(cid, $c);
 									}
 								});
 							that.delopenevents = true;
@@ -898,7 +960,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					});
 				}
 			});
-			socket.emit('giveCommentsDel', {type: this.type, cid: cid});
+			socket.emit('giveCommentsDel', {type: that.type, cid: cid});
 		},
 		delHide: function (cid, $c) {
 			var comment = this.commentsHash[cid];
@@ -915,7 +977,9 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		reasonSelect: function (reasonsselect, cb, ctx) {
 			if (!this.reasonVM) {
-				var select = [{key: '0', name: 'Свободное описание причины'}];
+				var select = [
+					{key: '0', name: 'Свободное описание причины'}
+				];
 				if (reasonsselect) {
 					select.push({key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'});
 					select.push({key: '2', name: 'Спам'});

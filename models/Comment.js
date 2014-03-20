@@ -3,15 +3,7 @@
 var mongoose = require('mongoose'),
 	Schema = mongoose.Schema;
 
-var histScheme = {
-		user: {type: Schema.Types.ObjectId, ref: 'User'},
-		stamp: {type: Date, 'default': Date.now, required: true},
-		frag: {type: Number},
-		txt: {type: String},
-		role: {type: Number}, //Реализуемая на момент операции роль пользователя. Например, если это модератор
-		roleregion: {type: Number} //Регион реализуемой роли
-	},
-	delInfo = {
+var delInfo = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},
 		stamp: {type: Date},
 		reason: {
@@ -20,6 +12,22 @@ var histScheme = {
 		},
 		origin: {type: Number}, //Если у удаляемого комментария есть дочерние, проставляем им ссылку (cid) непосредственно удаляемого, в этом случае reason дочерним можно не указывать
 		role: {type: Number}, //Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
+		roleregion: {type: Number} //Регион реализуемой роли
+	},
+	histScheme = {
+		user: {type: Schema.Types.ObjectId, ref: 'User'},
+		stamp: {type: Date, 'default': Date.now, required: true},
+		frag: {type: Number},
+		txt: {type: String},
+		del: { //Некоторые поля удаления из delInfo (остальные непосредственно в histScheme)
+			reason: {
+				key: {type: Number},
+				desc: {type: String}
+			},
+			origin: {type: Number}
+		},
+		restore: {type: Boolean}, //Восстановлен
+		role: {type: Number}, //Реализуемая на момент операции роль пользователя. Например, если это модератор
 		roleregion: {type: Number} //Регион реализуемой роли
 	},
 	CommentPSchema = new Schema(
@@ -33,7 +41,7 @@ var histScheme = {
 			level: {type: Number},
 			frag: {type: Boolean},
 
-			lastChanged: {type: Date}, //Время последнего редактирования
+			lastChanged: {type: Date}, //Время последнего изменения
 			hist: [new Schema(histScheme)],
 
 			del: delInfo, //Удалённый
@@ -54,7 +62,7 @@ var histScheme = {
 			parent: {type: Number},
 			level: {type: Number},
 
-			lastChanged: {type: Date}, //Время последнего редактирования
+			lastChanged: {type: Date}, //Время последнего изменения
 			hist: [new Schema(histScheme)],
 
 			del: delInfo //Удалённый

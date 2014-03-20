@@ -1,4 +1,4 @@
-.c.delopen(id="c{{=c.cid}}", class="l{{=c.level}}")
+.c.delopen(id="c{{=c.cid}}", class="l{{=c.level}}", data-origin="{{=c.del.origin || 0}}")
 	a.hrefava(href="{{='/u/'+c.user.login}}", target="_blank")
 		| {{?c.user.avatar === undefined}}
 		.overprint {{=c.user.disp[0]}}
