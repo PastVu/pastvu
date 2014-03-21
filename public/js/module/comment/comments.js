@@ -400,8 +400,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				for (; i < len; i++) {
 					comment = tree[i];
 					comment.user = usersHash[comment.user];
-					commentsPlain.push(comment);
 					commentsHash[comment.cid] = comment;
+					commentsPlain.push(comment);
 					if (comment.comments) {
 						treeRecursive(comment.comments, comment);
 					}
@@ -760,7 +760,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
-			//TODO: Восстановление с фрагментами
 			//TODO: Проверить удаление в новостях
 			//TODO: Почистить console
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
@@ -840,6 +839,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 		},
 		restore: function (cid, $c) {
 			var that = this,
+				restoring,
 				comment = that.commentsHash[cid];
 
 			if (!comment || !that.canModerate()) {
@@ -862,8 +862,12 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				},
 				buttons: [
 					{addClass: 'btn btn-success', text: 'Да', onClick: function ($noty) {
+						if (restoring) {
+							return;
+						}
+						restoring = true;
 						socket.once('restoreCommentResult', function (result) {
-							var count;
+							var count, i, c, tplIt;
 
 							if (result && !result.error) {
 								count = Number(result.countComments);
@@ -879,16 +883,28 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 									that.parentModule.fragReplace(result.frags);
 								}
 
-								delete comment.del;
-								comment.comments = result.comments[0].comments;
-								//Удаляем дочерние, если есть (нельзя просто удалить все .hlRestore, т.к. могут быть дочерние удалённые по жругой причине)
-								getChildComments(comment, $c).remove();
+								tplIt = {reply: true, mod: true, fDate: formatDateRelative, fDateIn: formatDateRelativeIn};
+
 								//Заменяем корневой восстанавливаемый комментарий
-								$c.replaceWith(that.renderComments(result.comments, tplComments));
+								delete comment.del;
+								$c.replaceWith(tplCommentAuth(comment, tplIt));
+
+								if (count > 1) {
+									//Заменяем комментарии потомки, которые были удалены весте с корневым
+									for (i in that.commentsHash) {
+										c = that.commentsHash[i];
+										if (c !== undefined && c.del !== undefined && c.del.origin === cid) {
+											delete c.del;
+											$('#c' + c.cid, that.$cmts).replaceWith(tplCommentAuth(c, tplIt));
+										}
+									}
+								}
+
 							} else {
 								window.noty({text: result && result.message || '', type: 'warning', layout: 'center', timeout: 2200, force: true});
 								$('.hlRestore', that.$cmts).removeClass('hlRestore');
 							}
+							$noty.close();
 						});
 						socket.emit('restoreComment', {type: that.type, cid: cid});
 					}},
