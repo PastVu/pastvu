@@ -5,7 +5,6 @@
 define(['underscore', 'jquery', 'Utils', 'Params', 'globalVM', 'knockout', 'm/_moduleCliche', 'text!tpl/common/reason.jade', 'css!style/common/reason'], function (_, $, Utils, P, globalVM, ko, Cliche, jade) {
 	'use strict';
 
-	var $window = $(window);
 	return Cliche.extend({
 		jade: jade,
 		options: {

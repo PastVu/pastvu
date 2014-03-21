@@ -1135,7 +1135,6 @@ function restoreComment(socket, data, cb) {
 		stamp,
 		hist,
 		histChilds,
-		restoreInfo,
 		childsCids;
 
 	if (!iAm) {
@@ -1278,7 +1277,7 @@ function restoreComment(socket, data, cb) {
 					}
 				}
 
-				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, commentModel, childsCids.length ? {childs: childsCids.length} : undefined);
+				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.role === 5 ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
 				cb({message: 'Ok', frags: frags, countComments: countCommentsRestored, myCountComments: ~~hashUsers[iAm._id], countUsers: Object.keys(hashUsers).length, stamp: stamp.getTime()});
 			}
 		);

@@ -117,6 +117,10 @@ var start = Date.now(),
 			{
 				name: "m/region/select",
 				exclude: ['commonExcludes']
+			},
+			{
+				name: "m/common/reason",
+				exclude: ['commonExcludes']
 			}
 		]
 	},
