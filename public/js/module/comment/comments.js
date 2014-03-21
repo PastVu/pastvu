@@ -148,7 +148,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			}
 
 			if (!this.showing) {
-				console.time('cc');
 				//Пока данные запрашиваются в первый раз, компилим doT шаблоны для разных вариантов, если еще не скомпилили их раньше
 				if (!tplComments) {
 					tplComments = doT.template(doTComments, undefined, {comment: loggedIn ? doTCommentAuth : doTCommentAnonym, del: dotCommentDel});
@@ -157,7 +156,6 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					tplCommentAuth = doT.template(doTCommentAuth, _.defaults({varname: 'c,it'}, doT.templateSettings), {del: dotCommentDel});
 					tplCommentAdd = doT.template(dotCommentAdd);
 				}
-				console.timeEnd('cc');
 				this.show();
 			}
 		},
@@ -356,10 +354,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						this.canReply(canReply);
 
 						//Отрисовываем комментарии путем замены innerHTML результатом шаблона dot
-						var tplResult = this.renderComments(data.comments, tplComments, true);
-						console.time('tplInsert');
-						this.$cmts[0].innerHTML = tplResult;
-						console.timeEnd('tplInsert');
+						this.$cmts[0].innerHTML = this.renderComments(data.comments, tplComments, true);
 
 						//Если у пользователя есть право отвечать в комментариях этого объекта, сразу добавляем ответ нулевого уровня
 						if (canReply) {
@@ -408,10 +403,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}
 			}(tree));
 
-			console.time('tplExec');
-			tplResult = tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: formatDateRelative, fDateIn: formatDateRelativeIn});
-			console.timeEnd('tplExec');
-			return tplResult;
+			return tpl({comments: commentsPlain, reply: this.canReply(), mod: this.canModerate(), fDate: formatDateRelative, fDateIn: formatDateRelativeIn});
 		},
 		usersRanks: function (users) {
 			var user,
@@ -760,8 +752,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				return;
 			}
 
-			//TODO: Проверить удаление в новостях
-			//TODO: Почистить console
+			//Подсвечиваем удаляемые текстом
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
 			//Когда пользователь удаляет свой последний комментарий, независимо от прав, он должен объяснить это просто текстом
@@ -778,7 +769,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					var i,
 						msg,
 						count,
-						$cparent;
+						$cdel;
 
 					if (result && !result.error) {
 						count = Number(result.countComments);
@@ -803,7 +794,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 						//Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
 						getChildComments(comment, $c).remove();
 						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-						$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
+						$cdel = $(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
+						$c.replaceWith($cdel);
 
 						//Если обычный пользователь удаляет свой ответ на свой же комментарий,
 						//пока может тот редактировать, и у того не осталось неудаленных дочерних, то проставляем у родителя кнопку удалить
@@ -818,6 +810,11 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 							if (parent.can.del) {
 								$('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>').insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
 							}
+						}
+
+						//Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
+						if ($cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
+							$window.scrollTo($cdel, {duration: 600});
 						}
 
 						if (count > 1) {
@@ -890,7 +887,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 								$c.replaceWith(tplCommentAuth(comment, tplIt));
 
 								if (count > 1) {
-									//Заменяем комментарии потомки, которые были удалены весте с корневым
+									//Заменяем комментарии потомки, которые были удалены вместе с корневым
 									for (i in that.commentsHash) {
 										c = that.commentsHash[i];
 										if (c !== undefined && c.del !== undefined && c.del.origin === cid) {

@@ -843,7 +843,7 @@ function createComment(socket, data, cb) {
 			}
 
 			if (data.parent) {
-				commentModel.findOne({cid: data.parent}, {_id: 0, level: 1}, this.parallel());
+				commentModel.findOne({cid: data.parent}, {_id: 0, level: 1, del: 1}, {lean: true}, this.parallel());
 			}
 		},
 		function counterUp(err, o, parent) {
@@ -1471,7 +1471,7 @@ function giveCommentHist(data, cb) {
 			hists.push({
 				user: comment.del.user,
 				stamp: comment.del.stamp,
-				del: comment.del,
+				del: _.pick(comment.del, 'reason', 'origin'),
 				role: comment.del.role,
 				roleregion: comment.del.roleregion
 			});
@@ -1484,31 +1484,29 @@ function giveCommentHist(data, cb) {
 				hist.roleregion = getregion(hist.roleregion);
 			}
 
-			if (hist.del) {
-				hist.del = _.pick(hist.del, 'reason', 'origin');
+			if (hist.del || hist.restore) {
 				result.push(hist);
-				continue;
-			}
-
-			if (hist.txt) {
-				//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
-				lastTxtObj.txt = hist.txt;
-				if (!lastTxtObj.frag) {
-					//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
-					result.splice(lastTxtIndex, 0, lastTxtObj);
+			} else {
+				if (hist.txt) {
+					//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
+					lastTxtObj.txt = hist.txt;
+					if (!lastTxtObj.frag) {
+						//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
+						result.splice(lastTxtIndex, 0, lastTxtObj);
+					}
+					//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
+					delete hist.txt;
+					lastTxtIndex = result.length;
+					lastTxtObj = hist;
 				}
-				//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
-				delete hist.txt;
-				lastTxtIndex = result.length;
-				lastTxtObj = hist;
-			}
-			//Если в записи есть изменение фрагмента, то вставляем её
-			if (hist.frag) {
-				result.push(hist);
+				//Если в записи есть изменение фрагмента, то вставляем её
+				if (hist.frag) {
+					result.push(hist);
+				}
 			}
 			//Если это последняя запись (в случае текущего состояние удаления - предпоследняя) в истории и ранее была смена текста,
 			//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
-			if ((i === hists.length - 1 || comment.del && i === hists.length - 2) && lastTxtIndex > 0) {
+			if (i === hists.length - 1 && lastTxtIndex > 0) {
 				lastTxtObj.txt = comment.txt;
 				if (!lastTxtObj.frag) {
 					result.splice(lastTxtIndex, 0, lastTxtObj);
