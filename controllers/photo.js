@@ -879,7 +879,7 @@ function giveNearestPhotos(data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	Photo.find({geo: {$near: data.geo.reverse(), $maxDistance: 2000}}, compactFields, {lean: true, limit: Math.min(Number(data.limit), 50)}, cb);
+	Photo.find({geo: {$near: data.geo.reverse(), $maxDistance: 2000}, s: 5}, compactFields, {lean: true, limit: Math.min(Number(data.limit), 50)}, cb);
 }
 
 //Отдаем непубличные фотографии
