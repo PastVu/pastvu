@@ -220,7 +220,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			// Если показывается окно загрузки, но в параметрах его нет,
 			// значит мы вернулись из загрузки в галерею и должны загрузку просто закрыть
 			if (this.uploadVM && !params.photoUpload) {
-				this.closeUpload();
+				this.destroyUpload();
 				return;
 			}
 
@@ -568,20 +568,27 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						{
 							module: 'm/user/photoUpload',
 							modal: {
-								initWidth: '1000px',
 								topic: 'Загрузка фотографий',
-								closeTxt: 'Завершить',
-								closeFunc: function (evt) {
-									this.uploadVM.createPhotos(function (data) {
-										if (data && !data.error) {
-											this.getAndCloseUpload(data.cids.length);
-											ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
-										} else {
-											ga('send', 'event', 'photo', 'create', 'photo create error');
-										}
-									}, this);
-									evt.stopPropagation();
-								}.bind(this)},
+								initWidth: '1000px',
+								offIcon: {text: 'Отмена', click: function () {
+									this.closeUpload();
+								}, ctx: this},
+								btns: [
+									{css: 'btn-success', text: 'Завершить', click: function () {
+										this.uploadVM.createPhotos(function (data) {
+											if (data && !data.error) {
+												this.getAndCloseUpload(data.cids.length);
+												ga('send', 'event', 'photo', 'create', 'photo create success', data.cids.length);
+											} else {
+												ga('send', 'event', 'photo', 'create', 'photo create error');
+											}
+										}, this);
+									}, ctx: this},
+									{css: 'btn-warning', text: 'Отмена', click: function () {
+										this.closeUpload();
+									}, ctx: this}
+								]
+							},
 							callback: function (vm) {
 								this.uploadVM = vm;
 								this.childModules[vm.id] = vm;
@@ -625,11 +632,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					}.bind(this));
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
-				//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-				globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : ''))  + this.pageQuery());
+				this.closeUpload();
 			}
 		},
 		closeUpload: function () {
+			//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
+			globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : ''))  + this.pageQuery());
+		},
+		destroyUpload: function () {
 			if (this.uploadVM) {
 				this.uploadVM.destroy();
 				delete this.uploadVM;

@@ -130,6 +130,10 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 							this.parentNode.classList.remove('dragover');
 						});
 				}
+
+				if (this.modal) {
+					this.modal.$curtain.addClass('showModalCurtain');
+				}
 			}, this);
 
 			this.showing = true;
