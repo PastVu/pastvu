@@ -5,7 +5,7 @@
 define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, i18n, ko, ps) {
 	"use strict";
 
-	var globalVM = {
+	return {
 		P: P,
 		pb: ps,
 		i18n: i18n,
@@ -17,7 +17,8 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 		ranks: {
 			mec: {src: '/img/rank/bronse.jpg', title: 'Меценат'},
 			mec_silv: {src: '/img/rank/silver.jpg', title: 'Серебряный меценат'},
-			mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'}
+			mec_gold: {src: '/img/rank/gold.jpg', title: 'Золотой меценат'},
+			adviser: {src: '/img/rank/adviser.jpg', title: 'Советник'}
 		},
 
 		func: {
@@ -60,6 +61,4 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 			}
 		}
 	};
-
-	return globalVM;
 });

@@ -8,7 +8,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 	var ranksLang = {
 		mec: 'Меценат',
 		mec_silv: 'Серебряный меценат',
-		mec_gold: 'Золотой меценат'
+		mec_gold: 'Золотой меценат',
+		adviser: 'Советник'
 	};
 
 	return Cliche.extend({
