@@ -1,6 +1,6 @@
 {
 	"name": "pastvu",
-	"version": "1.1.0-dev",
+	"version": "1.1.0",
 	"description": "Retrospective topography of media content",
 	"homepage": "https://github.com/klimashkin/pastvu",
 	"keywords": ["oldmos", "pastvu"],
@@ -43,7 +43,7 @@
 		"gm": "~1.14.2"
 	},
 	"devDependencies": {
-		"nodemon": "~1.0.15",
+		"nodemon": "~1.0.17",
 		"requirejs": "~2.1.11",
 		"less-middleware": "0.1.15",
 		"less": "~1.7.0",
