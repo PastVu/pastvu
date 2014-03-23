@@ -108,6 +108,11 @@
 		span.glyphicon.glyphicon-trash
 		span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
 	// /ko
+	//ko if: p.s()===9 && can.restore()
+	button.btn.btn-success(type="button", data-bind="click: restore, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-repeat
+		span  Восстановить
+	// /ko
 	| </script>
 
 	//-ACTIONS EDIT MODE

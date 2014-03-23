@@ -35,7 +35,7 @@ var auth = require('./auth.js'),
 
 	msg = {
 		deny: 'You do not have permission for this action',
-		notExists: 'Requested photo does not exist',
+		notExists: 'Запрашиваемая фотография не существует',
 		notExistsRegion: 'Such region does not exist',
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
 		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
@@ -80,6 +80,7 @@ var auth = require('./auth.js'),
 					edit: false,
 					disable: false,
 					remove: false,
+					restore: false,
 					approve: false,
 					convert: false
 				},
@@ -92,6 +93,7 @@ var auth = require('./auth.js'),
 
 				can.edit = canModerate || ownPhoto;
 				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
+				can.restore = user.role > 9; //Восстанавливать может только администратор
 				if (canModerate) {
 					can.disable = true;
 					if (photo.s < 2) {
@@ -398,6 +400,52 @@ function removePhoto(socket, cid, cb) {
 				);
 			});
 		}
+	});
+}
+
+/**
+ * Восстановление фотографии
+ * @param socket Сокет пользователя
+ * @param cid
+ * @param cb Коллбэк
+ */
+function restorePhoto(socket, cid, cb) {
+	var iAm = socket.handshake.session.user;
+
+	if (!iAm || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	cid = Number(cid);
+	if (!cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	findPhoto({cid: cid, s: 9}, {}, iAm, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || (msg.notExists + ' в удалёном статусе'), error: true});
+		}
+
+		if (!permissions.getCan(photo, iAm).restore) {
+			return cb({message: msg.deny, error: true});
+		}
+
+		photo.s = 5;
+		photo.save(function (err, photoSaved) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			step(
+				function () {
+					changePublicPhotoExternality(socket, photoSaved, iAm, true, this.parallel());
+				},
+				function (err) {
+					if (err) {
+						return cb({message: 'Restore ok, but: ' + (err && err.message || 'other changes error'), error: true});
+					}
+					cb({message: 'ok'});
+				}
+			);
+		});
 	});
 }
 
@@ -1614,6 +1662,11 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('removePhotoInc', function (data) {
 			removePhotoIncoming(socket, data, function (err) {
 				socket.emit('removePhotoIncCallback', {error: !!err});
+			});
+		});
+		socket.on('restorePhoto', function (data) {
+			restorePhoto(socket, data, function (resultData) {
+				socket.emit('restorePhotoCallback', resultData);
 			});
 		});
 

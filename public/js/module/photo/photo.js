@@ -35,6 +35,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				edit: false,
 				disable: false,
 				remove: false,
+				restore: false,
 				approve: false,
 				convert: false
 			});
@@ -819,6 +820,72 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
+							$noty.close();
+							that.exe(false);
+						}}
+					]
+				}
+			);
+		},
+		restore: function (data, event) {
+			if (!this.can.restore()) {
+				return false;
+			}
+
+			var that = this;
+
+			this.exe(true);
+			window.noty(
+				{
+					text: 'Фотография будет восстановлена и станет публичной<br>Подтвердить операцию?',
+					type: 'confirm',
+					layout: 'center',
+					modal: true,
+					force: true,
+					animation: {
+						open: {height: 'toggle'},
+						close: {},
+						easing: 'swing',
+						speed: 500
+					},
+					buttons: [
+						{addClass: 'btn btn-success', text: 'Да', onClick: function ($noty) {
+							// this = button element
+							// $noty = $noty element
+							if ($noty.$buttons && $noty.$buttons.find) {
+								$noty.$buttons.find('button').attr('disabled', true);
+							}
+
+							socket.once('restorePhotoCallback', function (data) {
+								$noty.$buttons.find('.btn-warning').remove();
+								var okButton = $noty.$buttons.find('button')
+									.attr('disabled', false)
+									.off('click');
+
+								if (data && !data.error) {
+									this.p.s(5);
+									this.originData.s = 5;
+
+									$noty.$message.children().html('Фотография успешно восстановлена');
+
+									okButton.text('Ok').on('click', function () {
+										$noty.close();
+										this.exe(false);
+									}.bind(this));
+									ga('send', 'event', 'photo', 'restore', 'photo restore success');
+								} else {
+									$noty.$message.children().html(data.message || 'Error occurred');
+									okButton.text('Close').on('click', function () {
+										$noty.close();
+										this.exe(false);
+									}.bind(this));
+									ga('send', 'event', 'photo', 'restore', 'photo restore error');
+								}
+							}.bind(that));
+							socket.emit('restorePhoto', that.p.cid());
+
+						}},
+						{addClass: 'btn btn-warning', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
 							that.exe(false);
 						}}
