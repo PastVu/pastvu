@@ -81,13 +81,13 @@ var giveRatings = (function () {
 					{$limit: limit}
 				], this.parallel());
 				Photo.collection.aggregate([
-					{$match: {adate: {$gt: dayStart}}},
+					{$match: {adate: {$gt: dayStart}, s: 5}},
 					{$group: {_id: '$user', pcount: {$sum: 1}}},
 					{$sort: {pcount: -1}},
 					{$limit: limit}
 				], this.parallel());
 				Photo.collection.aggregate([
-					{$match: {adate: {$gt: weekStart}}},
+					{$match: {adate: {$gt: weekStart}, s: 5}},
 					{$group: {_id: '$user', pcount: {$sum: 1}}},
 					{$sort: {pcount: -1}},
 					{$limit: limit}
@@ -106,13 +106,13 @@ var giveRatings = (function () {
 					upweekarr = [];
 
 				// Photo by views
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vdcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vdcount: 1}, {limit: limit, sort: [
+				Photo.collection.find({s: 5, vdcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vdcount: 1}, {limit: limit, sort: [
 					['vdcount', 'desc']
 				]}, this.parallel());
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vwcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vwcount: 1}, {limit: limit, sort: [
+				Photo.collection.find({s: 5, vwcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vwcount: 1}, {limit: limit, sort: [
 					['vwcount', 'desc']
 				]}, this.parallel());
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}, vcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vcount: 1}, {limit: limit, sort: [
+				Photo.collection.find({s: 5, vcount: {$gt: 0}}, {_id: 0, cid: 1, file: 1, title: 1, vcount: 1}, {limit: limit, sort: [
 					['vcount', 'desc']
 				]}, this.parallel());
 
@@ -121,13 +121,13 @@ var giveRatings = (function () {
 					pcommdayHash[pcday[i]._id] = pcday[i].ccount;
 					pcdayarr.push(pcday[i]._id);
 				}
-				Photo.collection.find({_id: {$in: pcdayarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
+				Photo.collection.find({_id: {$in: pcdayarr}, s: 5}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
 				for (i = pcweek.length; i--;) {
 					pcommweekHash[pcweek[i]._id] = pcweek[i].ccount;
 					pcweekarr.push(pcweek[i]._id);
 				}
-				Photo.collection.find({_id: {$in: pcweekarr}, fresh: {$exists: false}, del: {$exists: false}}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
-				Photo.collection.find({fresh: {$exists: false}, del: {$exists: false}}, {_id: 0, cid: 1, file: 1, title: 1, ccount: 1}, {limit: limit, sort: [
+				Photo.collection.find({_id: {$in: pcweekarr}, s: 5}, {_id: 1, cid: 1, file: 1, title: 1, ccount: 1}, this.parallel());
+				Photo.collection.find({s: 5}, {_id: 0, cid: 1, file: 1, title: 1, ccount: 1}, {limit: limit, sort: [
 					['ccount', 'desc']
 				]}, this.parallel());
 
