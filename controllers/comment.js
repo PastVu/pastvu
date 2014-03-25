@@ -1036,7 +1036,7 @@ function removeComment(socket, data, cb) {
 				if (canModerate && iAm.role) {
 					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
 					delInfo.role = iAm.role;
-					if (iAm.role === 5) {
+					if (iAm.role === 5 && _.isNumber(canModerate)) {
 						delInfo.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
 					}
 				}
@@ -1210,7 +1210,7 @@ function restoreComment(socket, data, cb) {
 					_.assign(_.omit(comment.del, 'origin'), {del: {reason: comment.del.reason}}),
 					{user: iAm._id, stamp: stamp, restore: true, role: iAm.role}
 				];
-				if (iAm.role === 5) {
+				if (iAm.role === 5 && _.isNumber(canModerate)) {
 					hist[1].roleregion = canModerate;
 				}
 				commentModel.update({cid: cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: hist}}}, this.parallel());
@@ -1220,7 +1220,7 @@ function restoreComment(socket, data, cb) {
 						_.assign(_.omit(comment.del, 'reason'), {del: {origin: cid}}),
 						{user: iAm._id, stamp: stamp, restore: true, role: iAm.role}
 					];
-					if (iAm.role === 5) {
+					if (iAm.role === 5 && _.isNumber(canModerate)) {
 						histChilds[1].roleregion = canModerate;
 					}
 					commentModel.update({obj: obj._id, 'del.origin': cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: histChilds}}}, {multi: true}, this.parallel());
@@ -1277,7 +1277,7 @@ function restoreComment(socket, data, cb) {
 					}
 				}
 
-				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.role === 5 ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
+				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.role === 5 && _.isNumber(canModerate) ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
 				cb({message: 'Ok', frags: frags, countComments: countCommentsRestored, myCountComments: ~~hashUsers[iAm._id], countUsers: Object.keys(hashUsers).length, stamp: stamp.getTime()});
 			}
 		);
@@ -1383,7 +1383,7 @@ function updateComment(socket, data, cb) {
 				if (canModerate && iAm.role) {
 					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент изменения
 					hist.role = iAm.role;
-					if (iAm.role === 5) {
+					if (iAm.role === 5 && _.isNumber(canModerate)) {
 						hist.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
 					}
 				}
