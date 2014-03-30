@@ -504,7 +504,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if ($cedit) {
 					$insertAfter = $cedit;
 					level = relatedComment.level;
-					txt = Utils.txtHtmlToInput(relatedComment.txt);
+					txt = Utils.txtHtmlToPlain(relatedComment.txt);
 				} else {
 					if (relatedComment.level === commentNestingMax) {
 						//Если отвечают на комментарий максимального уровня, делаем так чтобы ответ был на его родительский

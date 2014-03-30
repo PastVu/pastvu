@@ -437,14 +437,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		descSetEdit: function () {
-			this.descEditOrigin = Utils.txtHtmlToInput(this.p.desc());
+			this.descEditOrigin = Utils.txtHtmlToPlain(this.p.desc());
 			this.p.desc(this.descEditOrigin);
 			this.descCheckHeight(this.$dom.find('.descInput'));
 
-			this.sourceEditOrigin = Utils.txtHtmlToInput(this.p.source());
+			this.sourceEditOrigin = Utils.txtHtmlToPlain(this.p.source());
 			this.p.source(this.sourceEditOrigin);
 
-			this.authorEditOrigin = Utils.txtHtmlToInput(this.p.author());
+			this.authorEditOrigin = Utils.txtHtmlToPlain(this.p.author());
 			this.p.author(this.authorEditOrigin);
 		},
 		inputlblfocus: function (data, event) {

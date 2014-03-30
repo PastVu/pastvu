@@ -871,7 +871,7 @@ function createComment(socket, data, cb) {
 				obj: obj,
 				user: iAm,
 				stamp: new Date(),
-				txt: Utils.inputIncomingParse(content),
+				txt: Utils.inputIncomingParse(content).result,
 				del: undefined
 			};
 			if (data.parent) {
@@ -1045,7 +1045,7 @@ function removeComment(socket, data, cb) {
 					delInfo.reason.key = Number(data.reason.key);
 				}
 				if (data.reason.desc) {
-					delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc);
+					delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc).result;
 				}
 
 				commentModel.update({cid: cid}, {$set: {lastChanged: delInfo.stamp, del: delInfo}}, this.parallel());
@@ -1320,7 +1320,9 @@ function updateComment(socket, data, cb) {
 
 			var i,
 				hist = {user: iAm},
+				parsedResult,
 				content,
+				contentPlain,
 				fragExists,
 				fragChangedType,
 				txtChanged;
@@ -1334,7 +1336,8 @@ function updateComment(socket, data, cb) {
 					return cb({message: obj.nocomments ? msg.noComments : msg.deny, error: true});
 				}
 			}
-			content = Utils.inputIncomingParse(data.txt);
+			parsedResult = Utils.inputIncomingParse(data.txt);
+			content = parsedResult.result;
 
 			if (obj.frags) {
 				for (i = obj.frags.length; i--;) {
@@ -1373,7 +1376,10 @@ function updateComment(socket, data, cb) {
 			}
 
 			if (content !== comment.txt) {
+				//Записываем текущий текст(до смены) в объект истории
 				hist.txt = comment.txt;
+				//Получаем разницу текущего и нового текста (неформатированных) и записываем в объект истории
+				hist.txtdiff = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
 				txtChanged = true;
 			}
 

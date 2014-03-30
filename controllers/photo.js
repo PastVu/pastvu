@@ -1067,13 +1067,13 @@ function savePhoto(socket, data, cb) {
 
 		//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
 		if (data.desc) {
-			data.desc = Utils.inputIncomingParse(data.desc);
+			data.desc = Utils.inputIncomingParse(data.desc).result;
 		}
 		if (data.source) {
-			data.source = Utils.inputIncomingParse(data.source);
+			data.source = Utils.inputIncomingParse(data.source).result;
 		}
 		if (data.author) {
-			data.author = Utils.inputIncomingParse(data.author);
+			data.author = Utils.inputIncomingParse(data.author).result;
 		}
 		if (data.geo) {
 			if(Utils.geo.checkLatLng(data.geo)) {

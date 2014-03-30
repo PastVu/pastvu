@@ -275,7 +275,7 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 			};
 		}()),
 
-		txtHtmlToInput: function (txt) {
+		txtHtmlToPlain: function (txt) {
 			var result = txt;
 
 			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n

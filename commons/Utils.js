@@ -2,7 +2,8 @@ var fs = require('fs'),
 	path = require('path'),
 	Utils = new Object(null),
 	_ = require('lodash'),
-	_s = require('underscore.string');
+	_s = require('underscore.string'),
+	DMP = require('./diff_match_patch.js');
 
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
@@ -142,16 +143,20 @@ Utils.inputIncomingParse = (function () {
 	}
 
 	return function (txt) {
-		var result = txt;
+		var result = txt,
+			plain;
 
 		result = _s.trim(result); //Обрезаем концы
-		result = escape(result); //Эскейпим
 
 		//Заменяем ссылку на фото на диез-ссылку #xxx
 		//Например, http://domain.com/p/123456 -> #123456
 		result = result.replace(new RegExp('(\\b)(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,;>]|$)', 'gi'), '$1#$2');
 
-		//Восстанавливаем внтуреннюю ссылку чтобы на следующей операции обернуть её в линк
+		plain = result;
+
+		result = escape(result); //Эскейпим
+
+		//Восстанавливаем внутреннюю ссылку чтобы на следующей операции обернуть её в линк
 		//Например, /u/klimashkin/photo -> http://domain.com/u/klimashkin/photo
 		result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1' + host + '$2');
 
@@ -166,6 +171,45 @@ Utils.inputIncomingParse = (function () {
 		result = Utils.linkifyUrlString(result, '_blank'); //Оборачиваем остальные url в ahref
 		result = result.replace(/\n{3,}/g, '<br><br>').replace(/\n/g, '<br>'); //Заменяем переносы на <br>
 		result = _s.clean(result); //Очищаем лишние пробелы
+
+		return {result: result, plain: plain};
+	};
+}());
+Utils.txtHtmlToPlain = function (txt) {
+	var result = txt;
+
+	result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
+	result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
+	result = _s.unescapeHTML(result); //Возвращаем эскейпленные
+	return result;
+};
+Utils.txtdiff = (function () {
+	'use strict';
+	var dmp = new DMP.diff_match_patch();
+
+	return function (text1, text2) {
+		var result = '',
+			pattern_para = /\n/g,
+			diffs = dmp.diff_main(text1, text2),
+			operationType,
+			text;
+
+		dmp.diff_cleanupSemantic(diffs);
+
+		for (var x = 0; x < diffs.length; x++) {
+			operationType = diffs[x][0];    // Operation (insert, delete, equal)
+			text = _s.escapeHTML(diffs[x][1]).replace(pattern_para, '&para;<br>');
+			switch (operationType) {
+				case DMP.DIFF_INSERT:
+					result += '<span class="diffIns">' + text + '</span>';
+					break;
+				case DMP.DIFF_DELETE:
+					result += '<span class="diffDel">' + text + '</span>';
+					break;
+				default:
+					result += '<span class="diffEq">' + text + '</span>';
+			}
+		}
 		return result;
 	};
 }());
