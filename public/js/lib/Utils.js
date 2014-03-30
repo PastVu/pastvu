@@ -3,7 +3,7 @@
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends'], function ($, _, _s) {
+define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugins/extends'], function ($, _, _s, P) {
 	var Utils = {
 
 		/**
@@ -253,24 +253,6 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return url.replace(new RegExp('(' + param + '=).*?(&)'), '$1' + value + '$2');
 		},
 
-		/**
-		 * Возвращает значение data- параметра dom-элемента
-		 * @param ele Элемент
-		 * @param name Имя параметра
-		 */
-		getDataParam: (function () {
-			"use strict";
-			function html5data(ele, name) {
-				return ele.dataset[name];
-			}
-
-			function attrData(ele, name) {
-				return ele.getAttribute('data-' + name);
-			}
-
-			return !!document.createElement('div').dataset ? html5data : attrData;
-		}()),
-
 		randomString: (function () {
 			'use strict';
 			var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
@@ -358,38 +340,39 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					return (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
 
-				// Returns a string representing how long ago the date represents.
-				// Inspired by Pretty Date 2011 by John Resig (ejohn.org)
+				// Возвращает дату относительно переданной в формате "Сегодня в 12:15"
 				function relative(date) {
-					var diff = ((Date.now() - date.getTime()) / 1000),
-						day_diff = Math.floor(diff / 86400),
+					var dateMs = date.getTime(),
 						result;
 
-					if (isNaN(day_diff) || day_diff < 0 || day_diff >= 7) {
+					if (dateMs < P.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (day_diff === 0) {
-						result = 'Сегодня в ' + dateFormat.hhmm(date);
-					} else if (day_diff === 1) {
-						result = 'Вчера в ' + dateFormat.hhmm(date);
+					} else if (dateMs < P.times.midnight) {
+						if (dateMs < P.times.midnight - P.times.msDay) {
+							result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
+						} else {
+							result = 'Вчера в ' + dateFormat.hhmm(date);
+						}
 					} else {
-						result = weekDays[date.getDay()] + ', в ' + dateFormat.hhmm(date);
+						result = 'Сегодня в ' + dateFormat.hhmm(date);
 					}
 
 					return result;
 				}
 				function relativeIn(date) {
-					var diff = ((Date.now() - date.getTime()) / 1000),
-						day_diff = Math.floor(diff / 86400),
+					var dateMs = date.getTime(),
 						result;
 
-					if (isNaN(day_diff) || day_diff < 0 || day_diff >= 7) {
+					if (dateMs < P.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (day_diff === 0) {
-						result = 'сегодня в ' + dateFormat.hhmm(date);
-					} else if (day_diff === 1) {
-						result = 'вчера в ' + dateFormat.hhmm(date);
+					} else if (dateMs < P.times.midnight) {
+						if (dateMs < P.times.midnight - P.times.msDay) {
+							result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
+						} else {
+							result = 'вчера в ' + dateFormat.hhmm(date);
+						}
 					} else {
-						result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
+						result = 'сегодня в ' + dateFormat.hhmm(date);
 					}
 
 					return result;
@@ -1185,49 +1168,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					return numberOfRemoved;
 				}
 			};
-		}()),
-
-		/**
-		 * Creates Style element in head.
-		 * @param {!string=} src location.
-		 */
-		addStyle: function (src, doneCallback) {
-			var dfd = $.Deferred();
-			dfd.done(function () {
-				console.log("Source '%s' loaded success", src);
-				if (doneCallback) {
-					doneCallback();
-				}
-			});
-			$.getStyle(src, dfd.resolve);
-			return dfd.promise();
-		},
-		/**
-		 * Creates Script element in head.
-		 * @param {!string=} src location.
-		 */
-		addScript: function (src, doneCallback) {
-			var dfd = $.Deferred();
-
-			dfd.done(function (script, textStatus) {
-				console.log("Source '%s' loaded %s", src, textStatus);
-				if (doneCallback) {
-					doneCallback();
-				}
-			});
-
-			$.cachedScript(src).done(dfd.resolve);
-			return dfd.promise();
-		},
-
-		/**
-		 * Creates DOM Element.
-		 */
-		debug: function (msg) {
-			if (console && console.log) {
-				console.log(msg);
-			}
-		}
+		}())
 	};
 
 
