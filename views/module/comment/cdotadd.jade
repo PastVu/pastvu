@@ -5,7 +5,7 @@
 		| {{?}}
 		img.cava(src="{{=it.user.avatar || '/img/caps/avatarth.png'}}")
 	.cbody
-		textarea.form-control.cinput(wrap="soft")
+		textarea.form-control.cinput(wrap="soft", maxlength="12000")
 		.cinputLabel
 			| {{?it.level}}
 			| Нажмите, чтобы написать комментарий

@@ -21,11 +21,13 @@ var auth = require('./auth.js'),
 	logger,
 
 	weekMS = ms('7d'),
+	commentMaxLength = 12e3,
 	msg = {
 		deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
 		noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
 		noComments: 'Операции с комментариями на этой странице запрещены',
-		noCommentExists: 'Комментария не существует'
+		noCommentExists: 'Комментария не существует',
+		maxLength: 'Комментарий длиннее допустимого значения (' + commentMaxLength + ')'
 	},
 
 	actionLogController = require('./actionlog.js'),
@@ -818,6 +820,9 @@ function createComment(socket, data, cb) {
 	if (!Utils.isType('object', data) || !Number(data.obj) || !data.txt || data.level > 9) {
 		return cb({message: 'Bad params', error: true});
 	}
+	if (data.txt.length > commentMaxLength) {
+		return cb({message: msg.maxLength, error: true});
+	}
 
 	var iAm = socket.handshake.session.user,
 		cid = Number(data.obj),
@@ -1296,6 +1301,9 @@ function updateComment(socket, data, cb) {
 	}
 	if (!Utils.isType('object', data) || !data.obj || !Number(data.cid) || !data.txt) {
 		return cb({message: 'Bad params', error: true});
+	}
+	if (data.txt.length > commentMaxLength) {
+		return cb({message: msg.maxLength, error: true});
 	}
 	var cid = Number(data.cid),
 		iAm = socket.handshake.session.user,
