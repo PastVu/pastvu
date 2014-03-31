@@ -24,8 +24,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		create: function () {
 			this.cid = this.options.cid;
 			this.type = this.options.type;
+			this.hist_id = {};
 
-			ko.applyBindings(globalVM, this.$dom[0]);
 			if (!tplHist) {
 				tplHist = doT.template(document.getElementById('dothist').text);
 			}
@@ -38,6 +38,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			}, this);
 		},
 		show: function () {
+			ko.applyBindings(globalVM, this.$dom[0]);
 			globalVM.func.showContainer(this.$container);
 			if (this.modal) {
 				this.modal.$curtain.addClass('showModalCurtain');
@@ -61,6 +62,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 					while (i--) {
 						hist = data.hists[i];
+
+						hist.id = i;
+						this.hist_id[i] = hist;
+
+						if (hist.txt && hist.txtd) {
+							hist.showdiff = ko.observable(true);
+						}
 						if (hist.frag) {
 							hist.frag = changeFragTexts['f' + hist.frag];
 						}

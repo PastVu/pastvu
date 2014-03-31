@@ -1378,8 +1378,8 @@ function updateComment(socket, data, cb) {
 			if (content !== comment.txt) {
 				//Записываем текущий текст(до смены) в объект истории
 				hist.txt = comment.txt;
-				//Получаем разницу текущего и нового текста (неформатированных) и записываем в объект истории
-				hist.txtdiff = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
+				//Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
+				hist.txtd = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
 				txtChanged = true;
 			}
 
@@ -1450,7 +1450,7 @@ function giveCommentHist(data, cb) {
 		commentModel = Comment;
 	}
 
-	commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, stamp: 1, hist: 1, del: 1}, {lean: true}).populate({path: 'user hist.user del.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, comment) {
+	commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, txtd: 1, stamp: 1, hist: 1, del: 1}, {lean: true}).populate({path: 'user hist.user del.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, comment) {
 		if (err || !comment) {
 			return cb({message: err && err.message || msg.noCommentExists, error: true});
 		}

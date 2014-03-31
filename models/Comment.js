@@ -19,7 +19,7 @@ var delInfo = {
 		stamp: {type: Date, 'default': Date.now, required: true},
 		frag: {type: Number},
 		txt: {type: String},
-		txtdiff: {type: String},
+		txtd: {type: String}, //Текст с подсветкой разницы
 		del: { //Некоторые поля удаления из delInfo (остальные непосредственно в histScheme)
 			reason: {
 				key: {type: Number},

@@ -47,9 +47,21 @@
 				| {{?h.frag}}
 				.info {{=h.frag}}
 				| {{?}}
+
 				| {{?h.txt}}
+				.info
+					span.glyphicon.glyphicon-pencil
+					|  Отредактирован текст
+				| {{?h.txtd}}
+				// ko with: hist_id[{{=h.id}}]
+				.txtSwitch(data-bind="text: showdiff() ? 'Скрыть подсветку разницы' : 'Показать разницу', click: function () {showdiff(!showdiff())}")
+				.histText(data-bind="html: showdiff() ? txtd : txt")
+				// /ko
+				| {{??}}
 				.histText {{=h.txt}}
 				| {{?}}
+				| {{?}}
+
 
 				| {{?}}
 

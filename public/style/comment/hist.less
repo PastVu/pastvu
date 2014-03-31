@@ -38,22 +38,36 @@
 			cursor: default;
 		}
 
-		.info {
+		.info, .txtSwitch {
 			display: inline-block;
 			margin-bottom: 2px;
-			padding-left: 3px;
 			color: @gray;
 			font-size: @font-size-small;
 			line-height: 16px;
-			border-width: 0 0px 1px 1px;
 			border-color: @gray;
+		}
+		.info {
+			margin-right: 7px;
+			padding-left: 3px;
 			border-style: solid;
+			border-width: 0 0 1px 1px;
 
 			&.red {
 				color: @MainRedColor;
 			}
 			&.green {
 				color: @MainGreenColor;
+			}
+		}
+		.txtSwitch {
+			margin-left: -2px;
+			cursor: pointer;
+			border-style: dotted;
+			border-width: 0 0 1px 0;
+
+			&:hover {
+				color: @MainBlueColor;
+				border-color: @MainBlueColor;
 			}
 		}
 
