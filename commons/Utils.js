@@ -152,17 +152,17 @@ Utils.inputIncomingParse = (function () {
 		//Например, http://domain.com/p/123456 -> #123456
 		result = result.replace(new RegExp('(\\b)(?:https?://)?(?:www.)?' + host + '/p/(\\d{1,8})/?(?=[\\s\\)\\.,;>]|$)', 'gi'), '$1#$2');
 
+		//Все внутрипортальные ссылки оставляем без доменного имени, от корня
+		//Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
+		result = result.replace(new RegExp('(\\b)(?:https?://)?(?:www.)?' + host + '(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1$2');
+
 		plain = result;
 
 		result = escape(result); //Эскейпим
 
-		//Восстанавливаем внутреннюю ссылку чтобы на следующей операции обернуть её в линк
-		//Например, /u/klimashkin/photo -> http://domain.com/u/klimashkin/photo
-		result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1' + host + '$2');
-
-		//Все ссылки на адреса внутри портала оставляем без доменного имени, от корня, и оборачиваем в линк
-		//Например, http://domain.com/u/klimashkin/photo -> /u/klimashkin/photo
-		result = result.replace(new RegExp('(\\b)(?:https?://)?(?:www.)?' + host + '(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
+		//Оборачиваем внутренние ссылкы в линк
+		//Например, <a target="_blank" class="innerLink" href="/u/klimashkin/photo">/u/klimashkin/photo</a>
+		result = result.replace(new RegExp('(^|\\s|\\()(/[-A-Z0-9+&@#\\/%?=~_|!:,.;]*[-A-Z0-9+&@#\\/%=~_|])', 'gim'), '$1<a target="_blank" class="innerLink" href="$2">$2</a>');
 
 		//Заменяем диез-ссылку фото #xxx на линк
 		//Например, #123456 -> <a target="_blank" class="sharpPhoto" href="/p/123456">#123456</a>
@@ -176,6 +176,7 @@ Utils.inputIncomingParse = (function () {
 	};
 }());
 Utils.txtHtmlToPlain = function (txt) {
+	'use strict';
 	var result = txt;
 
 	result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
