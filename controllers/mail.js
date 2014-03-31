@@ -22,7 +22,7 @@ module.exports.send = function send(options, callback) {
 	}
 	var smtpobject = {
 		from: sender[options.sender] || sender.noreply,
-		to: (options.receiver.alias ? options.receiver.alias + ' ' : '') + '<' + options.receiver.email + '>',
+		to: (options.receiver.alias ? options.receiver.alias.replace(/:/g, '') + ' ' : '') + '<' + options.receiver.email + '>',
 		subject: options.subject,
 		headers: {
 			'X-Laziness-level': 1000
