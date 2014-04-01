@@ -1,15 +1,16 @@
+'use strict';
+
+var _ = require('lodash'),
+	Utils = require('../commons/Utils.js'),
+	apiController = require('./api.js'),
+	XPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
+
 module.exports.loadController = function (app) {
 
-	// Set custom X-Powered-By for non-static
-	app.get('*', function (req, res, next) {
-		res.setHeader('X-Powered-By', 'Paul Klimashkin | klimashkin@gmail.com');
+	app.all('*', function (req, res, next) {
+		//Устанавливаем кастомный X-Powered-By
+		res.setHeader('X-Powered-By', XPoweredBy);
 		next();
-	});
-
-	//ping-pong для проверки работы сервера
-	app.get('/ping', function (req, res) {
-		res.statusCode = 200;
-		res.send('pong');
 	});
 
 	// More complicated example: '/p/:cid?/*
@@ -17,15 +18,26 @@ module.exports.loadController = function (app) {
 		app.get(route, appMainHandler);
 	});
 	function appMainHandler(req, res) {
-		res.statusCode = 200;
-		res.render('app.jade', {appName: 'Main'});
+		res.status(200).render('app.jade', {appName: 'Main'});
 	}
 
 	['/admin*'].forEach(function (route) {
 		app.get(route, appAdminHandler);
 	});
 	function appAdminHandler(req, res) {
-		res.statusCode = 200;
-		res.render('app.jade', {appName: 'Admin'});
+		res.status(200).render('app.jade', {appName: 'Admin'});
 	}
+
+	//ping-pong для проверки работы сервера
+	app.get('/ping', function (req, res) {
+		res.send(200, 'pong');
+	});
+
+
+	var apiPaths = {'0.1.0': {'p/:cid': apiController.getPhotoRequest}};
+	_.forEach(apiPaths, function (paths, version) {
+		_.forEach(paths, function (handler, path) {
+			app.all(Utils.pathForExpress('/' + version + '/' + path), handler);
+		});
+	});
 };

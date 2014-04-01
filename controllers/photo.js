@@ -541,114 +541,134 @@ function activateDeactivate(socket, data, cb) {
 	});
 }
 
-//Отдаем фотографию для её страницы
-function givePhoto(socket, data, cb) {
-	var cid = Number(data.cid),
-		iAm = socket.handshake.session.user,
-		fieldSelect = {'frags._id': 0};
 
-	if (!cid) {
-		return cb({message: msg.notExists, error: true});
-	}
+var core = {
+	givePhoto: function (iAm, data, cb) {
+		var cid = data.cid,
+			fieldNoSelect = {};
 
-	//Инкрементируем кол-во просмотров только у публичных фото
-	//TODO: Сделать инкрементацию только у публичных!
-	Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldSelect}, function (err, photo) {
-		if (err) {
-			return cb({message: err && err.message, error: true});
+		if (data.noselect !== undefined) {
+			_.assign(fieldNoSelect, data.noselect);
+		}
+		if (fieldNoSelect.frags === undefined) {
+			fieldNoSelect['frags._id'] = 0;
 		}
 
-		if (!photo || !permissions.canSee(photo, iAm)) {
-			return cb({message: msg.notExists, error: true});
-		} else {
-			var can;
-
-			if (data.checkCan) {
-				//Права надо проверять до популяции пользователя
-				can = permissions.getCan(photo, iAm);
+		//Инкрементируем кол-во просмотров только у публичных фото
+		//TODO: Сделать инкрементацию только у публичных!
+		Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldNoSelect}, function (err, photo) {
+			if (err) {
+				return cb(err);
 			}
 
-			step(
-				function () {
-					var user = _session.getOnline(null, photo.user),
-						paralellUser = this.parallel(),
-						regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
+			if (!photo || !permissions.canSee(photo, iAm)) {
+				return cb({message: msg.notExists});
+			} else {
+				var can;
 
-					if (user) {
-						photo = photo.toObject();
-						photo.user = {
-							login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
-						};
-						paralellUser(null, photo);
-					} else {
-						photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
-							paralellUser(err, photo && photo.toObject());
-						});
-					}
-					//Если у фото нет координаты, берем домашнее положение региона
-					if (!photo.geo) {
-						regionFields.center = 1;
-						regionFields.bbox = 1;
-						regionFields.bboxhome = 1;
-					}
-					regionController.getObjRegionList(photo, regionFields, this.parallel());
-
-					if (iAm) {
-						UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
-					}
-				},
-				function (err, photo, regions, subscr) {
-					if (err) {
-						return cb({message: err && err.message, error: true});
-					}
-					var i = 0,
-						frags,
-						frag;
-
-					//Не отдаем фрагменты удаленных комментариев
-					if (photo.frags) {
-						frags = [];
-						for (i = 0; i < photo.frags.length; i++) {
-							frag = photo.frags[i];
-							if (!frag.del) {
-								frags.push(frag);
-							}
-						}
-						photo.frags = frags;
-					}
-
-					if (subscr) {
-						photo.subscr = true;
-					}
-
-					for (i = 0; i <= maxRegionLevel; i++) {
-						delete photo['r' + i];
-					}
-					if (regions.length) {
-						photo.regions = regions;
-					}
-					if (photo.geo) {
-						photo.geo = photo.geo.reverse();
-					}
-
-					if (!iAm || !photo.ccount) {
-						delete photo._id;
-						cb({photo: photo, can: can});
-					} else {
-						commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
-							if (err) {
-								return cb({message: err && err.message, error: true});
-							}
-							if (countsHash[photo._id]) {
-								photo.ccount_new = countsHash[photo._id];
-							}
-							delete photo._id;
-							cb({photo: photo, can: can});
-						});
-					}
+				if (data.checkCan) {
+					//Права надо проверять до популяции пользователя
+					can = permissions.getCan(photo, iAm);
 				}
-			);
+
+				step(
+					function () {
+						var user = _session.getOnline(null, photo.user),
+							paralellUser = this.parallel(),
+							regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
+
+						if (user) {
+							photo = photo.toObject();
+							photo.user = {
+								login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
+							};
+							paralellUser(null, photo);
+						} else {
+							photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
+								paralellUser(err, photo && photo.toObject());
+							});
+						}
+						//Если у фото нет координаты, берем домашнее положение региона
+						if (!photo.geo) {
+							regionFields.center = 1;
+							regionFields.bbox = 1;
+							regionFields.bboxhome = 1;
+						}
+						regionController.getObjRegionList(photo, regionFields, this.parallel());
+
+						if (iAm) {
+							UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
+						}
+					},
+					function (err, photo, regions, subscr) {
+						if (err) {
+							return cb(err);
+						}
+						var i = 0,
+							frags,
+							frag;
+
+						//Не отдаем фрагменты удаленных комментариев
+						if (photo.frags) {
+							frags = [];
+							for (i = 0; i < photo.frags.length; i++) {
+								frag = photo.frags[i];
+								if (!frag.del) {
+									frags.push(frag);
+								}
+							}
+							photo.frags = frags;
+						}
+
+						if (subscr) {
+							photo.subscr = true;
+						}
+
+						for (i = 0; i <= maxRegionLevel; i++) {
+							delete photo['r' + i];
+						}
+						if (regions.length) {
+							photo.regions = regions;
+						}
+						if (photo.geo) {
+							photo.geo = photo.geo.reverse();
+						}
+
+						if (!iAm || !photo.ccount) {
+							delete photo._id;
+							cb(null, photo, can);
+						} else {
+							commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
+								if (err) {
+									return cb(err);
+								}
+								if (countsHash[photo._id]) {
+									photo.ccount_new = countsHash[photo._id];
+								}
+								delete photo._id;
+								cb(null, photo, can);
+							});
+						}
+					}
+				);
+			}
+		});
+	}
+};
+
+//Отдаем фотографию для её страницы
+function givePhoto(socket, data, cb) {
+	if (!data || !Number(data.cid)) {
+		return cb({message: msg.notExists, error: true});
+	}
+	data.cid = Number(data.cid);
+	var iAm = socket.handshake.session.user;
+
+	core.givePhoto(iAm, data, function (err, photo, can) {
+		if (err) {
+			return cb({message: err.message, error: true});
 		}
+		cb({photo: photo, can: can});
 	});
 }
 
@@ -1798,3 +1818,5 @@ module.exports.loadController = function (app, db, io) {
 module.exports.findPhoto = findPhoto;
 module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
+
+module.exports.core = core;

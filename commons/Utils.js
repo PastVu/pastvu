@@ -54,6 +54,30 @@ Utils.randomString = (function () {
 }());
 
 
+//Преобразование путей для express. http://stackoverflow.com/questions/16577396/express-optional-trailing-slash-for-top-level-path
+// '/dev' - везьмет и со слешом в конце и без. Чтобы взял и дочерние, добавляем /:p?*, где p - переменная с дальнейшим путем в request
+Utils.pathForExpress = function (paths) {
+	var result,
+		i,
+		processPath = function (path) {
+			if (path.substr(-2, 2) === '/*') {
+				return path.substr(0, path.length - 1) + ':p?*';
+			}
+			return path;
+		};
+
+	if (!Array.isArray(paths)) {
+		result = processPath(paths);
+	} else {
+		result = [];
+		for (i = 0; i < paths.length; i++) {
+			result.unshift(processPath(paths[i]));
+		}
+	}
+
+	return result;
+};
+
 /**
  * Асинхронный memoize с опциональным временем жизни
  * @param memoizedFunc Функция, результат которой будет запомнен
