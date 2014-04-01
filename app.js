@@ -263,7 +263,7 @@ async.waterfall([
 		require('./controllers/registerRoutes.js').loadController(app);
 		require('./controllers/systemjs.js').loadController(app, db);
 		require('./controllers/errors.js').registerErrorHandling(app);
-		require('./basepatch/v1.1.1.js').loadController(app, db);
+		//require('./basepatch/v1.1.1.js').loadController(app, db);
 
 		regionController.fillCache(callback);
 	}

@@ -20,16 +20,17 @@ module.exports.send = function send(options, callback) {
 		}
 		return;
 	}
-	var smtpobject = {
-		from: sender[options.sender] || sender.noreply,
-		to: (options.receiver.alias ? options.receiver.alias.replace(/:/g, '') + ' ' : '') + '<' + options.receiver.email + '>',
-		subject: options.subject,
-		headers: {
-			'X-Laziness-level': 1000
-		},
-		generateTextFromHTML: true,
-		html: options.body
-	};
+	var alias = String(options.receiver.alias) ? String(options.receiver.alias).replace(/:/g, '') + ' ' : '',
+		smtpobject = {
+			from: sender[options.sender] || sender.noreply,
+			to: alias + '<' + options.receiver.email + '>',
+			subject: options.subject,
+			headers: {
+				'X-Laziness-level': 1000
+			},
+			generateTextFromHTML: true,
+			html: options.body
+		};
 	if (Array.isArray(options.attachments) && options.attachments.length) {
 		smtpobject.attachments = options.attachments;
 	}

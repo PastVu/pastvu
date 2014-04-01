@@ -468,11 +468,11 @@ function sendUserNotice(userId, lastnoty, cb) {
 						mailController.send(
 							{
 								sender: 'noreply',
-								receiver: {alias: user.disp, email: user.email},
+								receiver: {alias: String(user.disp), email: user.email},
 								subject: 'Новое уведомление',
 								head: true,
 								body: noticeTpl({
-									username: user.disp,
+									username: String(user.disp),
 									greeting: 'Уведомление о событиях на PastVu',
 									addr: global.appVar.serverAddr,
 									user: user,
