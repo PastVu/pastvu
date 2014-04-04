@@ -23,10 +23,10 @@ var auth = require('./auth.js'),
 	weekStart; //Время начала недели
 
 (function periodStartCalc() {
-	dayStart = moment().startOf('day').toDate();
-	weekStart = moment().startOf('week').toDate();
+	dayStart = moment().utc().startOf('day').toDate();
+	weekStart = moment().utc().startOf('week').toDate();
 	//На начало следующего дня планируем пересчет
-	setTimeout(periodStartCalc, moment().add('d', 1).startOf('day').diff(moment()) + 1000);
+	setTimeout(periodStartCalc, moment().utc().add('d', 1).startOf('day').diff(moment().utc()) + 1000);
 }());
 
 //Рейтинги

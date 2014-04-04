@@ -1623,7 +1623,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 var planResetDisplayStat = (function () {
 	function resetStat() {
 		var setQuery = {vdcount: 0},
-			needWeek = moment().day() === 1; //Начало недели - понедельник
+			needWeek = moment().utc().day() === 1; //Начало недели - понедельник
 
 		if (needWeek) {
 			setQuery.vwcount = 0;
@@ -1638,7 +1638,7 @@ var planResetDisplayStat = (function () {
 	}
 
 	return function () {
-		setTimeout(resetStat, moment().add('d', 1).startOf('day').diff(moment()) + 2000);
+		setTimeout(resetStat, moment().utc().add('d', 1).startOf('day').diff(moment().utc()) + 2000);
 	};
 }());
 

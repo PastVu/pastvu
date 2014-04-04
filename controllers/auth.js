@@ -175,7 +175,7 @@ function register(session, data, cb) {
 							addr: appEnv.serverAddr,
 							data: data,
 							confirmKey: confirmKey,
-							linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().lang('ru').add(ms('2d')).format("LLL") + ')'
+							linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
 						})
 					}
 				);
@@ -241,7 +241,7 @@ function recall(session, data, cb) {
 						addr: appEnv.serverAddr,
 						data: data,
 						confirmKey: confirmKey,
-						linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().lang('ru').add(ms('2d')).format("LLL") + ')'
+						linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
 					})
 				}
 			);

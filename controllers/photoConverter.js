@@ -247,7 +247,7 @@ module.exports.loadController = function (app, db, io) {
 	});
 
 	// Планируем запись статистики конвейера на начало следующей 10-минутки
-	var hourStart = +moment(Date.now()).startOf('hour');
+	var hourStart = +(moment().utc().startOf('hour'));
 	setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 
 	io.sockets.on('connection', function (socket) {
@@ -319,7 +319,7 @@ module.exports.loadController = function (app, db, io) {
 // Собираем статистику конвейера на начало каждой 10-минутки
 function CollectConveyerStat() {
 	var st = new STPhotoConveyer({
-		stamp: new Date(+moment(Date.now()).startOf('minute')),
+		stamp: new Date(+(moment().utc().startOf('minute'))),
 		clength: conveyerMaxLength,
 		converted: conveyerConverted
 	});

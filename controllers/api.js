@@ -18,7 +18,7 @@ var getPhotoRequest = (function () {
 			}
 			res.json(200, photo);
 		});
-	}
+	};
 }());
 
 module.exports.getPhotoRequest = getPhotoRequest;

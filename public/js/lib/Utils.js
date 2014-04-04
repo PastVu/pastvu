@@ -16,8 +16,8 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 			 * @return {!Object}
 			 */
 			function extend(dest) {
-				var sources = Array.prototype.slice.call(arguments, 1), i, j, len, src;
-				for (j = 0, len = sources.length; j < len; j++) {
+				var sources = Array.prototype.slice.call(arguments, 1), src, i, j = 0, len = sources.length;
+				for (; j < len; j++) {
 					src = sources[j] || {};
 					for (i in src) {
 						if (src.hasOwnProperty(i)) {
