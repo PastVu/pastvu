@@ -69,7 +69,7 @@ var core = {
 
 			step(
 				function () {
-					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0, del: 0}, {lean: true, sort: {stamp: 1}}, this);
+					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0, del: 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this);
 				},
 				function (err, comments) {
 					if (err || !comments) {
@@ -127,7 +127,7 @@ var core = {
 			step(
 				function () {
 					//Берём все комментарии
-					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					//Берём последнее время просмотра комментариев объекта
 					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
 					//Отмечаем в менеджере подписок, что просмотрели комментарии объекта
@@ -173,7 +173,7 @@ var core = {
 			commentModel = Comment;
 		}
 
-		commentModel.findOne({cid: data.cid, del: {$exists: true}}, {_id: 0, hist: 0, 'del.reason': 0}, {lean: true}, function (err, comment) {
+		commentModel.findOne({cid: data.cid, del: {$exists: true}}, {_id: 0, hist: 0, 'del.reason': 0, __v: 0}, {lean: true}, function (err, comment) {
 			if (err || !comment) {
 				return cb({message: err && err.message || msg.noCommentExists, error: true});
 			}
@@ -188,7 +188,7 @@ var core = {
 						photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
 					}
 					//Берём все удаленные комментарии, оставленные позже запрашиваемого удалённого, и ниже его уровнем
-					commentModel.find({obj: comment.obj, del: {$exists: true}, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
+					commentModel.find({obj: comment.obj, del: {$exists: true}, stamp: {$gte: comment.stamp}, level: {$gt: comment.level || 0}}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					delete comment.obj;
 				},
 				function (err, obj, childs) {
@@ -1931,6 +1931,7 @@ module.exports.loadController = function (app, db, io) {
 	});
 
 };
+module.exports.core = core;
 module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
 module.exports.dropCommentsView = dropCommentsView;
