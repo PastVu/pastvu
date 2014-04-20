@@ -946,8 +946,13 @@ function giveNearestPhotos(data, cb) {
 	if (!data || !Utils.geo.checkLatLng(data.geo)) {
 		return cb({message: 'Bad params', error: true});
 	}
+	var query = {geo: {$near: data.geo.reverse(), $maxDistance: 2000}, s: 5};
 
-	Photo.find({geo: {$near: data.geo.reverse(), $maxDistance: 2000}, s: 5}, compactFields, {lean: true, limit: Math.min(Number(data.limit), 50)}, cb);
+	if (typeof data.except === 'number') {
+		query.cid = {$ne: data.except};
+	}
+
+	Photo.find(query, compactFields, {lean: true, limit: Math.min(Number(data.limit), 20)}, cb);
 }
 
 //Отдаем непубличные фотографии

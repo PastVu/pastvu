@@ -4,12 +4,10 @@ define(function () {
 
     /**
      *    Events. Pub/Sub system for Loosely Coupled logic.
-     *    Based on Peter Higgins' port from Dojo to jQuery
      *    https://github.com/phiggins42/bloody-jquery-plugins/blob/master/pubsub.js
      *    https://gist.github.com/661855#comment-586021
      *
      *    Re-adapted to vanilla Javascript
-     *
      *    ----------------------------------------------------------
      *    And then wrapped to AMD Module by Dragan Bajcic @kodisha
      *

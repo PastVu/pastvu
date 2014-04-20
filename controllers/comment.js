@@ -830,7 +830,7 @@ function createComment(socket, data, cb) {
 		commentModel,
 		content = data.txt,
 		comment,
-		fragAdded = data.type === 'photo' && !data.frag && Utils.isType('object', data.fragObj),
+		fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj),
 		fragObj;
 
 	if (data.type === 'news') {
@@ -898,10 +898,10 @@ function createComment(socket, data, cb) {
 			if (fragAdded) {
 				fragObj = {
 					cid: savedComment.cid,
-					l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
-					t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
-					w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
-					h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+					l: Utils.math.toPrecision(Number(data.fragObj.l) || 10, 2),
+					t: Utils.math.toPrecision(Number(data.fragObj.t) || 10, 2),
+					w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
+					h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
 				};
 				obj.frags.push(fragObj);
 			}
@@ -1358,10 +1358,10 @@ function updateComment(socket, data, cb) {
 
 			fragRecieved = data.type === 'photo' && data.fragObj && {
 				cid: comment.cid,
-				l: Utils.math.toPrecision(data.fragObj.l || 0, 2),
-				t: Utils.math.toPrecision(data.fragObj.t || 0, 2),
-				w: Utils.math.toPrecision(data.fragObj.w || 100, 2),
-				h: Utils.math.toPrecision(data.fragObj.h || 100, 2)
+				l: Utils.math.toPrecision(Number(data.fragObj.l) || 10, 2),
+				t: Utils.math.toPrecision(Number(data.fragObj.t) || 10, 2),
+				w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
+				h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
 			};
 
 			if (fragRecieved) {
