@@ -653,6 +653,85 @@ var core = {
 				);
 			}
 		});
+	},
+	getBounds: function (data, cb) {
+		var year = false,
+			i = data.bounds.length;
+
+		// Реверсируем geo границы баунда
+		while (i--) {
+			data.bounds[i][0].reverse();
+			data.bounds[i][1].reverse();
+		}
+
+		// Определяем, нужна ли выборка по границам лет
+		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+			year = true;
+		}
+
+		if (data.z < 17) {
+			if (year) {
+				PhotoCluster.getBoundsByYear(data, res);
+			} else {
+				PhotoCluster.getBounds(data, res);
+			}
+		} else {
+			step(
+				function () {
+					var i = data.bounds.length,
+						criteria,
+						yearCriteria;
+
+					if (year) {
+						if (data.year === data.year2) {
+							yearCriteria = data.year;
+						} else {
+							yearCriteria = {$gte: data.year, $lte: data.year2};
+						}
+					}
+
+					while (i--) {
+						criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
+						if (year) {
+							criteria.year = yearCriteria;
+						}
+						PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
+					}
+				},
+				function cursors(err) {
+					if (err) {
+						return cb(err);
+					}
+					var i = arguments.length;
+					while (i > 1) {
+						arguments[--i].toArray(this.parallel());
+					}
+				},
+				function (err, photos) {
+					if (err) {
+						return cb(err);
+					}
+					var i = arguments.length;
+
+					while (i > 2) {
+						photos.push.apply(photos, arguments[--i]);
+					}
+					res(err, photos);
+				}
+			);
+		}
+
+		function res(err, photos, clusters) {
+			if (err) {
+				return cb(err);
+			}
+
+			// Реверсируем geo
+			for (var i = photos.length; i--;) {
+				photos[i].geo.reverse();
+			}
+			cb(null, photos, clusters);
+		}
 	}
 };
 
@@ -1101,7 +1180,7 @@ function savePhoto(socket, data, cb) {
 			data.author = Utils.inputIncomingParse(data.author).result;
 		}
 		if (data.geo) {
-			if(Utils.geo.checkLatLng(data.geo)) {
+			if (Utils.geo.checkLatLng(data.geo)) {
 				data.geo = Utils.geo.geoToPrecisionRound(data.geo.reverse());
 			} else {
 				delete data.geo;
@@ -1261,89 +1340,19 @@ function readyPhoto(socket, data, cb) {
 }
 
 //Фотографии и кластеры по границам
+//{z: Масштаб, bounds: [[]]}
 function getBounds(data, cb) {
-	if (!Utils.isType('object', data) || !Array.isArray(data.bounds) || !data.z) {
+	if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
 		cb({message: 'Bad params', error: true});
 		return;
 	}
 
-	var year = false,
-		i = data.bounds.length;
-
-	// Реверсируем geo границы баунда
-	while (i--) {
-		data.bounds[i][0].reverse();
-		data.bounds[i][1].reverse();
-	}
-
-	// Определяем, нужна ли выборка по границам лет
-	if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
-		year = true;
-	}
-
-	if (data.z < 17) {
-		if (year) {
-			PhotoCluster.getBoundsByYear(data, res);
-		} else {
-			PhotoCluster.getBounds(data, res);
-		}
-	} else {
-		step(
-			function () {
-				var i = data.bounds.length,
-					criteria,
-					yearCriteria;
-
-				if (year) {
-					if (data.year === data.year2) {
-						yearCriteria = data.year;
-					} else {
-						yearCriteria = {$gte: data.year, $lte: data.year2};
-					}
-				}
-
-				while (i--) {
-					criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
-					if (year) {
-						criteria.year = yearCriteria;
-					}
-					PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
-				}
-			},
-			function cursors(err) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				var i = arguments.length;
-				while (i > 1) {
-					arguments[--i].toArray(this.parallel());
-				}
-			},
-			function (err, photos) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				var i = arguments.length;
-
-				while (i > 2) {
-					photos.push.apply(photos, arguments[--i]);
-				}
-				res(err, photos);
-			}
-		);
-	}
-
-	function res(err, photos, clusters) {
+	core.getBounds(data, function (err, photos, clusters) {
 		if (err) {
-			return cb({message: err && err.message, error: true});
-		}
-
-		// Реверсируем geo
-		for (var i = photos.length; i--;) {
-			photos[i].geo.reverse();
+			return cb({message: err.message, error: true});
 		}
 		cb({photos: photos, clusters: clusters, startAt: data.startAt, z: data.z});
-	}
+	});
 }
 
 //Отправляет выбранные фото на конвертацию
@@ -1823,5 +1832,6 @@ module.exports.loadController = function (app, db, io) {
 module.exports.findPhoto = findPhoto;
 module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
+
 
 module.exports.core = core;

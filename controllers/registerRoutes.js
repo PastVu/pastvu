@@ -35,14 +35,13 @@ module.exports.loadController = function (app) {
 
 
 	var apiPaths = {
-		'0.1.0': {
-			'photo/:cid': apiController.getPhotoRequest,
-			'comments/:cid': apiController.getObjCommentsRequest
-		}
+		'0.1.0': [
+			{path: /^\/0\.1\.0\/?$/, handler: apiController.apiRouter}
+		]
 	};
 	_.forEach(apiPaths, function (paths, version) {
-		_.forEach(paths, function (handler, path) {
-			app.all(Utils.pathForExpress('/' + version + '/' + path), handler);
+		_.forEach(paths, function (item) {
+			app.all(item.path, item.handler);
 		});
 	});
 };
