@@ -381,7 +381,7 @@ Utils.math = (function () {
 Utils.geo = (function () {
 	'use strict';
 
-	//Цетр тяжести полигона. Без учета внутренних выколотых полигонов(дыр)
+	//Рассчитывает цетр тяжести полигона. Без учета внутренних выколотых полигонов(дыр)
 	//На вход подаётся массив точек [lng, lat]
 	//http://stackoverflow.com/a/10129983/1309851
 	function polyCentroid(points) {
@@ -407,7 +407,7 @@ Utils.geo = (function () {
 		return [x / f, y / f];
 	}
 
-	//BBOX полигона/мультиполигона. По первой замкнутой линии полигона, т.к. она должна быть exterior ring для следующих
+	//Рассчитывает BBOX полигона/мультиполигона. По первой замкнутой линии полигона, т.к. она должна быть exterior ring для следующих
 	//На вход подаётся объект geometry полигона
 	//Возвращает [WestLng, SouthLat, EastLng, NorthLat]
 	function polyBBOX(geometry) {

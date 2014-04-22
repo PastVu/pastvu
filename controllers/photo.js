@@ -658,12 +658,6 @@ var core = {
 		var year = false,
 			i = data.bounds.length;
 
-		// Реверсируем geo границы баунда
-		while (i--) {
-			data.bounds[i][0].reverse();
-			data.bounds[i][1].reverse();
-		}
-
 		// Определяем, нужна ли выборка по границам лет
 		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
 			year = true;
@@ -1345,6 +1339,11 @@ function getBounds(data, cb) {
 	if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
 		cb({message: 'Bad params', error: true});
 		return;
+	}
+	// Реверсируем geo границы баунда
+	for (var i = data.bounds.length; i--;) {
+		data.bounds[i][0].reverse();
+		data.bounds[i][1].reverse();
 	}
 
 	core.getBounds(data, function (err, photos, clusters) {

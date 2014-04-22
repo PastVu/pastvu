@@ -1,6 +1,7 @@
 'use strict';
 
-var photoController = require('./photo.js'),
+var	Utils = require('../commons/Utils.js'),
+	photoController = require('./photo.js'),
 	commentController = require('./comment.js'),
 	codesMessage = {
 		'400': 'Bad request',
@@ -28,19 +29,27 @@ var getPhotoRequest = (function () {
 	}()),
 	getPhotoBoundsRequest = (function () {
 		var noselect = {frags: 0, album: 0, adate: 0, sdate: 0};
-		return function (req, res) {
-			var zoom = Number(req.params.zoom);
-			if (!zoom) {
-				return res.send(400, 'Bad request');
+		return function (data, cb) {
+			var bounds =  [],
+				bound,
+				i;
+
+			if (!Number(data.z) || !Array.isArray(data.bounds) || !data.bounds.length) {
+				return cb(400);
 			}
-			photoController.core.givePhoto(null, {cid: 1, noselect: noselect}, function (err, photo) {
+			for (i = 0; i < data.bounds.length; i++) {
+				bound = data.bounds[i];
+				if (!Utils.geo.checkbbox(bound)) {
+					return cb(400);
+				}
+				bounds.push([[bound[0], bound[1]], [bound[2], bound[3]]]);
+			}
+			data.bounds = bounds;
+			photoController.core.getBounds(data, function (err, photos, clusters) {
 				if (err) {
-					return res.send(500, 'Error ocured');
+					return cb(500);
 				}
-				if (photo.ldate) {
-					photo.ldate = photo.ldate.getTime();
-				}
-				res.json(200, photo);
+				cb(null, {photos: photos, clusters: clusters});
 			});
 		};
 	}()),
@@ -61,6 +70,7 @@ var getPhotoRequest = (function () {
 	}()),
 	methodMap = {
 		'photo.get': getPhotoRequest,
+		'map.getBounds': getPhotoBoundsRequest,
 		'comments.getByObj': getObjCommentsRequest
 	};
 
@@ -100,6 +110,3 @@ function apiRouter(req, res) {
 }
 
 module.exports.apiRouter = apiRouter;
-module.exports.getPhotoRequest = getPhotoRequest;
-module.exports.getPhotoBoundsRequest = getPhotoBoundsRequest;
-module.exports.getObjCommentsRequest = getObjCommentsRequest;
