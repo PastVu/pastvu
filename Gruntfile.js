@@ -70,7 +70,7 @@ module.exports = function (grunt) {
 			main: {
 				files: [
 					{expand: true, src: ['basepatch/**', 'commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'], dest: targetDir},
-					{expand: true, src: ['views/app.jade', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'], dest: targetDir},
+					{expand: true, src: ['views/app.jade', 'views/api/**', 'views/includes/**', 'views/mail/**', 'views/status/**', 'views/diff/**'], dest: targetDir},
 					//{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
 					{expand: true, src: ['app.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', './README'], dest: targetDir}
 				]

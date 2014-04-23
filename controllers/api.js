@@ -87,21 +87,21 @@ function apiRouter(req, res) {
 		data;
 
 	if (!rid || !stamp || methodHandler === undefined) {
-		return req.send(400, 'Bad request');
+		return res.send(400, 'Bad request');
 	}
 
 	try {
 		data = req.query.data ? JSON.parse(req.query.data) : {};
 	} catch (e) {
-		return req.send(400, 'Bad request. Error while parsing data parameter: ' + e);
+		return res.send(400, 'Bad request. Error while parsing data parameter: ' + e);
 	}
 
 	methodHandler(data, function (err, result) {
 		if (err) {
 			if (typeof err === 'number') {
-				return req.send(err, codesMessage[err]);
+				return res.send(err, codesMessage[err]);
 			}
-			return req.send(err.code, err.message);
+			return res.send(err.code, err.message);
 		}
 
 		res.json(200, {rid: rid, stamp: stamp, result: result});
