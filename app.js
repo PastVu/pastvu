@@ -125,6 +125,7 @@ async.waterfall([
 	},
 
 	function loadingModels(callback) {
+		require(__dirname + '/models/ApiLog.js').makeModel(db);
 		require(__dirname + '/models/ActionLog.js').makeModel(db);
 		require(__dirname + '/models/Sessions.js').makeModel(db);
 		require(__dirname + '/models/Counter.js').makeModel(db);

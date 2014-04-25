@@ -28,7 +28,6 @@ var getPhotoRequest = (function () {
 		};
 	}()),
 	getPhotoBoundsRequest = (function () {
-		var noselect = {frags: 0, album: 0, adate: 0, sdate: 0};
 		return function (data, cb) {
 			var bounds =  [],
 				bound,
@@ -80,13 +79,17 @@ function apiRouter(req, res) {
 	}
 
 	var start = Date.now(),
+		app  = req.query.rid,
 		rid = req.query.rid,
-		stamp = req.query.stamp,
 		method = req.query.method,
 		methodHandler = methodMap[method],
+		stamp,
 		data;
 
+	stamp = req.query.stamp = Number(req.query.stamp);
 	if (!rid || !stamp || methodHandler === undefined) {
+		res.result = {status: 400, error: 'Bad request'};
+		requestFinish(400, req, res);
 		return res.send(400, 'Bad request');
 	}
 
@@ -107,6 +110,15 @@ function apiRouter(req, res) {
 		res.json(200, {rid: rid, stamp: stamp, result: result});
 		console.log(method, Date.now() - start);
 	});
+}
+
+function requestFinish(err, req, res, appid) {
+	if (err) {
+		if (typeof err === 'number') {
+			return res.send(err, codesMessage[err]);
+		}
+		return res.send(err.code, err.message);
+	}
 }
 
 module.exports.apiRouter = apiRouter;
