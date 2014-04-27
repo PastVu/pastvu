@@ -71,6 +71,7 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	storePath = path.normalize(conf.storePath || (__dirname + "/../store/")), //Путь к папке хранилища
 	servePublic = conf.servePublic, //Флаг, что node должен раздавать статику скриптов
 	serveStore = conf.serveStore, //Флаг, что node должен раздавать статику хранилища
+	serveLog = conf.serveLog, //Флаг, что node должен раздавать лог
 	gzip = conf.gzip, //Использовать gzip
 
 	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), //Путь к папке логов
@@ -96,113 +97,169 @@ mkdirp.sync(storePath + "public/avatars");
 mkdirp.sync(storePath + "public/photos");
 
 async.waterfall([
-	function connectMongo(cb) {
-		db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
-			.once('open', openHandler)
-			.once('error', errFirstHandler);
-		db.open(moongoUri, {server: {poolSize: moongoPool, auto_reconnect: true}, db: {safe: true}});
+		function connectMongo(cb) {
+			db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
+				.once('open', openHandler)
+				.once('error', errFirstHandler);
+			db.open(moongoUri, {server: {poolSize: moongoPool, auto_reconnect: true}, db: {safe: true}});
 
-		function openHandler() {
-			var admin = new mongoose.mongo.Admin(db.db);
-			admin.buildInfo(function (err, info) {
-				logger.info('MongoDB[' + info.version + ', x' + info.bits + '] connected through Mongoose[' + mongoose.version + '] at: ' + moongoUri);
-				cb(null);
-			});
-			db.removeListener('error', errFirstHandler);
-			db.on('error', function (err) {
+			function openHandler() {
+				var admin = new mongoose.mongo.Admin(db.db);
+				admin.buildInfo(function (err, info) {
+					logger.info('MongoDB[' + info.version + ', x' + info.bits + '] connected through Mongoose[' + mongoose.version + '] at: ' + moongoUri);
+					cb(null);
+				});
+				db.removeListener('error', errFirstHandler);
+				db.on('error', function (err) {
+					logger.error("Connection error to MongoDB at: " + moongoUri);
+					logger.error(err && (err.message || err));
+				});
+				db.on('reconnected', function () {
+					logger.info("Reconnected to MongoDB at: " + moongoUri);
+				});
+			}
+
+			function errFirstHandler(err) {
 				logger.error("Connection error to MongoDB at: " + moongoUri);
-				logger.error(err && (err.message || err));
-			});
-			db.on('reconnected', function () {
-				logger.info("Reconnected to MongoDB at: " + moongoUri);
-			});
-		}
+				cb(err);
+			}
+		},
 
-		function errFirstHandler(err) {
-			logger.error("Connection error to MongoDB at: " + moongoUri);
-			cb(err);
-		}
-	},
+		function loadingModels(callback) {
+			require(__dirname + '/models/ApiLog.js').makeModel(db);
+			require(__dirname + '/models/ActionLog.js').makeModel(db);
+			require(__dirname + '/models/Sessions.js').makeModel(db);
+			require(__dirname + '/models/Counter.js').makeModel(db);
+			require(__dirname + '/models/Settings.js').makeModel(db);
+			require(__dirname + '/models/User.js').makeModel(db);
+			require(__dirname + '/models/UserSettings.js').makeModel(db);
+			require(__dirname + '/models/UserStates.js').makeModel(db);
+			require(__dirname + '/models/Photo.js').makeModel(db);
+			require(__dirname + '/models/Comment.js').makeModel(db);
+			require(__dirname + '/models/Cluster.js').makeModel(db);
+			require(__dirname + '/models/Region.js').makeModel(db);
+			require(__dirname + '/models/News.js').makeModel(db);
+			require(__dirname + '/models/_initValues.js').makeModel(db);
+			Session = db.model('Session');
+			callback(null);
+		},
 
-	function loadingModels(callback) {
-		require(__dirname + '/models/ApiLog.js').makeModel(db);
-		require(__dirname + '/models/ActionLog.js').makeModel(db);
-		require(__dirname + '/models/Sessions.js').makeModel(db);
-		require(__dirname + '/models/Counter.js').makeModel(db);
-		require(__dirname + '/models/Settings.js').makeModel(db);
-		require(__dirname + '/models/User.js').makeModel(db);
-		require(__dirname + '/models/UserSettings.js').makeModel(db);
-		require(__dirname + '/models/UserStates.js').makeModel(db);
-		require(__dirname + '/models/Photo.js').makeModel(db);
-		require(__dirname + '/models/Comment.js').makeModel(db);
-		require(__dirname + '/models/Cluster.js').makeModel(db);
-		require(__dirname + '/models/Region.js').makeModel(db);
-		require(__dirname + '/models/News.js').makeModel(db);
-		require(__dirname + '/models/_initValues.js').makeModel(db);
-		Session = db.model('Session');
-		callback(null);
-	},
+		//Настраиваем express
+		function (callback) {
+			var pub = '/public/',
+				lessMiddleware;
 
-	function appConfigure(callback) {
-		var pub = '/public/';
-
-		app = express();
-		app.version = pkg.version;
-		app.hash = land === 'dev' ? app.version : buildJson.appHash;
-		logger.info('Application Hash: ' + app.hash);
-
-
-		function static404(req, res) {
-			logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-			res.send(404);
-		}
-
-		app.enable('trust proxy');
-		app.configure(function () {
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.mail = mail;
 			global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
-			app.set('appEnv', {land: land, hash: app.hash, version: app.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
+			Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 
-			app.set('views', __dirname + '/views');
+			app = express();
+			app.disable('x-powered-by'); //Disable default X-Powered-By
+			app.enable('trust proxy'); //Используем хедеры прокси, если стоим за ним
+			app.set('views', 'views');
 			app.set('view engine', 'jade');
+
+			//Etag (по умолчанию он и так включен), чтобы браузер мог указывать его для запрашиваемого ресурса
+			//При этом если браузеру заголовком Cache-Control разрешено кешировать, он отправит etag в запросе,
+			//и если сгенерированный ответ получает такой же etag, сервер вернёт 304 без контента и браузер возьмет контент из своего кеша
+			app.enable('etag');
+
+			//На проде включаем внутреннее кеширование результатов рендеринга шаблонов
+			//Сокращает время рендеринга (и соответственно waiting время запроса клиента) на порядок
 			if (land === 'dev') {
-				app.disable('view cache');
+				app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
 			} else {
 				app.enable('view cache');
 			}
 
-			app.locals({
+			app.hash = land === 'dev' ? pkg.version : buildJson.appHash;
+			logger.info('Application Hash: ' + app.hash);
+
+			app.set('appEnv', {land: land, hash: app.hash, version: pkg.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
+
+			//Устанавливаем объект, свойства которого будут доступны из всех jade-шаблонов как глобальные переменные
+			_.assign(app.locals, {
 				pretty: false, //Adds whitespace to the resulting html to make it easier for a human to read
-				debug: false, //If set to true, the tokens and function body is logged to stdout
-				compileDebug: false, //Include the function source in the compiled template for better error messages (sometimes useful in development).
+				compileDebug: false, //Include the function source in the compiled template for better error messages (sometimes usefu
+				debug: false, //If set to true, the tokens and function body is logged to stdoutl in development).
 
 				appLand: land, //Решает какие скрипты вставлять в head
 				appHash: app.hash //Вставляется в head страниц
 			});
 
-			//app.use(express.logger({ immediate: false, format: 'dev' }));
-			app.disable('x-powered-by'); // Disable default X-Powered-By
 			if (gzip) {
-				app.use(express.compress());
+				app.use(require('compression')());
 			}
-			app.use(express.favicon(__dirname + pub + 'favicon.ico', { maxAge: ms('1d') }));
-			if (land === 'dev') {
-				app.use('/style', require('less-middleware')({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
-				//prod: app.use('/style', require('less-middleware')({src: __dirname + pub + '/style', force: false, once: true, compress: true, yuicompress: true, optimization: 2, debug: false}));
-			}
+
 			if (servePublic) {
-				app.use(express.static(__dirname + pub, {maxAge: ms('2d')}));
+				if (land === 'dev') {
+					lessMiddleware = require('less-middleware');
+					app.use('/style', lessMiddleware({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
+				}
+				app.use(require('static-favicon')(__dirname + pub + 'favicon.ico', {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(express.static(__dirname + pub, {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
 			}
 			if (serveStore) {
 				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
 				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
 			}
-			app.use(app.router); //Здесь будут распологаться наши обработчики путей (app.get, post etc.)
 
-			//app.get должен быть всегда после app.use, в противном случае следующие app.use не будет использованы
-			//Сначала "законцовываем" пути к статике
+			callback(null);
+		},
+
+		function (callback) {
+			server = http.createServer(app);
+			io = require('socket.io').listen(server, listenhost);
+
+			callback(null);
+		},
+		function ioConfigure(callback) {
+			var _session = require('./controllers/_session.js');
+
+			io.set('log level', land === 'dev' ? 1 : 0);
+			io.set('browser client', false);
+			io.set('match origin protocol', true);
+			io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
+
+			io.set('authorization', _session.authSocket);
+			io.sockets.on('connection', _session.firstConnection);
+
+			_session.loadController(app, db, io);
+			callback(null);
+		},
+		function loadingControllers(callback) {
+			var regionController,
+				static404 = function (req, res) {
+					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
+					res.send(404);
+				};
+
+			require('./controllers/settings.js').loadController(app, db, io);
+			require('./controllers/actionlog.js').loadController(app, db, io);
+			regionController = require('./controllers/region.js').loadController(app, db, io);
+			require('./controllers/mail.js').loadController(app);
+			require('./controllers/auth.js').loadController(app, db, io);
+			require('./controllers/index.js').loadController(app, db, io);
+			require('./controllers/photo.js').loadController(app, db, io);
+			require('./controllers/subscr.js').loadController(app, db, io);
+			require('./controllers/comment.js').loadController(app, db, io);
+			require('./controllers/profile.js').loadController(app, db, io);
+			require('./controllers/admin.js').loadController(app, db, io);
+			if (land === 'dev') {
+				require('./controllers/tpl.js').loadController(app);
+			}
+
+			require('./controllers/registerRoutes.js').loadController(app);
+
+			//Раздаем лог
+			if (serveLog) {
+				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'));
+				app.use('/nodelog', express.static(logPath, {maxAge: '1s'}));
+			}
+
+			//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
 			if (servePublic) {
 				app.get('/img/*', static404);
 				app.get('/js/*', static404);
@@ -218,57 +275,13 @@ async.waterfall([
 				app.get('/_a/*', static404);
 				app.get('/_p/*', static404);
 			}
-		});
+			require('./controllers/errors.js').registerErrorHandling(app);
+			require('./controllers/systemjs.js').loadController(app, db);
+			//require('./basepatch/v1.1.1.js').loadController(app, db);
 
-		Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
-		callback(null);
-	},
-
-	function (callback) {
-		server = http.createServer(app);
-		io = require('socket.io').listen(server, listenhost);
-
-		callback(null);
-	},
-	function ioConfigure(callback) {
-		var _session = require('./controllers/_session.js');
-
-		io.set('log level', land === 'dev' ? 1 : 0);
-		io.set('browser client', false);
-		io.set('match origin protocol', true);
-		io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
-
-		io.set('authorization', _session.authSocket);
-		io.sockets.on('connection', _session.firstConnection);
-
-		_session.loadController(app, db, io);
-		callback(null);
-	},
-	function loadingControllers(callback) {
-		var regionController;
-
-		require('./controllers/settings.js').loadController(app, db, io);
-		require('./controllers/actionlog.js').loadController(app, db, io);
-		regionController = require('./controllers/region.js').loadController(app, db, io);
-		require('./controllers/mail.js').loadController(app);
-		require('./controllers/auth.js').loadController(app, db, io);
-		require('./controllers/index.js').loadController(app, db, io);
-		require('./controllers/photo.js').loadController(app, db, io);
-		require('./controllers/subscr.js').loadController(app, db, io);
-		require('./controllers/comment.js').loadController(app, db, io);
-		require('./controllers/profile.js').loadController(app, db, io);
-		require('./controllers/admin.js').loadController(app, db, io);
-		if (land === 'dev') {
-			require('./controllers/tpl.js').loadController(app);
+			regionController.fillCache(callback);
 		}
-		require('./controllers/registerRoutes.js').loadController(app);
-		require('./controllers/systemjs.js').loadController(app, db);
-		require('./controllers/errors.js').registerErrorHandling(app);
-		//require('./basepatch/v1.1.1.js').loadController(app, db);
-
-		regionController.fillCache(callback);
-	}
-],
+	],
 	function finish(err) {
 		if (err) {
 			logger.fatal(err && (err.message || err));

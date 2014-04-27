@@ -24,7 +24,7 @@ function send404(req, res, err) {
 		res.send(404, {error: 'Not found'});
 	} else {
 		res.statusCode = 404;
-		res.render('status/404.jade');
+		res.render('status/404');
 	}
 }
 function send500(req, res, err) {
@@ -33,7 +33,7 @@ function send500(req, res, err) {
 		res.send(500, {error: err.message});
 	} else {
 		res.statusCode = 500;
-		res.render('status/500.jade');
+		res.render('status/500');
 	}
 }
 

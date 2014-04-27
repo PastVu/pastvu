@@ -16,8 +16,8 @@ Utils.walkParallel(path.normalize('./views/module'), function (e, files) {
 
 module.exports.loadController = function (app) {
 	app.get('/tpl/*', function (req, res) {
-		if (~tpls.indexOf(req.route.params[0])) {
-			res.status(200).render('module/' + req.route.params[0]);
+		if (~tpls.indexOf(req.params[0])) {
+			res.status(200).render('module/' + req.params[0]);
 		} else {
 			res.send(404);
 		}

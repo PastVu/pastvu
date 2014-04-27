@@ -13,19 +13,24 @@ module.exports.loadController = function (app) {
 		next();
 	});
 
-	// More complicated example: '/p/:cid?/*
-	['/', '/p/*', '/ps', '/u*', '/photoUpload', '/news*', '/confirm/:key'].forEach(function (route) {
-		app.get(route, appMainHandler);
-	});
+	//Пути, которым возвращается стандартный index.jade
+	[
+		'/', //Корень
+		/^\/(?:ps|photoUpload|confirm)\/?$/, // Пути строгие (/example без или с завершающим слешом)
+		/^\/(?:p|u|news)(?:\/.*)?$/ // Пути с возможным продолжением (/example/*)
+	]
+		.forEach(function (route) {
+			app.route(route).get(appMainHandler);
+		});
 	function appMainHandler(req, res) {
-		res.status(200).render('app.jade', {appName: 'Main'});
+		res.set({'Cache-Control': 'no-cache'}).status(200).render('app', {appName: 'Main'});
 	}
 
-	['/admin*'].forEach(function (route) {
+	[/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
 		app.get(route, appAdminHandler);
 	});
 	function appAdminHandler(req, res) {
-		res.status(200).render('app.jade', {appName: 'Admin'});
+		res.set({'Cache-Control': 'no-cache'}).status(200).render('app', {appName: 'Admin'});
 	}
 
 	//ping-pong для проверки работы сервера
