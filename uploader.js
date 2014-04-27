@@ -227,7 +227,7 @@ function validatePhoto(fileInfo, cb) {
 
 	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
 		if (err) {
-			logger.error('~~~~', 'GM size error');
+			logger.error('~~~~', 'GM size error: ' + err);
 			fileInfo.error = 'fpx';
 			return cb();
 		}
@@ -256,7 +256,7 @@ function validateAvatar(fileInfo, cb) {
 
 	gm(options.incomeDir + fileInfo.file).size(function (err, size) {
 		if (err) {
-			logger.error('~~~~', 'GM size error');
+			logger.error('~~~~', 'GM size error: ' + err);
 			fileInfo.error = 'fpx';
 			return cb();
 		}
