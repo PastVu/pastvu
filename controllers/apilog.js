@@ -1,42 +1,61 @@
 'use strict';
 
-var ActionLog,
+var ApiLog,
 	log4js = require('log4js'),
-	logger;
+	logger,
 
-function logIt(appid, rid, rstamp, method, type) {
-	var argumentsLen = arguments.length,
-		stamp = argumentsLen > 4 ? arguments[4]: undefined,
-		reason = argumentsLen > 5 ? arguments[5]: undefined,
-		roleregion = argumentsLen > 6 ? arguments[6]: undefined,
-		addinfo = argumentsLen > 7 ? arguments[7]: undefined,
-		action = new ActionLog({
-			user: user,
-			stamp: stamp,
-			obj: obj,
-			objtype: objtype,
-			type: type,
-			reason: reason,
-			role: user.role,
-			roleregion: roleregion,
-			addinfo: addinfo
-	});
-	action.save();
+	bulk = [],
+	bulkMaxLength = 200,
+	saveLogTimeout;
+
+function logIt(appid, rid, rstamp, method, data, stamp, ms, code, errmessage) {
+	var obj = {
+		app: appid,
+		stamp: stamp,
+		ms: ms,
+
+		rid: rid,
+		rstamp: rstamp,
+
+		method: method,
+		data: data,
+
+		code: code
+	};
+	if (errmessage) {
+		obj.error = errmessage;
+	}
+	bulk.push(obj);
+
+	//Если размер планируемого к сохранению достиг максимального, сразу сохраняем и сбрасываем
+	if (bulk.length === bulkMaxLength) {
+		saveLog();
+	}
 }
 
-module.exports.loadController = function (app, db, io) {
-	logger = log4js.getLogger("photo.js");
+function scheduleLogSave() {
+	saveLogTimeout = setTimeout(saveLog, 1e3);
+}
+function saveLog() {
+	console.log(new Date());
+	clearTimeout(saveLogTimeout);
+	if (bulk.length) {
+		ApiLog.collection.insert(bulk, {forceServerObjectId: true, checkKeys: false}, function (err) {
+			if (err) {
+				logger.error(err);
+			}
+			scheduleLogSave();
+		});
+		bulk = []; //Сбрасываем массив
+	} else {
+		scheduleLogSave();
+	}
+}
 
-	ActionLog = db.model('ActionLog');
+module.exports.loadController = function (app, db) {
+	logger = log4js.getLogger('apilog.js');
+	ApiLog = db.model('ApiLog');
+
+	scheduleLogSave();
 };
 module.exports.logIt = logIt;
-module.exports.OBJTYPES = {
-	USER: 1,
-	PHOTO: 2,
-	COMMENT: 3
-};
-module.exports.TYPES = {
-	CREATE: 1,
-	RESTORE: 8,
-	REMOVE: 9
-};

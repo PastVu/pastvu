@@ -26,5 +26,5 @@ var ApiLogSchema = new Schema(
 );
 
 module.exports.makeModel = function (db) {
-	db.model('ActionLog', ApiLogSchema);
+	db.model('ApiLog', ApiLogSchema);
 };

@@ -242,6 +242,7 @@ async.waterfall([
 
 			require('./controllers/settings.js').loadController(app, db, io);
 			require('./controllers/actionlog.js').loadController(app, db, io);
+			require('./controllers/apilog.js').loadController(app, db);
 			regionController = require('./controllers/region.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);

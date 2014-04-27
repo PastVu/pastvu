@@ -35,7 +35,7 @@
 		"lodash": "~2.4.1",
 		"underscore.string": "~2.3.3",
 		"ms": "0.6.2",
-		"moment": "~2.5.1",
+		"moment": "~2.6.0",
 		"bcrypt": "~0.7.8",
 		"step": "",
 		"socket.io": "~0.9.16",

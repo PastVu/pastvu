@@ -65,8 +65,16 @@
 			"category": ["subscr.js"]
 		},
 		{
+			"type": "file",
+			"filename": "api.log",
+			"maxLogSize": 524288,
+			"backups": 1,
+			"pollInterval": 15,
+			"category": ["apilog.js"]
+		},
+		{
 			"type": "console",
-			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js"]
+			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js", "apilog.js"]
 		}
 	],
 	"replaceConsole": true
