@@ -147,13 +147,16 @@ async.waterfall([
 		//Настраиваем express
 		function (callback) {
 			var pub = '/public/',
+				ourMiddlewares,
 				lessMiddleware;
 
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
 			global.appVar.mail = mail;
 			global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
+
 			Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
+			ourMiddlewares = require('./controllers/middleware.js');
 
 			app = express();
 			app.disable('x-powered-by'); //Disable default X-Powered-By
@@ -189,6 +192,7 @@ async.waterfall([
 				appHash: app.hash //Вставляется в head страниц
 			});
 
+			app.use(ourMiddlewares.responseHeaderHook());
 			if (gzip) {
 				app.use(require('compression')());
 			}

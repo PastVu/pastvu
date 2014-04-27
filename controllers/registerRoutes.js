@@ -7,13 +7,6 @@ var _ = require('lodash'),
 
 module.exports.loadController = function (app) {
 
-	app.all('*', function (req, res, next) {
-		//Устанавливаем кастомный X-Powered-By
-		res.setHeader('X-Powered-By', XPoweredBy);
-		next();
-	});
-
-	//Пути, которым возвращается стандартный index.jade
 	[
 		'/', //Корень
 		/^\/(?:ps|photoUpload|confirm)\/?$/, // Пути строгие (/example без или с завершающим слешом)
