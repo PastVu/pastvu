@@ -2,15 +2,15 @@
 
 var _ = require('lodash'),
 	Utils = require('../commons/Utils.js'),
-	apiController = require('./api.js'),
-	XPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
+	apiController = require('./api.js');
 
 module.exports.loadController = function (app) {
 
 	[
 		'/', //Корень
-		/^\/(?:ps|photoUpload|confirm)\/?$/, // Пути строгие (/example без или с завершающим слешом)
-		/^\/(?:p|u|news)(?:\/.*)?$/ // Пути с возможным продолжением (/example/*)
+		/^\/(?:photoUpload)\/?$/, // Пути строгие (/example без или с завершающим слешом)
+		/^\/(?:ps|news)(?:\/.*)?$/, // Пути с возможным продолжением (/example/*)
+		/^\/(?:p|u|confirm)\/.+$/ // Пути обязательным продолжением (/example/*)
 	]
 		.forEach(function (route) {
 			app.route(route).get(appMainHandler);

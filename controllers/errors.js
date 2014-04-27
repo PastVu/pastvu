@@ -40,8 +40,8 @@ function send500(req, res, err) {
 module.exports.err = neoError;
 module.exports.registerErrorHandling = function (app) {
 
-	//Последний get. Если дошли сюда, значит на запрос нет обработчика
-	app.get('*', function (req, res) {
+	//Последний. Если дошли сюда, значит на запрос нет обработчика
+	app.all('*', function (req, res) {
 		throw new neoError.e404('No such resource');
 	});
 

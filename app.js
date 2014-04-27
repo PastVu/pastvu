@@ -255,7 +255,7 @@ async.waterfall([
 				require('./controllers/tpl.js').loadController(app);
 			}
 
-			require('./controllers/registerRoutes.js').loadController(app);
+			require('./controllers/routes.js').loadController(app);
 
 			//Раздаем лог
 			if (serveLog) {
