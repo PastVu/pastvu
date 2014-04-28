@@ -5,24 +5,24 @@
 			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
-			a#toUpload.labledIco.strokeAfter.iconBefore(href="/photoUpload")
-				.ico
+			a#toUpload.labledIco.strokeAfter(href="/photoUpload")
+				.glyphicon.glyphicon-cloud-upload
 				.text(data-bind="text: $root.i18n.image_upload()")
-			//ko if: can.mod()
-			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank")
-				.ico
-				.text(data-bind="text: $root.i18n.mod()")
 			// /ko
+			a#gallery.labledIco.strokeAfter(href="/ps")
+				.glyphicon.glyphicon-picture
+				.text(data-bind="text: $root.i18n.gallery()")
+			//ko if: auth.loggedIn()
 			//ko if: can.adm()
-			a#toAdmin.labledIco.strokeAfter.iconBefore(href="/admin", target="_blank")
-				.ico
+			a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
+				.glyphicon.glyphicon-cog
 				.text(data-bind="text: $root.i18n.admin()")
 			// /ko
-			a#toProfile.labledIco.iconBefore(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
+			a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
 				.ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
 			// /ko
-			#toRegister.labledIco.iconBefore(data-bind="style:{display: !auth.loggedIn() && registrationAllowed() ? '' : 'none'}, event:{click: function(data, evt){auth.show('reg')}}")
+			#toRegister.labledIco(data-bind="style:{display: !auth.loggedIn() && registrationAllowed() ? '' : 'none'}, event:{click: function(data, evt){auth.show('reg')}}")
 				.ico
 				.text(data-bind="text: $root.i18n.register()")
 			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="style:{display: !auth.loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.show('login')}}")
