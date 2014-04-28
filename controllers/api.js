@@ -59,6 +59,22 @@ var getPhotoRequest = (function () {
 			});
 		};
 	}()),
+	getPhotoNearRequest = (function () {
+		return function (data, cb) {
+			if (!data || !Utils.geo.checkLatLng(data.geo)) {
+				return cb({message: 'Bad params', error: true});
+			}
+			data.limit = Number(data.limit);
+			data.geo.reverse();
+
+			photoController.core.giveNearestPhotos(data, function (err, photos) {
+				if (err) {
+					return cb(500);
+				}
+				cb(null, {photos: photos || []});
+			});
+		};
+	}()),
 	getObjCommentsRequest = (function () {
 		var noselect = {frags: 0, album: 0, adate: 0, sdate: 0};
 		return function (data, cb) {
@@ -76,6 +92,7 @@ var getPhotoRequest = (function () {
 	}()),
 	methodMap = {
 		'photo.get': getPhotoRequest,
+		'photos.near': getPhotoNearRequest,
 		'map.getBounds': getPhotoBoundsRequest,
 		'comments.getByObj': getObjCommentsRequest
 	};

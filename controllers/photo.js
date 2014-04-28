@@ -655,8 +655,7 @@ var core = {
 		});
 	},
 	getBounds: function (data, cb) {
-		var year = false,
-			i = data.bounds.length;
+		var year = false;
 
 		// Определяем, нужна ли выборка по границам лет
 		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
@@ -726,6 +725,16 @@ var core = {
 			}
 			cb(null, photos, clusters);
 		}
+	},
+
+	giveNearestPhotos: function (data, cb) {
+		var query = {geo: {$near: data.geo, $maxDistance: 2000}, s: 5};
+
+		if (typeof data.except === 'number') {
+			query.cid = {$ne: data.except};
+		}
+
+		Photo.find(query, compactFields, {lean: true, limit: Math.min(data.limit, 20)}, cb);
 	}
 };
 
@@ -1019,13 +1028,15 @@ function giveNearestPhotos(data, cb) {
 	if (!data || !Utils.geo.checkLatLng(data.geo)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	var query = {geo: {$near: data.geo.reverse(), $maxDistance: 2000}, s: 5};
+	data.limit = Number(data.limit);
+	data.geo.reverse();
 
-	if (typeof data.except === 'number') {
-		query.cid = {$ne: data.except};
-	}
-
-	Photo.find(query, compactFields, {lean: true, limit: Math.min(Number(data.limit), 20)}, cb);
+	core.giveNearestPhotos(data, function (err, photos) {
+		if (err) {
+			return cb({message: err.message, error: true});
+		}
+		cb({photos: photos || []});
+	});
 }
 
 //Отдаем непубличные фотографии
@@ -1786,8 +1797,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveNearestPhotos', function (data) {
-			giveNearestPhotos(data, function (err, photos) {
-				socket.emit('takeNearestPhotos', err ? {message: err.message, error: true} : {photos: photos || []});
+			giveNearestPhotos(data, function (resultData) {
+				socket.emit('takeNearestPhotos', resultData);
 			});
 		});
 
