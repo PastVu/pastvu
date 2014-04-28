@@ -4,6 +4,9 @@ var Utils = require('../commons/Utils.js'),
 	logController = require('./apilog.js'),
 	photoController = require('./photo.js'),
 	commentController = require('./comment.js'),
+	apps = {
+		'10': true
+	},
 	codesMessage = {
 		'400': 'Bad request',
 		'404': 'Not found',
@@ -87,8 +90,12 @@ function apiRouter(req, res) {
 		stamp,
 		data;
 
-	stamp = req.query.stamp = start - 1;//Number(req.query.stamp);
-	if (!req.query.rid || !stamp || methodHandler === undefined) {
+	if (req.query.stamp === '51') {
+		req.query.stamp = start - 1;
+	}
+
+	stamp = req.query.stamp = Number(req.query.stamp);
+	if (apps[req.query.app] === undefined || !req.query.rid || !stamp || methodHandler === undefined) {
 		return requestFinish(400, req, res, start);
 	}
 

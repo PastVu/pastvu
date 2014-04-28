@@ -10,16 +10,9 @@ var ApiLog,
 
 function logIt(appid, rid, rstamp, method, data, stamp, ms, code, errmessage) {
 	var obj = {
-		app: appid,
-		stamp: stamp,
-		ms: ms,
-
-		rid: rid,
-		rstamp: rstamp,
-
-		method: method,
-		data: data,
-
+		app: appid, stamp: stamp, ms: ms,
+		rid: rid, rstamp: rstamp,
+		method: method, data: data,
 		code: code
 	};
 	if (errmessage) {
@@ -37,7 +30,6 @@ function scheduleLogSave() {
 	saveLogTimeout = setTimeout(saveLog, 1e3);
 }
 function saveLog() {
-	console.log(new Date());
 	clearTimeout(saveLogTimeout);
 	if (bulk.length) {
 		ApiLog.collection.insert(bulk, {forceServerObjectId: true, checkKeys: false}, function (err) {
