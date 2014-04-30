@@ -37,8 +37,8 @@ module.exports.loadController = function (app) {
 
 
 	var apiPaths = {
-		'0.1.0': [
-			{path: /^\/0\.1\.0\/?$/, handler: apiController.apiRouter}
+		'0.2.0': [
+			{path: /^\/0\.2\.0\/?$/, handler: apiController.apiRouter}
 		]
 	};
 	_.forEach(apiPaths, function (paths, version) {

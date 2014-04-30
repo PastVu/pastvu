@@ -2,9 +2,61 @@ doctype html
 html
 	head
 		meta(http-equiv="content-type", content="text/html; charset=utf-8")
-		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
+		meta(http-equiv="X-UA-Compatible", content="IE=Edge")
 		meta(name="apple-mobile-web-app-capable", content="yes")
 		title Документация API PastVu
 
 	body
-		| Обязательные параметры запроса:
+		h2 Документация API PastVu
+		span(style="color: #999") Версия 0.2.0
+		h3 Параметры запроса
+		table
+			caption
+			tbody
+				tr
+					td app*
+					td Идентификатор приложения. Выдаётся администратором по запросу на адрес support@pastvu.com
+				tr
+					td rid*
+					td Идентификатор запроса. Строка, позволяющая запрашиваемому приложению соотнести ответ с запросом. Возвращается в ответе
+				tr
+					td stamp*
+					td Время (UTC) отправки запроса в формате unix-time (количество миллисекунд с 1970/01/01). Запрос должен быть не старше 10 секунд. Возвращается в ответе
+				tr
+					td method*
+					td Метод запроса из перечисленных ниже
+				tr
+					td data
+					td Параметры метода в формате JSON
+		| * Обязательные параметры запроса
+
+		h3 Структура ответа
+		| В случае корректно переданных параметров запроса сервер вернёт JSON (Content-Type: application/json; charset=utf-8) следующей структуры:
+		table
+			caption
+			tbody
+				tr
+					td rid
+					td Переданный клиентом идентификатор запроса
+				tr
+					td stamp
+					td Переданное клиентом время отправки запроса
+				tr
+					td result
+					td Результат выполнения метода
+
+		h3 Методы запроса
+		table
+			tbody
+				tr
+					td photo.get
+					td Возвращает объект фотографии
+				tr
+					td photos.near
+					td Возвращает массив фотографий, ближайших переданной координате. Массив отсортирован по возрастанию расстояния
+				tr
+					td map.getBounds
+					td Возвращает массивы кластеров и фотографий для карты, входящих в переданные границы
+				tr
+					td comments.getByObj
+					td Возвращает дерево комментариев для фотографии
