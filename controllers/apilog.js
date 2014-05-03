@@ -8,15 +8,18 @@ var ApiLog,
 	bulkMaxLength = 200,
 	saveLogTimeout;
 
-function logIt(appid, rid, rstamp, method, data, stamp, ms, code, errmessage) {
+function logIt(appid, rid, rstamp, method, data, stamp, ms, status, errorCode, errorMessage) {
 	var obj = {
 		app: appid, stamp: stamp, ms: ms,
 		rid: rid, rstamp: rstamp,
 		method: method, data: data,
-		code: code
+		status: status
 	};
-	if (errmessage) {
-		obj.error = errmessage;
+	if (errorCode) {
+		obj.err_code = errorCode;
+	}
+	if (errorMessage) {
+		obj.err_msg = errorMessage;
 	}
 	bulk.push(obj);
 

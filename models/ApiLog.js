@@ -16,8 +16,9 @@ var ApiLogSchema = new Schema(
 		method: {type: String}, //Метод api
 		data: {type: String}, //Строка параметров data
 
-		code: {type: Number}, //Response http code
-		error: {type: String} //Возможная строка ошибки
+		status: {type: Number}, //Response http code
+		err_code: {type: Number}, //Возможный код ошибки
+		err_msg: {type: String} //Возможная строка ошибки
 	},
 	{
 		strict: true,
