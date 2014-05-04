@@ -30,12 +30,6 @@ module.exports.loadController = function (app) {
 		res.render('app', {appName: 'Admin'});
 	}
 
-	//ping-pong для проверки работы сервера
-	app.all('/ping', function (req, res) {
-		res.send(200, 'pong');
-	});
-
-
 	var apiPaths = {
 		'0.2.0': [
 			{path: /^\/0\.2\.0\/?$/, handler: apiController.apiRouter}
@@ -45,5 +39,10 @@ module.exports.loadController = function (app) {
 		_.forEach(paths, function (item) {
 			app.all(item.path, item.handler);
 		});
+	});
+
+	//ping-pong для проверки работы сервера
+	app.all('/ping', function (req, res) {
+		res.send(200, 'pong');
 	});
 };

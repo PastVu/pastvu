@@ -545,11 +545,13 @@ function activateDeactivate(socket, data, cb) {
 var core = {
 	givePhoto: function (iAm, data, cb) {
 		var cid = data.cid,
+			defaultNoSelect = {sign: 0},
 			fieldNoSelect = {};
 
 		if (data.noselect !== undefined) {
 			_.assign(fieldNoSelect, data.noselect);
 		}
+		_.defaults(fieldNoSelect, defaultNoSelect);
 		if (fieldNoSelect.frags === undefined) {
 			fieldNoSelect['frags._id'] = 0;
 		}

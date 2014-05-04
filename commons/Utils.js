@@ -343,6 +343,7 @@ Utils.diff = function (a, b) {
 Utils.math = (function () {
 	'use strict';
 
+	var defDivider = 1e6;
 	/**
 	 * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
 	 * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
@@ -351,7 +352,7 @@ Utils.math = (function () {
 	 * @return {Number}
 	 */
 	function toPrecision(number, precision) {
-		var divider = Math.pow(10, precision || 6);
+		var divider = precision ? Math.pow(10, precision) : defDivider;
 		return ~~(number * divider) / divider;
 	}
 
@@ -362,7 +363,7 @@ Utils.math = (function () {
 	 * @return {Number}
 	 */
 	function toPrecisionRound(number, precision) {
-		var divider = Math.pow(10, precision || 6);
+		var divider = precision ? Math.pow(10, precision) : defDivider;
 		return Math.round(number * divider) / divider;
 	}
 

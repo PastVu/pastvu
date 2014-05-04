@@ -18,6 +18,8 @@ var Utils = require('../commons/Utils.js'),
 		'20': {status: 400, errorText: 'Error while parsing data parameter'},
 		'21': {status: 400, errorText: 'Invalid method parameters'},
 
+		'31': {status: 400, errorText: 'Requested area too large'},
+
 		'99': {status: 500, errorText: 'Error occured'},
 
 		'101': {errorText: "Photo doesn't exists"}
@@ -44,8 +46,7 @@ var getPhotoRequest = (function () {
 	getPhotoBoundsRequest = (function () {
 		var minZoom = 3,
 			maxZoom = 20,
-			areaNear = 0.0001,
-			areaLimit = {'17': areaNear, '18': areaNear, '19': areaNear, '20': areaNear, '21': areaNear};
+			areaLimit = [0, 0, 0, 34530, 8425, 2085, 519, 130, 33, 8.12, 2.02, 0.507, 0.127, 0.0317, 0.008, 0.00199, 0.000495, 0.000125, 0.000125, 0.000125, 0.000125];
 
 		return function (data, cb) {
 			var bounds = [],
@@ -68,8 +69,8 @@ var getPhotoRequest = (function () {
 					[bound[2], bound[3]]
 				]);
 			}
-			if (data.z > 16 && area > 10) {
-
+			if (area > areaLimit[zoom]) {
+				return cb(31);
 			}
 
 			data.bounds = bounds;
