@@ -898,8 +898,8 @@ function createComment(socket, data, cb) {
 			if (fragAdded) {
 				fragObj = {
 					cid: savedComment.cid,
-					l: Utils.math.toPrecision(Number(data.fragObj.l) || 10, 2),
-					t: Utils.math.toPrecision(Number(data.fragObj.t) || 10, 2),
+					l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
+					t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
 					w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
 					h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
 				};
@@ -1358,8 +1358,8 @@ function updateComment(socket, data, cb) {
 
 			fragRecieved = data.type === 'photo' && data.fragObj && {
 				cid: comment.cid,
-				l: Utils.math.toPrecision(Number(data.fragObj.l) || 10, 2),
-				t: Utils.math.toPrecision(Number(data.fragObj.t) || 10, 2),
+				l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
+				t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
 				w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
 				h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
 			};
