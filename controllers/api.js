@@ -1,9 +1,10 @@
 'use strict';
 
-var Utils = require('../commons/Utils.js'),
+var _ = require('lodash'),
+	Utils = require('../commons/Utils.js'),
 	logController = require('./apilog.js'),
-	photoController = require('./photo.js'),
-	commentController = require('./comment.js'),
+	CoreClient = require('./coreclient'),
+	core,
 	apps = {
 		'mPsTm': true
 	},
@@ -32,7 +33,7 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			photoController.core.givePhoto(null, {cid: cid, noselect: noselect}, function (err, photo) {
+			core.givePhoto(null, {cid: cid, noselect: noselect}, function (err, photo) {
 				if (err) {
 					return cb(101);
 				}
@@ -74,7 +75,7 @@ var getPhotoRequest = (function () {
 			}
 
 			data.bounds = bounds;
-			photoController.core.getBounds(data, function (err, photos, clusters) {
+			core.getBounds(data, function (err, photos, clusters) {
 				if (err) {
 					return cb(101);
 				}
@@ -90,7 +91,7 @@ var getPhotoRequest = (function () {
 			data.limit = Number(data.limit);
 			data.geo.reverse();
 
-			photoController.core.giveNearestPhotos(data, function (err, photos) {
+			core.giveNearestPhotos(data, function (err, photos) {
 				if (err) {
 					return cb(101);
 				}
@@ -104,7 +105,7 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			commentController.core.getCommentsObjAnonym({type: 'photo', cid: cid}, function (err, commentsTree) {
+			core.getCommentsObjAnonym({type: 'photo', cid: cid}, function (err, commentsTree) {
 				if (err) {
 					return cb(101);
 				}
@@ -205,4 +206,10 @@ function logIt(req, start, status, errorCode, errorMessage) {
 	logController.logIt(query.app, query.rid, query.stamp, query.method, query.data, start, ms, status, errorCode, errorMessage);
 }
 
-module.exports.apiRouter = apiRouter;
+module.exports.loadController = function (app, db) {
+	core = new CoreClient();
+	core.connect(3001, function () {
+		console.log('API connected to Core');
+	});
+	app.route(/^\/0\.2\.0\/?$/).get(apiRouter).post(apiRouter);
+};

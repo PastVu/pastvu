@@ -70,11 +70,11 @@
 			"maxLogSize": 524288,
 			"backups": 1,
 			"pollInterval": 15,
-			"category": ["apilog.js"]
+			"category": ["api.js"]
 		},
 		{
 			"type": "console",
-			"category": ["console", "app.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js", "apilog.js"]
+			"category": ["console", "app.js", "api.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		}
 	],
 	"replaceConsole": true

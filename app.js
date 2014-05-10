@@ -4,6 +4,7 @@
 
 var express = require('express'),
 	http = require('http'),
+
 	app, server, io, db,
 
 	Session,
@@ -242,7 +243,6 @@ async.waterfall([
 
 			require('./controllers/settings.js').loadController(app, db, io);
 			require('./controllers/actionlog.js').loadController(app, db, io);
-			require('./controllers/apilog.js').loadController(app, db);
 			regionController = require('./controllers/region.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
@@ -338,8 +338,12 @@ async.waterfall([
 				logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
 				logger.info('Host for users: [%s]', protocol + '://' + host);
 				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
-			});
 
+				var CoreServer = require('./controllers/coreadapter.js'),
+					coreServer = new CoreServer(3001, function () {
+						logger.info('Core server listening 3001');
+					});
+			});
 		}
 	}
 );

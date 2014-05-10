@@ -1,8 +1,7 @@
 'use strict';
 
 var _ = require('lodash'),
-	Utils = require('../commons/Utils.js'),
-	apiController = require('./api.js');
+	Utils = require('../commons/Utils.js');
 
 module.exports.loadController = function (app) {
 
@@ -29,17 +28,6 @@ module.exports.loadController = function (app) {
 		res.statusCode = 200;
 		res.render('app', {appName: 'Admin'});
 	}
-
-	var apiPaths = {
-		'0.2.0': [
-			{path: /^\/0\.2\.0\/?$/, handler: apiController.apiRouter}
-		]
-	};
-	_.forEach(apiPaths, function (paths, version) {
-		_.forEach(paths, function (item) {
-			app.all(item.path, item.handler);
-		});
-	});
 
 	//ping-pong для проверки работы сервера
 	app.all('/ping', function (req, res) {

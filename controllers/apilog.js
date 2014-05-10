@@ -48,7 +48,7 @@ function saveLog() {
 }
 
 module.exports.loadController = function (app, db) {
-	logger = log4js.getLogger('apilog.js');
+	logger = log4js.getLogger('api.js');
 	ApiLog = db.model('ApiLog');
 
 	scheduleLogSave();

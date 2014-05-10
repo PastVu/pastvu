@@ -4,6 +4,9 @@
 	"port": 3000, /* Application app.js will listen this port. @Default 3000 */
 	"uport": 3001, /* Application uploader.js will listen this port. @Default 3001 */
 
+	"hostname_api": "", /* Accept only this host. If the hostname is omitted, the server will accept connections directed to any IPv4 address (INADDR_ANY). @Default "" */
+	"port_api": 3002, /* Application app.js will listen this port. @Default 3001 */
+
 	"protocol": "http", /* Protocol for external users. @Default "http" */
 	"domain": "127.0.0.1", /* Domain for external users, i.e. site entry point. @Default "127.0.0.1" */
 	"projectport": "", /* Port for external users. @Example ":1234". @Default "" */
@@ -25,6 +28,10 @@
 	"mongo": {
 		"con": "mongodb://localhost:27017/pastvu", /* DB connection string */
 		"pool": 5 /* Number of concurrent connections to DB.  @Default 5*/
+	},
+	"mongo_api": {
+		"con": "mongodb://localhost:27017/pastvu", /* DB connection string */
+		"pool": 2 /* Number of concurrent connections to DB.  @Default 5*/
 	},
 
 	"mail": {
