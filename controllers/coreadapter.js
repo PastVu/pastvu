@@ -2,6 +2,8 @@
 
 var net = require('net'),
 	_ = require('lodash'),
+	log4js = require('log4js'),
+	logger = log4js.getLogger('app.js'),
 	photoController = require('./photo.js'),
 	commentController = require('./comment.js'),
 	core = {
@@ -33,34 +35,33 @@ var net = require('net'),
 					ondestroy = function () {
 						socket.destroy();
 						_.remove(clientSockets, clientSocket);
-						console.log(clientSockets.length + ' core clients left');
+						logger.info('Core client disconnected. Total clients: %d', clientSockets.length);
 					};
 
 				clientSockets.push(clientSocket);
 
 				socket.on('error', function (err) {
-					console.log('Core client connection error: ' + (err.code || err));
+					logger.warn('Core client connection error: ' + (err.code || err));
 				});
-				socket.on('close', function (withError) {
-					console.log('Core client disconnected' + (withError ? ' due to error' : ''));
+				socket.on('close', function () {
 					ondestroy();
 				});
 				socket.on('end', function () {
-					console.log('Core client connection end');
+					logger.info('Core client connection end');
 					ondestroy();
 				});
-				console.log('Core client connected. Total clients: %d', clientSockets.length);
+				logger.info('Core client connected. Total clients: %d', clientSockets.length);
 			});
 
 		server.on('error', function (e) {
 			if (e.code === 'EADDRINUSE') {
-				console.log('Address in use, retrying...');
+				logger.error('Address in use, retrying...');
 				setTimeout(function () {
 					server.close();
 					server.listen.apply(server, args);
 				}, 1000);
 			} else {
-				console.log('Error occured: ', e);
+				logger.error('Error occured: ', e);
 			}
 		});
 
@@ -94,7 +95,7 @@ ClientSocket.prototype.handleMessage = function (msg) {
 	try {
 		msg = JSON.parse(msg);
 	} catch (e) {
-		console.error('Error parsing incoming message: ', e);
+		logger.error('Core: error parsing incoming message: ' + e + '. Message: ' + msg);
 		return;
 	}
 	if (msg) {

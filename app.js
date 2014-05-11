@@ -88,8 +88,8 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
-var logger = log4js.getLogger("app.js"),
-	logger404 = require('log4js').getLogger("404.js");
+var logger = log4js.getLogger('app.js'),
+	logger404 = log4js.getLogger("404.js");
 
 logger.info('~~~');
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
@@ -326,24 +326,22 @@ async.waterfall([
 					var start = Date.now(),
 						memUsage = process.memoryUsage();
 
-					logger.info('-> Start GC');
-					logger.info('rss: %s, heapUsed: %s, heapTotal: %s', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
+					logger.info('rss: %s, heapUsed: %s, heapTotal: %s. -> Starting GC', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
 
 					global.gc(); //Вызываем gc
 
 					memUsage = process.memoryUsage();
-					logger.info('rss: %s, heapUsed: %s, heapTotal: %s', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
-					logger.info('Garbage collected in %ss', (Date.now() - start) / 1000);
+					logger.info('rss: %s, heapUsed: %s, heapTotal: %s. Garbage collected in %ss', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal), (Date.now() - start) / 1000);
 					setTimeout(collectGarbage, manualGarbageCollect);
 				}, manualGarbageCollect);
 			}
 
 			coreServer = new CoreServer(core_port, core_hostname, function () {
 				httpServer.listen(http_port, http_hostname, function () {
-					logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
+					logger.info('servePublic: ' + servePublic + ', serveStore ' + serveStore);
 					logger.info('Host for users: [%s]', protocol + '://' + host);
 					logger.info('Core server listening [%s:%s] in %s-mode', core_hostname ? core_hostname : '*', core_port, land.toUpperCase());
-					logger.info('HTTP server listening [%s:%s] in %s-mode \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase());
+					logger.info('HTTP server listening [%s:%s] in %s-mode %s gzip \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase(), gzip ? 'with' : 'without');
 				});
 			});
 		}

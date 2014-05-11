@@ -2,45 +2,62 @@
 
 var net = require('net'),
 	util = require('util'),
-	events = require('events');
+	events = require('events'),
+	_ = require('lodash');
 
-var Client = module.exports = function () {
-	this.reset();
+var Client = module.exports = function (logger) {
+	this.logger = logger;
+	this.socketClosed = true;
 };
 util.inherits(Client, events.EventEmitter);
 
 Client.prototype.connect = function () {
 	var that = this;
 
-	this.socket = new net.Socket();
+	this.reset();
+	this.connectargs = this.connectargs || _.toArray(arguments);
 
+	this.socket = new net.Socket();
 	this.socket.setEncoding('utf8');
 	this.socket.setNoDelay(true);
 
-	this.socket.on('data', function (data) {
-		var messages = that._tokenizer(data),
-			len = messages.length,
-			i = 0;
+	this.socket
+		.on('data', function (data) {
+			var messages = that._tokenizer(data),
+				len = messages.length,
+				i = 0;
 
-		while (i < len) {
-			that.handleMessage(messages[i++]);
-		}
-	});
-	this.socket.on('connect', function () {
-		that.emit('connect');
-	});
-	this.socket.on('error', function (e) {
-		that.emit('error', e);
-	});
-	this.socket.on('close', function () {
-		that.reset();
-		that.emit('close');
-	});
+			while (i < len) {
+				that.handleMessage(messages[i++]);
+			}
+		})
+		.on('connect', function () {
+			that.logger.info('Connected to core at :%s', that.connectargs[0]);
+			that.socketClosed = false;
+			that.emit('connect');
+		})
+		.on('error', function (e) {
+			if (e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET') {
+				that.logger.warn('Can\'t connect to Core. Retrying...');
+				setTimeout(function () {
+					that.connect();
+				}, 1000);
+			} else {
+				that.logger.error('Core connnection error: ', e);
+				that.emit('error', e);
+			}
+		})
+		.on('close', function () {
+			that.socketClosed = true;
+			that.emit('close');
+		});
 
-	this.socket.connect.apply(this.socket, arguments);
+	this.socket.connect.apply(this.socket, this.connectargs);
 };
-
 Client.prototype.send = function (category, method, args, cb) {
+	if (this.socketClosed) {
+		return false;
+	}
 	var msg = {
 			category: category,
 			method: method,
@@ -55,6 +72,7 @@ Client.prototype.send = function (category, method, args, cb) {
 	}
 
 	this.socket.write(JSON.stringify(msg) + '\0');
+	return true;
 };
 Client.prototype.close = function () {
 	this.socket.end();
@@ -67,7 +85,7 @@ Client.prototype.handleMessage = function (msg) {
 	try {
 		msg = JSON.parse(msg);
 	} catch (e) {
-		this.emit('error', e);
+		this.emit('parseError', e);
 		return;
 	}
 
@@ -90,6 +108,9 @@ Client.prototype.reset = function () {
 		for (var key in this.cbDescriptors) {
 			this.cbDescriptors[key](connResetErr);
 		}
+	}
+	if (this.socket) {
+		this.socket.destroy();
 	}
 
 	this.buffer = '';

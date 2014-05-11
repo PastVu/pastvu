@@ -70,7 +70,7 @@ var confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.js
 console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
-var logger = log4js.getLogger("api.js");
+var logger = log4js.getLogger('api.js');
 
 logger.info('~~~ API');
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
@@ -120,6 +120,13 @@ async.waterfall([
 			app.enable('trust proxy'); //Используем хедеры прокси, если стоим за ним
 			app.disable('x-powered-by'); //Disable default X-Powered-By
 			app.disable('etag');
+			app.set('views', 'views');
+			app.set('view engine', 'jade');
+			if (land === 'dev') {
+				app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
+			} else {
+				app.enable('view cache');
+			}
 
 			app.use(ourMiddlewares.responseHeaderHook());
 			if (gzip) {
@@ -130,7 +137,7 @@ async.waterfall([
 		},
 
 		function (callback) {
-			core = new CoreClient();
+			core = new CoreClient(logger);
 			server = http.createServer(app);
 			callback(null);
 		},
@@ -174,7 +181,7 @@ async.waterfall([
 					var start = Date.now(),
 						memUsage = process.memoryUsage();
 
-					logger.info('rss: %s, heapUsed: %s, heapTotal: %s. -> Start GC', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
+					logger.info('rss: %s, heapUsed: %s, heapTotal: %s. -> Starting GC', Utils.format.fileSize(memUsage.rss), Utils.format.fileSize(memUsage.heapUsed), Utils.format.fileSize(memUsage.heapTotal));
 
 					global.gc(); //Вызываем gc
 
@@ -184,11 +191,10 @@ async.waterfall([
 				}, manualGarbageCollect);
 			}
 
-			core.connect(core_port, core_hostname, function () {
+			core.connect(core_port, core_hostname);
+			core.once('connect', function () {
 				server.listen(http_port, http_hostname, function () {
-					logger.info('gzip: ' + gzip);
-					logger.info('API connected to Core %s:%s', core_hostname, core_port);
-					logger.info('API server listening [%s:%s] in %s-mode \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase());
+					logger.info('API HTTP server listening [%s:%s] in %s-mode %s gzip \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase(), gzip ? 'with' : 'without');
 				});
 			});
 		}
