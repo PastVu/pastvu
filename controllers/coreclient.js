@@ -37,7 +37,7 @@ Client.prototype.connect = function () {
 		that.emit('close');
 	});
 
-	this.socket.connect.apply(arguments);
+	this.socket.connect.apply(this.socket, arguments);
 };
 
 Client.prototype.send = function (category, method, args, cb) {

@@ -1,6 +1,7 @@
 'use strict';
 
 var net = require('net'),
+	_ = require('lodash'),
 	photoController = require('./photo.js'),
 	commentController = require('./comment.js'),
 	core = {
@@ -26,13 +27,44 @@ var net = require('net'),
 	},
 
 	Server = function () {
-		var that = this;
+		var args = _.toArray(arguments),
+			server = net.createServer(function (socket) {
+				var clientSocket = new ClientSocket(server, socket),
+					ondestroy = function () {
+						socket.destroy();
+						_.remove(clientSockets, clientSocket);
+						console.log(clientSockets.length + ' core clients left');
+					};
 
-		this.server = net.createServer(function (s) {
-			clientSockets.push(new ClientSocket(that, s));
-			console.log('Core client connected');
+				clientSockets.push(clientSocket);
+
+				socket.on('error', function (err) {
+					console.log('Core client connection error: ' + (err.code || err));
+				});
+				socket.on('close', function (withError) {
+					console.log('Core client disconnected' + (withError ? ' due to error' : ''));
+					ondestroy();
+				});
+				socket.on('end', function () {
+					console.log('Core client connection end');
+					ondestroy();
+				});
+				console.log('Core client connected. Total clients: %d', clientSockets.length);
+			});
+
+		server.on('error', function (e) {
+			if (e.code === 'EADDRINUSE') {
+				console.log('Address in use, retrying...');
+				setTimeout(function () {
+					server.close();
+					server.listen.apply(server, args);
+				}, 1000);
+			} else {
+				console.log('Error occured: ', e);
+			}
 		});
-		this.server.listen.apply(this.server, arguments);
+
+		server.listen.apply(server, args);
 	},
 
 	clientSockets = [],

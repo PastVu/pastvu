@@ -3,7 +3,6 @@
 var _ = require('lodash'),
 	Utils = require('../commons/Utils.js'),
 	logController = require('./apilog.js'),
-	CoreClient = require('./coreclient'),
 	core,
 	apps = {
 		'mPsTm': true
@@ -206,10 +205,7 @@ function logIt(req, start, status, errorCode, errorMessage) {
 	logController.logIt(query.app, query.rid, query.stamp, query.method, query.data, start, ms, status, errorCode, errorMessage);
 }
 
-module.exports.loadController = function (app, db) {
-	core = new CoreClient();
-	core.connect(3001, function () {
-		console.log('API connected to Core');
-	});
+module.exports.loadController = function (app, db, c) {
+	core = c;
 	app.route(/^\/0\.2\.0\/?$/).get(apiRouter).post(apiRouter);
 };

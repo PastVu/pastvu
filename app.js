@@ -4,11 +4,6 @@
 
 var express = require('express'),
 	http = require('http'),
-
-	app, server, io, db,
-
-	Session,
-
 	async = require('async'),
 	path = require('path'),
 	fs = require('fs'),
@@ -20,7 +15,12 @@ var express = require('express'),
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
 	ms = require('ms'), // Tiny milisecond conversion utility
-	Utils;
+	Utils,
+
+	app, io, db,
+	CoreServer,
+	coreServer,
+	httpServer;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.maxRegionLevel = 6; //6 уровней регионов: 0..5
@@ -52,8 +52,11 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	conf = _.defaults(confConsole, argv.conf ? JSON.parse(JSON.minify(fs.readFileSync(argv.conf, 'utf8'))) : {}, confDefault),
 
 	land = conf.land, //Окружение (dev, test, prod)
-	listenport = conf.port, //Порт прослушки сервера
-	listenhost = conf.hostname, //Слушать хост
+	http_port = conf.port, //Порт прослушки сервера
+	http_hostname = conf.hostname, //Хост прослушки сервера
+
+	core_hostname = conf.core_hostname, //Хост Core
+	core_port = conf.core_port, //Порт Core
 
 	protocol = conf.protocol, //Протокол сервера для клинетов
 	domain = conf.domain || addresses[0], //Адрес сервера для клинетов
@@ -102,7 +105,7 @@ async.waterfall([
 			db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
 				.once('open', openHandler)
 				.once('error', errFirstHandler);
-			db.open(moongoUri, {server: {poolSize: moongoPool, auto_reconnect: true}, db: {safe: true}});
+			db.open(moongoUri, {httpServer: {poolSize: moongoPool, auto_reconnect: true}, db: {safe: true}});
 
 			function openHandler() {
 				var admin = new mongoose.mongo.Admin(db.db);
@@ -141,7 +144,6 @@ async.waterfall([
 			require(__dirname + '/models/Region.js').makeModel(db);
 			require(__dirname + '/models/News.js').makeModel(db);
 			require(__dirname + '/models/_initValues.js').makeModel(db);
-			Session = db.model('Session');
 			callback(null);
 		},
 
@@ -215,8 +217,8 @@ async.waterfall([
 		},
 
 		function (callback) {
-			server = http.createServer(app);
-			io = require('socket.io').listen(server, listenhost);
+			httpServer = http.createServer(app);
+			io = require('socket.io').listen(httpServer, http_hostname);
 
 			callback(null);
 		},
@@ -285,6 +287,8 @@ async.waterfall([
 			require('./controllers/systemjs.js').loadController(app, db);
 			//require('./basepatch/v1.1.1.js').loadController(app, db);
 
+			CoreServer = require('./controllers/coreadapter.js');
+
 			regionController.fillCache(callback);
 		}
 	],
@@ -299,7 +303,7 @@ async.waterfall([
 			 * Set zero for unlimited listeners
 			 * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
 			 */
-			server.setMaxListeners(0);
+			httpServer.setMaxListeners(0);
 			io.setMaxListeners(0);
 			process.setMaxListeners(0);
 			/**
@@ -334,15 +338,13 @@ async.waterfall([
 				}, manualGarbageCollect);
 			}
 
-			server.listen(listenport, listenhost, function () {
-				logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
-				logger.info('Host for users: [%s]', protocol + '://' + host);
-				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
-
-				var CoreServer = require('./controllers/coreadapter.js'),
-					coreServer = new CoreServer(3001, function () {
-						logger.info('Core server listening 3001');
-					});
+			coreServer = new CoreServer(core_port, core_hostname, function () {
+				httpServer.listen(http_port, http_hostname, function () {
+					logger.info('gzip: ' + gzip + ', servePublic: ' + servePublic + ', serveStore ' + serveStore);
+					logger.info('Host for users: [%s]', protocol + '://' + host);
+					logger.info('Core server listening [%s:%s] in %s-mode', core_hostname ? core_hostname : '*', core_port, land.toUpperCase());
+					logger.info('HTTP server listening [%s:%s] in %s-mode \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase());
+				});
 			});
 		}
 	}

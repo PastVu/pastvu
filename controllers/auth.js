@@ -4,7 +4,6 @@ var fs = require('fs'),
 	path = require('path'),
 	jade = require('jade'),
 	_session = require('./_session.js'),
-	Session,
 	User,
 	Counter,
 	UserConfirm,
@@ -388,7 +387,6 @@ function checkConfirm(session, data, cb) {
 module.exports.loadController = function (a, db, io) {
 	app = a;
 	appEnv = app.get('appEnv');
-	Session = db.model('Session');
 	User = db.model('User');
 	Counter = db.model('Counter');
 	UserConfirm = db.model('UserConfirm');

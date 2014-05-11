@@ -3,9 +3,6 @@
 
 var express = require('express'),
 	http = require('http'),
-	net = require('net'),
-	app, server, db,
-
 	async = require('async'),
 	path = require('path'),
 	fs = require('fs'),
@@ -17,7 +14,11 @@ var express = require('express'),
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
 	ms = require('ms'), // Tiny milisecond conversion utility
-	Utils;
+	Utils,
+	CoreClient = require('./controllers/coreclient'),
+
+	app, db,
+	core, server;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.maxRegionLevel = 6; //6 уровней регионов: 0..5
@@ -48,8 +49,11 @@ var confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.js
 	conf = _.defaults(confConsole, argv.conf ? JSON.parse(JSON.minify(fs.readFileSync(argv.conf, 'utf8'))) : {}, confDefault),
 
 	land = conf.land, //Окружение (dev, test, prod)
-	listenport = conf.port_api, //Порт прослушки сервера
-	listenhost = conf.hostname_api, //Слушать хост
+	http_port = conf.api_port, //Порт прослушки сервера
+	http_hostname = conf.api_hostname, //Слушать хост
+
+	core_hostname = conf.core_hostname, //Хост Core
+	core_port = conf.core_port, //Порт Core
 
 	moongoUri = argv.mongo_api || conf.mongo_api.con,
 	moongoPool = argv.mongopool_api || conf.mongo_api.pool,
@@ -126,11 +130,12 @@ async.waterfall([
 		},
 
 		function (callback) {
+			core = new CoreClient();
 			server = http.createServer(app);
 			callback(null);
 		},
 		function loadingControllers(callback) {
-			require('./controllers/api.js').loadController(app, db);
+			require('./controllers/api.js').loadController(app, db, core);
 			require('./controllers/apilog.js').loadController(app, db);
 			require('./controllers/errors.js').registerErrorHandling(app);
 			callback(null);
@@ -179,9 +184,12 @@ async.waterfall([
 				}, manualGarbageCollect);
 			}
 
-			server.listen(listenport, listenhost, function () {
-				logger.info('gzip: ' + gzip);
-				logger.info('Server listening [%s:%s] in %s-mode \n', listenhost ? listenhost : '*', listenport, land.toUpperCase());
+			core.connect(core_port, core_hostname, function () {
+				server.listen(http_port, http_hostname, function () {
+					logger.info('gzip: ' + gzip);
+					logger.info('API connected to Core %s:%s', core_hostname, core_port);
+					logger.info('API server listening [%s:%s] in %s-mode \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase());
+				});
 			});
 		}
 	}
