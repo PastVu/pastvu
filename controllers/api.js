@@ -32,12 +32,12 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			core.givePhoto(null, {cid: cid, noselect: noselect}, function (err, photo) {
+			core.request('photo', 'givePhoto', [null, {cid: cid, noselect: noselect}], function (err, photo) {
 				if (err) {
 					return cb(101);
 				}
 				if (photo.ldate) {
-					photo.ldate = photo.ldate.getTime();
+					photo.ldate = new Date(photo.ldate).getTime();
 				}
 				cb(null, photo);
 			});

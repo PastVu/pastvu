@@ -54,7 +54,7 @@ Client.prototype.connect = function () {
 
 	this.socket.connect.apply(this.socket, this.connectargs);
 };
-Client.prototype.send = function (category, method, args, cb) {
+Client.prototype.request = function (category, method, args, cb) {
 	if (this.socketClosed) {
 		return false;
 	}
@@ -98,7 +98,7 @@ Client.prototype.handleMessage = function (msg) {
 		return;
 	}
 
-	cb.apply(msg.args);
+	cb.apply(null, msg.args);
 	delete this.cbDescriptors[msg.descriptor];
 };
 

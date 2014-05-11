@@ -22,7 +22,7 @@ var net = require('net'),
 			if (msg.cb) {
 				msg.args.push(msg.cb);
 			}
-			method.apply(msg.args);
+			method.apply(null, msg.args);
 		} else if (msg.cb) {
 			msg.cb('Unsupported method [' + msg.category + ':' + msg.method + ']');
 		}
@@ -101,10 +101,10 @@ ClientSocket.prototype.handleMessage = function (msg) {
 	if (msg) {
 		if (msg.descriptor) {
 			var that = this;
-			msg.cb = function (err, data) {
+			msg.cb = function () {
 				var result = {
 					descriptor: msg.descriptor,
-					args: arguments
+					args: _.toArray(arguments)
 				};
 				that.socket.write(JSON.stringify(result) + '\0');
 			};
