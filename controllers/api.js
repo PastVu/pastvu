@@ -74,7 +74,7 @@ var getPhotoRequest = (function () {
 			}
 
 			data.bounds = bounds;
-			core.getBounds(data, function (err, photos, clusters) {
+			core.request('photo', 'getBounds', [data], function (err, photos, clusters) {
 				if (err) {
 					return cb(101);
 				}
@@ -90,7 +90,7 @@ var getPhotoRequest = (function () {
 			data.limit = Number(data.limit);
 			data.geo.reverse();
 
-			core.giveNearestPhotos(data, function (err, photos) {
+			core.request('photo', 'giveNearestPhotos', [data], function (err, photos) {
 				if (err) {
 					return cb(101);
 				}
@@ -104,7 +104,7 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			core.getCommentsObjAnonym({type: 'photo', cid: cid}, function (err, commentsTree) {
+			core.request('comment', 'getCommentsObjAnonym', [{type: 'photo', cid: cid}], function (err, commentsTree) {
 				if (err) {
 					return cb(101);
 				}
