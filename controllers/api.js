@@ -9,6 +9,7 @@ var _ = require('lodash'),
 	},
 	errors = {
 		'1': {status: 403, statusText: 'Not allowed application. Forbidden'},
+		'2': {status: 401, statusText: 'Service unavalible'},
 
 		'10': {status: 400, errorText: 'Bad request. Not enough parameters'},
 		'11': {status: 400, errorText: 'Bad request. Some parameter length not allowed'},

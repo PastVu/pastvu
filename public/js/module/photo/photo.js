@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель страницы фотографии
  */

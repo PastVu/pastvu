@@ -6,7 +6,7 @@ var net = require('net'),
 	_ = require('lodash');
 
 var Client = module.exports = function (logger) {
-	this.logger = logger;
+	this.logger = logger || console;
 	this.socketClosed = true;
 };
 util.inherits(Client, events.EventEmitter);
@@ -56,6 +56,9 @@ Client.prototype.connect = function () {
 };
 Client.prototype.request = function (category, method, args, cb) {
 	if (this.socketClosed) {
+		if (cb) {
+			cb(99);
+		}
 		return false;
 	}
 	var msg = {
