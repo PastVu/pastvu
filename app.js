@@ -203,14 +203,14 @@ async.waterfall([
 			if (servePublic) {
 				if (land === 'dev') {
 					lessMiddleware = require('less-middleware');
-					app.use('/style', lessMiddleware({src: __dirname + pub + 'style', force: true, once: false, compress: false, debug: false}));
+					app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {force: true, once: false, debug: false, compiler: {compress: false, yuicompress: false, sourceMap: true, sourceMapRootpath: '/', sourceMapBasepath: path.join(__dirname, pub)}, parser: {dumpLineNumbers: 0, optimization: 0}}));
 				}
-				app.use(require('static-favicon')(__dirname + pub + 'favicon.ico', {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
-				app.use(express.static(__dirname + pub, {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
+				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
 			}
 			if (serveStore) {
-				app.use('/_a/', express.static(storePath + 'public/avatars/', {maxAge: ms('2d')}));
-				app.use('/_p/', express.static(storePath + 'public/photos/', {maxAge: ms('7d')}));
+				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d')}));
+				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d')}));
 			}
 
 			callback(null);
