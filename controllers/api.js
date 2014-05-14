@@ -1,11 +1,11 @@
 'use strict';
 
-var _ = require('lodash'),
-	Utils = require('../commons/Utils.js'),
+var Utils = require('../commons/Utils.js'),
 	logController = require('./apilog.js'),
 	core,
 	apps = {
-		'mPsTm': true
+		test: {limit: 2, interval: 1e3, lastCall: 0, count: 0},
+		mPsTm: true
 	},
 	errors = {
 		'1': {status: 403, statusText: 'Not allowed application. Forbidden'},
@@ -79,8 +79,8 @@ var getPhotoRequest = (function () {
 				if (err) {
 					return cb(101);
 				}
-				cb(null, {photos: photos, clusters: clusters});
-			});
+				cb(null, '{"photos":' + photos + ',"clusters":' + clusters + '}', true);
+			}, 2);
 		};
 	}()),
 	getPhotoNearRequest = (function () {
@@ -105,7 +105,9 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			core.request('comment', 'getCommentsObjAnonym', [{type: 'photo', cid: cid}], function (err, commentsTree) {
+			core.request('comment', 'getCommentsObjAnonym', [
+				{type: 'photo', cid: cid}
+			], function (err, commentsTree) {
 				if (err) {
 					return cb(101);
 				}
@@ -129,16 +131,18 @@ function apiRouter(req, res) {
 	var start = Date.now(),
 		query = req.query,
 		methodHandler = methodMap[query.method],
+		app,
 		stamp,
 		data;
 
 	//Хак, обходящий необходимость передачи свежего запроса
-	if (query.stamp === '51') {
+	if (query.app === 'test') {
 		query.stamp = start - 1;
 	}
-
 	stamp = query.stamp = Number(query.stamp);
-	if (apps[query.app] === undefined) {
+
+	app = apps[query.app];
+	if (app === undefined) {
 		return requestFinish(1, req, res, start);
 	}
 	if (!query.rid || !stamp || methodHandler === undefined) {
@@ -162,12 +166,12 @@ function apiRouter(req, res) {
 		return requestFinish(20, req, res, start);
 	}
 
-	methodHandler(data, function (err, result) {
-		requestFinish(err, req, res, start, result);
+	methodHandler(data, function (err, result, stringified) {
+		requestFinish(err, req, res, start, result, stringified);
 	});
 }
 
-function requestFinish(err, req, res, start, result) {
+function requestFinish(err, req, res, start, result, stringified) {
 	var query = req.query,
 		sendStatus, sendResult,
 		error, errorCode, errorMessage;
@@ -191,7 +195,16 @@ function requestFinish(err, req, res, start, result) {
 	} else {
 		res.setHeader('Content-Type', 'application/json; charset=utf-8');
 		sendStatus = 200;
-		sendResult = JSON.stringify({rid: query.rid, stamp: query.stamp, result: result});
+		if (stringified === true) {
+			console.time('concatenate');
+			sendResult = '{"rid":' + query.rid + ',"stamp":' + query.stamp + ',"result":' + result + '}';
+			console.timeEnd('concatenate');
+		} else {
+			console.time('stringify');
+			sendResult = JSON.stringify({rid: query.rid, stamp: query.stamp, result: result});
+			console.timeEnd('stringify');
+		}
+
 	}
 
 	res.statusCode = sendStatus;

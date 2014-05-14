@@ -54,7 +54,7 @@ Client.prototype.connect = function () {
 
 	this.socket.connect.apply(this.socket, this.connectargs);
 };
-Client.prototype.request = function (category, method, args, cb) {
+Client.prototype.request = function (category, method, args, cb, stringifyResultArgs) {
 	if (this.socketClosed) {
 		if (cb) {
 			cb(99);
@@ -64,7 +64,8 @@ Client.prototype.request = function (category, method, args, cb) {
 	var msg = {
 			category: category,
 			method: method,
-			args: args
+			args: args,
+			stringifyResultArgs: stringifyResultArgs
 		},
 		cbDescriptor;
 
@@ -86,7 +87,9 @@ Client.prototype.handleMessage = function (msg) {
 		cb;
 
 	try {
+		console.time('parse');
 		msg = JSON.parse(msg);
+		console.timeEnd('parse');
 	} catch (e) {
 		this.emit('parseError', e);
 		return;

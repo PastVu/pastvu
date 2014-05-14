@@ -103,9 +103,19 @@ ClientSocket.prototype.handleMessage = function (msg) {
 			var that = this;
 			msg.cb = function () {
 				var result = {
-					descriptor: msg.descriptor,
-					args: _.toArray(arguments)
-				};
+						descriptor: msg.descriptor
+					},
+					stringifyResultArgs = msg.stringifyResultArgs,
+					args = _.toArray(arguments);
+
+				//Если передано сколько аргументов надо передавать как строка, стрингуем их (не включая нулевой аргумент - err)
+				if (typeof stringifyResultArgs === 'number') {
+					while (stringifyResultArgs) {
+						args[stringifyResultArgs] = JSON.stringify(args[stringifyResultArgs--]);
+					}
+				}
+
+				result.args = args;
 				that.socket.write(JSON.stringify(result) + '\0');
 			};
 		}
