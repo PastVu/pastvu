@@ -87,9 +87,7 @@ Client.prototype.handleMessage = function (msg) {
 		cb;
 
 	try {
-		console.time('parse');
 		msg = JSON.parse(msg);
-		console.timeEnd('parse');
 	} catch (e) {
 		this.emit('parseError', e);
 		return;

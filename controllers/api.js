@@ -95,8 +95,8 @@ var getPhotoRequest = (function () {
 				if (err) {
 					return cb(101);
 				}
-				cb(null, {photos: photos || []});
-			});
+				cb(null, photos, true);
+			}, 1);
 		};
 	}()),
 	getObjCommentsRequest = (function () {
@@ -111,8 +111,8 @@ var getPhotoRequest = (function () {
 				if (err) {
 					return cb(101);
 				}
-				cb(null, commentsTree);
-			});
+				cb(null, commentsTree, true);
+			}, 1);
 		};
 	}()),
 
@@ -196,13 +196,9 @@ function requestFinish(err, req, res, start, result, stringified) {
 		res.setHeader('Content-Type', 'application/json; charset=utf-8');
 		sendStatus = 200;
 		if (stringified === true) {
-			console.time('concatenate');
 			sendResult = '{"rid":' + query.rid + ',"stamp":' + query.stamp + ',"result":' + result + '}';
-			console.timeEnd('concatenate');
 		} else {
-			console.time('stringify');
 			sendResult = JSON.stringify({rid: query.rid, stamp: query.stamp, result: result});
-			console.timeEnd('stringify');
 		}
 
 	}
