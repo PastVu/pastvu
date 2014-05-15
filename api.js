@@ -112,9 +112,10 @@ async.waterfall([
 
 		//Настраиваем express
 		function (callback) {
+			global.appVar.land = land;
+			Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
 			var ourMiddlewares = require('./controllers/middleware.js');
 
-			global.appVar.land = land;
 
 			app = express();
 			app.enable('trust proxy'); //Используем хедеры прокси, если стоим за ним
