@@ -1185,7 +1185,7 @@ function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
 /**
  * Устанавливает объекту свойства регионов r0-rmaxRegionLevel на основе cid региона
  * @param obj Объект (фото, комментарий и т.д.)
- * @param cid Координата
+ * @param cid Номер региона
  * @param returnArrFields Массив выбираемых полей. В коллбек вернётся массив регионов с выбранными полями
  */
 function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
@@ -1219,6 +1219,57 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
 		return false;
 	}
 }
+
+/**
+ * Устанавливаем регионы объектам переданной модели по переданным критериям через update (множественная установка)
+ * @param model
+ * @param criteria
+ * @param regions Массив объектов регионов с обязательным свойстов cid
+ * @param cb
+ */
+function updateObjsRegions(model, criteria, regions, cb) {
+	var $set = {},
+		$unset = {},
+		$update = {},
+		region,
+		i;
+
+	if (!Array.isArray(regions)) {
+		regions = [];
+	}
+	console.log(regions);
+	for (i = 0; i <= maxRegionLevel; i++) {
+		region = regions[i];
+		if (region) {
+			$set['r' + (Array.isArray(region.parents) ? region.parents.length : 0)] = region.cid;
+		} else {
+			$unset['r' + i] = 1;
+		}
+	}
+	if (Object.keys($set).length) {
+		$update.$set = $set;
+	}
+	if (Object.keys($unset).length) {
+		$update.$unset = $unset;
+	}
+
+	if (Object.keys($update).length) {
+		$update.$unset = $unset;
+		console.log(criteria);
+		console.log($update);
+		finish(null);
+		model.update(criteria || {}, $update, {multi: true}, finish);
+	} else {
+		finish(null);
+	}
+	function finish() {
+		console.log(arguments);
+		if (cb) {
+			cb.apply(null, arguments);
+		}
+	}
+}
+
 /**
  * Очищает все регионы у объекта
  * @param obj Объект (фото, комментарий и т.д.)
@@ -1258,8 +1309,7 @@ function saveUserHomeRegion(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
-		itsOnline,
-		i;
+		itsOnline;
 
 	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
 		return cb({message: msg.deny, error: true});
@@ -1589,6 +1639,7 @@ module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegionsByGeo = setObjRegionsByGeo;
 module.exports.setObjRegionsByRegionCid = setObjRegionsByRegionCid;
 module.exports.clearObjRegions = clearObjRegions;
+module.exports.updateObjsRegions = updateObjsRegions;
 module.exports.setUserRegions = setUserRegions;
 
 module.exports.buildQuery = buildQuery;

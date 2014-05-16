@@ -1221,7 +1221,7 @@ function savePhoto(socket, data, cb) {
 		//Если координата обнулилась или её нет, то должны присвоить регион
 		if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
 			if (Number(newValues.region)) {
-				sendingBack.regions = regionController.setObjRegionsByRegionCid(photo, Number(newValues.region), ['cid', 'title_en', 'title_local']);
+				sendingBack.regions = regionController.setObjRegionsByRegionCid(photo, Number(newValues.region), ['cid', 'parents', 'title_en', 'title_local']);
 				//Если вернулся false, значит переданного региона не существует
 				if (!sendingBack.regions) {
 					return cb({message: msg.notExistsRegion, error: true});
@@ -1243,7 +1243,7 @@ function savePhoto(socket, data, cb) {
 			photoFromMap(photo, save);
 		} else if (newGeo) {
 			//Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
-			regionController.setObjRegionsByGeo(photo, newGeo, {_id: 0, cid: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
+			regionController.setObjRegionsByGeo(photo, newGeo, {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
@@ -1281,6 +1281,11 @@ function savePhoto(socket, data, cb) {
 				function finish(err) {
 					if (err) {
 						return cb({message: 'Photo saved, but ' + err.message, error: true});
+					}
+
+					//Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
+					if (photoSaved.s >= 5 && sendingBack.regions) {
+						regionController.updateObjsRegions(Comment, {obj: photoSaved._id}, sendingBack.regions);
 					}
 					cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
 				}
