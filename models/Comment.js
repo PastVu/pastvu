@@ -31,6 +31,7 @@ var delInfo = {
 		role: {type: Number}, //Реализуемая на момент операции роль пользователя. Например, если это модератор
 		roleregion: {type: Number} //Регион реализуемой роли
 	},
+//Комментарии фотографий
 	CommentPSchema = new Schema(
 		{
 			cid: {type: Number, index: {unique: true}},
@@ -41,6 +42,15 @@ var delInfo = {
 			parent: {type: Number},
 			level: {type: Number},
 			frag: {type: Boolean},
+
+			//Принадлежность к регионам, так же как в модели фотографий
+			//необходимо, чтобы можно было фильтровать комментарии по регионам без запросов фотографйи
+			r0: {type: Number, sparse: true},
+			r1: {type: Number, sparse: true},
+			r2: {type: Number, sparse: true},
+			r3: {type: Number, sparse: true},
+			r4: {type: Number, sparse: true},
+			r5: {type: Number, sparse: true},
 
 			lastChanged: {type: Date}, //Время последнего изменения
 			hist: [new Schema(histScheme)],
