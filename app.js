@@ -23,7 +23,7 @@ var express = require('express'),
 	httpServer;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
-global.appVar.maxRegionLevel = 6; //6 уровней регионов: 0..5
+global.appVar.maxRegionLevel = 5; //6 уровней регионов: 0..5
 
 /**
  * Включаем "наши" расширения js

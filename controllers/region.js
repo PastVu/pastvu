@@ -5,6 +5,7 @@ var _session = require('./_session.js'),
 	User,
 	Photo,
 	Region,
+	Comment,
 	Counter,
 	dbNative,
 	_ = require('lodash'),
@@ -574,8 +575,8 @@ function saveRegion(socket, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 					if (parentChange) {
-						if (parentsArray.length > region.parents.length && (parentsArray.length + 1 + childLens.length > maxRegionLevel)) {
-							return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + maxRegionLevel, error: true});
+						if (parentsArray.length > region.parents.length && (parentsArray.length + childLens.length > maxRegionLevel)) {
+							return cb({message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + (maxRegionLevel + 1), error: true});
 						}
 
 						childLenArray = childLens;
@@ -816,6 +817,7 @@ function removeRegion(socket, data, cb) {
 				}
 
 				Photo.update(objectsMatchQuery, objectsUpdateQuery, {multi: true}, this.parallel()); //Обновляем входящие фотографии
+				Comment.update(objectsMatchQuery, objectsUpdateQuery, {multi: true}, this.parallel()); //Обновляем входящие комментарии фотографий
 				Region.remove({parents: regionToRemove.cid}, this.parallel()); //Удаляем дочерние регионы
 				regionToRemove.remove(this.parallel()); //Удаляем сам регион
 			},
@@ -947,7 +949,7 @@ function getChildsLenByLevel(region, cb) {
 				// {'parents.1': 77, parents: {$size: 3}}
 				// {'parents.1': 77, parents: {$size: 4}}
 				childrenQuery['parents.' + level] = region.cid;
-				while (level++ < maxRegionLevel) {
+				while (level++ < maxRegionLevel) { //level инкрементируется после сравнения
 					childrenQuery.parents = {$size: level};
 					Region.count(childrenQuery, this.parallel());
 				}
@@ -1003,7 +1005,7 @@ function getParentsAndChilds(region, cb) {
 function getRegionsCountByLevel(cb) {
 	step(
 		function () {
-			for (var i = 0; i < maxRegionLevel; i++) {
+			for (var i = 0; i <= maxRegionLevel; i++) {
 				Region.count({parents: {$size: i}}, this.parallel());
 			}
 		},
@@ -1237,8 +1239,9 @@ function updateObjsRegions(model, criteria, regions, cb) {
 	if (!Array.isArray(regions)) {
 		regions = [];
 	}
-	console.log(regions);
+
 	for (i = 0; i <= maxRegionLevel; i++) {
+		console.log('r' + i);
 		region = regions[i];
 		if (region) {
 			$set['r' + (Array.isArray(region.parents) ? region.parents.length : 0)] = region.cid;
@@ -1255,15 +1258,12 @@ function updateObjsRegions(model, criteria, regions, cb) {
 
 	if (Object.keys($update).length) {
 		$update.$unset = $unset;
-		console.log(criteria);
-		console.log($update);
 		finish(null);
 		model.update(criteria || {}, $update, {multi: true}, finish);
 	} else {
 		finish(null);
 	}
 	function finish() {
-		console.log(arguments);
 		if (cb) {
 			cb.apply(null, arguments);
 		}
@@ -1281,7 +1281,7 @@ function clearObjRegions(obj) {
 }
 
 //Возвращает список регионов, в которые попадает заданая точка
-var getRegionsByGeoPoint = function () {
+var getRegionsByGeoPoint = (function () {
 	var defRegion = 1000000,//Если регион не найден, возвращаем Открытое море
 		defFields = {_id: 0, geo: 0, __v: 0};
 
@@ -1299,7 +1299,7 @@ var getRegionsByGeoPoint = function () {
 			cb(null, regions);
 		});
 	};
-}();
+}());
 
 
 /**
@@ -1385,8 +1385,8 @@ function saveUserRegions(socket, data, cb) {
 	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
 		return cb({message: msg.badParams, error: true});
 	}
-	if (data.regions.length > maxRegionLevel + 1) {
-		return cb({message: 'Вы можете выбрать до ' + (maxRegionLevel + 1) + ' регионов', error: true});
+	if (data.regions.length > maxRegionLevel) {
+		return cb({message: 'Вы можете выбрать до ' + maxRegionLevel + ' регионов', error: true});
 	}
 	//Проверяем, что переданы номера регионов
 	for (i = data.regions.length; i--;) {
@@ -1550,6 +1550,7 @@ module.exports.loadController = function (app, db, io) {
 	User = db.model('User');
 	Photo = db.model('Photo');
 	Region = db.model('Region');
+	Comment = db.model('Comment');
 
 	dbNative = db.db;
 
