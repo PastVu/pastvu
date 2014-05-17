@@ -1,7 +1,6 @@
 'use strict';
 
-var auth = require('./auth.js'),
-	_session = require('./_session.js'),
+var _session = require('./_session.js'),
 	Settings,
 	User,
 	UserCommentsView,
@@ -12,7 +11,6 @@ var auth = require('./auth.js'),
 	Counter,
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
-	moment = require('moment'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
@@ -34,6 +32,8 @@ var auth = require('./auth.js'),
 	regionController = require('./region.js'),
 	photoController = require('./photo.js'),
 	subscrController = require('./subscr.js'),
+
+	maxRegionLevel = global.appVar.maxRegionLevel,
 
 	permissions = {
 		canModerate: function (type, obj, user) {
@@ -827,16 +827,16 @@ function createComment(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		cid = Number(data.obj),
 		obj,
-		commentModel,
+		CommentModel,
 		content = data.txt,
 		comment,
 		fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj),
 		fragObj;
 
 	if (data.type === 'news') {
-		commentModel = CommentN;
+		CommentModel = CommentN;
 	} else {
-		commentModel = Comment;
+		CommentModel = Comment;
 	}
 
 	step(
@@ -848,7 +848,7 @@ function createComment(socket, data, cb) {
 			}
 
 			if (data.parent) {
-				commentModel.findOne({cid: data.parent}, {_id: 0, level: 1, del: 1}, {lean: true}, this.parallel());
+				CommentModel.findOne({cid: data.parent}, {_id: 0, level: 1, del: 1}, {lean: true}, this.parallel());
 			}
 		},
 		function counterUp(err, o, parent) {
@@ -870,6 +870,7 @@ function createComment(socket, data, cb) {
 			if (err || !countC) {
 				return cb({message: err && err.message || 'Increment comment counter error', error: true});
 			}
+			var i, r;
 
 			comment = {
 				cid: countC.next,
@@ -879,6 +880,15 @@ function createComment(socket, data, cb) {
 				txt: Utils.inputIncomingParse(content).result,
 				del: undefined
 			};
+			//Записываем комментарию фотографии ее регионы
+			if (data.type === 'photo') {
+				for (i = 0; i <= maxRegionLevel; i++) {
+					r = 'r' + i;
+					if (obj[r]) {
+						comment[r] = obj[r];
+					}
+				}
+			}
 			if (data.parent) {
 				comment.parent = data.parent;
 				comment.level = data.level;
@@ -889,7 +899,7 @@ function createComment(socket, data, cb) {
 			if (fragAdded) {
 				comment.frag = true;
 			}
-			new commentModel(comment).save(this);
+			new CommentModel(comment).save(this);
 		},
 		function (err, savedComment) {
 			if (err) {
@@ -1330,7 +1340,6 @@ function updateComment(socket, data, cb) {
 				hist = {user: iAm},
 				parsedResult,
 				content,
-				contentPlain,
 				fragExists,
 				fragChangedType,
 				txtChanged;
@@ -1424,10 +1433,6 @@ function updateComment(socket, data, cb) {
 }
 function commentDeleteHist(doc, ret, options) {
 	delete ret.hist;
-}
-
-function objectDeleteId(doc, ret, options) {
-	delete ret._id;
 }
 
 /**
@@ -1909,12 +1914,12 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCommentsObj', function (data) {
-			getCommentsObj(socket.handshake.session.user, data, function (result) {
+			getCommentsObj(hs.session.user, data, function (result) {
 				socket.emit('takeCommentsObj', result);
 			});
 		});
 		socket.on('giveCommentsDel', function (data) {
-			getDelTree(socket.handshake.session.user, data, function (result) {
+			getDelTree(hs.session.user, data, function (result) {
 				socket.emit('takeCommentsDel', result);
 			});
 		});
