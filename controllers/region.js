@@ -1241,7 +1241,6 @@ function updateObjsRegions(model, criteria, regions, cb) {
 	}
 
 	for (i = 0; i <= maxRegionLevel; i++) {
-		console.log('r' + i);
 		region = regions[i];
 		if (region) {
 			$set['r' + (Array.isArray(region.parents) ? region.parents.length : 0)] = region.cid;
@@ -1257,8 +1256,6 @@ function updateObjsRegions(model, criteria, regions, cb) {
 	}
 
 	if (Object.keys($update).length) {
-		$update.$unset = $unset;
-		finish(null);
 		model.update(criteria || {}, $update, {multi: true}, finish);
 	} else {
 		finish(null);
