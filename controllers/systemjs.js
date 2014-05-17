@@ -193,7 +193,6 @@ module.exports.loadController = function (app, db) {
 				queryObject = {},
 				setObject = {$set: {}};
 
-
 			queryObject.geo = {$geoWithin: {$geometry: region.geo}};
 			setObject.$set['r' + region.parents.length] = region.cid;
 
@@ -204,6 +203,47 @@ module.exports.loadController = function (app, db) {
 			}
 
 			print('Finished in ' + (Date.now() - startTime) / 1000 + 's\n');
+		});
+
+		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Присваиваем регионы комментариям фотографий
+	saveSystemJSFunc(function regionsAssignComments() {
+		var startTime = Date.now(),
+			photoCounter = 0,
+			maxRegionLevel = 5;
+
+		//Присваиваем регионы комментариям фотографий
+		print('Assign regions to comments for ' + db.photos.count({s: {$gte: 5}}) + ' published photos');
+		db.photos.find({s: {$gte: 5}}, {_id: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}).forEach(function (photo) {
+			var r,
+				$set = {},
+				$unset = {},
+				$update = {};
+
+			for (var i = 0; i <= maxRegionLevel; i++) {
+				r = 'r' + i;
+				if (photo[r]) {
+					$set[r] = photo[r];
+				} else {
+					$unset[r] = 1;
+				}
+			}
+			if (Object.keys($set).length) {
+				$update.$set = $set;
+			}
+			if (Object.keys($unset).length) {
+				$update.$unset = $unset;
+			}
+
+			if (Object.keys($update).length) {
+				db.comments.update({obj: photo._id}, $update, {multi: true});
+			}
+			photoCounter++;
+			if (photoCounter % 1000 === 0) {
+				print('Assigned comments for ' + photoCounter + ' published photos. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 'ms');
+			}
 		});
 
 		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -430,7 +470,7 @@ module.exports.loadController = function (app, db) {
 			userCounter = users.length,
 			$set,
 			$unset,
-			updateObj,
+			$update,
 			pcount,
 			pfcount,
 			ccount;
@@ -440,7 +480,7 @@ module.exports.loadController = function (app, db) {
 			user = users[userCounter];
 			$set = {};
 			$unset = {};
-			updateObj = {};
+			$update = {};
 			pcount = db.photos.count({user: user._id, s: 5});
 			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
 			ccount = db.comments.count({user: user._id, del: null, hidden: null}) + db.commentsn.count({user: user._id, del: null, hidden: null});
@@ -463,13 +503,13 @@ module.exports.loadController = function (app, db) {
 
 			//Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
 			if (Object.keys($set).length) {
-				updateObj.$set = $set;
+				$update.$set = $set;
 			}
 			if (Object.keys($unset).length) {
-				updateObj.$unset = $unset;
+				$update.$unset = $unset;
 			}
 
-			db.users.update({_id: user._id}, updateObj, {upsert: false});
+			db.users.update({_id: user._id}, $update, {upsert: false});
 		}
 
 		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
@@ -480,9 +520,10 @@ module.exports.loadController = function (app, db) {
 			photos = db.photos.find({}, {_id: 1}).sort({cid: -1}).toArray(),
 			photo,
 			counter = photos.length,
+			photoCounter = 0,
 			$set,
 			$unset,
-			updateObj,
+			$update,
 			ccount;
 
 		print('Start to calc for ' + counter + ' photos');
@@ -490,7 +531,7 @@ module.exports.loadController = function (app, db) {
 			photo = photos[counter];
 			$set = {};
 			$unset = {};
-			updateObj = {};
+			$update = {};
 			ccount = db.comments.count({obj: photo._id, del: null});
 
 			if (ccount > 0) {
@@ -500,13 +541,18 @@ module.exports.loadController = function (app, db) {
 			}
 
 			if (Object.keys($set).length) {
-				updateObj.$set = $set;
+				$update.$set = $set;
 			}
 			if (Object.keys($unset).length) {
-				updateObj.$unset = $unset;
+				$update.$unset = $unset;
 			}
 
-			db.photos.update({_id: photo._id}, updateObj, {upsert: false});
+			db.photos.update({_id: photo._id}, $update, {upsert: false});
+
+			photoCounter++;
+			if (photoCounter % 1000 === 0) {
+				print('Calculated stats for ' + photoCounter + ' photos. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 'ms');
+			}
 		}
 
 		return {message: 'Photos statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
