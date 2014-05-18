@@ -233,12 +233,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Удаляем убранные родительские регионы у потомков текущего региона, т.е. поднимаем их тоже
 				Region.update({parents: region.cid}, {$pull: {parents: {$in: regionsDiff}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos, affectedComments) {
+			function (err, affected) {
 				if (err) {
 					return cb(err);
 				}
-				resultData.affectedPhotos = affectedPhotos || 0;
-				resultData.affectedComments = affectedComments || 0;
+				resultData.affectedPhotos = affected.photos || 0;
+				resultData.affectedComments = affected.comments || 0;
 
 				if (!resultData.affectedPhotos) {
 					return cb(null, resultData);
@@ -257,12 +257,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Вставляем добавленные родительские регионы у потомков текущего региона, т.е. опускаем их тоже
 				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: regionsDiff, $position: levelWas}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos, affectedComments) {
+			function (err, affected) {
 				if (err) {
 					return cb(err);
 				}
-				resultData.affectedPhotos = affectedPhotos || 0;
-				resultData.affectedComments = affectedComments || 0;
+				resultData.affectedPhotos = affected.photos || 0;
+				resultData.affectedComments = affected.comments || 0;
 
 				if (!resultData.affectedPhotos) {
 					return this();
@@ -306,12 +306,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Вставляем все родительские регионы переносимого региона его потомкам
 				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: region.parents, $position: 0}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos, affectedComments) {
+			function (err, affected) {
 				if (err) {
 					return cb(err);
 				}
-				resultData.affectedPhotos = affectedPhotos || 0;
-				resultData.affectedComments = affectedComments || 0;
+				resultData.affectedPhotos = affected.photos || 0;
+				resultData.affectedComments = affected.comments || 0;
 
 				if (!resultData.affectedPhotos || levelNew === levelWas) {
 					return this();
@@ -360,7 +360,9 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				Photo.count(querycount, this.parallel());
 				Comment.count(querycount, this.parallel());
 			},
-			cb
+			function (err, photos, comments) {
+				cb(err, {photos: photos, comments: comments});
+			}
 		);
 	}
 

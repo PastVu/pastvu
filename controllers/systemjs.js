@@ -51,7 +51,7 @@ module.exports.loadController = function (app, db) {
 				clustersCounterInner,
 
 				sorterByCount = function (a, b) {
-					return a.c === b.c ? 0 : (a.c < b.c ? 1: -1);
+					return a.c === b.c ? 0 : (a.c < b.c ? 1 : -1);
 				};
 
 			clusterZoom.wHalf = toPrecisionRound(clusterZoom.w / 2);
@@ -208,15 +208,14 @@ module.exports.loadController = function (app, db) {
 		return {message: 'All assigning finished in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
-	//Присваиваем регионы комментариям фотографий
+	//Присваиваем регионы и координаты комментариям фотографий
 	saveSystemJSFunc(function regionsAssignComments() {
 		var startTime = Date.now(),
 			photoCounter = 0,
 			maxRegionLevel = 5;
 
-		//Присваиваем регионы комментариям фотографий
 		print('Assign regions to comments for ' + db.photos.count({s: {$gte: 5}}) + ' published photos');
-		db.photos.find({s: {$gte: 5}}, {_id: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}).forEach(function (photo) {
+		db.photos.find({s: {$gte: 5}}, {_id: 1, geo: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1}).forEach(function (photo) {
 			var r,
 				$set = {},
 				$unset = {},
@@ -229,6 +228,11 @@ module.exports.loadController = function (app, db) {
 				} else {
 					$unset[r] = 1;
 				}
+			}
+			if (photo.geo) {
+				$set.geo = photo.geo;
+			} else {
+				$unset.geo = 1;
 			}
 			if (Object.keys($set).length) {
 				$update.$set = $set;
@@ -256,7 +260,10 @@ module.exports.loadController = function (app, db) {
 			query = {cid: {$ne: 1000000}};
 
 		if (!withManual) {
-			query.$or = [{centerAuto: true}, {centerAuto: null}];
+			query.$or = [
+				{centerAuto: true},
+				{centerAuto: null}
+			];
 		}
 
 		print('Start to calc center for ' + db.regions.count(query) + ' regions..\n');
@@ -453,9 +460,10 @@ module.exports.loadController = function (app, db) {
 				result = polyNum(geometry.coordinates);
 			}
 
-			function polyNum (polygons) {
+			function polyNum(polygons) {
 				return {exterior: 1, interior: polygons.length - 1};
 			}
+
 			return result;
 		}
 
