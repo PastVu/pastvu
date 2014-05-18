@@ -905,6 +905,9 @@ function createComment(socket, data, cb) {
 			};
 			//Записываем комментарию фотографии ее регионы
 			if (data.type === 'photo') {
+				if (obj.geo) {
+					comment.geo = obj.geo;
+				}
 				for (i = 0; i <= maxRegionLevel; i++) {
 					r = 'r' + i;
 					if (obj[r]) {

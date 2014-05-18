@@ -524,8 +524,18 @@ define([
 									msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> фотографий ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии изменения коордиант поолигона.';
 								}
 							}
+							if (typeof resultStat.commentsCountBefore === 'number' && typeof resultStat.commentsCountAfter === 'number') {
+								geoChangePhotosCount = resultStat.commentsCountAfter - resultStat.commentsCountBefore;
+
+								if (geoChangePhotosCount) {
+									msg += '<br><b>' + Math.abs(geoChangePhotosCount) + '</b> комментариев ' + (geoChangePhotosCount > 0 ? 'добавлено в регион' : 'удалено из региона') + ' вследствии переноса фотографий.';
+								}
+							}
 							if (resultStat.affectedPhotos) {
 								msg += '<br><b>' + resultStat.affectedPhotos + '</b> фотографий переехали по дереву вслед за регионом.';
+							}
+							if (resultStat.affectedComments) {
+								msg += '<br><b>' + resultStat.affectedComments + '</b> комментариев переехали вслед за своими фотографиями.';
 							}
 							if (resultStat.affectedUsers) {
 								msg += '<br>У <b>' + resultStat.affectedUsers + '</b> пользователей были сокрашены "Мои регионы".';
@@ -641,6 +651,9 @@ define([
 													msg = 'Регион <b>' + title + '</b> успешно удалён<br>';
 													if (data.affectedPhotos) {
 														msg += '<b>' + data.affectedPhotos + '</b> фотографий сменили региональную принадлежность.<br>';
+													}
+													if (data.affectedComments) {
+														msg += '<b>' + data.affectedComments + '</b> комментариев сменили региональную принадлежность вслед за своими фотографиями.<br>';
 													}
 													if (data.homeAffectedUsers) {
 														msg += 'У <b>' + data.homeAffectedUsers + '</b> пользователей домашние регионы были заменены на ' + data.homeReplacedWith.title_en + ' (номер ' + data.homeReplacedWith.cid + ').<br>';

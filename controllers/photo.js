@@ -1285,7 +1285,13 @@ function savePhoto(socket, data, cb) {
 
 					//Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
 					if (photoSaved.s >= 5 && sendingBack.regions) {
-						regionController.updateObjsRegions(Comment, {obj: photoSaved._id}, sendingBack.regions);
+						var commentAdditionUpdate = {};
+						if (geoToNull) {
+							commentAdditionUpdate.$unset = {geo: 1};
+						} else if (newGeo) {
+							commentAdditionUpdate.$set = {geo: newGeo};
+						}
+						regionController.updateObjsRegions(Comment, {obj: photoSaved._id}, sendingBack.regions, commentAdditionUpdate);
 					}
 					cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
 				}

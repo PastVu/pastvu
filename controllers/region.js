@@ -133,25 +133,29 @@ function calcRegionIncludes(cidOrRegion, cb) {
 				setObject = {$unset: {}};
 
 				setObject.$unset[level] = 1;
-				Photo.update(queryObject, setObject, {multi: true}, this);
+				Photo.update(queryObject, setObject, {multi: true}, this.parallel());
+				Comment.update(queryObject, setObject, {multi: true}, this.parallel());
 			},
-			function (err, photosCountBefore) {
+			function (err, photosCountBefore, commentsCountBefore) {
 				if (err) {
 					return cb(err);
 				}
 				resultStat.photosCountBeforeGeo = photosCountBefore || 0;
+				resultStat.commentsCountBefore = commentsCountBefore || 0;
 
 				//Теперь присваиваем этот регион всем, входящим в его полигон
 				setObject = {$set: {}};
 				setObject.$set[level] = region.cid;
 
-				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, this);
+				Photo.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, this.parallel());
+				Comment.update({geo: {$geoWithin: {$geometry: region.geo}}}, setObject, {multi: true}, this.parallel());
 			},
-			function (err, photosCountAfter) {
+			function (err, photosCountAfter, commentsCountAfter) {
 				if (err) {
 					return cb(err);
 				}
 				resultStat.photosCountAfterGeo = photosCountAfter || 0;
+				resultStat.commentsCountAfter = commentsCountAfter || 0;
 				cb(null, resultStat);
 			}
 		);
@@ -229,11 +233,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Удаляем убранные родительские регионы у потомков текущего региона, т.е. поднимаем их тоже
 				Region.update({parents: region.cid}, {$pull: {parents: {$in: regionsDiff}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos) {
+			function (err, affectedPhotos, affectedComments) {
 				if (err) {
 					return cb(err);
 				}
 				resultData.affectedPhotos = affectedPhotos || 0;
+				resultData.affectedComments = affectedComments || 0;
 
 				if (!resultData.affectedPhotos) {
 					return cb(null, resultData);
@@ -252,11 +257,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Вставляем добавленные родительские регионы у потомков текущего региона, т.е. опускаем их тоже
 				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: regionsDiff, $position: levelWas}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos) {
+			function (err, affectedPhotos, affectedComments) {
 				if (err) {
 					return cb(err);
 				}
 				resultData.affectedPhotos = affectedPhotos || 0;
+				resultData.affectedComments = affectedComments || 0;
 
 				if (!resultData.affectedPhotos) {
 					return this();
@@ -300,11 +306,12 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				//Вставляем все родительские регионы переносимого региона его потомкам
 				Region.collection.update({parents: region.cid}, {$push: {parents: {$each: region.parents, $position: 0}}}, {multi: true}, this.parallel());
 			},
-			function (err, affectedPhotos) {
+			function (err, affectedPhotos, affectedComments) {
 				if (err) {
 					return cb(err);
 				}
 				resultData.affectedPhotos = affectedPhotos || 0;
+				resultData.affectedComments = affectedComments || 0;
 
 				if (!resultData.affectedPhotos || levelNew === levelWas) {
 					return this();
@@ -348,7 +355,13 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 	function countAffectedPhotos(cb) {
 		var querycount = {};
 		querycount['r' + levelWas] = region.cid;
-		Photo.count(querycount, cb);
+		step(
+			function () {
+				Photo.count(querycount, this.parallel());
+				Comment.count(querycount, this.parallel());
+			},
+			cb
+		);
 	}
 
 	//Последовательно поднимаем фотографии на уровни регионов вверх
@@ -363,7 +376,13 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 				return function () {
 					var cb = _.last(arguments);
 					//$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
-					Photo.collection.update(q, u, {multi: true}, cb);
+					step(
+						function () {
+							Photo.collection.update(q, u, {multi: true}, this.parallel());
+							Comment.collection.update(q, u, {multi: true}, this.parallel());
+						},
+						cb
+					);
 				};
 			};
 
@@ -409,7 +428,14 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 			updateParamsClosure = function (q, u) {
 				//Замыкаем параметры выборки и переименования
 				return function () {
-					Photo.collection.update(q, u, {multi: true}, _.last(arguments));
+					var cb = _.last(arguments);
+					step(
+						function () {
+							Photo.collection.update(q, u, {multi: true}, this.parallel());
+							Comment.collection.update(q, u, {multi: true}, this.parallel());
+						},
+						cb
+					);
 				};
 			};
 
@@ -433,7 +459,13 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 		for (i = levelFrom; i < levelTo; i++) {
 			setObj['r' + i] = region.parents[i];
 		}
-		Photo.collection.update(queryObj, {$set: setObj}, {multi: true}, cb);
+		step(
+			function () {
+				Photo.collection.update(queryObj, {$set: setObj}, {multi: true}, this.parallel());
+				Comment.collection.update(queryObj, {$set: setObj}, {multi: true}, this.parallel());
+			},
+			cb
+		);
 	}
 
 	//Удаляем у пользователей и модераторов подписку на дочерние регионы, если они подписаны на родительские
@@ -821,11 +853,12 @@ function removeRegion(socket, data, cb) {
 				Region.remove({parents: regionToRemove.cid}, this.parallel()); //Удаляем дочерние регионы
 				regionToRemove.remove(this.parallel()); //Удаляем сам регион
 			},
-			function (err, affectedPhotos) {
+			function (err, affectedPhotos, affectedComments) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
 				resultData.affectedPhotos = affectedPhotos || 0;
+				resultData.affectedComments = affectedComments || 0;
 				fillCache(this); //Обновляем кэш регионов
 			},
 			function (err) {
@@ -1229,7 +1262,7 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
  * @param regions Массив объектов регионов с обязательным свойстов cid
  * @param cb
  */
-function updateObjsRegions(model, criteria, regions, cb) {
+function updateObjsRegions(model, criteria, regions, additionalUpdate, cb) {
 	var $set = {},
 		$unset = {},
 		$update = {},
@@ -1254,6 +1287,11 @@ function updateObjsRegions(model, criteria, regions, cb) {
 	if (Object.keys($unset).length) {
 		$update.$unset = $unset;
 	}
+	if (additionalUpdate) {
+		_.merge($update, additionalUpdate);
+	}
+	console.log(additionalUpdate);
+	console.log($update);
 
 	if (Object.keys($update).length) {
 		model.update(criteria || {}, $update, {multi: true}, finish);
