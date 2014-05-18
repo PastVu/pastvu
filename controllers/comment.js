@@ -716,95 +716,118 @@ function getCommentsUser(data, cb) {
 }
 
 /**
+ * Берем комментарии
+ * @param data Объект параметров, включая стринг фильтра
+ * @param cb
+ */
+function getComments(query, data, cb) {
+	var skip = Math.abs(Number(data.skip)) || 0,
+		limit = Math.min(data.limit || 30, 100),
+		options = {lean: true, limit: limit, sort: {stamp: -1}},
+		commentsArr,
+		photosHash = {},
+		usersHash = {};
+
+	if (skip) {
+		options.skip = skip;
+	}
+
+	step(
+		function createCursor() {
+			Comment.find(query, {_id: 0, cid: 1, obj: 1, user: 1, txt: 1}, options, this);
+		},
+		function (err, comments) {
+			if (err || !comments) {
+				return cb({message: err && err.message || 'Comments get error', error: true});
+			}
+			var i = comments.length,
+				photoId,
+				photosArr = [],
+				userId,
+				usersArr = [];
+
+			while (i--) {
+				photoId = comments[i].obj;
+				if (photosHash[photoId] === undefined) {
+					photosHash[photoId] = true;
+					photosArr.push(photoId);
+				}
+				userId = comments[i].user;
+				if (usersHash[userId] === undefined) {
+					usersHash[userId] = true;
+					usersArr.push(userId);
+				}
+			}
+
+			commentsArr = comments;
+			Photo.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, {lean: true}, this.parallel());
+			User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
+		},
+		function (err, photos, users) {
+			if (err || !photos || !users) {
+				return cb({message: err && err.message || 'Cursor extract error', error: true});
+			}
+			var i,
+				comment,
+				photo,
+				photoFormatted,
+				photoFormattedHash = {},
+				user,
+				userFormatted,
+				userFormattedHash = {};
+
+			for (i = photos.length; i--;) {
+				photo = photos[i];
+				photoFormatted = {
+					cid: photo.cid,
+					file: photo.file,
+					title: photo.title
+				};
+				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+			}
+			for (i = users.length; i--;) {
+				user = users[i];
+				userFormatted = {
+					login: user.login,
+					disp: user.disp,
+					online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+				};
+				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
+			}
+
+			for (i = commentsArr.length; i--;) {
+				comment = commentsArr[i];
+				comment.obj = photosHash[comment.obj].cid;
+				comment.user = usersHash[comment.user].login;
+			}
+
+			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
+		}
+	);
+}
+
+/**
  * Выбирает последние комментарии по публичным фотографиям
  * @param data Объект
  * @param cb Коллбэк
  */
 var getCommentsFeed = (function () {
-	var query = {del: null, hidden: null},
-		selector = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
-		options = {lean: true, limit: 30, sort: {stamp: -1}};
+	var globalOptions = {limit: 30},
+		globalQuery = {del: null, hidden: null},
+		globalFeed = Utils.memoizeAsync(function (handler) {
+			getComments(globalQuery, globalOptions, handler);
+		}, ms('10s'));
 
-	return Utils.memoizeAsync(function calcStats(handler) {
-		var //start = Date.now(),
-			commentsArr,
-			photosHash = {},
-			usersHash = {};
+	return function (iAm, cb) {
+		var usObj = iAm && _session.us[iAm.login];
 
-		step(
-			function createCursor() {
-				Comment.find(query, selector, options, this);
-			},
-			function (err, comments) {
-				if (err || !comments) {
-					return handler({message: err && err.message || 'Comments get error', error: true});
-				}
-				var i = comments.length,
-					photoId,
-					photosArr = [],
-					userId,
-					usersArr = [];
-
-				while (i--) {
-					photoId = comments[i].obj;
-					if (photosHash[photoId] === undefined) {
-						photosHash[photoId] = true;
-						photosArr.push(photoId);
-					}
-					userId = comments[i].user;
-					if (usersHash[userId] === undefined) {
-						usersHash[userId] = true;
-						usersArr.push(userId);
-					}
-				}
-
-				commentsArr = comments;
-				Photo.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, {lean: true}, this.parallel());
-				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
-			},
-			function (err, photos, users) {
-				if (err || !photos || !users) {
-					return handler({message: err && err.message || 'Cursor extract error', error: true});
-				}
-				var i,
-					comment,
-					photo,
-					photoFormatted,
-					photoFormattedHash = {},
-					user,
-					userFormatted,
-					userFormattedHash = {};
-
-				for (i = photos.length; i--;) {
-					photo = photos[i];
-					photoFormatted = {
-						cid: photo.cid,
-						file: photo.file,
-						title: photo.title
-					};
-					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
-				}
-				for (i = users.length; i--;) {
-					user = users[i];
-					userFormatted = {
-						login: user.login,
-						disp: user.disp,
-						online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
-					};
-					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
-				}
-
-				for (i = commentsArr.length; i--;) {
-					comment = commentsArr[i];
-					comment.obj = photosHash[comment.obj].cid;
-					comment.user = usersHash[comment.user].login;
-				}
-
-				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-				handler({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
-			}
-		);
-	}, ms('15s'));
+		if (iAm && iAm.regions.length && usObj.rquery) {
+			getComments(_.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);
+		} else {
+			return globalFeed(cb);
+		}
+	};
 }());
 
 /**
@@ -1929,7 +1952,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveCommentsFeed', function () {
-			getCommentsFeed(function (result) {
+			getCommentsFeed(hs.session.user, function (result) {
 				socket.emit('takeCommentsFeed', result);
 			});
 		});
