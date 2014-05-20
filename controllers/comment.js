@@ -69,7 +69,7 @@ var core = {
 
 			step(
 				function () {
-					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0,__v: 0}, {lean: true, sort: {stamp: 1}}, this);
+					commentModel.find({obj: obj._id, del: null}, {_id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this);
 				},
 				function (err, comments) {
 					if (err || !comments) {
@@ -720,92 +720,136 @@ function getCommentsUser(data, cb) {
  * @param data Объект параметров, включая стринг фильтра
  * @param cb
  */
-function getComments(query, data, cb) {
-	var skip = Math.abs(Number(data.skip)) || 0,
-		limit = Math.min(data.limit || 30, 100),
-		options = {lean: true, limit: limit, sort: {stamp: -1}},
-		commentsArr,
-		photosHash = {},
-		usersHash = {};
+var getComments = (function () {
+	var defaultSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1};
 
-	if (skip) {
-		options.skip = skip;
-	}
+	return function (usObj, query, data, cb) {
+		var skip = Math.abs(Number(data.skip)) || 0,
+			limit = Math.min(data.limit || 30, 100),
+			options = {lean: true, limit: limit, sort: {stamp: -1}},
+			commentsArr,
+			photosHash = {},
+			usersHash = {},
+			regionsShortForm = usObj && usObj.rshowlvls.length > 0;
 
-	step(
-		function createCursor() {
-			Comment.find(query, {_id: 0, cid: 1, obj: 1, user: 1, txt: 1}, options, this);
-		},
-		function (err, comments) {
-			if (err || !comments) {
-				return cb({message: err && err.message || 'Comments get error', error: true});
-			}
-			var i = comments.length,
-				photoId,
-				photosArr = [],
-				userId,
-				usersArr = [];
-
-			while (i--) {
-				photoId = comments[i].obj;
-				if (photosHash[photoId] === undefined) {
-					photosHash[photoId] = true;
-					photosArr.push(photoId);
-				}
-				userId = comments[i].user;
-				if (usersHash[userId] === undefined) {
-					usersHash[userId] = true;
-					usersArr.push(userId);
-				}
-			}
-
-			commentsArr = comments;
-			Photo.find({_id: {$in: photosArr}}, {_id: 1, cid: 1, file: 1, title: 1}, {lean: true}, this.parallel());
-			User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
-		},
-		function (err, photos, users) {
-			if (err || !photos || !users) {
-				return cb({message: err && err.message || 'Cursor extract error', error: true});
-			}
-			var i,
-				comment,
-				photo,
-				photoFormatted,
-				photoFormattedHash = {},
-				user,
-				userFormatted,
-				userFormattedHash = {};
-
-			for (i = photos.length; i--;) {
-				photo = photos[i];
-				photoFormatted = {
-					cid: photo.cid,
-					file: photo.file,
-					title: photo.title
-				};
-				photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
-			}
-			for (i = users.length; i--;) {
-				user = users[i];
-				userFormatted = {
-					login: user.login,
-					disp: user.disp,
-					online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
-				};
-				userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
-			}
-
-			for (i = commentsArr.length; i--;) {
-				comment = commentsArr[i];
-				comment.obj = photosHash[comment.obj].cid;
-				comment.user = usersHash[comment.user].login;
-			}
-
-			//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-			cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash});
+		if (skip) {
+			options.skip = skip;
 		}
-	);
-}
+
+		step(
+			function createCursor() {
+				Comment.find(query, defaultSelect, options, this);
+			},
+			function (err, comments) {
+				if (err || !comments) {
+					return cb({message: err && err.message || 'Comments get error', error: true});
+				}
+				var i = comments.length,
+					photoId,
+					photosArr = [],
+					photosSelect = {_id: 1, cid: 1, file: 1, title: 1},
+					userId,
+					usersArr = [];
+
+				while (i--) {
+					photoId = comments[i].obj;
+					if (photosHash[photoId] === undefined) {
+						photosHash[photoId] = true;
+						photosArr.push(photoId);
+					}
+					userId = comments[i].user;
+					if (usersHash[userId] === undefined) {
+						usersHash[userId] = true;
+						usersArr.push(userId);
+					}
+				}
+
+				commentsArr = comments;
+				if (regionsShortForm) {
+					_.assign(photosSelect, usObj.rshowsel);
+				}
+				Photo.find({_id: {$in: photosArr}}, photosSelect, {lean: true}, this.parallel());
+				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
+			},
+			function (err, photos, users) {
+				if (err || !photos || !users) {
+					return cb({message: err && err.message || 'Cursor extract error', error: true});
+				}
+				var i,
+					comment,
+					photo,
+					photoFormatted,
+					photoFormattedHash = {},
+					user,
+					userFormatted,
+					userFormattedHash = {},
+
+					j,
+					k,
+					rlvl,
+					rcid,
+					regionsShortHash = Object.create(null);
+
+				for (i = photos.length; i--;) {
+					photo = photos[i];
+					photoFormatted = {
+						cid: photo.cid,
+						file: photo.file,
+						title: photo.title
+					};
+					if (regionsShortForm) {
+						photoFormatted.rs = [];
+						for (j = maxRegionLevel; j--;) {
+							rlvl = 'r' + j;
+							rcid = photo[rlvl];
+							if (rcid !== undefined) {
+								regionsShortHash[rcid] = true;
+								photoFormatted.rs.push(rcid);
+
+								for (k = usObj.rshowlvls.length; k--;) {
+									if (usObj.rshowlvls[k] !== rlvl) {
+										rcid = photo[usObj.rshowlvls[k]];
+										if (rcid !== undefined) {
+											regionsShortHash[rcid] = true;
+											photoFormatted.rs.push(rcid);
+										}
+									}
+								}
+								break;
+							}
+						}
+					}
+					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
+				}
+				if (regionsShortForm) {
+					regionController.getRegionsHashFill(regionsShortHash, ['cid', 'title_local']);
+				}
+
+				for (i = users.length; i--;) {
+					user = users[i];
+					userFormatted = {
+						login: user.login,
+						disp: user.disp,
+						online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+					};
+					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
+				}
+
+				for (i = commentsArr.length; i--;) {
+					comment = commentsArr[i];
+					comment.obj = photosHash[comment.obj].cid;
+					comment.user = usersHash[comment.user].login;
+				}
+
+				console.log(photoFormattedHash);
+				console.log(regionsShortHash);
+
+				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
+				cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash, regions: regionsShortHash});
+			}
+		);
+	};
+}());
 
 /**
  * Выбирает последние комментарии по публичным фотографиям
@@ -816,14 +860,14 @@ var getCommentsFeed = (function () {
 	var globalOptions = {limit: 30},
 		globalQuery = {del: null, hidden: null},
 		globalFeed = Utils.memoizeAsync(function (handler) {
-			getComments(globalQuery, globalOptions, handler);
+			getComments(null, globalQuery, globalOptions, handler);
 		}, ms('10s'));
 
 	return function (iAm, cb) {
 		var usObj = iAm && _session.us[iAm.login];
 
 		if (iAm && iAm.regions.length && usObj.rquery) {
-			getComments(_.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);
+			getComments(usObj, _.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);
 		} else {
 			return globalFeed(cb);
 		}

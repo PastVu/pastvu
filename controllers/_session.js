@@ -45,7 +45,7 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		firstAdding = true;
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usid[user._id] = usObj = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshowlvls: []};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshowlvls: [], rshowsel: Object.create(null)};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
 		if (!user.settings) {
 			user.settings = {};
@@ -318,6 +318,7 @@ function popUserRegions(user, cb) {
 			usObj.rquery = regionsData.rquery;
 			usObj.rhash = regionsData.rhash;
 			usObj.rshowlvls = [];
+			usObj.rshowsel = Object.create(null);
 
 			//Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
 			//Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
@@ -343,17 +344,26 @@ function popUserRegions(user, cb) {
 					}
 				}
 			}
-
+			//Максимальный уровень для отображения, это тот на котором несколько регионов либо undefined (т.е. любое кол-во регионов)
 			for (i = 0; i < rs.length; i++) {
 				if (!rs[i] || Object.keys(rs[i]).length > 1) {
 					usObj.rshowlvls.push('r' + i);
+
+					//Если это нулевой уровень (т.е. отображаем страны), то отображаем и их субъекты
 					if (!i) {
-						usObj.rshowlvls.push('r1'); //Если отображаем страны, то отображаем и их субъекты
+						usObj.rshowlvls.push('r1');
+					}
+
+					//Начиная с этого уровня заполняем хэш выбираемых уровней регионов у объекта ({rn: 1, rn+1: 1, ..., rmax: 1}),
+					//просто чтобы не выбирать лишние вышестоящие в каждом запросе к объекту
+					for (j = i; j <= maxRegionLevel; j++) {
+						usObj.rshowsel['r' + j] = 1;
 					}
 					break;
 				}
 			}
 			console.log('Levels', usObj.rshowlvls);
+			console.log('Sels', usObj.rshowsel);
 
 			if (user.role === 5) {
 				regionsData = regionController.buildQuery(user.mod_regions);

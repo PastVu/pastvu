@@ -81,6 +81,24 @@ function getRegionsHashFromCache(cids) {
 
 	return result;
 }
+function getRegionsHashFill(hash, fileds) {
+	var i;
+	if (fileds) {
+		var j, len = fileds.length, region;
+		for (i in hash) {
+			region = regionCacheHash[i];
+			hash[i] = {};
+			for (j = 0; j < len; j++) {
+				hash[i][fileds[j]] = region[fileds[j]];
+			}
+		}
+	} else {
+		for (i in hash) {
+			hash[i] = regionCacheHash[i];
+		}
+	}
+	return hash;
+}
 function getRegionsArrFromHash(hash, cids) {
 	var result = [],
 		i;
@@ -1669,6 +1687,7 @@ module.exports.loadController = function (app, db, io) {
 module.exports.fillCache = fillCache;
 module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
 module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
+module.exports.getRegionsHashFill = getRegionsHashFill;
 module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
