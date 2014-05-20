@@ -28,6 +28,7 @@ var Session,
 
 	settings = require('./settings.js'),
 	regionController = require('./region.js'),
+	maxRegionLevel = global.appVar.maxRegionLevel,
 	us = {}, //Users by login. Хэш всех активных соединений подключенных пользователей по логинам
 	usid = {}, //Users by _id. Хэш всех активных соединений подключенных пользователей по ключам _id
 	sess = {},//Sessions. Хэш всех активных сессий, с установленными соединениями
@@ -44,7 +45,7 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		firstAdding = true;
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usid[user._id] = usObj = {user: user, sessions: {}, rquery: {}};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshowlvls: []};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
 		if (!user.settings) {
 			user.settings = {};
@@ -304,12 +305,55 @@ function popUserRegions(user, cb) {
 			return cb(err);
 		}
 		var regionsData,
-			usObj = us[user.login];
+			usObj = us[user.login],
+
+			rs = new Array(maxRegionLevel + 1),
+			rsLevel,
+			r,
+			j,
+			i;
 
 		if (usObj) {
 			regionsData = regionController.buildQuery(user.regions);
 			usObj.rquery = regionsData.rquery;
 			usObj.rhash = regionsData.rhash;
+			usObj.rshowlvls = [];
+
+			//Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
+			//Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
+			//Например, при глобальной фильтрации максимальный уровень - страна, т.к. их множество
+			//При фильтрации по стране - максимальный уровень - субъект, т.к. их множество в стране, сл-но, надо отображать принадлежность к субъектам.
+			//Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
+			for (i in regionsData.rhash) {
+				if (regionsData.rhash.hasOwnProperty(i)) {
+					r = regionsData.rhash[i];
+
+					rsLevel = rs[r.parents.length];
+					if (rsLevel === undefined) {
+						rsLevel = rs[r.parents.length] = {};
+					}
+					rsLevel[i] = true;
+
+					for (j = 0; j < r.parents.length; j++) {
+						rsLevel = rs[j];
+						if (rsLevel === undefined) {
+							rsLevel = rs[j] = {};
+						}
+						rsLevel[r.parents[j]] = true;
+					}
+				}
+			}
+
+			for (i = 0; i < rs.length; i++) {
+				if (!rs[i] || Object.keys(rs[i]).length > 1) {
+					usObj.rshowlvls.push('r' + i);
+					if (!i) {
+						usObj.rshowlvls.push('r1'); //Если отображаем страны, то отображаем и их субъекты
+					}
+					break;
+				}
+			}
+			console.log('Levels', usObj.rshowlvls);
 
 			if (user.role === 5) {
 				regionsData = regionController.buildQuery(user.mod_regions);
@@ -385,9 +429,7 @@ function regetUser(u, emitHim, emitExcludeSocket, cb) {
 				_.defaults(user.settings, settings.getUserSettingsDef());
 				//Присваиваем новый объект пользователя всем его открытым сессиям
 				for (s in usObj.sessions) {
-					if (usObj.sessions.hasOwnProperty(s)) {
-						usObj.sessions[s].user = user;
-					}
+					usObj.sessions[s].user = user;
 				}
 
 				if (emitHim) {
