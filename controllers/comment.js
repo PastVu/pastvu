@@ -788,7 +788,11 @@ var getComments = (function () {
 					k,
 					rlvl,
 					rcid,
+					regionsShortHash;
+
+				if (regionsShortForm) {
 					regionsShortHash = Object.create(null);
+				}
 
 				for (i = photos.length; i--;) {
 					photo = photos[i];
@@ -822,7 +826,11 @@ var getComments = (function () {
 					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
 				}
 				if (regionsShortForm) {
-					regionController.getRegionsHashFill(regionsShortHash, ['cid', 'title_local']);
+					if (Object.keys(regionsShortHash).length) {
+						regionController.getRegionsHashFill(regionsShortHash, ['cid', 'title_local']);
+					} else {
+						regionsShortHash = undefined;
+					}
 				}
 
 				for (i = users.length; i--;) {

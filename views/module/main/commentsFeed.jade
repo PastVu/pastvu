@@ -1,14 +1,19 @@
 .commentsFeed(data-bind="with: repository[M!M]")
 	//-a.help(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
 		img.img-responsive.helpimg(data-bind="attr: {src: '/img/misc/fund2/bn_right_' + _.random(1,4) + '.jpg'}", alt="Помогите PastVu")
-	.ribbonHead.lineBehind
-		span Новые комментарии
-	div(data-bind="foreach: pComments")
-		.cPhoto.clearfix
-			a.photoName(data-bind="attr: {href: $data.link}, html: $data.title")
-			a.imgLoad(data-bind="attr: {href: $data.link}")
-				img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
-			div(data-bind="foreach: $data.comments")
-				a.commentText(data-bind="attr: {href: $data.link}, html: $data.txt")
-				a.authorName(data-bind="attr: {href: $data.user.link}, html: $data.user.disp, css: {online: $data.user.online}")
-		hr
+	.ribbonHead.lineBehind: span Новые комментарии
+	.commentsBody
+
+	| <script id="cfeeddot" type="text/doT">
+	| {{~it :p}}
+	.cPhoto.clearfix
+		a.photoName(href="{{=p.link}}") {{=p.title}}
+		a.imgLoad(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", data-bind="event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+		div
+			| {{~p.comments :c}}
+			a.commentText(href="{{=c.link}}") {{=c.txt}}
+			a.authorName(href="{{=c.user.link}}", class="{{?c.user.online}}online{{?}}") {{=c.user.disp}}
+			| {{~}}
+	hr
+	| {{~}}
+	| </script>

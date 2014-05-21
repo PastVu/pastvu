@@ -2,20 +2,24 @@
 /**
  * Модель ленты последних комментариев
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, doT, html) {
 	'use strict';
 
+	var tplComments;
+
 	return Cliche.extend({
-		jade: jade,
+		jade: html,
 		create: function () {
-			this.pComments = ko.observableArray();
+			this.pComments = [];
+			ko.applyBindings(globalVM, this.$dom[0]);
 
 			socket.once('takeCommentsFeed', function (data) {
 				var photo,
 					user,
 					comment,
+					regions,
 					photoCommentsToInsert = [],
-					i;
+					i, j;
 
 				if (!data || data.error || !Array.isArray(data.comments)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
@@ -43,9 +47,25 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 							photo.comments.unshift(comment);
 						}
 					}
-					this.pComments(photoCommentsToInsert);
+
+					regions = data.regions;
+					if (regions) {
+						for (i = photoCommentsToInsert.length; i--;) {
+							photo = photoCommentsToInsert[i];
+							if (photo.rs) {
+								for (j = photo.rs.length; j--;) {
+									photo.rs[j] = regions[photo.rs[j]];
+								}
+							}
+						}
+					}
+					if (!tplComments) {
+						tplComments = doT.template(document.getElementById('cfeeddot').text);
+					}
+
+					this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
+					this.pComments = photoCommentsToInsert;
 				}
-				ko.applyBindings(globalVM, this.$dom[0]);
 				this.show();
 			}.bind(this));
 			socket.emit('giveCommentsFeed', {limit: 30});
