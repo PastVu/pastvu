@@ -5,7 +5,9 @@
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'lib/doT', 'text!tpl/main/commentsFeed.jade', 'css!style/main/commentsFeed'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, doT, html) {
 	'use strict';
 
-	var tplComments;
+	var tplComments,
+		regexpAHrefTag = /<(?:\s*)?\/?(?:\s*)?a[^>]*>/g,
+		regexpNewLine = /[\f\r\n]/g;
 
 	return Cliche.extend({
 		jade: html,
@@ -33,6 +35,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 					for (i = 0; i < data.comments.length; i++) {
 						comment = data.comments[i];
+
+						//Убираем тэги ссылок (т.к. всё сообщение у нас ссылка, а ссылки в ссылках не разрешены)
+						//и заменяем перенос строки на пробел в каждом сообщении
+						comment.txt = comment.txt.replace(regexpAHrefTag, '').replace(regexpNewLine, ' ');
+
 						photo = data.photos[comment.obj];
 						user = data.users[comment.user];
 						if (photo && user) {

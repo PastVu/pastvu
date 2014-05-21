@@ -21,7 +21,7 @@
 		div
 			| {{~p.comments :c}}
 			a.commentText(href="{{=c.link}}") {{=c.txt}}
-			a.authorName(href="{{=c.user.link}}", class="{{?c.user.online}}online{{?}}") {{=c.user.disp}}
+			a(href="{{=c.user.link}}", class="authorName{{?c.user.online}} online{{?}}") {{=c.user.disp}}
 			| {{~}}
 	hr
 	| {{~}}
