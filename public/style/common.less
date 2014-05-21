@@ -358,17 +358,24 @@ html, body {
 	}
 
 	&.fail {
+		background-color: #586D79;
+
 		.img {
 			visibility: hidden;
 		}
 		&::after {
 			position: absolute;
-			content: '';
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: #586D79 url(/img/misc/imgw.png) 50% 50% no-repeat;
+			display: block;
+			content: '\e046';
+			top: 50%;
+			left: 50%;
+			margin: -14px 0 0 -12px;
+			color: @MainLigthColor;
+			font-family: 'Glyphicons Halflings';
+			font-size: 24px;
+			line-height: normal;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
 		}
 	}
 }

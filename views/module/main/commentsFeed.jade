@@ -8,7 +8,7 @@
 	| {{~it :p}}
 	.cPhoto.clearfix
 		a.photoName(href="{{=p.link}}") {{=p.title}}
-		a.imgLoad(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", data-bind="event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+		a.imgLoad.fail.showPrv(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", data-bind="event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 		div
 			| {{~p.comments :c}}
 			a.commentText(href="{{=c.link}}") {{=c.txt}}
