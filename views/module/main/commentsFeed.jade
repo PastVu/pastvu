@@ -17,7 +17,7 @@
 			| {{?}}
 			| {{~}}
 		| {{?}}
-		a.imgLoad.showPrv(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", data-bind="event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+		a.imgLoad(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
 		div
 			| {{~p.comments :c}}
 			a.commentText(href="{{=c.link}}") {{=c.txt}}

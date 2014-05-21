@@ -21,7 +21,7 @@
 	| <script id="photoSubscrTpl" type="text/html">
 	.object.clearfix
 		a.imgLoad(data-bind="attr: {href: $data.link}")
-			img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
+			img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
 		a.objTitle(data-bind="attr: {href: $data.link}, text: $data.title")
 		//ko if: $data.ccount
 		br

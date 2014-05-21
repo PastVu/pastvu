@@ -84,14 +84,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		hide: function () {
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
-		},
-
-		onPreviewLoad: function (data, event) {
-			event.target.parentNode.classList.add('showPrv');
-		},
-		onPreviewErr: function (data, event) {
-			event.target.parentNode.classList.add('fail'); //Через запятую работает пока только в chrome
-			event.target.parentNode.classList.add('showPrv');
 		}
 	});
 });

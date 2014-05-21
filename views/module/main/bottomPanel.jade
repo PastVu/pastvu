@@ -99,7 +99,7 @@
 	| <script id="ratingsColumnTpl" type="text/html">
 	a.row.ratElem(data-bind="attr: {href: $data.link}")
 		.imgLoad
-			img.img(data-bind="attr: {src: $data.sfile}, event: {load: $parent.onImgLoad, error: $parent.onImgErr}")
+			img.img(data-bind="attr: {src: $data.sfile}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
 		.ratName(data-bind="text: $data.title, css: {online: $data.online}")
 		.ratAmount(data-bind="text: $data.amount")
 	| </script>

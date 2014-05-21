@@ -5,6 +5,15 @@
 define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout', 'lib/PubSub'], function ($, Browser, Utils, _, P, i18n, ko, ps) {
 	"use strict";
 
+	window.G = {
+		imgLoadOk: function (target) {
+			target.parentNode.classList.add('showPrv');
+		},
+		imgLoadFail: function (target) {
+			target.parentNode.classList.add('showPrv', 'fail');
+		}
+	};
+
 	return {
 		P: P,
 		pb: ps,

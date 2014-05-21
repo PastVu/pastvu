@@ -362,14 +362,6 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}
 			$photoBox.append(content);
 			parent.classList.add('showPrv');
-		},
-
-		onImgLoad: function (data, event) {
-			event.target.parentNode.classList.add('showPrv');
-		},
-		onImgErr: function (data, event) {
-			event.target.parentNode.classList.add('fail'); //Через запятую работает пока только в chrome
-			event.target.parentNode.classList.add('showPrv');
 		}
 	});
 });
