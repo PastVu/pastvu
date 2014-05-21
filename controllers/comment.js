@@ -721,7 +721,8 @@ function getCommentsUser(data, cb) {
  * @param cb
  */
 var getComments = (function () {
-	var defaultSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1};
+	var commentSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
+		photosSelectAllRegions = _.assign({_id: 1, cid: 1, file: 1, title: 1}, regionController.regionsAllSelectHash);
 
 	return function (usObj, query, data, cb) {
 		var skip = Math.abs(Number(data.skip)) || 0,
@@ -729,8 +730,7 @@ var getComments = (function () {
 			options = {lean: true, limit: limit, sort: {stamp: -1}},
 			commentsArr,
 			photosHash = {},
-			usersHash = {},
-			regionsShortForm = usObj && usObj.rshowlvls.length > 0;
+			usersHash = {};
 
 		if (skip) {
 			options.skip = skip;
@@ -738,7 +738,7 @@ var getComments = (function () {
 
 		step(
 			function createCursor() {
-				Comment.find(query, defaultSelect, options, this);
+				Comment.find(query, commentSelect, options, this);
 			},
 			function (err, comments) {
 				if (err || !comments) {
@@ -765,10 +765,7 @@ var getComments = (function () {
 				}
 
 				commentsArr = comments;
-				if (regionsShortForm) {
-					_.assign(photosSelect, usObj.rshowsel);
-				}
-				Photo.find({_id: {$in: photosArr}}, photosSelect, {lean: true}, this.parallel());
+				Photo.find({_id: {$in: photosArr}}, usObj && usObj.rshowsel ? _.assign(photosSelect, usObj.rshowsel) : photosSelectAllRegions, {lean: true}, this.parallel());
 				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
 			},
 			function (err, photos, users) {
@@ -784,53 +781,17 @@ var getComments = (function () {
 					userFormatted,
 					userFormattedHash = {},
 
-					j,
-					k,
-					rlvl,
-					rcid,
-					regionsShortHash;
-
-				if (regionsShortForm) {
-					regionsShortHash = Object.create(null);
-				}
+					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj && usObj.rshowlvls);
 
 				for (i = photos.length; i--;) {
 					photo = photos[i];
 					photoFormatted = {
 						cid: photo.cid,
 						file: photo.file,
-						title: photo.title
+						title: photo.title,
+						rs: photo.rs //Массив регионов краткого отображения
 					};
-					if (regionsShortForm) {
-						photoFormatted.rs = [];
-						for (j = maxRegionLevel; j--;) {
-							rlvl = 'r' + j;
-							rcid = photo[rlvl];
-							if (rcid !== undefined) {
-								regionsShortHash[rcid] = true;
-								photoFormatted.rs.push(rcid);
-
-								for (k = usObj.rshowlvls.length; k--;) {
-									if (usObj.rshowlvls[k] !== rlvl) {
-										rcid = photo[usObj.rshowlvls[k]];
-										if (rcid !== undefined) {
-											regionsShortHash[rcid] = true;
-											photoFormatted.rs.push(rcid);
-										}
-									}
-								}
-								break;
-							}
-						}
-					}
 					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
-				}
-				if (regionsShortForm) {
-					if (Object.keys(regionsShortHash).length) {
-						regionController.fillRegionsHash(regionsShortHash, ['cid', 'title_local']);
-					} else {
-						regionsShortHash = undefined;
-					}
 				}
 
 				for (i = users.length; i--;) {
@@ -850,10 +811,10 @@ var getComments = (function () {
 				}
 
 				console.log(photoFormattedHash);
-				console.log(regionsShortHash);
+				console.log(shortRegionsHash);
 
 				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-				cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash, regions: regionsShortHash});
+				cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash, regions: shortRegionsHash});
 			}
 		);
 	};

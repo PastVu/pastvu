@@ -22,9 +22,15 @@ var _session = require('./_session.js'),
 	loggerApp = require('log4js').getLogger("app.js"),
 
 	maxRegionLevel = global.appVar.maxRegionLevel,
+	regionsAllSelectHash = Object.create(null),
 
 	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
-	regionCacheArr = []; //Массив-кэш регионов из базы [{_id, cid, parents}]
+	regionCacheArr = [], //Массив-кэш регионов из базы [{_id, cid, parents}]
+	i;
+
+for (i = 0; i <= maxRegionLevel; i++) {
+	regionsAllSelectHash['r' + i] = 1;
+}
 
 //Заполняем кэш (массив и хэш) регионов в память
 function fillCache(cb) {
@@ -125,12 +131,8 @@ function fillRegionsHash(hash, fileds) {
 //Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
 //@returns {lvls: ['rn'], sel: {rn: 1, rn+1: 1, ..., rmax: 1}}
 var getShortRegionsParams = (function () {
-	var globalFilterParams = {lvls: ['r0', 'r1'], sel: Object.create(null)},
-		i;
+	var globalFilterParams = {lvls: ['r0', 'r1'], sel: regionsAllSelectHash};
 
-	for (i = 0; i <= maxRegionLevel; i++) {
-		globalFilterParams.sel['r' + i] = 1;
-	}
 	return function (rhash) {
 		//Если хеша нет (например, аноним) или передан пустой хеш (значит глобальный фильтр), отдаём глобальные параметры
 		if (!rhash || !Object.keys(rhash).length) {
@@ -185,6 +187,57 @@ var getShortRegionsParams = (function () {
 		return result;
 	};
 }());
+
+//Бежит по массиву переданных объектов и для каждого создает массив cid регионов,
+//которые соответствуют переданным уровням для краткого отображения регионов
+//Изменяет элементы переданного массива и возвращает хеш попавших регионов
+var genObjsShortRegionsArr = (function () {
+	var defalutLevels = ['r0', 'r1'];
+
+	return function (objs, showlvls) {
+		var shortRegionsHash = {},
+			i = objs.length,
+			level,
+			cid,
+			obj,
+			j, k;
+
+		if (!showlvls) {
+			showlvls = defalutLevels;
+		}
+
+		while (i--) {
+			obj = objs[i];
+
+			obj.rs = [];
+			for (j = maxRegionLevel; j--;) {
+				level = 'r' + j;
+				cid = obj[level];
+				if (cid !== undefined) {
+					shortRegionsHash[cid] = true;
+					obj.rs.push(cid);
+
+					for (k = showlvls.length; k--;) {
+						if (showlvls[k] !== level) {
+							cid = obj[showlvls[k]];
+							if (cid !== undefined) {
+								shortRegionsHash[cid] = true;
+								obj.rs.push(cid);
+							}
+						}
+					}
+					break;
+				}
+			}
+		}
+		if (Object.keys(shortRegionsHash).length) {
+			fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
+		} else {
+			shortRegionsHash = undefined;
+		}
+		return shortRegionsHash;
+	};
+}())
 
 /**
  * Пересчет входящих объектов в переданный регион.
@@ -1758,7 +1811,9 @@ module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
 module.exports.fillRegionsHash = fillRegionsHash;
 module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
 
+module.exports.regionsAllSelectHash = regionsAllSelectHash;
 module.exports.getShortRegionsParams = getShortRegionsParams;
+module.exports.genObjsShortRegionsArr = genObjsShortRegionsArr;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
