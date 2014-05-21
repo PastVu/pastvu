@@ -183,6 +183,10 @@ var getShortRegionsParams = (function () {
 				break;
 			}
 		}
+		//Если в прошлом цикле не нашли уровень, значит выбран последний уровень ветки и надо отдать пустые объекты
+		if (!result) {
+			result = {lvls: [], sel: Object.create(null)};
+		}
 
 		return result;
 	};
@@ -209,13 +213,12 @@ var genObjsShortRegionsArr = (function () {
 		while (i--) {
 			obj = objs[i];
 
-			obj.rs = [];
 			for (j = maxRegionLevel; j--;) {
 				level = 'r' + j;
 				cid = obj[level];
 				if (cid !== undefined) {
 					shortRegionsHash[cid] = true;
-					obj.rs.push(cid);
+					obj.rs = [cid];
 
 					for (k = showlvls.length; k--;) {
 						if (showlvls[k] !== level) {
