@@ -10,7 +10,9 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 			target.parentNode.classList.add('showPrv');
 		},
 		imgLoadFail: function (target) {
-			target.parentNode.classList.add('showPrv', 'fail');
+			var classList = target.parentNode.classList;
+			classList.add('fail'); //Множестенная установка пока не работает в ie<=11
+			classList.add('showPrv');
 		}
 	};
 

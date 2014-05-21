@@ -305,63 +305,17 @@ function popUserRegions(user, cb) {
 			return cb(err);
 		}
 		var regionsData,
-			usObj = us[user.login],
-
-			rs = new Array(maxRegionLevel + 1),
-			rsLevel,
-			r,
-			j,
-			i;
+			shortRegions,
+			usObj = us[user.login];
 
 		if (usObj) {
 			regionsData = regionController.buildQuery(user.regions);
-			usObj.rquery = regionsData.rquery;
+			shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 			usObj.rhash = regionsData.rhash;
-			usObj.rshowlvls = [];
-			usObj.rshowsel = Object.create(null);
+			usObj.rquery = regionsData.rquery;
+			usObj.rshowlvls = shortRegions.lvls;
+			usObj.rshowsel = shortRegions.sel;
 
-			//Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
-			//Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
-			//Например, при глобальной фильтрации максимальный уровень - страна, т.к. их множество
-			//При фильтрации по стране - максимальный уровень - субъект, т.к. их множество в стране, сл-но, надо отображать принадлежность к субъектам.
-			//Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
-			for (i in regionsData.rhash) {
-				if (regionsData.rhash.hasOwnProperty(i)) {
-					r = regionsData.rhash[i];
-
-					rsLevel = rs[r.parents.length];
-					if (rsLevel === undefined) {
-						rsLevel = rs[r.parents.length] = {};
-					}
-					rsLevel[i] = true;
-
-					for (j = 0; j < r.parents.length; j++) {
-						rsLevel = rs[j];
-						if (rsLevel === undefined) {
-							rsLevel = rs[j] = {};
-						}
-						rsLevel[r.parents[j]] = true;
-					}
-				}
-			}
-			//Максимальный уровень для отображения, это тот на котором несколько регионов либо undefined (т.е. любое кол-во регионов)
-			for (i = 0; i < rs.length; i++) {
-				if (!rs[i] || Object.keys(rs[i]).length > 1) {
-					usObj.rshowlvls.push('r' + i);
-
-					//Если это нулевой уровень (т.е. отображаем страны), то отображаем и их субъекты
-					if (!i) {
-						usObj.rshowlvls.push('r1');
-					}
-
-					//Начиная с этого уровня заполняем хэш выбираемых уровней регионов у объекта ({rn: 1, rn+1: 1, ..., rmax: 1}),
-					//просто чтобы не выбирать лишние вышестоящие в каждом запросе к объекту
-					for (j = i; j <= maxRegionLevel; j++) {
-						usObj.rshowsel['r' + j] = 1;
-					}
-					break;
-				}
-			}
 			console.log('Levels', usObj.rshowlvls);
 			console.log('Sels', usObj.rshowsel);
 

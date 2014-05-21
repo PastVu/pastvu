@@ -7,7 +7,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 	var tplComments,
 		regexpAHrefTag = /<(?:\s*)?\/?(?:\s*)?a[^>]*>/g,
-		regexpNewLine = /[\f\r\n]/g;
+		regexpNewLine = /\f|\r|\n|<br\/?>/gi;
 
 	return Cliche.extend({
 		jade: html,

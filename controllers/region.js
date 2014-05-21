@@ -81,24 +81,6 @@ function getRegionsHashFromCache(cids) {
 
 	return result;
 }
-function getRegionsHashFill(hash, fileds) {
-	var i;
-	if (fileds) {
-		var j, len = fileds.length, region;
-		for (i in hash) {
-			region = regionCacheHash[i];
-			hash[i] = {};
-			for (j = 0; j < len; j++) {
-				hash[i][fileds[j]] = region[fileds[j]];
-			}
-		}
-	} else {
-		for (i in hash) {
-			hash[i] = regionCacheHash[i];
-		}
-	}
-	return hash;
-}
 function getRegionsArrFromHash(hash, cids) {
 	var result = [],
 		i;
@@ -117,6 +99,92 @@ function getRegionsArrFromHash(hash, cids) {
 
 	return result;
 }
+function fillRegionsHash(hash, fileds) {
+	var i;
+	if (fileds) {
+		var j, len = fileds.length, region;
+		for (i in hash) {
+			region = regionCacheHash[i];
+			hash[i] = {};
+			for (j = 0; j < len; j++) {
+				hash[i][fileds[j]] = region[fileds[j]];
+			}
+		}
+	} else {
+		for (i in hash) {
+			hash[i] = regionCacheHash[i];
+		}
+	}
+	return hash;
+}
+
+//Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
+//Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
+//Например, при глобальной фильтрации максимальный уровень - страна, т.к. их множество
+//При фильтрации по стране - максимальный уровень - субъект, т.к. их множество в стране, сл-но, надо отображать принадлежность к субъектам.
+//Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
+//@returns {lvls: ['rn'], sel: {rn: 1, rn+1: 1, ..., rmax: 1}}
+var getShortRegionsParams = (function () {
+	var globalFilterParams = {lvls: ['r0', 'r1'], sel: Object.create(null)},
+		i;
+
+	for (i = 0; i <= maxRegionLevel; i++) {
+		globalFilterParams.sel['r' + i] = 1;
+	}
+	return function (rhash) {
+		//Если хеша нет (например, аноним) или передан пустой хеш (значит глобальный фильтр), отдаём глобальные параметры
+		if (!rhash || !Object.keys(rhash).length) {
+			return globalFilterParams;
+		}
+
+		var regionLevels = new Array(maxRegionLevel + 1),
+			regionLevelHash,
+			regionParents,
+			region,
+			cid,
+			i, j,
+			result;
+
+		for (cid in rhash) {
+			region = rhash[cid];
+			regionParents = region.parents;
+
+			regionLevelHash = regionLevels[regionParents.length];
+			if (regionLevelHash === undefined) {
+				regionLevelHash = regionLevels[regionParents.length] = {};
+			}
+			regionLevelHash[cid] = true;
+
+			for (i = 0; i < regionParents.length; i++) {
+				regionLevelHash = regionLevels[i];
+				if (regionLevelHash === undefined) {
+					regionLevelHash = regionLevels[i] = {};
+				}
+				regionLevelHash[regionParents[i]] = true;
+			}
+		}
+		//Максимальный уровень для отображения, это тот на котором несколько регионов либо undefined (т.е. любое кол-во регионов)
+		for (i = 0; i < regionLevels.length; i++) {
+			if (!regionLevels[i] || Object.keys(regionLevels[i]).length > 1) {
+				if (i === 0) {
+					//Если это нулевой уровень (т.е. отображаем страны), то берем глобальную преднастройку
+					result = globalFilterParams;
+				} else {
+					result = {lvls: ['r' + i], sel: Object.create(null)};
+
+					//Начиная с этого уровня заполняем хэш выбираемых уровней регионов у объекта ({rn: 1, rn+1: 1, ..., rmax: 1}),
+					//просто чтобы не выбирать лишние вышестоящие в каждом запросе к объекту
+					for (j = i; j <= maxRegionLevel; j++) {
+						result.sel['r' + j] = 1;
+					}
+				}
+				break;
+			}
+		}
+
+		return result;
+	};
+}());
 
 /**
  * Пересчет входящих объектов в переданный регион.
@@ -1553,8 +1621,8 @@ function setUserRegions(login, regionsCids, field, cb) {
  * @returns {{rquery: {}, rhash: {}}}
  */
 function buildQuery(regions) {
-	var rquery = {},
-		rhash = {},
+	var rquery = Object.create(null),
+		rhash = Object.create(null),
 		$orobj,
 		levels,
 		level,
@@ -1687,8 +1755,10 @@ module.exports.loadController = function (app, db, io) {
 module.exports.fillCache = fillCache;
 module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
 module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
-module.exports.getRegionsHashFill = getRegionsHashFill;
+module.exports.fillRegionsHash = fillRegionsHash;
 module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
+
+module.exports.getShortRegionsParams = getShortRegionsParams;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;

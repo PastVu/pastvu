@@ -827,7 +827,7 @@ var getComments = (function () {
 				}
 				if (regionsShortForm) {
 					if (Object.keys(regionsShortHash).length) {
-						regionController.getRegionsHashFill(regionsShortHash, ['cid', 'title_local']);
+						regionController.fillRegionsHash(regionsShortHash, ['cid', 'title_local']);
 					} else {
 						regionsShortHash = undefined;
 					}
