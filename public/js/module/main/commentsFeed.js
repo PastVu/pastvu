@@ -1,4 +1,3 @@
-/*global define:true*/
 /**
  * Модель ленты последних комментариев
  */
@@ -54,6 +53,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						}
 					}
 
+					regions = data.regions;
+
 					for (i = 0; i < data.comments.length; i++) {
 						comment = data.comments[i];
 
@@ -63,12 +64,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 						photo = data.photos[comment.obj];
 						user = data.users[comment.user];
+
 						if (photo && user) {
 							comment.user = user;
+
 							if (photo.comments === undefined) {
 								photo.link = '/p/' + photo.cid;
 								photo.sfile = (P.preaddrs.length ? P.preaddrs[i % P.preaddrs.length] : '') + Photo.picFormats.s + photo.file;
 								photo.comments = [];
+
+								if (photo.rs) {
+									for (j = photo.rs.length; j--;) {
+										photo.rs[j] = regions[photo.rs[j]];
+									}
+								}
+
 								photoCommentsToInsert.push(photo);
 							}
 							comment.link = photo.link + '?hl=comment-' + comment.cid;
@@ -76,17 +86,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						}
 					}
 
-					regions = data.regions;
-					if (regions) {
-						for (i = photoCommentsToInsert.length; i--;) {
-							photo = photoCommentsToInsert[i];
-							if (photo.rs) {
-								for (j = photo.rs.length; j--;) {
-									photo.rs[j] = regions[photo.rs[j]];
-								}
-							}
-						}
-					}
 					if (!tplComments) {
 						tplComments = doT.template(document.getElementById('cfeeddot').text);
 					}

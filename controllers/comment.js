@@ -722,7 +722,7 @@ function getCommentsUser(data, cb) {
  */
 var getComments = (function () {
 	var commentSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
-		photosSelectAllRegions = _.assign({_id: 1, cid: 1, file: 1, title: 1}, regionController.regionsAllSelectHash);
+		photosSelectAllRegions = _.assign({_id: 1, cid: 1, file: 1, title: 1, geo: 1}, regionController.regionsAllSelectHash);
 
 	return function (usObj, query, data, cb) {
 		var skip = Math.abs(Number(data.skip)) || 0,
@@ -747,7 +747,7 @@ var getComments = (function () {
 				var i = comments.length,
 					photoId,
 					photosArr = [],
-					photosSelect = {_id: 1, cid: 1, file: 1, title: 1},
+					photosSelect = {_id: 1, cid: 1, file: 1, title: 1, geo: 1},
 					userId,
 					usersArr = [];
 

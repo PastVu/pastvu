@@ -26,6 +26,8 @@ var _session = require('./_session.js'),
 
 	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
 	regionCacheArr = [], //Массив-кэш регионов из базы [{_id, cid, parents}]
+
+	nogeoRegion = {cid: 0, title_en: 'Where is it?', title_local: 'Где это?'},
 	i;
 
 for (i = 0; i <= maxRegionLevel; i++) {
@@ -48,6 +50,8 @@ function fillCache(cb) {
 		while (i--) {
 			hash[regions[i].cid] = regions[i];
 		}
+		hash['0'] = nogeoRegion; //Нулевой регион обозначает отсутствие координат
+
 		regionCacheHash = hash;
 		regionCacheArr = regions;
 
@@ -232,6 +236,17 @@ var genObjsShortRegionsArr = (function () {
 					break;
 				}
 			}
+			//Если у объекта нет координаты, значит он относится к "где это?" и
+			//добавляем для информирования об этом 0 в начале краткого списка регионов
+			//Если регионов нет (без координат и регионов могут быть новые), то в списке будет только 0
+			if (!obj.geo) {
+				if (!obj.rs) {
+					obj.rs = [0];
+				} else {
+					obj.rs.unshift(0);
+				}
+				shortRegionsHash['0'] = true;
+			}
 		}
 		if (Object.keys(shortRegionsHash).length) {
 			fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
@@ -240,7 +255,7 @@ var genObjsShortRegionsArr = (function () {
 		}
 		return shortRegionsHash;
 	};
-}())
+}());
 
 /**
  * Пересчет входящих объектов в переданный регион.
