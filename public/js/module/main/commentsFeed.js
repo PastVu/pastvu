@@ -12,9 +12,30 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 	return Cliche.extend({
 		jade: html,
 		create: function () {
-			this.pComments = [];
+			this.auth = globalVM.repository['m/common/auth'];
 			ko.applyBindings(globalVM, this.$dom[0]);
-
+			this.receive(function () {
+				if (!this.auth.loggedIn()) {
+					this.subscriptions.loggedIn = this.auth.loggedIn.subscribe(this.loggedInHandler, this);
+				}
+				this.show();
+			}, this);
+		},
+		show: function () {
+			globalVM.func.showContainer(this.$container);
+			this.showing = true;
+		},
+		hide: function () {
+			globalVM.func.hideContainer(this.$container);
+			this.showing = false;
+		},
+		loggedInHandler: function () {
+			//Перезапрашиваем ленту комментариев на главной, чтобы показать для регионов пользователя
+			this.receive();
+			this.subscriptions.loggedIn.dispose();
+			delete this.subscriptions.loggedIn;
+		},
+		receive: function (cb, ctx) {
 			socket.once('takeCommentsFeed', function (data) {
 				var photo,
 					user,
@@ -71,19 +92,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					}
 
 					this.$dom[0].querySelector('.commentsBody').innerHTML = tplComments(photoCommentsToInsert);
-					this.pComments = photoCommentsToInsert;
 				}
-				this.show();
+				if (cb) {
+					cb.call(ctx);
+				}
 			}.bind(this));
 			socket.emit('giveCommentsFeed', {limit: 30});
-		},
-		show: function () {
-			globalVM.func.showContainer(this.$container);
-			this.showing = true;
-		},
-		hide: function () {
-			globalVM.func.hideContainer(this.$container);
-			this.showing = false;
 		}
 	});
 });

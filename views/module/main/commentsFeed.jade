@@ -8,15 +8,15 @@
 	| {{~it :p}}
 	.cPhoto.clearfix
 		a.photoName(href="{{=p.link}}") {{=p.title}}
-		| {{?p.rs && p.rs.length}}
 		.cRegions
+			| {{?p.rs}}
 			| {{~p.rs :r:rindex}}
 			a.cRegion(href="{{='/ps?f=r!'+r.cid}}") {{=r.title_local}}
 			| {{?rindex<p.rs.length-1}}
 			| ,&nbsp;
 			| {{?}}
 			| {{~}}
-		| {{?}}
+			| {{?}}
 		a.imgLoad(href="{{=p.link}}"): img.img(src="{{=p.sfile}}", onload="G.imgLoadOk(this)", onerror="G.imgLoadFail(this)")
 		div
 			| {{~p.comments :c}}
