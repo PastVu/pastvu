@@ -249,6 +249,7 @@ var genObjsShortRegionsArr = (function () {
 			}
 			//Если передан флаг, что надо удалить поля rn, делаем это
 			if (dropRegionsFields === true) {
+				delete obj.geo;
 				for (j = 0; j <= maxRegionLevel; j++) {
 					delete obj['r' + j];
 				}

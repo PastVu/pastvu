@@ -44,8 +44,8 @@ var auth = require('./auth.js'),
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
-	compactFieldsWithRegions = _.assign({}, compactFields, regionController.regionsAllSelectHash),
-	compactFieldsIdWithRegions = _.assign({}, compactFieldsId, regionController.regionsAllSelectHash),
+	compactFieldsWithRegions = _.assign({geo: 1}, compactFields, regionController.regionsAllSelectHash),
+	compactFieldsIdWithRegions = _.assign({geo: 1}, compactFieldsId, regionController.regionsAllSelectHash),
 	permissions = {
 		//Определяет может ли модерировать фотографию пользователь
 		//Если да, то в случае регионального модератора вернёт номер региона,
