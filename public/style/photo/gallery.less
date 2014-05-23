@@ -325,7 +325,7 @@
 	.gallery {
 		.photoPreview {
 			font-size: 12px;
-			padding-bottom: @PhotoTitleHeight - 3;
+			padding-bottom: @PhotoInfoHeight - 3;
 
 			&.addPhoto {
 				.desc {
@@ -333,15 +333,22 @@
 				}
 			}
 			.comm {
-				bottom: @PhotoTitleHeight + 4 - 3;
+				bottom: @PhotoInfoHeight + 4 - 3;
 				font-size: @font-size-small;
 				line-height: 14px;
 			}
-			.photoTitle {
-				height: @PhotoTitleHeight - 3;
-				padding: 0 0 0 2px;
-				font-size: 15px;
-				line-height: @PhotoTitleHeight - 3;
+			.info {
+				height: @PhotoInfoHeight - 3;
+				padding-left: 2px;
+				> .title {
+					padding-top: 2px;
+					font-size: 15px;
+					line-height: 17px;
+				}
+				> .regions {
+					font-size: 14px;
+					line-height: 15px;
+				}
 			}
 		}
 	}
@@ -351,7 +358,7 @@
 	.gallery {
 		.photoPreview {
 			font-size: @font-size-small;
-			padding-bottom: @PhotoTitleHeight - 4;
+			padding-bottom: @PhotoInfoHeight - 5;
 
 			&.addPhoto {
 				.desc {
@@ -359,15 +366,22 @@
 				}
 			}
 			.comm {
-				bottom: @PhotoTitleHeight + 4 - 4;
+				bottom: @PhotoInfoHeight + 4 - 5;
 				font-size: @font-size-small;
 				line-height: 14px;
 			}
-			.photoTitle {
-				height: @PhotoTitleHeight - 4;
-				padding: 0 0 0 2px;
-				font-size: 14px;
-				line-height: @PhotoTitleHeight - 4;
+			.info {
+				height: @PhotoInfoHeight - 5;
+				padding-left: 2px;
+				> .title {
+					padding-top: 1px;
+					font-size: 14px;
+					line-height: 17px;
+				}
+				> .regions {
+					font-size: 13px;
+					line-height: 15px;
+				}
 			}
 		}
 	}
@@ -377,7 +391,7 @@
 	.gallery {
 		.photoPreview {
 			font-size: @font-size-mini;
-			padding-bottom: @PhotoTitleHeight - 5;
+			padding-bottom: @PhotoInfoHeight - 7;
 
 			&.addPhoto {
 				.desc {
@@ -386,15 +400,22 @@
 			}
 			.comm {
 				min-width: 12px;
-				bottom: @PhotoTitleHeight + 4 - 5;
+				bottom: @PhotoInfoHeight + 4 - 7;
 				font-size: @font-size-mini;
 				line-height: 13px;
 			}
-			.photoTitle {
-				height: @PhotoTitleHeight - 5;
-				padding: 0 0 0 1px;
-				font-size: 13px;
-				line-height: @PhotoTitleHeight - 5;
+			.info {
+				height: @PhotoInfoHeight - 7;
+				padding-left: 1px;
+				> .title {
+					padding-top: 1px;
+					font-size: 13px;
+					line-height: 16px;
+				}
+				> .regions {
+					font-size: 12px;
+					line-height: 13px;
+				}
 			}
 		}
 	}

@@ -484,15 +484,14 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (!data || data.error || !Array.isArray(data.photos)) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
-					this.processPhotos(data.photos);
+					this.processPhotos(data.photos, data.rhash);
 					//Если фильтр активен - обновляем в нем данные
 					if (this.filter.active()) {
 						this.filterChangeHandleBlock = true;
 
 						//Если количество регионов равно, они пусты или массивы их cid равны,
 						//то и заменять их не надо, чтобы небыло "прыжка"
-						rEquals =
-							this.filter.disp.r().length === data.filter.r.length &&
+						rEquals = this.filter.disp.r().length === data.filter.r.length &&
 							(!data.filter.r.length || _.isEqual(_.pluck(this.filter.disp.r(), 'cid'), _.pluck(data.filter.r, 'cid')));
 						if (!rEquals) {
 							this.filter.disp.r(data.filter.r || []);
@@ -512,9 +511,16 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}.bind(this));
 			socket.emit(reqName, params);
 		},
-		processPhotos: function (arr) {
-			for (var i = arr.length; i--;) {
-				Photo.factory(arr[i], 'compact', 'h', {title: 'Без названия'});
+		processPhotos: function (arr, regionsHash) {
+			var photo, i = arr.length, j;
+			while (i--) {
+				photo = arr[i];
+				Photo.factory(photo, 'compact', 'h', {title: 'Без названия'});
+				if (regionsHash && photo.rs !== undefined) {
+					for (j = photo.rs.length; j--;) {
+						photo.rs[j] = regionsHash[photo.rs[j]];
+					}
+				}
 			}
 		},
 
@@ -636,7 +642,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		closeUpload: function () {
 			//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-			globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : ''))  + this.pageQuery());
+			globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : '')) + this.pageQuery());
 		},
 		destroyUpload: function () {
 			if (this.uploadVM) {

@@ -37,7 +37,7 @@
 	| <script id="photosTpl" type="text/html">
 	.photosNew
 		//ko foreach: photos
-		.photoPreview.withTitle.fringe(data-bind="attr: {title: title}")
+		.photoPreview.withInfo.fringe(data-bind="attr: {title: title}")
 			a.photoBox(data-bind="attr: {href: $data.link}")
 				img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 				.curtain
@@ -47,7 +47,7 @@
 			// /ko
 		// /ko
 		//ko if: moreLink()
-		a.photoPreview.withTitle.nextPhoto(data-bind="attr: {href: moreLink()}")
+		a.photoPreview.withInfo.nextPhoto(data-bind="attr: {href: moreLink()}")
 			.nextPhotoTxt
 				span.glyphicon.glyphicon-fast-forward
 				|  Еще..
