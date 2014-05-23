@@ -202,7 +202,7 @@ var getShortRegionsParams = (function () {
 var genObjsShortRegionsArr = (function () {
 	var defalutLevels = ['r0', 'r1'];
 
-	return function (objs, showlvls) {
+	return function (objs, showlvls, dropRegionsFields) {
 		var shortRegionsHash = {},
 			i = objs.length,
 			level,
@@ -246,6 +246,12 @@ var genObjsShortRegionsArr = (function () {
 					obj.rs.unshift(0);
 				}
 				shortRegionsHash['0'] = true;
+			}
+			//Если передан флаг, что надо удалить поля rn, делаем это
+			if (dropRegionsFields === true) {
+				for (j = 0; j <= maxRegionLevel; j++) {
+					delete obj['r' + j];
+				}
 			}
 		}
 		if (Object.keys(shortRegionsHash).length) {

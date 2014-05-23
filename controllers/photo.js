@@ -44,6 +44,8 @@ var auth = require('./auth.js'),
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+	compactFieldsWithRegions = _.assign({}, compactFields, regionController.regionsAllSelectHash),
+	compactFieldsIdWithRegions = _.assign({}, compactFieldsId, regionController.regionsAllSelectHash),
 	permissions = {
 		//Определяет может ли модерировать фотографию пользователь
 		//Если да, то в случае регионального модератора вернёт номер региона,
@@ -893,7 +895,7 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 		//console.log(query);
 		step(
 			function () {
-				var fieldsSelect = iAm ? compactFieldsId : compactFields; //Для подсчета новых комментариев нужны _id
+				var fieldsSelect = iAm ? compactFieldsIdWithRegions : compactFieldsWithRegions; //Для подсчета новых комментариев нужны _id
 
 				Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
 				Photo.count(query, this.parallel());
@@ -901,6 +903,13 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 			function finishOrNewCommentsCount(err, photos, count) {
 				if (err || !photos) {
 					return cb({message: err && err.message || 'Photos does not exist', error: true});
+				}
+				var shortRegionsParams, shortRegionsHash;
+
+				if (photos.length) {
+					//Заполняем для каждой фотографии краткие регионы и хэш этих регионов
+					shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
+					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
 				}
 
 				if (!iAm || !photos.length) {
@@ -920,7 +929,7 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 							delete photos[i]._id;
 						}
 					}
-					cb({photos: photos, filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, count: count, skip: skip});
+					cb({photos: photos, filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, rhash: shortRegionsHash, count: count, skip: skip});
 				}
 			}
 		);
@@ -1649,6 +1658,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	if (query) {
 		result.query = query;
 		result.rcids = regions_cids;
+		result.rhash = regions_hash;
 		result.rarr = regions_arr_all;
 	}
 
