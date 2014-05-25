@@ -321,8 +321,11 @@ function popUserRegions(user, cb) {
 
 			if (user.role === 5) {
 				regionsData = regionController.buildQuery(user.mod_regions);
-				usObj.mod_rquery = regionsData.rquery;
+				shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 				usObj.mod_rhash = regionsData.rhash;
+				usObj.mod_rquery = regionsData.rquery;
+				usObj.mod_rshowlvls = shortRegions.lvls;
+				usObj.mod_rshowsel = shortRegions.sel;
 			}
 			if (!mod_regions_equals) {
 				delete usObj.mod_regions_equals;

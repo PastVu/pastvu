@@ -973,7 +973,8 @@ function giveUserPhotos(iAm, data, cb) {
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
-	var query = {s: 1};
+	var usObj = _session.us[iAm.login],
+		query = {s: 1};
 
 	if (!iAm || iAm.role < 5) {
 		return cb({message: msg.deny, error: true});
@@ -982,10 +983,17 @@ function givePhotosForApprove(iAm, data, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 	if (iAm.role === 5) {
-		_.assign(query, _session.us[iAm.login].mod_rquery);
+		_.assign(query, usObj.mod_rquery);
 	}
 
-	Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, cb);
+	Photo.find(query, compactFieldsWithRegions, {lean: true, sort: {sdate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, function (err, photos) {
+		if (err || !photos) {
+			return cb({message: err && err.message || 'No photos', error: true});
+		}
+		var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj.mod_rshowlvls, true);
+
+		cb({photos: photos, rhash: shortRegionsHash});
+	});
 }
 
 //Берем массив до и после указанной фотографии пользователя указанной длины
@@ -1796,8 +1804,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosForApprove', function (data) {
-			givePhotosForApprove(hs.session.user, data, function (err, photos) {
-				socket.emit('takePhotosForApprove', err ? {message: err.message, error: true} : {photos: photos});
+			givePhotosForApprove(hs.session.user, data, function (resultData) {
+				socket.emit('takePhotosForApprove', resultData);
 			});
 		});
 
