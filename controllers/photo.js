@@ -760,11 +760,20 @@ function givePhoto(socket, data, cb) {
 
 //Отдаем последние публичные фотографии на главной для анонимов в memoized
 var givePhotosPublicIndex = (function () {
-	var options = {lean: true, sort: {sdate: -1}, skip: 0, limit: 29};
+	var options = {skip: 0, limit: 30},
+		filter = {s: [5]},
+		memoized = Utils.memoizeAsync(function (handler) {
+			givePhotos(null, filter, options, null, handler);
+		}, ms('10s'));
 
-	return Utils.memoizeAsync(function (handler) {
-		Photo.find({s: 5}, compactFields, options, handler);
-	}, ms('30s'));
+	return function (iAm, cb) {
+		if (iAm) {
+			//Для зарегистрированных пользователей всегда выбираем заново, т.к. могут быть новые комментарии или региональные фильтры
+			givePhotos(iAm, filter, options, null, cb);
+		} else {
+			return memoized(cb);
+		}
+	};
 }());
 
 //Отдаем последние публичные "Где это?" фотографии для главной
@@ -1771,15 +1780,9 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosPublicIndex', function () {
-			if (hs.session.user) {
-				givePhotos(hs.session.user, {s: [5]}, {skip: 0, limit: 29}, null, function (resultData) {
-					socket.emit('takePhotosPublicIndex', resultData);
-				});
-			} else {
-				givePhotosPublicIndex(function (err, photos) {
-					socket.emit('takePhotosPublicIndex', err ? {message: err.message, error: true} : {photos: photos});
-				});
-			}
+			givePhotosPublicIndex(hs.session.user, function (resultData) {
+				socket.emit('takePhotosPublicIndex', resultData);
+			});
 		});
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
