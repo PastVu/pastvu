@@ -118,7 +118,7 @@ async.waterfall([
 
 
 			app = express();
-			app.enable('trust proxy'); //Используем хедеры прокси, если стоим за ним
+			app.enable('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
 			app.disable('x-powered-by'); //Disable default X-Powered-By
 			app.disable('etag');
 			app.set('views', 'views');
