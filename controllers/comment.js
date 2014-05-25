@@ -810,9 +810,6 @@ var getComments = (function () {
 					comment.user = usersHash[comment.user].login;
 				}
 
-				console.log(photoFormattedHash);
-				console.log(shortRegionsHash);
-
 				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
 				cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash, regions: shortRegionsHash});
 			}

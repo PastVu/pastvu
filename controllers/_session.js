@@ -316,9 +316,6 @@ function popUserRegions(user, cb) {
 			usObj.rshortlvls = shortRegions.lvls;
 			usObj.rshortsel = shortRegions.sel;
 
-			console.log('Levels', usObj.rshortlvls);
-			console.log('Sels', usObj.rshortsel);
-
 			if (user.role === 5) {
 				regionsData = regionController.buildQuery(user.mod_regions);
 				shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
