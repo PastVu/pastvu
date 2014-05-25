@@ -616,7 +616,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 						} else {
 							if (data.photos.length > 0) {
-								this.processPhotos(data.photos);
+								this.processPhotos(data.photos, data.rhash);
 								this.count(this.count() + data.photos.length);
 								this.auth.setProps({pfcount: this.auth.iAm.pfcount() + data.photos.length});
 

@@ -163,7 +163,7 @@
 
 			.photoPreview {
 				font-size: 12px;
-				padding-bottom: @PhotoInfoHeight - 4;
+				padding-bottom: @PhotoInfoHeight - 5;
 
 				&.nextPhoto {
 					position: relative;
@@ -184,7 +184,7 @@
 						position: absolute;
 						top: 50%;
 						width: 100%;
-						margin-top: -8 - (@PhotoInfoHeight - 4) / 2;
+						margin-top: -8 - (@PhotoInfoHeight - 5) / 2;
 						padding-top: 10px;
 						font-size: 15px;
 						text-align: center;
@@ -197,15 +197,22 @@
 				}
 
 				.comm {
-					bottom: @PhotoInfoHeight + 4 - 4;
+					bottom: @PhotoInfoHeight + 6 - 5;
 					font-size: @font-size-small;
 					line-height: 14px;
 				}
-				.photoTitle {
-					height: @PhotoInfoHeight - 4;
-					padding: 0 0 0 2px;
-					font-size: 14px;
-					line-height: @PhotoInfoHeight - 4;
+				.info {
+					height: @PhotoInfoHeight - 5;
+					padding-left: 2px;
+					> .title {
+						padding-top: 1px;
+						font-size: 14px;
+						line-height: 17px;
+					}
+					> .regions {
+						font-size: 13px;
+						line-height: 15px;
+					}
 				}
 			}
 		}

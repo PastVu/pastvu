@@ -41,7 +41,13 @@
 			a.photoBox(data-bind="attr: {href: $data.link}")
 				img.img(data-bind="attr: {src: sfile, alt: title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}")
 				.curtain
-			a.photoTitle(data-bind="text: title, attr: {href: $data.link}")
+			.info
+				a.title(data-bind="text: title, attr: {href: $data.link}")
+				//ko if: $data.rs
+				.regions(data-bind="foreach: $data.rs", title=" ")
+					| <!--ko if: $index()-->, <!-- /ko -->
+					a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
+				// /ko
 			//ko if: $data.ccount
 			a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
 			// /ko

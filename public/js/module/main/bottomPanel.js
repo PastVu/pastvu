@@ -198,7 +198,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.processPhotos(data.photos, Photo.picFormats.m);
+						this.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
 						this.photos(data.photos);
 						this.moreLink('/ps');
 						success = true;
@@ -217,7 +217,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.processPhotos(data.photos, Photo.picFormats.m);
+						this.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
 						this.photos(data.photos);
 						this.moreLink('/ps?f=geo!0');
 						success = true;
@@ -236,7 +236,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!data || data.error || !Array.isArray(data.photos)) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.processPhotos(data.photos, Photo.picFormats.m);
+						this.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
 						this.photos(data.photos);
 						this.moreLink('/ps?f=r!0_s!1');
 						success = true;
@@ -255,13 +255,13 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (!data || data.error) {
 						window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					} else {
-						this.ratings.pbyview.day(this.processPhotos(data.pday, Photo.picFormats.s, 'vdcount', declension.view));
-						this.ratings.pbyview.week(this.processPhotos(data.pweek, Photo.picFormats.s, 'vwcount', declension.view));
-						this.ratings.pbyview.all(this.processPhotos(data.pall, Photo.picFormats.s, 'vcount', declension.view));
+						this.ratings.pbyview.day(this.processPhotos(data.pday, data.rhash, Photo.picFormats.s, 'vdcount', declension.view));
+						this.ratings.pbyview.week(this.processPhotos(data.pweek, data.rhash, Photo.picFormats.s, 'vwcount', declension.view));
+						this.ratings.pbyview.all(this.processPhotos(data.pall, data.rhash, Photo.picFormats.s, 'vcount', declension.view));
 
-						this.ratings.pbycomm.day(this.processPhotos(data.pcday, Photo.picFormats.s, 'ccount', declension.comment));
-						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, Photo.picFormats.s, 'ccount', declension.comment));
-						this.ratings.pbycomm.all(this.processPhotos(data.pcall, Photo.picFormats.s, 'ccount', declension.comment));
+						this.ratings.pbycomm.day(this.processPhotos(data.pcday, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
+						this.ratings.pbycomm.week(this.processPhotos(data.pcweek, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
+						this.ratings.pbycomm.all(this.processPhotos(data.pcall, data.rhash, Photo.picFormats.s, 'ccount', declension.comment));
 
 						this.ratings.ubycomm.day(this.processUsers(data.ucday, 'comments', 'ccount', declension.comment));
 						this.ratings.ubycomm.week(this.processUsers(data.ucweek, 'comments', 'ccount', declension.comment));
@@ -304,8 +304,8 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				id = $(event.target).attr('data-time');
 			this.ratings[group].selected(id);
 		},
-		processPhotos: function (photos, picFormat, numField, numFormat) {
-			var i = photos.length,
+		processPhotos: function (photos, regionsHash, picFormat, numField, numFormat) {
+			var i = photos.length, j,
 				photo;
 			while (i) {
 				photo = photos[--i];
@@ -320,6 +320,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 				if (numField && numFormat) {
 					photo.amount = photo[numField] + Utils.format.wordEndOfNum(photo[numField], numFormat);
+				}
+				if (regionsHash && photo.rs !== undefined) {
+					for (j = photo.rs.length; j--;) {
+						photo.rs[j] = regionsHash[photo.rs[j]];
+					}
 				}
 			}
 			return photos;
