@@ -990,7 +990,7 @@ function givePhotosForApprove(iAm, data, cb) {
 		if (err || !photos) {
 			return cb({message: err && err.message || 'No photos', error: true});
 		}
-		var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj.mod_rshowlvls, true);
+		var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj.mod_rshortlvls, true);
 
 		cb({photos: photos, rhash: shortRegionsHash});
 	});
@@ -1120,10 +1120,12 @@ function givePhotosFresh(socket, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			var query = {s: 0};
+			var query = {s: 0},
+				usObj = _session.us[iAm.login],
+				asModerator = iAm.login !== data.login && iAm.role === 5;
 
-			if (iAm.login !== data.login && iAm.role === 5) {
-				_.assign(query, _session.us[iAm.login].mod_rquery);
+			if (asModerator) {
+				_.assign(query, usObj.mod_rquery);
 			}
 			if (userid) {
 				query.user = userid;
@@ -1136,7 +1138,8 @@ function givePhotosFresh(socket, data, cb) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				cb({photos: photos || []});
+				var shortRegionsHash = regionController.genObjsShortRegionsArr(photos || [], asModerator ? usObj.mod_rshortlvls : usObj.rshortlvls, true);
+				cb({photos: photos || [], rhash: shortRegionsHash});
 			});
 		}
 	);

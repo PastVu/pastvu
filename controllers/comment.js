@@ -765,7 +765,7 @@ var getComments = (function () {
 				}
 
 				commentsArr = comments;
-				Photo.find({_id: {$in: photosArr}}, usObj && usObj.rshowsel ? _.assign(photosSelect, usObj.rshowsel) : photosSelectAllRegions, {lean: true}, this.parallel());
+				Photo.find({_id: {$in: photosArr}}, usObj && usObj.rshortsel ? _.assign(photosSelect, usObj.rshortsel) : photosSelectAllRegions, {lean: true}, this.parallel());
 				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
 			},
 			function (err, photos, users) {
@@ -781,7 +781,7 @@ var getComments = (function () {
 					userFormatted,
 					userFormattedHash = {},
 
-					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj && usObj.rshowlvls);
+					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj && usObj.rshortlvls);
 
 				for (i = photos.length; i--;) {
 					photo = photos[i];

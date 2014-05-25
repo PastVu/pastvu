@@ -45,7 +45,7 @@ function addUserSession(session) {
 	if (usObj === undefined) {
 		firstAdding = true;
 		//Если пользователя еще нет в хеше пользователей, создаем объект и добавляем в хеш
-		us[user.login] = usid[user._id] = usObj = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshowlvls: [], rshowsel: Object.create(null)};
+		us[user.login] = usid[user._id] = usObj = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshortlvls: [], rshortsel: Object.create(null)};
 		//При первом заходе пользователя присваиваем ему настройки по умолчанию
 		if (!user.settings) {
 			user.settings = {};
@@ -313,19 +313,19 @@ function popUserRegions(user, cb) {
 			shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 			usObj.rhash = regionsData.rhash;
 			usObj.rquery = regionsData.rquery;
-			usObj.rshowlvls = shortRegions.lvls;
-			usObj.rshowsel = shortRegions.sel;
+			usObj.rshortlvls = shortRegions.lvls;
+			usObj.rshortsel = shortRegions.sel;
 
-			console.log('Levels', usObj.rshowlvls);
-			console.log('Sels', usObj.rshowsel);
+			console.log('Levels', usObj.rshortlvls);
+			console.log('Sels', usObj.rshortsel);
 
 			if (user.role === 5) {
 				regionsData = regionController.buildQuery(user.mod_regions);
 				shortRegions = regionController.getShortRegionsParams(regionsData.rhash);
 				usObj.mod_rhash = regionsData.rhash;
 				usObj.mod_rquery = regionsData.rquery;
-				usObj.mod_rshowlvls = shortRegions.lvls;
-				usObj.mod_rshowsel = shortRegions.sel;
+				usObj.mod_rshortlvls = shortRegions.lvls;
+				usObj.mod_rshortsel = shortRegions.sel;
 			}
 			if (!mod_regions_equals) {
 				delete usObj.mod_regions_equals;
