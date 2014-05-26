@@ -132,12 +132,17 @@
 		.info.title(data-bind="text: p.title()")
 		// /ko
 		//ko if: p.regions().length
-		.regions(data-bind="foreach: p.regions")
+		.regions
+			//ko foreach: p.regions
 			.region
-				a(data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
-				//ko if: $index() < $parent.p.regions().length - 1
+				| <!--ko if: $index()-->, <!-- /ko -->
+				a(data-bind="text: $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+			// /ko
+			//ko if: !p.geo()
+			.region
 				| ,&nbsp;
-				// /ko
+				a(data-bind="text: 'Где это?', attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
+			// /ko
 		// /ko
 		//ko if: p.desc().length
 		.info(data-bind="html: p.desc()")
