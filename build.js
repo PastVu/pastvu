@@ -66,7 +66,7 @@ var start = Date.now(),
 			{
 				//Виртуальный модуль, содержащий общие модули, которые надо исключать из частных модулей
 				name: 'commonExcludes',
-				create: true, //set create: true if 'commonExcludes' is not a module that exists before a build
+				create: true, //set crecate: true if 'commonExcludes' is not a module that exists before a build
 				include: [
 					'domReady', 'text', 'css', 'lib/require/plugins/require-css/normalize',
 					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'lib/doT', 'backbone', 'moment',
