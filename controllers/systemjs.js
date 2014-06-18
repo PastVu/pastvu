@@ -1,4 +1,4 @@
-/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true*/
+/*global module:true, ObjectId:true, print:true, printjson:true, linkifyUrlString: true, inputIncomingParse: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true, geoToPrecision:true, geoToPrecisionRound:true, spinLng:true, regionClearPhotoTitle:true*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -469,6 +469,44 @@ module.exports.loadController = function (app, db) {
 
 		print('\n');
 		return {message: 'All calculated in ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Убирает название(или массив названий) региона в начале названия фотографии
+	saveSystemJSFunc(function regionClearPhotoTitle(regionString) {
+		if (!regionString) {
+			return {message: 'Error parameter required'};
+		}
+
+		var startTime = Date.now(),
+			regRxp = new RegExp('^(\\s*(?:' + (Array.isArray(regionString) ? regionString.filter(function (item) {
+				return !!item;
+			}).join('|') : regionString) + ')\\s*[\\.,-:]\\s*)(.+)$', 'i'),
+			count = 0;
+
+		db.photos.find({title: regRxp}, {title: 1}).forEach(function (photo) {
+			count++;
+			db.photos.update({_id: photo._id}, {$set: {title: photo.title.replace(regRxp, '$2') }});
+		});
+		return {count: count, message: 'In ' + (Date.now() - startTime) / 1000 + 's'};
+	});
+
+	//Убирает названия всех регионов в начале названия всех фотографий
+	saveSystemJSFunc(function regionsAllClearPhotoTitle() {
+		var startTime = Date.now(),
+			counter = 0,
+			renamedCounter = 0;
+
+		print('Start for ' + db.regions.count() + ' regions..\n');
+		db.regions.find({}, {_id: 0, title_en: 1, title_local: 1}).sort({cid: 1}).forEach(function (region) {
+			renamedCounter += regionClearPhotoTitle([region.title_en, region.title_local]).count;
+
+			counter++;
+			if (counter % 100 === 0) {
+				print('Done ' + counter + ' regions. Renamed ' + renamedCounter + ' photo titles. Cumulative time: ' + ((Date.now() - startTime) / 1000) + 's');
+			}
+		});
+
+		return {message: 'Renamed ' + renamedCounter + ' photo titles. All done in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
 	saveSystemJSFunc(function calcUserStats() {
