@@ -90,6 +90,12 @@ sudo node app.js --land prod --domain pastvu.com --port 80 --uport 3001
 		{$project: {regionscount: 1, pointscount: 1, _id: 0}}
 	], this);
 	
+	Удалить точку в конце имени фотографии (исключая многоточие)
+	db.photos.find({title: /^.+[^\.]\.$/i}, {title: 1}).forEach(function (photo) { db.photos.update({_id: photo._id}, {$set: {title: photo.title.substr(0, photo.title.length - 1)}}); })
+	
+	Убирает название города в начале названия фотографии
+	var regRxp = /^(\s*москва\s*[\.,]\s*)(.+)$/i; db.photos.find({title: regRxp}, {title: 1}).forEach(function (photo) { db.photos.update({_id: photo._id}, {$set: {title: photo.title.replace(regRxp, '$2') }}); })
+	
 ПЕРЕНОС ФАЙЛОВ	
 	CMD скрипт по flatten всех файлов во всех подпапках в одну результирующую папку:
 	forfiles /s /m *.* /p \_test\pastvu\photosAll /c "cmd /c move @file \_test\pastvu\result"
