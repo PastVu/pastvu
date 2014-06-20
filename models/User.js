@@ -218,7 +218,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
 	if (!login) {
 		cb(null, 'Login is not specified');
 	}
-	this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
+	this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, activatedate: 0, rules: 0}).exec(cb);
 };
 
 /**
@@ -227,7 +227,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
  * @param {function} cb
  */
 UserScheme.statics.getAllPublicUsers = function (cb) {
-	this.find({active: true}).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
+	this.find({active: true}).select({_id: 0, pass: 0, activatedate: 0, rules: 0}).exec(cb);
 };
 
 /**

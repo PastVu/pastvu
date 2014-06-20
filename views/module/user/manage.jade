@@ -50,10 +50,32 @@
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title
-					a.accordion-toggle(data-toggle="collapse", href="#ranks") Присваиваемые звания
+					a.accordion-toggle(data-toggle="collapse", href="#ranks") Специальные настройки
 			.panel-collapse.collapse.in#ranks
 				.panel-body
-					form(data-bind="foreach: ranks")
-						label.checkbox-inline
-							input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
-							span(data-bind="text: $data.desc")
+					.setTitle Присваиваемые звания
+					form
+						.form-group
+							//ko foreach: ranks
+							label.checkbox-inline
+								input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
+								span(data-bind="text: $data.desc")
+							// /ko
+
+					.setTitle Лимит количества неподтвержденных фотографий
+					div(data-bind="html: 'Действующая настройка: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
+					.calcInfo(data-bind="html: 'Доступный лимит: <b>'+u.pfcount()+'</b>'")
+					.calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+u.pfcount()+'</b>'")
+					.calcInfo(data-bind="html: 'Всего опубликованных: <b>'+u.pcount()+'</b>'")
+					form.form-inline(style="margin-top: 7px;")
+						.form-group
+							.radio
+								label.radio-inline
+									input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
+									| Авто
+							.radio
+								label.radio-inline
+									input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
+									| Вручную
+							.form-group
+								input.form-control.input-sm.photoLimit(type="text", title="Число от 0 до 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")

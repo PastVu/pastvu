@@ -18,6 +18,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			userVM: null
 		},
 		create: function () {
+			var that = this;
+
 			this.auth = globalVM.repository['m/common/auth'];
 			this.u = this.options.userVM;
 			this.u_origin = storage.userImmediate(this.u.login()).origin;
@@ -37,35 +39,35 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.roleCategory = ko.computed({
 				read: function () {
 					switch (Number(this.role())) {
-					case 4:
-					case 5:
-						return 'mod';
-					case 10:
-						return 'adm';
-					case 11:
-						return 'sadm';
-					case 0:
-						return 'reg';
-					default:
-						return 'reg';
+						case 4:
+						case 5:
+							return 'mod';
+						case 10:
+							return 'adm';
+						case 11:
+							return 'sadm';
+						case 0:
+							return 'reg';
+						default:
+							return 'reg';
 					}
 				},
 				write: function (value) {
 					switch (value) {
-					case 'mod':
-						this.role('5');
-						break;
-					case 'adm':
-						this.role('10');
-						break;
-					case 'sadm':
-						this.role('11');
-						break;
-					case 'reg':
-						this.role('0');
-						break;
-					default:
-						this.role('0');
+						case 'mod':
+							this.role('5');
+							break;
+						case 'adm':
+							this.role('10');
+							break;
+						case 'sadm':
+							this.role('11');
+							break;
+						case 'reg':
+							this.role('0');
+							break;
+						default:
+							this.role('0');
 					}
 				},
 				owner: this
@@ -77,12 +79,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			this.ranks = ko.observableArray();
 
-			this.getAllRanks(function () {
-				this.subscriptions.ranks = this.u.ranks.subscribe(_.debounce(this.ranksSelectedHandler, 1000), this);
+			this.photoNewLimit = ko.observable(null);
+			this.photoNewLimitOrigin = ko.observable('Авто');
+			this.photoNewLimitOption = ko.computed({
+				read: function () {
+					return _.isString(that.photoNewLimit()) ? 'manual' : 'auto';
+				},
+				write: function (value) {
+					that.photoNewLimit(value === 'manual' ? '0' : null);
+				}
+			});
 
-				ko.applyBindings(globalVM, this.$dom[0]);
-				this.show();
-			}, this);
+			$.when(that.getAllRanks(), that.getRules()).then(function () {
+				that.subscriptions.ranks = that.u.ranks.subscribe(_.debounce(that.ranksSelectedHandler, 1e3), that);
+				that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 800), that);
+
+				ko.applyBindings(globalVM, that.$dom[0]);
+				that.show();
+			});
 		},
 		show: function () {
 			this.$dom.find("#accordion").collapse({
@@ -91,22 +105,39 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			globalVM.func.showContainer(this.$container);
 			this.showing = true;
 		},
-		getAllRanks: function (cb, ctx) {
+		hide: function () {
+			globalVM.func.hideContainer(this.$container);
+			this.showing = false;
+		},
+
+		getAllRanks: function () {
+			var dfd = $.Deferred();
 			socket.once('takeUserAllRanks', function (result) {
 				if (result && !result.error) {
 					for (var i = 0; i < result.length; i++) {
 						this.ranks.push({key: result[i], desc: ranksLang[result[i]] || i});
 					}
 				}
-				if (Utils.isType('function', cb)) {
-					cb.call(ctx, result);
-				}
+				dfd.resolve(result);
 			}.bind(this));
 			socket.emit('giveUserAllRanks');
+			return dfd.promise();
 		},
-		hide: function () {
-			globalVM.func.hideContainer(this.$container);
-			this.showing = false;
+		getRules: function () {
+			var dfd = $.Deferred();
+			socket.once('takeUserRules', function (result) {
+				if (result && !result.error) {
+					this.setRules(result.rules || {});
+				}
+				dfd.resolve(result);
+			}.bind(this));
+			socket.emit('giveUserRules', {login: this.u.login()});
+			return dfd.promise();
+		},
+		setRules: function (rules) {
+			var photoNewLimit = _.isNumber(rules.photoNewLimit) ? String(rules.photoNewLimit) : null;
+			this.photoNewLimit(photoNewLimit);
+			this.photoNewLimitOrigin(_.isString(photoNewLimit) ? photoNewLimit : 'Авто');
 		},
 
 		saveCredentials: function (data, event) {
@@ -201,20 +232,43 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 
 		ranksSelectedHandler: function (val) {
-			this.saveUserRanks();
+			//Так, как сохранение ранков сделает emit во все сокеты, но этот хэнждлер опять сработает,
+			//т.к. будет новый объект массива с теми же значениями. Поэтому надо проверять на совпадение значений
+			if (!_.isEqual(val, this.u_origin.ranks)) {
+				this.saveUserRanks();
+			}
 		},
 		saveUserRanks: function (cb, ctx) {
 			socket.once('saveUserRanksResult', function (result) {
 				if (!result || result.error || !result.saved) {
 					window.noty({text: result && result.message || 'Ошибка сохранения звания', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					this.originUser.ranks = result.ranks;
+					this.u_origin.ranks = result.ranks;
 				}
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, result);
 				}
 			}.bind(this));
 			socket.emit('saveUserRanks', {login: this.u.login(), ranks: this.u.ranks()});
+		},
+
+		photoLimitHandler: function (val) {
+			if (this.photoNewLimitOption() === 'manual') {
+				val = Number(val);
+				if (isNaN(val)) {
+					return false;
+				}
+			} else {
+				val = null;
+			}
+			socket.once('saveUserRulesResult', function (result) {
+				if (!result || result.error || !result.saved) {
+					window.noty({text: result && result.message || 'Ошибка сохранения звания', type: 'error', layout: 'center', timeout: 4000, force: true});
+				} else {
+					this.setRules(result.rules || {});
+				}
+			}.bind(this));
+			socket.emit('saveUserRules', {login: this.u.login(), rules: {photoNewLimit: val}});
 		}
 	});
 });
