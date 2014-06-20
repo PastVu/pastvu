@@ -35,6 +35,7 @@ var auth = require('./auth.js'),
 
 	msg = {
 		deny: 'You do not have permission for this action',
+		noUser: 'Запрашиваемый пользователь не существует',
 		notExists: 'Запрашиваемая фотография не существует',
 		notExistsRegion: 'Such region does not exist',
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
@@ -123,6 +124,59 @@ var auth = require('./auth.js'),
 		}
 	};
 
+var getNewPhotosLimit = (function () {
+	var maxCanCreate = 1e4;
+
+	return function (user) {
+		var canCreate = 0;
+
+		if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
+			canCreate = Math.min(user.rules.photoNewLimit, maxCanCreate);
+		} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
+			canCreate = maxCanCreate; //Серебряный и золотой меценаты имеют максимально возможный лимит
+		} else if (user.ranks && ~user.ranks.indexOf('mec')) {
+			canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
+		} else if (user.pcount < 25) {
+			canCreate = Math.max(0, 3 - user.pfcount);
+		} else if (user.pcount < 50) {
+			canCreate = Math.max(0, 5 - user.pfcount);
+		} else if (user.pcount < 200) {
+			canCreate = Math.max(0, 10 - user.pfcount);
+		} else if (user.pcount < 1000) {
+			canCreate = Math.max(0, 50 - user.pfcount);
+		} else if (user.pcount >= 1000) {
+			canCreate = Math.max(0, 100 - user.pfcount);
+		}
+		return canCreate;
+	};
+}());
+
+function giveNewPhotosLimit(iAm, data, cb) {
+	if (!iAm || iAm.login !== data.login && iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	step(
+		function () {
+			if (iAm.login === data.login) {
+				this(null, iAm);
+			} else {
+				var user = _session.getOnline(data.login);
+				if (user) {
+					this(null, user);
+				} else {
+					User.findOne({login: data.login}, this);
+				}
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.noUser, error: true});
+			}
+			cb(getNewPhotosLimit(user));
+		}
+	);
+}
+
 /**
  * Создает фотографии в базе данных
  * @param socket Сессия пользователя
@@ -144,23 +198,7 @@ function createPhotos(socket, data, cb) {
 	}
 
 	var result = [],
-		canCreate = 0;
-
-	if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
-		canCreate = Infinity; //Серебряный и золотой меценаты имеют неограниченный лимит
-	} else if (user.ranks && ~user.ranks.indexOf('mec')) {
-		canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
-	} else if (user.pcount < 25) {
-		canCreate = Math.max(0, 3 - user.pfcount);
-	} else if (user.pcount < 50) {
-		canCreate = Math.max(0, 5 - user.pfcount);
-	} else if (user.pcount < 200) {
-		canCreate = Math.max(0, 10 - user.pfcount);
-	} else if (user.pcount < 1000) {
-		canCreate = Math.max(0, 50 - user.pfcount);
-	} else if (user.pcount >= 1000) {
-		canCreate = Math.max(0, 100 - user.pfcount);
-	}
+		canCreate = getNewPhotosLimit(user);
 
 	if (!canCreate || !data.length) {
 		cb({message: 'Nothing to save', cids: result});
@@ -1875,6 +1913,12 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('convertPhotosAll', function (data) {
 			convertPhotosAll(socket, data, function (resultData) {
 				socket.emit('convertPhotosAllResult', resultData);
+			});
+		});
+
+		socket.on('giveNewPhotosLimit', function (data) {
+			giveNewPhotosLimit(hs.session.user, data, function (resultData) {
+				socket.emit('takeNewPhotosLimit', resultData);
 			});
 		});
 	});

@@ -23,10 +23,9 @@ var UserScheme = new mongoose.Schema({
 	loginAttempts: {type: Number, required: true, 'default': 0},
 	lockUntil: {type: Number},
 
-	// 11 - owner, 10 - admin, 5 - moderator, undefined - regular
-	role: {type: Number},
-
 	settings: {type: Schema.Types.Mixed},
+	rules: {type: Schema.Types.Mixed}, //Правила(настройки), задаваемые администратором
+	role: {type: Number}, // 11 - owner, 10 - admin, 5 - moderator, undefined - regular
 	ranks: [String],
 
 	regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион

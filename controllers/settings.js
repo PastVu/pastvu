@@ -4,8 +4,6 @@ var auth = require('./auth.js'),
 	Settings,
 	UserSettingsDef,
 	_ = require('lodash'),
-	ms = require('ms'), // Tiny milisecond conversion utility
-	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	logger = require('log4js').getLogger("settings.js"),
 	appvar,
