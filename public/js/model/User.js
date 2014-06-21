@@ -44,6 +44,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			aboutme: '',
 
 			regdate: Date.now(),
+			pfcount: 0,
 			pcount: 0,
 			bcount: 0,
 			ccount: 0,
