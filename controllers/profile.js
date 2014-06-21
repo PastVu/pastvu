@@ -7,6 +7,7 @@ var fs = require('fs'),
 	auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	settings = require('./settings.js'),
+	photoController = require('./photo.js'),
 	Settings,
 	User,
 	Utils = require('../commons/Utils.js'),
@@ -54,7 +55,7 @@ function giveUser(socket, data, cb) {
 				itsOnline = true;
 				this(null, user.toObject({transform: _session.userToPublicObject}));
 			} else {
-				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0}, {lean: true})
+				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0}, {lean: true})
 					.populate([
 						{path: 'regionHome', select: {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
 						{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}},
@@ -422,12 +423,11 @@ function changeAvatar(socket, data, cb) {
 //Удаляем аватар
 function delAvatar(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
-		user,
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
 		itsOnline;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!iAm || !itsMe && (!iAm.role || iAm.role < 10)) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !login) {
@@ -475,14 +475,13 @@ function delAvatar(socket, data, cb) {
 }
 
 //Сохраняем ранки пользователя
-function saveUserRanks(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
+function saveUserRanks(iAm, data, cb) {
+	var login = data && data.login,
 		itsOnline,
 		ranksHash,
 		i;
 
-	if (!iAm || iAm.role < 10) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -525,6 +524,89 @@ function saveUserRanks(socket, data, cb) {
 					_session.emitUser(login);
 				}
 				cb({message: 'ok', saved: true, ranks: user.ranks || []});
+			});
+		}
+	);
+}
+
+function giveUserRules (iAm, data, cb) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!_.isObject(data) || !data.login) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	step(
+		function () {
+			var user = _session.getOnline(data.login);
+			if (user) {
+				this(null, user);
+			} else {
+				User.findOne({login: data.login}, this);
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			cb({rules: user.rules || {}, info: {canPhotoNew: photoController.core.getNewPhotosLimit(user)}});
+		}
+	);
+}
+function saveUserRules (iAm, data, cb) {
+	if (!iAm || !iAm.role || iAm.role < 10) {
+		return cb({message: msg.deny, error: true});
+	}
+	if (!_.isObject(data) || !data.login || !data.rules) {
+		return cb({message: msg.badParams, error: true});
+	}
+
+	var itsOnline;
+
+	step(
+		function () {
+			var user = _session.getOnline(data.login);
+			if (user) {
+				itsOnline = true;
+				this(null, user);
+			} else {
+				User.findOne({login: data.login}, this);
+			}
+		},
+		function (err, user) {
+			if (err || !user) {
+				return cb({message: err && err.message || msg.nouser, error: true});
+			}
+			var rules = data.rules;
+
+			if (!user.rules) {
+				user.rules = {};
+			}
+
+			if (rules.photoNewLimit !== undefined) {
+				if (_.isNumber(rules.photoNewLimit)) {
+					user.rules.photoNewLimit = Math.min(Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit);
+				} else {
+					delete user.rules.photoNewLimit;
+				}
+			}
+
+			//Если правил для пользователя нет, удаляем этот объет у пользователя
+			if (!Object.keys(user.rules).length) {
+				user.rules = undefined;
+			}
+			//Помечаем поле правил изменившимся
+			user.markModified('rules');
+
+			user.save(function (err, savedUser) {
+				if (err) {
+					return cb({message: err.message, error: true});
+				}
+				if (itsOnline) {
+					_session.emitUser(savedUser.login);
+				}
+				cb({message: 'ok', saved: true, rules: savedUser.rules, info: {canPhotoNew: photoController.core.getNewPhotosLimit(savedUser)}});
 			});
 		}
 	);
@@ -581,8 +663,20 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('saveUserRanks', function (data) {
-			saveUserRanks(socket, data, function (result) {
+			saveUserRanks(hs.session.user, data, function (result) {
 				socket.emit('saveUserRanksResult', result);
+			});
+		});
+
+		socket.on('giveUserRules', function (data) {
+			giveUserRules(hs.session.user, data, function (result) {
+				socket.emit('takeUserRules', result);
+			});
+		});
+
+		socket.on('saveUserRules', function (data) {
+			saveUserRules(hs.session.user, data, function (result) {
+				socket.emit('saveUserRulesResult', result);
 			});
 		});
 	});

@@ -47,49 +47,38 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					if (data) {
 						this.u = data.vm;
 
-						if (this.u.ranks && (~this.u.ranks.indexOf('mec_silv') || ~this.u.ranks.indexOf('mec_gold'))) {
-							this.canCountTotal = Infinity; //Серебряный и золотой меценаты имеют неограниченный лимит
-						} else if (this.u.ranks && ~this.u.ranks.indexOf('mec')) {
-							this.canCountTotal = Math.max(0, 100 - this.u.pfcount()); //Меценат имеет лимит 100
-						} else if (this.u.pcount() < 25) {
-							this.canCountTotal = Math.max(0, 3 - this.u.pfcount());
-						} else if (this.u.pcount() < 50) {
-							this.canCountTotal = Math.max(0, 5 - this.u.pfcount());
-						} else if (this.u.pcount() < 200) {
-							this.canCountTotal = Math.max(0, 10 - this.u.pfcount());
-						} else if (this.u.pcount() < 1000) {
-							this.canCountTotal = Math.max(0, 50 - this.u.pfcount());
-						} else if (this.u.pcount() >= 1000) {
-							this.canCountTotal = 100;
-						}
+						this.getLimit(function (data) {
+							if (data && !data.error) {
+								this.canCountTotal = data;
+							}
 
-						this.canCount(this.canCountTotal);
-						if (!this.canCount()) {
-							this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество для вашего профиля.');
-						} else {
-							this.toptext('Выберите фотографии, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
-							this.canLoad(true);
+							this.canCount(this.canCountTotal);
+							if (!this.canCount()) {
+								this.toptext('У вас нет свободных лимитов для загрузки файлов, так как вы имеете ' + this.u.pfcount() + ' неподтвержденных модератором фотографий. Это максимально разрешенное количество, установленное для вашего профиля.');
+							} else {
+								this.toptext('Выберите фотографии, нажав на кнопку добавления' + (this.filereader() ? ' или перетащив их в пунктирную область' : ''));
+								this.canLoad(true);
 
-							this.fileOptions = {
-								auto: true,
-								maxFiles: this.canCountTotal,
-								maxSize: 52428800, //50Mb
-								minSize: 10240, //10kB
-								acceptTypes: /(\.|\/)(jpe?g|png)$/i,
-								previewTypes: /(\.|\/)(jpe?g|png)$/i,
-								previewAsCanvas: true,
-								previewMaxSize: 10485760, //10MB The maximum file size of images that are to be displayed as preview:
-								previewMaxWidth: 210, // The maximum width of the preview images:
-								//previewMaxHeight: 120, // The maximum height of the preview images:
-								prependFiles: false
-							};
-						}
+								this.fileOptions = {
+									auto: true,
+									maxFiles: this.canCountTotal,
+									maxSize: 52428800, //50Mb
+									minSize: 10240, //10kB
+									acceptTypes: /(\.|\/)(jpe?g|png)$/i,
+									previewTypes: /(\.|\/)(jpe?g|png)$/i,
+									previewAsCanvas: true,
+									previewMaxSize: 10485760, //10MB The maximum file size of images that are to be displayed as preview:
+									previewMaxWidth: 210, // The maximum width of the preview images:
+									//previewMaxHeight: 120, // The maximum height of the preview images:
+									prependFiles: false
+								};
+							}
 
-						ko.applyBindings(globalVM, this.$dom[0]);
+							ko.applyBindings(globalVM, this.$dom[0]);
 
-						this.show();
+							this.show();
+						}, this);
 					}
-
 				}, this);
 			} else {
 				this.toptext('Вы не авторизованы для загрузки фотографий');
@@ -180,10 +169,19 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			this.canCount(Math.max(0, this.canCountTotal - this.fileList().length));
 		},
 
-
+		getLimit: function (cb, ctx) {
+			socket.once('takeNewPhotosLimit', function (data) {
+				if (!data || data.error) {
+					window.noty({text: 'Ошибка инициализации формы:' + data && data.message, type: 'error', layout: 'center', timeout: 4000, force: true});
+					console.dir(data);
+				}
+				cb.call(ctx || window, data);
+			}.bind(this));
+			socket.emit('giveNewPhotosLimit', {login: this.auth.iAm.login()});
+		},
 		onFileAdd: function (e, data) {
 			var options = this.fileOptions,
-				optionsPlugin = (this.$fileupload.data('blueimp-fileupload') || this.$fileupload.data('fileupload') || {}).options,
+			//optionsPlugin = (this.$fileupload.data('blueimp-fileupload') || this.$fileupload.data('fileupload') || {}).options,
 				files = data.files;
 
 			this.$dom.find('.addfiles_area')[0].classList.remove('dragover');
@@ -399,21 +397,21 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		setMessage: function (file, text, type) {
 			var css = '';
 			switch (type) {
-			case 'error':
-				css = 'text-error';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
+				case 'error':
+					css = 'text-error';
+					break;
+				case 'warn':
+					css = 'text-warning';
+					break;
+				case 'info':
+					css = 'text-info';
+					break;
+				case 'success':
+					css = 'text-success';
+					break;
+				default:
+					css = 'muted';
+					break;
 			}
 
 			file.ext.msg(text);

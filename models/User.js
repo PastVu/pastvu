@@ -23,10 +23,9 @@ var UserScheme = new mongoose.Schema({
 	loginAttempts: {type: Number, required: true, 'default': 0},
 	lockUntil: {type: Number},
 
-	// 11 - owner, 10 - admin, 5 - moderator, undefined - regular
-	role: {type: Number},
-
 	settings: {type: Schema.Types.Mixed},
+	rules: {type: Schema.Types.Mixed}, //Правила(настройки), задаваемые администратором
+	role: {type: Number}, // 11 - owner, 10 - admin, 5 - moderator, undefined - regular
 	ranks: [String],
 
 	regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
@@ -219,7 +218,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
 	if (!login) {
 		cb(null, 'Login is not specified');
 	}
-	this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
+	this.findOne({login: new RegExp('^' + login + '$', 'i'), active: true }).select({_id: 0, pass: 0, activatedate: 0, rules: 0}).exec(cb);
 };
 
 /**
@@ -228,7 +227,7 @@ UserScheme.statics.getUserPublic = function (login, cb) {
  * @param {function} cb
  */
 UserScheme.statics.getAllPublicUsers = function (cb) {
-	this.find({active: true}).select({_id: 0, pass: 0, activatedate: 0 }).exec(cb);
+	this.find({active: true}).select({_id: 0, pass: 0, activatedate: 0, rules: 0}).exec(cb);
 };
 
 /**

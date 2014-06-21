@@ -1,8 +1,7 @@
 'use strict';
 
 var mongoose = require('mongoose'),
-	Schema = mongoose.Schema,
-	ms = require('ms');
+	Schema = mongoose.Schema;
 
 //Время последнего просмотра пользователем комментария объекта
 var UserCommentsViewSchema = new mongoose.Schema(

@@ -9,6 +9,17 @@
 		padding: 11px 10px 11px 22px;
 	}
 
+	.setTitle {
+		margin-left: -7px;
+		margin-bottom: 5px;
+		color: @gray-light;
+		font-size: 14px;
+		font-weight: bold;
+		&:not(:first-child) {
+			margin-top: 15px;
+		}
+	}
+
 	.radio-inline {
 		margin-left: 0;
 		margin-right: 15px;
@@ -69,5 +80,15 @@
 		margin-left: 3px;
 		padding: 3px 0 0;
 		line-height: 24px;
+	}
+
+	.calcInfo {
+		display: inline-block;
+		margin-right: 12px;
+	}
+
+	#photoLimit:invalid {
+		border-color: @brand-danger;
+		background-color: #FBE8E8;
 	}
 }

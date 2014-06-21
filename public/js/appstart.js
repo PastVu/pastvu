@@ -88,8 +88,6 @@
 		//Всё время устанавливаем куку, продлевая её каждый раз на 7 дней с последнего захода
 		docCookies.setItem('pastvu.load.' + appHash, String(Date.now()), 604800, '/', null);
 
-		scrollHoverToggle();
-
 		var s = document.createElement('script');
 		s.setAttribute('type', 'text/javascript');
 		s.setAttribute('src', '/js/module/app' + appName + '.js?__=' + appHash);
@@ -158,25 +156,5 @@
 				setTimeout(tryScroll, 10);
 			}
 		}
-	}
-
-	//Предотвращает события hover при скроллинге http://habrahabr.ru/post/204238/
-	function scrollHoverToggle() {
-		var body = document.body,
-			className = 'disable-hover',
-			timer;
-
-		function removeclass() {
-			body.classList.remove(className);
-		}
-
-		window.addEventListener('scroll', function() {
-			clearTimeout(timer);
-			if(!body.classList.contains(className)) {
-				body.classList.add(className);
-			}
-
-			timer = setTimeout(removeclass, 400);
-		}, false);
 	}
 }());
