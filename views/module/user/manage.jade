@@ -64,7 +64,7 @@
 
 					.setTitle Лимит количества неподтвержденных фотографий
 					div(data-bind="html: 'Действующая настройка: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
-					.calcInfo(data-bind="html: 'Доступный лимит: <b>'+u.pfcount()+'</b>'")
+					.calcInfo(data-bind="html: 'Доступный лимит: <b>'+photoNewCan()+'</b>'")
 					.calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+u.pfcount()+'</b>'")
 					.calcInfo(data-bind="html: 'Всего опубликованных: <b>'+u.pcount()+'</b>'")
 					form.form-inline(style="margin-top: 7px;")

@@ -7,6 +7,7 @@ var fs = require('fs'),
 	auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	settings = require('./settings.js'),
+	photoController = require('./photo.js'),
 	Settings,
 	User,
 	Utils = require('../commons/Utils.js'),
@@ -542,14 +543,14 @@ function giveUserRules (iAm, data, cb) {
 			if (user) {
 				this(null, user);
 			} else {
-				User.findOne({login: data.login}, {_id: 0, rules: 1}, this);
+				User.findOne({login: data.login}, this);
 			}
 		},
 		function (err, user) {
 			if (err || !user) {
 				return cb({message: err && err.message || msg.nouser, error: true});
 			}
-			cb({rules: user.rules || {}});
+			cb({rules: user.rules || {}, info: {canPhotoNew: photoController.core.getNewPhotosLimit(user)}});
 		}
 	);
 }
@@ -606,7 +607,7 @@ function saveUserRules (iAm, data, cb) {
 				if (itsOnline) {
 					_session.emitUser(savedUser.login);
 				}
-				cb({message: 'ok', saved: true, rules: savedUser.rules, data: returnAdditionalData});
+				cb({message: 'ok', saved: true, rules: savedUser.rules, info: {canPhotoNew: photoController.core.getNewPhotosLimit(savedUser)}});
 			});
 		}
 	);

@@ -124,33 +124,6 @@ var auth = require('./auth.js'),
 		}
 	};
 
-var getNewPhotosLimit = (function () {
-	var maxCanCreate = 1e4;
-
-	return function (user) {
-		var canCreate = 0;
-
-		if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-			canCreate = Math.min(user.rules.photoNewLimit, maxCanCreate);
-		} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
-			canCreate = maxCanCreate; //Серебряный и золотой меценаты имеют максимально возможный лимит
-		} else if (user.ranks && ~user.ranks.indexOf('mec')) {
-			canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
-		} else if (user.pcount < 25) {
-			canCreate = Math.max(0, 3 - user.pfcount);
-		} else if (user.pcount < 50) {
-			canCreate = Math.max(0, 5 - user.pfcount);
-		} else if (user.pcount < 200) {
-			canCreate = Math.max(0, 10 - user.pfcount);
-		} else if (user.pcount < 1000) {
-			canCreate = Math.max(0, 50 - user.pfcount);
-		} else if (user.pcount >= 1000) {
-			canCreate = Math.max(0, 100 - user.pfcount);
-		}
-		return canCreate;
-	};
-}());
-
 function giveNewPhotosLimit(iAm, data, cb) {
 	if (!iAm || iAm.login !== data.login && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
@@ -172,7 +145,7 @@ function giveNewPhotosLimit(iAm, data, cb) {
 			if (err || !user) {
 				return cb({message: err && err.message || msg.noUser, error: true});
 			}
-			cb(getNewPhotosLimit(user));
+			cb(core.getNewPhotosLimit(user));
 		}
 	);
 }
@@ -198,7 +171,7 @@ function createPhotos(socket, data, cb) {
 	}
 
 	var result = [],
-		canCreate = getNewPhotosLimit(user);
+		canCreate = core.getNewPhotosLimit(user);
 
 	if (!canCreate || !data.length) {
 		cb({message: 'Nothing to save', cids: result});
@@ -583,6 +556,32 @@ function activateDeactivate(socket, data, cb) {
 
 
 var core = {
+	getNewPhotosLimit: (function () {
+		var maxCanCreate = 1e4;
+
+		return function (user) {
+			var canCreate = 0;
+
+			if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
+				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, maxCanCreate) - user.pfcount);
+			} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
+				canCreate = maxCanCreate; //Серебряный и золотой меценаты имеют максимально возможный лимит
+			} else if (user.ranks && ~user.ranks.indexOf('mec')) {
+				canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
+			} else if (user.pcount < 25) {
+				canCreate = Math.max(0, 3 - user.pfcount);
+			} else if (user.pcount < 50) {
+				canCreate = Math.max(0, 5 - user.pfcount);
+			} else if (user.pcount < 200) {
+				canCreate = Math.max(0, 10 - user.pfcount);
+			} else if (user.pcount < 1000) {
+				canCreate = Math.max(0, 50 - user.pfcount);
+			} else if (user.pcount >= 1000) {
+				canCreate = Math.max(0, 100 - user.pfcount);
+			}
+			return canCreate;
+		};
+	}()),
 	givePhoto: function (iAm, data, cb) {
 		var cid = data.cid,
 			defaultNoSelect = {sign: 0},

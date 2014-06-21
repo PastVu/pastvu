@@ -79,6 +79,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			this.ranks = ko.observableArray();
 
+			this.photoNewCan = ko.observable(0);
 			this.photoNewLimit = ko.observable(null);
 			this.photoNewLimitOrigin = ko.observable('Авто');
 			this.photoNewLimitOption = ko.computed({
@@ -127,17 +128,22 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			var dfd = $.Deferred();
 			socket.once('takeUserRules', function (result) {
 				if (result && !result.error) {
-					this.setRules(result.rules || {});
+					this.setRules(result.rules || {}, result.info || {});
 				}
 				dfd.resolve(result);
 			}.bind(this));
 			socket.emit('giveUserRules', {login: this.u.login()});
 			return dfd.promise();
 		},
-		setRules: function (rules) {
-			var photoNewLimit = _.isNumber(rules.photoNewLimit) ? String(rules.photoNewLimit) : null;
-			this.photoNewLimit(photoNewLimit);
-			this.photoNewLimitOrigin(_.isString(photoNewLimit) ? photoNewLimit : 'Авто');
+		setRules: function (rules, info) {
+			if (_.isNumber(rules.photoNewLimit)) {
+				this.photoNewLimit(String(rules.photoNewLimit));
+				this.photoNewLimitOrigin(this.photoNewLimit());
+			} else {
+				this.photoNewLimit(null);
+				this.photoNewLimitOrigin('Авто');
+			}
+			this.photoNewCan(info.canPhotoNew || 0);
 		},
 
 		saveCredentials: function (data, event) {
@@ -265,7 +271,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (!result || result.error || !result.saved) {
 					window.noty({text: result && result.message || 'Ошибка сохранения звания', type: 'error', layout: 'center', timeout: 4000, force: true});
 				} else {
-					this.setRules(result.rules || {});
+					this.setRules(result.rules || {}, result.info || {});
 				}
 			}.bind(this));
 			socket.emit('saveUserRules', {login: this.u.login(), rules: {photoNewLimit: val}});

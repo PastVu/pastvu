@@ -22,7 +22,8 @@
 				span Перетащите фотографии сюда
 				#dropzone
 
-	//ko if: canCount() < Infinity
+	//-Отображаем возможное кол-во к загрузке, если менее 50 разрешено
+	//ko if: canCount() < 50
 	.canCount(data-bind="text: 'Вы можете добавить еще ' + canCount() + ' фото'")
 	// /ko
 
