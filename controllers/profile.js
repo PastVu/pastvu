@@ -578,8 +578,7 @@ function saveUserRules (iAm, data, cb) {
 			if (err || !user) {
 				return cb({message: err && err.message || msg.nouser, error: true});
 			}
-			var returnAdditionalData = {},
-				rules = data.rules;
+			var rules = data.rules;
 
 			if (!user.rules) {
 				user.rules = {};
@@ -587,7 +586,7 @@ function saveUserRules (iAm, data, cb) {
 
 			if (rules.photoNewLimit !== undefined) {
 				if (_.isNumber(rules.photoNewLimit)) {
-					user.rules.photoNewLimit = rules.photoNewLimit;
+					user.rules.photoNewLimit = Math.min(Math.max(0, rules.photoNewLimit), photoController.core.maxNewPhotosLimit);
 				} else {
 					delete user.rules.photoNewLimit;
 				}

@@ -124,6 +124,229 @@ var auth = require('./auth.js'),
 		}
 	};
 
+var core = {
+	maxNewPhotosLimit: 1e4,
+	getNewPhotosLimit: (function () {
+		return function (user) {
+			var canCreate = 0;
+
+			if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
+				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - user.pfcount);
+			} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
+				canCreate = core.maxNewPhotosLimit; //Серебряный и золотой меценаты имеют максимально возможный лимит
+			} else if (user.ranks && ~user.ranks.indexOf('mec')) {
+				canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
+			} else if (user.pcount < 25) {
+				canCreate = Math.max(0, 3 - user.pfcount);
+			} else if (user.pcount < 50) {
+				canCreate = Math.max(0, 5 - user.pfcount);
+			} else if (user.pcount < 200) {
+				canCreate = Math.max(0, 10 - user.pfcount);
+			} else if (user.pcount < 1000) {
+				canCreate = Math.max(0, 50 - user.pfcount);
+			} else if (user.pcount >= 1000) {
+				canCreate = Math.max(0, 100 - user.pfcount);
+			}
+			return canCreate;
+		};
+	}()),
+	givePhoto: function (iAm, data, cb) {
+		var cid = data.cid,
+			defaultNoSelect = {sign: 0},
+			fieldNoSelect = {};
+
+		if (data.noselect !== undefined) {
+			_.assign(fieldNoSelect, data.noselect);
+		}
+		_.defaults(fieldNoSelect, defaultNoSelect);
+		if (fieldNoSelect.frags === undefined) {
+			fieldNoSelect['frags._id'] = 0;
+		}
+
+		//Инкрементируем кол-во просмотров только у публичных фото
+		//TODO: Сделать инкрементацию только у публичных!
+		Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldNoSelect}, function (err, photo) {
+			if (err) {
+				return cb(err);
+			}
+
+			if (!photo || !permissions.canSee(photo, iAm)) {
+				return cb({message: msg.notExists});
+			} else {
+				var can;
+
+				if (data.checkCan) {
+					//Права надо проверять до популяции пользователя
+					can = permissions.getCan(photo, iAm);
+				}
+
+				step(
+					function () {
+						var user = _session.getOnline(null, photo.user),
+							paralellUser = this.parallel(),
+							regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
+
+						if (user) {
+							photo = photo.toObject();
+							photo.user = {
+								login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
+							};
+							paralellUser(null, photo);
+						} else {
+							photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
+								paralellUser(err, photo && photo.toObject());
+							});
+						}
+						//Если у фото нет координаты, берем домашнее положение региона
+						if (!photo.geo) {
+							regionFields.center = 1;
+							regionFields.bbox = 1;
+							regionFields.bboxhome = 1;
+						}
+						regionController.getObjRegionList(photo, regionFields, this.parallel());
+
+						if (iAm) {
+							UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
+						}
+					},
+					function (err, photo, regions, subscr) {
+						if (err) {
+							return cb(err);
+						}
+						var i = 0,
+							frags,
+							frag;
+
+						//Не отдаем фрагменты удаленных комментариев
+						if (photo.frags) {
+							frags = [];
+							for (i = 0; i < photo.frags.length; i++) {
+								frag = photo.frags[i];
+								if (!frag.del) {
+									frags.push(frag);
+								}
+							}
+							photo.frags = frags;
+						}
+
+						if (subscr) {
+							photo.subscr = true;
+						}
+
+						for (i = 0; i <= maxRegionLevel; i++) {
+							delete photo['r' + i];
+						}
+						if (regions.length) {
+							photo.regions = regions;
+						}
+						if (photo.geo) {
+							photo.geo = photo.geo.reverse();
+						}
+
+						if (!iAm || !photo.ccount) {
+							delete photo._id;
+							cb(null, photo, can);
+						} else {
+							commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
+								if (err) {
+									return cb(err);
+								}
+								if (countsHash[photo._id]) {
+									photo.ccount_new = countsHash[photo._id];
+								}
+								delete photo._id;
+								cb(null, photo, can);
+							});
+						}
+					}
+				);
+			}
+		});
+	},
+	getBounds: function (data, cb) {
+		var year = false;
+
+		// Определяем, нужна ли выборка по границам лет
+		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+			year = true;
+		}
+
+		if (data.z < 17) {
+			if (year) {
+				PhotoCluster.getBoundsByYear(data, res);
+			} else {
+				PhotoCluster.getBounds(data, res);
+			}
+		} else {
+			step(
+				function () {
+					var i = data.bounds.length,
+						criteria,
+						yearCriteria;
+
+					if (year) {
+						if (data.year === data.year2) {
+							yearCriteria = data.year;
+						} else {
+							yearCriteria = {$gte: data.year, $lte: data.year2};
+						}
+					}
+
+					while (i--) {
+						criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
+						if (year) {
+							criteria.year = yearCriteria;
+						}
+						PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
+					}
+				},
+				function cursors(err) {
+					if (err) {
+						return cb(err);
+					}
+					var i = arguments.length;
+					while (i > 1) {
+						arguments[--i].toArray(this.parallel());
+					}
+				},
+				function (err, photos) {
+					if (err) {
+						return cb(err);
+					}
+					var i = arguments.length;
+
+					while (i > 2) {
+						photos.push.apply(photos, arguments[--i]);
+					}
+					res(err, photos);
+				}
+			);
+		}
+
+		function res(err, photos, clusters) {
+			if (err) {
+				return cb(err);
+			}
+
+			// Реверсируем geo
+			for (var i = photos.length; i--;) {
+				photos[i].geo.reverse();
+			}
+			cb(null, photos, clusters);
+		}
+	},
+
+	giveNearestPhotos: function (data, cb) {
+		var query = {geo: {$near: data.geo, $maxDistance: 2000}, s: 5};
+
+		if (typeof data.except === 'number') {
+			query.cid = {$ne: data.except};
+		}
+
+		Photo.find(query, compactFields, {lean: true, limit: Math.min(data.limit, 20)}, cb);
+	}
+};
+
 function giveNewPhotosLimit(iAm, data, cb) {
 	if (!iAm || iAm.login !== data.login && iAm.role < 10) {
 		return cb({message: msg.deny, error: true});
@@ -156,7 +379,7 @@ function giveNewPhotosLimit(iAm, data, cb) {
  * @param data Объект или массив фотографий
  * @param cb Коллбэк
  */
-var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
+//var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
 function createPhotos(socket, data, cb) {
 	var user = socket.handshake.session.user;
 	if (!user) {
@@ -553,231 +776,6 @@ function activateDeactivate(socket, data, cb) {
 		});
 	});
 }
-
-
-var core = {
-	getNewPhotosLimit: (function () {
-		var maxCanCreate = 1e4;
-
-		return function (user) {
-			var canCreate = 0;
-
-			if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, maxCanCreate) - user.pfcount);
-			} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
-				canCreate = maxCanCreate; //Серебряный и золотой меценаты имеют максимально возможный лимит
-			} else if (user.ranks && ~user.ranks.indexOf('mec')) {
-				canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
-			} else if (user.pcount < 25) {
-				canCreate = Math.max(0, 3 - user.pfcount);
-			} else if (user.pcount < 50) {
-				canCreate = Math.max(0, 5 - user.pfcount);
-			} else if (user.pcount < 200) {
-				canCreate = Math.max(0, 10 - user.pfcount);
-			} else if (user.pcount < 1000) {
-				canCreate = Math.max(0, 50 - user.pfcount);
-			} else if (user.pcount >= 1000) {
-				canCreate = Math.max(0, 100 - user.pfcount);
-			}
-			return canCreate;
-		};
-	}()),
-	givePhoto: function (iAm, data, cb) {
-		var cid = data.cid,
-			defaultNoSelect = {sign: 0},
-			fieldNoSelect = {};
-
-		if (data.noselect !== undefined) {
-			_.assign(fieldNoSelect, data.noselect);
-		}
-		_.defaults(fieldNoSelect, defaultNoSelect);
-		if (fieldNoSelect.frags === undefined) {
-			fieldNoSelect['frags._id'] = 0;
-		}
-
-		//Инкрементируем кол-во просмотров только у публичных фото
-		//TODO: Сделать инкрементацию только у публичных!
-		Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldNoSelect}, function (err, photo) {
-			if (err) {
-				return cb(err);
-			}
-
-			if (!photo || !permissions.canSee(photo, iAm)) {
-				return cb({message: msg.notExists});
-			} else {
-				var can;
-
-				if (data.checkCan) {
-					//Права надо проверять до популяции пользователя
-					can = permissions.getCan(photo, iAm);
-				}
-
-				step(
-					function () {
-						var user = _session.getOnline(null, photo.user),
-							paralellUser = this.parallel(),
-							regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
-
-						if (user) {
-							photo = photo.toObject();
-							photo.user = {
-								login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
-							};
-							paralellUser(null, photo);
-						} else {
-							photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
-								paralellUser(err, photo && photo.toObject());
-							});
-						}
-						//Если у фото нет координаты, берем домашнее положение региона
-						if (!photo.geo) {
-							regionFields.center = 1;
-							regionFields.bbox = 1;
-							regionFields.bboxhome = 1;
-						}
-						regionController.getObjRegionList(photo, regionFields, this.parallel());
-
-						if (iAm) {
-							UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
-						}
-					},
-					function (err, photo, regions, subscr) {
-						if (err) {
-							return cb(err);
-						}
-						var i = 0,
-							frags,
-							frag;
-
-						//Не отдаем фрагменты удаленных комментариев
-						if (photo.frags) {
-							frags = [];
-							for (i = 0; i < photo.frags.length; i++) {
-								frag = photo.frags[i];
-								if (!frag.del) {
-									frags.push(frag);
-								}
-							}
-							photo.frags = frags;
-						}
-
-						if (subscr) {
-							photo.subscr = true;
-						}
-
-						for (i = 0; i <= maxRegionLevel; i++) {
-							delete photo['r' + i];
-						}
-						if (regions.length) {
-							photo.regions = regions;
-						}
-						if (photo.geo) {
-							photo.geo = photo.geo.reverse();
-						}
-
-						if (!iAm || !photo.ccount) {
-							delete photo._id;
-							cb(null, photo, can);
-						} else {
-							commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
-								if (err) {
-									return cb(err);
-								}
-								if (countsHash[photo._id]) {
-									photo.ccount_new = countsHash[photo._id];
-								}
-								delete photo._id;
-								cb(null, photo, can);
-							});
-						}
-					}
-				);
-			}
-		});
-	},
-	getBounds: function (data, cb) {
-		var year = false;
-
-		// Определяем, нужна ли выборка по границам лет
-		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
-			year = true;
-		}
-
-		if (data.z < 17) {
-			if (year) {
-				PhotoCluster.getBoundsByYear(data, res);
-			} else {
-				PhotoCluster.getBounds(data, res);
-			}
-		} else {
-			step(
-				function () {
-					var i = data.bounds.length,
-						criteria,
-						yearCriteria;
-
-					if (year) {
-						if (data.year === data.year2) {
-							yearCriteria = data.year;
-						} else {
-							yearCriteria = {$gte: data.year, $lte: data.year2};
-						}
-					}
-
-					while (i--) {
-						criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
-						if (year) {
-							criteria.year = yearCriteria;
-						}
-						PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
-					}
-				},
-				function cursors(err) {
-					if (err) {
-						return cb(err);
-					}
-					var i = arguments.length;
-					while (i > 1) {
-						arguments[--i].toArray(this.parallel());
-					}
-				},
-				function (err, photos) {
-					if (err) {
-						return cb(err);
-					}
-					var i = arguments.length;
-
-					while (i > 2) {
-						photos.push.apply(photos, arguments[--i]);
-					}
-					res(err, photos);
-				}
-			);
-		}
-
-		function res(err, photos, clusters) {
-			if (err) {
-				return cb(err);
-			}
-
-			// Реверсируем geo
-			for (var i = photos.length; i--;) {
-				photos[i].geo.reverse();
-			}
-			cb(null, photos, clusters);
-		}
-	},
-
-	giveNearestPhotos: function (data, cb) {
-		var query = {geo: {$near: data.geo, $maxDistance: 2000}, s: 5};
-
-		if (typeof data.except === 'number') {
-			query.cid = {$ne: data.except};
-		}
-
-		Photo.find(query, compactFields, {lean: true, limit: Math.min(data.limit, 20)}, cb);
-	}
-};
 
 //Отдаем фотографию для её страницы
 function givePhoto(socket, data, cb) {

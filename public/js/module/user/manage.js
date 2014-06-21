@@ -93,7 +93,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			$.when(that.getAllRanks(), that.getRules()).then(function () {
 				that.subscriptions.ranks = that.u.ranks.subscribe(_.debounce(that.ranksSelectedHandler, 1e3), that);
-				that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 800), that);
+				that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 1e3), that);
 
 				ko.applyBindings(globalVM, that.$dom[0]);
 				that.show();
