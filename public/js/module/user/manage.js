@@ -93,7 +93,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			$.when(that.getAllRanks(), that.getRules()).then(function () {
 				that.subscriptions.ranks = that.u.ranks.subscribe(_.debounce(that.ranksSelectedHandler, 1e3), that);
-				that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 1e3), that);
+				that.subscriptions.photoLimit = that.photoNewLimit.subscribe(_.debounce(that.photoLimitHandler, 800), that);
 
 				ko.applyBindings(globalVM, that.$dom[0]);
 				that.show();
@@ -241,7 +241,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			//Так, как сохранение ранков сделает emit во все сокеты, но этот хэнждлер опять сработает,
 			//т.к. будет новый объект массива с теми же значениями. Поэтому надо проверять на совпадение значений
 			if (!_.isEqual(val, this.u_origin.ranks)) {
-				this.saveUserRanks();
+				this.saveUserRanks(function () {
+					//После обновлений званий надо обновить некоторые правила, так как они могут зависить от звания (например, лимит неподтвержденных)
+					this.getRules();
+				}, this);
 			}
 		},
 		saveUserRanks: function (cb, ctx) {

@@ -133,7 +133,7 @@ var core = {
 			if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
 				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - user.pfcount);
 			} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
-				canCreate = core.maxNewPhotosLimit; //Серебряный и золотой меценаты имеют максимально возможный лимит
+				canCreate = core.maxNewPhotosLimit - user.pfcount; //Серебряный и золотой меценаты имеют максимально возможный лимит
 			} else if (user.ranks && ~user.ranks.indexOf('mec')) {
 				canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
 			} else if (user.pcount < 25) {
