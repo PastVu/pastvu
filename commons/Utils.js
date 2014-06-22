@@ -3,7 +3,73 @@ var fs = require('fs'),
 	Utils = new Object(null),
 	_ = require('lodash'),
 	_s = require('underscore.string'),
+	useragent = require('useragent'),
 	DMP = require('./diff_match_patch.js');
+
+//Проверяет user-agent на совпадение с передаными разрешенными версиями
+//Если такого браузера нет в списке проверок, возвращается true
+Utils.checkAcceptedUserAgent = (function () {
+	var browserAcceptFromVerionDefault = {'IE': '>=9.0.0'};
+
+	return function (browserAcceptFromVerion) {
+		var semver = require('semver'),
+			cache = require('lru-cache')({max: 2000}); //Кэш для строк проверенных юзер-агентов, чтобы парсить уникальный юзер-агент только раз
+
+		if (!browserAcceptFromVerion) {
+			browserAcceptFromVerion = browserAcceptFromVerionDefault;
+		}
+
+		//If you are paranoid and always want your RegExp library to be up to date to match with agent,
+		//this will async load the database from the https://raw.github.com/tobie/ua-parser/master/regexes.yaml
+		//and compile it to a proper JavaScript supported format.
+		//If it fails to compile or load it from the remote location it will just fall back silently to the shipped version.
+		useragent(true);
+
+		return function (userAgent) {
+			var result, agent, acceptVersion;
+
+			if (!userAgent) {
+				return true;
+			}
+
+			result = cache.peek(userAgent);
+			if (result === undefined) {
+				agent = useragent.parse(userAgent);
+				acceptVersion = browserAcceptFromVerion[agent.family];
+
+				if (acceptVersion === undefined) {
+					return true;
+				}
+
+				result = semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion);
+				cache.set(userAgent, result);
+			}
+			return result;
+		};
+	};
+}());
+
+//Возвращает распарсенный агент
+//Агенты некоторый соц.сетей:
+//G+ 'Mozilla/5.0 (Windows NT 6.1; rv:6.0) Gecko/20110814 Firefox/6.0 Google (+)'
+//FB 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+//VK 'Mozilla/5.0 (compatible; vkShare; +http://vk.com/dev/Share)'
+Utils.getMyAgentParsed = (function () {
+	var cache = require('lru-cache')({max: 500});
+
+	return function (userAgent) {
+		if (!userAgent) {
+			return {};
+		}
+
+		var result = cache.peek(userAgent);
+		if (result === undefined) {
+			result = useragent.parse(userAgent);
+			cache.set(userAgent, result);
+		}
+		return result;
+	};
+}());
 
 /**
  * Проверяет на соответствие объекта типу (вместо typeof)
@@ -270,9 +336,10 @@ Utils.calcGeoJSONPolygonsNum = function (geometry) {
 		result = polyNum(geometry.coordinates);
 	}
 
-	function polyNum (polygons) {
+	function polyNum(polygons) {
 		return {exterior: 1, interior: polygons.length - 1};
 	}
+
 	return result;
 };
 
@@ -344,6 +411,7 @@ Utils.math = (function () {
 	'use strict';
 
 	var defDivider = 1e6;
+
 	/**
 	 * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
 	 * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
@@ -541,6 +609,7 @@ Utils.geo = (function () {
 	function check(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[0] > -180 && geo[0] < 180 && geo[1] > -90 && geo[1] < 90;
 	}
+
 	//Проверка на валидность geo [lat, lng]
 	function checkLatLng(geo) {
 		return Array.isArray(geo) && geo.length === 2 && (geo[0] || geo[1]) && geo[1] > -180 && geo[1] < 180 && geo[0] > -90 && geo[0] < 90;
@@ -550,10 +619,12 @@ Utils.geo = (function () {
 	function checkbbox(bbox) {
 		return Array.isArray(bbox) && bbox.length === 4 && check([bbox[0], bbox[1]]) && check([bbox[2], bbox[3]]) && bbox[1] < bbox[3];
 	}
+
 	//Проверка на валидность bbox [bottomlat, leftlng, toplat, rightlng]
 	function checkbboxLatLng(bbox) {
 		return Array.isArray(bbox) && bbox.length === 4 && checkLatLng([bbox[0], bbox[1]]) && checkLatLng([bbox[2], bbox[3]]) && bbox[0] < bbox[2];
 	}
+
 	//Переставляет местами lat и lng в bbox
 	function bboxReverse(bbox) {
 		return [bbox[1], bbox[0], bbox[3], bbox[2]];
