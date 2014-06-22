@@ -10,31 +10,26 @@ define(['module'], function (module) {
 			}
 
 			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
-				var connectionType = '',
-					s = io.connect(location.host, {
-						'reconnection delay': 1000, //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
-						'reconnection limit': 15000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
-						'max reconnection attempts': 20 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
-					});
+				var socket = io(location.host/*, {
+						//'reconnection delay': 1000, //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
+						//'reconnection limit': 15000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
+						//'max reconnection attempts': 20 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
+					}*/);
 
-				s.on('error', function (reason){
+				socket.on('error', function (reason){
 					console.log('Unable to connect socket: ', reason);
 				});
-				s.on('connect', function () {
-					console.log('Connected with ' + connectionType);
 
-					s.on('updateCookie', updateCookie);
+				socket.on('connect', function(){
+					console.log('Socket connected with');
+					socket.on('updateCookie', updateCookie);
 				});
 
-				s.on('connecting', function (type) {
-					connectionType = type;
-				});
-
-				s.on('disconnect', function () {
+				socket.on('disconnect', function () {
 					console.log('Disconnected');
 				});
 
-				s.once('connectData', receiveConnectDataFirst);
+				socket.once('connectData', receiveConnectDataFirst);
 
 				function receiveConnectDataFirst(data) {
 					if (!data || !Utils.isType('object', data.p)) {
@@ -55,9 +50,9 @@ define(['module'], function (module) {
 						updateCookie(data.cook);
 					}
 
-					s.on('connectData', receiveConnectDataFurther);
+					socket.on('connectData', receiveConnectDataFurther);
 
-					onLoad(s);
+					onLoad(socket);
 				}
 
 				//Обработчик получения данных после повторных коннектов

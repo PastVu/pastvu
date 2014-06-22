@@ -65,10 +65,11 @@ function addUserSession(session) {
 
 
 var uaParser = new UAParser();
-//Обработчик установки соединения сокетом 'authorization'
-function authSocket(handshake, callback) {
+//Первый обработчик установки соединения сокетом для авторизации клиента
+function authSocket(socket, next) {
+	var handshake = socket.handshake;
 	if (!handshake.headers || !handshake.headers['user-agent']) {
-		return callback(msg.browserNoHeaders, false); //Если нет хедера или юзер-агента - отказываем
+		return next(msg.browserNoHeaders); //Если нет хедера или юзер-агента - отказываем
 	}
 	//console.log(handshake);
 
@@ -78,7 +79,7 @@ function authSocket(handshake, callback) {
 		existsSid;
 
 	if (!uaParsed.browser.name || browserSuportFrom[uaParsed.browser.name] !== undefined && (!browserVersion || browserVersion < browserSuportFrom[uaParsed.browser.name])) {
-		return callback(msg.browserNotSupport, false); //Если браузер старой версии - отказываем
+		return next(msg.browserNotSupport); //Если браузер старой версии - отказываем
 	}
 
 	cookieObj = cookie.parse(handshake.headers.cookie || '');
@@ -115,7 +116,7 @@ function authSocket(handshake, callback) {
 							if (addUserSession(session)) {
 								popUserRegions(session.user, function (err) {
 									if (err) {
-										return callback('Error: ' + err, false);
+										return next('Error: ' + err);
 									}
 									callWaitings();
 								});
@@ -142,7 +143,7 @@ function authSocket(handshake, callback) {
 
 	function sessionProcess(err, session, cb) {
 		if (err) {
-			return callback('Error: ' + err, false);
+			return next('Error: ' + err);
 		}
 		var ip = handshake.headers['x-real-ip'] || handshake.headers['X-Real-IP'] || (handshake.address && handshake.address.address),
 			device = ((uaParsed.device.type || '') + ' ' + (uaParsed.device.vendor || '') + ' ' + (uaParsed.device.model || '')).trim(),
@@ -170,13 +171,12 @@ function authSocket(handshake, callback) {
 
 	function finishAuthConnection(session) {
 		handshake.session = session;
-		return callback(null, true);
+		return next();
 	}
 }
 
-//Первый обработчик on.connection
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
-function firstConnection(socket) {
+function firstConnection(socket, next) {
 	var session = socket.handshake.session,
 		userPlain;
 	//console.log('firstConnection');
@@ -246,6 +246,7 @@ function firstConnection(socket) {
 			}
 		}
 	});
+	next();
 }
 
 //Каждую минуту уничтожает ожидающие сессии, если они не перешли в статус активных в течении 5 минут
@@ -681,6 +682,4 @@ module.exports.loadController = function (a, db, io) {
 	User = db.model('User');
 
 	checkWaitingSess();
-
-	//io.sockets.on('connection', function (socket) {});
 };

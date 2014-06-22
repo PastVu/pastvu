@@ -215,24 +215,17 @@ async.waterfall([
 
 			callback(null);
 		},
-
 		function (callback) {
 			httpServer = http.createServer(app);
-			io = require('socket.io').listen(httpServer, http_hostname);
+			io = require('socket.io')(httpServer, {
+				transports: ['websocket', 'polling'],
+				path: '/socket.io',
+				serveClient: false
+			});
 
-			callback(null);
-		},
-		function ioConfigure(callback) {
 			var _session = require('./controllers/_session.js');
-
-			io.set('log level', land === 'dev' ? 1 : 0);
-			io.set('browser client', false);
-			io.set('match origin protocol', true);
-			io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
-
-			io.set('authorization', _session.authSocket);
-			io.sockets.on('connection', _session.firstConnection);
-
+			io.use(_session.authSocket);
+			io.use(_session.firstConnection);
 			_session.loadController(app, db, io);
 			callback(null);
 		},
@@ -304,7 +297,6 @@ async.waterfall([
 			 * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
 			 */
 			httpServer.setMaxListeners(0);
-			io.setMaxListeners(0);
 			process.setMaxListeners(0);
 			/**
 			 * Handling uncaught exceptions
