@@ -2,6 +2,10 @@
 define(['module'], function (module) {
 	'use strict';
 
+	function getConsoleTime() {
+		return new Date().toLocaleTimeString();
+	}
+
 	return {
 		load: function (name, req, onLoad, config) {
 			if (config.isBuild) {
@@ -10,30 +14,33 @@ define(['module'], function (module) {
 			}
 
 			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
-				var socket = io(location.host/*, {
-						//'reconnection delay': 1000, //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
-						//'reconnection limit': 15000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
-						//'max reconnection attempts': 20 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
-					}*/);
-
-				socket.on('error', function (reason){
-					console.log('Unable to connect socket: ', reason);
+				var socket = io(location.host, {
+					reconnectionDelay: 800,  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
+					reconnectionDelayMax: 10000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
+					reconnectionAttempts: 5 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 				});
 
-				socket.on('connect', function(){
-					console.log('Socket connected with');
+				socket.on('error', function (reason) {
+					console.log(getConsoleTime(), 'Unable to connect socket: ', reason);
+				});
+				socket.on('connect', function () {
+					console.log(getConsoleTime(), 'Connected to server');
 					socket.on('updateCookie', updateCookie);
 				});
-
 				socket.on('disconnect', function () {
-					console.log('Disconnected');
+					console.log(getConsoleTime(), 'Disconnected from server ');
+				});
+				socket.on('reconnecting', function (attempt) {
+					console.log('%s Trying to reconnect to server %d time', getConsoleTime(), attempt);
+				});
+				socket.on('reconnect_failed', function (attempt) {
+					console.log('%s Failed to reconnect for %d attempts. Stopped trying', getConsoleTime(), socket.io.reconnectionAttempts());
 				});
 
 				socket.once('connectData', receiveConnectDataFirst);
-
 				function receiveConnectDataFirst(data) {
 					if (!data || !Utils.isType('object', data.p)) {
-						console.log('First connectData receive error!');
+						console.log(getConsoleTime(), 'First connectData receive error!');
 						return;
 					}
 
@@ -58,7 +65,7 @@ define(['module'], function (module) {
 				//Обработчик получения данных после повторных коннектов
 				function receiveConnectDataFurther(data) {
 					if (!data || !Utils.isType('object', data.p)) {
-						console.log('connectData receive error!');
+						console.log(getConsoleTime(), 'Further connectData receive error!');
 						return;
 					}
 

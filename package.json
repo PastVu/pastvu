@@ -38,7 +38,7 @@
 		"moment": "~2.6.0",
 		"bcrypt": "~0.7.8",
 		"step": "",
-		"socket.io": "~1.0.6",
+		"socket.io": "1.0.6",
 		"nodemailer": "~0.6.5",
 		"ua-parser-js": "~0.6.2",
 		"optimist": "~0.6.1",
