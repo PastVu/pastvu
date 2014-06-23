@@ -17,7 +17,7 @@ define(['module'], function (module) {
 				var socket = io(location.host, {
 					reconnectionDelay: 800,  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
 					reconnectionDelayMax: 10000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
-					reconnectionAttempts: 5 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
+					reconnectionAttempts: 100 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 				});
 
 				socket.on('error', function (reason) {
