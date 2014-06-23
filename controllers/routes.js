@@ -55,13 +55,25 @@ module.exports.loadController = function (app) {
 		res.render('app', {appName: 'Admin'});
 	}
 
+	//Устаревший браузер
 	app.get('/badbrowser', function (req, res) {
 		res.statusCode = 200;
 		res.render('status/badbrowser', {agent: req.browser && req.browser.agent, title: 'Вы используете устаревшую версию браузера'});
 	});
+	//Отключенный javascript
 	app.get('/nojs', function (req, res) {
 		res.statusCode = 200;
 		res.render('status/nojs', {agent: req.browser && req.browser.agent, title: 'Выключен JavaScript'});
+	});
+	//Мой user-agent
+	app.get('/myua', function (req, res) {
+		res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
+		res.statusCode = 200;
+		res.render('status/myua', {
+			agent: req.browser && req.browser.agent,
+			accept: req.browser && req.browser.accept,
+			title: req.browser && req.browser.agent && req.browser.agent.source
+		});
 	});
 
 	//ping-pong для проверки работы сервера
