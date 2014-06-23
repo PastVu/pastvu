@@ -67,13 +67,15 @@ function addUserSession(session) {
 var uaParser = new UAParser();
 //Первый обработчик установки соединения сокетом для авторизации клиента
 function authSocket(socket, next) {
-	var handshake = socket.handshake;
-	if (!handshake.headers || !handshake.headers['user-agent']) {
+	var handshake = socket.handshake,
+		headers = handshake.headers;
+
+	if (!headers || !headers['user-agent']) {
 		return next(msg.browserNoHeaders); //Если нет хедера или юзер-агента - отказываем
 	}
 	//console.log(handshake);
 
-	var uaParsed = uaParser.setUA(handshake.headers['user-agent']).getResult(),
+	var uaParsed = uaParser.setUA(headers['user-agent']).getResult(),
 		browserVersion = Number(uaParsed.browser.major),
 		cookieObj,
 		existsSid;
@@ -82,7 +84,7 @@ function authSocket(socket, next) {
 		return next(msg.browserNotSupport); //Если браузер старой версии - отказываем
 	}
 
-	cookieObj = cookie.parse(handshake.headers.cookie || '');
+	cookieObj = cookie.parse(headers.cookie || '');
 	existsSid = cookieObj['pastvu.sid'];
 
 	if (existsSid === undefined) {
@@ -145,11 +147,11 @@ function authSocket(socket, next) {
 		if (err) {
 			return next('Error: ' + err);
 		}
-		var ip = handshake.headers['x-real-ip'] || handshake.headers['X-Real-IP'] || (handshake.address && handshake.address.address),
+		var ip = headers['x-real-ip'] || (handshake.address && handshake.address.address),
 			device = ((uaParsed.device.type || '') + ' ' + (uaParsed.device.vendor || '') + ' ' + (uaParsed.device.model || '')).trim(),
 			data = {
 				ip: ip,
-				headers: handshake.headers,
+				headers: headers,
 				ua: {
 					b: uaParsed.browser.name,
 					bv: uaParsed.browser.version,

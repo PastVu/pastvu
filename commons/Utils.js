@@ -8,12 +8,12 @@ var fs = require('fs'),
 
 //Проверяет user-agent на совпадение с передаными разрешенными версиями
 //Если такого браузера нет в списке проверок, возвращается true
-Utils.checkAcceptedUserAgent = (function () {
+Utils.checkUserAgent = (function () {
 	var browserAcceptFromVerionDefault = {'IE': '>=9.0.0'};
 
 	return function (browserAcceptFromVerion) {
 		var semver = require('semver'),
-			cache = require('lru-cache')({max: 2000}); //Кэш для строк проверенных юзер-агентов, чтобы парсить уникальный юзер-агент только раз
+			cache = require('lru-cache')({max: 1500}); //Кэш для строк проверенных юзер-агентов, чтобы парсить уникальный юзер-агент только раз
 
 		if (!browserAcceptFromVerion) {
 			browserAcceptFromVerion = browserAcceptFromVerionDefault;
@@ -26,7 +26,7 @@ Utils.checkAcceptedUserAgent = (function () {
 		useragent(true);
 
 		return function (userAgent) {
-			var result, agent, acceptVersion;
+			var agent, acceptVersion, result;
 
 			if (!userAgent) {
 				return true;
@@ -37,11 +37,10 @@ Utils.checkAcceptedUserAgent = (function () {
 				agent = useragent.parse(userAgent);
 				acceptVersion = browserAcceptFromVerion[agent.family];
 
-				if (acceptVersion === undefined) {
-					return true;
-				}
-
-				result = semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion);
+				result = {
+					agent: agent,
+					accept: acceptVersion === undefined ? true: semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion)
+				};
 				cache.set(userAgent, result);
 			}
 			return result;
