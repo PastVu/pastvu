@@ -18,7 +18,7 @@ var _ = require('lodash'),
 			//console.log(browser.agent);
 			if (!browser.accept) {
 				res.statusCode = 200;
-				res.render('status/badbrowser', {agent: browser.agent});
+				res.render('status/badbrowser', {agent: browser.agent, title: 'Вы используете устаревшую версию браузера'});
 			} else {
 				req.browser = browser;
 				next();
@@ -57,11 +57,11 @@ module.exports.loadController = function (app) {
 
 	app.get('/badbrowser', function (req, res) {
 		res.statusCode = 200;
-		res.render('status/badbrowser', {agent: req.browser && req.browser.agent});
+		res.render('status/badbrowser', {agent: req.browser && req.browser.agent, title: 'Вы используете устаревшую версию браузера'});
 	});
 	app.get('/nojs', function (req, res) {
 		res.statusCode = 200;
-		res.render('status/nojs');
+		res.render('status/nojs', {agent: req.browser && req.browser.agent, title: 'Выключен JavaScript'});
 	});
 
 	//ping-pong для проверки работы сервера

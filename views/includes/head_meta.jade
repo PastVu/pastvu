@@ -1,31 +1,33 @@
-head(data-apphash="" + appHash, data-appname="" + appName)
-	meta(http-equiv="content-type", content="text/html; charset=utf-8")
-	meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
-	meta(name="apple-mobile-web-app-capable", content="yes")
-	meta(http-equiv="X-FRAME-OPTIONS", content="DENY")
-	meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
+meta(http-equiv="content-type", content="text/html; charset=utf-8")
+meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
+meta(name="apple-mobile-web-app-capable", content="yes")
+meta(http-equiv="X-FRAME-OPTIONS", content="DENY")
+meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=IE8")
 
-	link(rel="shortcut icon", href="/favicon.ico")
+//-Facebook-style для редиректа клиента с отключённым javascript
+noscript: meta(http-equiv="refresh", content="0; URL=/nojs")
 
-	//-Coast by Opera for ipad
-	link(rel="icon", sizes="228x228", href="/coast-icon.png")
+link(rel="shortcut icon", href="/favicon.ico")
 
-	//-Retina ios7 ipad
-	link(rel="apple-touch-icon", sizes="152x152", href="/apple-touch-icon-152x152.png")
-	//-Retina ios6 ipad
-	link(rel="apple-touch-icon", sizes="144x144", href="/apple-touch-icon-144x144.png")
-	//-Retina ios7 iphone
-	link(rel="apple-touch-icon", sizes="120x120", href="/apple-touch-icon-120x120.png")
-	//-Retina ios6 iphone
-	link(rel="apple-touch-icon", sizes="114x114", href="/apple-touch-icon-114x114.png")
-	//-ios7 ipad
-	link(rel="apple-touch-icon", sizes="76x76", href="/apple-touch-icon-76x76.png")
-	//-ios6 ipad
-	link(rel="apple-touch-icon", sizes="72x72", href="/apple-touch-icon-72x72.png")
-	link(rel="apple-touch-icon", sizes="60x60", href="/apple-touch-icon-60x60.png")
-	link(rel="apple-touch-icon", href="/apple-touch-icon.png")
+//-Coast by Opera for ipad
+link(rel="icon", sizes="228x228", href="/coast-icon.png")
 
-	//-Фоновый цвет на старт-скрине Windows 8
-	meta(name="msapplication-TileColor", content="#214A7A")
-	//-Иконка для старт-скрина Windows 8
-	meta(name="msapplication-TileImage", content="/tileicon.png")
+//-Retina ios7 ipad
+link(rel="apple-touch-icon", sizes="152x152", href="/apple-touch-icon-152x152.png")
+//-Retina ios6 ipad
+link(rel="apple-touch-icon", sizes="144x144", href="/apple-touch-icon-144x144.png")
+//-Retina ios7 iphone
+link(rel="apple-touch-icon", sizes="120x120", href="/apple-touch-icon-120x120.png")
+//-Retina ios6 iphone
+link(rel="apple-touch-icon", sizes="114x114", href="/apple-touch-icon-114x114.png")
+//-ios7 ipad
+link(rel="apple-touch-icon", sizes="76x76", href="/apple-touch-icon-76x76.png")
+//-ios6 ipad
+link(rel="apple-touch-icon", sizes="72x72", href="/apple-touch-icon-72x72.png")
+link(rel="apple-touch-icon", sizes="60x60", href="/apple-touch-icon-60x60.png")
+link(rel="apple-touch-icon", href="/apple-touch-icon.png")
+
+//-Фоновый цвет на старт-скрине Windows 8
+meta(name="msapplication-TileColor", content="#214A7A")
+//-Иконка для старт-скрина Windows 8
+meta(name="msapplication-TileImage", content="/tileicon.png")
