@@ -3,7 +3,6 @@
 var Session,
 	User,
 	Utils = require('../commons/Utils.js'),
-	UAParser = require('ua-parser-js'),
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
@@ -15,16 +14,21 @@ var Session,
 		browserNoHeaders: 'Client came without header or user-agent',
 		browserNotSupport: 'Browser version not supported'
 	},
-
-	browserSuportFrom = {
-		'IE': 9,
-		'Firefox': 10,
-		'Opera': 12,
-		'Chrome': 14,
-		'Android': 3,
-		'Safari': 5,
-		'Mobile Safari': 4 //Пока определяет так и ios и android
+	errtypes = {
+		NO_HEADERS: 'Bad request - no header or user agent',
+		BAD_BROWSER: 'Bad browser, we do not support it',
+		ANOTHER: 'Some error occured'
 	},
+
+	checkUserAgent = Utils.checkUserAgent({
+		'IE': '>=9.0.0',
+		'Firefox': '>=6.0.0', //6-я версия - это G+
+		'Opera': '>=12.10.0',
+		'Chrome': '>=11.0.0', //11 версия - это Android 4 default browser в desktop-режиме
+		'Android': '>=4.0.0',
+		'Safari': '>=5.1.0',
+		'Mobile Safari': '>=5.1.0'
+	}),
 
 	settings = require('./settings.js'),
 	regionController = require('./region.js'),
@@ -63,49 +67,68 @@ function addUserSession(session) {
 	return firstAdding; //Возвращаем флаг. true - впервые добавлен, false - пользователь взялся из существующего хеша
 }
 
-
-var uaParser = new UAParser();
-//Первый обработчик установки соединения сокетом для авторизации клиента
-function authSocket(socket, next) {
+function handleRequest(req, res, next) {
+	authConnection(req.ip, req.headers, function (err, session, browser) {
+		if (err) {
+			if (err.type === errtypes.BAD_BROWSER) {
+				res.statusCode = 200;
+				res.render('status/badbrowser', {agent: err.agent, title: 'Вы используете устаревшую версию браузера'});
+			} else {
+				res.send(400, err.type);
+			}
+			return;
+		}
+		req.browser = browser; //Передаем дальше, на случай дальнейшего использования, например, прямого доступа к /badbrowser или /nojs
+		next();
+	});
+}
+function handleSocket(socket, next) {
 	var handshake = socket.handshake,
-		headers = handshake.headers;
+		headers = handshake.headers,
+		ip = headers['x-real-ip'] || (handshake.address && handshake.address.address);
 
+	authConnection(ip, headers, function (err, session) {
+		if (err) {
+			next(new Error(err.type));
+		}
+		handshake.session = session;
+		next();
+	});
+}
+
+//Обработчик при первом заходе или  установки соединения сокетом для создания сессии и проверки браузера клиента
+function authConnection(ip, headers, finishCb) {
 	if (!headers || !headers['user-agent']) {
-		return next(msg.browserNoHeaders); //Если нет хедера или юзер-агента - отказываем
-	}
-	//console.log(handshake);
-
-	var uaParsed = uaParser.setUA(headers['user-agent']).getResult(),
-		browserVersion = Number(uaParsed.browser.major),
-		cookieObj,
-		existsSid;
-
-	if (!uaParsed.browser.name || browserSuportFrom[uaParsed.browser.name] !== undefined && (!browserVersion || browserVersion < browserSuportFrom[uaParsed.browser.name])) {
-		return next(msg.browserNotSupport); //Если браузер старой версии - отказываем
+		return finishCb({type: errtypes.NO_HEADERS}); //Если нет хедера или юзер-агента - отказываем
 	}
 
-	cookieObj = cookie.parse(headers.cookie || '');
-	existsSid = cookieObj['pastvu.sid'];
+	var browser = checkUserAgent(headers['user-agent']);
+	if (!browser.accept) {
+		return finishCb({type: errtypes.BAD_BROWSER, agent: browser.agent});
+	}
+
+	var cookieObj = cookie.parse(headers.cookie || ''),
+		existsSid = cookieObj['pastvu.sid'];
 
 	if (existsSid === undefined) {
 		//Если ключа нет, переходим к созданию сессии
 		sessionProcess(null, null, function (session) {
 			sessWaitingConnect[session.key] = session;
-			finishAuthConnection(session);
+			authConnectionFinish(session);
 		});
 	} else {
 		if (sess[existsSid] !== undefined || sessWaitingConnect[existsSid] !== undefined) {
 			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid], finishAuthConnection);
+			sessionProcess(null, sess[existsSid] || sessWaitingConnect[existsSid], authConnectionFinish);
 		} else {
 			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
 			if (sessWaitingSelect[existsSid] !== undefined) {
 				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
-				sessWaitingSelect[existsSid].push({cb: finishAuthConnection});
+				sessWaitingSelect[existsSid].push({cb: authConnectionFinish});
 			} else {
 				//Если запроса к базе еще нет, создаем его
 				sessWaitingSelect[existsSid] = [
-					{cb: finishAuthConnection}
+					{cb: authConnectionFinish}
 				];
 
 				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
@@ -118,7 +141,7 @@ function authSocket(socket, next) {
 							if (addUserSession(session)) {
 								popUserRegions(session.user, function (err) {
 									if (err) {
-										return next('Error: ' + err);
+										return finishCb({type: errtypes.ANOTHER});
 									}
 									callWaitings();
 								});
@@ -145,22 +168,24 @@ function authSocket(socket, next) {
 
 	function sessionProcess(err, session, cb) {
 		if (err) {
-			return next('Error: ' + err);
+			return finishCb({type: errtypes.ANOTHER});
 		}
-		var ip = headers['x-real-ip'] || (handshake.address && handshake.address.address),
-			device = ((uaParsed.device.type || '') + ' ' + (uaParsed.device.vendor || '') + ' ' + (uaParsed.device.model || '')).trim(),
-			data = {
+		var data = {
 				ip: ip,
 				headers: headers,
-				ua: {
-					b: uaParsed.browser.name,
-					bv: uaParsed.browser.version,
-					os: ((uaParsed.os.name || '') + ' ' + (uaParsed.os.version || '')).trim()
+				agent: {
+					b: browser.agent.family, //Agent name e.g. 'Chrome'
+					bv: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
 				}
-			};
+			},
+			device = browser.agent.device.toString(), //Device e.g 'Asus A100'
+			os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
 
-		if (device) {
-			data.ua.d = device;
+		if (os) {
+			data.agent.os = os;
+		}
+		if (device && device !== 'Other') {
+			data.agent.d = device;
 		}
 
 		if (!session) {
@@ -171,17 +196,16 @@ function authSocket(socket, next) {
 		cb(session);
 	}
 
-	function finishAuthConnection(session) {
-		handshake.session = session;
-		return next();
+	function authConnectionFinish(session) {
+		finishCb(null, session, browser);
 	}
 }
 
 //Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
-function firstConnection(socket, next) {
+function firstSocketConnection(socket, next) {
 	var session = socket.handshake.session,
 		userPlain;
-	//console.log('firstConnection');
+	//console.log('firstSocketConnection');
 
 	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
 	if (sess[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
@@ -254,7 +278,7 @@ function firstConnection(socket, next) {
 //Каждую минуту уничтожает ожидающие сессии, если они не перешли в статус активных в течении 5 минут
 var checkWaitingSess = (function () {
 	function clearWaitingSess() {
-		var fiveMinutesAgo = new Date(Date.now() - ms('5m')),
+		var expiredFrontier = new Date(Date.now() - ms('1m')),
 			keys = Object.keys(sessWaitingConnect),
 			session,
 			usObj,
@@ -263,7 +287,7 @@ var checkWaitingSess = (function () {
 		for (i = keys.length; i--;) {
 			session = sessWaitingConnect[keys[i]];
 
-			if (session && session.stamp <= fiveMinutesAgo) {
+			if (session && session.stamp <= expiredFrontier) {
 				delete sessWaitingConnect[session.key];
 
 				if (session.user) {
@@ -657,8 +681,9 @@ function userToPublicObject(doc, ret, options) {
 	delete ret.active;
 }
 
-module.exports.authSocket = authSocket;
-module.exports.firstConnection = firstConnection;
+module.exports.handleRequest = handleRequest;
+module.exports.handleSocket = handleSocket;
+module.exports.firstSocketConnection = firstSocketConnection;
 module.exports.regen = regen;
 module.exports.destroy = destroy;
 module.exports.authUser = authUser;

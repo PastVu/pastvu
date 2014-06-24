@@ -2,34 +2,12 @@
 
 var _ = require('lodash'),
 	Utils = require('../commons/Utils.js'),
-	checkBrowser = (function () {
-		var checkUserAgent = Utils.checkUserAgent({
-			'IE': '>=9.0.0',
-			'Firefox': '>=6.0.0', //6-я версия - это G+
-			'Opera': '>=12.10.0',
-			'Chrome': '>=11.0.0', //11 версия - это Android 4 default browser в desktop-режиме
-			'Android': '>=4.0.0',
-			'Safari': '>=5.1.0',
-			'Mobile Safari': '>=5.1.0'
-		});
-
-		return function (req, res, next) {
-			var browser = checkUserAgent(req.headers['user-agent']);
-			//console.log(browser.agent);
-			if (!browser.accept) {
-				res.statusCode = 200;
-				res.render('status/badbrowser', {agent: browser.agent, title: 'Вы используете устаревшую версию браузера'});
-			} else {
-				req.browser = browser;
-				next();
-			}
-		};
-	}());
+	_session = require('./_session.js');
 
 module.exports.loadController = function (app) {
 
-	//Проверка браузера при обращении ко всем путям
-	app.get('*', checkBrowser);
+	//Создание сессии и проверка браузера при обращении ко всем путям
+	app.get('*', _session.handleRequest);
 
 	[
 		'/', //Корень

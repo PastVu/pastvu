@@ -5,7 +5,7 @@ var mongoose = require('mongoose'),
 
 	SessionSchema = new mongoose.Schema({
 			key: {type: String, index: {unique: true}},
-			stamp: {type: Date, 'default': Date.now, index: {expires: '14d'}},
+			stamp: {type: Date, 'default': Date.now, index: {expires: '30d'}},
 			user: {type: Schema.Types.ObjectId, ref: 'User', index: true},
 			data: {type: Schema.Types.Mixed, 'default': {}},
 
