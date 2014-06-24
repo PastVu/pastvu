@@ -151,7 +151,11 @@ async.waterfall([
 		function (callback) {
 			var pub = '/public/',
 				ourMiddlewares,
-				lessMiddleware;
+				lessMiddleware,
+				static404 = function (req, res) {
+					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
+					res.send(404);
+				};
 
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
@@ -207,10 +211,25 @@ async.waterfall([
 				}
 				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
 				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
+
+				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
+				app.get('/img/*', static404);
+				app.get('/js/*', static404);
+				app.get('/style/*', static404);
 			}
 			if (serveStore) {
 				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d')}));
 				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d')}));
+
+				//"Законцовываем" пути к хранилищу, т.е. то что дошло сюда - 404
+				app.get('/_a/d/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatar.png');
+				});
+				app.get('/_a/h/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatarth.png');
+				});
+				app.get('/_a/*', static404);
+				app.get('/_p/*', static404);
 			}
 
 			callback(null);
@@ -230,15 +249,9 @@ async.waterfall([
 			callback(null);
 		},
 		function loadingControllers(callback) {
-			var regionController,
-				static404 = function (req, res) {
-					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-					res.send(404);
-				};
-
 			require('./controllers/settings.js').loadController(app, db, io);
 			require('./controllers/actionlog.js').loadController(app, db, io);
-			regionController = require('./controllers/region.js').loadController(app, db, io);
+			var regionController = require('./controllers/region.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
 			require('./controllers/index.js').loadController(app, db, io);
@@ -260,22 +273,6 @@ async.waterfall([
 				app.use('/nodelog', express.static(logPath, {maxAge: '1s'}));
 			}
 
-			//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
-			if (servePublic) {
-				app.get('/img/*', static404);
-				app.get('/js/*', static404);
-				app.get('/style/*', static404);
-			}
-			if (serveStore) {
-				app.get('/_a/d/*', function (req, res) {
-					res.redirect(302, '/img/caps/avatar.png');
-				});
-				app.get('/_a/h/*', function (req, res) {
-					res.redirect(302, '/img/caps/avatarth.png');
-				});
-				app.get('/_a/*', static404);
-				app.get('/_p/*', static404);
-			}
 			require('./controllers/errors.js').registerErrorHandling(app);
 			require('./controllers/systemjs.js').loadController(app, db);
 			//require('./basepatch/v1.1.1.js').loadController(app, db);
