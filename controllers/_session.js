@@ -7,8 +7,6 @@ var Session,
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
 	app,
-	cookieMaxAgeRegisteredRemember = ms('14d') / 1000,
-	cookieMaxAgeAnonimouse = ms('14d') / 1000,
 
 	msg = {
 		browserNoHeaders: 'Client came without header or user-agent',
@@ -78,7 +76,12 @@ function handleRequest(req, res, next) {
 			}
 			return;
 		}
-		req.browser = browser; //Передаем дальше, на случай дальнейшего использования, например, прямого доступа к /badbrowser или /nojs
+		//Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
+		var cookieObj = createSidCookieObj(session);
+		res.cookie(cookieObj.key, cookieObj.value, {maxAge: cookieObj['max-age'] * 1000, path: cookieObj.path, domain: cookieObj.domain});
+
+		//Передаем browser дальше, на случай дальнейшего использования, например, прямого доступа к /badbrowser или /nojs
+		req.browser = browser;
 		next();
 	});
 }
@@ -226,7 +229,7 @@ function firstSocketConnection(socket, next) {
 	//Сразу поcле установки соединения отправляем клиенту параметры, куки и себя
 	socket.emit('connectData', {
 		p: settings.getClientParams(),
-		cook: emitCookie(socket, true),
+		cook: createSidCookieObj(session),
 		u: userPlain
 	});
 
@@ -582,7 +585,7 @@ function authUser(socket, user, data, cb) {
 					}
 				}
 
-				emitCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
+				emitSidCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
 				cb(err, session);
 			}
 		});
@@ -634,22 +637,28 @@ function saveEmitUser(login, _id, excludeSocket, cb) {
 	}
 }
 
-function emitCookie(socket, dontEmit) {
-	var newCoockie = {name: 'pastvu.sid', key: socket.handshake.session.key, path: '/'};
+var createSidCookieObj = (function () {
+	var key = 'pastvu.sid',
+		domain = global.appVar.serverAddr.domain,
+		cookieMaxAgeRegisteredRemember = ms('30d') / 1000,
+		cookieMaxAgeAnonimouse = ms('14d') / 1000;
 
-	if (socket.handshake.session.user) {
-		if (socket.handshake.session.data && socket.handshake.session.data.remember) {
-			newCoockie['max-age'] = cookieMaxAgeRegisteredRemember;
+	return function (session) {
+		var newCoockie = {key: key, value: session.key, path: '/', domain: domain};
+
+		if (session.user) {
+			if (session.data && session.data.remember) {
+				newCoockie['max-age'] = cookieMaxAgeRegisteredRemember;
+			}
+		} else {
+			newCoockie['max-age'] = cookieMaxAgeAnonimouse;
 		}
-	} else {
-		newCoockie['max-age'] = cookieMaxAgeAnonimouse;
-	}
 
-	if (!dontEmit) {
-		socket.emit('updateCookie', newCoockie);
-	}
-
-	return newCoockie;
+		return newCoockie;
+	};
+}());
+function emitSidCookie(socket) {
+	socket.emit('updateCookie', createSidCookieObj(socket.handshake.session));
 }
 
 //Проверяем если пользователь онлайн
@@ -689,7 +698,6 @@ module.exports.destroy = destroy;
 module.exports.authUser = authUser;
 module.exports.emitUser = emitUser;
 module.exports.saveEmitUser = saveEmitUser;
-module.exports.emitCookie = emitCookie;
 module.exports.isOnline = isOnline;
 module.exports.getOnline = getOnline;
 

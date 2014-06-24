@@ -94,7 +94,7 @@ define(['module'], function (module) {
 				}
 
 				function updateCookie(obj) {
-					Utils.cookie.setItem(obj.name, obj.key, obj['max-age'], '/', null);
+					Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
 				}
 			});
 		}
