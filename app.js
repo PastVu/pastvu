@@ -209,8 +209,8 @@ async.waterfall([
 					lessMiddleware = require('less-middleware');
 					app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {force: true, once: false, debug: false, compiler: {compress: false, yuicompress: false, sourceMap: true, sourceMapRootpath: '/', sourceMapBasepath: path.join(__dirname, pub)}, parser: {dumpLineNumbers: 0, optimization: 0}}));
 				}
-				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
-				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
+				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('2d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d'), etag: false}));
 
 				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
 				app.get('/img/*', static404);
@@ -218,8 +218,8 @@ async.waterfall([
 				app.get('/style/*', static404);
 			}
 			if (serveStore) {
-				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d')}));
-				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d')}));
+				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d'), etag: false}));
+				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d'), etag: false}));
 
 				//"Законцовываем" пути к хранилищу, т.е. то что дошло сюда - 404
 				app.get('/_a/d/*', function (req, res) {
