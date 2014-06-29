@@ -132,12 +132,12 @@ async.waterfall([
 		function loadingModels(callback) {
 			require(__dirname + '/models/ApiLog.js').makeModel(db);
 			require(__dirname + '/models/ActionLog.js').makeModel(db);
-			require(__dirname + '/models/Sessions.js').makeModel(db);
 			require(__dirname + '/models/Counter.js').makeModel(db);
 			require(__dirname + '/models/Settings.js').makeModel(db);
 			require(__dirname + '/models/User.js').makeModel(db);
 			require(__dirname + '/models/UserSettings.js').makeModel(db);
 			require(__dirname + '/models/UserStates.js').makeModel(db);
+			require(__dirname + '/models/Sessions.js').makeModel(db);
 			require(__dirname + '/models/Photo.js').makeModel(db);
 			require(__dirname + '/models/Comment.js').makeModel(db);
 			require(__dirname + '/models/Cluster.js').makeModel(db);
@@ -213,9 +213,7 @@ async.waterfall([
 				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d'), etag: false}));
 
 				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
-				app.get('/img/*', static404);
-				app.get('/js/*', static404);
-				app.get('/style/*', static404);
+				app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);
 			}
 			if (serveStore) {
 				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d'), etag: false}));
@@ -228,8 +226,7 @@ async.waterfall([
 				app.get('/_a/h/*', function (req, res) {
 					res.redirect(302, '/img/caps/avatarth.png');
 				});
-				app.get('/_a/*', static404);
-				app.get('/_p/*', static404);
+				app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
 			}
 
 			callback(null);
@@ -270,7 +267,7 @@ async.waterfall([
 			if (serveLog) {
 				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'));
 				app.use('/nodelog', require('serve-index')(logPath, {icons: true}));
-				app.use('/nodelog', express.static(logPath, {maxAge: '1s'}));
+				app.use('/nodelog', express.static(logPath, {maxAge: '1s', etag: false}));
 			}
 
 			require('./controllers/errors.js').registerErrorHandling(app);

@@ -28,15 +28,6 @@ var fs = require('fs'),
 	},
 	subscrController = require('./subscr.js');
 
-function userToPublicObject(doc, ret, options) {
-	delete ret._id;
-	delete ret.cid;
-	delete ret.pass;
-	delete ret.activatedate;
-	delete ret.loginAttempts;
-	delete ret.active;
-}
-
 //Отдаем пользователя
 function giveUser(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
@@ -53,7 +44,7 @@ function giveUser(socket, data, cb) {
 			var user = _session.getOnline(login);
 			if (user) {
 				itsOnline = true;
-				this(null, user.toObject({transform: _session.userToPublicObject}));
+				this(null, _session.getPlainUser(user));
 			} else {
 				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0}, {lean: true})
 					.populate([

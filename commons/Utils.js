@@ -39,7 +39,7 @@ Utils.checkUserAgent = (function () {
 
 				result = {
 					agent: agent,
-					accept: acceptVersion === undefined ? true: semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion)
+					accept: acceptVersion === undefined || semver.satisfies((Number(agent.major) || 0) + '.' + (Number(agent.minor) || 0) + '.' + (Number(agent.patch) || 0), acceptVersion)
 				};
 				cache.set(userAgent, result);
 			}

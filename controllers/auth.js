@@ -56,10 +56,12 @@ function login(socket, data, cb) {
 		//Если есть пользователь, значит проверка успешна
 		if (user) {
 			//Передаем пользователя в сессию
-			_session.authUser(socket, user, data, function (err, session) {
-				//Важно взять юзера из сессии, так как, во-первых, в сессии он будет спопулирован при присвоении заново,
-				//а, во-вторых, его объект мог взяться из существующего в хеше, если пользователь уже залогинен в другом браузере
-				cb(session, {message: "Success login", youAre: session.user.toObject({transform: _session.userToPublicObject})});
+			_session.authUser(socket, user, data, function (err, session, userPlain) {
+				if (err) {
+					cb(session, {message: err.message, error: true});
+				} else {
+					cb(session, {message: "Success login", youAre: userPlain});
+				}
 			});
 		} else {
 			switch (reason) {

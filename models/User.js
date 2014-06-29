@@ -15,53 +15,64 @@ var sexes = [
 ];
 
 var UserScheme = new mongoose.Schema({
-	cid: {type: Number, required: true, index: { unique: true }},
-	login: {type: String, required: true, index: { unique: true }},
-	email: {type: String, required: true, index: { unique: true }, lowercase: true, validate: [/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'incorrect email']},
+		cid: {type: Number, required: true, index: { unique: true }},
+		login: {type: String, required: true, index: { unique: true }},
+		email: {type: String, required: true, index: { unique: true }, lowercase: true, validate: [/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'incorrect email']},
 
-	pass: {type: String, required: true},
-	loginAttempts: {type: Number, required: true, 'default': 0},
-	lockUntil: {type: Number},
+		pass: {type: String, required: true},
+		loginAttempts: {type: Number, required: true, 'default': 0},
+		lockUntil: {type: Number},
 
-	settings: {type: Schema.Types.Mixed},
-	rules: {type: Schema.Types.Mixed}, //Правила(настройки), задаваемые администратором
-	role: {type: Number}, // 11 - owner, 10 - admin, 5 - moderator, undefined - regular
-	ranks: [String],
+		settings: {type: Schema.Types.Mixed},
+		rules: {type: Schema.Types.Mixed}, //Правила(настройки), задаваемые администратором
+		role: {type: Number}, // 11 - owner, 10 - admin, 5 - moderator, undefined - regular
+		ranks: [String],
 
-	regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
-	regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы для фильтрации по умолчанию
-	mod_regions: [{type: Schema.Types.ObjectId, ref: 'Region'}], //Регионы модерируемые
+		regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
+		regions: [ //Регионы для фильтрации контента по умолчанию
+			{type: Schema.Types.ObjectId, ref: 'Region'}
+		],
+		mod_regions: [ //Регионы модерируемые
+			{type: Schema.Types.ObjectId, ref: 'Region'}
+		],
 
-	//Profile
-	avatar: {type: String},
-	firstName: {type: String},
-	lastName: {type: String},
-	disp: {type: String}, //Отображаемое имя
+		//Profile
+		avatar: {type: String},
+		firstName: {type: String},
+		lastName: {type: String},
+		disp: {type: String}, //Отображаемое имя
 
-	birthdate: {type: String},
-	sex: {type: String},
-	country: {type: String},
-	city: {type: String},
-	work: {type: String},
-	www: {type: String},
-	icq: {type: String},
-	skype: {type: String},
-	aim: {type: String},
-	lj: {type: String},
-	flickr: {type: String},
-	blogger: {type: String},
-	aboutme: {type: String},
+		birthdate: {type: String},
+		sex: {type: String},
+		country: {type: String},
+		city: {type: String},
+		work: {type: String},
+		www: {type: String},
+		icq: {type: String},
+		skype: {type: String},
+		aim: {type: String},
+		lj: {type: String},
+		flickr: {type: String},
+		blogger: {type: String},
+		aboutme: {type: String},
 
-	regdate: {type: Date, 'default': Date.now },
-	pcount: {type: Number, 'default': 0, index: true}, //Кол-во публичных фотографий
-	pfcount: {type: Number, 'default': 0}, //Кол-во неподтвержденных фотографий
-	bcount: {type: Number, 'default': 0}, //Кол-во публичных блогов
-	ccount: {type: Number, 'default': 0, index: true}, //Кол-во публичных комментариев
+		regdate: {type: Date, 'default': Date.now },
+		pcount: {type: Number, 'default': 0, index: true}, //Кол-во публичных фотографий
+		pfcount: {type: Number, 'default': 0}, //Кол-во неподтвержденных фотографий
+		bcount: {type: Number, 'default': 0}, //Кол-во публичных блогов
+		ccount: {type: Number, 'default': 0, index: true}, //Кол-во публичных комментариев
 
-	dateFormat: {type: String, 'default': "dd.mm.yyyy" },
-	active: {type: Boolean, 'default': false },
-	activatedate: {type: Date}
-});
+		dateFormat: {type: String, 'default': "dd.mm.yyyy" },
+		active: {type: Boolean, 'default': false },
+		activatedate: {type: Date}
+	}),
+	AnonymScheme = {
+		settings: {type: Schema.Types.Mixed},
+		regionHome: {type: Schema.Types.ObjectId, ref: 'Region'}, //Домашний регион
+		regions: [ //Регионы для фильтрации контента по умолчанию
+			{type: Schema.Types.ObjectId, ref: 'Region'}
+		]
+	};
 
 /**
  * Перед каждым сохранением, если изменился пароль, генерируем хэш и соль по BlowFish
@@ -274,3 +285,4 @@ module.exports.makeModel = function (db) {
 	db.model('User', UserScheme);
 	db.model('UserConfirm', UserConfirm);
 };
+module.exports.AnonymScheme = AnonymScheme;
