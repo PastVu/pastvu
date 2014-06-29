@@ -25,7 +25,6 @@ define(['module'], function (module) {
 				});
 				socket.on('connect', function () {
 					console.log(getConsoleTime(), 'Connected to server');
-					socket.on('updateCookie', updateCookie);
 				});
 				socket.on('disconnect', function () {
 					console.log(getConsoleTime(), 'Disconnected from server ');
@@ -36,8 +35,28 @@ define(['module'], function (module) {
 				socket.on('reconnect_failed', function (attempt) {
 					console.log('%s Failed to reconnect for %d attempts. Stopped trying', getConsoleTime(), socket.io.reconnectionAttempts());
 				});
+				socket.on('reconnect', function () {
+					console.log(getConsoleTime(), 'ReConnected to server');
+					//После реконнекта заново запрашиваем initData
+					socket.emit('giveInitData', location.pathname);
+				});
 
-				socket.once('connectData', receiveConnectDataFirst);
+				socket.on('updateCookie', updateCookie);
+				socket.on('takeInitData', function (data) {
+					if (!data || data.error) {
+						console.log(getConsoleTime(), 'takeInitData receive error!', data.error);
+						return;
+					}
+
+					//Обновляем настройки
+					updateParams(data.p);
+
+					//Обновляем куки
+					if (Utils.isType('object', data.cook)) {
+						updateCookie(data.cook);
+					}
+				});
+
 				function receiveConnectDataFirst(data) {
 					if (!data || !Utils.isType('object', data.p)) {
 						console.log(getConsoleTime(), 'First connectData receive error!');

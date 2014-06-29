@@ -15,6 +15,10 @@ html
 
 		link(rel="stylesheet", href="/style/common.css")
 
+		| <script type="text/javascript">
+		//-Вставляем в скрипт сгенерированную для клиента строку глобальных переменных с изначальными данными
+		!= initData
+		| </script>
 		if appLand === 'dev'
 			| <script type="text/javascript">
 			include ../public/js/lib/require/require.js

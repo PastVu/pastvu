@@ -21,7 +21,7 @@ module.exports.loadController = function (app) {
 	function appMainHandler(req, res) {
 		res.setHeader('Cache-Control', 'no-cache');
 		res.statusCode = 200;
-		res.render('app', {appName: 'Main'});
+		res.render('app', {appName: 'Main', initData: genInitDataString(req.usObj)});
 	}
 
 	[/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
@@ -58,4 +58,16 @@ module.exports.loadController = function (app) {
 	app.all('/ping', function (req, res) {
 		res.send(200, 'pong');
 	});
+
+	function genInitDataString(usObj) {
+		var resultString = 'var init={';
+
+		if (usObj.user) {
+			resultString += 'user:' + JSON.stringify(_session.getPlainUser(usObj.user));
+		}
+
+		resultString += '};';
+
+		return resultString;
+	}
 };
