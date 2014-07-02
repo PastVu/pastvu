@@ -97,8 +97,8 @@ function getOnlineStat(socket, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	var usersCount = Utils.getObjectPropertyLength(_session.us),
-		sessions = _session.sess,
+	var usersCount = Utils.getObjectPropertyLength(_session.usLogin),
+		sessions = _session.sessConnected,
 
 		sessUserCount = 0,
 		sessUserZeroSockCount = 0,

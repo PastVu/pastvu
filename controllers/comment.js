@@ -567,7 +567,7 @@ function getUsersHashForComments(usersArr, cb) {
 			if (user.avatar) {
 				user.avatar = '/_a/h/' + user.avatar;
 			}
-			user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+			user.online = _session.usLogin[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
 			hashByLogin[user.login] = hashById[String(user._id)] = user;
 			delete user._id;
 		}
@@ -799,7 +799,7 @@ var getComments = (function () {
 					userFormatted = {
 						login: user.login,
 						disp: user.disp,
-						online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+						online: _session.usLogin[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
 					};
 					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 				}
@@ -830,7 +830,7 @@ var getCommentsFeed = (function () {
 		}, ms('10s'));
 
 	return function (iAm, cb) {
-		var usObj = iAm && _session.us[iAm.login];
+		var usObj = iAm && _session.usLogin[iAm.login];
 
 		if (iAm && iAm.regions.length && usObj.rquery) {
 			getComments(usObj, _.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);

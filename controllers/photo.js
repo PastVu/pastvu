@@ -64,7 +64,7 @@ var auth = require('./auth.js'),
 					}
 
 					//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
-					rhash = _session.us[user.login].mod_rhash;
+					rhash = _session.usLogin[user.login].mod_rhash;
 					for (i = 0; i <= maxRegionLevel; i++) {
 						photoRegion = photo['r' + i];
 						if (photoRegion && rhash[photoRegion] !== undefined) {
@@ -1026,7 +1026,7 @@ function giveUserPhotos(iAm, data, cb) {
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
-	var usObj = _session.us[iAm.login],
+	var usObj = _session.usLogin[iAm.login],
 		query = {s: 1};
 
 	if (!iAm || iAm.role < 5) {
@@ -1126,7 +1126,7 @@ function giveUserPhotosPrivate(socket, data, cb) {
 
 		if (iAm.role === 5) {
 			query.s = {$ne: 9};
-			_.assign(query, _session.us[iAm.login].mod_rquery);
+			_.assign(query, _session.usLogin[iAm.login].mod_rquery);
 		}
 
 		if (data.startTime || data.endTime) {
@@ -1174,7 +1174,7 @@ function givePhotosFresh(socket, data, cb) {
 				return cb({message: err && err.message, error: true});
 			}
 			var query = {s: 0},
-				usObj = _session.us[iAm.login],
+				usObj = _session.usLogin[iAm.login],
 				asModerator = iAm.login !== data.login && iAm.role === 5;
 
 			if (asModerator) {
@@ -1547,7 +1547,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
 		squery_public_only = !iAm || filter.s && filter.s.length === 1 && filter.s[0] === 5,
 
-		usObj = iAm && _session.us[iAm.login],
+		usObj = iAm && _session.usLogin[iAm.login],
 		region,
 		contained,
 		result = {query: null, s: [], rcids: [], rarr: []},
