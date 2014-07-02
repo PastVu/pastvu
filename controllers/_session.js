@@ -486,7 +486,7 @@ function getOnline(login, _id) {
 }
 
 
-//Обработчик при первом заходе или  установки соединения сокетом для создания сессии и проверки браузера клиента
+//Обработчик при первом заходе или установки соединения сокетом для создания сессии и проверки браузера клиента
 function authConnection(ip, headers, finishCb) {
 	if (!headers || !headers['user-agent']) {
 		return finishCb({type: errtypes.NO_HEADERS}); //Если нет хедера или юзер-агента - отказываем
@@ -541,53 +541,6 @@ function authConnection(ip, headers, finishCb) {
 	}
 }
 
-//Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
-function onSocketConnection(socket, next) {
-	var session = socket.handshake.session;
-	//console.log('onSocketConnection');
-
-	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
-	if (sessConnected[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
-		sessConnected[session.key] = session;
-		delete sessWaitingConnect[session.key];
-	}
-
-	if (!sessConnected[session.key]) {
-		return next(new Error('Session lost'));
-	}
-
-	if (!session.sockets) {
-		session.sockets = {};
-	}
-	session.sockets[socket.id] = socket; //Кладем сокет в сессию
-
-	socket.on('disconnect', onSocketDisconnection);
-	next();
-}
-
-//При разрыве сокет-соединения проверяет на необходимость оставлять в хэшах сессию и объект пользователя
-function onSocketDisconnection(socket) {
-	var session = socket.handshake.session,
-		usObj = socket.handshake.usObj,
-		someCountPrev = Object.keys(session.sockets).length,
-		someCountNew,
-		user = usObj.user;
-
-	//console.log('DISconnection');
-	delete session.sockets[socket.id]; //Удаляем сокет из сесии
-
-	someCountNew = Object.keys(session.sockets).length;
-	if (someCountNew !== someCountPrev - 1) {
-		console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
-	}
-
-	if (!someCountNew) {
-		//console.log('Delete Sess');
-		//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
-		sessionFromHashes(usObj, session, 'onSocketDisconnection');
-	}
-}
-
 //Обработка входящего http-соединения
 module.exports.handleRequest = function (req, res, next) {
 	authConnection(req.ip, req.headers, function (err, usObj, session, browser) {
@@ -615,20 +568,59 @@ module.exports.handleRequest = function (req, res, next) {
 	});
 };
 //Обработка входящего socket-соединения
-module.exports.handleSocket = function (socket, next) {
-	var handshake = socket.handshake,
-		headers = handshake.headers,
-		ip = headers['x-real-ip'] || (handshake.address && handshake.address.address);
+module.exports.handleSocket = (function () {
+	//При разрыве сокет-соединения проверяет на необходимость оставлять в хэшах сессию и объект пользователя
+	var onSocketDisconnection = function (socket) {
+		var session = socket.handshake.session,
+			usObj = socket.handshake.usObj,
+			someCountPrev = Object.keys(session.sockets).length,
+			someCountNew,
+			user = usObj.user;
 
-	authConnection(ip, headers, function (err, usObj, session) {
-		if (err) {
-			return next(new Error(err.type));
+		//console.log('DISconnection');
+		delete session.sockets[socket.id]; //Удаляем сокет из сесии
+
+		someCountNew = Object.keys(session.sockets).length;
+		if (someCountNew !== someCountPrev - 1) {
+			console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
 		}
-		handshake.usObj = usObj;
-		handshake.session = session;
-		next();
-	});
-};
+
+		if (!someCountNew) {
+			//console.log('Delete Sess');
+			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
+			sessionFromHashes(usObj, session, 'onSocketDisconnection');
+		}
+	};
+
+	return function (socket, next) {
+		var handshake = socket.handshake,
+			headers = handshake.headers,
+			ip = headers['x-real-ip'] || (handshake.address && handshake.address.address);
+
+		authConnection(ip, headers, function (err, usObj, session) {
+			if (err) {
+				return next(new Error(err.type));
+			}
+			handshake.usObj = usObj;
+			handshake.session = session;
+
+			//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
+			if (sessConnected[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
+				sessConnected[session.key] = session;
+				delete sessWaitingConnect[session.key];
+			}
+
+			if (!session.sockets) {
+				session.sockets = {};
+			}
+			session.sockets[socket.id] = socket; //Кладем сокет в сессию
+
+			socket.on('disconnect', onSocketDisconnection);//Вешаем обработчик на disconnect
+
+			next();
+		});
+	};
+}());
 
 
 //Периодически уничтожает ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
@@ -676,7 +668,7 @@ var checkExpiredSessions = (function () {
 					usObj = usSid[key];
 				if (session) {
 					if (usObj !== undefined) {
-						sessionFromHashes(usObj, session, 'onSocketDisconnection');
+						sessionFromHashes(usObj, session, 'checkExpiredSessions');
 					}
 					//Если в сессии есть сокеты, разрываем соединение
 					_.forEach(session.sockets, function (socket) {
@@ -698,7 +690,6 @@ var checkExpiredSessions = (function () {
 }());
 
 
-module.exports.onSocketConnection = onSocketConnection;
 module.exports.destroy = destroy;
 module.exports.authUser = authUser;
 module.exports.emitUser = emitUser;
