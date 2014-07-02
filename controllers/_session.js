@@ -82,7 +82,7 @@ var createSidCookieObj = (function () {
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
 function userObjectAddSession(session, cb) {
 	var registered = !!session.user,
-		user = registered ? session.user :  session.anonym,
+		user = registered ? session.user : session.anonym,
 		usObj = registered ? usLogin[user.login] : usSid[session.key],
 		firstAdding = false;
 
@@ -145,6 +145,21 @@ function sessionCreate(ip, headers, browser) {
 	session.save();
 	return session;
 }
+
+//Создаёт сессию путем копирования изначальных данных из переданной сессии (ip, header, agent)
+function sessionCopy(sessionSource) {
+	var session = new Session({
+		key: Utils.randomString(12),
+		stamp: new Date(),
+		data: {}
+	});
+
+	session.data.ip = sessionSource.data.ip;
+	session.data.headers = sessionSource.data.headers;
+	session.data.agent = sessionSource.data.agent;
+	return session;
+}
+
 //Добавляет созданную или вновь выбранную из базы сессию в память (список ожидания коннектов, хэш пользователей)
 function sessionAdd(session, cb) {
 	sessWaitingConnect[session.key] = session;
@@ -154,9 +169,13 @@ function sessionAdd(session, cb) {
 }
 //Отправляет сессию в архив
 function sessionToArchive(session) {
-	var sessionArchive = new Session(session.toObject());
-	sessionArchive.save();
-	return sessionArchive;
+	var archivePlain = session.toObject(),
+		archiveObj = new SessionArchive(archivePlain);
+
+	session.remove(); //Удаляем архивированную сессию из активных
+	archiveObj.save(); //Сохраняем архивированную сессию в архив
+
+	return archiveObj;
 }
 
 
@@ -477,56 +496,55 @@ function destroy(socket, cb) {
 
 //Присваивание пользователя сессии при логине, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
-	var session = socket.handshake.session,
-		sessionKeyOld = session.key,
-		usObjOld = usSid[session.key],
-		sessHash = sessWaitingConnect[session.key] ? sessWaitingConnect : sessConnected;
-
-	//Меняем ключ сессии
-	session.key = Utils.randomString(12);
+	var sessionOld = socket.handshake.session,
+		usObjOld = usSid[sessionOld.key],
+		sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
+		sessionNew = sessionCopy(sessionOld);
 
 	//Присваивание объекта пользователя при логине еще пустому populated-полю сессии вставит туда только _id,
 	//поэтому затем после сохранения сессии нужно будет сделать populate на этом поле. (mongoose 3.6)
 	//https://github.com/LearnBoost/mongoose/issues/1530
-	session.user = user;
-	//Удаляем поле анонима из сессии
-	session.anonym = undefined;
-	//Обновляем время сессии
-	session.stamp = new Date();
-	//Присваиваем поля data специфичные для залогиненного пользователя
-	_.assign(session.data, {remember: data.remember});
-	session.markModified('data');
+	sessionNew.user = user;
 
-	session.save(function (err, session) {
+	//Присваиваем поля data специфичные для залогиненного пользователя
+	_.assign(sessionOld.data, {remember: data.remember});
+
+	//Указываем новой сессий ссылку на архивируемую
+	sessionNew.previous = sessionOld.key;
+
+	sessionNew.save(function (err, sessionNew) {
 		if (err) {
 			return cb(err);
 		}
-		session.populate('user', function (err, session) {
+		sessionNew.populate('user', function (err, sessionNew) {
 			if (err) {
 				return cb(err);
 			}
 
-			delete usSid[sessionKeyOld]; //Удаляем старый usObj из хэша по сессиям, т.к. для зарегистрированного пользователя он создался заново
-			delete usObjOld.sessions[sessionKeyOld]; //Удаляем текущую сессию из удаленного usObj, чтобы gc его забрал
-			delete sessHash[session.key]; //Удаляем сессию по старому ключу из хэша сессий
-			sessHash[session.key] = session; //Присваиваем сессию по новому ключу в хэш сессий
+			delete usSid[sessionOld.key]; //Удаляем старый usObj из хэша по сессиям, т.к. для зарегистрированного пользователя он создастся заново
+			delete usObjOld.sessions[sessionOld.key]; //Удаляем старую сессию из удаленного usObj, чтобы gc их забрал
+			delete sessHash[sessionOld.key]; //Удаляем архивируемую сессию из хэша сессий
+			sessHash[sessionOld.key] = sessionNew; //Кладем новую сессию в хэш сессий
 
-			//Добавляем сессию в usObj(создастся если нет, а если есть, пользователь в сессию возьмется оттуда вместо спопулированного)
-			userObjectAddSession(session, function (err, usObj) {
+			//Отправляем старую сессию в архив
+			sessionToArchive(sessionOld);
+
+			//Добавляем новую сессию в usObj(создастся если еще нет, а если есть, пользователь в сессию возьмется оттуда вместо спопулированного)
+			userObjectAddSession(sessionNew, function (err, usObj) {
 				if (err) {
-					cb(err, session);
+					cb(err, sessionNew);
 				}
 				var userPlain = getPlainUser(usObj.user);
 
 				//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
-				for (var i in session.sockets) {
-					if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-						session.sockets[i].emit('youAre', userPlain);
+				for (var i in sessionNew.sockets) {
+					if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
+						sessionNew.sockets[i].emit('youAre', userPlain);
 					}
 				}
 
 				emitSidCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
-				cb(err, session, userPlain);
+				cb(err, sessionNew, userPlain);
 			});
 		});
 	});
