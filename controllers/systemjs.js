@@ -14,6 +14,7 @@ module.exports.loadController = function (app, db) {
 			archiveDate = new Date(),
 			query = {stamp: {lte: new Date(frontierDate)}},
 			fullcount = db.sessions.count(query),
+			resultKeys = [],
 			insertBulk = [],
 			castBulkBy = 100,
 			counter = 0;
@@ -21,6 +22,7 @@ module.exports.loadController = function (app, db) {
 		print('Start to archive ' + fullcount + ' expired sessions');
 		db.sessions.find(query).forEach(function (session) {
 			counter++;
+			resultKeys.push(session.key);
 			session.archived = archiveDate;
 			if (insertBulk.push(session) >= castBulkBy || counter >= fullcount) {
 				db.sessions_archive.insert(insertBulk, {ordered: false});
@@ -28,7 +30,7 @@ module.exports.loadController = function (app, db) {
 			}
 		});
 
-		return {message: 'Done in ' + (Date.now() - startFullTime) / 1000 + 's', count: counter};
+		return {message: 'Done in ' + (Date.now() - startFullTime) / 1000 + 's', count: counter, keys: resultKeys};
 	});
 
 	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos, zooms) {

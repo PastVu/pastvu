@@ -21,7 +21,7 @@ module.exports.loadController = function (app) {
 	function appMainHandler(req, res) {
 		res.setHeader('Cache-Control', 'no-cache');
 		res.statusCode = 200;
-		res.render('app', {appName: 'Main', initData: genInitDataString(req.usObj)});
+		res.render('app', {appName: 'Main', initData: genInitDataString(req.handshake.usObj)});
 	}
 
 	[/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {

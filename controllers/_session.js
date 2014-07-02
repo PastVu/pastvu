@@ -82,18 +82,19 @@ var createSidCookieObj = (function () {
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
 function userObjectAddSession(session, cb) {
 	var registered = !!session.user,
-		user = registered ? session.user : session.anonym,
-		usObj = registered ? usLogin[user.login] : usSid[session.key],
-		firstAdding = false;
+		usObj = usSid[session.key],
+		firstAdding = false,
+		user;
 
 	if (usObj === undefined) {
 		firstAdding = true;
+		user = registered ? session.user : session.anonym;
 		usObj = usSid[session.key] = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshortlvls: [], rshortsel: Object.create(null)};
 		if (registered) {
+			usObj.registered = true;
 			usLogin[user.login] = usId[user._id] = usObj;
 			console.log('Create us hash:', user.login);
 		} else {
-			usObj.anonym = true;
 			console.log('Create anonym hash:', session.key);
 		}
 	} else {
@@ -161,12 +162,48 @@ function sessionCopy(sessionSource) {
 }
 
 //Добавляет созданную или вновь выбранную из базы сессию в память (список ожидания коннектов, хэш пользователей)
-function sessionAdd(session, cb) {
+function sessionToHashes(session, cb) {
 	sessWaitingConnect[session.key] = session;
 	userObjectAddSession(session, function (err, usObj) {
 		cb(err, usObj, session);
 	});
 }
+
+//Убирает сессию из памяти (хешей) с проверкой объекта пользователя и убирает его, если сессий у него не осталось
+function sessionFromHashes(usObj, session, logPrefix) {
+	var sessionKey = session.key,
+		userKey = usObj.login || session.key,
+		someCountPrev = Object.keys(sessConnected).length,
+		someCountNew;
+
+	delete sessConnected[sessionKey];
+	someCountNew = Object.keys(sessConnected).length;
+	if (someCountNew !== someCountPrev - 1) {
+		console.log(logPrefix, 'WARN-Session not removed (' + sessionKey + ')', userKey);
+	}
+
+	someCountPrev = Object.keys(usSid).length;
+	delete usSid[sessionKey];
+	someCountNew = Object.keys(usSid).length;
+	if (someCountNew !== someCountPrev - 1) {
+		console.log(logPrefix, 'WARN-Session from usSid not removed (' + sessionKey + ')', userKey);
+	}
+
+	someCountPrev = Object.keys(usObj.sessions).length;
+	delete usObj.sessions[sessionKey];
+	someCountNew = Object.keys(usObj.sessions).length;
+	if (someCountNew !== someCountPrev - 1) {
+		console.log(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
+	}
+
+	if (!someCountNew && usObj.registered) {
+		//console.log(9, '2.Delete User', user.login);
+		//Если сессий у зарегистрированного пользователя не осталось, убираем usObj из хеша пользователей (из usSid уже должно было убраться)
+		delete usLogin[usObj.user.login];
+		delete usId[usObj.user._id];
+	}
+}
+
 //Отправляет сессию в архив
 function sessionToArchive(session) {
 	var archivePlain = session.toObject(),
@@ -178,189 +215,6 @@ function sessionToArchive(session) {
 	return archiveObj;
 }
 
-
-//Обработчик при первом заходе или  установки соединения сокетом для создания сессии и проверки браузера клиента
-function authConnection(ip, headers, finishCb) {
-	if (!headers || !headers['user-agent']) {
-		return finishCb({type: errtypes.NO_HEADERS}); //Если нет хедера или юзер-агента - отказываем
-	}
-
-	var browser = checkUserAgent(headers['user-agent']);
-	if (!browser.accept) {
-		return finishCb({type: errtypes.BAD_BROWSER, agent: browser.agent});
-	}
-
-	var cookieObj = cookie.parse(headers.cookie || ''),
-		existsSid = cookieObj['pastvu.sid'],
-		session,
-		authConnectionFinish = function (err, usObj, session) {
-			finishCb(err, usObj, session, browser);
-		};
-
-	if (existsSid === undefined) {
-		//Если ключа нет, переходим к созданию сессии
-		sessionAdd(sessionCreate(ip, headers, browser), authConnectionFinish);
-	} else {
-		session = sessConnected[existsSid] || sessWaitingConnect[existsSid];
-		if (session !== undefined) {
-			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
-			authConnectionFinish(null, usSid[session.key], session); //TODO: Сделать хэш usObjs из ключей сессий
-		} else {
-			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
-			if (sessWaitingSelect[existsSid] !== undefined) {
-				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
-				sessWaitingSelect[existsSid].push({cb: authConnectionFinish});
-			} else {
-				//Если запроса к базе еще нет, создаем его
-				sessWaitingSelect[existsSid] = [
-					{cb: authConnectionFinish}
-				];
-
-				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
-					if (err) {
-						return finishCb({type: errtypes.CANT_GET_SESSION});
-					}
-					sessionAdd(session || sessionCreate(ip, headers, browser), function (err, session) {
-						if (Array.isArray(sessWaitingSelect[existsSid])) {
-							sessWaitingSelect[existsSid].forEach(function (item) {
-								item.cb.call(null, err, session);
-							});
-							delete sessWaitingSelect[existsSid];
-						}
-					});
-				});
-			}
-		}
-	}
-}
-
-//Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
-function firstSocketConnection(socket, next) {
-	var session = socket.handshake.session;
-	//console.log('firstSocketConnection');
-
-	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
-	if (sessConnected[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
-		sessConnected[session.key] = session;
-		delete sessWaitingConnect[session.key];
-	}
-
-	if (!sessConnected[session.key]) {
-		return next(new Error('Session lost'));
-	}
-
-	if (!session.sockets) {
-		session.sockets = {};
-	}
-	session.sockets[socket.id] = socket; //Кладем сокет в сессию
-
-	socket.on('disconnect', function () {
-		var session = socket.handshake.session,
-			someCount = Object.keys(session.sockets).length,
-			user = session.user,
-			usObj;
-
-		//console.log('DISconnection');
-		delete session.sockets[socket.id]; //Удаляем сокет из сесии
-
-		if (Object.keys(session.sockets).length !== (someCount - 1)) {
-			console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
-		}
-
-		if (!Object.keys(session.sockets).length) {
-			//console.log(9, '1.Delete Sess');
-			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
-			someCount = Object.keys(sessConnected).length;
-			delete sessConnected[session.key];
-			if (Object.keys(sessConnected).length !== (someCount - 1)) {
-				console.log('WARN-Session not removed (' + session.key + ')', user && user.login);
-			}
-
-			if (user) {
-				//console.log(9, '2.Delete session from User', user.login);
-				//Если в сессии есть пользователь, нужно убрать сессию из пользователя
-				usObj = usLogin[user.login];
-
-				someCount = Object.keys(usObj.sessions).length;
-				delete usObj.sessions[session.key];
-				if (Object.keys(usObj.sessions).length !== (someCount - 1)) {
-					console.log('WARN-Session from user not removed (' + session.key + ')', user && user.login);
-				}
-
-				if (!Object.keys(usObj.sessions).length) {
-					//console.log(9, '3.Delete User', user.login);
-					//Если сессий у пользователя не осталось, убираем его из хеша пользователей
-					delete usLogin[user.login];
-					delete usId[user._id];
-				}
-			}
-		}
-	});
-	next();
-}
-
-//Периодически уничтожает ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
-var checkWaitingSess = (function () {
-	var checkInterval = ms('10s'),
-		sessWaitingPeriod = ms('30s');
-
-	function procedure() {
-		var expiredFrontier = new Date(Date.now() - sessWaitingPeriod),
-			keys = Object.keys(sessWaitingConnect),
-			session,
-			usObj,
-			i;
-
-		for (i = keys.length; i--;) {
-			session = sessWaitingConnect[keys[i]];
-
-			if (session && session.stamp <= expiredFrontier) {
-				delete sessWaitingConnect[session.key];
-
-				if (session.user) {
-					usObj = usLogin[session.user.login];
-
-					if (usObj) {
-						delete usObj.sessions[session.key];
-
-						if (!Object.keys(usObj.sessions).length) {
-							//Если сессий у пользователя не осталось, убираем его из хеша пользователей
-							delete usLogin[session.user.login];
-							delete usId[session.user._id];
-						}
-					}
-				}
-
-			}
-		}
-
-		checkWaitingSess();
-	}
-
-	return function () {
-		setTimeout(procedure, checkInterval);
-	};
-}());
-
-//Периодически отправляет просроченные сессии в архив
-var checkExpiredSessions = (function () {
-	var checkInterval = ms('1h'); //Интервал проверки
-
-	function procedure() {
-		dbNative.eval('function (frontierDate) {archiveExpiredSessions(frontierDate);}', [new Date() - SESSION_SHELF_LIFE], {nolock: true}, function (err, ret) {
-			if (err || !ret) {
-				console.log('archiveExpiredSessions error');
-			} else {
-				console.log(ret.count, ' sessions moved to archive');
-			}
-			checkExpiredSessions();
-		});
-	}
-
-	return function () {
-		setTimeout(procedure, checkInterval);
-	};
-}());
 
 function userObjectTreatUser(usObj, cb) {
 	var user = usObj.user;
@@ -494,7 +348,7 @@ function destroy(socket, cb) {
 }
 
 
-//Присваивание пользователя сессии при логине, вызывается из auth-контроллера
+//Работа с сессиями при авторизации пользователя, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
 	var sessionOld = socket.handshake.session,
 		usObjOld = usSid[sessionOld.key],
@@ -632,24 +486,109 @@ function getOnline(login, _id) {
 }
 
 
-module.exports.firstSocketConnection = firstSocketConnection;
-module.exports.destroy = destroy;
-module.exports.authUser = authUser;
-module.exports.emitUser = emitUser;
-module.exports.saveEmitUser = saveEmitUser;
-module.exports.isOnline = isOnline;
-module.exports.getOnline = getOnline;
+//Обработчик при первом заходе или  установки соединения сокетом для создания сессии и проверки браузера клиента
+function authConnection(ip, headers, finishCb) {
+	if (!headers || !headers['user-agent']) {
+		return finishCb({type: errtypes.NO_HEADERS}); //Если нет хедера или юзер-агента - отказываем
+	}
 
-//Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
-module.exports.usLogin = usLogin;
-module.exports.usId = usId;
-module.exports.sessConnected = sessConnected;
-module.exports.sessWaitingConnect = sessWaitingConnect;
-module.exports.regetUser = regetUser;
-module.exports.regetUsers = regetUsers;
-module.exports.getPlainUser = getPlainUser;
+	var browser = checkUserAgent(headers['user-agent']);
+	if (!browser.accept) {
+		return finishCb({type: errtypes.BAD_BROWSER, agent: browser.agent});
+	}
 
+	var cookieObj = cookie.parse(headers.cookie || ''),
+		existsSid = cookieObj['pastvu.sid'],
+		session,
+		authConnectionFinish = function (err, usObj, session) {
+			finishCb(err, usObj, session, browser);
+		};
 
+	if (existsSid === undefined) {
+		//Если ключа нет, переходим к созданию сессии
+		sessionToHashes(sessionCreate(ip, headers, browser), authConnectionFinish);
+	} else {
+		session = sessConnected[existsSid] || sessWaitingConnect[existsSid];
+		if (session !== undefined) {
+			//Если ключ есть и он уже есть в хеше, то берем эту уже выбранную сессию
+			authConnectionFinish(null, usSid[session.key], session);
+		} else {
+			//Если ключ есть, но его еще нет в хеше сессий, то выбираем сессию из базы по этому ключу
+			if (sessWaitingSelect[existsSid] !== undefined) {
+				//Если запрос сессии с таким ключем в базу уже происходит, просто добавляем обработчик на результат
+				sessWaitingSelect[existsSid].push({cb: authConnectionFinish});
+			} else {
+				//Если запроса к базе еще нет, создаем его
+				sessWaitingSelect[existsSid] = [
+					{cb: authConnectionFinish}
+				];
+
+				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
+					if (err) {
+						return finishCb({type: errtypes.CANT_GET_SESSION});
+					}
+					sessionToHashes(session || sessionCreate(ip, headers, browser), function (err, session) {
+						if (Array.isArray(sessWaitingSelect[existsSid])) {
+							sessWaitingSelect[existsSid].forEach(function (item) {
+								item.cb.call(null, err, session);
+							});
+							delete sessWaitingSelect[existsSid];
+						}
+					});
+				});
+			}
+		}
+	}
+}
+
+//Записываем сокет в сессию, отправляем клиенту первоначальные данные и вешаем обработчик на disconnect
+function onSocketConnection(socket, next) {
+	var session = socket.handshake.session;
+	//console.log('onSocketConnection');
+
+	//Если это первый коннект для сессии, перекладываем её в хеш активных сессий
+	if (sessConnected[session.key] === undefined && sessWaitingConnect[session.key] !== undefined) {
+		sessConnected[session.key] = session;
+		delete sessWaitingConnect[session.key];
+	}
+
+	if (!sessConnected[session.key]) {
+		return next(new Error('Session lost'));
+	}
+
+	if (!session.sockets) {
+		session.sockets = {};
+	}
+	session.sockets[socket.id] = socket; //Кладем сокет в сессию
+
+	socket.on('disconnect', onSocketDisconnection);
+	next();
+}
+
+//При разрыве сокет-соединения проверяет на необходимость оставлять в хэшах сессию и объект пользователя
+function onSocketDisconnection(socket) {
+	var session = socket.handshake.session,
+		usObj = socket.handshake.usObj,
+		someCountPrev = Object.keys(session.sockets).length,
+		someCountNew,
+		user = usObj.user;
+
+	//console.log('DISconnection');
+	delete session.sockets[socket.id]; //Удаляем сокет из сесии
+
+	someCountNew = Object.keys(session.sockets).length;
+	if (someCountNew !== someCountPrev - 1) {
+		console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
+	}
+
+	if (!someCountNew) {
+		//console.log('Delete Sess');
+		//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
+		sessionFromHashes(usObj, session, 'onSocketDisconnection');
+	}
+}
+
+//Обработка входящего http-соединения
 module.exports.handleRequest = function (req, res, next) {
 	authConnection(req.ip, req.headers, function (err, usObj, session, browser) {
 		if (err) {
@@ -675,6 +614,7 @@ module.exports.handleRequest = function (req, res, next) {
 		next();
 	});
 };
+//Обработка входящего socket-соединения
 module.exports.handleSocket = function (socket, next) {
 	var handshake = socket.handshake,
 		headers = handshake.headers,
@@ -690,6 +630,92 @@ module.exports.handleSocket = function (socket, next) {
 	});
 };
 
+
+//Периодически уничтожает ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
+var checkSessWaitingConnect = (function () {
+	var checkInterval = ms('10s'),
+		sessWaitingPeriod = ms('30s');
+
+	function procedure() {
+		var expiredFrontier = Date.now() - sessWaitingPeriod,
+			keys = Object.keys(sessWaitingConnect),
+			session,
+			i;
+
+		for (i = keys.length; i--;) {
+			session = sessWaitingConnect[keys[i]];
+
+			if (session && session.stamp <= expiredFrontier) {
+				delete sessWaitingConnect[session.key];
+				sessionFromHashes(usSid[session.key], session, 'checkSessWaitingConnect');
+			}
+		}
+
+		checkSessWaitingConnect();
+	}
+
+	return function () {
+		setTimeout(procedure, checkInterval);
+	};
+}());
+
+//Периодически отправляет просроченные сессии в архив
+var checkExpiredSessions = (function () {
+	var checkInterval = ms('1h'); //Интервал проверки
+
+	function procedure() {
+		dbNative.eval('function (frontierDate) {archiveExpiredSessions(frontierDate);}', [new Date() - SESSION_SHELF_LIFE], {nolock: true}, function (err, ret) {
+			if (err || !ret) {
+				console.log('archiveExpiredSessions error');
+			} else {
+				console.log(ret.count, ' sessions moved to archive');
+			}
+			//Проверяем, если какая-либо из отправленных в архив сессий находится в памяти (хешах), убираем из памяти
+			ret.keys.forEach(function (key) {
+				var session = sessConnected[key],
+					usObj = usSid[key];
+				if (session) {
+					if (usObj !== undefined) {
+						sessionFromHashes(usObj, session, 'onSocketDisconnection');
+					}
+					//Если в сессии есть сокеты, разрываем соединение
+					_.forEach(session.sockets, function (socket) {
+						if (socket.disconnet) {
+							socket.disconnet();
+						}
+					});
+					delete session.sockets;
+				}
+			});
+			//Планируем следующий запуск
+			checkExpiredSessions();
+		});
+	}
+
+	return function () {
+		setTimeout(procedure, checkInterval);
+	};
+}());
+
+
+module.exports.onSocketConnection = onSocketConnection;
+module.exports.destroy = destroy;
+module.exports.authUser = authUser;
+module.exports.emitUser = emitUser;
+module.exports.saveEmitUser = saveEmitUser;
+module.exports.isOnline = isOnline;
+module.exports.getOnline = getOnline;
+
+//Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
+module.exports.usLogin = usLogin;
+module.exports.usId = usId;
+module.exports.sessConnected = sessConnected;
+module.exports.sessWaitingConnect = sessWaitingConnect;
+module.exports.regetUser = regetUser;
+module.exports.regetUsers = regetUsers;
+module.exports.getPlainUser = getPlainUser;
+
+
 module.exports.loadController = function (a, db, io) {
 	app = a;
 	dbNative = db.db;
@@ -697,14 +723,12 @@ module.exports.loadController = function (a, db, io) {
 	SessionArchive = db.model('SessionArchive');
 	User = db.model('User');
 
-	checkWaitingSess();
+	checkSessWaitingConnect();
 	checkExpiredSessions();
 
 	io.sockets.on('connection', function (socket) {
-
 		socket.on('giveInitData', function (data) {
 			emitInitData(socket);
 		});
-
 	});
 };

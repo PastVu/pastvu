@@ -241,7 +241,7 @@ async.waterfall([
 
 			var _session = require('./controllers/_session.js');
 			io.use(_session.handleSocket);
-			io.use(_session.firstSocketConnection);
+			io.use(_session.onSocketConnection);
 			_session.loadController(app, db, io);
 			callback(null);
 		},
