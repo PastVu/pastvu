@@ -14,7 +14,9 @@ var app,
 		NO_HEADERS: 'Bad request - no header or user agent',
 		BAD_BROWSER: 'Bad browser, we do not support it',
 		CANT_CREATE_SESSION: 'Can not create session',
+		CANT_UPDATE_SESSION: 'Can not update session',
 		CANT_GET_SESSION: 'Can not get session',
+		CANT_POPUSER_SESSION: 'Can not populate user session',
 		ANOTHER: 'Some error occured'
 	},
 
@@ -118,6 +120,23 @@ function userObjectAddSession(session, cb) {
 	}
 }
 
+function getBrowserAgent(browser) {
+	var agent = {
+			n: browser.agent.family, //Agent name e.g. 'Chrome'
+			v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
+		},
+		device = browser.agent.device.toString(), //Device e.g 'Asus A100'
+		os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
+
+	if (os) {
+		agent.os = os;
+	}
+	if (device && device !== 'Other') {
+		agent.d = device;
+	}
+	return agent;
+}
+
 //Создаёт сессию и сохраняет её в базу. Не ждёт результата сохранения
 function sessionCreate(ip, headers, browser) {
 	var session = new Session({
@@ -126,24 +145,33 @@ function sessionCreate(ip, headers, browser) {
 			data: {
 				ip: ip,
 				headers: headers,
-				agent: {
-					n: browser.agent.family, //Agent name e.g. 'Chrome'
-					v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
-				}
+				agent: getBrowserAgent(browser)
 			}
-		}),
-		device = browser.agent.device.toString(), //Device e.g 'Asus A100'
-		os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
-
-	if (os) {
-		session.data.agent.os = os;
-	}
-	if (device && device !== 'Other') {
-		session.data.agent.d = device;
-	}
+		});
 
 	session.save();
 	return session;
+}
+//Обновляет сессию в базе, если при входе она была выбрана из базы
+function sessionUpdate(session, ip, headers, browser, cb) {
+	//Обновляем время сессии
+	session.stamp = new Date();
+	//Если ip пользователя изменился, записываем в историю старый с временем изменения
+	if (ip !== session.data.ip) {
+		if (!session.data.ip_hist) {
+			session.data.ip_hist = [];
+		}
+		session.data.ip_hist.push({ip: session.data.ip, off: session.stamp});
+		session.data.ip = ip;
+	}
+	//Если user-agent заголовка изменился, заново парсим агента
+	if (headers['user-agent'] !== session.data.headers['user-agent']) {
+		session.data.agent = getBrowserAgent(browser);
+	}
+	session.data.headers = headers;
+	session.markModified('data');
+
+	session.save(cb);
 }
 
 //Создаёт сессию путем копирования изначальных данных из переданной сессии (ip, header, agent)
@@ -525,18 +553,36 @@ function authConnection(ip, headers, finishCb) {
 					{cb: authConnectionFinish}
 				];
 
-				Session.findOne({key: existsSid}).populate('user').exec(function (err, session) {
+				Session.findOne({key: existsSid}, function (err, session) {
 					if (err) {
 						return finishCb({type: errtypes.CANT_GET_SESSION});
 					}
-					sessionToHashes(session || sessionCreate(ip, headers, browser), function (err, usObj, session) {
-						if (Array.isArray(sessWaitingSelect[existsSid])) {
-							sessWaitingSelect[existsSid].forEach(function (item) {
-								item.cb.call(null, err, usObj, session);
+					//Если сессия есть, обновляем в базе хедеры и stamp
+					if (session) {
+						sessionUpdate(session, ip, headers, browser, function (err, session) {
+							if (err) {
+								return finishCb({type: errtypes.CANT_UPDATE_SESSION});
+							}
+							session.populate('user', function (err, session) {
+								if (err) {
+									return finishCb({type: errtypes.CANT_POPUSER_SESSION});
+								}
+								further(session);
 							});
-							delete sessWaitingSelect[existsSid];
-						}
-					});
+						});
+					} else {
+						further(sessionCreate(ip, headers, browser));
+					}
+					function further(session) {
+						sessionToHashes(session, function (err, usObj, session) {
+							if (Array.isArray(sessWaitingSelect[existsSid])) {
+								sessWaitingSelect[existsSid].forEach(function (item) {
+									item.cb.call(null, err, usObj, session);
+								});
+								delete sessWaitingSelect[existsSid];
+							}
+						});
+					}
 				});
 			}
 		}
@@ -572,8 +618,9 @@ module.exports.handleRequest = function (req, res, next) {
 //Обработка входящего socket-соединения
 module.exports.handleSocket = (function () {
 	//При разрыве сокет-соединения проверяет на необходимость оставлять в хэшах сессию и объект пользователя
-	var onSocketDisconnection = function (socket) {
-		var session = socket.handshake.session,
+	var onSocketDisconnection = function (reason) {
+		var socket = this,
+			session = socket.handshake.session,
 			usObj = socket.handshake.usObj,
 			someCountPrev = Object.keys(session.sockets).length,
 			someCountNew,

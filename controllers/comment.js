@@ -829,10 +829,8 @@ var getCommentsFeed = (function () {
 			getComments(null, globalQuery, globalOptions, handler);
 		}, ms('10s'));
 
-	return function (iAm, cb) {
-		var usObj = iAm && _session.usLogin[iAm.login];
-
-		if (iAm && iAm.regions.length && usObj.rquery) {
+	return function (usObj, cb) {
+		if (usObj.rquery) {
 			getComments(usObj, _.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);
 		} else {
 			return globalFeed(cb);
@@ -1965,7 +1963,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveCommentsFeed', function () {
-			getCommentsFeed(hs.session.user, function (result) {
+			getCommentsFeed(hs.usObj, function (result) {
 				socket.emit('takeCommentsFeed', result);
 			});
 		});
