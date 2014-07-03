@@ -607,8 +607,13 @@ module.exports.handleRequest = function (req, res, next) {
 		req.handshake = {session: session, usObj: usObj};
 
 		//Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
-		var cookieObj = createSidCookieObj(session);
-		res.cookie(cookieObj.key, cookieObj.value, {maxAge: cookieObj['max-age'] * 1000, path: cookieObj.path, domain: cookieObj.domain});
+		var cookieObj = createSidCookieObj(session),
+			cookieResOptions = {path: cookieObj.path, domain: cookieObj.domain};
+
+		if (cookieObj['max-age'] !== undefined) {
+			cookieResOptions.maxAge = cookieObj['max-age'] * 1000;
+		}
+		res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
 		//Передаем browser дальше, на случай дальнейшего использования, например, прямого доступа к /badbrowser или /nojs
 		req.browser = browser;
