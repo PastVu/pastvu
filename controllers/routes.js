@@ -2,9 +2,25 @@
 
 var _ = require('lodash'),
 	Utils = require('../commons/Utils.js'),
+	settings = require('./settings.js'),
 	_session = require('./_session.js');
 
 module.exports.loadController = function (app) {
+	var genInitDataString = (function () {
+		var clientParamsJSON = JSON.stringify(settings.getClientParams());
+		console.log(clientParamsJSON);
+		return function (usObj) {
+			var resultString = 'var init={settings:' + clientParamsJSON + ', user:' + JSON.stringify(_session.getPlainUser(usObj.user));
+
+			if (usObj.registered) {
+				resultString += ',registered:true';
+			}
+
+			resultString += '};';
+
+			return resultString;
+		};
+	}());
 
 	//Создание сессии и проверка браузера при обращении ко всем путям
 	app.get('*', _session.handleRequest);
@@ -59,15 +75,5 @@ module.exports.loadController = function (app) {
 		res.send(200, 'pong');
 	});
 
-	function genInitDataString(usObj) {
-		var resultString = 'var init={';
 
-		if (usObj.user) {
-			resultString += 'user:' + JSON.stringify(_session.getPlainUser(usObj.user));
-		}
-
-		resultString += '};';
-
-		return resultString;
-	}
 };

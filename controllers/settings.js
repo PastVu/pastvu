@@ -18,7 +18,7 @@ var auth = require('./auth.js'),
 /**
  * Заполняем объект для параметров клиента
  */
-function fillClientParams() {
+function fillClientParams(cb) {
 	var params = {
 		server: appEnv.serverAddr,
 		appHash: appEnv.hash,
@@ -30,12 +30,14 @@ function fillClientParams() {
 		},
 		function (err, settings) {
 			if (err) {
-				return logger.error(err);
+				logger.error(err);
+				return cb(err);
 			}
 			for (var i = settings.length; i--;) {
 				params[settings[i].key] = settings[i].val;
 			}
 			clientSettings = params;
+			cb();
 		}
 	);
 }
@@ -43,7 +45,7 @@ function fillClientParams() {
 /**
  * Заполняем объект для параметров пользователя по умолчанию
  */
-function fillUserSettingsDef() {
+function fillUserSettingsDef(cb) {
 	var params = {};
 	step(
 		function () {
@@ -51,13 +53,15 @@ function fillUserSettingsDef() {
 		},
 		function (err, settings) {
 			if (err) {
-				return logger.error(err);
+				logger.error(err);
+				return cb(err);
 			}
 			for (var i = settings.length; i--;) {
 				params[settings[i].key] = settings[i].val;
 				userSettingsVars[settings[i].key] = settings[i].vars;
 			}
 			userSettingsDef = params;
+			cb();
 		}
 	);
 }
@@ -65,19 +69,21 @@ function fillUserSettingsDef() {
 /**
  * Заполняем объект для возможных званий пользователя
  */
-function fillUserRanks() {
+function fillUserRanks(cb) {
 	step(
 		function () {
 			UserSettingsDef.findOne({key: 'ranks'}, {_id: 0, vars: 1}, {lean: true}, this);
 		},
 		function (err, row) {
 			if (err) {
-				return logger.error(err);
+				logger.error(err);
+				return cb(err);
 			}
 			for (var i = 0; i < row.vars.length; i++) {
 				userRanksHash[row.vars[i]] = 1;
 			}
 			userRanks = row.vars;
+			cb();
 		}
 	);
 }
@@ -98,29 +104,35 @@ module.exports.getUserRanksHash = function () {
 	return userRanksHash;
 };
 
-module.exports.loadController = function (app, db, io) {
+module.exports.loadController = function (app, db, io, cb) {
 	appvar = app;
 	appEnv = app.get('appEnv');
 
 	Settings = db.model('Settings');
 	UserSettingsDef = db.model('UserSettingsDef');
-	fillClientParams();
-	fillUserSettingsDef();
-	fillUserRanks();
+	step(
+		function () {
+			fillClientParams(this.parallel());
+			fillUserSettingsDef(this.parallel());
+			fillUserRanks(this.parallel());
+		},
+		function (err) {
+			io.sockets.on('connection', function (socket) {
+				var hs = socket.handshake;
 
-	io.sockets.on('connection', function (socket) {
-		var hs = socket.handshake;
+				socket.on('giveClientParams', function () {
+					socket.emit('takeClientParams', clientSettings);
+				});
 
-		socket.on('giveClientParams', function () {
-			socket.emit('takeClientParams', clientSettings);
-		});
+				socket.on('giveUserSettingsVars', function () {
+					socket.emit('takeUserSettingsVars', userSettingsVars);
+				});
 
-		socket.on('giveUserSettingsVars', function () {
-			socket.emit('takeUserSettingsVars', userSettingsVars);
-		});
-
-		socket.on('giveUserAllRanks', function () {
-			socket.emit('takeUserAllRanks', userRanks);
-		});
-	});
+				socket.on('giveUserAllRanks', function () {
+					socket.emit('takeUserAllRanks', userRanks);
+				});
+			});
+			cb(err);
+		}
+	);
 };

@@ -45,7 +45,7 @@ var app,
 	settings = require('./settings.js'),
 	regionController = require('./region.js'),
 
-	SESSION_SHELF_LIFE = ms('30d'), //Срок годности сессии с последней активности
+	SESSION_SHELF_LIFE = ms('21d'), //Срок годности сессии с последней активности
 
 	usLogin = {}, //usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
 	usId = {}, //usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
@@ -107,8 +107,7 @@ function userObjectAddSession(session, cb) {
 		}
 	}
 
-	session.usObj = usObj; //Добавляем в сессию ссылку на объект пользователя TODO: Убрать
-	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий пользователя
+	usObj.sessions[session.key] = session; //Добавляем сессию в хеш сессий объекта пользователя
 
 	if (firstAdding) {
 		userObjectTreatUser(usObj, function (err) {
@@ -169,7 +168,7 @@ function sessionToHashes(session, cb) {
 	});
 }
 
-//Убирает сессию из памяти (хешей) с проверкой объекта пользователя и убирает его, если сессий у него не осталось
+//Убирает сессию из памяти (хешей) с проверкой объекта пользователя и убирает его тоже, если сессий у него не осталось
 function sessionFromHashes(usObj, session, logPrefix) {
 	var sessionKey = session.key,
 		userKey = usObj.login || session.key,
@@ -274,12 +273,15 @@ function popUserRegions(usObj, cb) {
 }
 
 //Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-function regetUser(u, emitHim, emitExcludeSocket, cb) {
+function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
+	if (!usObj.registered) {
+		return cb({message: 'Can reget only registered user'});
+	}
+	var u = usObj.user;
 	User.findOne({login: u.login}, function (err, user) {
-		var usObj = usLogin[user.login]; //TODO: Подавать на вход уже usObj
 		userObjectTreatUser(usObj, function (err) {
 			if (err || !user) {
-				console.log('Error wile regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
+				console.log('Error while regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
 				if (cb) {
 					cb(err || {message: 'No such user for reget'});
 				}
@@ -527,10 +529,10 @@ function authConnection(ip, headers, finishCb) {
 					if (err) {
 						return finishCb({type: errtypes.CANT_GET_SESSION});
 					}
-					sessionToHashes(session || sessionCreate(ip, headers, browser), function (err, session) {
+					sessionToHashes(session || sessionCreate(ip, headers, browser), function (err, usObj, session) {
 						if (Array.isArray(sessWaitingSelect[existsSid])) {
 							sessWaitingSelect[existsSid].forEach(function (item) {
-								item.cb.call(null, err, session);
+								item.cb.call(null, err, usObj, session);
 							});
 							delete sessWaitingSelect[existsSid];
 						}
@@ -556,7 +558,7 @@ module.exports.handleRequest = function (req, res, next) {
 			return;
 		}
 
-		req.handshake = {session: session, usObj: session.usObj};
+		req.handshake = {session: session, usObj: usObj};
 
 		//Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
 		var cookieObj = createSidCookieObj(session);
@@ -623,7 +625,7 @@ module.exports.handleSocket = (function () {
 }());
 
 
-//Периодически уничтожает ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
+//Периодически убирает из памяти ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
 var checkSessWaitingConnect = (function () {
 	var checkInterval = ms('10s'),
 		sessWaitingPeriod = ms('30s');

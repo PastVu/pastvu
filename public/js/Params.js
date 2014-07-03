@@ -5,8 +5,6 @@
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _, ko, ko_mapping) {
 	'use strict';
 	var head = document.head,
-		appHash = (head.dataset && head.dataset.apphash) || head.getAttribute('data-apphash') || '000',
-		appName = (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 		$window = $(window),
 
 		Params = {
@@ -18,10 +16,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 			settings: {
 				client: {},
 				server: {},
-
-				appVersion: '0',
-				appHash: appHash,
-				appName: appName,
+				appName: (head.dataset && head.dataset.appname) || head.getAttribute('data-appname') || 'Main',
 
 				USE_OSM_API: true,
 				USE_GOOGLE_API: true,
@@ -56,11 +51,33 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 
 				midnight: null, //Миллисекунды полуночи текущего дня
 				midnightWeekAgo: null //Миллисекунды полуночи семи дней назад
+			},
+			//Обновляем настройки и в случае наличия поддоменов формируем их массив
+			updateSettings: function (settings, plain) {
+				var subdomains;
+				if (plain) {
+					_.merge(Params.settings, settings);
+					subdomains = settings.server.subdomains || [];
+				} else {
+					ko_mapping.fromJS({settings: settings}, Params, {copy: ['updateParams', 'times', 'preaddrs', 'preaddr']});
+					subdomains = Params.settings.server.subdomains() || [];
+				}
+				if (subdomains && subdomains.length) {
+					subdomains(_.shuffle(subdomains));
+					Params.preaddrs = subdomains.map(function (sub) {
+						return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
+					});
+					Params.preaddr = Params.preaddrs[0];
+				} else {
+					Params.preaddrs = [];
+					Params.preaddr = '';
+				}
 			}
 		};
 
 	Params.window.square = Params.window.w * Params.window.h;
-	Params = ko_mapping.fromJS(Params, {copy: 'times'});
+	Params.updateSettings(init.settings, true);
+	Params = ko_mapping.fromJS(Params, {copy: ['updateParams', 'times', 'preaddrs', 'preaddr']});
 
 	//Считаем переменные времен
 	(function timesRecalc() {

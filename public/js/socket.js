@@ -49,68 +49,13 @@ define(['module'], function (module) {
 					}
 
 					//Обновляем настройки
-					updateParams(data.p);
+					P.updateSettings(data.p);
 
 					//Обновляем куки
 					if (Utils.isType('object', data.cook)) {
 						updateCookie(data.cook);
 					}
 				});
-
-				function receiveConnectDataFirst(data) {
-					if (!data || !Utils.isType('object', data.p)) {
-						console.log(getConsoleTime(), 'First connectData receive error!');
-						return;
-					}
-
-					//Принимаем настройки
-					updateParams(data.p);
-
-					//Принимаем своего пользователя
-					if (Utils.isType('object', data.u)) {
-						P.iAm = data.u;
-					}
-
-					//Устанавливаем куки
-					if (Utils.isType('object', data.cook)) {
-						updateCookie(data.cook);
-					}
-
-					socket.on('connectData', receiveConnectDataFurther);
-
-					onLoad(socket);
-				}
-
-				//Обработчик получения данных после повторных коннектов
-				function receiveConnectDataFurther(data) {
-					if (!data || !Utils.isType('object', data.p)) {
-						console.log(getConsoleTime(), 'Further connectData receive error!');
-						return;
-					}
-
-					//Обновляем настройки
-					updateParams(data.p);
-
-					//Обновляем куки
-					if (Utils.isType('object', data.cook)) {
-						updateCookie(data.cook);
-					}
-				}
-
-				//Обновляем настройки и в случае наличия поддоменов формируем их массив
-				function updateParams(p) {
-					ko_mapping.fromJS({settings: p}, P);
-					if (P.settings.server.subdomains() && P.settings.server.subdomains().length) {
-						P.settings.server.subdomains(_.shuffle(P.settings.server.subdomains()));
-						P.preaddrs = P.settings.server.subdomains().map(function (sub) {
-							return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
-						});
-						P.preaddr = P.preaddrs[0];
-					} else {
-						P.preaddrs = [];
-						P.preaddr = '';
-					}
-				}
 
 				function updateCookie(obj) {
 					Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);

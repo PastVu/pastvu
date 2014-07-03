@@ -7,7 +7,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		create: function () {
 			this.loggedIn = ko.observable(false);
 
-			if (P.iAm) {
+			if (init.user) {
 				this.processMe(P.iAm);
 				delete P.iAm;
 			} else {
@@ -23,7 +23,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
 			this.avatar = ko.observable('');
 			this.name = ko.observable('');
-
 
 			this.msg = ko.observable('');
 			this.caps = ko.observable(false);

@@ -193,8 +193,7 @@ function saveUserCredentials(socket, data, cb) {
 	var iAm = socket.handshake.session.user,
 		login = data && data.login,
 		itsMe = (iAm && iAm.login) === login,
-		itsOnline,
-		i;
+		itsOnline;
 
 	if (!iAm || iAm.role < 10) {
 		return cb({message: msg.deny, error: true});

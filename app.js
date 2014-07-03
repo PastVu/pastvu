@@ -8,6 +8,7 @@ var express = require('express'),
 	path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
+	step = require('step'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 	_ = require('lodash'),
@@ -244,10 +245,20 @@ async.waterfall([
 			_session.loadController(app, db, io);
 			callback(null);
 		},
-		function loadingControllers(callback) {
-			require('./controllers/settings.js').loadController(app, db, io);
+		function (callback) {
+			step(
+				function () {
+					require('./controllers/settings.js').loadController(app, db, io, this.parallel());
+					require('./controllers/region.js').loadController(app, db, io, this.parallel());
+				},
+				function (err) {
+					callback(err);
+				}
+			);
+
+		},
+		function (callback) {
 			require('./controllers/actionlog.js').loadController(app, db, io);
-			var regionController = require('./controllers/region.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
 			require('./controllers/index.js').loadController(app, db, io);
@@ -274,8 +285,7 @@ async.waterfall([
 			//require('./basepatch/v1.1.1.js').loadController(app, db);
 
 			CoreServer = require('./controllers/coreadapter.js');
-
-			regionController.fillCache(callback);
+			callback(null);
 		}
 	],
 	function finish(err) {
