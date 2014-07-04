@@ -1,18 +1,11 @@
-/*global define:true, ga:true*/
 define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
 	'use strict';
 
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.loggedIn = ko.observable(false);
-
-			if (init.user) {
-				this.processMe(P.iAm);
-				delete P.iAm;
-			} else {
-				this.iAm = User.vm();
-			}
+			this.loggedIn = ko.observable(!!init.registered);
+			this.processMe(init.user);
 
 			this.mode = ko.observable('');
 			this.working = ko.observable(false);
@@ -358,20 +351,26 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				this.processMe(data.u);
 			}
 		},
-		//Обновление модели залогиненного пользователя с сервера при логине или emitUser
-		processMe: function (user) {
-			if (user) {
-				user.online = true; //Залогиненный пользователь всегда онлайн
-				this.iAm = User.vm(user, this.iAm);
+		//Обновление модели пользователя с сервера при логине или emitUser
+		processMe: function (user, makedLoggedIn) {
+			var storageUser = storage.users[user.login],
+				loggedIn = !!makedLoggedIn || this.loggedIn();
 
-				if (this.loggedIn()) {
-					storage.users[user.login].origin = user;
-					this.iAm._v_(this.iAm._v_() + 1);
-				} else {
-					storage.users[user.login] = {origin: user, vm: this.iAm};
-					this.loggedIn(true);
-				}
+			if (loggedIn) {
+				user.online = true; //Залогиненный пользователь всегда онлайн
 			}
+			this.iAm = User.vm(user, this.iAm);
+
+			if (!storageUser) {
+				storage.users[user.login] = {origin: user, vm: this.iAm};
+			} else {
+				storageUser.origin = user;
+			}
+			if (makedLoggedIn) {
+				this.loggedIn(true); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
+			}
+			//Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
+			this.iAm._v_(this.iAm._v_() + 1);
 		},
 		reloadMe: function () {
 			socket.emit('whoAmI');
@@ -380,7 +379,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error && json.youAre) {
-						this.processMe(json.youAre);
+						this.processMe(json.youAre, true);
 					}
 
 					if (Utils.isType('function', callback)) {

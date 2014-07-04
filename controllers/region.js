@@ -36,7 +36,7 @@ for (i = 0; i <= maxRegionLevel; i++) {
 
 //Заполняем кэш (массив и хэш) регионов в память
 function fillCache(cb) {
-	Region.find({}, {_id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1}, {lean: true}, function (err, regions) {
+	Region.find({}, {_id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1}, {lean: true, sort: {cid: 1}}, function (err, regions) {
 		if (err) {
 			logger.error('FillCache: ' + err.message);
 			if (cb) {
@@ -55,6 +55,7 @@ function fillCache(cb) {
 		regionCacheHash = hash;
 		regionCacheArr = regions;
 
+		loggerApp.info(regions[0]);
 		logger.info('Region cache filled with ' + regions.length);
 		loggerApp.info('Region cache filled with ' + regions.length);
 		if (cb) {
@@ -77,6 +78,7 @@ function getRegionsArrFromCache(cids) {
 
 	return result;
 }
+
 function getRegionsHashFromCache(cids) {
 	var result = {},
 		region,

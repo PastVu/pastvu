@@ -10,6 +10,9 @@ var app,
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
 
+	settings = require('./settings.js'),
+	regionController = require('./region.js'),
+
 	errtypes = {
 		NO_HEADERS: 'Bad request - no header or user agent',
 		BAD_BROWSER: 'Bad browser, we do not support it',
@@ -30,6 +33,23 @@ var app,
 		'Mobile Safari': '>=5.1.0'
 	}),
 
+	getBrowserAgent = function (browser) {
+		var agent = {
+				n: browser.agent.family, //Agent name e.g. 'Chrome'
+				v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
+			},
+			device = browser.agent.device.toString(), //Device e.g 'Asus A100'
+			os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
+
+		if (os) {
+			agent.os = os;
+		}
+		if (device && device !== 'Other') {
+			agent.d = device;
+		}
+		return agent;
+	},
+
 	getPlainUser = (function () {
 		var userToPublicObject = function (doc, ret, options) {
 			delete ret._id;
@@ -44,10 +64,27 @@ var app,
 		};
 	}()),
 
-	settings = require('./settings.js'),
-	regionController = require('./region.js'),
-
 	SESSION_SHELF_LIFE = ms('21d'), //Срок годности сессии с последней активности
+//Создает объект с кукой ключа сессии
+	createSidCookieObj = (function () {
+		var key = 'pastvu.sid',
+			domain = global.appVar.serverAddr.domain,
+			cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+
+		return function (session) {
+			var newCoockie = {key: key, value: session.key, path: '/', domain: domain};
+
+			if (session.user) {
+				if (session.data && session.data.remember) {
+					newCoockie['max-age'] = cookieMaxAge;
+				}
+			} else {
+				newCoockie['max-age'] = cookieMaxAge;
+			}
+
+			return newCoockie;
+		};
+	}()),
 
 	usLogin = {}, //usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
 	usId = {}, //usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
@@ -56,29 +93,6 @@ var app,
 	sessConnected = {}, //Sessions. Хэш всех активных сессий, с установленными соединениями
 	sessWaitingConnect = {},//Хэш сессий, которые ожидают первого соединения
 	sessWaitingSelect = {}; //Хэш сессий, ожидающих выборки по ключу из базы
-
-
-//Создает объект с кукой ключа сессии
-var createSidCookieObj = (function () {
-	var key = 'pastvu.sid',
-		domain = global.appVar.serverAddr.domain,
-		cookieMaxAgeRegisteredRemember = SESSION_SHELF_LIFE / 1000,
-		cookieMaxAgeAnonimouse = SESSION_SHELF_LIFE / 1000;
-
-	return function (session) {
-		var newCoockie = {key: key, value: session.key, path: '/', domain: domain};
-
-		if (session.user) {
-			if (session.data && session.data.remember) {
-				newCoockie['max-age'] = cookieMaxAgeRegisteredRemember;
-			}
-		} else {
-			newCoockie['max-age'] = cookieMaxAgeAnonimouse;
-		}
-
-		return newCoockie;
-	};
-}());
 
 
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
@@ -120,34 +134,17 @@ function userObjectAddSession(session, cb) {
 	}
 }
 
-function getBrowserAgent(browser) {
-	var agent = {
-			n: browser.agent.family, //Agent name e.g. 'Chrome'
-			v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
-		},
-		device = browser.agent.device.toString(), //Device e.g 'Asus A100'
-		os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
-
-	if (os) {
-		agent.os = os;
-	}
-	if (device && device !== 'Other') {
-		agent.d = device;
-	}
-	return agent;
-}
-
 //Создаёт сессию и сохраняет её в базу. Не ждёт результата сохранения
 function sessionCreate(ip, headers, browser) {
 	var session = new Session({
-			key: Utils.randomString(12),
-			stamp: new Date(),
-			data: {
-				ip: ip,
-				headers: headers,
-				agent: getBrowserAgent(browser)
-			}
-		});
+		key: Utils.randomString(12),
+		stamp: new Date(),
+		data: {
+			ip: ip,
+			headers: headers,
+			agent: getBrowserAgent(browser)
+		}
+	});
 
 	session.save();
 	return session;
@@ -380,7 +377,8 @@ function destroy(socket, cb) {
 
 //Работа с сессиями при авторизации пользователя, вызывается из auth-контроллера
 function authUser(socket, user, data, cb) {
-	var sessionOld = socket.handshake.session,
+	var handshake = socket.handshake,
+		sessionOld = handshake.session,
 		usObjOld = usSid[sessionOld.key],
 		sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
 		sessionNew = sessionCopy(sessionOld);
@@ -389,6 +387,9 @@ function authUser(socket, user, data, cb) {
 	//поэтому затем после сохранения сессии нужно будет сделать populate на этом поле. (mongoose 3.6)
 	//https://github.com/LearnBoost/mongoose/issues/1530
 	sessionNew.user = user;
+
+	//Удаляем поле анонимного пользователя
+	sessionNew.anonym = undefined;
 
 	//Присваиваем поля data специфичные для залогиненного пользователя
 	_.assign(sessionOld.data, {remember: data.remember});
@@ -410,14 +411,24 @@ function authUser(socket, user, data, cb) {
 			delete sessHash[sessionOld.key]; //Удаляем архивируемую сессию из хэша сессий
 			sessHash[sessionOld.key] = sessionNew; //Кладем новую сессию в хэш сессий
 
+			//Переносим сокеты из старой в новую сессию
+			sessionNew.sockets = sessionOld.sockets;
+			delete sessionOld.sockets;
+
 			//Отправляем старую сессию в архив
 			sessionToArchive(sessionOld);
+
+			//Кладем новую сессию в handshake
+			handshake.session = sessionNew;
 
 			//Добавляем новую сессию в usObj(создастся если еще нет, а если есть, пользователь в сессию возьмется оттуда вместо спопулированного)
 			userObjectAddSession(sessionNew, function (err, usObj) {
 				if (err) {
 					cb(err, sessionNew);
 				}
+				//Кладем новый usObj в handshake
+				handshake.usObj = usObj;
+
 				var userPlain = getPlainUser(usObj.user);
 
 				//При логине отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
@@ -754,6 +765,7 @@ module.exports.getOnline = getOnline;
 //Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
 module.exports.usLogin = usLogin;
 module.exports.usId = usId;
+module.exports.usSid = usSid;
 module.exports.sessConnected = sessConnected;
 module.exports.sessWaitingConnect = sessWaitingConnect;
 module.exports.regetUser = regetUser;

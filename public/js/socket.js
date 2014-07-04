@@ -1,4 +1,3 @@
-/*global define*/
 define(['module'], function (module) {
 	'use strict';
 
@@ -14,18 +13,24 @@ define(['module'], function (module) {
 			}
 
 			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
-				var socket = io(location.host, {
-					reconnectionDelay: 800,  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
-					reconnectionDelayMax: 10000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
-					reconnectionAttempts: 100 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
-				});
+				var loaded,
+					socket = io(location.host, {
+						reconnectionDelay: 800,  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
+						reconnectionDelayMax: 10000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
+						reconnectionAttempts: 100 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
+					});
 
 				socket.on('error', function (reason) {
 					console.log(getConsoleTime(), 'Unable to connect socket: ', reason);
 				});
 				socket.on('connect', function () {
-					console.log(getConsoleTime(), 'Connected to server');
+					if (!loaded) {
+						console.log(getConsoleTime(), 'Connected to server');
+						loaded = true;
+						onLoad(socket);
+					}
 				});
+
 				socket.on('disconnect', function () {
 					console.log(getConsoleTime(), 'Disconnected from server ');
 				});
