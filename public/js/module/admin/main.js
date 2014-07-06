@@ -88,7 +88,7 @@ define([
 					}
 					return result;
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('getOnlineStat');
 		}
 	});

@@ -169,7 +169,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveUserSubscr', {login: this.u.login(), type: type, page: page});
 		},
 

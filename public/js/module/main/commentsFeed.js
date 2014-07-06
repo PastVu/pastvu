@@ -95,7 +95,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (cb) {
 					cb.call(ctx);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveCommentsFeed', {limit: 30});
 		}
 	});

@@ -23,7 +23,7 @@ define(['underscore', 'Params', 'socket!', 'knockout', 'm/_moduleCliche', 'globa
 				if (this.modal) {
 					this.modal.$curtain.addClass('showModalCurtain');
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveAbout');
 		},
 		hide: function () {

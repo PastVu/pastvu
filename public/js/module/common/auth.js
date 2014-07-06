@@ -25,10 +25,10 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			}, this);
 
 			//При изменении данных профиля на сервере, обновляем его на клиенте
-			socket.on('youAre', this.processMe.bind(this));
+			socket.on('youAre', this.processMe, this);
 
-			socket.on('command', this.commandHandler.bind(this));
-			socket.on('connectData', this.reconnectHandler.bind(this));
+			socket.on('command', this.commandHandler, this);
+			socket.on('connectData', this.reconnectHandler, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
 		show: function (mode, callback, ctx) {
@@ -385,7 +385,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 					if (Utils.isType('function', callback)) {
 						callback(json);
 					}
-				}.bind(this));
+				}, this);
 				socket.emit('loginRequest', data);
 			} catch (e) {
 				if (Utils.isType('function', callback)) {

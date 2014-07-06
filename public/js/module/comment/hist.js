@@ -79,7 +79,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, error, data.hists);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveCommentHist', {cid: this.cid, type: this.type});
 		}
 	});

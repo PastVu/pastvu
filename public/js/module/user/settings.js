@@ -102,7 +102,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, result);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveUserSettingsVars');
 		},
 		hide: function () {
@@ -139,7 +139,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, result);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('changeUserSetting', {login: this.u.login(), key: key, val: val});
 		},
 
@@ -149,7 +149,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					this.u.disp(result.disp);
 					this.originUser.disp = result.disp;
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('changeDispName', {login: this.u.login(), showName: !this.showName()});
 		},
 
@@ -186,7 +186,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						window.noty({text: result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 					}
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('changeEmail', {login: this.u.login(), email: this.u.email(), pass: pass});
 
 		},
@@ -204,7 +204,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				}
 				cb.call(ctx, error, data);
-			}.bind(this));
+			}, this);
 			socket.emit('saveUserHomeRegion', {login: this.u.login(), cid: cid});
 		},
 		saveFilterRegions: function (regions, cb, ctx) {
@@ -214,7 +214,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				}
 				cb.call(ctx, error);
-			}.bind(this));
+			}, this);
 			socket.emit('saveUserRegions', {login: this.u.login(), regions: regions});
 		},
 		regionDrop: function (cid) {

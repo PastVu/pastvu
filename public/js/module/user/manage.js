@@ -120,7 +120,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					}
 				}
 				dfd.resolve(result);
-			}.bind(this));
+			}, this);
 			socket.emit('giveUserAllRanks');
 			return dfd.promise();
 		},
@@ -131,7 +131,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					this.setRules(result.rules || {}, result.info || {});
 				}
 				dfd.resolve(result);
-			}.bind(this));
+			}, this);
 			socket.emit('giveUserRules', {login: this.u.login()});
 			return dfd.promise();
 		},
@@ -167,7 +167,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					this.regions(regions); //Переприсваиваем, чтобы сработал computed
 				}
 				this.exe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('saveUserCredentials', {login: this.u.login(), role: role, regions: regionsCids});
 		},
 		cancelCredentials: function (data, event) {
@@ -257,7 +257,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, result);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('saveUserRanks', {login: this.u.login(), ranks: this.u.ranks()});
 		},
 
@@ -276,7 +276,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				} else {
 					this.setRules(result.rules || {}, result.info || {});
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('saveUserRules', {login: this.u.login(), rules: {photoNewLimit: val}});
 		}
 	});

@@ -429,7 +429,7 @@ define([
 							]
 						}, this.chartsOptions));
 					}
-				}.bind(this));
+				}, this);
 				socket.emit('statConveyer', {});
 			}, this);
 
@@ -452,7 +452,7 @@ define([
 					this.conveyerEnabled(data.conveyerEnabled);
 				}
 				this.exe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('conveyerStartStop', !this.conveyerEnabled());
 		},
 		clearConveyer: function () {
@@ -494,7 +494,7 @@ define([
 									this.exe(false);
 									this.statFast();
 								}.bind(this));
-							}.bind(_this));
+							}, _this);
 							socket.emit('conveyerClear', true);
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
@@ -519,7 +519,7 @@ define([
 					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 				}
 				this.exe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('convertPhotosAll', {variants: convertVarsSel});
 		},
 
@@ -533,7 +533,7 @@ define([
 					this.converted(data.converted);
 				}
 				this.timeoutUpdate = window.setTimeout(this.statFast.bind(this), 2000);
-			}.bind(this));
+			}, this);
 			socket.emit('giveStatFastConveyer', {});
 		}
 	});

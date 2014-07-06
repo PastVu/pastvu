@@ -176,7 +176,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					console.dir(data);
 				}
 				cb.call(ctx || window, data);
-			}.bind(this));
+			}, this);
 			socket.emit('giveNewPhotosLimit', {login: this.auth.iAm.login()});
 		},
 		onFileAdd: function (e, data) {
@@ -304,7 +304,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						console.dir(data);
 					}
 					cb.call(ctx || window, data);
-				}.bind(this));
+				}, this);
 				socket.emit('createPhoto', toSaveArr);
 			} else {
 				cb.call(ctx || window, {cids: []});

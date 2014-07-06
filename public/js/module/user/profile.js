@@ -89,7 +89,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 						_.assign(this.originUser, target);
 						this.edit(false);
 					}
-				}.bind(this));
+				}, this);
 				socket.emit('saveUser', target);
 			}
 		},

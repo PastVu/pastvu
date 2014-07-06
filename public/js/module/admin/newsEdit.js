@@ -159,7 +159,7 @@ define([
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveNews', {cid: cid});
 		},
 		save: function () {
@@ -189,7 +189,7 @@ define([
 						globalVM.router.navigateToUrl('/admin/news/edit/' + data.news.cid);
 					}
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('saveNews', saveData);
 		},
 		submit: function (data, evt) {

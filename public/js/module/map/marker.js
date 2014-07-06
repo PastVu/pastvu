@@ -318,7 +318,7 @@ define([
 				}
 				newZoom = bound = null;
 				this.startPendingAt = undefined;
-			}.bind(this));
+			}, this);
 			socket.emit('getBounds', {z: newZoom, bounds: bounds, startAt: this.startPendingAt, year: this.year, year2: this.year2});
 		}
 	};
@@ -448,7 +448,7 @@ define([
 				console.log('Ошибка загрузки новых камер: ' + data.message);
 			}
 			zoom = bound = null;
-		}.bind(this));
+		}, this);
 		socket.emit('getBounds', {z: zoom, bounds: bounds, year: this.year, year2: this.year2});
 	};
 
