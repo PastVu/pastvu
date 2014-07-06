@@ -1,48 +1,26 @@
-if (!Function.prototype.bind) {
-	Function.prototype.bind = function (oThis) {
-		if (typeof this !== "function") {
-			// closest thing possible to the ECMAScript 5 internal IsCallable function
-			throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");
-		}
-
-		var aArgs = Array.prototype.slice.call(arguments, 1),
-			fToBind = this,
-			fNOP = function () {
-			},
-			fBound = function () {
-				return fToBind.apply(this instanceof fNOP
-					? this
-					: oThis,
-					aArgs.concat(Array.prototype.slice.call(arguments)));
-			};
-
-		fNOP.prototype = this.prototype;
-		fBound.prototype = new fNOP();
-
-		return fBound;
-	};
-}
-
 /*
  * classList.js: Cross-browser full element.classList implementation.
- * 2012-11-15
+ * 2014-01-31
  *
  * By Eli Grey, http://eligrey.com
  * Public Domain.
  * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
  */
-/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
-if (typeof document !== "undefined" && !("classList" in document.documentElement)) {
 
+/*global self, document, DOMException */
+
+/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
+
+if ("document" in self && !("classList" in document.createElement("_"))) {
 	(function (view) {
 		"use strict";
 
-		if (!('HTMLElement' in view) && !('Element' in view)) return;
+		if (!('Element' in view)) return;
 
 		var
 			classListProp = "classList"
 			, protoProp = "prototype"
-			, elemCtrProto = (view.HTMLElement || view.Element)[protoProp]
+			, elemCtrProto = view.Element[protoProp]
 			, objCtr = Object
 			, strTrim = String[protoProp].trim || function () {
 				return this.replace(/^\s+|\s+$/g, "");
@@ -82,7 +60,7 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
 			}
 			, ClassList = function (elem) {
 				var
-					trimmedClasses = strTrim.call(elem.className)
+					trimmedClasses = strTrim.call(elem.getAttribute("class") || "")
 					, classes = trimmedClasses ? trimmedClasses.split(/\s+/) : []
 					, i = 0
 					, len = classes.length
@@ -91,7 +69,7 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
 					this.push(classes[i]);
 				}
 				this._updateClassName = function () {
-					elem.className = this.toString();
+					elem.setAttribute("class", this.toString());
 				};
 			}
 			, classListProto = ClassList[protoProp] = []
@@ -152,15 +130,15 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
 				this._updateClassName();
 			}
 		};
-		classListProto.toggle = function (token, forse) {
+		classListProto.toggle = function (token, force) {
 			token += "";
 
 			var
 				result = this.contains(token)
 				, method = result ?
-					forse !== true && "remove"
+					force !== true && "remove"
 					:
-					forse !== false && "add"
+					force !== false && "add"
 				;
 
 			if (method) {
@@ -198,7 +176,8 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
  * Console Gag
  */
 (function (global) {
-	var noop = function () {},
+	var noop = function () {
+		},
 		getConsoleTime = function () {
 			return new Date().toLocaleTimeString();
 		},
@@ -227,7 +206,7 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
  * @url https://gist.github.com/1579671
  */
 if (!window.requestAnimationFrame || !window.cancelAnimationFrame) {
-	(function () {
+	(function (global) {
 		var lastTime = 0,
 			vendors = ['ms', 'moz', 'webkit', 'o'],
 			x,
@@ -235,17 +214,17 @@ if (!window.requestAnimationFrame || !window.cancelAnimationFrame) {
 			currTime,
 			timeToCall;
 
-		for (x = 0, length = vendors.length; x < length && !window.requestAnimationFrame; ++x) {
-			window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
-			window.cancelAnimationFrame = window[vendors[x] + 'CancelAnimationFrame'] || window[vendors[x] + 'CancelRequestAnimationFrame'];
+		for (x = 0, length = vendors.length; x < length && !global.requestAnimationFrame; ++x) {
+			global.requestAnimationFrame = global[vendors[x] + 'RequestAnimationFrame'];
+			global.cancelAnimationFrame = global[vendors[x] + 'CancelAnimationFrame'] || global[vendors[x] + 'CancelRequestAnimationFrame'];
 		}
 
-		if (!window.requestAnimationFrame) {
-			window.requestAnimationFrame = function (callback, element) {
+		if (!global.requestAnimationFrame) {
+			global.requestAnimationFrame = function (callback, element) {
 				currTime = Date.now();
 				timeToCall = Math.max(0, 16 - (currTime - lastTime));
 				lastTime = currTime + timeToCall;
-				return window.setTimeout(
+				return global.setTimeout(
 					function () {
 						callback(currTime + timeToCall);
 					},
@@ -254,10 +233,10 @@ if (!window.requestAnimationFrame || !window.cancelAnimationFrame) {
 			};
 		}
 
-		if (!window.cancelAnimationFrame) {
-			window.cancelAnimationFrame = function (id) {
-				window.clearTimeout(id);
+		if (!global.cancelAnimationFrame) {
+			global.cancelAnimationFrame = function (id) {
+				global.clearTimeout(id);
 			};
 		}
-	}());
+	}(window));
 }
