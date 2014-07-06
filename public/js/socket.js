@@ -1,10 +1,6 @@
 define(['module'], function (module) {
 	'use strict';
 
-	function getConsoleTime() {
-		return new Date().toLocaleTimeString();
-	}
-
 	return {
 		load: function (name, req, onLoad, config) {
 			if (config.isBuild) {
@@ -21,27 +17,27 @@ define(['module'], function (module) {
 					});
 
 				socket.on('error', function (reason) {
-					console.log(getConsoleTime(), 'Unable to connect socket: ', reason);
+					console.log('Unable to connect socket: ', reason);
 				});
 				socket.on('connect', function () {
 					if (!loaded) {
-						console.log(getConsoleTime(), 'Connected to server');
+						console.log('Connected to server');
 						loaded = true;
 						onLoad(socket);
 					}
 				});
 
 				socket.on('disconnect', function () {
-					console.log(getConsoleTime(), 'Disconnected from server ');
+					console.log('Disconnected from server ');
 				});
 				socket.on('reconnecting', function (attempt) {
-					console.log('%s Trying to reconnect to server %d time', getConsoleTime(), attempt);
+					console.log('Trying to reconnect to server %d time', attempt);
 				});
 				socket.on('reconnect_failed', function (attempt) {
-					console.log('%s Failed to reconnect for %d attempts. Stopped trying', getConsoleTime(), socket.io.reconnectionAttempts());
+					console.log('Failed to reconnect for %d attempts. Stopped trying', socket.io.reconnectionAttempts());
 				});
 				socket.on('reconnect', function () {
-					console.log(getConsoleTime(), 'ReConnected to server');
+					console.log('ReConnected to server');
 					//После реконнекта заново запрашиваем initData
 					socket.emit('giveInitData', location.pathname);
 				});
@@ -49,7 +45,7 @@ define(['module'], function (module) {
 				socket.on('updateCookie', updateCookie);
 				socket.on('takeInitData', function (data) {
 					if (!data || data.error) {
-						console.log(getConsoleTime(), 'takeInitData receive error!', data.error);
+						console.log('takeInitData receive error!', data.error);
 						return;
 					}
 

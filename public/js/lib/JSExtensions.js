@@ -1,42 +1,3 @@
-if (!Function.prototype.neoBind) {
-	/**@author P.Klimashkin
-	 * @param {!Object} scope Context, that becomes 'this' in function.
-	 * @param {!Array=} bindArgs Array of parameters.
-	 * @param {!boolean=} bindArgsFirst Insert bind_arguments first.
-	 * @param {!boolean=} pushCallee Add callee (wrapped function) as last parameter.
-	 * @return {!Function} Closured function.*/
-	Function.prototype.neoBind = function (scope, bindArgs, bindArgsFirst, pushCallee) {
-		'use strict';
-		/**@type {!Function}*/
-		var fn = this;
-		return function binder() {
-			/**@type {!Array}*/
-			var args = (bindArgs ?
-					(bindArgsFirst ? bindArgs.concat(Array.prototype.slice.call(arguments)) : Array.prototype.slice.call(arguments).concat(bindArgs)) :
-					Array.prototype.slice.call(arguments)),
-				result,
-				bindingname = '';
-			if (pushCallee !== false) {
-				args.push(binder);
-			}
-
-			try {
-				result = fn.apply(scope, args);
-			} catch (e) {
-				try {
-					bindingname = fn.toString();
-				} catch (e1) {
-				}
-				if (bindingname) {
-					e.message += ' Failed bound function: ' + bindingname;
-				}
-				throw e;
-			}
-			return result;
-		};
-	};
-}
-
 if (!Function.prototype.bind) {
 	Function.prototype.bind = function (oThis) {
 		if (typeof this !== "function") {
@@ -236,20 +197,28 @@ if (typeof document !== "undefined" && !("classList" in document.documentElement
  * @author P.Klimashkin
  * Console Gag
  */
-(function () {
-	function func() {
-	}
+(function (global) {
+	var noop = function () {},
+		getConsoleTime = function () {
+			return new Date().toLocaleTimeString();
+		},
+		logOriginal = global.console.log || noop;
 
-	if (!window.console) {
-		window.console = {};
+	if (!global.console) {
+		global.console = {};
 	}
-	["log", "debug", "info", "warn", "error", "assert", "clear", "dir", "dirxml", "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd", "timeStamp", "profile", "profileEnd", "count", "exception", "table"]
+	["debug", "info", "warn", "error", "assert", "clear", "dir", "dirxml", "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd", "timeStamp", "profile", "profileEnd", "count", "exception", "table"]
 		.forEach(function (method, index) {
-			if (!window.console[method]) {
-				window.console[method] = func;
+			if (!global.console[method]) {
+				global.console[method] = noop;
 			}
 		});
-}());
+	global.console.log = function () {
+		var args = Array.prototype.slice.call(arguments);
+		args[0] = getConsoleTime() + ' ' + args[0];
+		logOriginal.apply(this, args);
+	};
+}(window));
 
 
 /**
