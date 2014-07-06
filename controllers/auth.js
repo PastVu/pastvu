@@ -442,8 +442,8 @@ module.exports.loadController = function (a, db, io) {
 			});
 		});
 
-		socket.on('whoAmI', function (data) {
-			socket.emit('youAre', (hs.session.user && hs.session.user.toObject ? hs.session.user.toObject() : null));
+		socket.on('whoAmI', function () {
+			socket.emit('youAre', (hs.usObj.user && hs.usObj.user.toObject ? hs.usObj.user.toObject() : null));
 		});
 
 		socket.on('checkConfirm', function (data) {

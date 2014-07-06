@@ -198,5 +198,5 @@ require([
 
 	//window.appRouter = globalVM.router;
 	//window.glob = globalVM;
-	console.timeStamp('=== app load (' + appHash + ') ===');
+	console.log('APP %s loaded', appHash);
 });
