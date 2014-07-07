@@ -29,8 +29,8 @@ var app,
 		'Opera': '>=12.10.0',
 		'Chrome': '>=11.0.0', //11 версия - это Android 4 default browser в desktop-режиме
 		'Android': '>=4.0.0',
-		'Safari': '>=5.1.4',
-		'Mobile Safari': '>=5.1.0'
+		'Safari': '>=5.1.4', //5.1.4 это Function.prototype.bind
+		'Mobile Safari': '>=5.1.4'
 	}),
 
 	getBrowserAgent = function (browser) {

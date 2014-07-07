@@ -9,23 +9,30 @@ define(['module'], function (module) {
 			}
 
 			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
-				var sio = io(location.host, {
+				var moduleLoaded, //Флаг первоначального коннекта для вызова события загрузки модуля
+					connectPath = location.host,
+					connectOptions = {
 						reconnectionDelay: 800,  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
-						reconnectionDelayMax: 10000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
-						reconnectionAttempts: 100 ////Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
-					}),
-					loaded, //Флаг первоначального коннекта для вызова события загрузки модуля
+						reconnectionDelayMax: 7000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
+						reconnectionAttempts: 150 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
+					},
+					sio = io(connectPath, connectOptions),
+					socket = {connected: false, ons: {}},
+
 					disconnectionDataReturn = {error: true, message: 'Connection lost', noconnect: true},
-					socket = {connected: false, ons: {}};
+					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
+					noСonnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>',
+					$noСonnWait,
+					$noСonnFail;
 
 				sio.on('error', function (reason) {
 					console.log('Unable to connect socket: ', reason);
 				});
 				sio.on('connect', function () {
-					if (!loaded) {
+					if (!moduleLoaded) {
 						console.log('Connected to server');
 						socket.connected = true;
-						loaded = true;
+						moduleLoaded = true;
 						onLoad(socket);
 					}
 				});
@@ -37,14 +44,20 @@ define(['module'], function (module) {
 				});
 				sio.on('reconnecting', function (attempt) {
 					console.log('Trying to reconnect to server %d time', attempt);
+					if (attempt > 1) {
+						noConnWaitShow();
+					}
 				});
 				sio.on('reconnect_failed', function (attempt) {
+					noConnWaitHide();
+					noConnFailShow();
 					console.log('Failed to reconnect for %d attempts. Stopped trying', sio.io.reconnectionAttempts());
 				});
 				sio.on('reconnect', function () {
 					console.log('ReConnected to server');
 					socket.connected = true;
 					sio.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
+					noConnWaitHide();
 				});
 
 				sio.on('updateCookie', updateCookie);
@@ -147,6 +160,40 @@ define(['module'], function (module) {
 						if (socket.ons.hasOwnProperty(name)) {
 							eventHandlersNotify(name, disconnectionDataReturn);
 						}
+					}
+				}
+
+				function noConnWaitShow() {
+					if (!$noСonnWait) {
+						$noСonnWait = $(noСonnWait).appendTo('#top');
+					}
+				}
+
+				function noConnWaitHide() {
+					if ($noСonnWait) {
+						$noСonnWait.remove();
+						$noСonnWait = null;
+					}
+				}
+
+				function noConnRepeat() {
+					noConnFailHide();
+					noConnWaitShow();
+					sio.io.attempts = 0; //Вручную сбрасываем попытки
+					sio.io.reconnect(); //Вызываем реконнекты
+				}
+				function noConnFailShow() {
+					if (!$noСonnFail) {
+						$noСonnFail = $(noСonnFail);
+						$('.repeat', $noСonnFail).on('click', noConnRepeat);
+						$noСonnFail.appendTo('#top');
+					}
+				}
+
+				function noConnFailHide() {
+					if ($noСonnFail) {
+						$noСonnFail.remove();
+						$noСonnFail = null;
 					}
 				}
 
