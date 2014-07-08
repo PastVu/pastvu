@@ -76,6 +76,12 @@ define(['module'], function (module) {
 					}
 				});
 
+				setTimeout(function () {
+					sio.io.disconnect();
+					setTimeout(function () {
+						sio.io.maybeReconnectOnOpen();
+					}, 4000);
+				}, 2000);
 
 				socket.emit = function (name, data) {
 					//Если соединения нет, возращаем коллбэку ошибку через timeout
@@ -182,6 +188,7 @@ define(['module'], function (module) {
 					sio.io.attempts = 0; //Вручную сбрасываем попытки
 					sio.io.reconnect(); //Вызываем реконнекты
 				}
+
 				function noConnFailShow() {
 					if (!$noСonnFail) {
 						$noСonnFail = $(noСonnFail);
