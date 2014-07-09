@@ -28,7 +28,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			socket.on('youAre', this.processMe, this);
 
 			socket.on('command', this.commandHandler, this);
-			socket.on('connectData', this.reconnectHandler, this);
+
+			//Подписываемся на получение новых первоначальных данных (пользователя), на случай, если пока он был оффлайн, пользователь изменился
+			socket.on('takeInitData', function (data) {
+				if (_.isObject(data.u)) {
+					this.processMe(data.u);
+				}
+			}, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
 		show: function (mode, callback, ctx) {
@@ -344,13 +350,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			}
 		},
 
-		//Обновляет пользователя при реконнекте, на случай, если пока он был оффлайн, пользователь изменился
-		reconnectHandler: function (data) {
-			console.log('user reconnect');
-			if (Utils.isType('object', data.u)) {
-				this.processMe(data.u);
-			}
-		},
 		//Обновление модели пользователя с сервера при логине или emitUser
 		processMe: function (user, makedLoggedIn) {
 			var storageUser = storage.users[user.login],

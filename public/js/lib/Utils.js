@@ -1,9 +1,9 @@
-/*global define:true, escape:true, unescape:true*/
+/*global escape:true, unescape:true*/
 /**
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugins/extends'], function ($, _, _s, P) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends'], function ($, _, _s) {
 	var Utils = {
 
 		/**
@@ -316,9 +316,30 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 					}
 				}, 100); // the smaller this number, the more accurate the timer will be
 		},
+		times: (function () {
+			var times = {
+				msDay: 864e5,
+				msWeek: 6048e5,
+
+				midnight: null, //Миллисекунды полуночи текущего дня
+				midnightWeekAgo: null //Миллисекунды полуночи семи дней назад
+			};
+
+			//Считаем переменные времен
+			(function timesRecalc() {
+				var dateMidnight = new Date();
+
+				times.midnight = dateMidnight.setHours(0, 0, 0, 0);
+				times.midnightWeekAgo = times.midnight - times.msWeek;
+
+				setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1); //Планируем пересчет на первую миллисекунду следующего дня
+			}());
+
+			return times;
+		}()),
 
 		format: (function () {
-			var dateFormat = (function (){
+			var dateFormat = (function () {
 				var months = [
 						'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
 					],
@@ -334,6 +355,7 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 						mintues = date.getMinutes();
 					return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
+
 				function hhmm(date) {
 					var hours = date.getHours(),
 						mintues = date.getMinutes();
@@ -345,10 +367,10 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 					var dateMs = date.getTime(),
 						result;
 
-					if (dateMs < P.times.midnightWeekAgo) {
+					if (dateMs < Utils.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < P.times.midnight) {
-						if (dateMs < P.times.midnight - P.times.msDay) {
+					} else if (dateMs < Utils.times.midnight) {
+						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
 							result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
 						} else {
 							result = 'Вчера в ' + dateFormat.hhmm(date);
@@ -359,14 +381,15 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 
 					return result;
 				}
+
 				function relativeIn(date) {
 					var dateMs = date.getTime(),
 						result;
 
-					if (dateMs < P.times.midnightWeekAgo) {
+					if (dateMs < Utils.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < P.times.midnight) {
-						if (dateMs < P.times.midnight - P.times.msDay) {
+					} else if (dateMs < Utils.times.midnight) {
+						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
 							result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
 						} else {
 							result = 'вчера в ' + dateFormat.hhmm(date);
@@ -510,49 +533,6 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 			} else if (evt.type === "keydown" && n === 20) {
 				return false;
 			}
-		},
-
-
-		getClientWidth: function () {
-			var result = 0;
-			if (window.opera && window.innerWidth) {
-				result = window.innerWidth;
-			} else {
-				result = (document.compatMode === 'CSS1Compat' && !window.opera ?
-					document.documentElement.clientWidth : document.body.clientWidth);
-			}
-			return result;
-		},
-
-		getClientHeight: function () {
-			return window.opera && window.innerWidth ? window.innerWidth : (document.compatMode === 'CSS1Compat' && !window.opera ?
-				document.documentElement.clientHeight :
-				document.body.clientHeight);
-		},
-
-		getBodyScrollTop: function () {
-			return window.pageYOffset ||
-				(document.documentElement && document.documentElement.scrollTop) ||
-				(document.body && document.body.scrollTop);
-		},
-
-		getBodyScrollLeft: function () {
-			return window.pageXOffset ||
-				(document.documentElement && document.documentElement.scrollLeft) ||
-				(document.body && document.body.scrollLeft);
-		},
-
-		getDocumentHeight: function () {
-			var scrollHeight = document.body.scrollHeight,
-				offsetHeight = document.body.offsetHeight;
-			return (scrollHeight > offsetHeight) ? scrollHeight : offsetHeight;
-		},
-
-		getDocumentWidth: function () {
-			var scrollWidth = document.body.scrollWidth,
-				offsetWidth = document.body.offsetWidth;
-
-			return (scrollWidth > offsetWidth) ? scrollWidth : offsetWidth;
 		},
 
 		getElementComputedStyle: function (elem, prop) {

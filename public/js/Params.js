@@ -2,7 +2,7 @@
 /**
  * Params
  */
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _, ko, ko_mapping) {
+define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mapping'], function ($, _, socket, Utils, ko, ko_mapping) {
 	'use strict';
 	var head = document.head,
 		$window = $(window),
@@ -44,51 +44,14 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 				w: 'Запад',
 				nw: 'Северо-Запад',
 				aero: 'Аэро/Спутник'
-			},
-			times: {
-				msDay: 864e5,
-				msWeek: 6048e5,
-
-				midnight: null, //Миллисекунды полуночи текущего дня
-				midnightWeekAgo: null //Миллисекунды полуночи семи дней назад
-			},
-			//Обновляем настройки и в случае наличия поддоменов формируем их массив
-			updateSettings: function (settings, plain) {
-				var subdomains;
-				if (plain) {
-					_.merge(Params.settings, settings);
-					subdomains = settings.server.subdomains || [];
-				} else {
-					ko_mapping.fromJS({settings: settings}, Params, {copy: ['updateParams', 'times', 'preaddrs', 'preaddr']});
-					subdomains = Params.settings.server.subdomains() || [];
-				}
-				if (subdomains && subdomains.length) {
-					subdomains(_.shuffle(subdomains));
-					Params.preaddrs = subdomains.map(function (sub) {
-						return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
-					});
-					Params.preaddr = Params.preaddrs[0];
-				} else {
-					Params.preaddrs = [];
-					Params.preaddr = '';
-				}
 			}
 		};
 
 	Params.window.square = Params.window.w * Params.window.h;
-	Params.updateSettings(init.settings, true);
-	Params = ko_mapping.fromJS(Params, {copy: ['updateParams', 'times', 'preaddrs', 'preaddr']});
+	updateSettings(init.settings, true);
+	Params = ko_mapping.fromJS(Params, {copy: ['preaddrs', 'preaddr']});
 
-	//Считаем переменные времен
-	(function timesRecalc() {
-		var dateMidnight = new Date();
-
-		Params.times.midnight = dateMidnight.setHours(0, 0, 0, 0);
-		Params.times.midnightWeekAgo = Params.times.midnight - Params.times.msWeek;
-
-		setTimeout(timesRecalc, Params.times.midnight + Params.times.msDay - Date.now() + 1); //Планируем пересчет на первую миллисекунду следующего дня
-	}());
-
+	//Пересчитываем размеры при ресайзе окна
 	$window.on('resize', _.debounce(function () {
 		var w = $window.width(),
 			h = $window.height();
@@ -96,6 +59,51 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping'], function ($, _,
 		Params.window.h(h);
 		Params.window.square(w * h);
 	}, 50));
+
+
+	//Обновляем настройки и в случае наличия поддоменов формируем их массив
+	function updateSettings(settings, plain) {
+		var subdomains;
+		if (plain) {
+			_.merge(Params.settings, settings);
+			subdomains = settings.server.subdomains || [];
+		} else {
+			ko_mapping.fromJS({settings: settings}, Params, {copy: ['preaddrs', 'preaddr']});
+			subdomains = Params.settings.server.subdomains() || [];
+		}
+		if (subdomains && subdomains.length) {
+			subdomains(_.shuffle(subdomains));
+			Params.preaddrs = subdomains.map(function (sub) {
+				return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
+			});
+			Params.preaddr = Params.preaddrs[0];
+		} else {
+			Params.preaddrs = [];
+			Params.preaddr = '';
+		}
+	}
+
+	//Обновляет куки сессии переданным объектом с сервера
+	function updateCookie(obj) {
+		Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
+	}
+
+	//Подписываемся на обновление куки сессии
+	socket.on('updateCookie', updateCookie);
+
+	//Подписываемся на получение новых первоначальных данных (пользователь, куки, настройки)
+	socket.on('takeInitData', function (data) {
+		if (!data || data.error) {
+			console.log('takeInitData receive error!', data.error);
+			return;
+		}
+
+		updateSettings(data.p); //Обновляем настройки
+
+		if (_.isObject(data.cook)) {
+			updateCookie(data.cook); //Обновляем куки
+		}
+	});
 
 	return Params;
 });

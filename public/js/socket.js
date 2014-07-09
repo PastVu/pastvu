@@ -8,7 +8,7 @@ define(['module'], function (module) {
 				return;
 			}
 
-			req(['underscore', 'socket.io', 'Utils', 'Params', 'knockout', 'knockout.mapping'], function (_, io, Utils, P, ko, ko_mapping) {
+			req(['underscore', 'socket.io'], function (_, io) {
 				var moduleLoaded, //Флаг первоначального коннекта для вызова события загрузки модуля
 					connectPath = location.host,
 					connectOptions = {
@@ -16,7 +16,7 @@ define(['module'], function (module) {
 						reconnectionDelayMax: 7000, //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
 						reconnectionAttempts: 150 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 					},
-					sio = io(connectPath, connectOptions),
+					sio,
 					socket = {connected: false, ons: {}},
 
 					disconnectionDataReturn = {error: true, message: 'Нет соединения с сервером, повторите после восстановления связи', noconnect: true},
@@ -25,68 +25,10 @@ define(['module'], function (module) {
 					$noСonnWait,
 					$noСonnFail;
 
-				sio.on('error', function (reason) {
-					console.log('Unable to connect socket: ', reason);
-				});
-				sio.on('connect', function () {
-					if (!moduleLoaded) {
-						console.log('Connected to server');
-						socket.connected = true;
-						moduleLoaded = true;
-						onLoad(socket);
-					}
-				});
-
-				sio.on('disconnect', function () {
-					console.log('Disconnected from server ');
-					socket.connected = false;
-					disconnectionAllNotyfy();
-				});
-				sio.on('reconnecting', function (attempt) {
-					console.log('Trying to reconnect to server %d time', attempt);
-					if (attempt > 1) {
-						noConnWaitShow();
-					}
-				});
-				sio.on('reconnect_failed', function (attempt) {
-					noConnWaitHide();
-					noConnFailShow();
-					console.log('Failed to reconnect for %d attempts. Stopped trying', sio.io.reconnectionAttempts());
-				});
-				sio.on('reconnect', function () {
-					console.log('ReConnected to server');
-					socket.connected = true;
-					sio.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
-					noConnWaitHide();
-				});
-
-				sio.on('updateCookie', updateCookie);
-				sio.on('takeInitData', function (data) {
-					if (!data || data.error) {
-						console.log('takeInitData receive error!', data.error);
-						return;
-					}
-
-					//Обновляем настройки
-					P.updateSettings(data.p);
-
-					//Обновляем куки
-					if (Utils.isType('object', data.cook)) {
-						updateCookie(data.cook);
-					}
-				});
-
-				/*setTimeout(function () {
-					sio.io.disconnect();
-					setTimeout(function () {
-						sio.io.maybeReconnectOnOpen();
-					}, 4000);
-				}, 2000);*/
-
 				/**
 				 * Отправляет данные на сервер
 				 * @param name Имя сообщения
-				 * @param data Данные
+				 * @param [data] Данные
 				 * @returns {boolean} Отправлено ли сообщение
 				 */
 				socket.emit = function (name, data) {
@@ -100,8 +42,8 @@ define(['module'], function (module) {
 				 * Постоянная подписка на событие
 				 * @param name Имя события
 				 * @param cb Коллбэк
-				 * @param ctx Контекст коллбэка
-				 * @param noConnectionNotify Флаг, вызывать ли при отсутствии соединения. По умолчанию - false
+				 * @param [ctx] Контекст коллбэка
+				 * @param {boolean} [noConnectionNotify=false] Флаг, вызывать ли при отсутствии соединения. По умолчанию - false
 				 * @returns {boolean} Флаг, что событие зарегистрировано
 				 */
 				socket.on = function (name, cb, ctx, noConnectionNotify) {
@@ -118,8 +60,8 @@ define(['module'], function (module) {
 				 * Одноразовая подписка на событие. Отписывается после первого вызова коллбэка
 				 * @param name Имя события
 				 * @param cb Коллбэк
-				 * @param ctx Контекст коллбэка
-				 * @param noConnectionNotify Флаг, вызывать ли при отсутствии соединения. По умолчанию - true
+				 * @param [ctx] Контекст коллбэка
+				 * @param {boolean} [noConnectionNotify=true] Флаг, вызывать ли при отсутствии соединения. По умолчанию - true
 				 * @returns {boolean} Флаг, что событие зарегистрировано и коннект есть
 				 */
 				socket.once = function (name, cb, ctx, noConnectionNotify) {
@@ -137,7 +79,7 @@ define(['module'], function (module) {
 				/**
 				 * Отписка от события. Если конкретный коллбжк не передан, отпишет все обработчики события
 				 * @param name Имя события
-				 * @param cb Коллбэк
+				 * @param [cb] Коллбэк
 				 * @returns {boolean}
 				 */
 				socket.off = function (name, cb) {
@@ -258,10 +200,51 @@ define(['module'], function (module) {
 					}
 				}
 
-				//Обновляет куки сессии переданным объектом с сервера
-				function updateCookie(obj) {
-					Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
-				}
+				//Коннектимся
+				sio = io(connectPath, connectOptions);
+
+				sio.on('error', function (reason) {
+					console.log('Unable to connect socket: ', reason);
+				});
+				sio.on('connect', function () {
+					if (!moduleLoaded) {
+						console.log('Connected to server');
+						socket.connected = true;
+						moduleLoaded = true;
+						onLoad(socket);
+					}
+				});
+
+				sio.on('disconnect', function () {
+					console.log('Disconnected from server ');
+					socket.connected = false;
+					disconnectionAllNotyfy();
+				});
+				sio.on('reconnecting', function (attempt) {
+					console.log('Trying to reconnect to server %d time', attempt);
+					if (attempt > 1) {
+						noConnWaitShow();
+					}
+				});
+				sio.on('reconnect_failed', function (attempt) {
+					noConnWaitHide();
+					noConnFailShow();
+					console.log('Failed to reconnect for %d attempts. Stopped trying', sio.io.reconnectionAttempts());
+				});
+				sio.on('reconnect', function () {
+					console.log('ReConnected to server');
+					socket.connected = true;
+					sio.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
+					noConnWaitHide();
+				});
+
+				/*setTimeout(function () {
+					 sio.io.disconnect();
+					 setTimeout(function () {
+					    sio.io.maybeReconnectOnOpen();
+					 }, 4000);
+				 }, 2000);
+				 */
 			});
 		}
 	};

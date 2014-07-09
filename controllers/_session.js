@@ -65,8 +65,9 @@ var app,
 	}()),
 
 	SESSION_SHELF_LIFE = ms('21d'), //Срок годности сессии с последней активности
-//Создает объект с кукой ключа сессии
+
 	createSidCookieObj = (function () {
+		//Создает объект с кукой ключа сессии
 		var key = 'pastvu.sid',
 			domain = global.appVar.serverAddr.domain,
 			cookieMaxAge = SESSION_SHELF_LIFE / 1000;
@@ -202,6 +203,7 @@ function sessionFromHashes(usObj, session, logPrefix) {
 
 	delete sessConnected[sessionKey];
 	someCountNew = Object.keys(sessConnected).length;
+	console.log('Delete session from sessConnected', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
 		console.log(logPrefix, 'WARN-Session not removed (' + sessionKey + ')', userKey);
 	}
@@ -209,6 +211,7 @@ function sessionFromHashes(usObj, session, logPrefix) {
 	someCountPrev = Object.keys(usSid).length;
 	delete usSid[sessionKey];
 	someCountNew = Object.keys(usSid).length;
+	console.log('Delete session from usSid', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
 		console.log(logPrefix, 'WARN-Session from usSid not removed (' + sessionKey + ')', userKey);
 	}
@@ -216,12 +219,13 @@ function sessionFromHashes(usObj, session, logPrefix) {
 	someCountPrev = Object.keys(usObj.sessions).length;
 	delete usObj.sessions[sessionKey];
 	someCountNew = Object.keys(usObj.sessions).length;
+	console.log('Delete session from usObj.sessions', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
 		console.log(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
 	}
 
 	if (!someCountNew && usObj.registered) {
-		//console.log(9, '2.Delete User', user.login);
+		console.log('Delete user from hashes', usObj.user.login);
 		//Если сессий у зарегистрированного пользователя не осталось, убираем usObj из хеша пользователей (из usSid уже должно было убраться)
 		delete usLogin[usObj.user.login];
 		delete usId[usObj.user._id];
@@ -488,16 +492,6 @@ function saveEmitUser(login, _id, excludeSocket, cb) {
 			}
 		});
 	}
-}
-
-function emitInitData(socket) {
-	var session = socket.handshake.session;
-
-	socket.emit('takeInitData', {
-		p: settings.getClientParams(),
-		cook: createSidCookieObj(session),
-		u: getPlainUser(session.user)
-	});
 }
 
 function emitSidCookie(socket) {
@@ -784,8 +778,17 @@ module.exports.loadController = function (a, db, io) {
 	checkExpiredSessions();
 
 	io.sockets.on('connection', function (socket) {
+		var hs = socket.handshake;
+
 		socket.on('giveInitData', function (data) {
-			emitInitData(socket);
+			var usObj = hs.usObj,
+			session = hs.session;
+
+			socket.emit('takeInitData', {
+				p: settings.getClientParams(),
+				cook: createSidCookieObj(session),
+				u: getPlainUser(usObj.user)
+			});
 		});
 	});
 };
