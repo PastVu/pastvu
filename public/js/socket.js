@@ -19,7 +19,7 @@ define(['module'], function (module) {
 					sio = io(connectPath, connectOptions),
 					socket = {connected: false, ons: {}},
 
-					disconnectionDataReturn = {error: true, message: 'Connection lost', noconnect: true},
+					disconnectionDataReturn = {error: true, message: 'Нет соединения с сервером, повторите после восстановления связи', noconnect: true},
 					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
 					noСonnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>',
 					$noСonnWait,
@@ -76,29 +76,70 @@ define(['module'], function (module) {
 					}
 				});
 
-				setTimeout(function () {
+				/*setTimeout(function () {
 					sio.io.disconnect();
 					setTimeout(function () {
 						sio.io.maybeReconnectOnOpen();
 					}, 4000);
-				}, 2000);
+				}, 2000);*/
 
+				/**
+				 * Отправляет данные на сервер
+				 * @param name Имя сообщения
+				 * @param data Данные
+				 * @returns {boolean} Отправлено ли сообщение
+				 */
 				socket.emit = function (name, data) {
-					//Если соединения нет, возращаем коллбэку ошибку через timeout
-					if (!socket.connected) {
+					if (socket.connected) {
+						sio.emit(name, data);
+						return true;
+					}
+					return false; //Если соединения нет, возращаем false
+				};
+				/**
+				 * Постоянная подписка на событие
+				 * @param name Имя события
+				 * @param cb Коллбэк
+				 * @param ctx Контекст коллбэка
+				 * @param noConnectionNotify Флаг, вызывать ли при отсутствии соединения. По умолчанию - false
+				 * @returns {boolean} Флаг, что событие зарегистрировано
+				 */
+				socket.on = function (name, cb, ctx, noConnectionNotify) {
+					var registered = eventHandlerRegister('on', name, cb, ctx, noConnectionNotify);
+					//Если указано уведомлять об отсутствии соединения и его сейчас нет, то сразу после регистрации события уведомляем об этом
+					if (registered && noConnectionNotify && !socket.connected) {
 						setTimeout(function () {
-							eventHandlersNotify(name, disconnectionDataReturn);
+							eventHandlersNotify(name, null, true);
+						}, 4);
+					}
+					return registered;
+				};
+				/**
+				 * Одноразовая подписка на событие. Отписывается после первого вызова коллбэка
+				 * @param name Имя события
+				 * @param cb Коллбэк
+				 * @param ctx Контекст коллбэка
+				 * @param noConnectionNotify Флаг, вызывать ли при отсутствии соединения. По умолчанию - true
+				 * @returns {boolean} Флаг, что событие зарегистрировано и коннект есть
+				 */
+				socket.once = function (name, cb, ctx, noConnectionNotify) {
+					noConnectionNotify = noConnectionNotify !== false;
+
+					//Если указано уведомлять об отсутствии соединения и его сейчас нет, то сразу уведомляем об этом и не регистрируем событие, так как подписка одноразовая
+					if (noConnectionNotify && !socket.connected) {
+						setTimeout(function () {
+							cb.call(ctx, disconnectionDataReturn);
 						}, 4);
 						return false;
 					}
-					sio.emit(name, data);
+					return eventHandlerRegister('once', name, cb, ctx, noConnectionNotify);
 				};
-				socket.on = function (name, cb, ctx) {
-					eventHandlerRegister('on', name, cb, ctx);
-				};
-				socket.once = function (name, cb, ctx) {
-					eventHandlerRegister('once', name, cb, ctx);
-				};
+				/**
+				 * Отписка от события. Если конкретный коллбжк не передан, отпишет все обработчики события
+				 * @param name Имя события
+				 * @param cb Коллбэк
+				 * @returns {boolean}
+				 */
 				socket.off = function (name, cb) {
 					var nameStack = socket.ons[name],
 						item,
@@ -123,9 +164,10 @@ define(['module'], function (module) {
 
 				//Добавляем обработчик события
 				//Если его еще нет в хеше, создаем в нем стек по имени и вешаем событие на sio
-				function eventHandlerRegister(type, name, cb, ctx) {
+				function eventHandlerRegister(type, name, cb, ctx, noConnectionNotify) {
 					var nameStack = socket.ons[name],
-						stackRecord = {type: type, name: name, cb: cb, ctx: ctx};
+						stackRecord = {type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify};
+
 					if (Array.isArray(nameStack)) {
 						nameStack.push(stackRecord);
 					} else {
@@ -134,18 +176,25 @@ define(['module'], function (module) {
 							eventHandlersNotify(name, data);
 						});
 					}
+					return true;
 				}
 
 				//Вызывает обработчики события с переданными данными
 				//Если обработчик установлен как once, удаляет его из стека после вызова
 				//Если обработчиков после вызова не осталось, удаляем событие из хэша и отписываемся от sio
-				function eventHandlersNotify(name, data) {
+				function eventHandlersNotify(name, data, aboutNoConnection) {
 					var nameStack = socket.ons[name],
 						item,
 						i;
+					if (aboutNoConnection) {
+						data = disconnectionDataReturn;
+					}
 					if (Array.isArray(nameStack)) {
 						for (i = 0; i < nameStack.length; i++) {
 							item = nameStack[i];
+							if (aboutNoConnection && !item.connoty) {
+								continue; //Если уведомляем про отсутствие соединения, а флага уведомлять об этом на хэндлере нет, пропускаем его
+							}
 							item.cb.call(item.ctx, data);
 							//Если это once, удаляем из стека после вызова коллбэка
 							if (item.type === 'once') {
@@ -164,17 +213,19 @@ define(['module'], function (module) {
 				function disconnectionAllNotyfy() {
 					for (var name in socket.ons) {
 						if (socket.ons.hasOwnProperty(name)) {
-							eventHandlersNotify(name, disconnectionDataReturn);
+							eventHandlersNotify(name, null, true);
 						}
 					}
 				}
 
+				//Показывает сообщение о разрыве соединения
 				function noConnWaitShow() {
 					if (!$noСonnWait) {
 						$noСonnWait = $(noСonnWait).appendTo('#top');
 					}
 				}
 
+				//Скрывает сообщение о разрыве соединения
 				function noConnWaitHide() {
 					if ($noСonnWait) {
 						$noСonnWait.remove();
@@ -182,6 +233,7 @@ define(['module'], function (module) {
 					}
 				}
 
+				//Начинает процедуру реконнектов сначала. Вызывается по кнопке на сообщении о превышении попыток подключения
 				function noConnRepeat() {
 					noConnFailHide();
 					noConnWaitShow();
@@ -189,6 +241,7 @@ define(['module'], function (module) {
 					sio.io.reconnect(); //Вызываем реконнекты
 				}
 
+				//Показывает сообщение о превышении попыток подключения
 				function noConnFailShow() {
 					if (!$noСonnFail) {
 						$noСonnFail = $(noСonnFail);
@@ -197,6 +250,7 @@ define(['module'], function (module) {
 					}
 				}
 
+				//Скрывает сообщение о превышении попыток подключения
 				function noConnFailHide() {
 					if ($noСonnFail) {
 						$noСonnFail.remove();
@@ -204,6 +258,7 @@ define(['module'], function (module) {
 					}
 				}
 
+				//Обновляет куки сессии переданным объектом с сервера
 				function updateCookie(obj) {
 					Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
 				}
