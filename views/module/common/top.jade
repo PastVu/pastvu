@@ -5,7 +5,7 @@
 			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
 		#panelTools.hide-text
 			//ko if: auth.loggedIn()
-			a#toUpload.labledIco.strokeAfter(href="/photoUpload", style="")
+			a#toUpload.labledIco.strokeAfter(href="/photoUpload")
 				.glyphicon.glyphicon-cloud-upload
 				.text Загрузить фото
 			// /ko
@@ -22,19 +22,14 @@
 				.ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
 			// /ko
-			//-if !auth.loggedIn
-				#toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
-					.ico
-					.text Регистрация
-				#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
-					.text Вход
-					.ico
+			//ko if: !auth.loggedIn()
 			#toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
 				.ico
 				.text Регистрация
 			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
 				.text Вход
 				.ico
+			// /ko
 			//ko if: auth.loggedIn()
 			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
 				.text Выход

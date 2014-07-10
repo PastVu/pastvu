@@ -77,7 +77,7 @@ define(['module'], function (module) {
 					return eventHandlerRegister('once', name, cb, ctx, noConnectionNotify);
 				};
 				/**
-				 * Отписка от события. Если конкретный коллбжк не передан, отпишет все обработчики события
+				 * Отписка от события. Если конкретный коллбэк не передан, отпишет все обработчики события
 				 * @param name Имя события
 				 * @param [cb] Коллбэк
 				 * @returns {boolean}

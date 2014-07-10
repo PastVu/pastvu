@@ -293,7 +293,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return text.substring(0, cut);
 		},
 		capitalizeFirst: function (str) {
-			return str.charAt(0).toUpperCase() + str.slice(1);
+			return str ? str[0].toUpperCase() + str.substr(1) : '';
 		},
 
 		/**
@@ -303,10 +303,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 		 * @param complete
 		 */
 		timer: function timer(time, update, complete) {
-			var start = new Date().getTime(),
+			var start = Date.now(),
 				interval = setInterval(function () {
-					var now = time - (new Date().getTime() - start);
-					if (now <= 0) {
+					var now = time - (Date.now() - start);
+					if (now <= 1) {
 						clearInterval(interval);
 						if (complete) {
 							complete();

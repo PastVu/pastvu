@@ -27,6 +27,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			//При изменении данных профиля на сервере, обновляем его на клиенте
 			socket.on('youAre', this.processMe, this);
 
+			//Подписываемся на команды с сервера
 			socket.on('command', this.commandHandler, this);
 
 			//Подписываемся на получение новых первоначальных данных (пользователя), на случай, если пока он был оффлайн, пользователь изменился
