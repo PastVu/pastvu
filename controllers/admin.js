@@ -15,14 +15,8 @@ var auth = require('./auth.js'),
 	};
 
 
-function createNews(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	if (!Utils.isType('object', data)) {
+function createNews(iAm, data, cb) {
+	if (!_.isObject(data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -54,14 +48,8 @@ function createNews(socket, data, cb) {
 		}
 	);
 }
-function saveNews(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	if (!Utils.isType('object', data)) {
+function saveNews(iAm, data, cb) {
+	if (!_.isObject(data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -90,10 +78,8 @@ function saveNews(socket, data, cb) {
 	);
 }
 
-function getOnlineStat(socket, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function getOnlineStat(usObj, cb) {
+	if (!usObj.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -189,17 +175,17 @@ function getOnlineStat(socket, cb) {
 }
 
 //Сохраняем права пользователя
-function saveUserCredentials(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
-
-	if (!iAm || iAm.role < 10) {
+function saveUserCredentials(usObj, data, cb) {
+	if (!usObj.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !login || data.role < 0 || data.role > 11) {
+	var iAm = usObj.user,
+		login = data && data.login,
+		itsMe = iAm.login === login,
+		itsOnline;
+
+	if (!_.isObject(data) || !login || data.role < 0 || data.role > 11) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -295,24 +281,26 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('saveNews', function (data) {
+			if (!hs.usObj.isAdmin) {
+				return result ({message: msg.deny, error: true});
+			}
 			if (data.cid) {
-				saveNews(socket, data, function (resultData) {
-					socket.emit('saveNewsResult', resultData);
-				});
+				saveNews(hs.usObj.user, data, result);
 			} else {
-				createNews(socket, data, function (resultData) {
-					socket.emit('saveNewsResult', resultData);
-				});
+				createNews(hs.usObj.user, data, result);
+			}
+			function result (resultData) {
+				socket.emit('saveNewsResult', resultData);
 			}
 		});
 
 		socket.on('getOnlineStat', function () {
-			getOnlineStat(socket, function (err, resultData) {
+			getOnlineStat(hs.usObj, function (err, resultData) {
 				socket.emit('takeOnlineStat', resultData);
 			});
 		});
 		socket.on('saveUserCredentials', function (data) {
-			saveUserCredentials(socket, data, function (resultData) {
+			saveUserCredentials(hs.usObj, data, function (resultData) {
 				socket.emit('saveUserCredentialsResult', resultData);
 			});
 		});

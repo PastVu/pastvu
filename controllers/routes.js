@@ -8,7 +8,6 @@ var _ = require('lodash'),
 module.exports.loadController = function (app) {
 	var genInitDataString = (function () {
 		var clientParamsJSON = JSON.stringify(settings.getClientParams());
-		console.log(clientParamsJSON);
 		return function (usObj) {
 			var resultString = 'var init={settings:' + clientParamsJSON + ', user:' + JSON.stringify(_session.getPlainUser(usObj.user));
 
@@ -46,7 +45,7 @@ module.exports.loadController = function (app) {
 	function appAdminHandler(req, res) {
 		res.setHeader('Cache-Control', 'no-cache');
 		res.statusCode = 200;
-		res.render('app', {appName: 'Admin'});
+		res.render('app', {appName: 'Admin', initData: genInitDataString(req.handshake.usObj)});
 	}
 
 	//Устаревший браузер

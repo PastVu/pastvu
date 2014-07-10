@@ -93,8 +93,12 @@ var app,
 
 	sessConnected = {}, //Sessions. Хэш всех активных сессий, с установленными соединениями
 	sessWaitingConnect = {},//Хэш сессий, которые ожидают первого соединения
-	sessWaitingSelect = {}; //Хэш сессий, ожидающих выборки по ключу из базы
+	sessWaitingSelect = {}, //Хэш сессий, ожидающих выборки по ключу из базы
 
+	usObjIsAdmin = function () {
+		/*jshint validthis: true*/
+		return this.registered && this.user.role > 9;
+	};
 
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
 function userObjectAddSession(session, cb) {
@@ -107,6 +111,10 @@ function userObjectAddSession(session, cb) {
 		firstAdding = true;
 		user = registered ? session.user : session.anonym;
 		usObj = usSid[session.key] = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshortlvls: [], rshortsel: Object.create(null)};
+		Object.defineProperty(usObj, 'isAdmin', {
+			get: usObjIsAdmin,
+			enumerable: true
+		});
 		if (registered) {
 			usObj.registered = true;
 			usLogin[user.login] = usId[user._id] = usObj;
@@ -780,9 +788,9 @@ module.exports.loadController = function (a, db, io) {
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
-		socket.on('giveInitData', function (data) {
+		socket.on('giveInitData', function () {
 			var usObj = hs.usObj,
-			session = hs.session;
+				session = hs.session;
 
 			socket.emit('takeInitData', {
 				p: settings.getClientParams(),
