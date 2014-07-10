@@ -414,7 +414,7 @@ function authUser(socket, user, data, cb) {
 	sessionNew.anonym = undefined;
 
 	//Присваиваем поля data специфичные для залогиненного пользователя
-	_.assign(sessionOld.data, {remember: data.remember});
+	_.assign(sessionNew.data, {remember: data.remember});
 
 	//Указываем новой сессий ссылку на архивируемую
 	sessionNew.previous = sessionOld.key;

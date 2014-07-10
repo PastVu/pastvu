@@ -35,8 +35,7 @@ moment.lang('ru');
 
 //Вход в систему
 function login(socket, data, cb) {
-	var error = '',
-		session = socket.handshake.session;
+	var error = '';
 
 	if (!data.login) {
 		error += 'Fill in the login field. ';
@@ -45,12 +44,12 @@ function login(socket, data, cb) {
 		error += 'Fill in the password field.';
 	}
 	if (error) {
-		return cb(null, {message: error, error: true});
+		return cb({message: error, error: true});
 	}
 
 	User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
 		if (err) {
-			return cb(null, {message: err && err.message, error: true});
+			return cb({message: err && err.message, error: true});
 		}
 
 		//Если есть пользователь, значит проверка успешна
@@ -58,9 +57,9 @@ function login(socket, data, cb) {
 			//Передаем пользователя в сессию
 			_session.authUser(socket, user, data, function (err, session, userPlain) {
 				if (err) {
-					cb(session, {message: err.message, error: true});
+					cb({message: err.message, error: true});
 				} else {
-					cb(session, {message: "Success login", youAre: userPlain});
+					cb({message: "Success login", youAre: userPlain});
 				}
 			});
 		} else {
@@ -68,11 +67,11 @@ function login(socket, data, cb) {
 			case User.failedLogin.NOT_FOUND:
 			case User.failedLogin.PASSWORD_INCORRECT:
 				// note: these cases are usually treated the same - don't tell the user *why* the login failed, only that it did
-				cb(null, {message: 'Неправильная пара логин-пароль', error: true});
+				cb({message: 'Неправильная пара логин-пароль', error: true});
 				break;
 			case User.failedLogin.MAX_ATTEMPTS:
 				// send email or otherwise notify user that account is temporarily locked
-				cb(null, {message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
+				cb({message: 'Your account has been temporarily locked due to exceeding the number of wrong login attempts', error: true});
 				break;
 			}
 		}
@@ -410,10 +409,7 @@ module.exports.loadController = function (a, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('loginRequest', function (json) {
-			login(socket, json, function (newSession, data) {
-				if (newSession) {
-					hs.session = newSession;
-				}
+			login(socket, json, function (data) {
 				socket.emit('loginResult', data);
 			});
 		});
