@@ -1,4 +1,3 @@
-/*global require:true, ga:true*/
 //require(['jquery'], function(jQuery){jQuery.noConflict(true); delete window.jQuery; delete window.$;}); //Убираем jquery из глобальной области видимости
 
 require([

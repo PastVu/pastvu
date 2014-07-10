@@ -1,5 +1,3 @@
-/*global require:true*/
-
 require([
 	'domReady!',
 	'jquery',

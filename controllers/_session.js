@@ -95,6 +95,10 @@ var app,
 	sessWaitingConnect = {},//Хэш сессий, которые ожидают первого соединения
 	sessWaitingSelect = {}, //Хэш сессий, ожидающих выборки по ключу из базы
 
+	usObjIsOwner = function () {
+		/*jshint validthis: true*/
+		return this.registered && this.user.role > 10;
+	},
 	usObjIsAdmin = function () {
 		/*jshint validthis: true*/
 		return this.registered && this.user.role > 9;
@@ -111,9 +115,15 @@ function userObjectAddSession(session, cb) {
 		firstAdding = true;
 		user = registered ? session.user : session.anonym;
 		usObj = usSid[session.key] = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshortlvls: [], rshortsel: Object.create(null)};
-		Object.defineProperty(usObj, 'isAdmin', {
-			get: usObjIsAdmin,
-			enumerable: true
+		Object.defineProperties(usObj, {
+			isOwner: {
+				get: usObjIsOwner,
+				enumerable: true
+			},
+			isAdmin: {
+				get: usObjIsAdmin,
+				enumerable: true
+			}
 		});
 		if (registered) {
 			usObj.registered = true;

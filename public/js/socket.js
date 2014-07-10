@@ -17,7 +17,7 @@ define(['module'], function (module) {
 						reconnectionAttempts: 150 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 					},
 					sio,
-					socket = {connected: false, ons: {}},
+					socket = {connected: false, ons: {}, emitQueue: {}},
 
 					disconnectionDataReturn = {error: true, message: 'Нет соединения с сервером, повторите после восстановления связи', noconnect: true},
 					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
@@ -29,11 +29,20 @@ define(['module'], function (module) {
 				 * Отправляет данные на сервер
 				 * @param name Имя сообщения
 				 * @param [data] Данные
+				 * @param {boolean} [queueIfNoConnection=false] Ожидать ли подключения, в случае его отсутствия, и автоматически отправить при подключении. По умолчанию - false
 				 * @returns {boolean} Отправлено ли сообщение
 				 */
-				socket.emit = function (name, data) {
+				socket.emit = function (name, data, queueIfNoConnection) {
 					if (socket.connected) {
 						sio.emit(name, data);
+						return true;
+					} else if (queueIfNoConnection) {
+						var nameQueue = socket.emitQueue[name];
+						if (!nameQueue) {
+							socket.emitQueue[name] = [data];
+						} else {
+							nameQueue.push(data);
+						}
 						return true;
 					}
 					return false; //Если соединения нет, возращаем false
@@ -43,7 +52,7 @@ define(['module'], function (module) {
 				 * @param name Имя события
 				 * @param cb Коллбэк
 				 * @param [ctx] Контекст коллбэка
-				 * @param {boolean} [noConnectionNotify=false] Флаг, вызывать ли при отсутствии соединения. По умолчанию - false
+				 * @param {boolean} [noConnectionNotify=false] Вызывать ли при отсутствии соединения. По умолчанию - false
 				 * @returns {boolean} Флаг, что событие зарегистрировано
 				 */
 				socket.on = function (name, cb, ctx, noConnectionNotify) {
@@ -61,18 +70,24 @@ define(['module'], function (module) {
 				 * @param name Имя события
 				 * @param cb Коллбэк
 				 * @param [ctx] Контекст коллбэка
-				 * @param {boolean} [noConnectionNotify=true] Флаг, вызывать ли при отсутствии соединения. По умолчанию - true
+				 * @param {boolean} [noConnectionNotify=true] Вызывать ли при отсутствии соединения. По умолчанию - true
+				 * @param {boolean} [registerEvenNoConnection=false] Регистрировать, даже если нет соединения. По умолчанию - false. Будет использован, только если noConnectionNotify=false
 				 * @returns {boolean} Флаг, что событие зарегистрировано и коннект есть
 				 */
-				socket.once = function (name, cb, ctx, noConnectionNotify) {
+				socket.once = function (name, cb, ctx, noConnectionNotify, registerEvenNoConnection) {
 					noConnectionNotify = noConnectionNotify !== false;
 
-					//Если указано уведомлять об отсутствии соединения и его сейчас нет, то сразу уведомляем об этом и не регистрируем событие, так как подписка одноразовая
-					if (noConnectionNotify && !socket.connected) {
-						setTimeout(function () {
-							cb.call(ctx, disconnectionDataReturn);
-						}, 4);
-						return false;
+					if (!socket.connected) {
+						if (noConnectionNotify) {
+							//Если указано уведомлять об отсутствии соединения и его сейчас нет, то сразу уведомляем об этом и не регистрируем событие, так как подписка одноразовая
+							setTimeout(function () {
+								cb.call(ctx, disconnectionDataReturn);
+							}, 4);
+							return false;
+						} else if (!registerEvenNoConnection) {
+							//Если флагом не указано, что сказано регистрировать даже в случае отсутствия соединения, то выходим
+							return false;
+						}
 					}
 					return eventHandlerRegister('once', name, cb, ctx, noConnectionNotify);
 				};
@@ -149,6 +164,20 @@ define(['module'], function (module) {
 							delete socket.ons[name];
 						}
 					}
+				}
+
+				//Отправляет все emit, которые ожидали подключения
+				function emitQueued() {
+					function emitNameData (data) {
+						sio.emit(name, data);
+					}
+
+					for (var name in socket.emitQueue) {
+						if (socket.emitQueue.hasOwnProperty(name)) {
+							socket.emitQueue[name].forEach(emitNameData);
+						}
+					}
+					socket.emitQueue = {};
 				}
 
 				//В случае разрыва соединения оповещает все подписанные на все события обработчики
@@ -235,14 +264,15 @@ define(['module'], function (module) {
 					console.log('ReConnected to server');
 					socket.connected = true;
 					sio.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
-					noConnWaitHide();
+					noConnWaitHide(); //Скрываем сообщение об отсутствии соединения
+					emitQueued(); //Отправляем все сообщения emit, которые ожидали восстановления соединения
 				});
 
 				/*setTimeout(function () {
-					 sio.io.disconnect();
-					 setTimeout(function () {
-					    sio.io.maybeReconnectOnOpen();
-					 }, 4000);
+				 sio.io.disconnect();
+				 setTimeout(function () {
+				 sio.io.maybeReconnectOnOpen();
+				 }, 4000);
 				 }, 2000);
 				 */
 			});
