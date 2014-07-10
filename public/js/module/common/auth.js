@@ -1,4 +1,4 @@
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
 	return Cliche.extend({
@@ -50,16 +50,9 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			globalVM.func.showContainer(this.$container, function () {
 				this.showing = true;
 				this.formFocus();
-
-				keyTarget.push({
-					id: 'authOverlay',
-					stopFurther: false,
-					onEsc: this.formClose.bind(this)
-				});
 			}, this);
 		},
 		hide: function () {
-			keyTarget.pop();
 			this.formReset();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
