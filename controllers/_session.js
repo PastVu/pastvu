@@ -107,13 +107,12 @@ var app,
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
 function userObjectAddSession(session, cb) {
 	var registered = !!session.user,
-		usObj = usSid[session.key],
-		firstAdding = false,
-		user;
+		user = registered ? session.user : session.anonym,
+		usObj = registered ? usLogin[user.login] : usSid[session.key], //Для зарегистрированных надо брать именно через хэш пользователей, чтобы взялся существующий usObj, если пользователь логинится в другом браузере
+		firstAdding = false;
 
 	if (usObj === undefined) {
 		firstAdding = true;
-		user = registered ? session.user : session.anonym;
 		usObj = usSid[session.key] = {user: user, sessions: Object.create(null), rquery: Object.create(null), rshortlvls: [], rshortsel: Object.create(null)};
 		Object.defineProperties(usObj, {
 			isOwner: {
@@ -172,6 +171,10 @@ function sessionCreate(ip, headers, browser) {
 function sessionUpdate(session, ip, headers, browser, cb) {
 	//Обновляем время сессии
 	session.stamp = new Date();
+	//Если пользователь зарегистрирован, обнуляем поле anonym, т.к. при выборке из базы mongoose его автоматически заполняет {}
+	if (session.user) {
+		session.anonym = undefined;
+	}
 	//Если ip пользователя изменился, записываем в историю старый с временем изменения
 	if (ip !== session.data.ip) {
 		if (!session.data.ip_hist) {
@@ -369,39 +372,12 @@ function regetUsers(filterFn, emitThem, cb) {
 	return usersCount;
 }
 
-function destroy(socket, cb) {
-	var session = socket.handshake.session;
-
-	if (session) {
-		socket.once('commandResult', function () {
-			//Отправляем всем сокетам сессии кроме текущей команду на релоад
-			for (var i in session.sockets) {
-				if (session.sockets[i] !== undefined && session.sockets[i] !== socket && session.sockets[i].emit !== undefined) {
-					session.sockets[i].emit('command', [
-						{name: 'location'}
-					]);
-				}
-			}
-
-			//Удаляем сессию из базы
-			session.remove(cb);
-		});
-
-		//Отправляем автору запроса на логаут комманду на очистку кук, очистится у всех вкладок сессии
-		socket.emit('command', [
-			{name: 'clearCookie'}
-		]);
-	} else {
-		cb({message: 'No such session'});
-	}
-}
-
 
 //Работа с сессиями при авторизации пользователя, вызывается из auth-контроллера
-function authUser(socket, user, data, cb) {
+function loginUser(socket, user, data, cb) {
 	var handshake = socket.handshake,
 		sessionOld = handshake.session,
-		usObjOld = usSid[sessionOld.key],
+		usObjOld = handshake.usObj,
 		sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
 		sessionNew = sessionCopy(sessionOld);
 
@@ -428,10 +404,10 @@ function authUser(socket, user, data, cb) {
 				return cb(err);
 			}
 
-			delete usSid[sessionOld.key]; //Удаляем старый usObj из хэша по сессиям, т.к. для зарегистрированного пользователя он создастся заново
+			delete usSid[sessionOld.key]; //Удаляем старый анонимный usObj из хэша по сессиям
 			delete usObjOld.sessions[sessionOld.key]; //Удаляем старую сессию из удаленного usObj, чтобы gc их забрал
 			delete sessHash[sessionOld.key]; //Удаляем архивируемую сессию из хэша сессий
-			sessHash[sessionOld.key] = sessionNew; //Кладем новую сессию в хэш сессий
+			sessHash[sessionNew.key] = sessionNew; //Кладем новую сессию в хэш сессий
 
 			//Переносим сокеты из старой в новую сессию
 			sessionNew.sockets = sessionOld.sockets;
@@ -443,12 +419,12 @@ function authUser(socket, user, data, cb) {
 			//Кладем новую сессию в handshake
 			handshake.session = sessionNew;
 
-			//Добавляем новую сессию в usObj(создастся если еще нет, а если есть, пользователь в сессию возьмется оттуда вместо спопулированного)
+			//Добавляем новую сессию в usObj(создастся если еще нет, а если есть, usObj и пользователь в сессию возьмется оттуда вместо спопулированного)
 			userObjectAddSession(sessionNew, function (err, usObj) {
 				if (err) {
 					cb(err, sessionNew);
 				}
-				//Кладем новый usObj в handshake
+				//Кладем полученный usObj в handshake
 				handshake.usObj = usObj;
 
 				var userPlain = getPlainUser(usObj.user);
@@ -463,6 +439,70 @@ function authUser(socket, user, data, cb) {
 				emitSidCookie(socket); //Куки можно обновлять в любом соединении, они обновятся для всех в браузере
 				cb(err, sessionNew, userPlain);
 			});
+		});
+	});
+}
+
+//Работа с сессиями при выходе пользователя, вызывается из auth-контроллера
+function logoutUser(socket, cb) {
+	var handshake = socket.handshake,
+		sessionOld = handshake.session,
+		sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
+		sessionNew = sessionCopy(sessionOld);
+
+	sessionNew.user = undefined;
+	sessionNew.anonym.settings = sessionOld.user.settings;
+	sessionNew.anonym.regionHome = sessionOld.user.regionHome;
+	sessionNew.anonym.regions = sessionOld.user.regions;
+
+	//Указываем новой сессий ссылку на архивируемую
+	sessionNew.previous = sessionOld.key;
+
+	sessionNew.save(function (err, sessionNew) {
+		if (err) {
+			return cb(err);
+		}
+		//Кладем новую сессию в handshake
+		handshake.session = sessionNew;
+
+		//Кладем новую сессию в хэш сессий
+		sessHash[sessionNew.key] = sessionNew;
+
+		//Переносим сокеты из старой в новую сессию
+		sessionNew.sockets = sessionOld.sockets;
+		delete sessionOld.sockets;
+
+		//Убираем сессию из хеша сессий, и если в usObj это была одна сессия, usObj тоже удалится
+		sessionFromHashes(sessionOld);
+
+		//Отправляем старую сессию в архив
+		sessionToArchive(sessionOld);
+
+		//Добавляем новую сессию в usObj
+		userObjectAddSession(sessionNew, function (err, usObj) {
+			if (err) {
+				cb(err);
+			}
+			//Кладем новый usObj в handshake
+			handshake.usObj = usObj;
+
+			//Отправляем клиенту новые куки анонимной сессии
+			emitSidCookie(socket);
+
+			setTimeout(function () {
+				socket.once('commandResult', function () {
+					//Отправляем всем сокетам сессии кроме текущей команду на релоад
+					for (var i in sessionNew.sockets) {
+						if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
+							sessionNew.sockets[i].emit('command', [
+								{name: 'location'}
+							]);
+						}
+					}
+				});
+
+				cb();
+			}, 50);
 		});
 	});
 }
@@ -767,8 +807,8 @@ var checkExpiredSessions = (function () {
 }());
 
 
-module.exports.destroy = destroy;
-module.exports.authUser = authUser;
+module.exports.loginUser = loginUser;
+module.exports.logoutUser = logoutUser;
 module.exports.emitUser = emitUser;
 module.exports.saveEmitUser = saveEmitUser;
 module.exports.isOnline = isOnline;

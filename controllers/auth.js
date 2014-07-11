@@ -55,7 +55,7 @@ function login(socket, data, cb) {
 		//Если есть пользователь, значит проверка успешна
 		if (user) {
 			//Передаем пользователя в сессию
-			_session.authUser(socket, user, data, function (err, session, userPlain) {
+			_session.loginUser(socket, user, data, function (err, session, userPlain) {
 				if (err) {
 					cb({message: err.message, error: true});
 				} else {
@@ -415,7 +415,7 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('logoutRequest', function () {
-			_session.destroy(socket, function (err) {
+			_session.logoutUser(socket, function (err) {
 				socket.emit('logoutCommand', {message: (err && err.message) || '', error: !!err});
 			});
 		});
