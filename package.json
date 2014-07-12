@@ -22,7 +22,7 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"express": "~4.5.1",
+		"express": "~4.6.0",
         "compression": "~1.0.8",
         "static-favicon": "~1.0.2",
         "basic-auth-connect": "~1.0.0",

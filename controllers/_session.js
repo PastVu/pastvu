@@ -161,6 +161,10 @@ function sessionCreate(ip, headers, browser) {
 			ip: ip,
 			headers: headers,
 			agent: getBrowserAgent(browser)
+		},
+		anonym: {
+			regionHome: regionController.DEFAULT_REGION._id,
+			regions: []
 		}
 	});
 
@@ -218,16 +222,12 @@ function sessionToHashes(session, cb) {
 //Убирает сессию из памяти (хешей) с проверкой объекта пользователя и убирает его тоже, если сессий у него не осталось
 function sessionFromHashes(usObj, session, logPrefix) {
 	var sessionKey = session.key,
-		userKey = usObj.login || session.key,
-		someCountPrev = Object.keys(sessConnected).length,
+		userKey = usObj.registered ? usObj.user.login : session.key,
+		someCountPrev,
 		someCountNew;
 
+	delete sessWaitingConnect[sessionKey];
 	delete sessConnected[sessionKey];
-	someCountNew = Object.keys(sessConnected).length;
-	console.log('Delete session from sessConnected', someCountNew);
-	if (someCountNew !== someCountPrev - 1) {
-		console.log(logPrefix, 'WARN-Session not removed (' + sessionKey + ')', userKey);
-	}
 
 	someCountPrev = Object.keys(usSid).length;
 	delete usSid[sessionKey];
@@ -258,6 +258,10 @@ function sessionToArchive(session) {
 	var archivePlain = session.toObject(),
 		archiveObj = new SessionArchive(archivePlain);
 
+	if (archivePlain.user) {
+		archiveObj.anonym = undefined;
+	}
+
 	session.remove(); //Удаляем архивированную сессию из активных
 	archiveObj.save(); //Сохраняем архивированную сессию в архив
 
@@ -278,15 +282,17 @@ function userObjectTreatUser(usObj, cb) {
 //Пупулируем регионы пользователя и строим запросы для них
 function popUserRegions(usObj, cb) {
 	var user = usObj.user,
+		registered = usObj.registered,
+		pathPrefix = (registered ? '' : 'anonym.'),
 		paths = [
-			{path: 'regionHome', select: {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
-			{path: 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
+			{path: pathPrefix + 'regionHome', select: {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1}},
+			{path: pathPrefix + 'regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}}
 		],
 		mod_regions_equals; //Регионы интересов и модерирования равны
 
-	if (user.role === 5) {
+	if (registered && user.role === 5) {
 		mod_regions_equals = _.isEqual(user.regions, user.mod_regions) || undefined;
-		paths.push({path: 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}});
+		paths.push({path: pathPrefix + 'mod_regions', select: {_id: 0, cid: 1, title_en: 1, title_local: 1}});
 	}
 	user.populate(paths, function (err, user) {
 		if (err) {
@@ -446,14 +452,17 @@ function loginUser(socket, user, data, cb) {
 //Работа с сессиями при выходе пользователя, вызывается из auth-контроллера
 function logoutUser(socket, cb) {
 	var handshake = socket.handshake,
+		usObjOld = handshake.usObj,
 		sessionOld = handshake.session,
+		sessionNew = sessionCopy(sessionOld),
 		sessHash = sessWaitingConnect[sessionOld.key] ? sessWaitingConnect : sessConnected,
-		sessionNew = sessionCopy(sessionOld);
+		user = usObjOld.user.toObject(),
+		regionsIds = Array.isArray(user.regions) && user.regions.length ? _.pluck(regionController.getRegionsArrFromCache(_.pluck(user.regions, 'cid')), '_id') : [],
+		regionHomeId = user.regionHome && user.regionHome.cid ? regionController.getRegionFromCache(user.regionHome.cid)._id : regionController.DEFAULT_REGION._id;
 
-	sessionNew.user = undefined;
-	sessionNew.anonym.settings = sessionOld.user.settings;
-	sessionNew.anonym.regionHome = sessionOld.user.regionHome;
-	sessionNew.anonym.regions = sessionOld.user.regions;
+	sessionNew.anonym.settings = user.settings;
+	sessionNew.anonym.regionHome = regionHomeId;
+	sessionNew.anonym.regions = regionsIds;
 
 	//Указываем новой сессий ссылку на архивируемую
 	sessionNew.previous = sessionOld.key;
@@ -473,7 +482,7 @@ function logoutUser(socket, cb) {
 		delete sessionOld.sockets;
 
 		//Убираем сессию из хеша сессий, и если в usObj это была одна сессия, usObj тоже удалится
-		sessionFromHashes(sessionOld);
+		sessionFromHashes(usObjOld, sessionOld, 'logoutUser');
 
 		//Отправляем старую сессию в архив
 		sessionToArchive(sessionOld);
@@ -490,17 +499,14 @@ function logoutUser(socket, cb) {
 			emitSidCookie(socket);
 
 			setTimeout(function () {
-				socket.once('commandResult', function () {
-					//Отправляем всем сокетам сессии кроме текущей команду на релоад
-					for (var i in sessionNew.sockets) {
-						if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
-							sessionNew.sockets[i].emit('command', [
-								{name: 'location'}
-							]);
-						}
+				//Отправляем всем сокетам сессии кроме текущей команду на релоад
+				for (var i in sessionNew.sockets) {
+					if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
+						sessionNew.sockets[i].emit('command', [
+							{name: 'location'}
+						]);
 					}
-				});
-
+				}
 				cb();
 			}, 50);
 		});
@@ -755,7 +761,6 @@ var checkSessWaitingConnect = (function () {
 			session = sessWaitingConnect[keys[i]];
 
 			if (session && session.stamp <= expiredFrontier) {
-				delete sessWaitingConnect[session.key];
 				sessionFromHashes(usSid[session.key], session, 'checkSessWaitingConnect');
 			}
 		}

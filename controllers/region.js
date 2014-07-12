@@ -21,6 +21,8 @@ var _session = require('./_session.js'),
 	logger = require('log4js').getLogger("region.js"),
 	loggerApp = require('log4js').getLogger("app.js"),
 
+	DEFAULT_REGION,
+
 	maxRegionLevel = global.appVar.maxRegionLevel,
 	regionsAllSelectHash = Object.create(null),
 
@@ -55,7 +57,7 @@ function fillCache(cb) {
 		regionCacheHash = hash;
 		regionCacheArr = regions;
 
-		loggerApp.info(regions[0]);
+		module.exports.DEFAULT_REGION = DEFAULT_REGION = regions[0];
 		logger.info('Region cache filled with ' + regions.length);
 		loggerApp.info('Region cache filled with ' + regions.length);
 		if (cb) {
@@ -64,6 +66,9 @@ function fillCache(cb) {
 	});
 }
 
+function getRegionFromCache(cid) {
+	return regionCacheHash[cid];
+}
 function getRegionsArrFromCache(cids) {
 	var result = [],
 		region,
@@ -1832,6 +1837,7 @@ module.exports.loadController = function (app, db, io, cb) {
 	});
 };
 
+module.exports.getRegionFromCache = getRegionFromCache;
 module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
 module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
 module.exports.fillRegionsHash = fillRegionsHash;

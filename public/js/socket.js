@@ -19,7 +19,7 @@ define(['module'], function (module) {
 					sio,
 					socket = {connected: false, ons: {}, emitQueue: {}},
 
-					disconnectionDataReturn = {error: true, message: 'Нет соединения с сервером, повторите после восстановления связи', noconnect: true},
+					disconnectionDataReturn = {error: true, noconnect: true, message: 'Нет соединения с сервером, повторите после восстановления связи'},
 					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
 					noСonnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>',
 					$noСonnWait,

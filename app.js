@@ -275,9 +275,7 @@ async.waterfall([
 
 			//Раздаем лог
 			if (serveLog) {
-				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'));
-				app.use('/nodelog', require('serve-index')(logPath, {icons: true}));
-				app.use('/nodelog', express.static(logPath, {maxAge: '1s', etag: false}));
+				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'), require('serve-index')(logPath, {icons: true}), express.static(logPath, {maxAge: '1s', etag: false}));
 			}
 
 			require('./controllers/errors.js').registerErrorHandling(app);

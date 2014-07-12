@@ -389,9 +389,10 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		doLogout: function (callback) {
 			ga('send', 'event', 'auth', 'logout');
 			try {
-				socket.once('logoutCommand', function (json) {
-					if (json.error) {
-						console.log('Logout error: ' + json.message);
+				socket.once('logoutCommand', function (data) {
+					if (data.error) {
+						window.noty({text: data.noconnect ? data.message : 'При попытке выхода возникла ошибка', type: 'error', layout: 'center', timeout: 4000, force: true});
+						console.log('Logout error: ' + data.message);
 					} else {
 						location.reload();
 					}
