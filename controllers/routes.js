@@ -7,22 +7,56 @@ var _ = require('lodash'),
 
 module.exports.loadController = function (app) {
 	var genInitDataString = (function () {
-		var clientParamsJSON = JSON.stringify(settings.getClientParams());
-		return function (usObj) {
-			var resultString = 'var init={settings:' + clientParamsJSON + ', user:' + JSON.stringify(_session.getPlainUser(usObj.user));
+			var clientParamsJSON = JSON.stringify(settings.getClientParams());
+			return function (usObj) {
+				var resultString = 'var init={settings:' + clientParamsJSON + ', user:' + JSON.stringify(_session.getPlainUser(usObj.user));
 
-			if (usObj.registered) {
-				resultString += ',registered:true';
+				if (usObj.registered) {
+					resultString += ',registered:true';
+				}
+
+				resultString += '};';
+
+				return resultString;
+			};
+		}()),
+
+	//Для путей, которым не нужна установка сессии напрямую парсим браузер
+		getReqBrowser = function (req, res, next) {
+			var ua = req.headers['user-agent'];
+			if (ua) {
+				req.browser = _session.checkUserAgent(ua);
 			}
+			next();
+		},
 
-			resultString += '};';
+	//Заполняем некоторые заголовки для полностью генерируемых страниц
+		setStaticHeaders = (function () {
+			var cacheControl = 'no-cache',
+				xFramePolicy = 'SAMEORIGIN',
+				xPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com',
+				xUA = 'IE=edge';
 
-			return resultString;
-		};
-	}());
+			return function (req, res, next) {
+				//Директива ответа для указания браузеру правила кеширования
+				//no-cache - браузеру и прокси разрешено кешировать, с обязательным запросом актуальности
+				//(в случае с наличием etag в первом ответе, в следующем запросе клиент для проверки актуальности передаст этот etag в заголовке If-None-Match)
+				res.setHeader('Cache-Control', cacheControl);
 
-	//Создание сессии и проверка браузера при обращении ко всем путям
-	app.get('*', _session.handleRequest);
+				//The page can only be displayed in a frame on the same origin as the page itself https://developer.mozilla.org/en-US/docs/Web/HTTP/X-Frame-Options
+				res.setHeader('X-Frame-Options', xFramePolicy);
+
+				if (req.browser && req.browser.agent.family === 'IE') {
+					//X-UA-Compatible header has greater precedence than Compatibility View http://msdn.microsoft.com/en-us/library/ff955275(v=vs.85).aspx
+					res.setHeader('X-UA-Compatible', xUA);
+				}
+
+				res.setHeader('X-Powered-By', xPoweredBy);
+				if (typeof next === 'function') {
+					next();
+				}
+			};
+		}());
 
 	[
 		'/', //Корень
@@ -31,35 +65,35 @@ module.exports.loadController = function (app) {
 		/^\/(?:p|confirm)\/.+$/ // Пути обязательным продолжением (/example/*)
 	]
 		.forEach(function (route) {
-			app.route(route).get(appMainHandler);
+			app.get(route, _session.handleRequest, setStaticHeaders, appMainHandler);
 		});
 	function appMainHandler(req, res) {
-		res.setHeader('Cache-Control', 'no-cache');
 		res.statusCode = 200;
 		res.render('app', {appName: 'Main', initData: genInitDataString(req.handshake.usObj)});
 	}
 
+
 	[/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
-		app.get(route, appAdminHandler);
+		app.get(route, _session.handleRequest, setStaticHeaders, appAdminHandler);
 	});
 	function appAdminHandler(req, res) {
-		res.setHeader('Cache-Control', 'no-cache');
 		res.statusCode = 200;
 		res.render('app', {appName: 'Admin', initData: genInitDataString(req.handshake.usObj)});
 	}
 
+
 	//Устаревший браузер
-	app.get('/badbrowser', function (req, res) {
+	app.get('/badbrowser', getReqBrowser, setStaticHeaders, function (req, res) {
 		res.statusCode = 200;
 		res.render('status/badbrowser', {agent: req.browser && req.browser.agent, title: 'Вы используете устаревшую версию браузера'});
 	});
 	//Отключенный javascript
-	app.get('/nojs', function (req, res) {
+	app.get('/nojs', getReqBrowser, function (req, res) {
 		res.statusCode = 200;
 		res.render('status/nojs', {agent: req.browser && req.browser.agent, title: 'Выключен JavaScript'});
 	});
 	//Мой user-agent
-	app.get('/myua', function (req, res) {
+	app.get('/myua', getReqBrowser, function (req, res) {
 		res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
 		res.statusCode = 200;
 		res.render('status/myua', {

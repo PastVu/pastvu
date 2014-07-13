@@ -696,7 +696,7 @@ module.exports.handleRequest = function (req, res, next) {
 		}
 		res.cookie(cookieObj.key, cookieObj.value, cookieResOptions);
 
-		//Передаем browser дальше, на случай дальнейшего использования, например, прямого доступа к /badbrowser или /nojs
+		//Передаем browser дальше, на случай дальнейшего использования, например, в установке заголовка 'X-UA-Compatible'
 		req.browser = browser;
 		next();
 	});
@@ -840,6 +840,7 @@ module.exports.sessWaitingConnect = sessWaitingConnect;
 module.exports.regetUser = regetUser;
 module.exports.regetUsers = regetUsers;
 module.exports.getPlainUser = getPlainUser;
+module.exports.checkUserAgent = checkUserAgent;
 
 
 module.exports.loadController = function (a, db, io) {
