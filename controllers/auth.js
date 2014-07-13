@@ -20,7 +20,6 @@ var fs = require('fs'),
 	}),
 	appEnv = {},
 	app,
-	io,
 
 	regTpl,
 	recallTpl,
@@ -79,7 +78,7 @@ function login(socket, data, cb) {
 }
 
 //Регистрация
-function register(session, data, cb) {
+function register(data, cb) {
 	var error = '',
 		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
@@ -185,7 +184,7 @@ function register(session, data, cb) {
 }
 
 //Отправка на почту запроса на восстановление пароля
-function recall(session, data, cb) {
+function recall(usObj, data, cb) {
 	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail', //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 
@@ -204,10 +203,8 @@ function recall(session, data, cb) {
 			if (err || !user) {
 				return cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true}); //'User with such login or e-mail does not exist'
 			}
-			var iAm = session.user;
-
 			//Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
-			if (iAm && iAm.login !== data.login && (!iAm.role || iAm.role < 10)) {
+			if (usObj.registered && usObj.user.login !== data.login && !usObj.isAdmin) {
 				return cb({message: msg.deny, error: true});
 			}
 
@@ -250,7 +247,7 @@ function recall(session, data, cb) {
 }
 
 //Смена пароля по запросу восстановлния из почты
-function passChangeRecall(session, data, cb) {
+function passChangeRecall(usObj, data, cb) {
 	var error = '',
 		key = data.key;
 
@@ -276,7 +273,7 @@ function passChangeRecall(session, data, cb) {
 				// Если залогиненный пользователь запрашивает восстановление, то пароль надо поменять в модели пользователя сессии
 				// Если аноним - то в модели пользователи конфирма
 				// (Это один и тот же пользователь, просто разные объекты)
-				var user = session.user && session.user.login === confirm.user.login ? session.user : confirm.user;
+				var user = usObj.registered && usObj.user.login === confirm.user.login ? usObj.user : confirm.user;
 				user.pass = data.pass;
 
 				//Если неактивный пользователь восстанавливает пароль - активируем его
@@ -300,10 +297,10 @@ function passChangeRecall(session, data, cb) {
 }
 
 //Смена пароля в настройках пользователя с указанием текущего пароля
-function passChange(session, data, cb) {
+function passChange(usObj, data, cb) {
 	var error = '';
 
-	if (!session.user || !data || session.user.login !== data.login) {
+	if (!usObj.registered || !data || usObj.user.login !== data.login) {
 		return cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
 	}
 	if (!data.pass || !data.passNew || !data.passNew2) {
@@ -316,14 +313,14 @@ function passChange(session, data, cb) {
 		return cb({message: error, error: true});
 	}
 
-	session.user.checkPass(data.pass, function (err, isMatch) {
+	usObj.user.checkPass(data.pass, function (err, isMatch) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
 
 		if (isMatch) {
-			session.user.pass = data.passNew;
-			session.user.save(function (err) {
+			usObj.user.pass = data.passNew;
+			usObj.user.save(function (err) {
 				if (err) {
 					return cb({message: err && err.message || 'Save error', error: true});
 				}
@@ -336,7 +333,7 @@ function passChange(session, data, cb) {
 }
 
 //Проверка ключа confirm
-function checkConfirm(session, data, cb) {
+function checkConfirm(data, cb) {
 	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
 		cb({message: 'Bad params', error: true});
 		return;
@@ -421,19 +418,24 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('registerRequest', function (data) {
-			register(hs.session, data, function (data) {
+			register(data, function (data) {
 				socket.emit('registerResult', data);
 			});
 		});
 
 		socket.on('recallRequest', function (data) {
-			recall(hs.session, data, function (data) {
+			recall(hs.usObj, data, function (data) {
 				socket.emit('recallResult', data);
 			});
 		});
 
+		socket.on('passChangeRecall', function (data) {
+			passChangeRecall(hs.usObj, data, function (data) {
+				socket.emit('passChangeRecallResult', data);
+			});
+		});
 		socket.on('passChangeRequest', function (data) {
-			passChange(hs.session, data, function (data) {
+			passChange(hs.usObj, data, function (data) {
 				socket.emit('passChangeResult', data);
 			});
 		});
@@ -443,13 +445,8 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('checkConfirm', function (data) {
-			checkConfirm(hs.session, data, function (data) {
+			checkConfirm(data, function (data) {
 				socket.emit('checkConfirmResult', data);
-			});
-		});
-		socket.on('passChangeRecall', function (data) {
-			passChangeRecall(hs.session, data, function (data) {
-				socket.emit('passChangeRecallResult', data);
 			});
 		});
 	});
