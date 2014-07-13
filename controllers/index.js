@@ -363,7 +363,7 @@ var giveIndexNews = (function () {
 /**
  * Архив новостей
  */
-function giveAllNews(iAm, cb) {
+function giveAllNews(usObj, cb) {
 	News.find({pdate: {$lte: new Date()}}, {cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}})
 		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
 		.exec(function (err, news) {
@@ -371,11 +371,11 @@ function giveAllNews(iAm, cb) {
 				return cb(err);
 			}
 
-			if (!iAm || !news.length) {
+			if (!usObj.registered || !news.length) {
 				finish(null, news);
 			} else {
 				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
+				commentController.fillNewCommentsCount(news, usObj.user._id, 'news', finish);
 			}
 
 			function finish(err, news) {
@@ -410,12 +410,12 @@ function giveNewsFull(data, cb) {
 
 /**
  * Отдача новости для её страницы
- * @param iAm
+ * @param usObj
  * @param data
  * @param cb
  * @returns {*}
  */
-function giveNewsPublic(iAm, data, cb) {
+function giveNewsPublic(usObj, data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
 		return cb({message: 'Bad params'});
 	}
@@ -445,8 +445,8 @@ function giveNewsPublic(iAm, data, cb) {
 					});
 				}
 
-				if (iAm) {
-					UserSubscr.findOne({obj: news._id, user: iAm._id}, {_id: 0}, this.parallel());
+				if (usObj.registered) {
+					UserSubscr.findOne({obj: news._id, user: usObj.user._id}, {_id: 0}, this.parallel());
 				}
 			},
 			function (err, news, subscr) {
@@ -458,11 +458,11 @@ function giveNewsPublic(iAm, data, cb) {
 					news.subscr = true;
 				}
 
-				if (!iAm || !news.ccount) {
+				if (!usObj.registered || !news.ccount) {
 					delete news._id;
 					cb(null, {news: news});
 				} else {
-					commentController.getNewCommentsCount([news._id], iAm._id, 'news', function (err, countsHash) {
+					commentController.getNewCommentsCount([news._id], usObj.user._id, 'news', function (err, countsHash) {
 						if (err) {
 							return cb(err);
 						}
@@ -518,8 +518,8 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveIndexNews', function () {
-			if (hs.session.user) {
-				giveIndexNews(hs.session.user, returnIndexNews);
+			if (hs.usObj.registered) {
+				giveIndexNews(hs.usObj.user, returnIndexNews);
 			} else {
 				giveIndexNewsAnonym(returnIndexNews);
 			}
@@ -529,7 +529,7 @@ module.exports.loadController = function (app, db, io) {
 		}
 
 		socket.on('giveAllNews', function (data) {
-			giveAllNews(hs.session.user, function (err, result) {
+			giveAllNews(hs.usObj, function (err, result) {
 				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);
 			});
 		});
@@ -539,7 +539,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(hs.session.user, data, function (err, result) {
+			giveNewsPublic(hs.usObj, data, function (err, result) {
 				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : result);
 			});
 		});
