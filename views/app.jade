@@ -22,4 +22,6 @@ html
 			| </script>
 
 	body
+		if nojsShow
+			include includes/nojs
 		script(type="text/javascript", src='/js/module/app'+appName+'.js?__='+appHash)

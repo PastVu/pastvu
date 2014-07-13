@@ -3,7 +3,8 @@ meta(name="apple-mobile-web-app-capable", content="yes")
 meta(name="viewport", content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0")
 
 //-Facebook-style для редиректа клиента с отключённым javascript
-noscript: meta(http-equiv="refresh", content="0; URL=/nojs")
+if !nojsShow && nojsUrl
+	noscript: meta(http-equiv="refresh", content='0; URL='+nojsUrl)
 
 link(rel="shortcut icon", href="/favicon.ico")
 

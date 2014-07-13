@@ -21,6 +21,18 @@ module.exports.loadController = function (app) {
 			};
 		}()),
 
+	//Проверка на выключенный у клиенты js. В этом случае клиент передаст параметр _nojs=1 в url
+		checkNoJS = function (req) {
+			var nojsShow = req.query._nojs === '1',
+				nojsUrl;
+
+			//Если страница уже не для "отсутствует javascript", вставляем в noscript ссылку на редирект в случае отсутствия javascript
+			if (!nojsShow) {
+				nojsUrl = req._parsedUrl.pathname + '?' + (req._parsedUrl.query ? req._parsedUrl.query + '&' : '') + '_nojs=1';
+			}
+			return {nojsUrl: nojsUrl, nojsShow: nojsShow};
+		},
+
 	//Для путей, которым не нужна установка сессии напрямую парсим браузер
 		getReqBrowser = function (req, res, next) {
 			var ua = req.headers['user-agent'];
@@ -68,8 +80,9 @@ module.exports.loadController = function (app) {
 			app.get(route, _session.handleRequest, setStaticHeaders, appMainHandler);
 		});
 	function appMainHandler(req, res) {
+		var nojs = checkNoJS(req);
 		res.statusCode = 200;
-		res.render('app', {appName: 'Main', initData: genInitDataString(req.handshake.usObj)});
+		res.render('app', {appName: 'Main', initData: genInitDataString(req.handshake.usObj), nojsUrl: nojs.nojsUrl, nojsShow: nojs.nojsShow, agent: req.browser && req.browser.agent});
 	}
 
 
@@ -77,8 +90,9 @@ module.exports.loadController = function (app) {
 		app.get(route, _session.handleRequest, setStaticHeaders, appAdminHandler);
 	});
 	function appAdminHandler(req, res) {
+		var nojs = checkNoJS(req);
 		res.statusCode = 200;
-		res.render('app', {appName: 'Admin', initData: genInitDataString(req.handshake.usObj)});
+		res.render('app', {appName: 'Admin', initData: genInitDataString(req.handshake.usObj), nojsUrl: nojs.nojsUrl, nojsShow: nojs.nojsShow, agent: req.browser && req.browser.agent});
 	}
 
 
@@ -87,11 +101,7 @@ module.exports.loadController = function (app) {
 		res.statusCode = 200;
 		res.render('status/badbrowser', {agent: req.browser && req.browser.agent, title: 'Вы используете устаревшую версию браузера'});
 	});
-	//Отключенный javascript
-	app.get('/nojs', getReqBrowser, function (req, res) {
-		res.statusCode = 200;
-		res.render('status/nojs', {agent: req.browser && req.browser.agent, title: 'Выключен JavaScript'});
-	});
+
 	//Мой user-agent
 	app.get('/myua', getReqBrowser, function (req, res) {
 		res.setHeader('Cache-Control', 'no-cache,no-store,max-age=0,must-revalidate');
