@@ -102,6 +102,10 @@ var app,
 	usObjIsAdmin = function () {
 		/*jshint validthis: true*/
 		return this.registered && this.user.role > 9;
+	},
+	usObjIsModerator = function () {
+		/*jshint validthis: true*/
+		return this.registered && this.user.role === 5;
 	};
 
 //Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
@@ -121,6 +125,10 @@ function userObjectAddSession(session, cb) {
 			},
 			isAdmin: {
 				get: usObjIsAdmin,
+				enumerable: true
+			},
+			isModerator: {
+				get: usObjIsModerator,
 				enumerable: true
 			}
 		});
@@ -335,11 +343,10 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 	if (!usObj.registered) {
 		return cb({message: 'Can reget only registered user'});
 	}
-	var u = usObj.user;
-	User.findOne({login: u.login}, function (err, user) {
+	User.findOne({login: usObj.user.login}, function (err, user) {
 		userObjectTreatUser(usObj, function (err) {
 			if (err || !user) {
-				console.log('Error while regeting user (' + u.login + ')', err && err.message || 'No such user for reget');
+				console.log('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
 				if (cb) {
 					cb(err || {message: 'No such user for reget'});
 				}
@@ -353,7 +360,7 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 			}
 
 			if (emitHim) {
-				emitUser(user.login, emitExcludeSocket);
+				emitUser(usObj, null, emitExcludeSocket);
 			}
 			if (cb) {
 				cb(null, user);
@@ -361,7 +368,7 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 		});
 	});
 }
-//TODO: Обрабатывать и анонимных пользователей, популировать регионы
+//TODO: Обрабатывать и анонимных пользователей, популировать у них регионы
 //Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
 //Принимает на вход 'all' или функцию фильтра пользователей
 //Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
@@ -371,7 +378,7 @@ function regetUsers(filterFn, emitThem, cb) {
 
 	//_.forEach, потому что usersToReget может быть как объектом (usLogin), так и массивом (результат filter)
 	_.forEach(usersToReget, function (usObj) {
-		regetUser(usObj.user, emitThem);
+		regetUser(usObj, emitThem);
 	});
 
 	if (cb) {
@@ -524,16 +531,19 @@ function logoutUser(socket, cb) {
 }
 
 //Отправка текущего пользователя всем его подключеным клиентам
-function emitUser(login, excludeSocket) {
-	var usObj = usLogin[login],
-		user,
+function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
+	var userPlain,
 		sessions,
 		sockets,
 		i,
 		j;
 
-	if (usObj !== undefined) {
-		user = getPlainUser(usObj.user);
+	if (!usObj) {
+		usObj = usLogin[loginOrIdOrSessKey] || usId[loginOrIdOrSessKey] || usSid[loginOrIdOrSessKey];
+	}
+
+	if (usObj) {
+		userPlain = getPlainUser(usObj.user);
 		sessions = usObj.sessions;
 
 		for (i in sessions) {
@@ -541,7 +551,7 @@ function emitUser(login, excludeSocket) {
 				sockets = sessions[i].sockets;
 				for (j in sockets) {
 					if (sockets[j] !== undefined && sockets[j] !== excludeSocket && sockets[j].emit !== undefined) {
-						sockets[j].emit('youAre', {user: user, registered: usObj.registered});
+						sockets[j].emit('youAre', {user: userPlain, registered: usObj.registered});
 					}
 				}
 			}
@@ -550,17 +560,10 @@ function emitUser(login, excludeSocket) {
 }
 
 //Сохранение и последующая отправка
-function saveEmitUser(login, _id, excludeSocket, cb) {
-	var usObj;
-	if (login) {
-		usObj = usLogin[login];
-	} else if (_id) {
-		usObj = usId[_id];
-	}
-
-	if (usObj !== undefined && usObj.user !== undefined) {
+function saveEmitUser(usObj, excludeSocket, cb) {
+	if (usObj && usObj.user !== undefined) {
 		usObj.user.save(function (err) {
-			emitUser(usObj.user.login, excludeSocket);
+			emitUser(usObj, null, excludeSocket);
 			if (cb) {
 				cb();
 			}
@@ -591,8 +594,8 @@ function getOnline(login, _id) {
 	} else if (_id) {
 		usObj = usId[_id];
 	}
-	if (usObj !== undefined) {
-		return usObj.user;
+	if (usObj) {
+		return usObj;
 	}
 }
 
@@ -796,23 +799,25 @@ var checkExpiredSessions = (function () {
 			} else {
 				console.log(ret.count, ' sessions moved to archive');
 			}
-			//Проверяем, если какая-либо из отправленных в архив сессий находится в памяти (хешах), убираем из памяти
-			ret.keys.forEach(function (key) {
-				var session = sessConnected[key],
-					usObj = usSid[key];
-				if (session) {
-					if (usObj !== undefined) {
-						sessionFromHashes(usObj, session, 'checkExpiredSessions');
-					}
-					//Если в сессии есть сокеты, разрываем соединение
-					_.forEach(session.sockets, function (socket) {
-						if (socket.disconnet) {
-							socket.disconnet();
+			if (ret && Array.isArray(ret.keys)) {
+				//Проверяем, если какая-либо из отправленных в архив сессий находится в памяти (хешах), убираем из памяти
+				ret.keys.forEach(function (key) {
+					var session = sessConnected[key],
+						usObj = usSid[key];
+					if (session) {
+						if (usObj !== undefined) {
+							sessionFromHashes(usObj, session, 'checkExpiredSessions');
 						}
-					});
-					delete session.sockets;
-				}
-			});
+						//Если в сессии есть сокеты, разрываем соединение
+						_.forEach(session.sockets, function (socket) {
+							if (socket.disconnet) {
+								socket.disconnet();
+							}
+						});
+						delete session.sockets;
+					}
+				});
+			}
 			//Планируем следующий запуск
 			checkExpiredSessions();
 		});

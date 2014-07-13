@@ -363,7 +363,7 @@ var giveIndexNews = (function () {
 /**
  * Архив новостей
  */
-function giveAllNews(usObj, cb) {
+function giveAllNews(iAm, cb) {
 	News.find({pdate: {$lte: new Date()}}, {cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}})
 		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
 		.exec(function (err, news) {
@@ -371,11 +371,11 @@ function giveAllNews(usObj, cb) {
 				return cb(err);
 			}
 
-			if (!usObj.registered || !news.length) {
+			if (!iAm.registered || !news.length) {
 				finish(null, news);
 			} else {
 				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				commentController.fillNewCommentsCount(news, usObj.user._id, 'news', finish);
+				commentController.fillNewCommentsCount(news, iAm.user._id, 'news', finish);
 			}
 
 			function finish(err, news) {
@@ -410,12 +410,12 @@ function giveNewsFull(data, cb) {
 
 /**
  * Отдача новости для её страницы
- * @param usObj
+ * @param iAm
  * @param data
  * @param cb
  * @returns {*}
  */
-function giveNewsPublic(usObj, data, cb) {
+function giveNewsPublic(iAm, data, cb) {
 	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
 		return cb({message: 'Bad params'});
 	}
@@ -427,12 +427,12 @@ function giveNewsPublic(usObj, data, cb) {
 
 		step(
 			function () {
-				var user = _session.getOnline(null, news.user),
+				var userObj = _session.getOnline(null, news.user),
 					paralellUser = this.parallel();
 
-				if (user) {
+				if (userObj) {
 					news.user = {
-						login: user.login, avatar: user.avatar, disp: user.disp, online: true
+						login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, online: true
 					};
 					paralellUser(null, news);
 				} else {
@@ -445,8 +445,8 @@ function giveNewsPublic(usObj, data, cb) {
 					});
 				}
 
-				if (usObj.registered) {
-					UserSubscr.findOne({obj: news._id, user: usObj.user._id}, {_id: 0}, this.parallel());
+				if (iAm.registered) {
+					UserSubscr.findOne({obj: news._id, user: iAm.user._id}, {_id: 0}, this.parallel());
 				}
 			},
 			function (err, news, subscr) {
@@ -458,11 +458,11 @@ function giveNewsPublic(usObj, data, cb) {
 					news.subscr = true;
 				}
 
-				if (!usObj.registered || !news.ccount) {
+				if (!iAm.registered || !news.ccount) {
 					delete news._id;
 					cb(null, {news: news});
 				} else {
-					commentController.getNewCommentsCount([news._id], usObj.user._id, 'news', function (err, countsHash) {
+					commentController.getNewCommentsCount([news._id], iAm.user._id, 'news', function (err, countsHash) {
 						if (err) {
 							return cb(err);
 						}

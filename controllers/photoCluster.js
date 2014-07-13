@@ -9,8 +9,6 @@ var dbNative,
 	clusterConditions, // Параметры установки кластера
 
 	_ = require('lodash'),
-	ms = require('ms'), // Tiny milisecond conversion utility
-	moment = require('moment'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
@@ -61,7 +59,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('clusterAll', function (data) {
-				if (!hs.session.user || !hs.session.user.role || hs.session.user.role < 10) {
+				if (!hs.usObj.isAdmin) {
 					return result({message: 'Not authorized', error: true});
 				}
 				step(

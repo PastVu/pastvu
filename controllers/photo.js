@@ -1,7 +1,6 @@
 'use strict';
 
-var auth = require('./auth.js'),
-	_session = require('./_session.js'),
+var _session = require('./_session.js'),
 	Settings,
 	User,
 	UserCommentsView,
@@ -22,7 +21,6 @@ var auth = require('./auth.js'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	step = require('step'),
-	async = require('async'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger,
@@ -51,34 +49,32 @@ var auth = require('./auth.js'),
 		//Определяет может ли модерировать фотографию пользователь
 		//Если да, то в случае регионального модератора вернёт номер региона,
 		//в случае, глобального модератора и админа - true
-		canModerate: function (photo, user) {
+		canModerate: function (photo, usObj) {
 			var rhash,
 				photoRegion,
 				i;
 
-			if (user) {
-				if (user.role === 5) {
-					//Если у пользователя роль модератора регионов, смотрим его регионы
-					if (!user.mod_regions || !user.mod_regions.length) {
-						return true; //Глобальные модераторы могут модерировать всё
-					}
-
-					//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
-					rhash = _session.usLogin[user.login].mod_rhash;
-					for (i = 0; i <= maxRegionLevel; i++) {
-						photoRegion = photo['r' + i];
-						if (photoRegion && rhash[photoRegion] !== undefined) {
-							return photoRegion;
-						}
-					}
-				} else if (user.role > 5) {
-					//Если пользователь админ - то может
-					return true;
+			if (usObj.isModerator) {
+				//Если у пользователя роль модератора регионов, смотрим его регионы
+				if (!usObj.user.mod_regions || !usObj.user.mod_regions.length) {
+					return true; //Глобальные модераторы могут модерировать всё
 				}
+
+				//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
+				rhash = usObj.mod_rhash;
+				for (i = 0; i <= maxRegionLevel; i++) {
+					photoRegion = photo['r' + i];
+					if (photoRegion && rhash[photoRegion] !== undefined) {
+						return photoRegion;
+					}
+				}
+			} else if (usObj.isAdmin) {
+				//Если пользователь админ - то может
+				return true;
 			}
 			return false;
 		},
-		getCan: function (photo, user) {
+		getCan: function (photo, usObj) {
 			var can = {
 					edit: false,
 					disable: false,
@@ -90,33 +86,33 @@ var auth = require('./auth.js'),
 				ownPhoto,
 				canModerate;
 
-			if (user) {
-				ownPhoto = photo.user && photo.user.equals(user._id);
-				canModerate = permissions.canModerate(photo, user);
+			if (usObj.registered) {
+				ownPhoto = photo.user && photo.user.equals(usObj.user._id);
+				canModerate = permissions.canModerate(photo, usObj);
 
 				can.edit = canModerate || ownPhoto;
 				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
-				can.restore = user.role > 9; //Восстанавливать может только администратор
+				can.restore = usObj.isAdmin; //Восстанавливать может только администратор
 				if (canModerate) {
 					can.disable = true;
 					if (photo.s < 2) {
 						can.approve = true;
 					}
-					if (user.role > 9) {
+					if (usObj.isAdmin) {
 						can.convert = true;
 					}
 				}
 			}
 			return can;
 		},
-		canSee: function (photo, user) {
+		canSee: function (photo, usObj) {
 			if (photo.s === 5) {
 				return true;
-			} else if (user && photo.user) {
+			} else if (usObj.registered && photo.user) {
 				if (photo.s === 9) {
-					return user.role > 9;
+					return usObj.isAdmin;
 				} else {
-					return photo.user.equals(user._id) || permissions.canModerate(photo, user);
+					return photo.user.equals(usObj.user._id) || permissions.canModerate(photo, usObj);
 				}
 			}
 
@@ -182,14 +178,14 @@ var core = {
 
 				step(
 					function () {
-						var user = _session.getOnline(null, photo.user),
+						var userObj = _session.getOnline(null, photo.user),
 							paralellUser = this.parallel(),
 							regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
 
-						if (user) {
+						if (userObj) {
 							photo = photo.toObject();
 							photo.user = {
-								login: user.login, avatar: user.avatar, disp: user.disp, ranks: user.ranks || [], sex: user.sex, online: true
+								login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, ranks: userObj.user.ranks || [], sex: userObj.user.sex, online: true
 							};
 							paralellUser(null, photo);
 						} else {
@@ -205,8 +201,8 @@ var core = {
 						}
 						regionController.getObjRegionList(photo, regionFields, this.parallel());
 
-						if (iAm) {
-							UserSubscr.findOne({obj: photo._id, user: iAm._id}, {_id: 0}, this.parallel());
+						if (iAm.registered) {
+							UserSubscr.findOne({obj: photo._id, user: iAm.user._id}, {_id: 0}, this.parallel());
 						}
 					},
 					function (err, photo, regions, subscr) {
@@ -243,11 +239,11 @@ var core = {
 							photo.geo = photo.geo.reverse();
 						}
 
-						if (!iAm || !photo.ccount) {
+						if (!iAm.registered || !photo.ccount) {
 							delete photo._id;
 							cb(null, photo, can);
 						} else {
-							commentController.getNewCommentsCount([photo._id], iAm._id, null, function (err, countsHash) {
+							commentController.getNewCommentsCount([photo._id], iAm.user._id, null, function (err, countsHash) {
 								if (err) {
 									return cb(err);
 								}
@@ -348,17 +344,17 @@ var core = {
 };
 
 function giveNewPhotosLimit(iAm, data, cb) {
-	if (!iAm || iAm.login !== data.login && iAm.role < 10) {
+	if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	step(
 		function () {
-			if (iAm.login === data.login) {
-				this(null, iAm);
+			if (iAm.user.login === data.login) {
+				this(null, iAm.user);
 			} else {
-				var user = _session.getOnline(data.login);
-				if (user) {
-					this(null, user);
+				var userObj = _session.getOnline(data.login);
+				if (userObj) {
+					this(null, userObj.user);
 				} else {
 					User.findOne({login: data.login}, this);
 				}
@@ -381,8 +377,8 @@ function giveNewPhotosLimit(iAm, data, cb) {
  */
 //var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
 function createPhotos(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user) {
+	var iAm = socket.handshake.usObj;
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
@@ -394,7 +390,7 @@ function createPhotos(socket, data, cb) {
 	}
 
 	var result = [],
-		canCreate = core.getNewPhotosLimit(user);
+		canCreate = core.getNewPhotosLimit(iAm.user);
 
 	if (!canCreate || !data.length) {
 		cb({message: 'Nothing to save', cids: result});
@@ -435,7 +431,7 @@ function createPhotos(socket, data, cb) {
 
 				photo = new Photo({
 					cid: next + i,
-					user: user._id,
+					user: iAm.user,
 					file: item.fullfile,
 					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
 					sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
@@ -459,8 +455,8 @@ function createPhotos(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			user.pfcount = user.pfcount + data.length;
-			_session.saveEmitUser(user.login, null, socket, this);
+			iAm.user.pfcount = iAm.user.pfcount + data.length;
+			_session.saveEmitUser(iAm, socket, this);
 		},
 		function (err) {
 			if (err) {
@@ -478,10 +474,10 @@ function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
 			commentController.hideObjComments(photo._id, !makePublic, iAm, this.parallel());
 
 			//Пересчитывам кол-во публичных фото у владельца фотографии
-			var user = _session.getOnline(null, photo.user);
-			if (user) {
-				user.pcount = user.pcount + (makePublic ? 1 : -1);
-				_session.saveEmitUser(null, photo.user);
+			var userObj = _session.getOnline(null, photo.user);
+			if (userObj) {
+				userObj.user.pcount = userObj.user.pcount + (makePublic ? 1 : -1);
+				_session.saveEmitUser(userObj);
 			} else {
 				User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
 			}
@@ -546,9 +542,8 @@ function photoFromMap(photo, cb) {
 }
 
 //Удаляет из Incoming загруженное, но не созданное фото
-function removePhotoIncoming(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user) {
+function removePhotoIncoming(iAm, data, cb) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -562,9 +557,9 @@ function removePhotoIncoming(socket, data, cb) {
  * @param cb Коллбэк
  */
 function removePhoto(socket, cid, cb) {
-	var iAm = socket.handshake.session.user;
+	var iAm = socket.handshake.usObj;
 
-	if (!iAm) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	cid = Number(cid);
@@ -588,12 +583,12 @@ function removePhoto(socket, cid, cb) {
 					return cb({message: err.message, error: true});
 				}
 
-				var user = _session.getOnline(null, photo.user);
+				var userObj = _session.getOnline(null, photo.user);
 
 				//Пересчитывам кол-во новых фото у владельца
-				if (user) {
-					user.pfcount = user.pfcount - 1;
-					_session.saveEmitUser(user.login);
+				if (userObj) {
+					userObj.user.pfcount = userObj.user.pfcount - 1;
+					_session.saveEmitUser(userObj);
 				} else {
 					User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
 				}
@@ -646,9 +641,9 @@ function removePhoto(socket, cid, cb) {
  * @param cb Коллбэк
  */
 function restorePhoto(socket, cid, cb) {
-	var iAm = socket.handshake.session.user;
+	var iAm = socket.handshake.usObj;
 
-	if (!iAm || iAm.role < 10) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	cid = Number(cid);
@@ -719,11 +714,11 @@ function approvePhoto(iAm, cid, cb) {
 			}
 
 			//Обновляем количество у автора фотографии
-			var user = _session.getOnline(null, photoSaved.user);
-			if (user) {
-				user.pcount = user.pcount + 1;
-				user.pfcount = user.pfcount - 1;
-				_session.saveEmitUser(user.login);
+			var userObj = _session.getOnline(null, photoSaved.user);
+			if (userObj) {
+				userObj.user.pcount = userObj.user.pcount + 1;
+				userObj.user.pfcount = userObj.user.pfcount - 1;
+				_session.saveEmitUser(userObj);
 			} else {
 				User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
 			}
@@ -736,8 +731,8 @@ function approvePhoto(iAm, cid, cb) {
 
 //Активация/деактивация фото
 function activateDeactivate(socket, data, cb) {
-	var user = socket.handshake.session.user;
-	if (!user || user.role < 5) {
+	var iAm = socket.handshake.usObj;
+	if (!iAm.registered || iAm.user.role < 5) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!data || !Utils.isType('object', data)) {
@@ -767,7 +762,7 @@ function activateDeactivate(socket, data, cb) {
 				return cb({message: err.message, error: true});
 			}
 
-			changePublicPhotoExternality(socket, photoSaved, user, !makeDisabled, function (err) {
+			changePublicPhotoExternality(socket, photoSaved, iAm, !makeDisabled, function (err) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
@@ -778,12 +773,11 @@ function activateDeactivate(socket, data, cb) {
 }
 
 //Отдаем фотографию для её страницы
-function givePhoto(socket, data, cb) {
+function givePhoto(iAm, data, cb) {
 	if (!data || !Number(data.cid)) {
 		return cb({message: msg.notExists, error: true});
 	}
 	data.cid = Number(data.cid);
-	var iAm = socket.handshake.session.user;
 
 	core.givePhoto(iAm, data, function (err, photo, can) {
 		if (err) {
@@ -793,39 +787,25 @@ function givePhoto(socket, data, cb) {
 	});
 }
 
-//Отдаем последние публичные фотографии на главной для анонимов в memoized
+//Отдаем последние публичные фотографии на главной
 var givePhotosPublicIndex = (function () {
 	var options = {skip: 0, limit: 30},
-		filter = {s: [5]},
-		memoized = Utils.memoizeAsync(function (handler) {
-			givePhotos(null, filter, options, null, handler);
-		}, ms('15s'));
+		filter = {s: [5]};
 
 	return function (iAm, cb) {
-		if (iAm) {
-			//Для зарегистрированных пользователей всегда выбираем заново, т.к. могут быть новые комментарии или региональные фильтры
-			givePhotos(iAm, filter, options, null, cb);
-		} else {
-			return memoized(cb);
-		}
+		//Всегда выбираем заново, т.к. могут быть региональные фильтры
+		givePhotos(iAm, filter, options, null, cb);
 	};
 }());
 
 //Отдаем последние публичные "Где это?" фотографии для главной
 var givePhotosPublicNoGeoIndex = (function () {
 	var options = {skip: 0, limit: 30},
-		filter = {geo: ['0'], s: [5]},
-		memoized = Utils.memoizeAsync(function (handler) {
-			givePhotos(null, filter, options, null, handler);
-		}, ms('15s'));
+		filter = {geo: ['0'], s: [5]};
 
 	return function (iAm, cb) {
-		if (iAm) {
-			//Для зарегистрированных пользователей всегда выбираем заново, т.к. могут быть новые комментарии или региональные фильтры
-			givePhotos(iAm, filter, options, null, cb);
-		} else {
-			return memoized(cb);
-		}
+		//Выбираем заново, т.к. могут быть региональные фильтры
+		givePhotos(iAm, filter, options, null, cb);
 	};
 }());
 
@@ -917,7 +897,7 @@ function parseFilter(filterString) {
 
 /**
  * Отдаем полную галерею с учетом прав и фильтров в компактном виде
- * @param iAm Пользователь сессии
+ * @param iAm Объект пользователя
  * @param filter Объект фильтра (распарсенный)
  * @param data Объект параметров, включая стринг фильтра
  * @param user_id _id пользователя, если хотим галерею только для него получить
@@ -948,7 +928,7 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 		//console.log(query);
 		step(
 			function () {
-				var fieldsSelect = iAm ? compactFieldsIdWithRegions : compactFieldsWithRegions; //Для подсчета новых комментариев нужны _id
+				var fieldsSelect = iAm.registered ? compactFieldsIdWithRegions : compactFieldsWithRegions; //Для подсчета новых комментариев нужны _id
 
 				Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
 				Photo.count(query, this.parallel());
@@ -965,19 +945,19 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
 				}
 
-				if (!iAm || !photos.length) {
+				if (!iAm.registered || !photos.length) {
 					//Если аноним или фотографий нет, сразу возвращаем
 					finish(null, photos);
 				} else {
 					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-					commentController.fillNewCommentsCount(photos, iAm._id, null, finish);
+					commentController.fillNewCommentsCount(photos, iAm.user._id, null, finish);
 				}
 
 				function finish(err, photos) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					if (iAm) {
+					if (iAm.registered) {
 						for (var i = photos.length; i--;) {
 							delete photos[i]._id;
 						}
@@ -993,7 +973,7 @@ function givePhotos(iAm, filter, data, user_id, cb) {
 
 //Отдаем общую галерею
 function givePhotosPS(iAm, data, cb) {
-	if (!Utils.isType('object', data)) {
+	if (!_.isObject(data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -1017,7 +997,7 @@ function giveUserPhotos(iAm, data, cb) {
 		var filter = data.filter ? parseFilter(data.filter) : {};
 		//Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
 		//и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
-		if (filter.r === undefined && iAm && iAm.login !== data.login && iAm.regions && iAm.regions.length && iAm.settings && !iAm.settings.r_f_user_gal) {
+		if (filter.r === undefined && iAm.registered && iAm.user.login !== data.login && iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
 			filter.r = 0;
 		}
 		givePhotos(iAm, filter, data, user_id, cb);
@@ -1026,33 +1006,31 @@ function giveUserPhotos(iAm, data, cb) {
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
-	var usObj = _session.usLogin[iAm.login],
-		query = {s: 1};
+	var query = {s: 1};
 
-	if (!iAm || iAm.role < 5) {
+	if (!iAm.registered || iAm.user.role < 5) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data)) {
 		return cb({message: 'Bad params', error: true});
 	}
-	if (iAm.role === 5) {
-		_.assign(query, usObj.mod_rquery);
+	if (iAm.isModerator) {
+		_.assign(query, iAm.mod_rquery);
 	}
 
 	Photo.find(query, compactFieldsWithRegions, {lean: true, sort: {sdate: -1}, skip: data.skip || 0, limit: Math.min(data.limit || 20, 100)}, function (err, photos) {
 		if (err || !photos) {
 			return cb({message: err && err.message || 'No photos', error: true});
 		}
-		var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj.mod_rshortlvls, true);
+		var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm.mod_rshortlvls, true);
 
 		cb({photos: photos, rhash: shortRegionsHash});
 	});
 }
 
 //Берем массив до и после указанной фотографии пользователя указанной длины
-function giveUserPhotosAround(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		cid = Number(data && data.cid),
+function giveUserPhotosAround(iAm, data, cb) {
+	var cid = Number(data && data.cid),
 		limitL = Math.min(Number(data.limitL), 100),
 		limitR = Math.min(Number(data.limitR), 100);
 
@@ -1067,7 +1045,7 @@ function giveUserPhotosAround(socket, data, cb) {
 
 		step(
 			function () {
-				var filter = iAm && iAm.settings && !iAm.settings.r_f_photo_user_gal ? {r: 0} : {},
+				var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? {r: 0} : {},
 					query = buildPhotosQuery(filter, photo.user, iAm).query;
 				query.user = photo.user;
 
@@ -1112,9 +1090,8 @@ function giveNearestPhotos(data, cb) {
 }
 
 //Отдаем непубличные фотографии
-function giveUserPhotosPrivate(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-	if (!iAm || (iAm.role < 5 && iAm.login !== data.login)) {
+function giveUserPhotosPrivate(iAm, data, cb) {
+	if (!iAm.registered || (iAm.user.role < 5 && iAm.user.login !== data.login)) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -1124,9 +1101,9 @@ function giveUserPhotosPrivate(socket, data, cb) {
 		}
 		var query = {user: userid};
 
-		if (iAm.role === 5) {
+		if (iAm.isModerator) {
 			query.s = {$ne: 9};
-			_.assign(query, _session.usLogin[iAm.login].mod_rquery);
+			_.assign(query, iAm.mod_rquery);
 		}
 
 		if (data.startTime || data.endTime) {
@@ -1150,11 +1127,10 @@ function giveUserPhotosPrivate(socket, data, cb) {
 }
 
 //Отдаем новые фотографии
-function givePhotosFresh(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-	if (!iAm ||
-		(!data.login && iAm.role < 5) ||
-		(data.login && iAm.role < 5 && iAm.login !== data.login)) {
+function givePhotosFresh(iAm, data, cb) {
+	if (!iAm.registered ||
+		(!data.login && iAm.user.role < 5) ||
+		(data.login && iAm.user.role < 5 && iAm.user.login !== data.login)) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!data || !Utils.isType('object', data)) {
@@ -1174,11 +1150,10 @@ function givePhotosFresh(socket, data, cb) {
 				return cb({message: err && err.message, error: true});
 			}
 			var query = {s: 0},
-				usObj = _session.usLogin[iAm.login],
-				asModerator = iAm.login !== data.login && iAm.role === 5;
+				asModerator = iAm.user.login !== data.login && iAm.isModerator;
 
 			if (asModerator) {
-				_.assign(query, usObj.mod_rquery);
+				_.assign(query, iAm.mod_rquery);
 			}
 			if (userid) {
 				query.user = userid;
@@ -1191,7 +1166,7 @@ function givePhotosFresh(socket, data, cb) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
 				}
-				var shortRegionsHash = regionController.genObjsShortRegionsArr(photos || [], asModerator ? usObj.mod_rshortlvls : usObj.rshortlvls, true);
+				var shortRegionsHash = regionController.genObjsShortRegionsArr(photos || [], asModerator ? iAm.mod_rshortlvls : iAm.rshortlvls, true);
 				cb({photos: photos || [], rhash: shortRegionsHash});
 			});
 		}
@@ -1199,19 +1174,18 @@ function givePhotosFresh(socket, data, cb) {
 }
 
 //Отдаем разрешенные can для фото
-function giveCanPhoto(socket, data, cb) {
-	var user = socket.handshake.session.user,
-		cid = Number(data.cid);
+function giveCanPhoto(iAm, data, cb) {
+	var cid = Number(data.cid);
 
 	if (isNaN(cid)) {
 		return cb({message: msg.notExists, error: true});
 	}
-	if (user) {
+	if (iAm.registered) {
 		Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			cb({can: permissions.getCan(photo, user)});
+			cb({can: permissions.getCan(photo, iAm)});
 		});
 	} else {
 		cb({});
@@ -1219,9 +1193,8 @@ function giveCanPhoto(socket, data, cb) {
 }
 
 //Сохраняем информацию о фотографии
-function savePhoto(socket, data, cb) {
-	var user = socket.handshake.session.user,
-		cid = Number(data.cid),
+function savePhoto(iAm, data, cb) {
+	var cid = Number(data.cid),
 		photoOldObj,
 		newValues,
 		oldGeo,
@@ -1229,21 +1202,21 @@ function savePhoto(socket, data, cb) {
 		geoToNull,
 		sendingBack = {};
 
-	if (!user) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid}, {frags: 0}, user, function (err, photo) {
+	findPhoto({cid: cid}, {frags: 0}, iAm, function (err, photo) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		if (!permissions.getCan(photo, user).edit) {
+		if (!permissions.getCan(photo, iAm).edit) {
 			return cb({message: msg.deny, error: true});
 		}
 
@@ -1374,11 +1347,10 @@ function savePhoto(socket, data, cb) {
 }
 
 //Говорим, что фото готово к премодерации и публикации
-function readyPhoto(socket, data, cb) {
-	var user = socket.handshake.session.user,
-		cid = Number(data);
+function readyPhoto(iAm, data, cb) {
+	var cid = Number(data);
 
-	if (!user) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!cid) {
@@ -1391,25 +1363,25 @@ function readyPhoto(socket, data, cb) {
 		if (photo.s !== 0) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
-		if (!permissions.getCan(photo, user).edit) {
+		if (!permissions.getCan(photo, iAm).edit) {
 			return cb({message: msg.deny, error: true});
 		}
 		if (!photo.r0) {
 			return cb({message: msg.mustCoord, error: true});
 		}
 
-		if (user.ranks && user.ranks.indexOf('mec_gold') > -1) {
+		if (iAm.user.ranks && iAm.user.ranks.indexOf('mec_gold') > -1) {
 			//Если пользователь - золотой меценат, значит он сразу публикует фото, если таких действий еще менее 100
-			UserSelfPublishedPhotos.find({user: user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
+			UserSelfPublishedPhotos.find({user: iAm.user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
 				if (obj && obj.photos && obj.photos.length >= 100) {
 					justSetReady();
 				} else {
-					approvePhoto(user, cid, function (result) {
+					approvePhoto(iAm, cid, function (result) {
 						if (result.error) {
 							return cb(result);
 						}
 						cb({message: 'Ok', published: true});
-						UserSelfPublishedPhotos.update({user: user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
+						UserSelfPublishedPhotos.update({user: iAm.user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
 					});
 				}
 			});
@@ -1452,12 +1424,11 @@ function getBounds(data, cb) {
 }
 
 //Отправляет выбранные фото на конвертацию
-function convertPhotos(socket, data, cb) {
-	var user = socket.handshake.session.user,
-		cids = [],
+function convertPhotos(iAm, data, cb) {
+	var cids = [],
 		i;
 
-	if (!user || user.role < 10) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Array.isArray(data) || !data.length) {
@@ -1489,10 +1460,8 @@ function convertPhotos(socket, data, cb) {
 }
 
 //Отправляет все фото выбранных вариантов на конвертацию
-function convertPhotosAll(socket, data, cb) {
-	var user = socket.handshake.session.user;
-
-	if (!user || user.role < 10) {
+function convertPhotosAll(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data)) {
@@ -1507,18 +1476,18 @@ function convertPhotosAll(socket, data, cb) {
  * Находим фотографию с учетом прав пользователя
  * @param query
  * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
- * @param user Пользователь сессии
+ * @param usObj Объект пользователя
  * @param cb
  */
-function findPhoto(query, fieldSelect, user, cb) {
-	if (!user) {
+function findPhoto(query, fieldSelect, usObj, cb) {
+	if (!usObj.registered) {
 		query.s = 5; //Анонимам ищем только публичные
 	}
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}
-		if (photo && permissions.canSee(photo, user)) {
+		if (photo && permissions.canSee(photo, usObj)) {
 			cb(null, photo);
 		} else {
 			cb(null, null);
@@ -1530,7 +1499,7 @@ function findPhoto(query, fieldSelect, user, cb) {
  * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
  * @param filter
  * @param forUserId
- * @param iAm Пользователь сессии
+ * @param iAm Объект пользователя сессии
  */
 function buildPhotosQuery(filter, forUserId, iAm) {
 	var query, //Результирующий запрос
@@ -1545,9 +1514,8 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		regions_hash = {},
 
 		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
-		squery_public_only = !iAm || filter.s && filter.s.length === 1 && filter.s[0] === 5,
+		squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === 5,
 
-		usObj = iAm && _session.usLogin[iAm.login],
 		region,
 		contained,
 		result = {query: null, s: [], rcids: [], rarr: []},
@@ -1558,7 +1526,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 	if (!squery_public_only && filter.s && filter.s.length) {
 		//Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
-		filter.s = _.without(filter.s, 5, !iAm || !iAm.role || iAm.role < 10 ? 9 : undefined);
+		filter.s = _.without(filter.s, 5, !iAm.isAdmin ? 9 : undefined);
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
@@ -1576,9 +1544,9 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		someVar = regionController.buildQuery(regions_arr);
 		rquery_pub = rquery_mod = someVar.rquery;
 		regions_hash = someVar.rhash;
-	} else if (filter.r === undefined && iAm && iAm.regions.length && (!forUserId || !forUserId.equals(iAm._id))) {
-		regions_hash = usObj.rhash;
-		regions_cids = _.pluck(iAm.regions, 'cid');
+	} else if (filter.r === undefined && iAm.registered && iAm.user.regions.length && (!forUserId || !forUserId.equals(iAm.user._id))) {
+		regions_hash = iAm.rhash;
+		regions_cids = _.pluck(iAm.user.regions, 'cid');
 		regions_arr = regions_arr_all = regionController.getRegionsArrFromHash(regions_hash, regions_cids);
 	}
 	if (regions_cids.length) {
@@ -1588,37 +1556,37 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	if (squery_public_only) {
 		query_pub = {};  //Анонимам или при фильтрации для публичных отдаем только публичные
 
-		if (filter.r === undefined && iAm && iAm.regions.length) {
-			rquery_pub = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
+		if (filter.r === undefined && iAm.registered && iAm.user.regions.length) {
+			rquery_pub = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
 		}
-	} else if (forUserId && forUserId.equals(iAm._id)) {
+	} else if (forUserId && forUserId.equals(iAm.user._id)) {
 		//Собственную галерею отдаем без удаленных(не админам) и без регионов в настройках, только по filter.r
 		query_mod = {};
 	} else {
-		if (filter.r === undefined && iAm.regions.length) {
-			rquery_pub = rquery_mod = usObj.rquery; //Если фильтр не указан - отдаем по собственным регионам
+		if (filter.r === undefined && iAm.user.regions.length) {
+			rquery_pub = rquery_mod = iAm.rquery; //Если фильтр не указан - отдаем по собственным регионам
 		}
 
-		if (iAm.role > 9) {
+		if (iAm.isAdmin) {
 			//Админам отдаем все статусы
 			query_mod = {};
-		} else if (!iAm.role || iAm.role < 5) {
+		} else if (!iAm.user.role || iAm.user.role < 5) {
 			//Ниже чем модераторам региона отдаем только публичные
 			query_pub = {};
-		} else if (iAm.role === 5) {
+		} else if (iAm.isModerator) {
 			//Региональным модераторам отдаем в своих регионах без удаленных, в остальных - только публичные
 
-			if (!iAm.mod_regions.length || usObj.mod_regions_equals) {
+			if (!iAm.user.mod_regions.length || iAm.mod_regions_equals) {
 				//Глобальным модераторам и региональным, у которых совпадают регионы модерирования с собственными,
 				//(т.е. область модерирования включает в себя пользовательскую)
 				//отдаем пользовательскую область как модерируемую
 				query_mod = {};
-			} else if (filter.r === 0 || !iAm.regions.length) {
+			} else if (filter.r === 0 || !iAm.user.regions.length) {
 				//Если запрашиваются все пользовательские регионы (т.е. весь мир),
 				//то делаем глобальный запрос по публичным, а со статусами по модерируемым
 				query_pub = {};
 				query_mod = {};
-				rquery_mod = usObj.mod_rquery;
+				rquery_mod = iAm.mod_rquery;
 			} else {
 				//В случае, когда массив пользовательских и модерируемых регионов различается,
 				//"вычитаем" публичные из модерируемых, получая два новых чистых массива
@@ -1632,11 +1600,11 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 					region = regions_arr[i];
 					contained = false;
 
-					if (usObj.mod_rhash[region.cid]) {
+					if (iAm.mod_rhash[region.cid]) {
 						contained = true;
 					} else if (region.parents) {
 						for (j = region.parents.length; j--;) {
-							if (usObj.mod_rhash[region.parents[j]]) {
+							if (iAm.mod_rhash[region.parents[j]]) {
 								contained = true;
 								break;
 							}
@@ -1652,8 +1620,8 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 				//Если один из модерируемых регионов является дочерним какому-либо пользовательскому региону,
 				//то включаем такой модерируемый регион в массив модерируемых,
 				//несмотря на то, что родительский лежит в массиве публичных
-				for (i = iAm.mod_regions.length; i--;) {
-					region = usObj.mod_rhash[iAm.mod_regions[i].cid];
+				for (i = iAm.user.mod_regions.length; i--;) {
+					region = iAm.mod_rhash[iAm.user.mod_regions[i].cid];
 					if (region.parents) {
 						for (j = region.parents.length; j--;) {
 							if (regions_hash[region.parents[j]]) {
@@ -1701,7 +1669,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 				query_mod.s = {$in: filter.s};
 			}
 			Array.prototype.push.apply(result.s, filter.s);
-		} else if (iAm.role < 10) {
+		} else if (!iAm.isAdmin) {
 			query_mod.s = {$ne: 9};
 		}
 
@@ -1791,7 +1759,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('removePhotoInc', function (data) {
-			removePhotoIncoming(socket, data, function (err) {
+			removePhotoIncoming(hs.usObj, data, function (err) {
 				socket.emit('removePhotoIncCallback', {error: !!err});
 			});
 		});
@@ -1802,8 +1770,8 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('approvePhoto', function (data) {
-			if (hs.session.user && hs.session.user.role > 4) {
-				approvePhoto(hs.session.user, data, function (resultData) {
+			if (hs.usObj && hs.usObj.user.role > 4) {
+				approvePhoto(hs.usObj, data, function (resultData) {
 					socket.emit('approvePhotoResult', resultData);
 				});
 			} else {
@@ -1818,55 +1786,55 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhoto', function (data) {
-			givePhoto(socket, data, function (resultData) {
+			givePhoto(hs.usObj, data, function (resultData) {
 				socket.emit('takePhoto', resultData);
 			});
 		});
 
 		socket.on('givePhotosPublicIndex', function () {
-			givePhotosPublicIndex(hs.session.user, function (resultData) {
+			givePhotosPublicIndex(hs.usObj, function (resultData) {
 				socket.emit('takePhotosPublicIndex', resultData);
 			});
 		});
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
-			givePhotosPublicNoGeoIndex(hs.session.user, function (resultData) {
+			givePhotosPublicNoGeoIndex(hs.usObj, function (resultData) {
 				socket.emit('takePhotosPublicNoGeoIndex', resultData);
 			});
 		});
 
 		socket.on('givePhotos', function (data) {
-			givePhotosPS(hs.session.user, data, function (resultData) {
+			givePhotosPS(hs.usObj, data, function (resultData) {
 				socket.emit('takePhotos', resultData);
 			});
 		});
 
 		socket.on('giveUserPhotos', function (data) {
-			giveUserPhotos(hs.session.user, data, function (resultData) {
+			giveUserPhotos(hs.usObj, data, function (resultData) {
 				socket.emit('takeUserPhotos', resultData);
 			});
 		});
 
 		socket.on('givePhotosForApprove', function (data) {
-			givePhotosForApprove(hs.session.user, data, function (resultData) {
+			givePhotosForApprove(hs.usObj, data, function (resultData) {
 				socket.emit('takePhotosForApprove', resultData);
 			});
 		});
 
 		socket.on('giveUserPhotosAround', function (data) {
-			giveUserPhotosAround(socket, data, function (resultData) {
+			giveUserPhotosAround(hs.usObj, data, function (resultData) {
 				socket.emit('takeUserPhotosAround', resultData);
 			});
 		});
 
 		socket.on('giveUserPhotosPrivate', function (data) {
-			giveUserPhotosPrivate(socket, data, function (resultData) {
+			giveUserPhotosPrivate(hs.usObj, data, function (resultData) {
 				socket.emit('takeUserPhotosPrivate', resultData);
 			});
 		});
 
 		socket.on('givePhotosFresh', function (data) {
-			givePhotosFresh(socket, data, function (resultData) {
+			givePhotosFresh(hs.usObj, data, function (resultData) {
 				socket.emit('takePhotosFresh', resultData);
 			});
 		});
@@ -1878,19 +1846,19 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveCanPhoto', function (data) {
-			giveCanPhoto(socket, data, function (resultData) {
+			giveCanPhoto(hs.usObj, data, function (resultData) {
 				socket.emit('takeCanPhoto', resultData);
 			});
 		});
 
 		socket.on('savePhoto', function (data) {
-			savePhoto(socket, data, function (resultData) {
+			savePhoto(hs.usObj, data, function (resultData) {
 				socket.emit('savePhotoResult', resultData);
 			});
 		});
 
 		socket.on('readyPhoto', function (data) {
-			readyPhoto(socket, data, function (resultData) {
+			readyPhoto(hs.usObj, data, function (resultData) {
 				socket.emit('readyPhotoResult', resultData);
 			});
 		});
@@ -1902,19 +1870,19 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('convertPhotos', function (data) {
-			convertPhotos(socket, data, function (resultData) {
+			convertPhotos(hs.usObj, data, function (resultData) {
 				socket.emit('convertPhotosResult', resultData);
 			});
 		});
 
 		socket.on('convertPhotosAll', function (data) {
-			convertPhotosAll(socket, data, function (resultData) {
+			convertPhotosAll(hs.usObj, data, function (resultData) {
 				socket.emit('convertPhotosAllResult', resultData);
 			});
 		});
 
 		socket.on('giveNewPhotosLimit', function (data) {
-			giveNewPhotosLimit(hs.session.user, data, function (resultData) {
+			giveNewPhotosLimit(hs.usObj, data, function (resultData) {
 				socket.emit('takeNewPhotosLimit', resultData);
 			});
 		});

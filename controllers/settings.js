@@ -1,9 +1,7 @@
 'use strict';
 
-var auth = require('./auth.js'),
-	Settings,
+var Settings,
 	UserSettingsDef,
-	_ = require('lodash'),
 	step = require('step'),
 	logger = require('log4js').getLogger("settings.js"),
 	appvar,
@@ -118,8 +116,6 @@ module.exports.loadController = function (app, db, io, cb) {
 		},
 		function (err) {
 			io.sockets.on('connection', function (socket) {
-				var hs = socket.handshake;
-
 				socket.on('giveClientParams', function () {
 					socket.emit('takeClientParams', clientSettings);
 				});

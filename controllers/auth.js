@@ -184,7 +184,7 @@ function register(data, cb) {
 }
 
 //Отправка на почту запроса на восстановление пароля
-function recall(usObj, data, cb) {
+function recall(iAm, data, cb) {
 	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail', //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
 		confirmKey = '';
 
@@ -204,7 +204,7 @@ function recall(usObj, data, cb) {
 				return cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true}); //'User with such login or e-mail does not exist'
 			}
 			//Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
-			if (usObj.registered && usObj.user.login !== data.login && !usObj.isAdmin) {
+			if (iAm.registered && iAm.user.login !== data.login && !iAm.isAdmin) {
 				return cb({message: msg.deny, error: true});
 			}
 
@@ -247,7 +247,7 @@ function recall(usObj, data, cb) {
 }
 
 //Смена пароля по запросу восстановлния из почты
-function passChangeRecall(usObj, data, cb) {
+function passChangeRecall(iAm, data, cb) {
 	var error = '',
 		key = data.key;
 
@@ -273,7 +273,7 @@ function passChangeRecall(usObj, data, cb) {
 				// Если залогиненный пользователь запрашивает восстановление, то пароль надо поменять в модели пользователя сессии
 				// Если аноним - то в модели пользователи конфирма
 				// (Это один и тот же пользователь, просто разные объекты)
-				var user = usObj.registered && usObj.user.login === confirm.user.login ? usObj.user : confirm.user;
+				var user = iAm.registered && iAm.user.login === confirm.user.login ? iAm.user : confirm.user;
 				user.pass = data.pass;
 
 				//Если неактивный пользователь восстанавливает пароль - активируем его
@@ -297,10 +297,10 @@ function passChangeRecall(usObj, data, cb) {
 }
 
 //Смена пароля в настройках пользователя с указанием текущего пароля
-function passChange(usObj, data, cb) {
+function passChange(iAm, data, cb) {
 	var error = '';
 
-	if (!usObj.registered || !data || usObj.user.login !== data.login) {
+	if (!iAm.registered || !data || iAm.user.login !== data.login) {
 		return cb({message: 'Вы не авторизованны для этой операции', error: true}); //'You are not authorized for this action'
 	}
 	if (!data.pass || !data.passNew || !data.passNew2) {
@@ -313,14 +313,14 @@ function passChange(usObj, data, cb) {
 		return cb({message: error, error: true});
 	}
 
-	usObj.user.checkPass(data.pass, function (err, isMatch) {
+	iAm.user.checkPass(data.pass, function (err, isMatch) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
 
 		if (isMatch) {
-			usObj.user.pass = data.passNew;
-			usObj.user.save(function (err) {
+			iAm.user.pass = data.passNew;
+			iAm.user.save(function (err) {
 				if (err) {
 					return cb({message: err && err.message || 'Save error', error: true});
 				}

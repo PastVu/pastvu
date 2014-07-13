@@ -2,8 +2,8 @@
 
 var fs = require('fs'),
 	path = require('path'),
-	auth = require('./auth.js'),
 	jade = require('jade'),
+	_ = require('lodash'),
 	_session = require('./_session.js'),
 	settings = require('./settings.js'),
 	Settings,
@@ -15,8 +15,6 @@ var fs = require('fs'),
 	Utils = require('../commons/Utils.js'),
 	step = require('step'),
 	logger = require('log4js').getLogger("subscr.js"),
-	_ = require('lodash'),
-	ms = require('ms'), // Tiny milisecond conversion utility
 	mailController = require('./mail.js'),
 	photoController = require('./photo.js'),
 	commentController = require('./comment.js'),
@@ -39,15 +37,15 @@ var fs = require('fs'),
 
 /**
  * Подписка/Отписка объекта (внешняя, для текущего пользователя по cid объекта)
- * @param user
+ * @param iAm
  * @param data
  * @param cb
  */
-function subscribeUser(user, data, cb) {
-	if (!user) {
+function subscribeUser(iAm, data, cb) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!data || !Utils.isType('object', data) || !Number(data.cid)) {
+	if (!_.isObject(data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -58,7 +56,7 @@ function subscribeUser(user, data, cb) {
 			if (data.type === 'news') {
 				News.findOne({cid: cid}, {_id: 1}, this);
 			} else {
-				photoController.findPhoto({cid: cid}, null, user, this);
+				photoController.findPhoto({cid: cid}, null, iAm, this);
 			}
 		},
 		function (err, obj) {
@@ -66,11 +64,11 @@ function subscribeUser(user, data, cb) {
 				return cb({message: err && err.message || msg.noObject, error: true});
 			}
 			if (data.do) {
-				UserSubscr.update({obj: obj._id, user: user._id}, {$set: {type: data.type, cdate: new Date()}}, {upsert: true, multi: false}, this.parallel());
+				UserSubscr.update({obj: obj._id, user: iAm.user._id}, {$set: {type: data.type, cdate: new Date()}}, {upsert: true, multi: false}, this.parallel());
 				//Вставляем время просмотра объекта, если его еще нет, чтобы при отправке уведомления правильно посчиталось кол-во новых с момента подписки
-				commentController.upsertCommentsView(obj._id, user._id, this.parallel());
+				commentController.upsertCommentsView(obj._id, iAm.user._id, this.parallel());
 			} else {
-				UserSubscr.remove({obj: obj._id, user: user._id}, this);
+				UserSubscr.remove({obj: obj._id, user: iAm.user._id}, this);
 			}
 		},
 		function (err) {
@@ -114,10 +112,10 @@ function subscribeUserByIds(userId, objId, type, cb) {
  * @param cb
  */
 function unSubscribeObjForAll(iAm, data, cb) {
-	if (!iAm || !iAm.role || iAm.role < 10) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!data || !Utils.isType('object', data) || !Number(data.cid)) {
+	if (!_.isObject(data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -352,9 +350,9 @@ var notifierConveyer = (function () {
  * @param cb
  */
 function sendUserNotice(userId, lastnoty, cb) {
-	var u = _session.getOnline(null, userId);
-	if (u) {
-		userProcess(null, u);
+	var userObj = _session.getOnline(null, userId);
+	if (userObj) {
+		userProcess(null, userObj.user);
 	} else {
 		User.findOne({_id: userId}, {_id: 1, login: 1, disp: 1, email: 1}, {lean: true}, userProcess);
 	}
@@ -500,11 +498,11 @@ function sortSubscr(a, b) {
 }
 //Отдача постраничного списка подписанных объектов пользователя
 function getUserSubscr(iAm, data, cb) {
-	if (!data || !Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
-	}
-	if (!iAm || (iAm.login !== data.login && !iAm.role && iAm.role < 10)) {
+	if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
+	}
+	if (!_.isObject(data)) {
+		return cb({message: 'Bad params', error: true});
 	}
 	User.getUserID(data.login, function (err, user_id) {
 		if (err || !user_id) {
@@ -595,12 +593,12 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('subscr', function (data) {
-			subscribeUser(hs.session.user, data, function (createData) {
+			subscribeUser(hs.usObj, data, function (createData) {
 				socket.emit('subscrResult', createData);
 			});
 		});
 		socket.on('giveUserSubscr', function (data) {
-			getUserSubscr(hs.session.user, data, function (createData) {
+			getUserSubscr(hs.usObj, data, function (createData) {
 				socket.emit('takeUserSubscr', createData);
 			});
 		});

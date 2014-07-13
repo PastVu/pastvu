@@ -31,7 +31,7 @@ function createNews(iAm, data, cb) {
 
 			var novel = new News({
 				cid: count.next,
-				user: iAm,
+				user: iAm.user,
 				pdate: data.pdate,
 				tdate: data.tdate,
 				title: data.title,
@@ -78,8 +78,8 @@ function saveNews(iAm, data, cb) {
 	);
 }
 
-function getOnlineStat(usObj, cb) {
-	if (!usObj.isAdmin) {
+function getOnlineStat(iAm, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -175,30 +175,28 @@ function getOnlineStat(usObj, cb) {
 }
 
 //Сохраняем права пользователя
-function saveUserCredentials(usObj, data, cb) {
-	if (!usObj.isAdmin) {
+function saveUserCredentials(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	var iAm = usObj.user,
-		login = data && data.login,
-		itsMe = iAm.login === login,
-		itsOnline;
+	var login = data && data.login,
+		itsMe = iAm.user.login === login,
+		userObjOnline;
 
 	if (!_.isObject(data) || !login || data.role < 0 || data.role > 11) {
 		return cb({message: msg.badParams, error: true});
 	}
 
-	if (itsMe && iAm.role !== data.role) {
+	if (itsMe && iAm.user.role !== data.role) {
 		return cb({message: 'Administrators can not change their role :)', error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}).populate('mod_regions', {_id: 0, cid: 1}).exec(this);
 			}
@@ -212,7 +210,7 @@ function saveUserCredentials(usObj, data, cb) {
 				if (user.role < 11 && data.role === 11) {
 					return cb({message: 'The role of the super admin can not be assigned through the user management interface', error: true});
 				}
-				if (iAm.role === 10 && user.role < 10 && data.role > 9) {
+				if (iAm.user.role === 10 && user.role < 10 && data.role > 9) {
 					return cb({message: 'Only super administrators can assign other administrators', error: true});
 				}
 			}
@@ -228,8 +226,8 @@ function saveUserCredentials(usObj, data, cb) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
-						if (itsOnline) {
-							_session.regetUser(user, false, null, function (err) {
+						if (userObjOnline) {
+							_session.regetUser(userObjOnline, false, null, function (err) {
 								if (err) {
 									return cb({message: err.message, error: true});
 								}
@@ -259,8 +257,8 @@ function saveUserCredentials(usObj, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 
-					if (itsOnline) {
-						_session.emitUser(login);
+					if (userObjOnline) {
+						_session.emitUser(userObjOnline);
 					}
 					cb({message: 'ok', saved: true});
 				});
@@ -285,9 +283,9 @@ module.exports.loadController = function (app, db, io) {
 				return result ({message: msg.deny, error: true});
 			}
 			if (data.cid) {
-				saveNews(hs.usObj.user, data, result);
+				saveNews(hs.usObj, data, result);
 			} else {
-				createNews(hs.usObj.user, data, result);
+				createNews(hs.usObj, data, result);
 			}
 			function result (resultData) {
 				socket.emit('saveNewsResult', resultData);

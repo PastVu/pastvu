@@ -339,7 +339,7 @@ function calcRegionIncludes(cidOrRegion, cb) {
  * @param cb
  */
 function calcRegionsIncludes(iAm, cids, cb) {
-	if (!iAm || !iAm.role || iAm.role < 10) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Array.isArray(cids)) {
@@ -683,15 +683,13 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
 
 /**
  * Сохранение/создание региона
- * @param socket
+ * @param iAm
  * @param data
  * @param cb
  * @returns {*}
  */
-function saveRegion(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function saveRegion(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -932,19 +930,17 @@ function saveRegion(socket, data, cb) {
 /**
  * Удаление региона администратором
  * Параметр reassignChilds зарезервирован - перемещение дочерних регионов в другой при удалении
- * @param socket
+ * @param iAm
  * @param data
  * @param cb
  * @returns {*}
  */
-function removeRegion(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function removeRegion(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !data.cid) {
+	if (!_.isObject(data) || !data.cid) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -1085,14 +1081,12 @@ function removeRegionsFromMods(usersQuery, regionsIds, cb) {
 	});
 }
 
-function getRegion(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function getRegion(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !data.cid) {
+	if (!_.isObject(data) || !data.cid) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -1251,14 +1245,12 @@ function getRegionsStatByLevel(cb) {
 	);
 }
 
-function getRegionsFull(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function getRegionsFull(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data)) {
+	if (!_.isObject(data)) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -1291,8 +1283,8 @@ function getRegionsFull(socket, data, cb) {
 	);
 }
 
-function getRegionsPublic(socket, data, cb) {
-	if (!Utils.isType('object', data)) {
+function getRegionsPublic(data, cb) {
+	if (!_.isObject(data)) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -1433,6 +1425,7 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
  * @param model
  * @param criteria
  * @param regions Массив объектов регионов с обязательным свойстов cid
+ * @param additionalUpdate
  * @param cb
  */
 function updateObjsRegions(model, criteria, regions, additionalUpdate, cb) {
@@ -1463,8 +1456,6 @@ function updateObjsRegions(model, criteria, regions, additionalUpdate, cb) {
 	if (additionalUpdate) {
 		_.merge($update, additionalUpdate);
 	}
-	console.log(additionalUpdate);
-	console.log($update);
 
 	if (Object.keys($update).length) {
 		model.update(criteria || {}, $update, {multi: true}, finish);
@@ -1513,25 +1504,23 @@ var getRegionsByGeoPoint = (function () {
 /**
  * Сохраняет домашний регион пользователя
  */
-function saveUserHomeRegion(usObj, data, cb) {
-	var iAm = usObj.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+function saveUserHomeRegion(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline;
 
-	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !Number(data.cid)) {
+	if (!_.isObject(data) || !login || !Number(data.cid)) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this.parallel()(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this.parallel()(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this.parallel());
 			}
@@ -1554,8 +1543,8 @@ function saveUserHomeRegion(usObj, data, cb) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
-						if (itsOnline) {
-							_session.regetUser(user, true, null, function (err, user) {
+						if (userObjOnline) {
+							_session.regetUser(userObjOnline, true, null, function (err, user) {
 								if (err) {
 									return cb({message: err.message, error: true});
 								}
@@ -1567,8 +1556,8 @@ function saveUserHomeRegion(usObj, data, cb) {
 						}
 					});
 				} else {
-					if (itsOnline) {
-						_session.emitUser(user.login);
+					if (userObjOnline) {
+						_session.emitUser(userObjOnline);
 					}
 					cb({message: 'ok', saved: 1, region: regionHome});
 				}
@@ -1581,16 +1570,16 @@ function saveUserHomeRegion(usObj, data, cb) {
  * Сохраняет регионы пользователю
  */
 function saveUserRegions(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
+	var iAm = socket.handshake.usObj,
 		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline,
 		i;
 
-	if (!iAm || (!itsMe && (!iAm.role || iAm.role < 10))) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !Array.isArray(data.regions)) {
+	if (!_.isObject(data) || !login || !Array.isArray(data.regions)) {
 		return cb({message: msg.badParams, error: true});
 	}
 	if (data.regions.length > maxRegionLevel) {
@@ -1605,10 +1594,9 @@ function saveUserRegions(socket, data, cb) {
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -1628,8 +1616,8 @@ function saveUserRegions(socket, data, cb) {
 				//Но после этого save юзера отработает некорректно, и массив регионов в базе будет заполнен null'ами
 				//https://groups.google.com/forum/?fromgroups#!topic/mongoose-orm/ZQan6eUV9O0
 				//Поэтому полностью заново берем юзера из базы
-				if (itsOnline) {
-					_session.regetUser(user, true, socket, function (err, user) {
+				if (userObjOnline) {
+					_session.regetUser(userObjOnline, true, socket, function (err, user) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
@@ -1648,8 +1636,7 @@ function saveUserRegions(socket, data, cb) {
  * Сохраняет массив _id регионов в указанное поле юзера
  */
 function setUserRegions(login, regionsCids, field, cb) {
-	var i,
-		j;
+	var i, j;
 
 	//Проверяем, что переданы номера регионов
 	for (i = regionsCids.length; i--;) {
@@ -1767,27 +1754,27 @@ module.exports.loadController = function (app, db, io, cb) {
 			var hs = socket.handshake;
 
 			socket.on('saveRegion', function (data) {
-				saveRegion(socket, data, function (resultData) {
+				saveRegion(hs.usObj, data, function (resultData) {
 					socket.emit('saveRegionResult', resultData);
 				});
 			});
 			socket.on('removeRegion', function (data) {
-				removeRegion(socket, data, function (resultData) {
+				removeRegion(hs.usObj, data, function (resultData) {
 					socket.emit('removeRegionResult', resultData);
 				});
 			});
 			socket.on('giveRegion', function (data) {
-				getRegion(socket, data, function (resultData) {
+				getRegion(hs.usObj, data, function (resultData) {
 					socket.emit('takeRegion', resultData);
 				});
 			});
 			socket.on('giveRegionsFull', function (data) {
-				getRegionsFull(socket, data, function (resultData) {
+				getRegionsFull(hs.usObj, data, function (resultData) {
 					socket.emit('takeRegionsFull', resultData);
 				});
 			});
 			socket.on('giveRegions', function (data) {
-				getRegionsPublic(socket, data, function (resultData) {
+				getRegionsPublic(data, function (resultData) {
 					socket.emit('takeRegions', resultData);
 				});
 			});
@@ -1795,7 +1782,7 @@ module.exports.loadController = function (app, db, io, cb) {
 				if (!hs.usObj.registered) {
 					return response({message: msg.deny, error: true});
 				}
-				if (!Utils.isType('object', data) || !Utils.geo.checkLatLng(data.geo)) {
+				if (!_.isObject(data) || !Utils.geo.checkLatLng(data.geo)) {
 					return response({message: msg.badParams, error: true});
 				}
 				data.geo = data.geo.reverse();
