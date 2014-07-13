@@ -505,10 +505,7 @@ function logoutUser(socket, cb) {
 			//Отправляем старую сессию в архив
 			sessionToArchive(sessionOld);
 
-			//Отправляем клиенту новые куки анонимной сессии
-			emitSidCookie(socket);
-
-			setTimeout(function () {
+			socket.once('commandResult', function () {
 				//Отправляем всем сокетам сессии кроме текущей команду на релоад
 				for (var i in sessionNew.sockets) {
 					if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
@@ -518,7 +515,10 @@ function logoutUser(socket, cb) {
 					}
 				}
 				cb();
-			}, 100);
+			});
+
+			//Отправляем клиенту новые куки анонимной сессии
+			emitSidCookie(socket);
 		});
 	});
 }
@@ -569,7 +569,9 @@ function saveEmitUser(login, _id, excludeSocket, cb) {
 }
 
 function emitSidCookie(socket) {
-	socket.emit('updateCookie', createSidCookieObj(socket.handshake.session));
+	socket.emit('command', [
+		{name: 'updateCookie', data: createSidCookieObj(socket.handshake.session)}
+	]);
 }
 
 //Проверяем если пользователь онлайн
@@ -860,7 +862,8 @@ module.exports.loadController = function (a, db, io) {
 			socket.emit('takeInitData', {
 				p: settings.getClientParams(),
 				cook: createSidCookieObj(session),
-				u: getPlainUser(usObj.user)
+				u: getPlainUser(usObj.user),
+				registered: usObj.registered
 			});
 		});
 	});

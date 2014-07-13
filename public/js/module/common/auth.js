@@ -1,6 +1,11 @@
 define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, jade) {
 	'use strict';
 
+	//Обновляет куки сессии переданным объектом с сервера
+	function updateCookie(obj) {
+		Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
+	}
+
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
@@ -29,10 +34,15 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			//Подписываемся на команды с сервера
 			socket.on('command', this.commandHandler, this);
 
-			//Подписываемся на получение новых первоначальных данных (пользователя), на случай, если пока он был оффлайн, пользователь изменился
+			//Подписываемся на получение новых первоначальных данных (пользователя, куки), на случай, если пока он был оффлайн, пользователь изменился
 			socket.on('takeInitData', function (data) {
-				if (_.isObject(data.u)) {
-					this.processMe({user: data.u});
+				if (data) {
+					if (_.isObject(data.cook)) {
+						updateCookie(data.cook); //Обновляем куки
+					}
+					if (_.isObject(data.u)) {
+						this.processMe({user: data.u, registered: data.registered});
+					}
 				}
 			}, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
@@ -150,6 +160,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				_.forEach(data, function (command) {
 					if (command.name === 'clearCookie') {
 						Utils.cookie.removeItem('pastvu.sid', '/');
+					} else if (command.name === 'updateCookie' && _.isObject(command.data)) {
+						updateCookie(command.data);
 					} else if (command.name === 'location') {
 						if (command.path) {
 							document.location = command.path;
