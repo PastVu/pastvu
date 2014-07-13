@@ -5,7 +5,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		jade: jade,
 		create: function () {
 			this.loggedIn = ko.observable(!!init.registered);
-			this.processMe(init.user);
+			this.processMe({user: init.user});
 
 			this.mode = ko.observable('');
 			this.working = ko.observable(false);
@@ -26,14 +26,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 
 			//При изменении данных профиля на сервере, обновляем его на клиенте
 			socket.on('youAre', this.processMe, this);
-
 			//Подписываемся на команды с сервера
 			socket.on('command', this.commandHandler, this);
 
 			//Подписываемся на получение новых первоначальных данных (пользователя), на случай, если пока он был оффлайн, пользователь изменился
 			socket.on('takeInitData', function (data) {
 				if (_.isObject(data.u)) {
-					this.processMe(data.u);
+					this.processMe({user: data.u});
 				}
 			}, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
@@ -117,21 +116,21 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		setMessage: function (text, type) {
 			var css = '';
 			switch (type) {
-			case 'error':
-				css = 'text-danger';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
+				case 'error':
+					css = 'text-danger';
+					break;
+				case 'warn':
+					css = 'text-warning';
+					break;
+				case 'info':
+					css = 'text-info';
+					break;
+				case 'success':
+					css = 'text-success';
+					break;
+				default:
+					css = 'muted';
+					break;
 			}
 
 			this.msg(text);
@@ -345,13 +344,12 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		},
 
 		//Обновление модели пользователя с сервера при логине или emitUser
-		processMe: function (user, makedLoggedIn) {
-			var storageUser = storage.users[user.login],
-				loggedIn = !!makedLoggedIn || this.loggedIn();
+		processMe: function (usObj) {
+			var user = usObj.user,
+				loggedIn = !!usObj.registered,
+				storageUser = storage.users[user.login];
 
-			if (loggedIn) {
-				user.online = true; //Залогиненный пользователь всегда онлайн
-			}
+			user.online = loggedIn; //Залогиненный пользователь всегда онлайн
 			this.iAm = User.vm(user, this.iAm);
 
 			if (!storageUser) {
@@ -359,8 +357,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			} else {
 				storageUser.origin = user;
 			}
-			if (makedLoggedIn) {
-				this.loggedIn(true); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
+			if (loggedIn) {
+				this.loggedIn(loggedIn); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
 			}
 			//Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
 			this.iAm._v_(this.iAm._v_() + 1);
@@ -372,7 +370,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error && json.youAre) {
-						this.processMe(json.youAre, true);
+						this.processMe({user: json.youAre, registered: true});
 					}
 
 					if (Utils.isType('function', callback)) {
@@ -386,24 +384,32 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				}
 			}
 		},
-		doLogout: function (callback) {
-			ga('send', 'event', 'auth', 'logout');
-			try {
-				socket.once('logoutCommand', function (data) {
-					if (data.error) {
-						window.noty({text: data.noconnect ? data.message : 'При попытке выхода возникла ошибка', type: 'error', layout: 'center', timeout: 4000, force: true});
-						console.log('Logout error: ' + data.message);
-					} else {
-						location.reload();
-					}
-				});
-				socket.emit('logoutRequest');
-			} catch (e) {
-				if (Utils.isType('function', callback)) {
-					callback(e.message);
+		doLogout: (function () {
+			var logouting;
+			return function (callback) {
+				if (logouting) {
+					return;
 				}
-			}
-		},
+				logouting = true;
+				ga('send', 'event', 'auth', 'logout');
+				try {
+					socket.once('logoutCommand', function (data) {
+						if (data.error) {
+							window.noty({text: data.noconnect ? data.message : 'При попытке выхода возникла ошибка', type: 'error', layout: 'center', timeout: 4000, force: true});
+							console.log('Logout error: ' + data.message);
+						} else {
+							location.reload();
+						}
+						logouting = false;
+					});
+					socket.emit('logoutRequest');
+				} catch (e) {
+					if (Utils.isType('function', callback)) {
+						callback(e.message);
+					}
+				}
+			};
+		}()),
 		doRegister: function (data, callback) {
 			try {
 				socket.once('registerResult', function (json) {

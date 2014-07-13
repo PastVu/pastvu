@@ -446,7 +446,7 @@ function loginUser(socket, user, data, cb) {
 				//Отправляем пользователя во все сокеты сессии, кроме текущего сокета (ему отправит auth-контроллер)
 				for (var i in sessionNew.sockets) {
 					if (sessionNew.sockets[i] !== undefined && sessionNew.sockets[i] !== socket && sessionNew.sockets[i].emit !== undefined) {
-						sessionNew.sockets[i].emit('youAre', userPlain);
+						sessionNew.sockets[i].emit('youAre', {user: userPlain, registered: true});
 					}
 				}
 
@@ -541,7 +541,7 @@ function emitUser(login, excludeSocket) {
 				sockets = sessions[i].sockets;
 				for (j in sockets) {
 					if (sockets[j] !== undefined && sockets[j] !== excludeSocket && sockets[j].emit !== undefined) {
-						sockets[j].emit('youAre', user);
+						sockets[j].emit('youAre', {user: user, registered: usObj.registered});
 					}
 				}
 			}

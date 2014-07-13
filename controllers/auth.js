@@ -88,7 +88,7 @@ function register(session, data, cb) {
 	if (!data.login) {
 		error += 'Заполните имя пользователя. '; //'Fill in the login field. '
 	} else {
-		if (!data.login.match(/^[\.\w-]{3,15}$/i) || !data.login.match(/^[A-za-z].*$/i) || !data.login.match(/^.*\w$/i)) {
+		if (data.login !== 'anonymous' && !data.login.match(/^[\.\w-]{3,15}$/i) || !data.login.match(/^[A-za-z].*$/i) || !data.login.match(/^.*\w$/i)) {
 			error += 'Имя пользователя должно содержать от 3 до 15 латинских символов и начинаться с буквы. В состав слова могут входить цифры, точка, подчеркивание и тире. ';
 		}
 	}
@@ -439,7 +439,7 @@ module.exports.loadController = function (a, db, io) {
 		});
 
 		socket.on('whoAmI', function () {
-			socket.emit('youAre', (hs.usObj.user && hs.usObj.user.toObject ? hs.usObj.user.toObject() : null));
+			socket.emit('youAre', {user: hs.usObj.user && hs.usObj.user.toObject ? hs.usObj.user.toObject() : null, registered: hs.usObj.registered});
 		});
 
 		socket.on('checkConfirm', function (data) {

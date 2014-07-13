@@ -93,8 +93,8 @@ define(['module'], function (module) {
 				};
 				/**
 				 * Отписка от события. Если конкретный коллбэк не передан, отпишет все обработчики события
-				 * @param name Имя события
-				 * @param [cb] Коллбэк
+				 * @param {string} name Имя события
+				 * @param {function} [cb] Коллбэк
 				 * @returns {boolean}
 				 */
 				socket.off = function (name, cb) {
