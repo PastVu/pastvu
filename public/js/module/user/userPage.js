@@ -34,7 +34,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 				this.sizesCalc();
 				this.$dom.find('.userBrief').affix({
 					offset: {
-						top: this.$dom.find('.userBrief').parent().offset().top
+						top: 0
 					}
 				});
 
