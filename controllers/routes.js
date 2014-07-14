@@ -117,6 +117,4 @@ module.exports.loadController = function (app) {
 	app.all('/ping', function (req, res) {
 		res.send(200, 'pong');
 	});
-
-
 };
