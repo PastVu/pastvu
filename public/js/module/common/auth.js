@@ -185,7 +185,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				if (this.mode() === 'login') {
 					this.doLogin(
-						$.extend(formData, {'remember': $form[0].querySelector('#remember').classList.contains('checked')}),
+						formData,
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -266,7 +266,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 									//для которого восстанавливали пароль
 									if (!this.loggedIn()) {
 										this.doLogin(
-											{login: this.login(), pass: formData.pass, remember: true},
+											{login: this.login(), pass: formData.pass},
 											function (data) {
 												if (!data.error) {
 													ga('send', 'event', 'auth', 'login', 'auth login success');

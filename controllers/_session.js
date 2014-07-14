@@ -78,17 +78,7 @@ var app,
 			cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
 		return function (session) {
-			var newCoockie = {key: key, value: session.key, path: '/', domain: domain};
-
-			if (session.user) {
-				if (session.data && session.data.remember) {
-					newCoockie['max-age'] = cookieMaxAge;
-				}
-			} else {
-				newCoockie['max-age'] = cookieMaxAge;
-			}
-
-			return newCoockie;
+			return {key: key, value: session.key, path: '/', domain: domain, 'max-age': cookieMaxAge};
 		};
 	}()),
 
@@ -417,7 +407,7 @@ function loginUser(socket, user, data, cb) {
 	sessionNew.anonym = undefined;
 
 	//Присваиваем поля data специфичные для залогиненного пользователя
-	_.assign(sessionNew.data, {remember: data.remember});
+	//_.assign(sessionNew.data, {});
 
 	//Указываем новой сессий ссылку на архивируемую
 	sessionNew.previous = sessionOld.key;
@@ -686,7 +676,7 @@ function authConnection(ip, headers, finishCb) {
 }
 
 //Обработка входящего http-соединения
-module.exports.handleRequest = function (req, res, next) {
+module.exports.handleHTTPRequest = function (req, res, next) {
 	authConnection(req.ip, req.headers, function (err, usObj, session, browser) {
 		if (err) {
 			if (err.type === errtypes.BAD_BROWSER) {

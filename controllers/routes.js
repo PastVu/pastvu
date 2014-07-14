@@ -77,7 +77,7 @@ module.exports.loadController = function (app) {
 		/^\/(?:p|confirm)\/.+$/ // Пути обязательным продолжением (/example/*)
 	]
 		.forEach(function (route) {
-			app.get(route, _session.handleRequest, setStaticHeaders, appMainHandler);
+			app.get(route, _session.handleHTTPRequest, setStaticHeaders, appMainHandler);
 		});
 	function appMainHandler(req, res) {
 		var nojs = checkNoJS(req);
@@ -87,7 +87,7 @@ module.exports.loadController = function (app) {
 
 
 	[/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
-		app.get(route, _session.handleRequest, setStaticHeaders, appAdminHandler);
+		app.get(route, _session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
 	});
 	function appAdminHandler(req, res) {
 		var nojs = checkNoJS(req);
