@@ -58,6 +58,7 @@ var app,
 			delete ret.activatedate;
 			delete ret.loginAttempts;
 			delete ret.active;
+			delete ret.__v;
 		};
 		return function (user) {
 			return user && user.toObject ? user.toObject({transform: userToPublicObject}) : null;
@@ -87,13 +88,13 @@ var app,
 		};
 	}()),
 
-	usLogin = {}, //usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
-	usId = {}, //usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
-	usSid = {}, //usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
+	usSid = Object.create(null), //usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
+	usLogin = Object.create(null), //usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
+	usId = Object.create(null), //usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
 
-	sessConnected = {}, //Sessions. Хэш всех активных сессий, с установленными соединениями
-	sessWaitingConnect = {},//Хэш сессий, которые ожидают первого соединения
-	sessWaitingSelect = {}, //Хэш сессий, ожидающих выборки по ключу из базы
+	sessConnected = Object.create(null), //Sessions. Хэш всех активных сессий, с установленными соединениями
+	sessWaitingConnect = Object.create(null), //Хэш сессий, которые ожидают первого соединения
+	sessWaitingSelect = Object.create(null), //Хэш сессий, ожидающих выборки по ключу из базы
 
 	usObjIsOwner = function () {
 		/*jshint validthis: true*/
@@ -344,19 +345,25 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 		return cb({message: 'Can reget only registered user'});
 	}
 	User.findOne({login: usObj.user.login}, function (err, user) {
+		if (err || !user) {
+			console.log('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
+			if (cb) {
+				cb(err || {message: 'No such user for reget'});
+			}
+		}
+
+		//usObj и всем его сессиям присваиваем новую модель пользователя
+		usObj.user = user;
+		_.forIn(usObj.sessions, function (session) {
+			session.user = user;
+		});
+
 		userObjectTreatUser(usObj, function (err) {
 			if (err || !user) {
-				console.log('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
+				console.log('Error while treating regeted user (' + usObj.user.login + ')', err && err.message || 'Не могу выбрать зависимости пользователя');
 				if (cb) {
-					cb(err || {message: 'No such user for reget'});
+					cb(err || {message: 'Не могу выбрать зависимости пользователя'});
 				}
-			}
-
-			//Присваиваем новый объект пользователя usObj
-			usObj.user = user;
-			//Присваиваем новый объект пользователя всем его открытым сессиям
-			for (var s in usObj.sessions) {
-				usObj.sessions[s].user = user;
 			}
 
 			if (emitHim) {
