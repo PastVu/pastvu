@@ -358,10 +358,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		//Обновление модели пользователя с сервера при логине или emitUser
 		processMe: function (usObj) {
 			var user = usObj.user,
-				loggedIn = !!usObj.registered,
+				loggedIn = !!usObj.registered || this.loggedIn(),
 				storageUser = storage.users[user.login];
 
 			user.online = loggedIn; //Залогиненный пользователь всегда онлайн
+			if (this.iAm) {
+				user._v_ = this.iAm._v_(); //Оригинальную версию надо сохранить, в противном случае подставится 0
+			}
 			this.iAm = User.vm(user, this.iAm);
 
 			if (!storageUser) {
@@ -373,7 +376,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				this.loggedIn(loggedIn); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
 			}
 			//Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
-			this.iAm._v_(this.iAm._v_() + 1);
+			this.iAm._v_(user._v_ + 1);
 		},
 		reloadMe: function () {
 			socket.emit('whoAmI');
