@@ -52,13 +52,17 @@ var app,
 
 	getPlainUser = (function () {
 		var userToPublicObject = function (doc, ret, options) {
+			//Этот метод вызовется и в дочерних популированных объектах. Transforms are applied to the document and each of its sub-documents.
+			//Проверяем, что именно пользователь
+			if (doc.login !== undefined) {
+				delete ret.cid;
+				delete ret.pass;
+				delete ret.activatedate;
+				delete ret.loginAttempts;
+				delete ret.active;
+				delete ret.__v;
+			}
 			delete ret._id;
-			delete ret.cid;
-			delete ret.pass;
-			delete ret.activatedate;
-			delete ret.loginAttempts;
-			delete ret.active;
-			delete ret.__v;
 		};
 		return function (user) {
 			return user && user.toObject ? user.toObject({transform: userToPublicObject}) : null;
@@ -305,6 +309,7 @@ function popUserRegions(usObj, cb) {
 		mod_regions_equals = _.isEqual(user.regions, user.mod_regions) || undefined;
 		paths.push({path: pathPrefix + 'mod_regions', select: {_id: 1, cid: 1, title_en: 1, title_local: 1}});
 	}
+
 	user.populate(paths, function (err, user) {
 		if (err) {
 			return cb(err);
