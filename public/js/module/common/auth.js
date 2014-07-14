@@ -159,7 +159,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				_.forEach(data, function (command) {
 					if (command.name === 'clearCookie') {
-						Utils.cookie.removeItem('pastvu.sid', '/');
+						Utils.cookie.removeItem('past.sid', '/');
 					} else if (command.name === 'updateCookie' && _.isObject(command.data)) {
 						updateCookie(command.data);
 					} else if (command.name === 'location') {

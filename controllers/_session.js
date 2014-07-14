@@ -73,7 +73,7 @@ var app,
 
 	createSidCookieObj = (function () {
 		//Создает объект с кукой ключа сессии
-		var key = 'pastvu.sid',
+		var key = 'past.sid',
 			domain = global.appVar.serverAddr.domain,
 			cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
@@ -131,9 +131,7 @@ function userObjectAddSession(session, cb) {
 			usObj.registered = true;
 			usLogin[user.login] = usId[user._id] = usObj;
 			console.log('Create us hash:', user.login);
-		} else {
-			console.log('Create anonym hash:', session.key);
-		}
+		} //else {console.log('Create anonym hash:', session.key);}
 	} else {
 		if (registered) {
 			//Если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере,
@@ -237,7 +235,7 @@ function sessionFromHashes(usObj, session, logPrefix) {
 	someCountPrev = Object.keys(usSid).length;
 	delete usSid[sessionKey];
 	someCountNew = Object.keys(usSid).length;
-	console.log('Delete session from usSid', someCountNew);
+	//console.log('Delete session from usSid', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
 		console.log(logPrefix, 'WARN-Session from usSid not removed (' + sessionKey + ')', userKey);
 	}
@@ -245,13 +243,13 @@ function sessionFromHashes(usObj, session, logPrefix) {
 	someCountPrev = Object.keys(usObj.sessions).length;
 	delete usObj.sessions[sessionKey];
 	someCountNew = Object.keys(usObj.sessions).length;
-	console.log('Delete session from usObj.sessions', someCountNew);
+	//console.log('Delete session from usObj.sessions', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
 		console.log(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
 	}
 
 	if (!someCountNew && usObj.registered) {
-		console.log('Delete user from hashes', usObj.user.login);
+		//console.log('Delete user from hashes', usObj.user.login);
 		//Если сессий у зарегистрированного пользователя не осталось, убираем usObj из хеша пользователей (из usSid уже должно было убраться)
 		delete usLogin[usObj.user.login];
 		delete usId[usObj.user._id];
@@ -614,7 +612,7 @@ function authConnection(ip, headers, finishCb) {
 	}
 
 	var cookieObj = cookie.parse(headers.cookie || ''),
-		existsSid = cookieObj['pastvu.sid'],
+		existsSid = cookieObj['past.sid'],
 		session,
 		authConnectionFinish = function (err, usObj, session) {
 			finishCb(err, usObj, session, browser);
