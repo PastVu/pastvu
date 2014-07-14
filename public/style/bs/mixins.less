@@ -119,8 +119,7 @@
 
 // Drop shadows
 .box-shadow(@shadow) {
-  -webkit-box-shadow: @shadow; // iOS <4.3 & Android <4.1
-          box-shadow: @shadow;
+  box-shadow: @shadow;
 }
 
 // Transitions
@@ -216,7 +215,6 @@
 
 // Box sizing
 .box-sizing(@boxmodel) {
-  -webkit-box-sizing: @boxmodel;
      -moz-box-sizing: @boxmodel;
           box-sizing: @boxmodel;
 }

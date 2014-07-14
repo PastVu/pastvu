@@ -12,13 +12,13 @@ define([
 
 	var $requestGoogle,
 		popupLoadingTpl = doT.template(
-			"<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
+				"<table style='text-align: center', border='0', cellspacing='5', cellpadding='0'><tbody>" +
 				"<tr><td style='width: 200px;'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
 				"<tr><td><img src='/img/misc/load.gif' style='width: 67px; height: 10px'/></td></tr>" +
 				"</tbody></table>"
 		),
 		popupTpl = doT.template(
-			"<table style='text-align: center;', border='0', cellspacing='5', cellpadding='0'><tbody>" +
+				"<table style='text-align: center;', border='0', cellspacing='5', cellpadding='0'><tbody>" +
 				"<tr><td colspan='2'>{{=it.geo}}<hr style='margin: 2px 0 5px;'></td></tr>" +
 				"<tr style='font-weight: bold;'><td style='min-width:150px;'>PastVu</td><td style='min-width:150px;'>Google</td></tr>" +
 				"<tr><td style='vertical-align: top;'>" +
@@ -102,7 +102,7 @@ define([
 		},
 		hide: function () {
 			this.updateRegionAbort();
-			socket.removeAllListeners('takeRegionsByGeo');
+			socket.off('takeRegionsByGeo');
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
 		},
@@ -210,7 +210,7 @@ define([
 
 			//Запрашиваем регионы Google
 			$requestGoogle = $.ajax(
-				'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
+					'http://maps.googleapis.com/maps/api/geocode/json?latlng=' + geo[0] + ',' + geo[1] + '&language=en&sensor=true',
 				{
 					crossDomain: true,
 					dataType: 'json',
@@ -265,7 +265,7 @@ define([
 		},
 		getPastvuRegion: function (geo, cb, ctx) {
 			//Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
-			socket.removeAllListeners('takeRegionsByGeo');
+			socket.off('takeRegionsByGeo');
 			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
 			socket.on('takeRegionsByGeo', function (data) {
 				//Если вернулись данные для другой(прошлой) точки, то выходи
@@ -281,7 +281,7 @@ define([
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, error, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveRegionsByGeo', {geo: geo});
 		}
 	});

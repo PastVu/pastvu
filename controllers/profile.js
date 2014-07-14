@@ -4,7 +4,6 @@ var fs = require('fs'),
 	path = require('path'),
 	mkdirp = require('mkdirp'),
 	gm = require('gm'),
-	auth = require('./auth.js'),
 	_session = require('./_session.js'),
 	settings = require('./settings.js'),
 	photoController = require('./photo.js'),
@@ -28,32 +27,22 @@ var fs = require('fs'),
 	},
 	subscrController = require('./subscr.js');
 
-function userToPublicObject(doc, ret, options) {
-	delete ret._id;
-	delete ret.cid;
-	delete ret.pass;
-	delete ret.activatedate;
-	delete ret.loginAttempts;
-	delete ret.active;
-}
-
 //Отдаем пользователя
-function giveUser(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
+function giveUser(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = iAm.registered && iAm.user.login === login,
 		itsOnline = false;
 
-	if (!Utils.isType('object', data) || !login) {
+	if (!_.isObject(data) || !login) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
+			var userObj = _session.getOnline(login);
+			if (userObj) {
 				itsOnline = true;
-				this(null, user.toObject({transform: _session.userToPublicObject}));
+				this(null, _session.getPlainUser(userObj.user));
 			} else {
 				User.findOne({login: login, active: true}, {_id: 0, cid: 0, pass: 0, activatedate: 0, loginAttempts: 0, active: 0, rules: 0}, {lean: true})
 					.populate([
@@ -68,7 +57,7 @@ function giveUser(socket, data, cb) {
 			if (err || !user) {
 				return cb({message: err && err.message || msg.nouser, error: true});
 			}
-			if (itsMe || (iAm && iAm.role > 9)) {
+			if (itsMe || iAm.isAdmin) {
 				user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
 			}
 			user.online = itsOnline;
@@ -78,31 +67,29 @@ function giveUser(socket, data, cb) {
 }
 
 //Сохраняем изменения в профиле пользователя
-function saveUser(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
+function saveUser(iAm, data, cb) {
+	var login = data && data.login,
+		userObjOnline,
 		itsMe,
-		itsOnline,
 		newValues;
 
-	if (!iAm) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login) {
+	if (!_.isObject(data) || !login) {
 		return cb({message: msg.badParams, error: true});
 	}
-	itsMe = iAm.login === login;
+	itsMe = iAm.user.login === login;
 
-	if (!itsMe && iAm.role < 10) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -131,8 +118,8 @@ function saveUser(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			if (itsOnline) {
-				_session.emitUser(user.login);
+			if (userObjOnline) {
+				_session.emitUser(userObjOnline);
 			}
 
 			cb({message: 'ok', saved: 1});
@@ -141,25 +128,23 @@ function saveUser(socket, data, cb) {
 }
 
 //Меняем значение настройки
-function changeSetting(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+function changeSetting(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !data.key) {
+	if (!_.isObject(data) || !login || !data.key) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -199,8 +184,8 @@ function changeSetting(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			if (itsOnline) {
-				_session.emitUser(user.login); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
+			if (userObjOnline) {
+				_session.emitUser(userObjOnline); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
 			}
 			cb({message: 'ok', saved: 1, key: data.key, val: user.settings[data.key]});
 		}
@@ -208,25 +193,23 @@ function changeSetting(socket, data, cb) {
 }
 
 //Меняем отображаемое имя
-function changeDispName(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+function changeDispName(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login) {
+	if (!_.isObject(data) || !login) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -250,8 +233,8 @@ function changeDispName(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			if (itsOnline) {
-				_session.emitUser(user.login);
+			if (userObjOnline) {
+				_session.emitUser(userObjOnline);
 			}
 			cb({message: 'ok', saved: 1, disp: user.disp});
 		}
@@ -259,17 +242,16 @@ function changeDispName(socket, data, cb) {
 }
 
 //Меняем email
-function changeEmail(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		user,
+function changeEmail(iAm, data, cb) {
+	var user,
 		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !data.email) {
+	if (!_.isObject(data) || !login || !data.email) {
 		return cb({message: msg.badParams, error: true});
 	}
 	data.email = data.email.toLowerCase();
@@ -279,10 +261,9 @@ function changeEmail(socket, data, cb) {
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -303,7 +284,7 @@ function changeEmail(socket, data, cb) {
 			}
 
 			if (data.pass) {
-				iAm.checkPass(data.pass, function (err, isMatch) {
+				iAm.user.checkPass(data.pass, function (err, isMatch) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
@@ -325,8 +306,8 @@ function changeEmail(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			if (itsOnline) {
-				_session.emitUser(user.login);
+			if (userObjOnline) {
+				_session.emitUser(userObjOnline);
 			}
 			cb({message: 'ok', email: savedUser.email});
 		});
@@ -334,19 +315,18 @@ function changeEmail(socket, data, cb) {
 }
 
 //Меняем аватар
-function changeAvatar(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		user,
+function changeAvatar(iAm, data, cb) {
+	var user,
 		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline,
 		file,
 		fullfile;
 
-	if (!iAm || !itsMe && iAm.role < 10) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login || !data.file || !new RegExp("^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
+	if (!_.isObject(data) || !login || !data.file || !new RegExp("^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -355,10 +335,9 @@ function changeAvatar(socket, data, cb) {
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -412,8 +391,8 @@ function changeAvatar(socket, data, cb) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			if (itsOnline) {
-				_session.emitUser(user.login);
+			if (userObjOnline) {
+				_session.emitUser(userObjOnline);
 			}
 			cb({message: 'ok', avatar: user.avatar});
 		}
@@ -421,25 +400,23 @@ function changeAvatar(socket, data, cb) {
 }
 
 //Удаляем аватар
-function delAvatar(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline;
+function delAvatar(iAm, data, cb) {
+	var login = data && data.login,
+		itsMe = iAm.registered && iAm.user.login === login,
+		userObjOnline;
 
-	if (!iAm || !itsMe && (!iAm.role || iAm.role < 10)) {
+	if (!itsMe && !iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !login) {
+	if (!_.isObject(data) || !login) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -461,8 +438,8 @@ function delAvatar(socket, data, cb) {
 					if (err) {
 						return cb({message: err.message, error: true});
 					}
-					if (itsOnline) {
-						_session.emitUser(login);
+					if (userObjOnline) {
+						_session.emitUser(userObjOnline);
 					}
 					cb({message: 'ok'});
 				});
@@ -470,22 +447,21 @@ function delAvatar(socket, data, cb) {
 				cb({message: 'ok'});
 			}
 		}
-
 	);
 }
 
 //Сохраняем ранки пользователя
 function saveUserRanks(iAm, data, cb) {
 	var login = data && data.login,
-		itsOnline,
+		userObjOnline,
 		ranksHash,
 		i;
 
-	if (!iAm || !iAm.role || iAm.role < 10) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !login || !Array.isArray(data.ranks)) {
+	if (!_.isObject(data) || !login || !Array.isArray(data.ranks)) {
 		return cb({message: msg.badParams, error: true});
 	}
 
@@ -499,10 +475,9 @@ function saveUserRanks(iAm, data, cb) {
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}, this);
 			}
@@ -520,8 +495,8 @@ function saveUserRanks(iAm, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				if (itsOnline) {
-					_session.emitUser(login);
+				if (userObjOnline) {
+					_session.emitUser(userObjOnline);
 				}
 				cb({message: 'ok', saved: true, ranks: user.ranks || []});
 			});
@@ -529,8 +504,8 @@ function saveUserRanks(iAm, data, cb) {
 	);
 }
 
-function giveUserRules (iAm, data, cb) {
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function giveUserRules(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!_.isObject(data) || !data.login) {
@@ -539,9 +514,9 @@ function giveUserRules (iAm, data, cb) {
 
 	step(
 		function () {
-			var user = _session.getOnline(data.login);
-			if (user) {
-				this(null, user);
+			var userObj = _session.getOnline(data.login);
+			if (userObj) {
+				this(null, userObj.user);
 			} else {
 				User.findOne({login: data.login}, this);
 			}
@@ -554,22 +529,21 @@ function giveUserRules (iAm, data, cb) {
 		}
 	);
 }
-function saveUserRules (iAm, data, cb) {
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function saveUserRules(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!_.isObject(data) || !data.login || !data.rules) {
 		return cb({message: msg.badParams, error: true});
 	}
 
-	var itsOnline;
+	var userObjOnline;
 
 	step(
 		function () {
-			var user = _session.getOnline(data.login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(data.login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: data.login}, this);
 			}
@@ -603,8 +577,8 @@ function saveUserRules (iAm, data, cb) {
 				if (err) {
 					return cb({message: err.message, error: true});
 				}
-				if (itsOnline) {
-					_session.emitUser(savedUser.login);
+				if (userObjOnline) {
+					_session.emitUser(userObjOnline);
 				}
 				cb({message: 'ok', saved: true, rules: savedUser.rules, info: {canPhotoNew: photoController.core.getNewPhotosLimit(savedUser)}});
 			});
@@ -622,60 +596,60 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveUser', function (data) {
-			giveUser(socket, data, function (result) {
+			giveUser(hs.usObj, data, function (result) {
 				socket.emit('takeUser', result);
 			});
 		});
 
 		socket.on('saveUser', function (data) {
-			saveUser(socket, data, function (resultData) {
+			saveUser(hs.usObj, data, function (resultData) {
 				socket.emit('saveUserResult', resultData);
 			});
 		});
 
 
 		socket.on('changeUserSetting', function (data) {
-			changeSetting(socket, data, function (resultData) {
+			changeSetting(hs.usObj, data, function (resultData) {
 				socket.emit('changeUserSettingResult', resultData);
 			});
 		});
 
 		socket.on('changeDispName', function (data) {
-			changeDispName(socket, data, function (resultData) {
+			changeDispName(hs.usObj, data, function (resultData) {
 				socket.emit('changeDispNameResult', resultData);
 			});
 		});
 		socket.on('changeEmail', function (data) {
-			changeEmail(socket, data, function (resultData) {
+			changeEmail(hs.usObj, data, function (resultData) {
 				socket.emit('changeEmailResult', resultData);
 			});
 		});
 
 		socket.on('changeAvatar', function (data) {
-			changeAvatar(socket, data, function (resultData) {
+			changeAvatar(hs.usObj, data, function (resultData) {
 				socket.emit('changeAvatarResult', resultData);
 			});
 		});
 		socket.on('delAvatar', function (data) {
-			delAvatar(socket, data, function (resultData) {
+			delAvatar(hs.usObj, data, function (resultData) {
 				socket.emit('delAvatarResult', resultData);
 			});
 		});
 
 		socket.on('saveUserRanks', function (data) {
-			saveUserRanks(hs.session.user, data, function (result) {
+			saveUserRanks(hs.usObj, data, function (result) {
 				socket.emit('saveUserRanksResult', result);
 			});
 		});
 
 		socket.on('giveUserRules', function (data) {
-			giveUserRules(hs.session.user, data, function (result) {
+			giveUserRules(hs.usObj, data, function (result) {
 				socket.emit('takeUserRules', result);
 			});
 		});
 
 		socket.on('saveUserRules', function (data) {
-			saveUserRules(hs.session.user, data, function (result) {
+			saveUserRules(hs.usObj, data, function (result) {
 				socket.emit('saveUserRulesResult', result);
 			});
 		});

@@ -44,7 +44,7 @@ requirejs.config({
 		'jquery-ui': 'lib/jquery/ui',
 		'jquery-plugins': 'lib/jquery/plugins',
 		'bs': 'lib/bootstrap',
-		'socket.io': 'lib/socket.io',
+		'socket.io': 'lib/socket.io.min',
 		'moment': 'lib/moment/moment',
 		'momentlang': 'lib/moment/lang',
 

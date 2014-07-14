@@ -45,7 +45,7 @@ define([
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data, error);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveRegionsFull', {});
 		},
 		treeBuild: function (arr) {

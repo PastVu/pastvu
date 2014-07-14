@@ -1,0 +1,80 @@
+doctype html
+html
+	head
+		include ../includes/head_top_cap
+body
+	.top.fringe
+		a.brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+			img.logo(src="/img/misc/logo.png")
+			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
+	style.
+		.content {
+			max-width: 800px;
+		}
+
+		.curr {
+			color: #888;
+		}
+
+		.browsers {
+			margin: 35px auto 5px auto;
+		}
+
+		.browsers a {
+			display: inline-block;
+			margin: 0 5px 5px 5px;
+			width: 128px;
+			padding: 132px 5px 5px 5px;
+			border: 1px solid #eee;
+			background-position: 5px 0;
+			background-repeat: no-repeat;
+		}
+
+		.browsers a:hover {
+			border-color: #e4e4e4;
+			background-color: #fbfbfb;
+		}
+
+		.browsers a.chrome {
+			background-image: url(/img/misc/br/chrome_128x128.png);
+		}
+
+		.browsers a.firefox {
+			background-image: url(/img/misc/br/firefox_128x128.png);
+		}
+
+		.browsers a.opera {
+			background-image: url(/img/misc/br/opera_128x128.png);
+		}
+
+		.browsers a.safari {
+			background-image: url(/img/misc/br/safari_8_128x128.png);
+		}
+
+		.browsers a.yandex {
+			background-image: url(/img/misc/br/yandex_128x128.png);
+		}
+	.cent.centering_content
+		.content.fringe
+			p
+				span Команда PastVu считает, что ваш браузер
+				if agent && agent.family
+					span.curr=' '+agent.family+' '+agent.major
+				span  устарел и не отвечает современным требованиям, по которым разработан наш сайт
+				br
+				br
+				| Пожалуйста, обновите ваш браузер или установите с официального сайта один из перечисленных ниже.
+				br
+				| Это займет всего несколько минут, но откроет вам быстрый современный интернет.
+				br
+				br
+				| А после установки возвращайтесь к нам - на самый большой архив исторических фотографий PastVu.com!
+			.browsers
+				a.chrome(href="http://www.google.com/chrome", target="_blank") Google Chrome
+				a.firefox(href="http://www.mozilla.org", target="_blank") Mozilla Firefox
+				a.opera(href="http://www.opera.com", target="_blank") Opera
+				a.safari(href="http://www.apple.com/safari", target="_blank") Apple Safari
+				a.yandex(href="http://browser.yandex.net", target="_blank") Yandex
+			.support
+				a(href='mailto:support@pastvu.comm?subject=Сайт выдаёт сообщение об устаревшем браузере&body=Добрый день! Идентификатор моего браузера: '+(agent&&agent.source?agent.source:''), target="_blank")
+					| Напишите, если мы ошибаемся: support@pastvu.com

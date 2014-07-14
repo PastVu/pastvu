@@ -1,5 +1,3 @@
-/*global require:true*/
-
 require([
 	'domReady!',
 	'jquery',
@@ -7,9 +5,9 @@ require([
 	'socket!',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'RouteManager',
-	'text!tpl/appAdmin.jade', 'css!style/common', 'css!style/appAdmin',
+	'text!tpl/appAdmin.jade', 'css!style/appAdmin',
 	'backbone.queryparams', 'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, jade) {
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, html) {
 	"use strict";
 
 	Utils.title.setPostfix('Администрирование - Фотографии прошлого');
@@ -142,41 +140,18 @@ require([
 
 	moment.lang('ru');
 
-	$('body').append(jade);
+	$('body').append(html);
 	ko.applyBindings(globalVM);
 
 	globalVM.router = new RouteManager(routerAnatomy);
 	$.when(routerDeferred.promise()).then(app);
 
 	function app() {
-		var loadTime;
-
-		if (window.wasLoading) {
-			loadTime = Number(Utils.cookie.getItem('pastvu.load.' + appHash));
-			if (isNaN(loadTime)) {
-				loadTime = 100;
-			} else {
-				loadTime = Math.max(100, 2200 - (Date.now() - loadTime));
-			}
-			if (!$.urlParam('stopOnLoad')) {
-				window.setTimeout(startApp, loadTime);
-			}
-		} else {
-			Utils.cookie.setItem('pastvu.load.' + appHash, String(Date.now()), 604800, '/', null);
-			startApp();
-		}
-
-		function startApp() {
-			if (window.wasLoading) {
-				$('#apploader').remove();
-				delete window.wasLoading;
-			}
-			//Backbone.Router.namedParameters = true;
-			Backbone.history.start({pushState: true, root: routerAnatomy.root, silent: false});
-		}
+		//Backbone.Router.namedParameters = true;
+		Backbone.history.start({pushState: true, root: routerAnatomy.root, silent: false});
 	}
 
 	//window.appRouter = globalVM.router;
 	//window.glob = globalVM;
-	console.timeStamp('=== app load (' + appHash + ') ===');
+	console.log('APP %s loaded', appHash);
 });

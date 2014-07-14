@@ -177,26 +177,26 @@ var giveRatings = (function () {
 
 				for (i = ucday.length; i--;) {
 					ucday[i].ccount = ucommdayHash[ucday[i]._id];
-					ucday[i].online = _session.us[ucday[i].login] !== undefined;
+					ucday[i].online = _session.usLogin[ucday[i].login] !== undefined;
 				}
 				for (i = ucweek.length; i--;) {
 					ucweek[i].ccount = ucommweekHash[ucweek[i]._id];
-					ucweek[i].online = _session.us[ucweek[i].login] !== undefined;
+					ucweek[i].online = _session.usLogin[ucweek[i].login] !== undefined;
 				}
 				for (i = ucall.length; i--;) {
-					ucall[i].online = _session.us[ucall[i].login] !== undefined;
+					ucall[i].online = _session.usLogin[ucall[i].login] !== undefined;
 				}
 
 				for (i = upday.length; i--;) {
 					upday[i].pcount = updayHash[upday[i]._id];
-					upday[i].online = _session.us[upday[i].login] !== undefined;
+					upday[i].online = _session.usLogin[upday[i].login] !== undefined;
 				}
 				for (i = upweek.length; i--;) {
 					upweek[i].pcount = upweekHash[upweek[i]._id];
-					upweek[i].online = _session.us[upweek[i].login] !== undefined;
+					upweek[i].online = _session.usLogin[upweek[i].login] !== undefined;
 				}
 				for (i = upall.length; i--;) {
-					upall[i].online = _session.us[upall[i].login] !== undefined;
+					upall[i].online = _session.usLogin[upall[i].login] !== undefined;
 				}
 
 				//console.log(Date.now() - st);
@@ -285,8 +285,8 @@ var giveStats = (function () {
 var giveFastStats = (function () {
 
 	return Utils.memoizeAsync(function (handler) {
-		var usersCount = Utils.getObjectPropertyLength(_session.us),
-			sessions = _session.sess,
+		var usersCount = Utils.getObjectPropertyLength(_session.usLogin),
+			sessions = _session.sessConnected,
 			anonymCount = 0,
 			i;
 
@@ -371,11 +371,11 @@ function giveAllNews(iAm, cb) {
 				return cb(err);
 			}
 
-			if (!iAm || !news.length) {
+			if (!iAm.registered || !news.length) {
 				finish(null, news);
 			} else {
 				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
+				commentController.fillNewCommentsCount(news, iAm.user._id, 'news', finish);
 			}
 
 			function finish(err, news) {
@@ -427,12 +427,12 @@ function giveNewsPublic(iAm, data, cb) {
 
 		step(
 			function () {
-				var user = _session.getOnline(null, news.user),
+				var userObj = _session.getOnline(null, news.user),
 					paralellUser = this.parallel();
 
-				if (user) {
+				if (userObj) {
 					news.user = {
-						login: user.login, avatar: user.avatar, disp: user.disp, online: true
+						login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, online: true
 					};
 					paralellUser(null, news);
 				} else {
@@ -445,8 +445,8 @@ function giveNewsPublic(iAm, data, cb) {
 					});
 				}
 
-				if (iAm) {
-					UserSubscr.findOne({obj: news._id, user: iAm._id}, {_id: 0}, this.parallel());
+				if (iAm.registered) {
+					UserSubscr.findOne({obj: news._id, user: iAm.user._id}, {_id: 0}, this.parallel());
 				}
 			},
 			function (err, news, subscr) {
@@ -458,11 +458,11 @@ function giveNewsPublic(iAm, data, cb) {
 					news.subscr = true;
 				}
 
-				if (!iAm || !news.ccount) {
+				if (!iAm.registered || !news.ccount) {
 					delete news._id;
 					cb(null, {news: news});
 				} else {
-					commentController.getNewCommentsCount([news._id], iAm._id, 'news', function (err, countsHash) {
+					commentController.getNewCommentsCount([news._id], iAm.user._id, 'news', function (err, countsHash) {
 						if (err) {
 							return cb(err);
 						}
@@ -518,8 +518,8 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('giveIndexNews', function () {
-			if (hs.session.user) {
-				giveIndexNews(hs.session.user, returnIndexNews);
+			if (hs.usObj.registered) {
+				giveIndexNews(hs.usObj.user, returnIndexNews);
 			} else {
 				giveIndexNewsAnonym(returnIndexNews);
 			}
@@ -529,7 +529,7 @@ module.exports.loadController = function (app, db, io) {
 		}
 
 		socket.on('giveAllNews', function (data) {
-			giveAllNews(hs.session.user, function (err, result) {
+			giveAllNews(hs.usObj, function (err, result) {
 				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);
 			});
 		});
@@ -539,7 +539,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(hs.session.user, data, function (err, result) {
+			giveNewsPublic(hs.usObj, data, function (err, result) {
 				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : result);
 			});
 		});

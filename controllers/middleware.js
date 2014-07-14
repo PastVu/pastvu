@@ -50,10 +50,8 @@ module.exports.cors = function (originRoot) {
 	};
 };
 
-//Добавляет заголовки X-Response-Time и X-Powered-By
+//Добавляет заголовок X-Response-Time
 module.exports.responseHeaderHook = function () {
-	var XPoweredBy = 'Paul Klimashkin | klimashkin@gmail.com';
-
 	return function (req, res, next) {
 		var start = Date.now(),
 			writeHeadOriginal = res.writeHead;
@@ -63,7 +61,6 @@ module.exports.responseHeaderHook = function () {
 		}
 		res.writeHead = function () {
 			res.setHeader('X-Response-Time', (Date.now() - start) + 'ms');
-			res.setHeader('X-Powered-By', XPoweredBy);
 			writeHeadOriginal.apply(res, arguments);
 		};
 		next();

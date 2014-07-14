@@ -8,6 +8,7 @@ var express = require('express'),
 	path = require('path'),
 	fs = require('fs'),
 	os = require('os'),
+	step = require('step'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
 	_ = require('lodash'),
@@ -132,12 +133,12 @@ async.waterfall([
 		function loadingModels(callback) {
 			require(__dirname + '/models/ApiLog.js').makeModel(db);
 			require(__dirname + '/models/ActionLog.js').makeModel(db);
-			require(__dirname + '/models/Sessions.js').makeModel(db);
 			require(__dirname + '/models/Counter.js').makeModel(db);
 			require(__dirname + '/models/Settings.js').makeModel(db);
 			require(__dirname + '/models/User.js').makeModel(db);
 			require(__dirname + '/models/UserSettings.js').makeModel(db);
 			require(__dirname + '/models/UserStates.js').makeModel(db);
+			require(__dirname + '/models/Sessions.js').makeModel(db);
 			require(__dirname + '/models/Photo.js').makeModel(db);
 			require(__dirname + '/models/Comment.js').makeModel(db);
 			require(__dirname + '/models/Cluster.js').makeModel(db);
@@ -151,7 +152,11 @@ async.waterfall([
 		function (callback) {
 			var pub = '/public/',
 				ourMiddlewares,
-				lessMiddleware;
+				lessMiddleware,
+				static404 = function (req, res) {
+					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
+					res.send(404);
+				};
 
 			global.appVar.land = land;
 			global.appVar.storePath = storePath;
@@ -167,10 +172,10 @@ async.waterfall([
 			app.set('views', 'views');
 			app.set('view engine', 'jade');
 
-			//Etag (по умолчанию он и так включен), чтобы браузер мог указывать его для запрашиваемого ресурса
+			//Etag (по умолчанию weak), чтобы браузер мог указывать его для запрашиваемого ресурса
 			//При этом если браузеру заголовком Cache-Control разрешено кешировать, он отправит etag в запросе,
 			//и если сгенерированный ответ получает такой же etag, сервер вернёт 304 без контента и браузер возьмет контент из своего кеша
-			app.enable('etag');
+			app.set('etag', 'weak');
 
 			//На проде включаем внутреннее кеширование результатов рендеринга шаблонов
 			//Сокращает время рендеринга (и соответственно waiting время запроса клиента) на порядок
@@ -205,47 +210,55 @@ async.waterfall([
 					lessMiddleware = require('less-middleware');
 					app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {force: true, once: false, debug: false, compiler: {compress: false, yuicompress: false, sourceMap: true, sourceMapRootpath: '/', sourceMapBasepath: path.join(__dirname, pub)}, parser: {dumpLineNumbers: 0, optimization: 0}}));
 				}
-				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('1d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
-				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d')}));
+				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('2d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d'), etag: false}));
+
+				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
+				app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);
 			}
 			if (serveStore) {
-				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d')}));
-				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d')}));
+				app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), {maxAge: ms('2d'), etag: false}));
+				app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), {maxAge: ms('7d'), etag: false}));
+
+				//"Законцовываем" пути к хранилищу, т.е. то что дошло сюда - 404
+				app.get('/_a/d/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatar.png');
+				});
+				app.get('/_a/h/*', function (req, res) {
+					res.redirect(302, '/img/caps/avatarth.png');
+				});
+				app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
 			}
 
 			callback(null);
 		},
-
 		function (callback) {
 			httpServer = http.createServer(app);
-			io = require('socket.io').listen(httpServer, http_hostname);
+			io = require('socket.io')(httpServer, {
+				transports: ['websocket', 'polling'],
+				path: '/socket.io',
+				serveClient: false
+			});
 
-			callback(null);
-		},
-		function ioConfigure(callback) {
 			var _session = require('./controllers/_session.js');
-
-			io.set('log level', land === 'dev' ? 1 : 0);
-			io.set('browser client', false);
-			io.set('match origin protocol', true);
-			io.set('transports', ['websocket', 'xhr-polling', 'jsonp-polling', 'htmlfile']);
-
-			io.set('authorization', _session.authSocket);
-			io.sockets.on('connection', _session.firstConnection);
-
+			io.use(_session.handleSocket);
 			_session.loadController(app, db, io);
 			callback(null);
 		},
-		function loadingControllers(callback) {
-			var regionController,
-				static404 = function (req, res) {
-					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-					res.send(404);
-				};
+		function (callback) {
+			step(
+				function () {
+					require('./controllers/settings.js').loadController(app, db, io, this.parallel());
+					require('./controllers/region.js').loadController(app, db, io, this.parallel());
+				},
+				function (err) {
+					callback(err);
+				}
+			);
 
-			require('./controllers/settings.js').loadController(app, db, io);
+		},
+		function (callback) {
 			require('./controllers/actionlog.js').loadController(app, db, io);
-			regionController = require('./controllers/region.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
 			require('./controllers/index.js').loadController(app, db, io);
@@ -262,34 +275,15 @@ async.waterfall([
 
 			//Раздаем лог
 			if (serveLog) {
-				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'));
-				app.use('/nodelog', require('serve-index')(logPath, {icons: true}));
-				app.use('/nodelog', express.static(logPath, {maxAge: '1s'}));
+				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'), require('serve-index')(logPath, {icons: true}), express.static(logPath, {maxAge: '1s', etag: false}));
 			}
 
-			//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
-			if (servePublic) {
-				app.get('/img/*', static404);
-				app.get('/js/*', static404);
-				app.get('/style/*', static404);
-			}
-			if (serveStore) {
-				app.get('/_a/d/*', function (req, res) {
-					res.redirect(302, '/img/caps/avatar.png');
-				});
-				app.get('/_a/h/*', function (req, res) {
-					res.redirect(302, '/img/caps/avatarth.png');
-				});
-				app.get('/_a/*', static404);
-				app.get('/_p/*', static404);
-			}
 			require('./controllers/errors.js').registerErrorHandling(app);
 			require('./controllers/systemjs.js').loadController(app, db);
 			//require('./basepatch/v1.1.1.js').loadController(app, db);
 
 			CoreServer = require('./controllers/coreadapter.js');
-
-			regionController.fillCache(callback);
+			callback(null);
 		}
 	],
 	function finish(err) {
@@ -304,7 +298,6 @@ async.waterfall([
 			 * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
 			 */
 			httpServer.setMaxListeners(0);
-			io.setMaxListeners(0);
 			process.setMaxListeners(0);
 			/**
 			 * Handling uncaught exceptions

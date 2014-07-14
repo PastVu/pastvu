@@ -36,20 +36,20 @@ var _session = require('./_session.js'),
 	maxRegionLevel = global.appVar.maxRegionLevel,
 
 	permissions = {
-		canModerate: function (type, obj, user) {
-			return user && (type === 'photo' && photoController.permissions.canModerate(obj, user) || type === 'news' && user.role > 9);
+		canModerate: function (type, obj, usObj) {
+			return usObj.registered && (type === 'photo' && photoController.permissions.canModerate(obj, usObj) || type === 'news' && usObj.isAdmin);
 		},
-		canEdit: function (comment, obj, user) {
-			return user && !obj.nocomments && comment.user.equals(user._id) && comment.stamp > (Date.now() - weekMS);
+		canEdit: function (comment, obj, usObj) {
+			return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - weekMS);
 		},
-		canReply: function (type, obj, user) {
-			return user && !obj.nocomments && (type === 'photo' && obj.s > 1 || type === 'news');
+		canReply: function (type, obj, usObj) {
+			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s > 1 || type === 'news');
 		}
 	};
 
 var core = {
 	//Упрощенная отдача комментариев анонимным пользователям
-	getCommentsObjAnonym: function (data, cb) {
+	getCommentsObjAnonym: function (iAm, data, cb) {
 		var commentsArr,
 			commentModel,
 			usersHash = {};
@@ -59,7 +59,7 @@ var core = {
 			News.findOne({cid: data.cid}, {_id: 1}, findComments);
 		} else {
 			commentModel = Comment;
-			photoController.findPhoto({cid: data.cid}, null, null, findComments);
+			photoController.findPhoto({cid: data.cid}, null, iAm, findComments);
 		}
 
 		function findComments(err, obj) {
@@ -129,9 +129,9 @@ var core = {
 					//Берём все комментарии
 					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					//Берём последнее время просмотра комментариев объекта
-					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm.user._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
 					//Отмечаем в менеджере подписок, что просмотрели комментарии объекта
-					subscrController.commentViewed(obj._id, iAm);
+					subscrController.commentViewed(obj._id, iAm.user);
 				},
 				function (err, comments, userView) {
 					if (err || !comments) {
@@ -145,10 +145,10 @@ var core = {
 					if (comments.length) {
 						if (canModerate) {
 							//Если это модератор данной фотографии или администратор новости
-							commentsTreeBuildCanModerate(String(iAm._id), comments, previousViewStamp, this);
+							commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp, this);
 						} else {
 							//Если это зарегистрированный пользователь
-							commentsTreeBuildAuth(String(iAm._id), comments, previousViewStamp, !obj.nocomments, this);
+							commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments, this);
 						}
 					} else {
 						this(null, {tree: [], users: {}, countTotal: 0, countNew: 0});
@@ -196,7 +196,7 @@ var core = {
 						return cb({message: err && err.message || msg.noObject, error: true});
 					}
 					canModerate = permissions.canModerate(data.type, obj, iAm);
-					commentsTreeBuildDel(comment, childs, canModerate ? undefined : String(iAm._id), this);
+					commentsTreeBuildDel(comment, childs, canModerate ? undefined : String(iAm.user._id), this);
 				},
 				function (err, commentsTree) {
 					if (err) {
@@ -567,7 +567,7 @@ function getUsersHashForComments(usersArr, cb) {
 			if (user.avatar) {
 				user.avatar = '/_a/h/' + user.avatar;
 			}
-			user.online = _session.us[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+			user.online = _session.usLogin[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
 			hashByLogin[user.login] = hashById[String(user._id)] = user;
 			delete user._id;
 		}
@@ -589,10 +589,10 @@ function getCommentsObj(iAm, data, cb) {
 
 	data.cid = Number(data.cid);
 
-	if (iAm) {
+	if (iAm.registered) {
 		core.getCommentsObjAuth(iAm, data, finish);
 	} else {
-		core.getCommentsObjAnonym(data, finish);
+		core.getCommentsObjAnonym(iAm, data, finish);
 	}
 	function finish(err, result) {
 		if (err) {
@@ -724,7 +724,7 @@ var getComments = (function () {
 	var commentSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1},
 		photosSelectAllRegions = _.assign({_id: 1, cid: 1, file: 1, title: 1, geo: 1}, regionController.regionsAllSelectHash);
 
-	return function (usObj, query, data, cb) {
+	return function (iAm, query, data, cb) {
 		var skip = Math.abs(Number(data.skip)) || 0,
 			limit = Math.min(data.limit || 30, 100),
 			options = {lean: true, limit: limit, sort: {stamp: -1}},
@@ -765,7 +765,7 @@ var getComments = (function () {
 				}
 
 				commentsArr = comments;
-				Photo.find({_id: {$in: photosArr}}, usObj && usObj.rshortsel ? _.assign(photosSelect, usObj.rshortsel) : photosSelectAllRegions, {lean: true}, this.parallel());
+				Photo.find({_id: {$in: photosArr}}, iAm && iAm.rshortsel ? _.assign(photosSelect, iAm.rshortsel) : photosSelectAllRegions, {lean: true}, this.parallel());
 				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
 			},
 			function (err, photos, users) {
@@ -781,7 +781,7 @@ var getComments = (function () {
 					userFormatted,
 					userFormattedHash = {},
 
-					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, usObj && usObj.rshortlvls);
+					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls);
 
 				for (i = photos.length; i--;) {
 					photo = photos[i];
@@ -799,7 +799,7 @@ var getComments = (function () {
 					userFormatted = {
 						login: user.login,
 						disp: user.disp,
-						online: _session.us[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+						online: _session.usLogin[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
 					};
 					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 				}
@@ -830,10 +830,8 @@ var getCommentsFeed = (function () {
 		}, ms('10s'));
 
 	return function (iAm, cb) {
-		var usObj = iAm && _session.us[iAm.login];
-
-		if (iAm && iAm.regions.length && usObj.rquery) {
-			getComments(usObj, _.assign({del: null, hidden: null}, usObj.rquery), globalOptions, cb);
+		if (iAm.rquery) {
+			getComments(iAm, _.assign({del: null, hidden: null}, iAm.rquery), globalOptions, cb);
 		} else {
 			return globalFeed(cb);
 		}
@@ -847,7 +845,8 @@ var getCommentsFeed = (function () {
  * @param cb Коллбэк
  */
 function createComment(socket, data, cb) {
-	if (!socket.handshake.session.user) {
+	var iAm = socket.handshake.usObj;
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !Number(data.obj) || !data.txt || data.level > 9) {
@@ -857,8 +856,7 @@ function createComment(socket, data, cb) {
 		return cb({message: msg.maxLength, error: true});
 	}
 
-	var iAm = socket.handshake.session.user,
-		cid = Number(data.obj),
+	var cid = Number(data.obj),
 		obj,
 		CommentModel,
 		content = data.txt,
@@ -908,7 +906,7 @@ function createComment(socket, data, cb) {
 			comment = {
 				cid: countC.next,
 				obj: obj,
-				user: iAm,
+				user: iAm.user,
 				stamp: new Date(),
 				txt: Utils.inputIncomingParse(content).result,
 				del: undefined
@@ -956,24 +954,24 @@ function createComment(socket, data, cb) {
 			obj.save(this.parallel());
 
 			if (!savedComment.hidden) {
-				iAm.ccount += 1;
-				iAm.save(this.parallel());
+				iAm.user.ccount += 1;
+				iAm.user.save(this.parallel());
 			}
 		},
 		function (err) {
 			if (err) {
 				return cb({message: err.message, error: true});
 			}
-			comment.user = iAm.login;
+			comment.user = iAm.user.login;
 			comment.obj = cid;
 			comment.can = {};
 			if (comment.level === undefined) {
 				comment.level = 0;
 			}
-			_session.emitUser(iAm.login, socket);
+			_session.emitUser(iAm, null, socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
 
-			subscrController.commentAdded(obj._id, iAm);
+			subscrController.commentAdded(obj._id, iAm.user);
 		}
 	);
 }
@@ -985,14 +983,14 @@ function createComment(socket, data, cb) {
  * @param cb Коллбэк
  */
 function removeComment(socket, data, cb) {
-	if (!socket.handshake.session.user) {
+	var iAm = socket.handshake.session.user;
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
 	if (!Utils.isType('object', data) || !Number(data.cid) || !data.reason || (!Number(data.reason.key) && !data.reason.desc)) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),
-		iAm = socket.handshake.session.user,
 		canEdit,
 		canModerate,
 		obj,
@@ -1062,7 +1060,7 @@ function removeComment(socket, data, cb) {
 					len = childs.length,
 					i = 0;
 
-				delInfo = {user: iAm._id, stamp: new Date(), reason: {}};
+				delInfo = {user: iAm.user._id, stamp: new Date(), reason: {}};
 				childsCids = [];
 
 				//Операции с корневым удаляемым комментарием
@@ -1086,8 +1084,8 @@ function removeComment(socket, data, cb) {
 
 				if (canModerate && iAm.role) {
 					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
-					delInfo.role = iAm.role;
-					if (iAm.role === 5 && _.isNumber(canModerate)) {
+					delInfo.role = iAm.user.role;
+					if (iAm.isModerator && _.isNumber(canModerate)) {
 						delInfo.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
 					}
 				}
@@ -1112,7 +1110,7 @@ function removeComment(socket, data, cb) {
 					return cb({message: err.message || 'Comment remove error', error: true});
 				}
 				var frags = obj.frags && obj.frags.toObject(),
-					user,
+					userObj,
 					i,
 					u;
 
@@ -1129,10 +1127,10 @@ function removeComment(socket, data, cb) {
 
 				for (u in hashUsers) {
 					if (hashUsers[u] !== undefined) {
-						user = _session.getOnline(null, u);
-						if (user !== undefined) {
-							user.ccount = user.ccount - hashUsers[u];
-							_session.saveEmitUser(user.login, null, null, this.parallel());
+						userObj = _session.getOnline(null, u);
+						if (userObj !== undefined) {
+							userObj.user.ccount = userObj.user.ccount - hashUsers[u];
+							_session.saveEmitUser(userObj, null, this.parallel());
 						} else {
 							User.update({_id: u}, {$inc: {ccount: -hashUsers[u]}}, this.parallel());
 						}
@@ -1143,7 +1141,7 @@ function removeComment(socket, data, cb) {
 				if (err) {
 					return cb({message: err.message || 'Object or user update error', error: true});
 				}
-				var myCountRemoved = hashUsers[iAm._id] || 0, //Кол-во моих комментариев
+				var myCountRemoved = hashUsers[iAm.user._id] || 0, //Кол-во моих комментариев
 					frags,
 					frag,
 					i;
@@ -1160,7 +1158,7 @@ function removeComment(socket, data, cb) {
 					}
 				}
 
-				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
+				actionLogController.logIt(iAm.user, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.REMOVE, delInfo.stamp, delInfo.reason, delInfo.roleregion, childsCids.length ? {childs: childsCids.length} : undefined);
 				cb({message: 'Ok', frags: frags, countComments: countCommentsRemoved, myCountComments: myCountRemoved, countUsers: Object.keys(hashUsers).length, stamp: delInfo.stamp.getTime(), delInfo: delInfo});
 			}
 		);
@@ -1174,8 +1172,8 @@ function removeComment(socket, data, cb) {
  * @param cb Коллбэк
  */
 function restoreComment(socket, data, cb) {
-	var cid = data && Number(data.cid),
-		iAm = socket.handshake.session.user,
+	var iAm = socket.handshake.usObj,
+		cid = data && Number(data.cid),
 		canModerate,
 		obj,
 		commentsHash = {},
@@ -1188,10 +1186,10 @@ function restoreComment(socket, data, cb) {
 		histChilds,
 		childsCids;
 
-	if (!iAm) {
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !Number(data.cid)) {
+	if (!_.isObject(data) || !Number(data.cid)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -1259,9 +1257,9 @@ function restoreComment(socket, data, cb) {
 
 				hist = [
 					_.assign(_.omit(comment.del, 'origin'), {del: {reason: comment.del.reason}}),
-					{user: iAm._id, stamp: stamp, restore: true, role: iAm.role}
+					{user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role}
 				];
-				if (iAm.role === 5 && _.isNumber(canModerate)) {
+				if (iAm.isModerator && _.isNumber(canModerate)) {
 					hist[1].roleregion = canModerate;
 				}
 				commentModel.update({cid: cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: hist}}}, this.parallel());
@@ -1269,9 +1267,9 @@ function restoreComment(socket, data, cb) {
 				if (childsCids.length) {
 					histChilds = [
 						_.assign(_.omit(comment.del, 'reason'), {del: {origin: cid}}),
-						{user: iAm._id, stamp: stamp, restore: true, role: iAm.role}
+						{user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role}
 					];
-					if (iAm.role === 5 && _.isNumber(canModerate)) {
+					if (iAm.isModerator && _.isNumber(canModerate)) {
 						histChilds[1].roleregion = canModerate;
 					}
 					commentModel.update({obj: obj._id, 'del.origin': cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: histChilds}}}, {multi: true}, this.parallel());
@@ -1282,7 +1280,7 @@ function restoreComment(socket, data, cb) {
 					return cb({message: err.message || 'Comment restore error', error: true});
 				}
 				var frags = obj.frags && obj.frags.toObject(),
-					user,
+					userObj,
 					u, i;
 
 				if (frags) {
@@ -1298,10 +1296,10 @@ function restoreComment(socket, data, cb) {
 
 				for (u in hashUsers) {
 					if (hashUsers[u] !== undefined) {
-						user = _session.getOnline(null, u);
-						if (user !== undefined) {
-							user.ccount = user.ccount + hashUsers[u];
-							_session.saveEmitUser(user.login, null, null, this.parallel());
+						userObj = _session.getOnline(null, u);
+						if (userObj !== undefined) {
+							userObj.user.ccount = userObj.user.ccount + hashUsers[u];
+							_session.saveEmitUser(userObj, null, this.parallel());
 						} else {
 							User.update({_id: u}, {$inc: {ccount: hashUsers[u]}}, this.parallel());
 						}
@@ -1328,8 +1326,8 @@ function restoreComment(socket, data, cb) {
 					}
 				}
 
-				actionLogController.logIt(iAm, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.role === 5 && _.isNumber(canModerate) ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
-				cb({message: 'Ok', frags: frags, countComments: countCommentsRestored, myCountComments: ~~hashUsers[iAm._id], countUsers: Object.keys(hashUsers).length, stamp: stamp.getTime()});
+				actionLogController.logIt(iAm.user, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.isModerator && _.isNumber(canModerate) ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
+				cb({message: 'Ok', frags: frags, countComments: countCommentsRestored, myCountComments: ~~hashUsers[iAm.user._id], countUsers: Object.keys(hashUsers).length, stamp: stamp.getTime()});
 			}
 		);
 	});
@@ -1342,17 +1340,17 @@ function restoreComment(socket, data, cb) {
  * @param cb Коллбэк
  */
 function updateComment(socket, data, cb) {
-	if (!socket.handshake.session.user) {
+	var iAm = socket.handshake.usObj;
+	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !data.obj || !Number(data.cid) || !data.txt) {
+	if (!_.isObject(data) || !data.obj || !Number(data.cid) || !data.txt) {
 		return cb({message: 'Bad params', error: true});
 	}
 	if (data.txt.length > commentMaxLength) {
 		return cb({message: msg.maxLength, error: true});
 	}
 	var cid = Number(data.cid),
-		iAm = socket.handshake.session.user,
 		canEdit,
 		canModerate,
 		fragRecieved;
@@ -1373,7 +1371,7 @@ function updateComment(socket, data, cb) {
 			}
 
 			var i,
-				hist = {user: iAm},
+				hist = {user: iAm.user},
 				parsedResult,
 				content,
 				fragExists,
@@ -1439,10 +1437,10 @@ function updateComment(socket, data, cb) {
 			if (txtChanged || fragChangedType) {
 				hist.frag = fragChangedType || undefined;
 
-				if (canModerate && iAm.role) {
+				if (canModerate && iAm.user.role) {
 					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент изменения
-					hist.role = iAm.role;
-					if (iAm.role === 5 && _.isNumber(canModerate)) {
+					hist.role = iAm.user.role;
+					if (iAm.isModerator && _.isNumber(canModerate)) {
 						hist.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
 					}
 				}
@@ -1574,15 +1572,14 @@ function giveCommentHist(data, cb) {
 
 /**
  * Переключает возможность комментирования объекта
- * @param socket Сокет пользователя
+ * @param iAm Объект пользователя
  * @param data
  * @param cb Коллбэк
  */
-function setNoComments(socket, data, cb) {
-	var cid = data && Number(data.cid),
-		iAm = socket.handshake.session && socket.handshake.session.user;
+function setNoComments(iAm, data, cb) {
+	var cid = data && Number(data.cid);
 
-	if (!iAm || !iAm.role) {
+	if (!iAm.registered || !iAm.user.role) {
 		return cb({message: msg.deny, error: true});
 	}
 
@@ -1622,7 +1619,7 @@ function setNoComments(socket, data, cb) {
  * Скрывает комментарии объекта (делает их не публичными)
  * @param oid _id объекта
  * @param hide Скрыть или наоборот
- * @param iAm Пользователь сессии, считаем сколько его комментариев затронуто
+ * @param iAm Объект пользователя, считаем сколько его комментариев затронуто
  * @param cb Коллбэк
  */
 function hideObjComments(oid, hide, iAm, cb) {
@@ -1653,7 +1650,7 @@ function hideObjComments(oid, hide, iAm, cb) {
 			var i,
 				len = comments.length,
 				cdelta,
-				user,
+				userObj,
 				comment,
 				hashUsers = {};
 
@@ -1666,16 +1663,16 @@ function hideObjComments(oid, hide, iAm, cb) {
 			for (i in hashUsers) {
 				if (hashUsers[i] !== undefined) {
 					cdelta = hide ? -hashUsers[i] : hashUsers[i];
-					user = _session.getOnline(null, i);
-					if (user !== undefined) {
-						user.ccount = user.ccount + cdelta;
-						_session.saveEmitUser(null, i);
+					userObj = _session.getOnline(null, i);
+					if (userObj !== undefined) {
+						userObj.user.ccount = userObj.user.ccount + cdelta;
+						_session.saveEmitUser(userObj);
 					} else {
 						User.update({_id: i}, {$inc: {ccount: cdelta}}).exec();
 					}
 				}
 			}
-			cb(null, {myCount: hashUsers[iAm._id] || 0});
+			cb(null, {myCount: hashUsers[iAm.user._id] || 0});
 		}
 	);
 }
@@ -1944,18 +1941,18 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('setNoComments', function (data) {
-			setNoComments(socket, data, function (result) {
+			setNoComments(hs.usObj, data, function (result) {
 				socket.emit('setNoCommentsResult', result);
 			});
 		});
 
 		socket.on('giveCommentsObj', function (data) {
-			getCommentsObj(hs.session.user, data, function (result) {
+			getCommentsObj(hs.usObj, data, function (result) {
 				socket.emit('takeCommentsObj', result);
 			});
 		});
 		socket.on('giveCommentsDel', function (data) {
-			getDelTree(hs.session.user, data, function (result) {
+			getDelTree(hs.usObj, data, function (result) {
 				socket.emit('takeCommentsDel', result);
 			});
 		});
@@ -1965,7 +1962,7 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveCommentsFeed', function () {
-			getCommentsFeed(hs.session.user, function (result) {
+			getCommentsFeed(hs.usObj, function (result) {
 				socket.emit('takeCommentsFeed', result);
 			});
 		});

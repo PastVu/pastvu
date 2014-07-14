@@ -1,6 +1,7 @@
 'use strict';
 
-var util = require('util'),
+var http = require('http'),
+	util = require('util'),
 	logger = require('log4js').getLogger("error.js"),
 	logger404 = require('log4js').getLogger("404.js"),
 	neoError = {
@@ -42,7 +43,7 @@ module.exports.registerErrorHandling = function (app) {
 
 	//Последний. Если дошли сюда, значит на запрос нет обработчика
 	app.all('*', function (req, res) {
-		throw new neoError.e404('No such resource');
+		throw new neoError.e404(http.STATUS_CODES['404']);
 	});
 
 	//Обработчик выброшенных ошибок

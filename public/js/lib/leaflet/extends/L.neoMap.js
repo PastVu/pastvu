@@ -5,12 +5,12 @@ define(['jquery', 'Utils', 'leaflet', 'Params'], function ($, Utils, L, P) {
     var deltaH, deltaV;
 
     function calcDelta() {
-        deltaH = Math.floor(Utils.getClientWidth() / 4);
-        deltaV = Math.floor(Utils.getClientHeight() / 4);
+        deltaH = Math.floor(P.window.w() / 4);
+        deltaV = Math.floor(P.window.h() / 4);
     }
 
     calcDelta();
-    Utils.Event.add(window, 'resize', calcDelta);
+	P.window.square.subscribe(calcDelta);
 
     L.neoMap = L.Map.extend({
         zoomBy: function (diff) {

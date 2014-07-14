@@ -1,0 +1,20 @@
+doctype html
+html
+	head
+		include ../includes/head_top_cap
+body
+	.top.fringe
+		a.brand(href='/', title="PastVu - ретроспектива среды обитания человечества")
+			img.logo(src="/img/misc/logo.png")
+			img.name(src="/img/misc/name-2x.png", srcset="/img/misc/name.png 1x, /img/misc/name-2x.png 2x")
+	style.
+		.content {
+			max-width: 1000px;
+			text-align: left;
+		}
+	.cent.centering_content
+		.content.fringe()
+			p
+				.accepd= 'Accept: '+accept
+				.parsed= 'Parsed: '+(agent&&agent.toString())
+				.orig(style="color: #888;")='UA: '+(agent&&agent.source)

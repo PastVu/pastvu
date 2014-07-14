@@ -41,6 +41,7 @@ define([
 		},
 		localDestroy: function (destroy) {
 			window.clearTimeout(this.timeoutUpdate);
+			socket.off('takeOnlineStat');
 			this.hide();
 			destroy.call(this);
 		},
@@ -74,7 +75,7 @@ define([
 					this.headersWC(headersWC);
 				}
 
-				if (Utils.isType('function', cb)) {
+				if (_.isFunction(cb)) {
 					cb.call(ctx);
 				}
 				this.timeoutUpdate = window.setTimeout(this.giveOnlives.bind(this), 5000);
@@ -88,8 +89,8 @@ define([
 					}
 					return result;
 				}
-			}.bind(this));
-			socket.emit('getOnlineStat');
+			}, this, false, true); //При отсутствии соединения на момент подписки, не надо вызывать ошибку, надо всё равно подписаться
+			socket.emit('getOnlineStat', undefined, true);
 		}
 	});
 });

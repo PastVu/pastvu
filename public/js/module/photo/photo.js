@@ -544,7 +544,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		getRegionsByGeo: function (geo, cb, ctx) {
 			this.exeregion(true);
-			socket.removeAllListeners('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			socket.off('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
 			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
 			socket.on('takeRegionsByGeo', function (data) {
 				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
@@ -563,7 +563,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					cb.call(ctx, error, data);
 				}
 				this.exeregion(false);
-			}.bind(this));
+			}, this);
 			socket.emit('giveRegionsByGeo', {geo: geo});
 		},
 		regionSelect: function () {
@@ -670,7 +670,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						ga('send', 'event', 'photo', 'edit', 'photo approve error');
 					}
 					this.exe(false);
-				}.bind(this));
+				}, this);
 				socket.emit('approvePhoto', this.p.cid());
 			}
 		},
@@ -693,7 +693,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' error');
 					}
 					this.exe(false);
-				}.bind(this));
+				}, this);
 				socket.emit('disablePhoto', {cid: this.p.cid(), disable: this.p.s() !== 7});
 			}
 		},
@@ -814,7 +814,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 									}.bind(this));
 									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' error');
 								}
-							}.bind(that));
+							}, that);
 							socket.emit('removePhoto', that.p.cid());
 
 						}},
@@ -880,7 +880,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 									}.bind(this));
 									ga('send', 'event', 'photo', 'restore', 'photo restore error');
 								}
-							}.bind(that));
+							}, that);
 							socket.emit('restorePhoto', that.p.cid());
 
 						}},
@@ -956,7 +956,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						}
 						delete ctx[propName + 'EditOrigin'];
 					}
-				}.bind(this));
+				}, this);
 				socket.emit('savePhoto', target);
 			} else {
 				if (cb) {
@@ -995,7 +995,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					ga('send', 'event', 'photo', 'ready', 'photo ready error');
 				}
 				this.exe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('readyPhoto', this.p.cid());
 		},
 
@@ -1012,7 +1012,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					window.noty({text: (data && data.message) || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
 				}
 				this.exe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('convertPhotos', [
 				{cid: this.p.cid(), variants: convertVarsSel}
 			]);
@@ -1047,7 +1047,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveUserPhotosAround', {cid: this.p.cid(), limitL: left, limitR: right});
 		},
 		applyUserRibbon: function () {
@@ -1097,7 +1097,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveNearestPhotos', {geo: geo, limit: limit, except: except});
 		},
 		applyNearestRibbon: function () {

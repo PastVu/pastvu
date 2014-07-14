@@ -21,6 +21,7 @@
 		"requirejs",
 		"require",
 		"define",
+		"init",
 		"ga"
 	],
 

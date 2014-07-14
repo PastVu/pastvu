@@ -175,7 +175,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 							ga('send', 'event', 'avatar', 'upload', 'avatar upload success');
 						}
 						this.avaexe(false);
-					}.bind(this));
+					}, this);
 					socket.emit('changeAvatar', {login: this.user.login(), file: receivedFile.file});
 				}
 			}
@@ -202,7 +202,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 					ga('send', 'event', 'avatar', 'delete', 'avatar delete');
 				}
 				this.avaexe(false);
-			}.bind(this));
+			}, this);
 			socket.emit('delAvatar', {login: this.user.login()});
 
 			if (e.stopPropagation) {

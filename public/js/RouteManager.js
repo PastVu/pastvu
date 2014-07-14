@@ -1,8 +1,7 @@
-/*global define:true*/
 /**
  * Менеджер путей
  */
-define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'renderer'], function ($, Utils, _, Backbone, ko, globalVM, renderer) {
+define(['jquery', 'underscore', 'Utils', 'backbone', 'knockout', 'globalVM', 'renderer'], function ($, _, Utils, Backbone, ko, globalVM, renderer) {
 	"use strict";
 
 	return Backbone.Router.extend({
@@ -32,7 +31,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 				this.rootForUrlTest = this.root.charAt(this.root.length-1) === '/' ? this.root.substring(0, this.root.length-1) + '(/)' : this.root;
 			}
 			//Указываем отслеживать ли историю переходов по url (leaf)
-			if (options && Utils.isType('boolean', options.useLeaf)) {
+			if (options && _.isBoolean(options.useLeaf)) {
 				this.useLeaf = options.useLeaf;
 			}
 
@@ -104,7 +103,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 		getByGo: function (param) {
 			var result;
 
-			if (Utils.isType('number', param)) {
+			if (_.isNumber(param)) {
 				if (this.stackCurrentIndex + param < 0) {
 					result = this.stackHash[this.stack[0]];
 				} else if (this.stackCurrentIndex + param > this.stack.length - 1) {
@@ -118,7 +117,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 		getFlattenStack: function (root, groupBy) {
 			var past,
 				future;
-			if (Utils.isType('string', root)) {
+			if (_.isString(root)) {
 				past = [];
 				future = [];
 				this.stack.forEach(function (item, index, array) {
@@ -143,7 +142,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 			var body,
 				leaf = this.useLeaf && Utils.getURLParameter('l', url);
 
-			if (Utils.isType('string', url) && url.length > 0) {
+			if (_.isString(url) && url.length) {
 				if (!this.useLeaf) {
 					// Если не используем leaf, то просто навигируемся. 'navigate' - метод backbone
 					this.navigate(url.substr(this.root.length), {trigger: true, replace: false});
@@ -214,7 +213,7 @@ define(['jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 're
 		},
 		// Блокирует переход по ссылкам
 		ahrefBlock: function (flag) {
-			if (Utils.isType('boolean', flag)) {
+			if (_.isBoolean(flag)) {
 				this.blockHrefs = flag;
 			} else {
 				this.blockHrefs = !this.blockHrefs;

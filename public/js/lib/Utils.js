@@ -1,9 +1,9 @@
-/*global define:true, escape:true, unescape:true*/
+/*global escape:true, unescape:true*/
 /**
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugins/extends'], function ($, _, _s, P) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends'], function ($, _, _s) {
 	var Utils = {
 
 		/**
@@ -293,7 +293,7 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 			return text.substring(0, cut);
 		},
 		capitalizeFirst: function (str) {
-			return str.charAt(0).toUpperCase() + str.slice(1);
+			return str ? str[0].toUpperCase() + str.substr(1) : '';
 		},
 
 		/**
@@ -303,10 +303,10 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 		 * @param complete
 		 */
 		timer: function timer(time, update, complete) {
-			var start = new Date().getTime(),
+			var start = Date.now(),
 				interval = setInterval(function () {
-					var now = time - (new Date().getTime() - start);
-					if (now <= 0) {
+					var now = time - (Date.now() - start);
+					if (now <= 1) {
 						clearInterval(interval);
 						if (complete) {
 							complete();
@@ -316,9 +316,30 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 					}
 				}, 100); // the smaller this number, the more accurate the timer will be
 		},
+		times: (function () {
+			var times = {
+				msDay: 864e5,
+				msWeek: 6048e5,
+
+				midnight: null, //Миллисекунды полуночи текущего дня
+				midnightWeekAgo: null //Миллисекунды полуночи семи дней назад
+			};
+
+			//Считаем переменные времен
+			(function timesRecalc() {
+				var dateMidnight = new Date();
+
+				times.midnight = dateMidnight.setHours(0, 0, 0, 0);
+				times.midnightWeekAgo = times.midnight - times.msWeek;
+
+				setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1); //Планируем пересчет на первую миллисекунду следующего дня
+			}());
+
+			return times;
+		}()),
 
 		format: (function () {
-			var dateFormat = (function (){
+			var dateFormat = (function () {
 				var months = [
 						'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
 					],
@@ -334,6 +355,7 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 						mintues = date.getMinutes();
 					return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' + (hours > 9 ? hours : '0' + hours) + ':' + (mintues > 9 ? mintues : '0' + mintues);
 				}
+
 				function hhmm(date) {
 					var hours = date.getHours(),
 						mintues = date.getMinutes();
@@ -345,10 +367,10 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 					var dateMs = date.getTime(),
 						result;
 
-					if (dateMs < P.times.midnightWeekAgo) {
+					if (dateMs < Utils.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < P.times.midnight) {
-						if (dateMs < P.times.midnight - P.times.msDay) {
+					} else if (dateMs < Utils.times.midnight) {
+						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
 							result = weekDays[date.getDay()] + ', ' + dateFormat.hhmm(date);
 						} else {
 							result = 'Вчера в ' + dateFormat.hhmm(date);
@@ -359,14 +381,15 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 
 					return result;
 				}
+
 				function relativeIn(date) {
 					var dateMs = date.getTime(),
 						result;
 
-					if (dateMs < P.times.midnightWeekAgo) {
+					if (dateMs < Utils.times.midnightWeekAgo) {
 						result = dateFormat.dMMYYYYhhmm(date);
-					} else if (dateMs < P.times.midnight) {
-						if (dateMs < P.times.midnight - P.times.msDay) {
+					} else if (dateMs < Utils.times.midnight) {
+						if (dateMs < Utils.times.midnight - Utils.times.msDay) {
 							result = weekDaysIn[date.getDay()] + ', ' + dateFormat.hhmm(date);
 						} else {
 							result = 'вчера в ' + dateFormat.hhmm(date);
@@ -510,49 +533,6 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 			} else if (evt.type === "keydown" && n === 20) {
 				return false;
 			}
-		},
-
-
-		getClientWidth: function () {
-			var result = 0;
-			if (window.opera && window.innerWidth) {
-				result = window.innerWidth;
-			} else {
-				result = (document.compatMode === 'CSS1Compat' && !window.opera ?
-					document.documentElement.clientWidth : document.body.clientWidth);
-			}
-			return result;
-		},
-
-		getClientHeight: function () {
-			return window.opera && window.innerWidth ? window.innerWidth : (document.compatMode === 'CSS1Compat' && !window.opera ?
-				document.documentElement.clientHeight :
-				document.body.clientHeight);
-		},
-
-		getBodyScrollTop: function () {
-			return window.pageYOffset ||
-				(document.documentElement && document.documentElement.scrollTop) ||
-				(document.body && document.body.scrollTop);
-		},
-
-		getBodyScrollLeft: function () {
-			return window.pageXOffset ||
-				(document.documentElement && document.documentElement.scrollLeft) ||
-				(document.body && document.body.scrollLeft);
-		},
-
-		getDocumentHeight: function () {
-			var scrollHeight = document.body.scrollHeight,
-				offsetHeight = document.body.offsetHeight;
-			return (scrollHeight > offsetHeight) ? scrollHeight : offsetHeight;
-		},
-
-		getDocumentWidth: function () {
-			var scrollWidth = document.body.scrollWidth,
-				offsetWidth = document.body.offsetWidth;
-
-			return (scrollWidth > offsetWidth) ? scrollWidth : offsetWidth;
 		},
 
 		getElementComputedStyle: function (elem, prop) {
@@ -991,184 +971,7 @@ define(['jquery', 'underscore', 'underscore.string', 'Params', 'lib/jquery/plugi
 
 				return [r * 255, g * 255, b * 255];
 			}
-		},
-
-		Event: (function () {
-
-			var guid = 0;
-
-			function returnFalse() {
-				this.returnValue = false;
-			}
-
-			function cancelBubble() {
-				this.cancelBubble = true;
-			}
-
-			function stopAllAftermath() {
-				if (this.stopImmediatePropagation) {
-					this.stopImmediatePropagation();
-				} else if (this.stopPropagation) {
-					this.stopPropagation();
-				}
-				if (this.preventDefault) {
-					this.preventDefault();
-				}
-			}
-
-			function fixEvent(event) {
-				event = event || window.event;
-
-				if (event.isFixed) {
-					return event;
-				}
-				event.isFixed = true;
-
-				event.preventDefault = event.preventDefault || returnFalse;
-				event.stopPropagation = event.stopPropagation || cancelBubble;
-				event.stopAllAftermath = stopAllAftermath;
-
-				if (!event.target) {
-					event.target = event.srcElement;
-				}
-
-				if (!event.relatedTarget && event.fromElement) {
-					event.relatedTarget = event.fromElement === event.target ?
-						event.toElement : event.fromElement;
-				}
-
-				if (!event.which && event.button) {
-					event.which = (event.button & 1 ?
-						1 : (event.button & 2 ?
-						3 : (event.button & 4 ?
-						2 : 0)));
-				}
-				return event;
-			}
-
-			/* Вызывается в контексте элемента всегда this = element */
-			function commonHandle(event) {
-				event = fixEvent(event);
-
-				var handlers = this.events[event.type],
-					handler,
-					g,
-					ret;
-
-				for (g in handlers) {
-					if (handlers.hasOwnProperty(g)) {
-						handler = handlers[g];
-
-						ret = handler.call(this, event);
-						if (ret === false) {
-							event.stopAllAftermath();
-						}
-					}
-				}
-			}
-
-			return {
-				add: function (elem, type, handler) {
-					if (elem.setInterval && (elem !== window && !elem.frameElement)) {
-						elem = window;
-					}
-
-					if (!handler.guid) {
-						handler.guid = ++guid;
-					}
-
-					if (!elem.events) {
-						elem.events = {};
-						elem.handle = function (event) {
-							if (Utils.isType('function', event)) {
-								return commonHandle.call(elem, event);
-							}
-						};
-					}
-
-					if (!elem.events[type]) {
-						elem.events[type] = {};
-
-						if (elem.addEventListener) {
-							elem.addEventListener(type, elem.handle, false);
-						} else if (elem.attachEvent) {
-							elem.attachEvent("on" + type, elem.handle);
-						}
-					}
-
-					elem.events[type][handler.guid] = handler;
-
-					return elem;
-				},
-
-				getEventArray: function (elem) {
-					var res = [],
-						elemEvents = elem.events,
-						type,
-						handle;
-					for (type in elemEvents) {
-						if (elemEvents.hasOwnProperty(type)) {
-							for (handle in elemEvents[type]) {
-								if (elemEvents[type].hasOwnProperty(handle)) {
-									res.push({type: type, handler: elemEvents[type][handle]});
-								}
-							}
-						}
-					}
-					elemEvents = type = handle = null;
-					return res;
-				},
-
-				remove: function (elem, type, handler) {
-					var handlers = elem.events && elem.events[type],
-						any;
-
-					if (!handlers) {
-						return elem;
-					}
-
-					delete handlers[handler.guid];
-
-					for (any in handlers) {
-						if (handlers.hasOwnProperty(any)) {
-							return elem;
-						}
-					}
-					if (elem.removeEventListener) {
-						elem.removeEventListener(type, elem.handle, false);
-					} else if (elem.detachEvent) {
-						elem.detachEvent("on" + type, elem.handle);
-					}
-
-					delete elem.events[type];
-
-					for (any in elem.events) {
-						if (elem.events.hasOwnProperty(any)) {
-							return elem;
-						}
-					}
-					try {
-						delete elem.handle;
-						delete elem.events;
-					} catch (e) { // IE
-						elem.removeAttribute("handle");
-						elem.removeAttribute("events");
-					}
-					return elem;
-				},
-
-				removeAll: function (elem) {
-					var events = this.getEventArray(elem),
-						numberOfRemoved = events.length,
-						e;
-					for (e = 0; e < events.length; e++) {
-						this.remove(elem, events[e].type, events[e].handler);
-					}
-					events = null;
-					return numberOfRemoved;
-				}
-			};
-		}())
+		}
 	};
 
 

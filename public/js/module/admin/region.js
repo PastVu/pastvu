@@ -454,7 +454,7 @@ define([
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data, error);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveRegion', {cid: cid});
 		},
 		save: function () {
@@ -578,7 +578,7 @@ define([
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data, error);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('saveRegion', saveData);
 		},
 		remove: function () {
@@ -684,7 +684,7 @@ define([
 														this.exe(false);
 													}.bind(this));
 												}
-											}.bind(that));
+											}, that);
 											socket.emit('removeRegion', {cid: cid});
 
 										}},

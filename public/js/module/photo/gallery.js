@@ -508,7 +508,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit(reqName, params);
 		},
 		processPhotos: function (arr, regionsHash) {
@@ -634,7 +634,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 							}
 						}
 						this.loading(false);
-					}.bind(this));
+					}, this);
 					socket.emit('givePhotosFresh', {login: this.u.login(), after: this.waitUploadSince});
 				}
 				this.closeUpload();

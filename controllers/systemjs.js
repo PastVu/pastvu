@@ -8,6 +8,31 @@ var log4js = require('log4js'),
 module.exports.loadController = function (app, db) {
 	logger = log4js.getLogger("systemjs.js");
 
+	//Архивирует сессии
+	saveSystemJSFunc(function archiveExpiredSessions(frontierDate) {
+		var startFullTime = Date.now(),
+			archiveDate = new Date(),
+			query = {stamp: {lte: new Date(frontierDate)}},
+			fullcount = db.sessions.count(query),
+			resultKeys = [],
+			insertBulk = [],
+			castBulkBy = 100,
+			counter = 0;
+
+		print('Start to archive ' + fullcount + ' expired sessions');
+		db.sessions.find(query).forEach(function (session) {
+			counter++;
+			resultKeys.push(session.key);
+			session.archived = archiveDate;
+			if (insertBulk.push(session) >= castBulkBy || counter >= fullcount) {
+				db.sessions_archive.insert(insertBulk, {ordered: false});
+				insertBulk = [];
+			}
+		});
+
+		return {message: 'Done in ' + (Date.now() - startFullTime) / 1000 + 's', count: counter, keys: resultKeys};
+	});
+
 	saveSystemJSFunc(function clusterPhotosAll(withGravity, logByNPhotos, zooms) {
 		var startFullTime = Date.now(),
 			clusterparamsQuery = {sgeo: {$exists: false}},

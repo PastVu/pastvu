@@ -126,7 +126,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveNewsPublic', {cid: cid});
 		},
 

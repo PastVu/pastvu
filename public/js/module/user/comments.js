@@ -145,7 +145,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, data);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveCommentsUser', {login: this.u.login(), page: page});
 		},
 		showHistory: function (cid) {

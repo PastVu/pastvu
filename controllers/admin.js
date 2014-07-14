@@ -15,14 +15,8 @@ var auth = require('./auth.js'),
 	};
 
 
-function createNews(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	if (!Utils.isType('object', data)) {
+function createNews(iAm, data, cb) {
+	if (!_.isObject(data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -37,7 +31,7 @@ function createNews(socket, data, cb) {
 
 			var novel = new News({
 				cid: count.next,
-				user: iAm,
+				user: iAm.user,
 				pdate: data.pdate,
 				tdate: data.tdate,
 				title: data.title,
@@ -54,14 +48,8 @@ function createNews(socket, data, cb) {
 		}
 	);
 }
-function saveNews(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	if (!Utils.isType('object', data)) {
+function saveNews(iAm, data, cb) {
+	if (!_.isObject(data)) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -90,15 +78,13 @@ function saveNews(socket, data, cb) {
 	);
 }
 
-function getOnlineStat(socket, cb) {
-	var iAm = socket.handshake.session.user;
-
-	if (!iAm || !iAm.role || iAm.role < 10) {
+function getOnlineStat(iAm, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	var usersCount = Utils.getObjectPropertyLength(_session.us),
-		sessions = _session.sess,
+	var usersCount = Utils.getObjectPropertyLength(_session.usLogin),
+		sessions = _session.sessConnected,
 
 		sessUserCount = 0,
 		sessUserZeroSockCount = 0,
@@ -189,31 +175,28 @@ function getOnlineStat(socket, cb) {
 }
 
 //Сохраняем права пользователя
-function saveUserCredentials(socket, data, cb) {
-	var iAm = socket.handshake.session.user,
-		login = data && data.login,
-		itsMe = (iAm && iAm.login) === login,
-		itsOnline,
-		i;
-
-	if (!iAm || iAm.role < 10) {
+function saveUserCredentials(iAm, data, cb) {
+	if (!iAm.isAdmin) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !login || data.role < 0 || data.role > 11) {
+	var login = data && data.login,
+		itsMe = iAm.user.login === login,
+		userObjOnline;
+
+	if (!_.isObject(data) || !login || data.role < 0 || data.role > 11) {
 		return cb({message: msg.badParams, error: true});
 	}
 
-	if (itsMe && iAm.role !== data.role) {
+	if (itsMe && iAm.user.role !== data.role) {
 		return cb({message: 'Administrators can not change their role :)', error: true});
 	}
 
 	step(
 		function () {
-			var user = _session.getOnline(login);
-			if (user) {
-				itsOnline = true;
-				this(null, user);
+			userObjOnline = _session.getOnline(login);
+			if (userObjOnline) {
+				this(null, userObjOnline.user);
 			} else {
 				User.findOne({login: login}).populate('mod_regions', {_id: 0, cid: 1}).exec(this);
 			}
@@ -227,7 +210,7 @@ function saveUserCredentials(socket, data, cb) {
 				if (user.role < 11 && data.role === 11) {
 					return cb({message: 'The role of the super admin can not be assigned through the user management interface', error: true});
 				}
-				if (iAm.role === 10 && user.role < 10 && data.role > 9) {
+				if (iAm.user.role === 10 && user.role < 10 && data.role > 9) {
 					return cb({message: 'Only super administrators can assign other administrators', error: true});
 				}
 			}
@@ -243,8 +226,8 @@ function saveUserCredentials(socket, data, cb) {
 						if (err) {
 							return cb({message: err.message, error: true});
 						}
-						if (itsOnline) {
-							_session.regetUser(user, false, null, function (err) {
+						if (userObjOnline) {
+							_session.regetUser(userObjOnline, false, null, function (err) {
 								if (err) {
 									return cb({message: err.message, error: true});
 								}
@@ -274,8 +257,8 @@ function saveUserCredentials(socket, data, cb) {
 						return cb({message: err.message, error: true});
 					}
 
-					if (itsOnline) {
-						_session.emitUser(login);
+					if (userObjOnline) {
+						_session.emitUser(userObjOnline);
 					}
 					cb({message: 'ok', saved: true});
 				});
@@ -296,24 +279,26 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('saveNews', function (data) {
+			if (!hs.usObj.isAdmin) {
+				return result ({message: msg.deny, error: true});
+			}
 			if (data.cid) {
-				saveNews(socket, data, function (resultData) {
-					socket.emit('saveNewsResult', resultData);
-				});
+				saveNews(hs.usObj, data, result);
 			} else {
-				createNews(socket, data, function (resultData) {
-					socket.emit('saveNewsResult', resultData);
-				});
+				createNews(hs.usObj, data, result);
+			}
+			function result (resultData) {
+				socket.emit('saveNewsResult', resultData);
 			}
 		});
 
 		socket.on('getOnlineStat', function () {
-			getOnlineStat(socket, function (err, resultData) {
+			getOnlineStat(hs.usObj, function (err, resultData) {
 				socket.emit('takeOnlineStat', resultData);
 			});
 		});
 		socket.on('saveUserCredentials', function (data) {
-			saveUserCredentials(socket, data, function (resultData) {
+			saveUserCredentials(hs.usObj, data, function (resultData) {
 				socket.emit('saveUserCredentialsResult', resultData);
 			});
 		});

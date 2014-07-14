@@ -188,7 +188,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveIndexNews');
 		},
 		getPhotos: function (cb, ctx, scroll) {
@@ -207,7 +207,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('givePhotosPublicIndex');
 		},
 		getPhotosNoGeo: function (cb, ctx, scroll) {
@@ -226,7 +226,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('givePhotosPublicNoGeoIndex');
 		},
 		getPhotosToApprove: function (cb, ctx, scroll) {
@@ -245,7 +245,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('givePhotosForApprove', {skip: 0, limit: 42});
 		},
 		getRatings: function (cb, ctx, scroll) {
@@ -276,7 +276,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveRatings', {limit: 24});
 		},
 		getStats: function (cb, ctx, scroll) {
@@ -295,7 +295,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx, success, scroll);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveStats');
 		},
 

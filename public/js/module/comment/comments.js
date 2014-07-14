@@ -830,7 +830,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					if (msg) {
 						window.noty({text: msg, type: 'info', layout: 'center', timeout: 2200, force: true});
 					}
-				}.bind(that));
+				}, that);
 				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
 			}, this);
 		},
@@ -1170,7 +1170,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}
 
 				cb(result);
-			}.bind(this));
+			}, this);
 			socket.emit('createComment', dataSend);
 		},
 		sendUpdate: function (comment, dataSend, cb, $cadd) {
@@ -1219,7 +1219,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				}
 
 				cb(result);
-			}.bind(this));
+			}, this);
 			socket.emit('updateComment', dataSend);
 		},
 		fragClick: function (data, event) {
@@ -1290,7 +1290,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.parentModule.setNoComments(data.nocomments);
 					this.nocomments(data.nocomments);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('setNoComments', {cid: this.cid, type: this.type, val: !this.nocomments()});
 		},
 

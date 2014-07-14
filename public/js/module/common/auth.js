@@ -1,18 +1,16 @@
-/*global define:true, ga:true*/
-define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'KeyHandler', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, keyTarget, jade) {
+define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'model/storage', 'model/User', 'text!tpl/common/auth.jade', 'css!style/common/auth'], function (_, $, Utils, socket, P, ko, Cliche, globalVM, storage, User, jade) {
 	'use strict';
+
+	//Обновляет куки сессии переданным объектом с сервера
+	function updateCookie(obj) {
+		Utils.cookie.setItem(obj.key, obj.value, obj['max-age'], obj.path, obj.domain, null);
+	}
 
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			this.loggedIn = ko.observable(false);
-
-			if (P.iAm) {
-				this.processMe(P.iAm);
-				delete P.iAm;
-			} else {
-				this.iAm = User.vm();
-			}
+			this.loggedIn = ko.observable(!!init.registered);
+			this.processMe({user: init.user});
 
 			this.mode = ko.observable('');
 			this.working = ko.observable(false);
@@ -24,7 +22,6 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			this.avatar = ko.observable('');
 			this.name = ko.observable('');
 
-
 			this.msg = ko.observable('');
 			this.caps = ko.observable(false);
 
@@ -33,10 +30,21 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			}, this);
 
 			//При изменении данных профиля на сервере, обновляем его на клиенте
-			socket.on('youAre', this.processMe.bind(this));
+			socket.on('youAre', this.processMe, this);
+			//Подписываемся на команды с сервера
+			socket.on('command', this.commandHandler, this);
 
-			socket.on('command', this.commandHandler.bind(this));
-			socket.on('connectData', this.reconnectHandler.bind(this));
+			//Подписываемся на получение новых первоначальных данных (пользователя, куки), на случай, если пока он был оффлайн, пользователь изменился
+			socket.on('takeInitData', function (data) {
+				if (data) {
+					if (_.isObject(data.cook)) {
+						updateCookie(data.cook); //Обновляем куки
+					}
+					if (_.isObject(data.u)) {
+						this.processMe({user: data.u, registered: data.registered});
+					}
+				}
+			}, this);
 			ko.applyBindings(globalVM, this.$dom[0]);
 		},
 		show: function (mode, callback, ctx) {
@@ -52,16 +60,9 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			globalVM.func.showContainer(this.$container, function () {
 				this.showing = true;
 				this.formFocus();
-
-				keyTarget.push({
-					id: 'authOverlay',
-					stopFurther: false,
-					onEsc: this.formClose.bind(this)
-				});
 			}, this);
 		},
 		hide: function () {
-			keyTarget.pop();
 			this.formReset();
 			globalVM.func.hideContainer(this.$container);
 			this.showing = false;
@@ -125,21 +126,21 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 		setMessage: function (text, type) {
 			var css = '';
 			switch (type) {
-			case 'error':
-				css = 'text-danger';
-				break;
-			case 'warn':
-				css = 'text-warning';
-				break;
-			case 'info':
-				css = 'text-info';
-				break;
-			case 'success':
-				css = 'text-success';
-				break;
-			default:
-				css = 'muted';
-				break;
+				case 'error':
+					css = 'text-danger';
+					break;
+				case 'warn':
+					css = 'text-warning';
+					break;
+				case 'info':
+					css = 'text-info';
+					break;
+				case 'success':
+					css = 'text-success';
+					break;
+				default:
+					css = 'muted';
+					break;
 			}
 
 			this.msg(text);
@@ -158,7 +159,9 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				_.forEach(data, function (command) {
 					if (command.name === 'clearCookie') {
-						Utils.cookie.removeItem('pastvu.sid', '/');
+						Utils.cookie.removeItem('past.sid', '/');
+					} else if (command.name === 'updateCookie' && _.isObject(command.data)) {
+						updateCookie(command.data);
 					} else if (command.name === 'location') {
 						if (command.path) {
 							document.location = command.path;
@@ -182,7 +185,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				if (this.mode() === 'login') {
 					this.doLogin(
-						$.extend(formData, {'remember': $form[0].querySelector('#remember').classList.contains('checked')}),
+						formData,
 						function (data) {
 							if (data.error) {
 								this.setMessage(data.message, 'error');
@@ -263,7 +266,7 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 									//для которого восстанавливали пароль
 									if (!this.loggedIn()) {
 										this.doLogin(
-											{login: this.login(), pass: formData.pass, remember: true},
+											{login: this.login(), pass: formData.pass},
 											function (data) {
 												if (!data.error) {
 													ga('send', 'event', 'auth', 'login', 'auth login success');
@@ -352,27 +355,28 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			}
 		},
 
-		//Обновляет пользователя при реконнекте, на случай, если пока он был оффлайн, пользователь изменился
-		reconnectHandler: function (data) {
-			console.log('user reconnect');
-			if (Utils.isType('object', data.u)) {
-				this.processMe(data.u);
-			}
-		},
-		//Обновление модели залогиненного пользователя с сервера при логине или emitUser
-		processMe: function (user) {
-			if (user) {
-				user.online = true; //Залогиненный пользователь всегда онлайн
-				this.iAm = User.vm(user, this.iAm);
+		//Обновление модели пользователя с сервера при логине или emitUser
+		processMe: function (usObj) {
+			var user = usObj.user,
+				loggedIn = !!usObj.registered || this.loggedIn(),
+				storageUser = storage.users[user.login];
 
-				if (this.loggedIn()) {
-					storage.users[user.login].origin = user;
-					this.iAm._v_(this.iAm._v_() + 1);
-				} else {
-					storage.users[user.login] = {origin: user, vm: this.iAm};
-					this.loggedIn(true);
-				}
+			user.online = loggedIn; //Залогиненный пользователь всегда онлайн
+			if (this.iAm) {
+				user._v_ = this.iAm._v_(); //Оригинальную версию надо сохранить, в противном случае подставится 0
 			}
+			this.iAm = User.vm(user, this.iAm);
+
+			if (!storageUser) {
+				storage.users[user.login] = {origin: user, vm: this.iAm};
+			} else {
+				storageUser.origin = user;
+			}
+			if (loggedIn) {
+				this.loggedIn(loggedIn); //loggedIn должен изменятся после обновления storage, так как на него есть зависимые подписки
+			}
+			//Поднимаем версию пользователя, с помощью которой есть подписки на обновление iAm
+			this.iAm._v_(user._v_ + 1);
 		},
 		reloadMe: function () {
 			socket.emit('whoAmI');
@@ -381,13 +385,13 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 			try {
 				socket.once('loginResult', function (json) {
 					if (!json.error && json.youAre) {
-						this.processMe(json.youAre);
+						this.processMe({user: json.youAre, registered: true});
 					}
 
 					if (Utils.isType('function', callback)) {
 						callback(json);
 					}
-				}.bind(this));
+				}, this);
 				socket.emit('loginRequest', data);
 			} catch (e) {
 				if (Utils.isType('function', callback)) {
@@ -395,23 +399,32 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'knockout', 'm/_mo
 				}
 			}
 		},
-		doLogout: function (callback) {
-			ga('send', 'event', 'auth', 'logout');
-			try {
-				socket.once('logoutCommand', function (json) {
-					if (json.error) {
-						console.log('Logout error: ' + json.message);
-					} else {
-						location.reload();
-					}
-				});
-				socket.emit('logoutRequest');
-			} catch (e) {
-				if (Utils.isType('function', callback)) {
-					callback(e.message);
+		doLogout: (function () {
+			var logouting;
+			return function (callback) {
+				if (logouting) {
+					return;
 				}
-			}
-		},
+				logouting = true;
+				ga('send', 'event', 'auth', 'logout');
+				try {
+					socket.once('logoutCommand', function (data) {
+						if (data.error) {
+							window.noty({text: data.noconnect ? data.message : 'При попытке выхода возникла ошибка', type: 'error', layout: 'center', timeout: 4000, force: true});
+							console.log('Logout error: ' + data.message);
+						} else {
+							location.reload();
+						}
+						logouting = false;
+					});
+					socket.emit('logoutRequest');
+				} catch (e) {
+					if (Utils.isType('function', callback)) {
+						callback(e.message);
+					}
+				}
+			};
+		}()),
 		doRegister: function (data, callback) {
 			try {
 				socket.once('registerResult', function (json) {

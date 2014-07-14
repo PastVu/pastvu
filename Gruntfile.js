@@ -107,9 +107,8 @@ module.exports = function (grunt) {
 					}
 				},
 				files: [
-					{expand: true, cwd: targetDir + 'views/', ext: 'Main.html', src: 'app.jade', dest: targetDir + 'views/html/'},
-					{expand: true, cwd: targetDir + 'views/', ext: 'Admin.html', src: 'app.jade', dest: targetDir + 'views/html/'},
-					{expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status/*.jade', dest: targetDir + 'views/html/'}
+					{expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status/404.jade', dest: targetDir + 'views/html/'}/*,
+					 {expand: true, cwd: targetDir + 'views/', ext: '.html', src: 'status*//*.jade', dest: targetDir + 'views/html/'}*/
 				]
 			}
 		},

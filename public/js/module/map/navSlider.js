@@ -1,4 +1,3 @@
-/*global requirejs:true, require:true, define:true*/
 define([
 	'jquery', 'underscore', 'Browser', 'Utils', 'Params', 'knockout', 'm/_moduleCliche', 'globalVM', 'renderer',
 	'leaflet', 'lib/leaflet/extends/L.neoMap', 'Locations', '../../EventTypes',

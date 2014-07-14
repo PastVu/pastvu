@@ -7,31 +7,34 @@
 			//ko if: auth.loggedIn()
 			a#toUpload.labledIco.strokeAfter(href="/photoUpload")
 				.glyphicon.glyphicon-cloud-upload
-				.text(data-bind="text: $root.i18n.image_upload()")
+				.text Загрузить фото
 			// /ko
 			a#gallery.labledIco.strokeAfter(href="/ps")
 				.glyphicon.glyphicon-picture
-				.text(data-bind="text: $root.i18n.gallery()")
+				.text Галерея
 			//ko if: auth.loggedIn()
 			//ko if: can.adm()
 			a#toAdmin.labledIco.strokeAfter(href="/admin", target="_blank")
 				.glyphicon.glyphicon-cog
-				.text(data-bind="text: $root.i18n.admin()")
+				.text Админ
 			// /ko
 			a#toProfile.labledIco(data-bind="attr:{href: '/u/'+auth.iAm.login()}")
 				.ico.fringe(data-bind="style: {backgroundImage: 'url('+profileAvatar()+')'}")
 				.text(data-bind="text: profile")
 			// /ko
-			#toRegister.labledIco(data-bind="style:{display: !auth.loggedIn() && registrationAllowed() ? '' : 'none'}, event:{click: function(data, evt){auth.show('reg')}}")
+			//ko if: !auth.loggedIn()
+			#toRegister.labledIco(data-bind="click: function(data, evt){auth.show('reg')}")
 				.ico
-				.text(data-bind="text: $root.i18n.register()")
-			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="style:{display: !auth.loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.show('login')}}")
-				.text(data-bind="text: $root.i18n.login()")
+				.text Регистрация
+			#toLogIn.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.show('login')}")
+				.text Вход
 				.ico
-			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="style:{display: auth.loggedIn() ? '' : 'none'}, event:{click: function(data, evt){auth.doLogout()}}")
-				.text(data-bind="text: $root.i18n.logout()")
+			// /ko
+			//ko if: auth.loggedIn()
+			#toLogOut.labledIco.strokeBefore.iconAfter(data-bind="click: function(data, evt){auth.doLogout()}")
+				.text Выход
 				.ico
+			// /ko
 	//ko if: msg().length
-	#appMsg(data-bind="css: msgCss()")
-		span(data-bind="text: msg()")
+	#appMsg(data-bind="css: msgCss()"): span(data-bind="text: msg()")
 	// /ko

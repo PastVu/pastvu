@@ -5,7 +5,6 @@ var path = require('path'),
 	imageMagick = require('imagemagick'),
 	mkdirp = require('mkdirp'),
 	dbNative,
-	Settings,
 	User,
 	Photo,
 	PhotoConveyer,
@@ -19,8 +18,6 @@ var path = require('path'),
 	log4js = require('log4js'),
 	logger = log4js.getLogger("photoConverter.js"),
 	appEnv = {},
-
-	photoController = require('./photo.js'),
 
 	conveyerEnabled = true,
 	conveyerLength = 0,
@@ -284,7 +281,7 @@ module.exports.loadController = function (app, db, io) {
 			}
 
 			socket.on('statConveyer', function () {
-				if (!hs.session.user) {
+				if (!hs.usObj.registered) {
 					result({message: 'Not authorized for statConveyer', error: true});
 					return;
 				}
@@ -413,7 +410,7 @@ module.exports.addPhotosAll = function (data, cb) {
 /**
  * Удаление фотографий из конвейера конвертаций
  * @param data Массив cid
- * @param cb Коллбэк успешности удаления
+ * @param {function} [cb] Коллбэк успешности удаления
  */
 module.exports.removePhotos = function (data, cb) {
 	PhotoConveyer.remove({cid: {$in: data}}, function (err, docs) {
