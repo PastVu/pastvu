@@ -3,6 +3,7 @@
 var fs = require('fs'),
 	path = require('path'),
 	jade = require('jade'),
+	_ = require('lodash'),
 	_session = require('./_session.js'),
 	User,
 	Counter,
@@ -27,9 +28,10 @@ var fs = require('fs'),
 	msg = {
 		deny: 'You do not have permission for this action'
 	},
-	regionController = require('./region.js');
+	regionController = require('./region.js'),
 
-var logger = log4js.getLogger("auth.js");
+	logger = log4js.getLogger("auth.js"),
+	loggerApp = log4js.getLogger("app.js");
 moment.lang('ru');
 
 //Вход в систему
@@ -48,7 +50,8 @@ function login(socket, data, cb) {
 
 	User.getAuthenticated(data.login, data.pass, function (err, user, reason) {
 		if (err) {
-			return cb({message: err && err.message, error: true});
+			logger.error('Auth login User.getAuthenticated: ', err);
+			return cb({message: 'Ошибка авторизации', error: true});
 		}
 
 		//Если есть пользователь, значит проверка успешна
@@ -56,6 +59,7 @@ function login(socket, data, cb) {
 			//Передаем пользователя в сессию
 			_session.loginUser(socket, user, data, function (err, session, userPlain) {
 				if (err) {
+					logger.error('Auth login _session.loginUser: ', err);
 					cb({message: err.message, error: true});
 				} else {
 					cb({message: "Success login", youAre: userPlain});
@@ -78,11 +82,11 @@ function login(socket, data, cb) {
 }
 
 //Регистрация
+var registerPublicError = {message: 'Ошибка регистрации', error: true};
 function register(data, cb) {
 	var error = '',
 		success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
 		confirmKey = '';
-	data.email = data.email.toLowerCase();
 
 	if (!data.login) {
 		error += 'Заполните имя пользователя. '; //'Fill in the login field. '
@@ -94,6 +98,8 @@ function register(data, cb) {
 	if (!data.email) {
 		error += 'Fill in the e-mail field. ';
 	}
+	data.email = data.email.toLowerCase();
+
 	if (!data.pass) {
 		error += 'Fill in the password field. ';
 	}
@@ -109,7 +115,8 @@ function register(data, cb) {
 		{email: data.email}
 	]}, function (err, user) {
 		if (err) {
-			return cb({message: err, error: true});
+			logger.error('Auth register User.findOne: ', err);
+			return cb({message: 'Ошибка регистрации', error: true});
 		}
 		if (user) {
 			if (user.login.toLowerCase() === data.login.toLowerCase()) {
@@ -127,7 +134,8 @@ function register(data, cb) {
 			},
 			function createUser(err, count) {
 				if (err || !count) {
-					return cb({message: err && err.message || 'Increment user counter error', error: true});
+					logger.error('Auth register increment user: ', err || 'Increment user counter error');
+					return cb(registerPublicError);
 				}
 				var regionHome = regionController.getRegionsArrFromCache([3]);
 				if (regionHome.length) {
@@ -149,7 +157,8 @@ function register(data, cb) {
 			},
 			function (err, user) {
 				if (err || !user) {
-					return cb({message: err && err.message || 'User save error', error: true});
+					logger.error('Auth register user save: ', err);
+					return cb(registerPublicError);
 				}
 				confirmKey = Utils.randomString(7);
 				new UserConfirm({key: confirmKey, user: user._id}).save(this);
@@ -158,7 +167,8 @@ function register(data, cb) {
 			function finish(err) {
 				if (err) {
 					User.remove({login: data.login});
-					return cb({message: err.message, error: true});
+					logger.error('Auth register UserConfirm save: ', err);
+					return cb(registerPublicError);
 				}
 				cb({message: success});
 
@@ -184,11 +194,12 @@ function register(data, cb) {
 }
 
 //Отправка на почту запроса на восстановление пароля
+var successPublic = {message: 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail'}, //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
+	recallPublicError = {message: 'Ошибка восстановления пароля', error: true};
 function recall(iAm, data, cb) {
-	var success = 'Запрос успешно отправлен. Для продолжения процедуры следуйте инструкциям, высланным на Ваш e-mail', //success = 'The data is successfully sent. To restore password, follow the instructions sent to Your e-mail',
-		confirmKey = '';
+	var confirmKey = '';
 
-	if (!Utils.isType('object', data) || !data.login) {
+	if (!_.isObject(data) || !data.login) {
 		return cb({message: 'Bad params', error: true});
 	}
 
@@ -200,8 +211,12 @@ function recall(iAm, data, cb) {
 			]}).exec(this);
 		},
 		function (err, user) {
-			if (err || !user) {
-				return cb({message: err && err.message || 'Пользователя с таким логином или e-mail не существует', error: true}); //'User with such login or e-mail does not exist'
+			if (err) {
+				logger.error('Auth recall User.findOne: ', err);
+				return cb(recallPublicError);
+			}
+			if (!user) {
+				return cb({message: 'Пользователя с таким логином или e-mail не существует', error: true}); //'User with such login or e-mail does not exist'
 			}
 			//Если залогинен и пытается восстановить не свой аккаунт, то проверяем что это админ
 			if (iAm.registered && iAm.user.login !== data.login && !iAm.isAdmin) {
@@ -217,15 +232,17 @@ function recall(iAm, data, cb) {
 		},
 		function (err) {
 			if (err) {
-				return cb({message: err.message, error: true});
+				logger.error('Auth recall UserConfirm.remove: ', err);
+				return cb(recallPublicError);
 			}
 			new UserConfirm({key: confirmKey, user: data._id}).save(this);
 		},
 		function finish(err) {
 			if (err) {
-				return cb({message: err.message, error: true});
+				logger.error('Auth recall UserConfirm.save: ', err);
+				return cb(recallPublicError);
 			}
-			cb({message: success});
+			cb({message: successPublic});
 
 			mailController.send(
 				{
@@ -247,6 +264,7 @@ function recall(iAm, data, cb) {
 }
 
 //Смена пароля по запросу восстановлния из почты
+var passChangeRecallPublicError = {message: 'Ошибка смены пароля', error: true};
 function passChangeRecall(iAm, data, cb) {
 	var error = '',
 		key = data.key;
@@ -265,8 +283,12 @@ function passChangeRecall(iAm, data, cb) {
 	}
 
 	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
-		if (err || !confirm || !confirm.user) {
-			return cb({message: err && err.message || 'Get confirm error', error: true});
+		if (err) {
+			logger.error('Auth passChangeRecall UserConfirm.findOne: ', err);
+			return cb(passChangeRecallPublicError);
+		}
+		if (!confirm || !confirm.user) {
+			return cb(passChangeRecallPublicError);
 		}
 		step(
 			function () {
@@ -287,7 +309,8 @@ function passChangeRecall(iAm, data, cb) {
 			},
 			function (err) {
 				if (err) {
-					return cb({message: err.message, error: true});
+					logger.error('Auth passChangeRecall user.save or confirm.remove: ', err);
+					return cb(passChangeRecallPublicError);
 				}
 
 				cb({message: 'Новый пароль сохранен успешно'});
@@ -297,6 +320,7 @@ function passChangeRecall(iAm, data, cb) {
 }
 
 //Смена пароля в настройках пользователя с указанием текущего пароля
+var passChangePublicError = {message: 'Ошибка смены пароля', error: true};
 function passChange(iAm, data, cb) {
 	var error = '';
 
@@ -315,14 +339,16 @@ function passChange(iAm, data, cb) {
 
 	iAm.user.checkPass(data.pass, function (err, isMatch) {
 		if (err) {
-			return cb({message: err.message, error: true});
+			logger.error('Auth passChange iAm.user.checkPass: ', err);
+			return cb(passChangePublicError);
 		}
 
 		if (isMatch) {
 			iAm.user.pass = data.passNew;
 			iAm.user.save(function (err) {
 				if (err) {
-					return cb({message: err && err.message || 'Save error', error: true});
+					logger.error('Auth passChange iAm.user.save: ', err);
+					return cb(passChangePublicError);
 				}
 				cb({message: 'Новый пароль установлен успешно'}); //'Password was changed successfully!'
 			});
@@ -333,6 +359,7 @@ function passChange(iAm, data, cb) {
 }
 
 //Проверка ключа confirm
+var checkConfirmPublicError = {message: 'Ошибка подтверждения ключа', error: true};
 function checkConfirm(data, cb) {
 	if (!data || !Utils.isType('string', data.key) || data.key.length < 7 || data.key.length > 8) {
 		cb({message: 'Bad params', error: true});
@@ -341,9 +368,12 @@ function checkConfirm(data, cb) {
 
 	var key = data.key;
 	UserConfirm.findOne({key: key}).populate('user').exec(function (err, confirm) {
-		if (err || !confirm || !confirm.user) {
-			cb({message: err && err.message || 'Get confirm error', error: true});
-			return;
+		if (err) {
+			logger.error('Auth checkConfirm UserConfirm.findOne: ', err);
+			return cb(checkConfirmPublicError);
+		}
+		if (!confirm || !confirm.user) {
+			cb({message: 'Переданного вами ключа не существует', error: true});
 		}
 		var user = confirm.user,
 			avatar;
@@ -358,8 +388,8 @@ function checkConfirm(data, cb) {
 				},
 				function (err) {
 					if (err) {
-						cb({message: err.message, error: true});
-						return;
+						logger.error('Auth checkConfirm confirm.remove: ', err);
+						return cb(checkConfirmPublicError);
 					}
 
 					cb({message: 'Спасибо, регистрация подтверждена! Теперь вы можете войти в систему, используя ваш логин и пароль', type: 'noty'});
@@ -391,13 +421,13 @@ module.exports.loadController = function (a, db, io) {
 
 	fs.readFile(path.normalize('./views/mail/registration.jade'), 'utf-8', function (err, data) {
 		if (err) {
-			return logger.error('Notice jade read error: ' + err.message);
+			return loggerApp.error('Notice jade read error: ' + err.message);
 		}
 		regTpl = jade.compile(data, {filename: path.normalize('./views/mail/registration.jade'), pretty: false});
 	});
 	fs.readFile(path.normalize('./views/mail/recall.jade'), 'utf-8', function (err, data) {
 		if (err) {
-			return logger.error('Notice jade read error: ' + err.message);
+			return loggerApp.error('Notice jade read error: ' + err.message);
 		}
 		recallTpl = jade.compile(data, {filename: path.normalize('./views/mail/recall.jade'), pretty: false});
 	});
