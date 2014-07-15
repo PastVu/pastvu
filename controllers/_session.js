@@ -843,6 +843,7 @@ module.exports.usId = usId;
 module.exports.usSid = usSid;
 module.exports.sessConnected = sessConnected;
 module.exports.sessWaitingConnect = sessWaitingConnect;
+module.exports.sessWaitingSelect = sessWaitingSelect;
 module.exports.regetUser = regetUser;
 module.exports.regetUsers = regetUsers;
 module.exports.getPlainUser = getPlainUser;

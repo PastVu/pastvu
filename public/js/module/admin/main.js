@@ -21,7 +21,9 @@ define([
 				all: 0, users: 0,
 				sessUC: 0, sessUZC: 0, sessUNC: 0, sessAC: 0, sessAZC: 0, sessANC: 0,
 				sessWCUC: 0, sessWCAC: 0,
-				sockUC: 0, sockAC: 0
+				sockUC: 0, sockAC: 0,
+				сusSid: 0, сusLogin: 0, сusId: 0,
+				сsessConnected: 0, сsessWaitingConnect: 0, сsessWaitingSelect: 0
 			});
 			this.headers = ko.observableArray();
 			this.headersWC = ko.observableArray();

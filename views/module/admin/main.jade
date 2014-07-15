@@ -33,6 +33,24 @@
 			| /
 			.rate(data-bind="text: (onlines.sockUC() + onlines.sockAC())")
 		span.stateDesc Активных соединений авторизованных/анонимных/всего
+	div
+		span.stateDesc Хэши объектов пользователя в памяти:&nbsp;
+		span.stateRate
+			| usSid:
+			.rate(data-bind="text: ' '+ onlines.cusSid()")
+			| , usLogin:
+			.rate(data-bind="text: ' '+ onlines.cusLogin()")
+			| , usId:
+			.rate(data-bind="text: ' '+ onlines.cusId()")
+	div
+		span.stateDesc Хэши сессий в памяти:&nbsp;
+		span.stateRate
+			| sessConnected:
+			.rate(data-bind="text: ' '+ onlines.csessConnected()")
+			| , sessWaitingConnect:
+			.rate(data-bind="text: ' '+ onlines.csessWaitingConnect()")
+			| , sessWaitingSelect:
+			.rate(data-bind="text: ' '+ onlines.csessWaitingSelect()")
 	.desc
 		strong Активная сессия
 		|  - один браузер клиента с открытым pastvu хотябы на одной вкладке. Если есть с нулем соединений, значит закрытие соединения не очистило сессию (норма по нулям). Если есть без соединения, значит сессия проскочила в активную без установки реального соединения (норма по нулям).

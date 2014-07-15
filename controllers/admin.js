@@ -170,7 +170,14 @@ function getOnlineStat(iAm, cb) {
 		sessWCNCHeaders: sessWCNoSockHeaders,
 
 		sockUC: socketUserCount,
-		sockAC: socketAnonymCount
+		sockAC: socketAnonymCount,
+
+		cusSid: Utils.getObjectPropertyLength(_session.usSid),
+		cusLogin: usersCount,
+		cusId: Utils.getObjectPropertyLength(_session.usId),
+		csessConnected: Utils.getObjectPropertyLength(_session.sessConnected),
+		csessWaitingConnect: Utils.getObjectPropertyLength(_session.sessWaitingConnect),
+		csessWaitingSelect: Utils.getObjectPropertyLength(_session.sessWaitingSelect)
 	});
 }
 
