@@ -213,6 +213,7 @@ var core = {
 function commentsTreeBuildAnonym(comments, usersHash) {
 	var i = 0,
 		len = comments.length,
+		user,
 		hash = {},
 		comment,
 		commentParent,
@@ -220,7 +221,12 @@ function commentsTreeBuildAnonym(comments, usersHash) {
 
 	for (; i < len; i++) {
 		comment = comments[i];
-		comment.user = usersHash[String(comment.user)].login;
+		user = usersHash[String(comment.user)];
+		if (!user) {
+			logger.error('User for comment undefined. Comment userId: ' + String(comment.user) + ' Comment: ' + JSON.stringify(comment));
+		} else {
+			comment.user = user.login;
+		}
 		//Время отдаём в ms
 		comment.stamp = comment.stamp.getTime();
 		if (comment.lastChanged !== undefined) {

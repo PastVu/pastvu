@@ -9,6 +9,7 @@ var app,
 	_ = require('lodash'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
+	logger = require('log4js').getLogger("session"),
 
 	settings = require('./settings.js'),
 	regionController = require('./region.js'),
@@ -130,17 +131,17 @@ function userObjectAddSession(session, cb) {
 		if (registered) {
 			usObj.registered = true;
 			usLogin[user.login] = usId[user._id] = usObj;
-			console.log('Create us hash:', user.login);
-		} //else {console.log('Create anonym hash:', session.key);}
+			logger.info('Create us hash:', user.login);
+		} //else {logger.info('Create anonym hash:', session.key);}
 	} else {
 		if (registered) {
 			//Если пользователь уже был в хеше пользователей, т.е. залогинен в другом браузере,
 			//вставляем в usSid по ключу текущей сессии существующий usObj и присваиваем текущей сессии существующего пользователя
 			usSid[session.key] = usObj;
 			user = session.user = usObj.user;
-			console.log('Add new session to us hash:', user.login);
+			logger.info('Add new session to us hash:', user.login);
 		} else {
-			console.warn('Anonym trying to add new session?! Key: ' + session.key);
+			logger.warn('Anonym trying to add new session?! Key: ' + session.key);
 		}
 	}
 
@@ -235,21 +236,21 @@ function sessionFromHashes(usObj, session, logPrefix) {
 	someCountPrev = Object.keys(usSid).length;
 	delete usSid[sessionKey];
 	someCountNew = Object.keys(usSid).length;
-	//console.log('Delete session from usSid', someCountNew);
+	//logger.info('Delete session from usSid', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
-		console.log(logPrefix, 'WARN-Session from usSid not removed (' + sessionKey + ')', userKey);
+		logger.warn(logPrefix, 'Session from usSid not removed (' + sessionKey + ')', userKey);
 	}
 
 	someCountPrev = Object.keys(usObj.sessions).length;
 	delete usObj.sessions[sessionKey];
 	someCountNew = Object.keys(usObj.sessions).length;
-	//console.log('Delete session from usObj.sessions', someCountNew);
+	//logger.info('Delete session from usObj.sessions', someCountNew);
 	if (someCountNew !== someCountPrev - 1) {
-		console.log(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
+		logger.warn(logPrefix, 'WARN-Session from usObj not removed (' + sessionKey + ')', userKey);
 	}
 
 	if (!someCountNew && usObj.registered) {
-		//console.log('Delete user from hashes', usObj.user.login);
+		//logger.info('Delete user from hashes', usObj.user.login);
 		//Если сессий у зарегистрированного пользователя не осталось, убираем usObj из хеша пользователей (из usSid уже должно было убраться)
 		delete usLogin[usObj.user.login];
 		delete usId[usObj.user._id];
@@ -339,7 +340,7 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 	}
 	User.findOne({login: usObj.user.login}, function (err, user) {
 		if (err || !user) {
-			console.log('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
+			logger.error('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
 			if (cb) {
 				cb(err || {message: 'No such user for reget'});
 			}
@@ -353,7 +354,7 @@ function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
 
 		userObjectTreatUser(usObj, function (err) {
 			if (err || !user) {
-				console.log('Error while treating regeted user (' + usObj.user.login + ')', err && err.message || 'Не могу выбрать зависимости пользователя');
+				logger.error('Error while treating regeted user (' + usObj.user.login + ')', err && err.message || 'Не могу выбрать зависимости пользователя');
 				if (cb) {
 					cb(err || {message: 'Не могу выбрать зависимости пользователя'});
 				}
@@ -433,7 +434,7 @@ function loginUser(socket, user, data, cb) {
 					//Переносим сокеты из старой в новую сессию
 					sessionNew.sockets = sessionOld.sockets;
 				} else {
-					console.warn('SessionOld have no sockets while login', user.login);
+					logger.warn('SessionOld have no sockets while login', user.login);
 				}
 				delete sessionOld.sockets;
 
@@ -499,7 +500,7 @@ function logoutUser(socket, cb) {
 				//Переносим сокеты из старой в новую сессию
 				sessionNew.sockets = sessionOld.sockets;
 			} else {
-				console.warn('SessionOld have no sockets while logout', user.login);
+				logger.warn('SessionOld have no sockets while logout', user.login);
 			}
 			delete sessionOld.sockets;
 
@@ -715,16 +716,16 @@ module.exports.handleSocket = (function () {
 			someCountNew,
 			user = usObj.user;
 
-		//console.log('DISconnection');
+		//logger.info('DISconnection');
 		delete session.sockets[socket.id]; //Удаляем сокет из сесии
 
 		someCountNew = Object.keys(session.sockets).length;
 		if (someCountNew !== someCountPrev - 1) {
-			console.log('WARN-Socket not removed (' + socket.id + ')', user && user.login);
+			logger.warn('Socket not removed (' + socket.id + ')', user && user.login);
 		}
 
 		if (!someCountNew) {
-			//console.log('Delete Sess');
+			//logger.info('Delete Sess');
 			//Если для этой сессии не осталось соединений, убираем сессию из хеша сессий
 			sessionFromHashes(usObj, session, 'onSocketDisconnection');
 		}
@@ -770,9 +771,9 @@ var checkSessWaitingConnect = (function () {
 		var expiredFrontier = Date.now() - sessWaitingPeriod,
 			keys = Object.keys(sessWaitingConnect),
 			session,
-			i;
+			i = keys.length;
 
-		for (i = keys.length; i--;) {
+		while (i--) {
 			session = sessWaitingConnect[keys[i]];
 
 			if (session && session.stamp <= expiredFrontier) {
@@ -795,9 +796,9 @@ var checkExpiredSessions = (function () {
 	function procedure() {
 		dbNative.eval('function (frontierDate) {archiveExpiredSessions(frontierDate);}', [new Date() - SESSION_SHELF_LIFE], {nolock: true}, function (err, ret) {
 			if (err || !ret) {
-				console.log('archiveExpiredSessions error');
+				logger.error('archiveExpiredSessions error: ', err);
 			} else {
-				console.log(ret.count, ' sessions moved to archive');
+				logger.info(ret.count, ' sessions moved to archive');
 			}
 			if (ret && Array.isArray(ret.keys)) {
 				//Проверяем, если какая-либо из отправленных в архив сессий находится в памяти (хешах), убираем из памяти

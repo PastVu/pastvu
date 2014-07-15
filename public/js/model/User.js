@@ -1,4 +1,3 @@
-/*global define:true*/
 define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params', 'model/Region'], function ($, _, Utils, ko, ko_mapping, P, Region) {
 	'use strict';
 
