@@ -89,6 +89,10 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
+if (land === 'dev') {
+	//В dev выводим все логи также в консоль
+	log4js.addAppender(log4js.appenders.console());
+}
 var logger = log4js.getLogger('app.js'),
 	logger404 = log4js.getLogger("404.js");
 

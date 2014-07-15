@@ -70,6 +70,10 @@ var confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.js
 console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
+if (land === 'dev') {
+	//В dev выводим все логи также в консоль
+	log4js.addAppender(log4js.appenders.console());
+}
 var logger = log4js.getLogger('api.js');
 
 logger.info('~~~ API');

@@ -1,6 +1,7 @@
 'use strict';
 
 var Utils = require('../commons/Utils.js'),
+	logger = log4js.getLogger('api.js'),
 	logController = require('./apilog.js'),
 	core,
 	apps = {

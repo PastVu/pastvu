@@ -1,43 +1,52 @@
 {
+	"replaceConsole": true,
 	"appenders": [
 		{
 			"type": "file",
+			"filename": "all.log",
+			"maxLogSize": 10485760,
+			"backups": 3
+		},
+		{
+			"type": "file",
 			"filename": "app.log",
-			"maxLogSize": 524288,
+			"maxLogSize": 1048576,
 			"backups": 2,
-			"pollInterval": 10,
 			"category": ["app.js", "systemjs.js"]
 		},
 		{
 			"type": "file",
-			"filename": "common.log",
-			"maxLogSize": 524288,
+			"filename": "session.log",
+			"maxLogSize": 1048576,
 			"backups": 2,
-			"pollInterval": 15,
-			"category": ["console", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js"]
+			"category": ["session", "auth.js"]
+		},
+		{
+			"type": "file",
+			"filename": "common.log",
+			"maxLogSize": 1048576,
+			"backups": 2,
+			"category": ["index.js", "profile.js", "photo.js", "photoCluster.js"]
 		},
 		{
 			"type": "file",
 			"filename": "region.log",
 			"maxLogSize": 524288,
 			"backups": 1,
-			"pollInterval": 15,
 			"category": ["region.js"]
 		},
 		{
 			"type": "file",
 			"filename": "404.log",
-			"maxLogSize": 524288,
-			"backups": 1,
-			"pollInterval": 10,
+			"maxLogSize": 1048576,
+			"backups": 2,
 			"category": ["404.js"]
 		},
 		{
 			"type": "file",
 			"filename": "error.log",
-			"maxLogSize": 524288,
-			"backups": 1,
-			"pollInterval": 10,
+			"maxLogSize": 1048576,
+			"backups": 2,
 			"category": ["error.js"]
 		},
 		{
@@ -45,37 +54,28 @@
 			"filename": "photoConverter.log",
 			"maxLogSize": 524288,
 			"backups": 2,
-			"pollInterval": 15,
 			"category": ["photoConverter.js"]
 		},
 		{
 			"type": "file",
 			"filename": "uploader.log",
-			"maxLogSize": 524288,
+			"maxLogSize": 1048576,
 			"backups": 0,
-			"pollInterval": 15,
 			"category": ["uploader.js"]
 		},
 		{
 			"type": "file",
 			"filename": "subscriber.log",
-			"maxLogSize": 524288,
+			"maxLogSize": 1048576,
 			"backups": 1,
-			"pollInterval": 15,
 			"category": ["subscr.js"]
 		},
 		{
 			"type": "file",
 			"filename": "api.log",
-			"maxLogSize": 524288,
-			"backups": 1,
-			"pollInterval": 15,
+			"maxLogSize": 1048576,
+			"backups": 3,
 			"category": ["api.js"]
-		},
-		{
-			"type": "console",
-			"category": ["console", "app.js", "api.js", "uploader.js", "index.js", "profile.js", "auth.js", "photo.js", "photoCluster.js", "systemjs.js"]
 		}
-	],
-	"replaceConsole": true
+	]
 }
