@@ -31,9 +31,16 @@
 		{
 			"type": "file",
 			"filename": "region.log",
-			"maxLogSize": 524288,
+			"maxLogSize": 1048576,
 			"backups": 1,
 			"category": ["region.js"]
+		},
+		{
+			"type": "file",
+			"filename": "mail.log",
+			"maxLogSize": 1048576,
+			"backups": 1,
+			"category": ["mail.js"]
 		},
 		{
 			"type": "file",
