@@ -185,7 +185,8 @@ function register(data, cb) {
 							data: data,
 							confirmKey: confirmKey,
 							linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
-						})
+						}),
+						text: 'Перейдите по следующей ссылке: ' + appEnv.serverAddr.protocol + '://' + appEnv.serverAddr.host + '/confirm/' + confirmKey
 					}
 				);
 			}
@@ -242,7 +243,7 @@ function recall(iAm, data, cb) {
 				logger.error('Auth recall UserConfirm.save: ', err);
 				return cb(recallPublicError);
 			}
-			cb({message: successPublic});
+			cb(successPublic);
 
 			mailController.send(
 				{
@@ -256,7 +257,8 @@ function recall(iAm, data, cb) {
 						data: data,
 						confirmKey: confirmKey,
 						linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
-					})
+					}),
+					text: 'Перейдите по следующей ссылке: ' + appEnv.serverAddr.protocol + '://' + appEnv.serverAddr.host + '/confirm/' + confirmKey
 				}
 			);
 		}

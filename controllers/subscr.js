@@ -428,6 +428,7 @@ function sendUserNotice(userId, lastnoty, cb) {
 					}
 					var newsResult = [],
 						photosResult = [],
+						totalNewestComments = 0,
 						obj,
 						i;
 
@@ -437,12 +438,14 @@ function sendUserNotice(userId, lastnoty, cb) {
 					for (i = news.length; i--;) {
 						obj = news[i];
 						if (obj.brief && obj.brief.newest) {
+							totalNewestComments += obj.brief.newest;
 							newsResult.push(objProcess(obj));
 						}
 					}
 					for (i = photos.length; i--;) {
 						obj = photos[i];
 						if (obj.brief && obj.brief.newest) {
+							totalNewestComments += obj.brief.newest;
 							photosResult.push(objProcess(obj));
 						}
 					}
@@ -476,7 +479,8 @@ function sendUserNotice(userId, lastnoty, cb) {
 									user: user,
 									news: newsResult,
 									photos: photosResult
-								})
+								}),
+								text: totalNewestComments + (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' + (totalNewestComments < 5 ? 'комментария' : 'комментариев'))
 							},
 							finish
 						);
