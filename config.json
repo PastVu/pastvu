@@ -39,7 +39,8 @@
 
 	"mail": {
 		"type": "SMTP",
-		"service": "Gmail",
+		"service": "gmail",
+		"secure": true,
 		"host": "",
 		"port": 0,
 		"auth": {

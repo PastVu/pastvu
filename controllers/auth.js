@@ -373,7 +373,7 @@ function checkConfirm(data, cb) {
 			return cb(checkConfirmPublicError);
 		}
 		if (!confirm || !confirm.user) {
-			cb({message: 'Переданного вами ключа не существует', error: true});
+			return cb({message: 'Переданного вами ключа не существует', error: true});
 		}
 		var user = confirm.user,
 			avatar;
