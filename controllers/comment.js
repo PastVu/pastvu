@@ -989,11 +989,11 @@ function createComment(socket, data, cb) {
  * @param cb Коллбэк
  */
 function removeComment(socket, data, cb) {
-	var iAm = socket.handshake.session.user;
+	var iAm = socket.handshake.usObj;
 	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!Utils.isType('object', data) || !Number(data.cid) || !data.reason || (!Number(data.reason.key) && !data.reason.desc)) {
+	if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.key) && !data.reason.desc)) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),

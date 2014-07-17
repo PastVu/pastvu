@@ -46,7 +46,7 @@ module.exports.send = function send(options, callback) {
 
 	transport.sendMail(smtpobject, function (err, info) {
 			if (err) {
-				logger.error(err);
+				logger.error(err, info);
 			} else {
 				var accepted = info && info.accepted,
 					rejected = info && info.rejected;
