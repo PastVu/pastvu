@@ -7,10 +7,19 @@ define([
 	'underscore', 'jquery', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM',
 	'model/User', 'model/storage',
 	'text!tpl/admin/newsEdit.jade', 'css!style/admin/newsEdit',
-	'jquery-plugins/redactor/redactor', 'css!style/jquery/redactor/redactor',
+	'jquery-plugins/redactor/redactor.min', 'jquery-plugins/redactor/lang/ru', 'css!style/jquery/redactor/redactor',
 	'bs/ext/datetimepicker/datetimepicker'
 ], function (_, $, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, User, storage, jade) {
 	'use strict';
+
+	var redactorOptions = {
+		lang: 'ru',
+		buttons: [
+			'html', 'formatting', 'bold', 'italic', 'underline', 'deleted', 'unorderedlist', 'orderedlist',
+			'outdent', 'indent', 'image', 'video', 'file', 'table', 'link', 'alignment', '|',
+			'horizontalrule'
+		]
+	};
 
 	return Cliche.extend({
 		jade: jade,
@@ -32,7 +41,7 @@ define([
 				nocomments: false
 			});
 
-			this.$dom.find('textarea#newsPrimary').redactor();
+			this.$dom.find('textarea#newsPrimary').redactor(redactorOptions);
 			this.$dom.find('#newsPdate').datetimepicker({defaultDate: new Date()});
 
 			this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandler, this);
@@ -50,7 +59,7 @@ define([
 			this.showing = false;
 		},
 		localDestroy: function (destroy) {
-			this.$dom.find('textarea#newsPrimary').destroyEditor();
+			this.$dom.find('textarea#newsPrimarynewsPrimary').redactor('destroy');
 			this.$dom.find('#newsPdate').data('DateTimePicker').disable();
 			this.noticeOff();
 			this.tDateOff();
@@ -72,10 +81,10 @@ define([
 		},
 		//TODO: проверить флоу с переходом на другие новости
 		resetData: function () {
-			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
+			var primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject'),
 				pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
-			areaPrimary.setCode('<p></p>');
+			primaryRedactor.set(primaryRedactor.opts.emptyHtml);
 			pickerP.setDate(new Date());
 			this.noticeOff();
 			this.tDateOff();
@@ -91,11 +100,14 @@ define([
 			}, this.news);
 		},
 		fillData: function () {
-			var areaPrimary = this.$dom.find('textarea#newsPrimary'),
+			var primaryRedactor = this.$dom.find('textarea#newsPrimary').redactor('getObject'),
+				primaryTxt = this.news.txt(),
 				pickerP = this.$dom.find('#newsPdate').data('DateTimePicker');
 
 			pickerP.setDate(new Date(this.news.pdate() || Date.now()));
-			areaPrimary.setCode(this.news.txt() || '<p></p>');
+			if (primaryTxt) {
+				primaryRedactor.set(primaryTxt);
+			}
 			if (!!this.news.notice()) {
 				this.noticeOn();
 			} else {
@@ -119,13 +131,13 @@ define([
 		},
 		noticeOn: function () {
 			this.noticeExists(true);
-			this.$dom.find('textarea#newsNotice').redactor().setCode(this.news.notice());
+			this.$dom.find('textarea#newsNotice').redactor(redactorOptions).redactor('set', this.news.notice());
 		},
 		noticeOff: function () {
 			if (this.noticeExists()) {
-				var areaNotice = this.$dom.find('textarea#newsNotice');
-				this.news.notice(areaNotice.getCode());
-				areaNotice.destroyEditor();
+				var noticeRedactor = this.$dom.find('textarea#newsNotice').redactor('getObject');
+				this.news.notice(noticeRedactor.get());
+				noticeRedactor.destroy();
 				this.noticeExists(false);
 			}
 		},
@@ -172,13 +184,13 @@ define([
 			}
 
 			if (this.noticeExists()) {
-				saveData.notice = this.$dom.find('textarea#newsNotice').getCode();
+				saveData.notice = this.$dom.find('textarea#newsNotice').redactor('get');
 			} else {
 				delete saveData.notice;
 			}
 
 			saveData.pdate = this.$dom.find('#newsPdate').data('DateTimePicker').getDate().toDate();
-			saveData.txt = this.$dom.find('textarea#newsPrimary').getCode();
+			saveData.txt = this.$dom.find('textarea#newsPrimary').redactor('get');
 
 			socket.once('saveNewsResult', function (data) {
 				if (!data || data.error || !data.news) {

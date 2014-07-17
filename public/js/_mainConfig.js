@@ -23,9 +23,14 @@ requirejs.config({
 			],
 			exports: 'Highcharts'
 		},
-		'jquery-plugins/redactor/redactor': {
+		'jquery-plugins/redactor/redactor.min': {
 			deps: [
 				'jquery'
+			]
+		},
+		'jquery-plugins/redactor/lang/ru': {
+			deps: [
+				'jquery-plugins/redactor/redactor.min'
 			]
 		}
 	},
