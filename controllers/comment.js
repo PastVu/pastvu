@@ -1088,7 +1088,7 @@ function removeComment(socket, data, cb) {
 					}
 				}
 
-				if (canModerate && iAm.role) {
+				if (canModerate && iAm.user.role) {
 					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
 					delInfo.role = iAm.user.role;
 					if (iAm.isModerator && _.isNumber(canModerate)) {
