@@ -3,7 +3,7 @@
  * Utils
  * @author Klimashkin P.
  */
-define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends'], function ($, _, _s) {
+define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/plugins/extends'], function ($, _, _s, Uri) {
 	var Utils = {
 
 		/**
@@ -213,12 +213,11 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			loadImg.src = url;
 		},
 
-		//Парсинг url. Возвращает объект со свойствами как window.location
+		//Парсинг url через ahref. Возвращает объект со свойствами как window.location
 		parseUrl: (function () {
 			var a = document.createElement('a'),
 				ahrefProperties,
-				ahrefLen,
-				regexp;
+				ahrefLen;
 
 			a.href = location.href;
 			if (a.hostname) {
@@ -244,24 +243,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					return result;
 				};
 			} else {
-				//Разбирающий regexp. Работает только на полном url Пример: http://regex101.com/r/dR0qK8/2
-				regexp = /^((http[s]?|ftp):\/)?\/?([^:\/\s]+)(:([^\/]*))?((\/\w+)*\/)([\-\.A-Za-z0-9_]+[^#?\s]+)(\?([^#]*))?(#(.*))?$/;
-
-				return function (url) {
-					var matched = url.match(regexp);
-					return {
-						href: url,
-						protocol: matched[2] || '',
-						hostname: matched[3] || '',
-						port: matched[5] || '',
-						path: matched[6] || '/',
-						file: matched[8] || '',
-						pathname: (matched[6] || '/') + (matched[8] || ''),
-						search: matched[9] || '',
-						querystring: matched[10] || '',
-						hash: matched[11] || ''
-					};
-				};
+				console.error('Can\'t parse url with ahref');
 			}
 		}()),
 
