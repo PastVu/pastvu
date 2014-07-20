@@ -293,7 +293,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 					result = {};
 
 				if (queryStart > -1) {
-					query = url.substr(queryStart + 1, fragmentStart === -1 ? fragmentStart - queryStart - 1 : undefined);
+					query = url.substr(queryStart + 1, fragmentStart > -1 ? fragmentStart - queryStart - 1 : undefined);
 					if (query) {
 						query = query.split(sep);
 

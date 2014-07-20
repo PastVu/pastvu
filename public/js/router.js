@@ -63,7 +63,6 @@ define(['jquery', 'underscore', 'Utils', 'backbone', 'knockout', 'globalVM', 're
 			},
 			handlerWrapper: function (handler) {
 				handler.apply(null, Array.prototype.slice.call(arguments, 1));
-				router.routeChanged(location.pathname);
 			},
 
 			navigate: function (url, options) {
@@ -96,6 +95,7 @@ define(['jquery', 'underscore', 'Utils', 'backbone', 'knockout', 'globalVM', 're
 						}
 					}
 				});
+				router.routeChanged(location.href);
 			},
 			checkUrl: function (pathname) {
 				if (!pathname) {
