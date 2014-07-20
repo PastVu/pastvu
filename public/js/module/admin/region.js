@@ -201,7 +201,7 @@ define([
 			} else {
 				cid = Number(cid);
 				if (!cid) {
-					return globalVM.router.navigateToUrl('/admin/region');
+					return globalVM.router.navigate('/admin/region');
 				}
 				this.createMode(false);
 				this.getOneRegion(cid, function () {
@@ -569,7 +569,7 @@ define([
 
 					if (this.createMode()) {
 						//Если регион успешно создан, но переходим на его cid, и через роутер он нарисуется
-						globalVM.router.navigateToUrl('/admin/region/' + data.region.cid);
+						globalVM.router.navigate('/admin/region/' + data.region.cid);
 					} else {
 						this.fillData(data, needRedraw);
 					}

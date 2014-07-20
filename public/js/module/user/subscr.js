@@ -87,7 +87,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 				this.subscriptions.route = globalVM.router.routeChanged.subscribe(this.routeHandlerDebounced, this);
 				this.routeHandler();
 			} else {
-				globalVM.router.navigateToUrl('/u/' + this.u.login());
+				globalVM.router.navigate('/u/' + this.u.login());
 			}
 		},
 		show: function () {
@@ -118,11 +118,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 			if (!this.types[type]) {
 				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + page);
+					globalVM.router.navigate('/u/' + this.u.login() + '/subscriptions/' + page);
 				}.bind(this), 200);
 			} else if (this.binded && page > this.pageLast()) {
 				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/subscriptions/' + this.pageLast() + (type !== 'photo' ? '?type=' + type : ''));
+					globalVM.router.navigate('/u/' + this.u.login() + '/subscriptions/' + this.pageLast() + (type !== 'photo' ? '?type=' + type : ''));
 				}.bind(this), 200);
 			} else if (page !== this.page() || type !== this.type()) {
 				if (type !== this.type()) {

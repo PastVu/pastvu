@@ -84,7 +84,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 					this.show();
 				}, this);
 			} else {
-				globalVM.router.navigateToUrl('/u/' + this.u.login());
+				globalVM.router.navigate('/u/' + this.u.login());
 			}
 		},
 		show: function () {

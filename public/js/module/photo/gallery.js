@@ -402,11 +402,11 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			} else {
 				uri.deleteQueryParam('f');
 			}
-			globalVM.router.navigateToUrl(uri.toString());
+			globalVM.router.navigate(uri.toString());
 		},
 
 		feedSelect: function (feed) {
-			globalVM.router.navigateToUrl(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
+			globalVM.router.navigate(this.pageUrl() + (feed ? '/feed' : '') + this.pageQuery());
 		},
 		scrollActivate: function () {
 			if (!this.scrollActive) {
@@ -445,7 +445,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				if (this.page() > this.pageLast()) {
 					//Если вызванная страница больше максимальной, выходим и навигируемся на максимальную
 					return window.setTimeout(function () {
-						globalVM.router.navigateToUrl(this.pageUrl() + '/' + this.pageLast() + this.pageQuery());
+						globalVM.router.navigate(this.pageUrl() + '/' + this.pageLast() + this.pageQuery());
 					}.bind(this), 200);
 				}
 
@@ -623,7 +623,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 								if (this.page() > 1 || this.filter.origin) {
 									//Если в постраничном режиме не на первой странице или активен фильтр,
 									//то переходим на первую без фильтров
-									globalVM.router.navigateToUrl(this.pageUrl());
+									globalVM.router.navigate(this.pageUrl());
 								} else {
 									//Если с учетом добавленных текущие вылезут за лимит страницы, удаляем текущие
 									if (!this.feed() && this.photos().length + data.photos.length > this.limit) {
@@ -642,7 +642,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 		closeUpload: function () {
 			//Закрытие будет вызвано автоматиечски после срабатывания routeHandler
-			globalVM.router.navigateToUrl(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : '')) + this.pageQuery());
+			globalVM.router.navigate(this.pageUrl() + (this.feed() ? '/feed' : (this.page() > 1 ? '/' + this.page() : '')) + this.pageQuery());
 		},
 		destroyUpload: function () {
 			if (this.uploadVM) {

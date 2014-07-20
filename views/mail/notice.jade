@@ -2,7 +2,7 @@ mixin noticeLi(arr, path)
 	each val in arr
 		- usersLogin = Object.keys(val.brief.users)
 		li(style="margin-left: 10px;")
-			a(href=hosturl + path + val.cid + '?hl=comment-unread', target='_blank')= val.title
+			a(href=hosturl + path + val.cid + '?hl=comment-unread&utm_campaign=notification&utm_source=notify_letter&utm_medium=email', target='_blank')= val.title
 			div(style="margin-left: 13px;")
 				= val.briefFormat.newest
 				if val.briefFormat.unread

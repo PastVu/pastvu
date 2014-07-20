@@ -26,7 +26,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 
 			if (this.auth.iAm.role() < 10) {
-				globalVM.router.navigateToUrl('/u/' + this.u.login());
+				globalVM.router.navigate('/u/' + this.u.login());
 			}
 
 			this.role = ko.observable(String(this.u_origin.role));

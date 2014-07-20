@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель комментариев к объекту
  */
@@ -323,7 +322,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.subscr(subscrFlag);
 					ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('subscr', {cid: this.cid, type: this.type, do: !this.subscr()});
 		},
 
@@ -372,14 +371,13 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					this.activatorRecieveNotice.cb.call(this.activatorRecieveNotice.ctx || window);
 					delete this.activatorRecieveNotice;
 				}
-			}.bind(this));
+			}, this);
 			socket.emit('giveCommentsObj', {type: this.type, cid: this.cid});
 		},
 		renderComments: function (tree, tpl, changeHash) {
 			var usersHash = this.users,
 				commentsPlain = [],
-				commentsHash,
-				tplResult;
+				commentsHash;
 
 			if (changeHash) {
 				commentsHash = this.commentsHash = {};

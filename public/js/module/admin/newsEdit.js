@@ -198,7 +198,7 @@ define([
 				} else {
 					window.noty({text: 'Сохранено', type: 'success', layout: 'center', timeout: 1800, force: true});
 					if (this.createMode()) {
-						globalVM.router.navigateToUrl('/admin/news/edit/' + data.news.cid);
+						globalVM.router.navigate('/admin/news/edit/' + data.news.cid);
 					}
 				}
 			}, this);

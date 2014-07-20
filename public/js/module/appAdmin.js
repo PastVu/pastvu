@@ -4,10 +4,10 @@ require([
 	'Browser', 'Utils',
 	'socket!',
 	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
-	'globalVM', 'Params', 'renderer', 'RouteManager',
+	'globalVM', 'Params', 'renderer', 'router',
 	'text!tpl/appAdmin.jade', 'css!style/appAdmin',
 	'backbone.queryparams', 'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, RouteManager, html) {
+], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, router, html) {
 	"use strict";
 
 	Utils.title.setPostfix('Администрирование - Фотографии прошлого');
@@ -15,7 +15,6 @@ require([
 	var appHash = P.settings.appHash(),
 		routerDeferred = $.Deferred(),
 		routerAnatomy = {
-			root: '/admin/',
 			globalModules: {
 				modules: [
 					{module: 'm/common/auth', container: '#auth', global: true},
@@ -40,10 +39,10 @@ require([
 				}
 			},
 			routes: [
-				{route: "(:section)(/)(:param1)(/)(:param2)(/)", handler: "index"},
-				{route: "map(/)(:section)(/)", handler: "map"},
-				{route: "photo(/)(:section)(/)", handler: "photo"},
-				{route: "region(/)(:param1)(/)", handler: "region"}
+				{route: /^\/admin(?:\/(\w+)(?:\/(\w+)(?:\/(\w+))?)?)?\/?$/, handler: "index"},
+				{route: /^\/admin\/map(?:\/(\w+))?\/?$/, handler: "map"},
+				{route: /^\/admin\/photo(?:\/(\w+))?\/?$/, handler: "photo"},
+				{route: /^\/admin\/region(?:\/(\w+))?\/?$/, handler: "region"}
 			],
 			handlers: {
 				index: function (section, param1, param2, qparams) {
@@ -71,7 +70,7 @@ require([
 							modules.push({module: 'm/diff/newsList', container: '#bodyContainer'});
 						}
 					}
-					this.params(_.assign(params, {_handler: 'index'}, qparams));
+					router.params(_.assign(params, {_handler: 'index'}, qparams));
 					renderer(modules);
 				},
 				map: function (section, qparams) {
@@ -85,7 +84,7 @@ require([
 					if (!section) {
 						section = 'cluster';
 					}
-					this.params(_.assign({section: section, _handler: 'map'}, qparams));
+					router.params(_.assign({section: section, _handler: 'map'}, qparams));
 
 					if (section === 'cluster') {
 						modules.push({module: 'm/map/mapClusterCalc', container: '#bodyContainer'});
@@ -103,7 +102,7 @@ require([
 					if (!section) {
 						section = 'conveyer';
 					}
-					this.params(_.assign({section: section, _handler: 'photo'}, qparams));
+					router.params(_.assign({section: section, _handler: 'photo'}, qparams));
 
 					if (section === 'conveyer') {
 						modules.push({module: 'm/admin/conveyer', container: '#bodyContainer'});
@@ -132,7 +131,7 @@ require([
 						modules.push({module: 'm/admin/regionList', container: '#bodyContainer'});
 					}
 
-					this.params(_.assign(params, {_handler: 'region'}, qparams));
+					router.params(_.assign(params, {_handler: 'region'}, qparams));
 					renderer(modules);
 				}
 			}
@@ -143,13 +142,10 @@ require([
 	$('body').append(html);
 	ko.applyBindings(globalVM);
 
-	globalVM.router = new RouteManager(routerAnatomy);
-	$.when(routerDeferred.promise()).then(app);
-
-	function app() {
-		//Backbone.Router.namedParameters = true;
-		Backbone.history.start({pushState: true, root: routerAnatomy.root, silent: false});
-	}
+	globalVM.router = router.init(routerAnatomy);
+	$.when(routerDeferred.promise()).then(function () {
+		router.start();
+	});
 
 	//window.appRouter = globalVM.router;
 	//window.glob = globalVM;

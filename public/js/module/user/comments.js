@@ -94,7 +94,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			var page = Math.abs(Number(globalVM.router.params().page)) || 1;
 			if (page > this.pageLast()) {
 				window.setTimeout(function () {
-					globalVM.router.navigateToUrl('/u/' + this.u.login() + '/comments/' + this.pageLast());
+					globalVM.router.navigate('/u/' + this.u.login() + '/comments/' + this.pageLast());
 				}.bind(this), 200);
 			} else {
 				this.page(page);

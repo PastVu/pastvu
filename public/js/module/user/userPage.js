@@ -88,7 +88,7 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 					if (result.loggedIn) {
 						this.routeHandler();
 					} else {
-						globalVM.router.navigateToUrl('/');
+						globalVM.router.navigate('/');
 					}
 				}, this);
 				return;
@@ -96,11 +96,11 @@ define(['underscore', 'Utils', 'Params', 'renderer', 'knockout', 'knockout.mappi
 
 			if ((params.section === 'settings' || params.section === 'subscriptions') &&
 				!itsMe && this.auth.iAm.role() < 10) {
-				globalVM.router.navigateToUrl('/u/' + login);
+				globalVM.router.navigate('/u/' + login);
 				return;
 			}
 			if (params.section === 'manage' && this.auth.iAm.role() < 10) {
-				globalVM.router.navigateToUrl('/u/' + login);
+				globalVM.router.navigate('/u/' + login);
 				return;
 			}
 

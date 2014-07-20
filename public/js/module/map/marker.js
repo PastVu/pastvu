@@ -867,7 +867,7 @@ define([
 		if (this.openNewTab) {
 			window.open(url, '_blank');
 		} else {
-			globalVM.router.navigateToUrl(url);
+			globalVM.router.navigate(url);
 		}
 	};
 
