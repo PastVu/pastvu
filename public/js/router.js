@@ -1,7 +1,7 @@
 /**
  * Менеджер путей
  */
-define(['jquery', 'underscore', 'Utils', 'backbone', 'knockout', 'globalVM', 'renderer'], function ($, _, Utils, Backbone, ko, globalVM, renderer) {
+define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], function ($, _, Utils, ko, globalVM, renderer) {
 	"use strict";
 
 	var global = window,

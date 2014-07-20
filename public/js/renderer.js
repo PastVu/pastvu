@@ -1,8 +1,8 @@
 /*global define:true*/
 
 define([
-	'jquery', 'Utils', 'underscore', 'backbone', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.jade'
-], function ($, Utils, _, Backbone, ko, globalVM, doT, dotModal) {
+	'jquery', 'Utils', 'underscore', 'knockout', 'globalVM', 'lib/doT', 'text!tpl/modal.jade'
+], function ($, Utils, _, ko, globalVM, doT, dotModal) {
 	"use strict";
 
 	var repository = globalVM.repository,

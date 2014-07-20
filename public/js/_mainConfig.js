@@ -5,18 +5,6 @@ requirejs.config({
 	//deps: ['lib/JSExtensions'],
 	//Shim позволит нам настроить зависимоти для скриптов, которые не содержат define, чтобы объявить себя модулем
 	shim: {
-		'backbone': {
-			deps: [
-				'underscore',
-				'jquery'
-			],
-			exports: 'Backbone'
-		},
-		'backbone.queryparams': {
-			deps: [
-				'backbone'
-			]//, exports: ' Backbone.Router.arrayValueSplit'
-		},
 		'highstock': {
 			deps: [
 				'jquery'
@@ -63,8 +51,6 @@ requirejs.config({
 		'lodash': 'lib/lodash',
 		'underscore': 'lib/lodash',
 		'underscore.string': 'lib/underscore.string',
-		'backbone': 'lib/backbone/backbone',
-		'backbone.queryparams': 'lib/backbone/queryparams',
 
 		'knockout': 'lib/knockout/knockout',
 		'knockout.extends': 'lib/knockout/extends',

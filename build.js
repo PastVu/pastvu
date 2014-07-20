@@ -69,9 +69,9 @@ var start = Date.now(),
 				create: true, //set crecate: true if 'commonExcludes' is not a module that exists before a build
 				include: [
 					'domReady', 'text', 'css', 'lib/require/plugins/require-css/normalize',
-					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'lib/doT', 'backbone', 'moment',
+					'jquery', 'underscore', 'knockout', 'knockout.mapping', 'lib/doT', 'moment',
 					'noty', 'noty.layouts', 'noty.themes/pastvu',
-					'Browser', 'Utils', 'socket', 'RouteManager', 'Params', 'globalVM',
+					'Browser', 'Utils', 'socket', 'router', 'Params', 'globalVM',
 					'm/_moduleCliche', 'renderer',
 					'model/Photo', 'model/User', 'model/storage'
 				]

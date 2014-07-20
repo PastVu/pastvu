@@ -3,11 +3,11 @@ require([
 	'jquery',
 	'Browser', 'Utils',
 	'socket!',
-	'underscore', 'backbone', 'knockout', 'knockout.mapping', 'moment',
+	'underscore', 'knockout', 'knockout.mapping', 'moment',
 	'globalVM', 'Params', 'renderer', 'router',
 	'text!tpl/appAdmin.jade', 'css!style/appAdmin',
-	'backbone.queryparams', 'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
-], function (domReady, $, Browser, Utils, socket, _, Backbone, ko, ko_mapping, moment, globalVM, P, renderer, router, html) {
+	'momentlang/ru', 'bs/transition', 'knockout.extends', 'noty', 'noty.layouts', 'noty.themes/pastvu', 'jquery-plugins/scrollto'
+], function (domReady, $, Browser, Utils, socket, _, ko, ko_mapping, moment, globalVM, P, renderer, router, html) {
 	"use strict";
 
 	Utils.title.setPostfix('Администрирование - Фотографии прошлого');
