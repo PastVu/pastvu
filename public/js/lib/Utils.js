@@ -213,6 +213,58 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			loadImg.src = url;
 		},
 
+		//Парсинг url. Возвращает объект со свойствами как window.location
+		parseUrl: (function () {
+			var a = document.createElement('a'),
+				ahrefProperties,
+				ahrefLen,
+				regexp;
+
+			a.href = location.href;
+			if (a.hostname) {
+				//Parse properties from href element http://stackoverflow.com/a/12470263/1309851
+				ahrefProperties = ['href', 'protocol', 'host', 'hostname', 'port', 'origin', 'pathname', 'search', 'hash'];
+				ahrefLen = ahrefProperties.length;
+				return function (url, ahref) {
+					var i = ahrefLen,
+						result = {};
+
+					if (!ahref) {
+						ahref = a;
+						ahref.href = url;
+					}
+
+					while (i--) {
+						result[ahrefProperties[i]] = ahref[ahrefProperties[i]];
+					}
+					if (!result.pathname) {
+						result.pathname = '/';
+					}
+					console.dir(result);
+					return result;
+				};
+			} else {
+				//Разбирающий regexp. Работает только на полном url Пример: http://regex101.com/r/dR0qK8/2
+				regexp = /^((http[s]?|ftp):\/)?\/?([^:\/\s]+)(:([^\/]*))?((\/\w+)*\/)([\-\.A-Za-z0-9_]+[^#?\s]+)(\?([^#]*))?(#(.*))?$/;
+
+				return function (url) {
+					var matched = url.match(regexp);
+					return {
+						href: url,
+						protocol: matched[2] || '',
+						hostname: matched[3] || '',
+						port: matched[5] || '',
+						path: matched[6] || '/',
+						file: matched[8] || '',
+						pathname: (matched[6] || '/') + (matched[8] || ''),
+						search: matched[9] || '',
+						querystring: matched[10] || '',
+						hash: matched[11] || ''
+					};
+				};
+			}
+		}()),
+
 		/**
 		 * Возвращает значение параметра из строки адреса, содержащей параметры, или переданной строки
 		 * @param name Имя параметра
@@ -223,31 +275,57 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jquery/plugins/extends
 			return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(url || location.search) || [undefined, ""])[1].replace(/\+/g, '%20')) || null;
 		},
 
-		getURLParameters: function (url) {
-			var qs = url.indexOf("?"),
-				fr = url.indexOf("#"),
-				parts,
-				vars = {},
-				p,
-				q,
-				i;
+		getURLParameters: (function () {
+			var decode = decodeURIComponent,
+				regexpPlus = /\+/g,
+				replacePlus = '%20',
+				maxKeys = 100, // maxKeys <= 0 means that we should not limit keys count
+				sep = '&',
+				eq = '=';
 
-			if (qs > -1) {
-				q = (fr === -1) ? url.substr(qs + 1) : url.substr(qs + 1, fr - qs - 1);
-				parts = q.split("&");
+			return function (url) {
+				var queryStart = url.indexOf("?"),
+					fragmentStart = url.indexOf("#"),
+					query,
+					param,
+					len,
+					key, val, i,
+					result = {};
 
-				for (i = 0; i < parts.length; i++) {
-					p = parts[i].split("=");
-					if (p[1]) {
-						vars[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
-					} else {
-						vars[decodeURIComponent(p[0])] = "";
+				if (queryStart > -1) {
+					query = url.substr(queryStart + 1, fragmentStart === -1 ? fragmentStart - queryStart - 1 : undefined);
+					if (query) {
+						query = query.split(sep);
+
+						len = query.length;
+						if (maxKeys > 0 && len > maxKeys) {
+							len = maxKeys;
+						}
+
+						for (i = 0; i < len; i++) {
+							//decodeURIComponent в определенных кейсах может сломаться, нужен try
+							try {
+								param = query[i].replace(regexpPlus, replacePlus).split(eq);
+								key = decode(param[0]);
+								val = param[1] ? decode(param[1]) : '';
+							} catch (e) {
+								continue;
+							}
+
+							if (!result.hasOwnProperty(key)) {
+								result[key] = val;
+							} else if (Array.isArray(result[key])) {
+								result[key].push(val);
+							} else {
+								result[key] = [result[key], val];
+							}
+						}
 					}
 				}
-			}
 
-			return vars;
-		},
+				return result;
+			};
+		}()),
 
 		urlReplaceParameterValue: function (url, param, value) {
 			return url.replace(new RegExp('(' + param + '=).*?(&)'), '$1' + value + '$2');
