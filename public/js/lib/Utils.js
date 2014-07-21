@@ -239,7 +239,7 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 					if (!result.pathname) {
 						result.pathname = '/';
 					}
-					console.dir(result);
+					//console.dir(result);
 					return result;
 				};
 			} else {

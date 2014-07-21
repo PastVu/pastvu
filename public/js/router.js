@@ -16,7 +16,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 					options = {};
 				}
 
-				router.routeChanged = ko.observable();
+				router.routeChanged = ko.observable(location.href);
 				router.params = ko.observable({});
 				router.blockHrefs = false;
 
@@ -72,7 +72,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 					}
 					global.history[options.replace ? 'replaceState' : 'pushState']({}, null, url);
 					if (options.trigger !== false) {
-						router.triggerUrl();
+						if (!router.triggerUrl()) {
+							global.location.reload(); //Если triggerUrl не нашел обработчиков, просто рефрешим с новым url
+						}
 					}
 				} else {
 					global.location = url;
@@ -83,19 +85,22 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 				var qparams = Utils.getURLParameters(location.href),
 					pathname = location.pathname,
 					matchedArgs,
-					handler;
+					handler,
+					triggered = false;
 
 				router.routes.forEach(function (item) {
 					if (item.route.test(pathname)) {
 						handler = router.handlers[item.handler];
-						if (handler) {
+						if (_.isFunction(handler)) {
 							matchedArgs = _.chain(pathname.match(item.route)).toArray().rest().value();
 							matchedArgs.push(qparams);
 							handler.apply(item.ctx, matchedArgs);
+							triggered = true;
 						}
 					}
 				});
 				router.routeChanged(location.href);
+				return triggered;
 			},
 			checkUrl: function (pathname) {
 				if (!pathname) {
