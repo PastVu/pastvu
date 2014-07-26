@@ -28,7 +28,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						delete storage.waitings['u' + login];
 					}
 				});
-				socket.emit('giveUser', {login: login, checkCan: globalVM.repository['m/common/auth'].loggedIn()});
+				socket.emit('giveUser', {login: login});
 			}
 		},
 		userImmediate: function (login) {
@@ -50,7 +50,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						storage.timeouts[cid] = window.setTimeout(function () {
 							delete storage.photos[cid];
 							delete storage.timeouts[cid];
-						}, 60 * 1000); //Через минуту отбрасываем из storage, чтобы запросить при необходимости заново
+						}, 60000); //Через минуту отбрасываем из storage, чтобы запросить при необходимости заново
 					}
 					if (Array.isArray(storage.waitings['p' + cid])) {
 						storage.waitings['p' + cid].forEach(function (item) {
@@ -59,7 +59,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
 						delete storage.waitings['p' + cid];
 					}
 				});
-				socket.emit('givePhoto', {cid: cid, checkCan: globalVM.repository['m/common/auth'].loggedIn()});
+				socket.emit('givePhoto', {cid: cid});
 			}
 		},
 		photoCan: function (cid, callback, context) {
