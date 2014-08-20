@@ -171,7 +171,7 @@ var core = {
 			} else {
 				var can;
 
-				if (data.checkCan) {
+				if (iAm.registered) {
 					//Права надо проверять до популяции пользователя
 					can = permissions.getCan(photo, iAm);
 				}
