@@ -1,10 +1,12 @@
 'use strict';
 
-var Utils = require('../commons/Utils.js'),
-	log4js = require('log4js'),
+var ms = require('ms'),
+    log4js = require('log4js'),
 	logger = log4js.getLogger('api.js'),
 	logController = require('./apilog.js'),
-	core,
+    Utils = require('../commons/Utils.js'),
+    core,
+    REQUEST_SELF_LIFE = ms('60s'),
 	apps = {
 		test: {limit: 2, interval: 1e3, lastCall: 0, count: 0},
 		mPsTm: true
@@ -15,7 +17,7 @@ var Utils = require('../commons/Utils.js'),
 
 		'10': {status: 400, errorText: 'Bad request. Not enough parameters'},
 		'11': {status: 400, errorText: 'Bad request. Some parameter length not allowed'},
-		'12': {status: 400, errorText: 'Request is the time machine'},
+		'12': {status: 408, errorText: 'Request is too old'},
 		'13': {status: 400, errorText: 'Roads... where we are going, we do not need roads'},
 
 		'20': {status: 400, errorText: 'Error while parsing data parameter'},
@@ -35,7 +37,7 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			core.request('photo', 'givePhoto', [null, {cid: cid, noselect: noselect}], function (err, photo) {
+			core.request('photo', 'givePhoto', [{}, {cid: cid, noselect: noselect}], function (err, photo) {
 				if (err) {
 					return cb(101);
 				}
@@ -108,7 +110,7 @@ var getPhotoRequest = (function () {
 				return cb(21);
 			}
 			core.request('comment', 'getCommentsObjAnonym', [
-				{type: 'photo', cid: cid}
+                {}, {type: 'photo', cid: cid}
 			], function (err, commentsTree) {
 				if (err) {
 					return cb(101);
@@ -156,7 +158,7 @@ function apiRouter(req, res) {
 	}
 
 	//Если запрос старше 10сек или в будущем, это не приемлемо
-	if (stamp < start - 1e4) {
+	if (stamp < start - REQUEST_SELF_LIFE) {
 		return requestFinish(12, req, res, start);
 	} else if (stamp > start) {
 		return requestFinish(13, req, res, start);

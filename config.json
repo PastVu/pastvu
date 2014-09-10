@@ -4,7 +4,7 @@
 	"port": 3000, /* Application app.js will listen this port. @Default 3000 */
 	"uport": 3001, /* Application uploader.js will listen this port. @Default 3001 */
 
-	"core_hostname": "", /* Core will listen this host. @Default 3010 */
+	"core_hostname": "", /* Core will listen this host. @Default "" */
 	"core_port": 3010, /* Core will listen this port. @Default 3010 */
 
 	"api_hostname": "", /* Accept only this host. If the hostname is omitted, the server will accept connections directed to any IPv4 address (INADDR_ANY). @Default "" */
