@@ -333,13 +333,30 @@ var core = {
 	},
 
 	giveNearestPhotos: function (data, cb) {
-		var query = {geo: {$near: data.geo, $maxDistance: 2000}, s: 5};
+		var query = {geo: {$near: data.geo}, s: 5};
+        var options = {lean: true};
 
-		if (typeof data.except === 'number') {
+		if (typeof data.except === 'number' && data.except > 0) {
 			query.cid = {$ne: data.except};
 		}
 
-		Photo.find(query, compactFields, {lean: true, limit: Math.min(data.limit, 20)}, cb);
+		if (typeof data.distance === 'number' && data.distance > 0 && data.distance < 100000) {
+			query.geo.$maxDistance = data.distance;
+		} else {
+            query.geo.$maxDistance = 2000;
+        }
+
+		if (typeof data.limit === 'number' && data.limit > 0 && data.limit < 30) {
+            options.limit = data.limit;
+		} else {
+            options.limit = 30;
+        }
+
+		if (typeof data.skip === 'number' && data.skip > 0 && data.skip < 1000) {
+            options.skip = data.skip;
+		}
+
+		Photo.find(query, compactFields, options, cb);
 	}
 };
 

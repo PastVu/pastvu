@@ -92,8 +92,17 @@ var getPhotoRequest = (function () {
 			if (!data || !Utils.geo.checkLatLng(data.geo)) {
 				return cb(21);
 			}
-			data.limit = Number(data.limit);
-			data.geo.reverse();
+            data.geo.reverse();
+
+            if (data.limit) {
+                data.limit = Math.abs(Number(data.limit));
+            }
+            if (data.skip) {
+                data.skip = Math.abs(Number(data.skip));
+            }
+            if (data.distance) {
+                data.distance = Math.abs(Number(data.distance));
+            }
 
 			core.request('photo', 'giveNearestPhotos', [data], function (err, photos) {
 				if (err) {
