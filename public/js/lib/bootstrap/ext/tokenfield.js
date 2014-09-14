@@ -8,7 +8,7 @@
 (function (factory) {
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(['jquery', 'jquery-plugins/typeahead', 'css!style/bs/ext/tokenfield'], factory);
+		define(['jquery', 'jquery-plugins/typeahead', 'css!style/bsext/tokenfield'], factory);
 	} else {
 		// Browser globals
 		factory(jQuery);

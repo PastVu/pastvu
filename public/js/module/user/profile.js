@@ -44,7 +44,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 		},
 		editModeHandler: function (val) {
 			if (val) {
-				require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bs/ext/datepicker'], function (Construct) {
+				require(['bs/ext/datepicker/datepicker', 'bs/ext/datepicker/lang/ru', 'css!style/bsext/datepicker'], function (Construct) {
 					if (this.$dom instanceof jQuery) {
 						this.$dom
 							.find('#inBirthdate')

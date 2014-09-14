@@ -9,7 +9,7 @@
 (function (factory) {
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(['jquery', 'knockout', 'bs/dropdown', 'css!style/bs/ext/multiselect'], factory);
+		define(['jquery', 'knockout', 'bs/dropdown', 'css!style/bsext/multiselect'], factory);
 	} else {
 		// Browser globals
 		factory(jQuery);

@@ -28,7 +28,7 @@
 (function (factory) {
 	if (typeof define === 'function' && define.amd) {
 		// AMD. Register as an anonymous module.
-		define(['jquery', 'moment', 'bs/collapse', 'css!style/bs/ext/datetimepicker'], factory);
+		define(['jquery', 'moment', 'bs/collapse', 'css!style/bsext/datetimepicker'], factory);
 	} else {
 		// Browser globals
 		factory(jQuery);
