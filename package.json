@@ -22,8 +22,8 @@
 		"start": "node app.js"
 	},
 	"dependencies": {
-		"express": "~4.6.1",
-        "compression": "~1.0.9",
+		"express": "~4.10.0",
+        "compression": "~1.2.0",
         "static-favicon": "~1.0.2",
         "basic-auth-connect": "~1.0.0",
         "serve-index": "~1.1.4",

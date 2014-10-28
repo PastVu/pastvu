@@ -21,19 +21,19 @@ neoError.e500.prototype.name = '500Error';
 
 function send404(req, res, err) {
 	logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
+	res.statusCode = 404;
 	if (req.xhr) {
-		res.send(404, {error: 'Not found'});
+		res.send({error: 'Not found'});
 	} else {
-		res.statusCode = 404;
 		res.render('status/404');
 	}
 }
 function send500(req, res, err) {
 	logger.error(err);
+	res.statusCode = 500;
 	if (req.xhr) {
-		res.send(500, {error: err.message});
+		res.send({error: err.message});
 	} else {
-		res.statusCode = 500;
 		res.render('status/500');
 	}
 }

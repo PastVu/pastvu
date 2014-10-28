@@ -26,7 +26,7 @@ module.exports.jadeToHtml = function (seekPath) {
 					next();
 				} else {
 					console.log('%s compiled from jade', req.url);
-					res.send(200, renderedHTML);
+					res.status(200).send(renderedHTML);
 				}
 			});
 		} else {

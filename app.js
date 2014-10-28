@@ -159,7 +159,7 @@ async.waterfall([
 				lessMiddleware,
 				static404 = function (req, res) {
 					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-					res.send(404);
+					res.sendStatus(404);
 				};
 
 			global.appVar.land = land;
@@ -172,6 +172,7 @@ async.waterfall([
 
 			app = express();
 			app.disable('x-powered-by'); //Disable default X-Powered-By
+			app.set('query parser', 'extended'); //Parse with "qs" module
 			app.set('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
 			app.set('views', 'views');
 			app.set('view engine', 'jade');
@@ -214,7 +215,8 @@ async.waterfall([
 					lessMiddleware = require('less-middleware');
 					app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {force: true, once: false, debug: false, compiler: {compress: false, yuicompress: false, sourceMap: true, sourceMapRootpath: '/', sourceMapBasepath: path.join(__dirname, pub)}, parser: {dumpLineNumbers: 0, optimization: 0}}));
 				}
-				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('2d')})); //Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				//Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('2d')}));
 				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d'), etag: false}));
 
 				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404

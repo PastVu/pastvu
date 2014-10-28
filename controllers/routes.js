@@ -115,6 +115,6 @@ module.exports.loadController = function (app) {
 
 	//ping-pong для проверки работы сервера
 	app.all('/ping', function (req, res) {
-		res.send(200, 'pong');
+		res.status(200).send('pong');
 	});
 };
