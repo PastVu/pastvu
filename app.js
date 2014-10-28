@@ -90,7 +90,7 @@ console.log('\n');
 mkdirp.sync(logPath);
 log4js.configure('./log4js.json', {cwd: logPath});
 if (land === 'dev') {
-	//В dev выводим все логи также в консоль
+	// В dev выводим все логи также в консоль
 	log4js.addAppender(log4js.appenders.console());
 }
 var logger = log4js.getLogger('app.js'),
@@ -152,14 +152,18 @@ async.waterfall([
 			callback(null);
 		},
 
-		//Настраиваем express
+		// Настраиваем express
 		function (callback) {
 			var pub = '/public/',
 				ourMiddlewares,
 				lessMiddleware,
+				statusCodes = http.STATUS_CODES,
+				status404Code = 404,
+				status404Text = statusCodes[status404Code],
 				static404 = function (req, res) {
 					logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-					res.sendStatus(404);
+					res.statusCode = status404Code;
+					res.end(status404Text); // Вызываем end вместо send, чтобы не было дополнительных действий типа etag
 				};
 
 			global.appVar.land = land;
@@ -167,23 +171,23 @@ async.waterfall([
 			global.appVar.mail = mail;
 			global.appVar.serverAddr = {protocol: protocol, domain: domain, host: host, port: port, uport: uport, subdomains: subdomains};
 
-			Utils = require('./commons/Utils.js'); //Utils должны реквайрится после установки глобальных переменных, так как они там используются
+			Utils = require('./commons/Utils.js'); // Utils должны реквайрится после установки глобальных переменных, так как они там используются
 			ourMiddlewares = require('./controllers/middleware.js');
 
 			app = express();
-			app.disable('x-powered-by'); //Disable default X-Powered-By
-			app.set('query parser', 'extended'); //Parse with "qs" module
-			app.set('trust proxy', true); //Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
+			app.disable('x-powered-by'); // Disable default X-Powered-By
+			app.set('query parser', 'extended'); // Parse with "qs" module
+			app.set('trust proxy', true); // Если нужно брать ip пользователя через req.ips(), это вернет массив из X-Forwarded-For с переданным количеством ip. https://github.com/visionmedia/express/blob/master/History.md#430--2014-05-21
 			app.set('views', 'views');
 			app.set('view engine', 'jade');
 
-			//Etag (по умолчанию weak), чтобы браузер мог указывать его для запрашиваемого ресурса
-			//При этом если браузеру заголовком Cache-Control разрешено кешировать, он отправит etag в запросе,
-			//и если сгенерированный ответ получает такой же etag, сервер вернёт 304 без контента и браузер возьмет контент из своего кеша
+			// Etag (по умолчанию weak), чтобы браузер мог указывать его для запрашиваемого ресурса
+			// При этом если браузеру заголовком Cache-Control разрешено кешировать, он отправит etag в запросе,
+			// и если сгенерированный ответ получает такой же etag, сервер вернёт 304 без контента и браузер возьмет контент из своего кеша
 			app.set('etag', 'weak');
 
-			//На проде включаем внутреннее кеширование результатов рендеринга шаблонов
-			//Сокращает время рендеринга (и соответственно waiting время запроса клиента) на порядок
+			// На проде включаем внутреннее кеширование результатов рендеринга шаблонов
+			// Сокращает время рендеринга (и соответственно waiting время запроса клиента) на порядок
 			if (land === 'dev') {
 				app.disable('view cache'); //В дев выключаем только для того, чтобы можно было править шаблон без перезагрузки сервера
 			} else {
@@ -195,14 +199,14 @@ async.waterfall([
 
 			app.set('appEnv', {land: land, hash: app.hash, version: pkg.version, storePath: storePath, serverAddr: global.appVar.serverAddr});
 
-			//Устанавливаем объект, свойства которого будут доступны из всех jade-шаблонов как глобальные переменные
+			// Устанавливаем объект, свойства которого будут доступны из всех jade-шаблонов как глобальные переменные
 			_.assign(app.locals, {
-				pretty: false, //Adds whitespace to the resulting html to make it easier for a human to read
-				compileDebug: false, //Include the function source in the compiled template for better error messages (sometimes usefu
-				debug: false, //If set to true, the tokens and function body is logged to stdoutl in development).
+				pretty: false, // Adds whitespace to the resulting html to make it easier for a human to read
+				compileDebug: false, // Include the function source in the compiled template for better error messages (sometimes usefu
+				debug: false, // If set to true, the tokens and function body is logged to stdoutl in development).
 
-				appLand: land, //Решает какие скрипты вставлять в head
-				appHash: app.hash //Вставляется в head страниц
+				appLand: land, // Решает какие скрипты вставлять в head
+				appHash: app.hash // Вставляется в head страниц
 			});
 
 			app.use(ourMiddlewares.responseHeaderHook());
