@@ -48,7 +48,6 @@ var send404 = (function () {
 }());
 
 var send500 = (function () {
-	var json500 = JSON.stringify({error: err.message});
 	var html500;
 
 	return function (req, res, err) {
@@ -56,7 +55,7 @@ var send500 = (function () {
 		res.statusCode = 500;
 
 		if (req.xhr) {
-			res.end(json500);
+			res.end(JSON.stringify({error: err.message}));
 		} else {
 			if (html500) {
 				res.end(html500);

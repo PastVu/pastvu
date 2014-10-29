@@ -9,21 +9,36 @@ define(['module'], function (module) {
 			}
 
 			req(['underscore', 'socket.io'], function (_, io) {
-				var moduleLoaded, //Флаг первоначального коннекта для вызова события загрузки модуля
-					connectPath = location.host,
+				var connectPath = location.host,
 					connectOptions = {
+						autoConnect: false,
 						reconnectionDelay: _.random(700, 900),  //Изначальный интервал (в мс) между попытками реконнекта браузера, каждый следующий растет экспоненциально
 						reconnectionDelayMax: _.random(6000, 8000), //Максимальный интервал (в мс) между попытками реконнекта браузера, до него дорастет предыдущий параметр
 						reconnectionAttempts: 150 //Максимальное колво попыток реконнекта браузера, после которого будет вызванно событие reconnect_failed
 					},
-					sio,
+					manager = io(connectPath, connectOptions),
 					socket = {connected: false, ons: {}, emitQueue: {}},
 
+					firstConnected = false, //Флаг первоначального коннекта
+					firstConnectSubscribers = [],
 					disconnectionDataReturn = {error: true, noconnect: true, message: 'Нет соединения с сервером, повторите после восстановления связи'},
 					noСonnWait = '<div class="noconn"><div class="inn">Нет соединения с сервером, пробую подключиться.. После восстановления связи сообщение пропадет автоматически</div></div>',
 					noСonnFail = '<div class="noconn fail"><div class="inn">Не удалось автоматически подключиться к серверу. <span class="repeat">Продолжать попытки</span></div></div>',
 					$noСonnWait,
 					$noСonnFail;
+
+				/**
+				 * Событие первого соединения с сервером
+				 * @param cb Коллбэк
+				 * @param [ctx] Контекст коллбэка
+				 */
+				socket.onFirstConnect = function (cb, ctx) {
+					if (firstConnected) {
+						cb.call(ctx);
+					} else {
+						firstConnectSubscribers.push({cb: cb, ctx: ctx});
+					}
+				};
 
 				/**
 				 * Отправляет данные на сервер
@@ -34,7 +49,7 @@ define(['module'], function (module) {
 				 */
 				socket.emit = function (name, data, queueIfNoConnection) {
 					if (socket.connected) {
-						sio.emit(name, data);
+						manager.emit(name, data);
 						return true;
 					} else if (queueIfNoConnection) {
 						var nameQueue = socket.emitQueue[name];
@@ -47,6 +62,7 @@ define(['module'], function (module) {
 					}
 					return false; //Если соединения нет, возращаем false
 				};
+
 				/**
 				 * Постоянная подписка на событие
 				 * @param name Имя события
@@ -65,6 +81,7 @@ define(['module'], function (module) {
 					}
 					return registered;
 				};
+
 				/**
 				 * Одноразовая подписка на событие. Отписывается после первого вызова коллбэка
 				 * @param name Имя события
@@ -91,6 +108,7 @@ define(['module'], function (module) {
 					}
 					return eventHandlerRegister('once', name, cb, ctx, noConnectionNotify);
 				};
+
 				/**
 				 * Отписка от события. Если конкретный коллбэк не передан, отпишет все обработчики события
 				 * @param {string} name Имя события
@@ -111,16 +129,23 @@ define(['module'], function (module) {
 							nameStack.splice(i--, 1);
 						}
 					}
-					//Если обработчиков не осталось, удаляем подписку на событие sio
+					//Если обработчиков не осталось, удаляем подписку на событие manager
 					if (!nameStack.length) {
-						sio.removeAllListeners(name);
+						manager.removeAllListeners(name);
 						delete socket.ons[name];
 					}
 					return true;
 				};
 
+				// Уведомление обработчиков о первом соединении
+				function firstConnectNotifier() {
+					firstConnectSubscribers.forEach(function (subscriber) {
+						subscriber.cb.call(subscriber.ctx);
+					});
+				}
+
 				//Добавляем обработчик события
-				//Если его еще нет в хеше, создаем в нем стек по имени и вешаем событие на sio
+				//Если его еще нет в хеше, создаем в нем стек по имени и вешаем событие на manager
 				function eventHandlerRegister(type, name, cb, ctx, noConnectionNotify) {
 					var nameStack = socket.ons[name],
 						stackRecord = {type: type, name: name, cb: cb, ctx: ctx, connoty: noConnectionNotify};
@@ -129,7 +154,7 @@ define(['module'], function (module) {
 						nameStack.push(stackRecord);
 					} else {
 						socket.ons[name] = [stackRecord];
-						sio.on(name, function (data) {
+						manager.on(name, function (data) {
 							eventHandlersNotify(name, data);
 						});
 					}
@@ -138,7 +163,7 @@ define(['module'], function (module) {
 
 				//Вызывает обработчики события с переданными данными
 				//Если обработчик установлен как once, удаляет его из стека после вызова
-				//Если обработчиков после вызова не осталось, удаляем событие из хэша и отписываемся от sio
+				//Если обработчиков после вызова не осталось, удаляем событие из хэша и отписываемся от manager
 				function eventHandlersNotify(name, data, aboutNoConnection) {
 					var nameStack = socket.ons[name],
 						item,
@@ -158,9 +183,9 @@ define(['module'], function (module) {
 								nameStack.splice(i--, 1);
 							}
 						}
-						//Если обработчиков не осталось, удаляем подписку на событие sio
+						//Если обработчиков не осталось, удаляем подписку на событие manager
 						if (!nameStack.length) {
-							sio.removeAllListeners(name);
+							manager.removeAllListeners(name);
 							delete socket.ons[name];
 						}
 					}
@@ -169,7 +194,7 @@ define(['module'], function (module) {
 				//Отправляет все emit, которые ожидали подключения
 				function emitQueued() {
 					function emitNameData (data) {
-						sio.emit(name, data);
+						manager.emit(name, data);
 					}
 
 					for (var name in socket.emitQueue) {
@@ -208,8 +233,8 @@ define(['module'], function (module) {
 				function noConnRepeat() {
 					noConnFailHide();
 					noConnWaitShow();
-					sio.io.attempts = 0; //Вручную сбрасываем попытки
-					sio.io.reconnect(); //Вызываем реконнекты
+					manager.io.attempts = 0; //Вручную сбрасываем попытки
+					manager.io.reconnect(); //Вызываем реконнекты
 				}
 
 				//Показывает сообщение о превышении попыток подключения
@@ -229,49 +254,50 @@ define(['module'], function (module) {
 					}
 				}
 
-				//Коннектимся
-				sio = io(connectPath, connectOptions);
 
-				sio.on('error', function (reason) {
+				manager.on('error', function (reason) {
 					console.log('Unable to connect socket: ', reason);
 				});
-				sio.on('connect', function () {
-					if (!moduleLoaded) {
+				manager.on('connect', function () {
+					if (!firstConnected) {
 						console.log('Connected to server');
 						socket.connected = true;
-						moduleLoaded = true;
+						firstConnected = true;
 						onLoad(socket);
+						firstConnectNotifier();
 					}
 				});
 
-				sio.on('disconnect', function () {
+				manager.on('disconnect', function () {
 					console.log('Disconnected from server ');
 					socket.connected = false;
 					disconnectionAllNotyfy();
 				});
-				sio.on('reconnecting', function (attempt) {
+				manager.on('reconnecting', function (attempt) {
 					console.log('Trying to reconnect to server %d time', attempt);
 					if (attempt > 1) {
 						noConnWaitShow();
 					}
 				});
-				sio.on('reconnect_failed', function (attempt) {
+				manager.on('reconnect_failed', function (attempt) {
 					noConnWaitHide();
 					noConnFailShow();
-					console.log('Failed to reconnect for %d attempts. Stopped trying', sio.io.reconnectionAttempts());
+					console.log('Failed to reconnect for %d attempts. Stopped trying', manager.io.reconnectionAttempts());
 				});
-				sio.on('reconnect', function () {
+				manager.on('reconnect', function () {
 					console.log('ReConnected to server');
 					socket.connected = true;
-					sio.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
+					manager.emit('giveInitData', location.pathname); //После реконнекта заново запрашиваем initData
 					noConnWaitHide(); //Скрываем сообщение об отсутствии соединения
 					emitQueued(); //Отправляем все сообщения emit, которые ожидали восстановления соединения
 				});
 
+				manager.open(); // Коннектимся к серверу
+
 				/*setTimeout(function () {
-				 sio.io.disconnect();
+				 manager.io.disconnect();
 				 setTimeout(function () {
-				 sio.io.maybeReconnectOnOpen();
+				 manager.io.maybeReconnectOnOpen();
 				 }, 4000);
 				 }, 2000);
 				 */

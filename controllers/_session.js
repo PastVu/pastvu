@@ -683,10 +683,10 @@ module.exports.handleHTTPRequest = function (req, res, next) {
 				res.render('status/badbrowser', {agent: err.agent, title: 'Вы используете устаревшую версию браузера'});
 			} else if (err.type === errtypes.NO_HEADERS) {
 				res.statusCode = 400;
-				res.send(err.type);
+				res.end(err.type);
 			} else {
 				res.statusCode = 500;
-				res.send(err.type);
+				res.end(err.type);
 			}
 			return;
 		}
