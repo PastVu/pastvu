@@ -19,24 +19,61 @@ util.inherits(neoError.e500, Error);
 neoError.e404.prototype.name = 'HTTP404Error';
 neoError.e500.prototype.name = '500Error';
 
-function send404(req, res, err) {
-	logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
-	res.statusCode = 404;
-	if (req.xhr) {
-		res.send({error: 'Not found'});
-	} else {
-		res.render('status/404');
-	}
-}
-function send500(req, res, err) {
-	logger.error(err);
-	res.statusCode = 500;
-	if (req.xhr) {
-		res.send({error: err.message});
-	} else {
-		res.render('status/500');
-	}
-}
+var send404 = (function () {
+	var json404 = JSON.stringify({error: 'Not found'});
+	var html404;
+
+	return function (req, res, err) {
+		logger404.error(JSON.stringify({url: req.url, method: req.method, ua: req.headers && req.headers['user-agent'], referer: req.headers && req.headers.referer}));
+		res.statusCode = 404;
+
+		if (req.xhr) {
+			res.end(json404);
+		} else {
+			if (html404) {
+				res.end(html404);
+			} else {
+				res.render('status/404', function (err, html) {
+					if (err) {
+						logger.error('Cannot render 404 page', err);
+						html404 = http.STATUS_CODES[404];
+					} else {
+						html404 = html;
+					}
+					res.end(html404);
+				})
+			}
+		}
+	};
+}());
+
+var send500 = (function () {
+	var json500 = JSON.stringify({error: err.message});
+	var html500;
+
+	return function (req, res, err) {
+		logger.error(err);
+		res.statusCode = 500;
+
+		if (req.xhr) {
+			res.end(json500);
+		} else {
+			if (html500) {
+				res.end(html500);
+			} else {
+				res.render('status/500', function (err, html) {
+					if (err) {
+						logger.error('Cannot render 500 page', err);
+						html500 = http.STATUS_CODES[500];
+					} else {
+						html500 = html;
+					}
+					res.end(html500);
+				})
+			}
+		}
+	};
+}());
 
 module.exports.err = neoError;
 module.exports.registerErrorHandling = function (app) {
