@@ -219,8 +219,9 @@ async.waterfall([
 					lessMiddleware = require('less-middleware');
 					app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {force: true, once: false, debug: false, compiler: {compress: false, yuicompress: false, sourceMap: true, sourceMapRootpath: '/', sourceMapBasepath: path.join(__dirname, pub)}, parser: {dumpLineNumbers: 0, optimization: 0}}));
 				}
-				//Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется. Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
-				app.use(require('static-favicon')(path.join(__dirname, pub, 'favicon.ico'), {maxAge: ms('2d')}));
+				// Favicon надо помещать перед статикой, т.к. он прочитается с диска один раз и закешируется.
+				// Он бы отдался и на следующем шаге, но тогда будет читаться с диска каждый раз
+				app.use(require('serve-favicon')(path.join(__dirname, pub, 'favicon.ico'), { maxAge: ms(land === 'dev' ? '1s' : '2d') }));
 				app.use(express.static(path.join(__dirname, pub), {maxAge: ms(land === 'dev' ? '1s' : '2d'), etag: false}));
 
 				//"Законцовываем" пути к статике, т.е. то что дошло сюда - 404
@@ -285,7 +286,12 @@ async.waterfall([
 
 			//Раздаем лог
 			if (serveLog) {
-				app.use('/nodelog', require('basic-auth-connect')('pastvu', 'pastvupastvu'), require('serve-index')(logPath, {icons: true}), express.static(logPath, {maxAge: '1s', etag: false}));
+				app.use(
+					'/nodelog',
+					require('basic-auth-connect')('pastvu', 'pastvupastvu'),
+					require('serve-index')(logPath, {icons: true}),
+					express.static(logPath, {maxAge: 0, etag: false})
+				);
 			}
 
 			require('./controllers/errors.js').registerErrorHandling(app);
