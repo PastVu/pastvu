@@ -8,6 +8,8 @@ var dbNative,
 	clusterParams, // Параметры кластера
 	clusterConditions, // Параметры установки кластера
 
+	constants = require('./constants'),
+
 	_ = require('lodash'),
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
@@ -191,7 +193,7 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 
 			$update.$set.geo = geoCluster;
-			Photo.collection.findOne({s: 5, geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
+			Photo.collection.findOne({s: constants.photo.status.PUBLIC, geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
 		},
 		function (err, photo) {
 			if (err) {
@@ -473,7 +475,7 @@ module.exports.getBoundsByYear = function (data, cb) {
 	);
 };
 function getClusterPoster(cluster, yearCriteria, cb) {
-	Photo.collection.findOne({s: 5, geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
+	Photo.collection.findOne({s: constants.photo.status.PUBLIC, geo: {$near: cluster.geo}, year: yearCriteria}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, function (err, photo) {
 		if (err) {
 			return cb(err);
 		}

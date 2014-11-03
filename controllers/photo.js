@@ -40,6 +40,9 @@ var _session = require('./_session.js'),
 		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
 	},
 
+	constants = require('./constants.js'),
+	status = constants.photo.status,
+
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
@@ -106,10 +109,10 @@ var _session = require('./_session.js'),
 			return can;
 		},
 		canSee: function (photo, usObj) {
-			if (photo.s === 5) {
+			if (photo.s === status.PUBLIC) {
 				return true;
 			} else if (usObj.registered && photo.user) {
-				if (photo.s === 9) {
+				if (photo.s === status.REMOVED) {
 					return usObj.isAdmin;
 				} else {
 					return photo.user.equals(usObj.user._id) || permissions.canModerate(photo, usObj);
@@ -333,7 +336,7 @@ var core = {
 	},
 
 	giveNearestPhotos: function (data, cb) {
-		var query = {geo: {$near: data.geo}, s: 5};
+		var query = {geo: {$near: data.geo}, s: status.PUBLIC};
         var options = {lean: true};
 
 		if (typeof data.except === 'number' && data.except > 0) {
@@ -593,8 +596,8 @@ function removePhoto(socket, cid, cb) {
 			return cb({message: msg.deny, error: true});
 		}
 
-		if (photo.s === 0 || photo.s === 1) {
-			//Неподтвержденную фотографию удаляем безвозвратно
+		if (photo.s === status.NEW || photo.s === status.READY) {
+
 			photo.remove(function (err) {
 				if (err) {
 					return cb({message: err.message, error: true});
@@ -622,9 +625,9 @@ function removePhoto(socket, cid, cb) {
 				cb({message: 'ok'});
 			});
 		} else {
-			var isPublic = photo.s === 5;
+			var isPublic = photo.s === status.PUBLIC;
 
-			photo.s = 9;
+			photo.s = status.REMOVED;
 			photo.save(function (err, photoSaved) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
@@ -668,7 +671,7 @@ function restorePhoto(socket, cid, cb) {
 		return cb({message: 'Bad params', error: true});
 	}
 
-	findPhoto({cid: cid, s: 9}, {}, iAm, function (err, photo) {
+	findPhoto({cid: cid, s: status.REMOVED}, {}, iAm, function (err, photo) {
 		if (err || !photo) {
 			return cb({message: err && err.message || (msg.notExists + ' в удалёном статусе'), error: true});
 		}
@@ -677,7 +680,7 @@ function restorePhoto(socket, cid, cb) {
 			return cb({message: msg.deny, error: true});
 		}
 
-		photo.s = 5;
+		photo.s = status.PUBLIC;
 		photo.save(function (err, photoSaved) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
@@ -711,14 +714,14 @@ function approvePhoto(iAm, cid, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		if (photo.s !== 0 && photo.s !== 1) {
+		if (photo.s !== status.NEW && photo.s !== status.READY) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
 		if (!photo.r0) {
 			return cb({message: msg.mustCoord, error: true});
 		}
 
-		photo.s = 5;
+		photo.s = status.PUBLIC;
 		photo.adate = photo.sdate = new Date();
 		photo.save(function (err, photoSaved) {
 			if (err) {
@@ -769,11 +772,11 @@ function activateDeactivate(socket, data, cb) {
 		if (!photo) {
 			return cb({message: msg.notExists, error: true});
 		}
-		if (makeDisabled && photo.s === 7 || !makeDisabled && photo.s === 5) {
+		if (makeDisabled && photo.s === status.DEACTIVATED || !makeDisabled && photo.s === status.PUBLIC) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
 
-		photo.s = makeDisabled ? 7 : 5;
+		photo.s = makeDisabled ? status.DEACTIVATED : status.PUBLIC;
 		photo.save(function (err, photoSaved) {
 			if (err) {
 				return cb({message: err.message, error: true});
@@ -807,7 +810,7 @@ function givePhoto(iAm, data, cb) {
 //Отдаем последние публичные фотографии на главной
 var givePhotosPublicIndex = (function () {
 	var options = {skip: 0, limit: 30},
-		filter = {s: [5]};
+		filter = {s: [status.PUBLIC]};
 
 	return function (iAm, cb) {
 		//Всегда выбираем заново, т.к. могут быть региональные фильтры
@@ -818,7 +821,7 @@ var givePhotosPublicIndex = (function () {
 //Отдаем последние публичные "Где это?" фотографии для главной
 var givePhotosPublicNoGeoIndex = (function () {
 	var options = {skip: 0, limit: 30},
-		filter = {geo: ['0'], s: [5]};
+		filter = {geo: ['0'], s: [status.PUBLIC]};
 
 	return function (iAm, cb) {
 		//Выбираем заново, т.к. могут быть региональные фильтры
@@ -996,7 +999,7 @@ function givePhotosPS(iAm, data, cb) {
 
 	var filter = data.filter ? parseFilter(data.filter) : {};
 	if (!filter.s) {
-		filter.s = [5];
+		filter.s = [status.PUBLIC];
 	}
 
 	givePhotos(iAm, filter, data, null, cb);
@@ -1023,7 +1026,7 @@ function giveUserPhotos(iAm, data, cb) {
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
-	var query = {s: 1};
+	var query = {s: status.READY};
 
 	if (!iAm.registered || iAm.user.role < 5) {
 		return cb({message: msg.deny, error: true});
@@ -1119,7 +1122,7 @@ function giveUserPhotosPrivate(iAm, data, cb) {
 		var query = {user: userid};
 
 		if (iAm.isModerator) {
-			query.s = {$ne: 9};
+			query.s = {$ne: status.REMOVED};
 			_.assign(query, iAm.mod_rquery);
 		}
 
@@ -1166,7 +1169,7 @@ function givePhotosFresh(iAm, data, cb) {
 			if (err) {
 				return cb({message: err && err.message, error: true});
 			}
-			var query = {s: 0},
+			var query = {s: status.NEW},
 				asModerator = iAm.user.login !== data.login && iAm.isModerator;
 
 			if (asModerator) {
@@ -1291,7 +1294,7 @@ function savePhoto(iAm, data, cb) {
 				}
 			} else {
 				//Не иметь ни координаты ни региона могут только новые фотографии
-				if (photo.s !== 0) {
+				if (photo.s !== status.NEW) {
 					return cb({message: msg.mustCoord, error: true});
 				}
 				regionController.clearObjRegions(photo); //Очищаем привязку к регионам
@@ -1299,7 +1302,7 @@ function savePhoto(iAm, data, cb) {
 			}
 		}
 
-		if (geoToNull && photo.s === 5) {
+		if (geoToNull && photo.s === status.PUBLIC) {
 			//При обнулении координаты
 			//Если фото публичное, значит оно было на карте. Удаляем с карты.
 			//Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
@@ -1333,7 +1336,7 @@ function savePhoto(iAm, data, cb) {
 					oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
 				}
 
-				if (photoSaved.s === 5 && !_.isEmpty(photoSaved.geo) && (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
+				if (photoSaved.s === status.PUBLIC && !_.isEmpty(photoSaved.geo) && (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
 					//Если фото публичное, добавилась/изменилась координата или есть чем обновить постер кластера, то пересчитываем на карте
 					//Здесь координата должна проверятся именно photoSaved.geo, а не newGeo, так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
 					photoToMap(photoSaved, oldGeo, photoOldObj.year, finish);
@@ -1347,7 +1350,7 @@ function savePhoto(iAm, data, cb) {
 					}
 
 					//Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
-					if (photoSaved.s >= 5 && sendingBack.regions) {
+					if (photoSaved.s >= status.PUBLIC && sendingBack.regions) {
 						var commentAdditionUpdate = {};
 						if (geoToNull) {
 							commentAdditionUpdate.$unset = {geo: 1};
@@ -1377,7 +1380,7 @@ function readyPhoto(iAm, data, cb) {
 		if (err || !photo) {
 			return cb({message: err && err.message || msg.notExists, error: true});
 		}
-		if (photo.s !== 0) {
+		if (photo.s !== status.NEW) {
 			return cb({message: msg.anotherStatus, error: true});
 		}
 		if (!permissions.getCan(photo, iAm).edit) {
@@ -1408,7 +1411,7 @@ function readyPhoto(iAm, data, cb) {
 		}
 
 		function justSetReady() {
-			photo.s = 1;
+			photo.s = status.READY;
 			photo.save(function finish(err) {
 				if (err) {
 					return cb({message: err && err.message, error: true});
@@ -1498,7 +1501,7 @@ function convertPhotosAll(iAm, data, cb) {
  */
 function findPhoto(query, fieldSelect, usObj, cb) {
 	if (!usObj.registered) {
-		query.s = 5; //Анонимам ищем только публичные
+		query.s = status.PUBLIC; //Анонимам ищем только публичные
 	}
 	Photo.findOne(query, fieldSelect, function (err, photo) {
 		if (err) {
@@ -1531,7 +1534,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 		regions_hash = {},
 
 		squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
-		squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === 5,
+		squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC,
 
 		region,
 		contained,
@@ -1543,7 +1546,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 	if (!squery_public_only && filter.s && filter.s.length) {
 		//Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
-		filter.s = _.without(filter.s, 5, !iAm.isAdmin ? 9 : undefined);
+		filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVED : undefined);
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
@@ -1663,11 +1666,11 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 	}
 
 	if (query_pub && squery_public_have) {
-		query_pub.s = 5;
+		query_pub.s = status.PUBLIC;
 		if (rquery_pub) {
 			_.assign(query_pub, rquery_pub);
 		}
-		result.s.push(5);
+		result.s.push(status.PUBLIC);
 	}
 	if (!squery_public_have) {
 		//Если указан фильтр и в нем нет публичных, удаляем запрос по ним
@@ -1678,7 +1681,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			if (!query_pub && squery_public_have) {
 				//Если запроса по публичным нет, но должен, то добавляем публичные в модерируемые
 				//Это произойдет с админами и глобальными модераторами, так как у них один query_mod
-				filter.s.push(5);
+				filter.s.push(status.PUBLIC);
 			}
 			if (filter.s.length === 1) {
 				query_mod.s = filter.s[0];
@@ -1687,7 +1690,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			}
 			Array.prototype.push.apply(result.s, filter.s);
 		} else if (!iAm.isAdmin) {
-			query_mod.s = {$ne: 9};
+			query_mod.s = {$ne: status.REMOVED};
 		}
 
 		if (rquery_mod) {
@@ -1724,7 +1727,7 @@ var planResetDisplayStat = (function () {
 		if (needWeek) {
 			setQuery.vwcount = 0;
 		}
-		Photo.update({s: {$in: [5, 7, 9]}}, {$set: setQuery}, {multi: true}, function (err, count) {
+		Photo.update({s: {$in: [status.PUBLIC, status.DEACTIVATED, status.REMOVED]}}, {$set: setQuery}, {multi: true}, function (err, count) {
 			planResetDisplayStat();
 			if (err) {
 				return logger.error(err);

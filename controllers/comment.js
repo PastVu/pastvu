@@ -18,6 +18,8 @@ var _session = require('./_session.js'),
 	host,
 	logger,
 
+	constants = require('./constants'),
+
 	weekMS = ms('7d'),
 	commentMaxLength = 12e3,
 	msg = {
@@ -43,7 +45,7 @@ var _session = require('./_session.js'),
 			return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - weekMS);
 		},
 		canReply: function (type, obj, usObj) {
-			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s > 1 || type === 'news');
+			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s > constants.photo.status.READY || type === 'news');
 		}
 	};
 
@@ -933,7 +935,7 @@ function createComment(socket, data, cb) {
 				comment.parent = data.parent;
 				comment.level = data.level;
 			}
-			if (obj.s !== undefined && obj.s !== 5) {
+			if (obj.s !== undefined && obj.s !== constants.photo.status.PUBLIC) {
 				comment.hidden = true;
 			}
 			if (fragAdded) {
