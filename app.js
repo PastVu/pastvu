@@ -11,6 +11,7 @@ var express = require('express'),
 	step = require('step'),
 	log4js = require('log4js'),
 	argv = require('optimist').argv,
+	moment = require('moment'),
 	_ = require('lodash'),
 
 	mkdirp = require('mkdirp'),
@@ -19,6 +20,7 @@ var express = require('express'),
 	Utils,
 
 	app, io, db,
+	startStamp,
 	CoreServer,
 	coreServer,
 	httpServer;
@@ -79,8 +81,9 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	serveLog = conf.serveLog, //Флаг, что node должен раздавать лог
 	gzip = conf.gzip, //Использовать gzip
 
-	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), //Путь к папке логов
-	manualGarbageCollect = conf.manualGarbageCollect; //Интервал самостоятельного вызова gc. 0 - выключено
+	logPath = path.normalize(conf.logPath || (__dirname + "/logs")), // Путь к папке логов
+	logUptimeInterval = conf.logUptimeInterval, // Интервал логирования времени работы сервера
+	manualGarbageCollect = conf.manualGarbageCollect; // Интервал самостоятельного вызова gc. 0 - выключено
 
 
 /**
@@ -345,12 +348,21 @@ async.waterfall([
 				}, manualGarbageCollect);
 			}
 
+			setTimeout(function func() {
+				var mom = moment(Date.now() - startStamp).zone('0');
+
+				logger.info('uptime %d.%s', mom.dayOfYear() - 1, mom.format('HH:mm:ss'));
+
+				setTimeout(func, logUptimeInterval);
+			}, logUptimeInterval);
+
 			coreServer = new CoreServer(core_port, core_hostname, function () {
 				httpServer.listen(http_port, http_hostname, function () {
 					logger.info('servePublic: ' + servePublic + ', serveStore ' + serveStore);
 					logger.info('Host for users: [%s]', protocol + '://' + host);
 					logger.info('Core server listening [%s:%s] in %s-mode', core_hostname ? core_hostname : '*', core_port, land.toUpperCase());
 					logger.info('HTTP server listening [%s:%s] in %s-mode %s gzip \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase(), gzip ? 'with' : 'without');
+					startStamp = Date.now();
 				});
 			});
 		}
