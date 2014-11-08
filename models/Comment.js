@@ -14,13 +14,13 @@ var delInfo = {
 		role: {type: Number}, //Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
 		roleregion: {type: Number} //Регион реализуемой роли
 	},
-	histScheme = {
+	histSchema = {
 		user: {type: Schema.Types.ObjectId, ref: 'User'},
 		stamp: {type: Date, 'default': Date.now, required: true},
 		frag: {type: Number},
 		txt: {type: String},
 		txtd: {type: String}, //Текст с подсветкой разницы
-		del: { //Некоторые поля удаления из delInfo (остальные непосредственно в histScheme)
+		del: { //Некоторые поля удаления из delInfo (остальные непосредственно в histSchema)
 			reason: {
 				key: {type: Number},
 				desc: {type: String}
@@ -55,7 +55,7 @@ var delInfo = {
 			r5: {type: Number, sparse: true},
 
 			lastChanged: {type: Date}, //Время последнего изменения
-			hist: [new Schema(histScheme)],
+			hist: [new Schema(histSchema)],
 
 			del: delInfo, //Удалённый
 			hidden: {type: Boolean} //Скрытый комментарий, например, у неактивной фотографии. Не отображается в списке пользователя и не участвует в статистике
@@ -76,7 +76,7 @@ var delInfo = {
 			level: {type: Number},
 
 			lastChanged: {type: Date}, //Время последнего изменения
-			hist: [new Schema(histScheme)],
+			hist: [new Schema(histSchema)],
 
 			del: delInfo //Удалённый
 		},

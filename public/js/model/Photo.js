@@ -15,9 +15,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				convqueue: false //В очереди на конвертацию
 			},
 			compact: {
-				ldate: Date.now(),
-				adate: Date.now(),
-				sdate: Date.now(),
+				ldate: Date.now(), // Время загрузки
+				adate: Date.now(), // Время активации
+				sdate: Date.now(), // Время сортировки
 
 				year: 2000,
 				year2: 2000,
@@ -32,6 +32,8 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 
 				geo: null,
 				regions: [],
+				cdate: null, // Время изменения
+
 				dir: undefined,
 
 				type: 'image/jpeg',
@@ -109,6 +111,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			}
 			if (origin.regions.length) {
 				Region.factory(_.last(origin.regions), 'home');
+			}
+			if (origin.cdate) {
+				origin.cdate = new Date(origin.cdate);
 			}
 			User.factory(origin.user, 'base');
 		}
