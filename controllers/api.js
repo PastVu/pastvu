@@ -37,7 +37,7 @@ var getPhotoRequest = (function () {
 			if (!cid || cid < 0) {
 				return cb(21);
 			}
-			core.request('photo', 'givePhoto', [{}, {cid: cid, noselect: noselect}], function (err, photo) {
+			core.request('photo', 'givePhoto', [{}, {cid: cid, countView: true, noselect: noselect}], function (err, photo) {
 				if (err) {
 					return cb(101);
 				}

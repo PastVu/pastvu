@@ -6,6 +6,88 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 	var $window = $(window),
 		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
 
+	function confirm(params) {
+		return window.noty({
+			text: params.message,
+			type: 'confirm',
+			layout: 'center',
+			modal: true,
+			force: true,
+			animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 500 },
+			buttons: [
+				{addClass: 'btn btn-danger', text: params.okText || 'Ok', onClick: function ($noty) {
+					// this = button element
+					// $noty = $noty element
+
+					if (!params.onOk) {
+						$noty.close();
+						return;
+					}
+
+					var $buttons = $noty.$buttons;
+					var finish = function (onFinish, ctx) {
+						$buttons.find('.btn-danger').remove();
+						return $buttons.find('.btn-primary')
+							.off('click')
+							.attr('disabled', false)
+							.on('click', function () {
+								$noty.close();
+								onFinish && onFinish.call(ctx);
+							}.bind(this));
+					};
+					var methods = {
+						close: function () {
+							$noty.close();
+						},
+						enable: function () {
+							$buttons.find('button').attr('disabled', false);
+						},
+						disable: function () {
+							$buttons.find('button').attr('disabled', true);
+						},
+						replaceTexts: function (message, okText, cancelText) {
+							$noty.$message.children().html(message);
+							if (okText) {
+								$('.btn-danger', $buttons).text(okText);
+							}
+							if (cancelText) {
+								$('.btn-primary', $buttons).text(cancelText);
+							}
+						},
+						success: function (message, buttonText, countdown, onFinish, ctx) {
+							this.replaceTexts(message, null, buttonText);
+							var finishButton = finish(onFinish, ctx);
+
+							if (_.isNumber(countdown) && countdown > 0) {
+								finishButton.text(buttonText + ' (' + (countdown - 1)+ ')');
+
+								Utils.timer(
+									countdown * 1000,
+									function (timeleft) {
+										finishButton.text(buttonText + ' (' + timeleft + ')');
+									},
+									function () {
+										finishButton.trigger('click');
+									}
+								);
+							}
+						},
+						error: function (message, buttonText, onFinish, ctx) {
+							this.replaceTexts(message, null, buttonText);
+							finish(onFinish, ctx);
+						}
+					};
+
+					params.onOk.call(params.ctx, methods);
+				}},
+				{addClass: 'btn btn-primary', text: params.cancelText || 'Отмена', onClick: function ($noty) {
+					$noty.close();
+					params.onCancel && params.onCancel.call(params.ctx);
+				}}
+			]
+		});
+	}
+
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
@@ -32,23 +114,17 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.can = ko_mapping.fromJS({
 				edit: false,
+				revoke: false,
+				reject: false,
+				approve: false,
 				disable: false,
 				remove: false,
 				restore: false,
-				approve: false,
 				convert: false
 			});
 
 			this.IOwner = this.co.IOwner = ko.computed(function () {
 				return this.auth.iAm.login() === this.p.user.login();
-			}, this);
-
-			this.canBeApprove = this.co.canBeApprove = ko.computed(function () {
-				return this.p.s() < 2 && this.can.approve();
-			}, this);
-
-			this.canBeDisable = this.co.canBeDisable = ko.computed(function () {
-				return this.p.s() > 1 && this.p.s() !== 9 && this.can.disable();
 			}, this);
 
 			this.edit = ko.observable(undefined);
@@ -213,6 +289,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 
+		rechargeData: function (photo, can) {
+			this.originData = photo;
+			this.p = Photo.vm(photo, this.p, true);
+			this.can = ko_mapping.fromJS(can, this.can);
+		},
+
 		routeHandler: function () {
 			var cid = Number(globalVM.router.params().cid),
 				hl = globalVM.router.params().hl;
@@ -240,9 +322,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
 
 					if (data) {
-						this.originData = data.origin;
-						this.p = Photo.vm(data.origin, this.p, true);
-						this.can = ko_mapping.fromJS(data.can, this.can);
+						this.rechargeData(data.origin, data.can);
 
 						Utils.title.setTitle({title: this.p.title()});
 
@@ -559,7 +639,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					Photo.vm({regions: data.regions}, this.p, true); //Обновляем регионы
 				}
 
-				if (Utils.isType('function', cb)) {
+				if (_.isFunction(cb)) {
 					cb.call(ctx, error, data);
 				}
 				this.exeregion(false);
@@ -660,7 +740,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 		setApprove: function (data, event) {
-			if (this.canBeApprove()) {
+			if (this.can.approve()) {
 				this.exe(true);
 				socket.once('approvePhotoResult', function (data) {
 					if (data && !data.error) {
@@ -681,7 +761,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			ga('send', 'event', 'photo', 'approve', 'photo approve success');
 		},
 		toggleDisable: function (data, event) {
-			if (this.canBeDisable()) {
+			if (this.can.disable()) {
 				this.exe(true);
 				socket.once('disablePhotoResult', function (data) {
 					if (data && !data.error) {
@@ -719,7 +799,11 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		askForGeo: function (cb, ctx) {
 			window.noty(
 				{
-					text: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>Без точки на карте фотография попадет в раздел «Где это?». В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, в котором предположительно сделана данная фотография<br><br>',
+					text: 'Вы не указали точку съемки фотографии на карте и регион, к которому она может принадлежать.<br><br>' +
+						'Установить точку можно в режиме редактирования, кликнув по карте справа и перемещая появившийся маркер.<br><br>' +
+						'Без точки на карте фотография попадет в раздел «Где это?». ' +
+						'В этом случае, чтобы сообщество в дальнейшем помогло определить координаты, необходимо указать регион, ' +
+						'в котором предположительно сделана данная фотография<br><br>',
 					type: 'confirm',
 					layout: 'center',
 					modal: true,
@@ -751,12 +835,238 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			);
 		},
 
+		reasonSelect: function (reasons, topic, text, cb, ctx) {
+			if (this.reasonVM) {
+				return;
+			}
+
+			renderer(
+				[
+					{
+						module: 'm/common/reason',
+						options: {
+							text: text,
+							select: reasons
+						},
+						modal: {
+							topic: topic,
+							maxWidthRatio: 0.75,
+							animateScale: true,
+							offIcon: {text: 'Отмена', click: function () {
+								cb.call(ctx, true);
+								this.reasonDestroy();
+							}, ctx: this},
+							btns: [
+								{css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
+									var reason = this.reasonVM.getReason();
+									if (reason) {
+										cb.call(ctx, null, reason);
+										this.reasonDestroy();
+									}
+								}, ctx: this},
+								{css: 'btn-success', text: 'Отмена', click: function () {
+									cb.call(ctx, true);
+									this.reasonDestroy();
+								}, ctx: this}
+							]
+						},
+						callback: function (vm) {
+							this.reasonVM = vm;
+							this.childModules[vm.id] = vm;
+						}.bind(this)
+					}
+				],
+				{
+					parent: this,
+					level: this.level + 1
+				}
+			);
+
+		},
+		reasonDestroy: function () {
+			if (this.reasonVM) {
+				this.reasonVM.destroy();
+				delete this.reasonVM;
+			}
+		},
+
+		revoke: function (data, event) {
+			var self = this;
+
+			if (!self.can.revoke()) {
+				return false;
+			}
+
+			var confimingChanges;
+			var cid = self.p.cid();
+			var request = function (cb, ctx) {
+				socket.once('revokePhotoCallback', function (data) {
+					cb.call(ctx, data);
+				});
+				socket.emit('revokePhoto', {cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: confimingChanges});
+			};
+
+			self.exe(true);
+			confirm({
+				message: 'Фотография будет перемещена в корзину и не попадет в очередь на публикацию<br>Подтвердить операцию?',
+				okText: 'Да',
+				cancelText: 'Нет',
+				onOk: function (confirmer) {
+					confirmer.disable();
+
+					request(function (data) {
+						if (data && data.changed) {
+							confimingChanges = true;
+
+							confirmer.replaceTexts(
+								data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+								'Продолжить операцию',
+								'Отменить'
+							);
+							confirmer.enable();
+						} else if (data && !data.error) {
+							self.originData = data.photo;
+
+							confirmer.close();
+							ga('send', 'event', 'photo', 'revoke', 'photo revoke success');
+							globalVM.router.navigate('/u/' + self.p.user.login() + '/photo');
+						} else {
+							confirmer.error(data.message || 'Error occurred', 'Закрыть', function () {
+								self.exe(false);
+							});
+							ga('send', 'event', 'photo', 'revoke', 'photo revoke error');
+						}
+					});
+				},
+				onCancel: function () {
+					self.exe(false);
+				}
+			});
+		},
+
+		reject: function (data, event) {
+			if (!this.can.reject()) {
+				return false;
+			}
+
+			var self = this;
+			var topic = 'Причина отклонения';
+			var text = 'Фотография будет отклонена<br>Укажите причину и подтвердите операцию';
+			var reasons = [
+				{key: '0', name: 'Свободное описание причины'},
+				{key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'},
+				{key: '2', name: 'Спам'}
+			];
+
+			self.reasonSelect(reasons, topic, text, function (cancel, reason) {
+				if (cancel) {
+					return;
+				}
+				socket.once('rejectPhotoCallback', function (result) {
+					if (result && !result.error) {
+						self.p.s(result.s);
+						self.originData.s = result.s;
+						self.can = ko_mapping.fromJS(data.can, self.can);
+
+						ga('send', 'event', 'photo', 'reject', 'photo reject success');
+					} else {
+						window.noty({text: result && result.message || 'Ошибка отклонения', type: 'info', layout: 'center', timeout: 2200, force: true});
+
+						ga('send', 'event', 'photo', 'reject', 'photo reject error');
+					}
+				});
+				socket.emit('rejectPhoto', {cid: self.p.cid(), s: self.p.s()});
+			});
+		},
+
 		remove: function (data, event) {
+			if (!this.can.revoke()) {
+				return false;
+			}
+			var reasons = [{key: '0', name: 'Свободное описание причины'}];
+			var topic = 'Причина отклонения';
+			var text = 'Фотография будет удалена и не попадет в очередь на публикацию<br>Укажите причину и подтвердите операцию';
+
+			this.reasonSelect(reasons, text, function (cancel, reason) {
+				if (cancel) {
+					return;
+				}
+				socket.once('removeCommentResult', function (result) {
+					var i,
+						msg,
+						count,
+						$cdel;
+
+					if (result && !result.error) {
+						count = Number(result.countComments);
+						if (!count) {
+							return;
+						}
+						if (!tplCommentDel) {
+							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
+						}
+
+						comment.lastChanged = result.stamp;
+						this.count(this.count() - count);
+						this.parentModule.commentCountIncrement(-count);
+
+						if (Array.isArray(result.frags)) {
+							this.parentModule.fragReplace(result.frags);
+						}
+
+						comment.del = result.delInfo;
+						//Очищаем массив дочерних как в delHide
+						delete comment.comments;
+						//Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
+						getChildComments(comment, $c).remove();
+						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
+						$cdel = $(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
+						$c.replaceWith($cdel);
+
+						//Если обычный пользователь удаляет свой ответ на свой же комментарий,
+						//пока может тот редактировать, и у того не осталось неудаленных дочерних, то проставляем у родителя кнопку удалить
+						if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
+							parent.can.del = true;
+							for (i = 0; i < parent.comments.length; i++) {
+								if (parent.comments[i].del === undefined) {
+									parent.can.del = false;
+									break;
+								}
+							}
+							if (parent.can.del) {
+								$('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>').insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
+							}
+						}
+
+						//Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
+						if ($cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
+							$window.scrollTo($cdel, {duration: 600});
+						}
+
+						if (count > 1) {
+							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
+						}
+						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
+					} else {
+						msg = result && result.message || '';
+						$('.hlRemove', this.$cmts).removeClass('hlRemove');
+						ga('send', 'event', 'comment', 'delete', 'comment delete error');
+					}
+
+					if (msg) {
+						window.noty({text: msg, type: 'info', layout: 'center', timeout: 2200, force: true});
+					}
+				}, that);
+				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
+			}, this);
+		},
+
+		removeOld: function (data, event) {
 			if (!this.can.remove()) {
 				return false;
 			}
 
-			var that = this;
+			var self = this;
 
 			this.exe(true);
 			window.noty(
@@ -805,6 +1115,9 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 											okButton.trigger('click');
 										}
 									);
+
+									this.can = ko_mapping.fromJS(data.can, this.can);
+
 									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' success');
 								} else {
 									$noty.$message.children().html(data.message || 'Error occurred');
@@ -814,13 +1127,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 									}.bind(this));
 									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' error');
 								}
-							}, that);
-							socket.emit('removePhoto', that.p.cid());
+							}, self);
+							socket.emit('removePhoto', {cid: self.p.cid(), s: self.p.s()});
 
 						}},
 						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
 							$noty.close();
-							that.exe(false);
+							self.exe(false);
 						}}
 					]
 				}

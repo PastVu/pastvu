@@ -45,7 +45,7 @@ var _session = require('./_session.js'),
 			return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - weekMS);
 		},
 		canReply: function (type, obj, usObj) {
-			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s > constants.photo.status.READY || type === 'news');
+			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s >= constants.photo.status.PUBLIC || type === 'news');
 		}
 	};
 

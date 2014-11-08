@@ -348,13 +348,6 @@ async.waterfall([
 				}, manualGarbageCollect);
 			}
 
-			setTimeout(function func() {
-				var mom = moment(Date.now() - startStamp).zone('0');
-
-				logger.info('uptime %d.%s', mom.dayOfYear() - 1, mom.format('HH:mm:ss'));
-
-				setTimeout(func, logUptimeInterval);
-			}, logUptimeInterval);
 
 			coreServer = new CoreServer(core_port, core_hostname, function () {
 				httpServer.listen(http_port, http_hostname, function () {
@@ -362,7 +355,15 @@ async.waterfall([
 					logger.info('Host for users: [%s]', protocol + '://' + host);
 					logger.info('Core server listening [%s:%s] in %s-mode', core_hostname ? core_hostname : '*', core_port, land.toUpperCase());
 					logger.info('HTTP server listening [%s:%s] in %s-mode %s gzip \n', http_hostname ? http_hostname : '*', http_port, land.toUpperCase(), gzip ? 'with' : 'without');
+
 					startStamp = Date.now();
+					setTimeout(function func() {
+						var mom = moment(Date.now() - startStamp).zone('0');
+
+						logger.info('uptime %d.%s', mom.dayOfYear() - 1, mom.format('HH:mm:ss'));
+
+						setTimeout(func, logUptimeInterval);
+					}, logUptimeInterval + 100);
 				});
 			});
 		}

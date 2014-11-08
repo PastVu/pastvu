@@ -7,6 +7,7 @@ var _session = require('./_session.js'),
 	UserSelfPublishedPhotos,
 	Photo,
 	PhotoMap,
+    PhotoHistory,
 	Comment,
 	Counter,
 	UserSubscr,
@@ -17,7 +18,7 @@ var _session = require('./_session.js'),
 	commentController = require('./comment.js'),
 
 	_ = require('lodash'),
-	fs = require('fs'),
+    fs = require('fs'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	step = require('step'),
@@ -32,38 +33,42 @@ var _session = require('./_session.js'),
 	maxRegionLevel = global.appVar.maxRegionLevel,
 
 	msg = {
-		deny: 'You do not have permission for this action',
+		deny: 'У вас нет прав на это действие',
 		noUser: 'Запрашиваемый пользователь не существует',
 		notExists: 'Запрашиваемая фотография не существует',
 		notExistsRegion: 'Such region does not exist',
+		changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена', // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
 		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
 	},
 
 	constants = require('./constants.js'),
 	status = constants.photo.status,
+	snaphotFields = constants.photo.snaphotFields,
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsWithRegions = _.assign({geo: 1}, compactFields, regionController.regionsAllSelectHash),
 	compactFieldsIdWithRegions = _.assign({geo: 1}, compactFieldsId, regionController.regionsAllSelectHash),
+
 	permissions = {
-		//Определяет может ли модерировать фотографию пользователь
-		//Если да, то в случае регионального модератора вернёт номер региона,
-		//в случае, глобального модератора и админа - true
+		// Определяет может ли модерировать фотографию пользователь
+		// Если да, то в случае регионального модератора вернёт номер региона,
+		// в случае, глобального модератора и админа - true
 		canModerate: function (photo, usObj) {
 			var rhash,
 				photoRegion,
 				i;
 
 			if (usObj.isModerator) {
-				//Если у пользователя роль модератора регионов, смотрим его регионы
+				// Если у пользователя роль модератора регионов, смотрим его регионы
 				if (!usObj.user.mod_regions || !usObj.user.mod_regions.length) {
-					return true; //Глобальные модераторы могут модерировать всё
+					return true; // Глобальные модераторы могут модерировать всё
 				}
 
-				//Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
+				// Если фотография принадлежит одному из модерируемых регионов, значит пользователь может её модерировать
+				// В этом случае возвращаем номер этого региона
 				rhash = usObj.mod_rhash;
 				for (i = 0; i <= maxRegionLevel; i++) {
 					photoRegion = photo['r' + i];
@@ -72,38 +77,49 @@ var _session = require('./_session.js'),
 					}
 				}
 			} else if (usObj.isAdmin) {
-				//Если пользователь админ - то может
+				// Если пользователь админ - то может
 				return true;
 			}
 			return false;
 		},
-		getCan: function (photo, usObj) {
+		getCan: function (photo, usObj, canModerate) {
 			var can = {
 					edit: false,
+					revoke: false,
+					reject: false,
+					approve: false,
 					disable: false,
 					remove: false,
 					restore: false,
-					approve: false,
 					convert: false
 				},
-				ownPhoto,
-				canModerate;
+				s = photo.s,
+				ownPhoto;
 
 			if (usObj.registered) {
-				ownPhoto = photo.user && photo.user.equals(usObj.user._id);
-				canModerate = permissions.canModerate(photo, usObj);
+				ownPhoto = !!photo.user && photo.user.equals(usObj.user._id);
+				if (canModerate === undefined) {
+					canModerate = permissions.canModerate(photo, usObj);
+				}
 
-				can.edit = canModerate || ownPhoto;
-				can.remove = canModerate || photo.s < 2 && ownPhoto; //Пока фото новое, её может удалить и владелец
-				can.restore = usObj.isAdmin; //Восстанавливать может только администратор
+				// Редактировать может модератор и владелец, если оно не удалено. Администратор - всегда
+				can.edit = usObj.isAdmin || s !== status.REMOVED && (canModerate || ownPhoto);
+				// Отозвать может только владелец пока фото новое
+				can.revoke = s < status.REVOKE && ownPhoto;
+				// Модератор может отклонить не свое фото пока оно новое
+				can.reject = s < status.REVOKE && canModerate && !ownPhoto;
+				// Восстанавливать из удаленных может только администратор
+				can.restore = usObj.isAdmin;
+				// Отправить на конвертацию может только администратор
+				can.convert = usObj.isAdmin;
+
 				if (canModerate) {
-					can.disable = true;
-					if (photo.s < 2) {
-						can.approve = true;
-					}
-					if (usObj.isAdmin) {
-						can.convert = true;
-					}
+					// Модератор может одобрить новое фото
+					can.approve = s < status.REJECT;
+					// Модератор может деактивировать только опубликованное
+					can.disable = s === status.PUBLIC;
+					// Модератор может удалить уже опубликованное и не удаленное фото
+					can.remove = s >= status.PUBLIC && s !== status.REMOVED;
 				}
 			}
 			return can;
@@ -149,22 +165,20 @@ var core = {
 			return canCreate;
 		};
 	}()),
-	givePhoto: function (iAm, data, cb) {
-		var cid = data.cid,
+	givePhoto: function (iAm, params, cb) {
+		var cid = params.cid,
 			defaultNoSelect = {sign: 0},
 			fieldNoSelect = {};
 
-		if (data.noselect !== undefined) {
-			_.assign(fieldNoSelect, data.noselect);
+		if (params.noselect !== undefined) {
+			_.assign(fieldNoSelect, params.noselect);
 		}
 		_.defaults(fieldNoSelect, defaultNoSelect);
 		if (fieldNoSelect.frags === undefined) {
 			fieldNoSelect['frags._id'] = 0;
 		}
 
-		//Инкрементируем кол-во просмотров только у публичных фото
-		//TODO: Сделать инкрементацию только у публичных!
-		Photo.findOneAndUpdate({cid: cid}, {$inc: {vdcount: 1, vwcount: 1, vcount: 1}}, {new: true, select: fieldNoSelect}, function (err, photo) {
+		Photo.findOne({cid: cid}, fieldNoSelect, function (err, photo) {
 			if (err) {
 				return cb(err);
 			}
@@ -175,7 +189,7 @@ var core = {
 				var can;
 
 				if (iAm.registered) {
-					//Права надо проверять до популяции пользователя
+					// Права надо проверять до популяции пользователя
 					can = permissions.getCan(photo, iAm);
 				}
 
@@ -188,7 +202,12 @@ var core = {
 						if (userObj) {
 							photo = photo.toObject();
 							photo.user = {
-								login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, ranks: userObj.user.ranks || [], sex: userObj.user.sex, online: true
+								login: userObj.user.login,
+								avatar: userObj.user.avatar,
+								disp: userObj.user.disp,
+								ranks: userObj.user.ranks || [],
+								sex: userObj.user.sex,
+								online: true
 							};
 							paralellUser(null, photo);
 						} else {
@@ -196,7 +215,7 @@ var core = {
 								paralellUser(err, photo && photo.toObject());
 							});
 						}
-						//Если у фото нет координаты, берем домашнее положение региона
+						// Если у фото нет координаты, берем домашнее положение региона
 						if (!photo.geo) {
 							regionFields.center = 1;
 							regionFields.bbox = 1;
@@ -243,8 +262,7 @@ var core = {
 						}
 
 						if (!iAm.registered || !photo.ccount) {
-							delete photo._id;
-							cb(null, photo, can);
+							finish();
 						} else {
 							commentController.getNewCommentsCount([photo._id], iAm.user._id, null, function (err, countsHash) {
 								if (err) {
@@ -253,9 +271,24 @@ var core = {
 								if (countsHash[photo._id]) {
 									photo.ccount_new = countsHash[photo._id];
 								}
-								delete photo._id;
-								cb(null, photo, can);
+								finish();
 							});
+						}
+
+						function finish () {
+							delete photo._id;
+
+							// Инкрементируем кол-во просмотров только у публичных фото
+							if (params.countView === true && photo.s === status.PUBLIC) {
+								photo.vdcount = (photo.vdcount || 0) + 1;
+								photo.vwcount = (photo.vwcount || 0) + 1;
+								photo.vcount = (photo.vcount || 0) + 1;
+
+								// В базе через инкремент, чтобы избежать race conditions
+								Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+							}
+
+							cb(null, photo, can);
 						}
 					}
 				);
@@ -570,19 +603,59 @@ function removePhotoIncoming(iAm, data, cb) {
 	fs.unlink(incomeDir + data.file, cb);
 }
 
+function getPhotoSnaphotFields(oldPhoto, newPhoto) {
+    return snaphotFields.reduce(function (result, field) {
+        var oldValue = oldPhoto[field];
+
+        if (!_.isEqual(oldValue, newPhoto[field])) {
+            result[field] = oldValue;
+        }
+
+        return result;
+    }, {});
+}
+
+function savePhotoSnaphot(iAm, oldPhotoObj, photo, canModerate, cb) {
+    var snapshot = getPhotoSnaphotFields(oldPhotoObj, photo.toObject());
+
+    if (Object.keys(snapshot).length) {
+		var history = new PhotoHistory({
+			cid: photo.cid,
+			stamp: photo.cdate || new Date(),
+			user: iAm.user._id,
+			snapshot: snapshot
+		});
+
+		if (canModerate && iAm.user.role) {
+			// Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
+			history.role = iAm.user.role;
+
+			// В случае с модератором региона, permissions.canModerate возвращает cid роли
+			if (iAm.isModerator && _.isNumber(canModerate)) {
+				history.roleregion = canModerate;
+			}
+		}
+
+		history.save(cb);
+    } else {
+        cb();
+    }
+}
+
 /**
- * Удаление фотографии
- * @param socket Сокет пользователя
- * @param cid
+ * Отзыв собственной фотографии
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
  * @param cb Коллбэк
  */
-function removePhoto(socket, cid, cb) {
+function revokePhoto(socket, data, cb) {
 	var iAm = socket.handshake.usObj;
 
 	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	cid = Number(cid);
+	var cid = data && Number(data.cid);
+
 	if (!cid) {
 		return cb({message: 'Bad params', error: true});
 	}
@@ -592,65 +665,193 @@ function removePhoto(socket, cid, cb) {
 			return cb({message: err && err.message || 'No such photo', error: true});
 		}
 
-		if (!permissions.getCan(photo, iAm).remove) {
+		if (_.isNumber(data.s) && data.s !== photo.s) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
+
+		if (!permissions.getCan(photo, iAm).revoke) {
 			return cb({message: msg.deny, error: true});
 		}
 
-		if (photo.s === status.NEW || photo.s === status.READY) {
-
-			photo.remove(function (err) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-
-				var userObj = _session.getOnline(null, photo.user);
-
-				//Пересчитывам кол-во новых фото у владельца
-				if (userObj) {
-					userObj.user.pfcount = userObj.user.pfcount - 1;
-					_session.saveEmitUser(userObj);
-				} else {
-					User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
-				}
-
-				//Удаляем из конвейера если есть
-				PhotoConverter.removePhotos([photo.cid]);
-
-				//Удаляем файлы фотографии
-				fs.unlink(privateDir + photo.file, Utils.dummyFn);
-				imageFolders.forEach(function (folder) {
-					fs.unlink(publicDir + folder + photo.file, Utils.dummyFn);
-				});
-
-				cb({message: 'ok'});
-			});
-		} else {
-			var isPublic = photo.s === status.PUBLIC;
-
-			photo.s = status.REMOVED;
-			photo.save(function (err, photoSaved) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				step(
-					function () {
-						//Отписываем всех пользователей
-						subscrController.unSubscribeObj(photoSaved._id, null, this.parallel());
-						//Удаляем время просмотра комментариев у пользователей
-						commentController.dropCommentsView(photoSaved._id, null, this.parallel());
-						if (isPublic) {
-							changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
-						}
-					},
-					function (err) {
-						if (err) {
-							return cb({message: 'Removed ok, but: ' + (err && err.message || 'other changes error'), error: true});
-						}
-						cb({message: 'ok'});
-					}
-				);
-			});
+		// Если фотография изменилась после отображения и не стоит флаг игнорирования изменения, то возвращаем статус, что изменено
+		if (_.isDate(photo.cdate) && !data.ignoreChange) {
+			if (data.cdate) {
+				data.cdate = new Date(data.cdate);
+			}
+			if (!_.isEqual(data.cdate, photo.cdate)) {
+				return cb({changed: true, message: msg.changed});
+			}
 		}
+
+		var oldPhotoObj = photo.toObject();
+
+		photo.s = status.REVOKE;
+		photo.cdate = new Date();
+
+		photo.save(function (err, photoSaved) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			var ownerObj = _session.getOnline(null, photo.user);
+
+			// Пересчитывам кол-во новых фото у владельца
+			if (ownerObj) {
+				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
+				_session.saveEmitUser(ownerObj);
+			} else {
+				User.update({ _id: photo.user }, { $inc: { pfcount: -1 } }).exec();
+			}
+
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, false, function (err) {
+				if (err) {
+					return cb({ message: 'Revoked ok, but savePhotoSnaphot error: ' + (err && err.message), error: true });
+				}
+
+				// Заново выбираем данные для отображения
+				core.givePhoto(iAm, { cid: photoSaved.cid }, function (err, photo, can) {
+					if (err) {
+						return cb({ message: 'Revoked ok, but give photo error: ' + (err && err.message), error: true });
+					}
+
+					cb({ message: 'ok', photo: photo, can: can });
+				});
+			});
+		});
+
+	});
+}
+
+
+/**
+ * Отклонение фотографии
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ * @param cb Коллбэк
+ */
+function rejectPhoto(socket, data, cb) {
+	var iAm = socket.handshake.usObj;
+
+	if (!iAm.registered) {
+		return cb({message: msg.deny, error: true});
+	}
+	var cid = data && Number(data.cid);
+
+	if (!cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || 'No such photo', error: true});
+		}
+
+		if (_.isNumber(data.s) && data.s !== photo.s) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
+
+		var canModerate = permissions.canModerate(photo, iAm);
+
+		if (!permissions.getCan(photo, iAm, canModerate).reject) {
+			return cb({message: msg.deny, error: true});
+		}
+
+		var oldPhotoObj = photo.toObject();
+
+		photo.s = status.REJECT;
+		photo.cdate = new Date();
+
+		photo.save(function (err, photoSaved) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			var ownerObj = _session.getOnline(null, photo.user);
+
+			// Пересчитывам кол-во новых фото у владельца
+			if (ownerObj) {
+				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
+				_session.saveEmitUser(ownerObj);
+			} else {
+				User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
+			}
+
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, canModerate, function (err) {
+				if (err) {
+					return cb({message: 'Rejected ok, but snapshot save error: ' + (err && err.message || ''), error: true});
+				}
+				cb({message: 'ok', s: photoSaved.s, can: permissions.getCan(photoSaved, iAm, canModerate)});
+			});
+		});
+
+	});
+}
+
+/**
+ * Удаление фотографии
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ * @param cb Коллбэк
+ */
+function removePhoto(socket, data, cb) {
+	var iAm = socket.handshake.usObj;
+
+	if (!iAm.registered) {
+		return cb({message: msg.deny, error: true});
+	}
+
+	var cid = data && Number(data.cid);
+
+	if (!cid) {
+		return cb({message: 'Bad params', error: true});
+	}
+
+	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
+		if (err || !photo) {
+			return cb({message: err && err.message || 'No such photo', error: true});
+		}
+
+		if (_.isNumber(data.s) && data.s !== photo.s) {
+			return cb({message: msg.anotherStatus, error: true});
+		}
+
+		var canModerate = permissions.canModerate(photo, iAm);
+
+		if (!permissions.getCan(photo, iAm, canModerate).remove) {
+			return cb({message: msg.deny, error: true});
+		}
+
+        var oldPhotoObj = photo.toObject();
+
+		photo.s = status.REMOVED;
+		photo.cdate = new Date();
+
+		photo.save(function (err, photoSaved) {
+			if (err) {
+				return cb({ message: err && err.message, error: true });
+			}
+
+			step(
+				function () {
+					// Сохраняем в истории предыдущий статус
+					savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, canModerate, this.parallel());
+					//Отписываем всех пользователей
+					subscrController.unSubscribeObj(photoSaved._id, null, this.parallel());
+					//Удаляем время просмотра комментариев у пользователей
+					commentController.dropCommentsView(photoSaved._id, null, this.parallel());
+					if (oldPhotoObj.s === status.PUBLIC) {
+						changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
+					}
+				},
+				function (err) {
+					if (err) {
+						return cb({message: 'Removed ok, but: ' + (err && err.message || 'other changes error'), error: true});
+					}
+					cb({ message: 'ok', s: photoSaved.s, can: permissions.getCan(photoSaved, iAm, canModerate) });
+				}
+			);
+
+		});
 	});
 }
 
@@ -797,9 +998,12 @@ function givePhoto(iAm, data, cb) {
 	if (!data || !Number(data.cid)) {
 		return cb({message: msg.notExists, error: true});
 	}
-	data.cid = Number(data.cid);
+	var params = {
+		cid: Number(data.cid),
+		countView: true
+	};
 
-	core.givePhoto(iAm, data, function (err, photo, can) {
+	core.givePhoto(iAm, params, function (err, photo, can) {
 		if (err) {
 			return cb({message: err.message, error: true});
 		}
@@ -1197,7 +1401,7 @@ function givePhotosFresh(iAm, data, cb) {
 function giveCanPhoto(iAm, data, cb) {
 	var cid = Number(data.cid);
 
-	if (isNaN(cid)) {
+	if (!cid) {
 		return cb({message: msg.notExists, error: true});
 	}
 	if (iAm.registered) {
@@ -1322,6 +1526,10 @@ function savePhoto(iAm, data, cb) {
 
 		function save() {
 			_.assign(photo, newValues);
+
+			if (photo.s !== status.NEW) {
+				photo.cdate = new Date();
+			}
 
 			photo.save(function (err, photoSaved) {
 				if (err) {
@@ -1749,7 +1957,8 @@ module.exports.loadController = function (app, db, io) {
 	User = db.model('User');
 	Photo = db.model('Photo');
 	PhotoMap = db.model('PhotoMap');
-	Counter = db.model('Counter');
+    PhotoHistory = db.model('PhotoHistory');
+    Counter = db.model('Counter');
 	Comment = db.model('Comment');
 	UserSubscr = db.model('UserSubscr');
 
@@ -1773,6 +1982,16 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
+		socket.on('rejectPhoto', function (data) {
+			rejectPhoto(socket, data, function (resultData) {
+				socket.emit('rejectPhotoCallback', resultData);
+			});
+		});
+		socket.on('revokePhoto', function (data) {
+			revokePhoto(socket, data, function (resultData) {
+				socket.emit('revokePhotoCallback', resultData);
+			});
+		});
 		socket.on('removePhoto', function (data) {
 			removePhoto(socket, data, function (resultData) {
 				socket.emit('removePhotoCallback', resultData);

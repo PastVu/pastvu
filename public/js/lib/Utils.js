@@ -381,18 +381,19 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 				msDay: 864e5,
 				msWeek: 6048e5,
 
-				midnight: null, //Миллисекунды полуночи текущего дня
-				midnightWeekAgo: null //Миллисекунды полуночи семи дней назад
+				midnight: null, // Миллисекунды полуночи текущего дня
+				midnightWeekAgo: null // Миллисекунды полуночи семи дней назад
 			};
 
-			//Считаем переменные времен
+			// Считаем переменные времен
 			(function timesRecalc() {
 				var dateMidnight = new Date();
 
 				times.midnight = dateMidnight.setHours(0, 0, 0, 0);
 				times.midnightWeekAgo = times.midnight - times.msWeek;
 
-				setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1); //Планируем пересчет на первую миллисекунду следующего дня
+				// Планируем пересчет на первую миллисекунду следующего дня
+				setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1);
 			}());
 
 			return times;
