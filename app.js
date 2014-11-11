@@ -13,6 +13,7 @@ var express = require('express'),
 	argv = require('optimist').argv,
 	moment = require('moment'),
 	_ = require('lodash'),
+	Bluebird = require('bluebird'),
 
 	mkdirp = require('mkdirp'),
 	mongoose = require('mongoose'),
@@ -85,7 +86,6 @@ var pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8')),
 	logUptimeInterval = conf.logUptimeInterval, // Интервал логирования времени работы сервера
 	manualGarbageCollect = conf.manualGarbageCollect; // Интервал самостоятельного вызова gc. 0 - выключено
 
-
 /**
  * Вызов логера
  */
@@ -102,6 +102,15 @@ var logger = log4js.getLogger('app.js'),
 logger.info('~~~');
 logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
 logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ' with ' + os.cpus().length + ' cpu cores');
+
+// Включаем подробный stack trace промисов не на проде
+if (land !== 'prod') {
+	logger.info('Bluebird long stack traces are enabled');
+	Bluebird.longStackTraces();
+}
+
+// Промисифаем mongoose, методы будут с постфиксом Async, например, model.saveAsync().then(..)
+Bluebird.promisifyAll(require('mongoose'));
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");
