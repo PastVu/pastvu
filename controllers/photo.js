@@ -18,6 +18,7 @@ var _session = require('./_session.js'),
 	commentController = require('./comment.js'),
 
 	_ = require('lodash'),
+	Bluebird = require('bluebird'),
     fs = require('fs'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
@@ -33,6 +34,7 @@ var _session = require('./_session.js'),
 	maxRegionLevel = global.appVar.maxRegionLevel,
 
 	msg = {
+		badParams: 'Неверные параметры запроса',
 		deny: 'У вас нет прав на это действие',
 		noUser: 'Запрашиваемый пользователь не существует',
 		notExists: 'Запрашиваемая фотография не существует',
@@ -86,6 +88,7 @@ var _session = require('./_session.js'),
 			var can = {
 					edit: false,
 					revoke: false,
+					revision: false,
 					reject: false,
 					approve: false,
 					disable: false,
@@ -139,6 +142,27 @@ var _session = require('./_session.js'),
 		}
 	};
 
+
+/**
+ * Находим фотографию с учетом прав пользователя
+ * @param query
+ * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
+ * @param usObj Объект пользователя
+ * @param cb
+ */
+function findPhoto(query, fieldSelect, usObj, cb) {
+	if (!usObj.registered) {
+		query.s = status.PUBLIC; // Анонимам ищем только публичные
+	}
+	return Photo.findOneAsync(query, fieldSelect).then(function (photo) {
+		if (!photo || !permissions.canSee(photo, usObj)) {
+			throw { message: 'No such photo' };
+		}
+
+		return photo;
+	}).nodeify(cb);
+}
+
 var core = {
 	maxNewPhotosLimit: 1e4,
 	getNewPhotosLimit: (function () {
@@ -178,122 +202,128 @@ var core = {
 			fieldNoSelect['frags._id'] = 0;
 		}
 
-		Photo.findOne({cid: cid}, fieldNoSelect, function (err, photo) {
-			if (err) {
-				return cb(err);
-			}
-
-			if (!photo || !permissions.canSee(photo, iAm)) {
-				return cb({message: msg.notExists});
-			} else {
-				var can;
+		return Photo.findOneAsync({cid: cid}, fieldNoSelect)
+			.bind({})
+			.then(function (photo) {
+				if (!photo || !permissions.canSee(photo, iAm)) {
+					throw { message: msg.notExists };
+				}
 
 				if (iAm.registered) {
 					// Права надо проверять до популяции пользователя
-					can = permissions.getCan(photo, iAm);
+					this.can = permissions.getCan(photo, iAm);
 				}
 
-				step(
-					function () {
-						var userObj = _session.getOnline(null, photo.user),
-							paralellUser = this.parallel(),
-							regionFields = {_id: 0, cid: 1, title_en: 1, title_local: 1};
+				var userObj = _session.getOnline(null, photo.user);
+				var regionFields = { _id: 0, cid: 1, title_en: 1, title_local: 1 };
+				var promiseProps = {};
 
-						if (userObj) {
-							photo = photo.toObject();
-							photo.user = {
-								login: userObj.user.login,
-								avatar: userObj.user.avatar,
-								disp: userObj.user.disp,
-								ranks: userObj.user.ranks || [],
-								sex: userObj.user.sex,
-								online: true
-							};
-							paralellUser(null, photo);
-						} else {
-							photo.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1}}, function (err, photo) {
-								paralellUser(err, photo && photo.toObject());
-							});
+				if (userObj) {
+					photo = photo.toObject();
+					photo.user = {
+						login: userObj.user.login,
+						avatar: userObj.user.avatar,
+						disp: userObj.user.disp,
+						ranks: userObj.user.ranks || [],
+						sex: userObj.user.sex,
+						online: true
+					};
+					promiseProps.photo = photo;
+				} else {
+					promiseProps.photo = photo.populateAsync({
+						path: 'user',
+						select: { _id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1 }
+					}).then(function (photo) {
+						if (!photo) {
+							throw { message: msg.notExists };
 						}
-						// Если у фото нет координаты, берем домашнее положение региона
-						if (!photo.geo) {
-							regionFields.center = 1;
-							regionFields.bbox = 1;
-							regionFields.bboxhome = 1;
-						}
-						regionController.getObjRegionList(photo, regionFields, this.parallel());
+						return photo.toObject();
+					});
+				}
 
-						if (iAm.registered) {
-							UserSubscr.findOne({obj: photo._id, user: iAm.user._id}, {_id: 0}, this.parallel());
-						}
-					},
-					function (err, photo, regions, subscr) {
-						if (err) {
-							return cb(err);
-						}
-						var i = 0,
-							frags,
-							frag;
 
-						//Не отдаем фрагменты удаленных комментариев
-						if (photo.frags) {
-							frags = [];
-							for (i = 0; i < photo.frags.length; i++) {
-								frag = photo.frags[i];
-								if (!frag.del) {
-									frags.push(frag);
-								}
-							}
-							photo.frags = frags;
-						}
+				// Если у фото нет координаты, берем домашнее положение региона
+				if (!photo.geo) {
+					regionFields.center = 1;
+					regionFields.bbox = 1;
+					regionFields.bboxhome = 1;
+				}
+				promiseProps.regions = regionController.getObjRegionList(photo, regionFields);
 
-						if (subscr) {
-							photo.subscr = true;
-						}
+				if (iAm.registered) {
+					promiseProps.subscr = UserSubscr.findOneAsync({ obj: photo._id, user: iAm.user._id }, { _id: 0 });
+				}
 
-						for (i = 0; i <= maxRegionLevel; i++) {
-							delete photo['r' + i];
-						}
-						if (regions.length) {
-							photo.regions = regions;
-						}
-						if (photo.geo) {
-							photo.geo = photo.geo.reverse();
-						}
+				return Bluebird.props(promiseProps);
+			})
+			.then(function (result) {
+				var photo = result.photo;
+				var regions = result.regions;
+				var subscr = result.subscr;
+				var i = 0;
+				var frags;
+				var frag;
 
-						if (!iAm.registered || !photo.ccount) {
-							finish();
-						} else {
-							commentController.getNewCommentsCount([photo._id], iAm.user._id, null, function (err, countsHash) {
-								if (err) {
-									return cb(err);
-								}
-								if (countsHash[photo._id]) {
-									photo.ccount_new = countsHash[photo._id];
-								}
-								finish();
-							});
-						}
-
-						function finish () {
-							delete photo._id;
-
-							// Инкрементируем кол-во просмотров только у публичных фото
-							if (params.countView === true && photo.s === status.PUBLIC) {
-								photo.vdcount = (photo.vdcount || 0) + 1;
-								photo.vwcount = (photo.vwcount || 0) + 1;
-								photo.vcount = (photo.vcount || 0) + 1;
-
-								// В базе через инкремент, чтобы избежать race conditions
-								Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
-							}
-
-							cb(null, photo, can);
+				//Не отдаем фрагменты удаленных комментариев
+				if (photo.frags) {
+					frags = [];
+					for (i = 0; i < photo.frags.length; i++) {
+						frag = photo.frags[i];
+						if (!frag.del) {
+							frags.push(frag);
 						}
 					}
-				);
-			}
-		});
+					photo.frags = frags;
+				}
+
+				if (subscr) {
+					photo.subscr = true;
+				}
+
+				for (i = 0; i <= maxRegionLevel; i++) {
+					delete photo['r' + i];
+				}
+				if (regions.length) {
+					photo.regions = regions;
+				}
+				if (photo.geo) {
+					photo.geo = photo.geo.reverse();
+				}
+
+				if (!iAm.registered || !photo.ccount) {
+					return photo;
+				} else {
+					return commentController.getNewCommentsCountPromised([photo._id], iAm.user._id)
+						.then(function (countsHash) {
+							if (countsHash[photo._id]) {
+								photo.ccount_new = countsHash[photo._id];
+							}
+							return photo;
+						});
+				}
+			})
+			.then(function (photo) {
+				delete photo._id;
+
+				// Инкрементируем кол-во просмотров только у публичных фото
+				if (params.countView === true && photo.s === status.PUBLIC) {
+					photo.vdcount = (photo.vdcount || 0) + 1;
+					photo.vwcount = (photo.vwcount || 0) + 1;
+					photo.vcount = (photo.vcount || 0) + 1;
+
+					// В базе через инкремент, чтобы избежать race conditions
+					Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+				}
+
+				return [photo, this.can];
+			})
+			.nodeify(cb, {spread: true});
+	},
+	givePhotoAsProps: function (iAm, params) {
+		return core.givePhoto(iAm, params)
+			.spread(function (photo, can) {
+				return {photo: photo, can: can};
+			});
 	},
 	getBounds: function (data, cb) {
 		var year = false;
@@ -615,7 +645,7 @@ function getPhotoSnaphotFields(oldPhoto, newPhoto) {
     }, {});
 }
 
-function savePhotoSnaphot(iAm, oldPhotoObj, photo, canModerate, cb) {
+var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate) {
     var snapshot = getPhotoSnaphotFields(oldPhotoObj, photo.toObject());
 
     if (Object.keys(snapshot).length) {
@@ -636,90 +666,100 @@ function savePhotoSnaphot(iAm, oldPhotoObj, photo, canModerate, cb) {
 			}
 		}
 
-		history.save(cb);
+		return history.saveAsync();
     } else {
-        cb();
+		return null;
     }
-}
+});
+
+var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
+	var cid = data && Number(data.cid);
+
+	if (!iAm.registered) {
+		throw {message: msg.deny};
+	}
+	if (!cid) {
+		throw {message: msg.badParams};
+	}
+
+	return findPhoto({cid: cid}, {}, iAm)
+		.then(function (photo) {
+			if (_.isNumber(data.s) && data.s !== photo.s) {
+				throw { message: msg.anotherStatus };
+			}
+
+			if (can && permissions.getCan(photo, iAm)[can] !== true) {
+				throw { message: msg.deny };
+			}
+
+			// Если фотография изменилась после отображения и не стоит флаг игнорирования изменения,
+			// то возвращаем статус, что изменено
+			if (data.ignoreChange !== true && _.isDate(photo.cdate) && (!data.cdate || !_.isEqual(new Date(data.cdate), photo.cdate))) {
+				throw { changed: true };
+			}
+
+			return photo;
+		});
+});
 
 /**
  * Отзыв собственной фотографии
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
- * @param cb Коллбэк
  */
-function revokePhoto(socket, data, cb) {
+var revokePhoto = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-	var cid = data && Number(data.cid);
+	return prefetchPhoto(iAm, data, 'revoke')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
 
-	if (!cid) {
-		return cb({message: 'Bad params', error: true});
-	}
+			photo.s = status.REVOKE;
+			photo.cdate = new Date();
 
-	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || 'No such photo', error: true});
-		}
-
-		if (_.isNumber(data.s) && data.s !== photo.s) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
-
-		if (!permissions.getCan(photo, iAm).revoke) {
-			return cb({message: msg.deny, error: true});
-		}
-
-		// Если фотография изменилась после отображения и не стоит флаг игнорирования изменения, то возвращаем статус, что изменено
-		if (_.isDate(photo.cdate) && !data.ignoreChange) {
-			if (data.cdate) {
-				data.cdate = new Date(data.cdate);
+			return photo.saveAsync();
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				throw { message: msg.changed, changed: true };
 			}
-			if (!_.isEqual(data.cdate, photo.cdate)) {
-				return cb({changed: true, message: msg.changed});
-			}
-		}
 
-		var oldPhotoObj = photo.toObject();
-
-		photo.s = status.REVOKE;
-		photo.cdate = new Date();
-
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			var ownerObj = _session.getOnline(null, photo.user);
+			throw { message: err.message, error: true};
+		})
+		.spread(function (photoSaved) {
+			var ownerObj = _session.getOnline(null, photoSaved.user);
 
 			// Пересчитывам кол-во новых фото у владельца
 			if (ownerObj) {
 				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
 				_session.saveEmitUser(ownerObj);
 			} else {
-				User.update({ _id: photo.user }, { $inc: { pfcount: -1 } }).exec();
+				User.update({ _id: photoSaved.user }, { $inc: { pfcount: -1 } }).exec();
 			}
 
-			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, false, function (err) {
-				if (err) {
-					return cb({ message: 'Revoked ok, but savePhotoSnaphot error: ' + (err && err.message), error: true });
-				}
-
-				// Заново выбираем данные для отображения
-				core.givePhoto(iAm, { cid: photoSaved.cid }, function (err, photo, can) {
-					if (err) {
-						return cb({ message: 'Revoked ok, but give photo error: ' + (err && err.message), error: true });
-					}
-
-					cb({ message: 'ok', photo: photo, can: can });
+			return Bluebird.props({
+					// Заново выбираем данные для отображения
+					givenPhoto: core.givePhotoAsProps(iAm, { cid: photoSaved.cid }),
+					// Сохраняем в истории предыдущий статус
+					snapshot: savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false)
+				})
+				.catch(function (err) {
+					throw { message: 'Revoked ok, but error: ' + err.message, error: true };
 				});
-			});
+		})
+		.then(function (result) {
+			return { message: 'ok', photo: result.givenPhoto.photo, can: result.givenPhoto.can }
 		});
+});
 
-	});
+/**
+ * Отправить фотографию, ожидающую публикацию на доработку автору
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
+function sendPhotoForRevision(socket, data) {
+
 }
 
 
@@ -1701,29 +1741,6 @@ function convertPhotosAll(iAm, data, cb) {
 }
 
 /**
- * Находим фотографию с учетом прав пользователя
- * @param query
- * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
- * @param usObj Объект пользователя
- * @param cb
- */
-function findPhoto(query, fieldSelect, usObj, cb) {
-	if (!usObj.registered) {
-		query.s = status.PUBLIC; //Анонимам ищем только публичные
-	}
-	Photo.findOne(query, fieldSelect, function (err, photo) {
-		if (err) {
-			return cb(err);
-		}
-		if (photo && permissions.canSee(photo, usObj)) {
-			cb(null, photo);
-		} else {
-			cb(null, null);
-		}
-	});
-}
-
-/**
  * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
  * @param filter
  * @param forUserId
@@ -1988,9 +2005,13 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('revokePhoto', function (data) {
-			revokePhoto(socket, data, function (resultData) {
-				socket.emit('revokePhotoCallback', resultData);
-			});
+			revokePhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('revokePhotoCallback', resultData);
+				})
+				.catch(function (err) {
+					socket.emit('revokePhotoCallback', err);
+				});
 		});
 		socket.on('removePhoto', function (data) {
 			removePhoto(socket, data, function (resultData) {

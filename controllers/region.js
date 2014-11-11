@@ -1300,28 +1300,26 @@ var getOrderedRegionList = (function () {
 	var defFields = {_id: 0, geo: 0, __v: 0};
 
 	return function (cidArr, fields, cb) {
-		Region.find({cid: {$in: cidArr}}, fields || defFields, {lean: true}, function (err, regions) {
-			if (err) {
-				return cb(err);
-			}
-			var parentsSortedArr = [],
-				parent,
-				i = cidArr.length,
-				parentfind = function (parent) {
-					return parent.cid === cidArr[i];
-				};
+		return Region.findAsync({cid: {$in: cidArr}}, fields || defFields, {lean: true})
+			.then(function (regions) {
+				var parentsSortedArr = [],
+					parent,
+					i = cidArr.length,
+					parentfind = function (parent) {
+						return parent.cid === cidArr[i];
+					};
 
-			if (cidArr.length === regions.length) {
-				//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
-				while (i--) {
-					parent = _.find(regions, parentfind);
-					if (parent) {
-						parentsSortedArr.unshift(parent);
+				if (cidArr.length === regions.length) {
+					//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
+					while (i--) {
+						parent = _.find(regions, parentfind);
+						if (parent) {
+							parentsSortedArr.unshift(parent);
+						}
 					}
 				}
-			}
-			cb(null, parentsSortedArr);
-		});
+				return parentsSortedArr;
+			}).nodeify(cb);
 	};
 }());
 
@@ -1343,9 +1341,9 @@ function getObjRegionList(obj, fields, cb) {
 		}
 	}
 	if (!cidArr.length) {
-		cb(null, cidArr);
+		return cb ? cb(null, cidArr) : cidArr;
 	} else {
-		getOrderedRegionList(cidArr, fields, cb);
+		return getOrderedRegionList(cidArr, fields, cb);
 	}
 }
 

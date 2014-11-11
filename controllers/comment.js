@@ -10,6 +10,7 @@ var _session = require('./_session.js'),
 	CommentN,
 	Counter,
 	_ = require('lodash'),
+	Bluebird = require('bluebird'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	step = require('step'),
 	Utils = require('../commons/Utils.js'),
@@ -1982,5 +1983,6 @@ module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
 module.exports.dropCommentsView = dropCommentsView;
 module.exports.getNewCommentsCount = getNewCommentsCount;
+module.exports.getNewCommentsCountPromised = Bluebird.promisify(getNewCommentsCount);
 module.exports.fillNewCommentsCount = fillNewCommentsCount;
 module.exports.getNewCommentsBrief = getNewCommentsBrief;
