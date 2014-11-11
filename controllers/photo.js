@@ -707,7 +707,7 @@ var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-var revokePhoto = Bluebird.method(function (socket, data) {
+var revokePhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
 	return prefetchPhoto(iAm, data, 'revoke')
@@ -720,13 +720,6 @@ var revokePhoto = Bluebird.method(function (socket, data) {
 
 			return photo.saveAsync();
 		})
-		.catch(function (err) {
-			if (err.changed === true) {
-				throw { message: msg.changed, changed: true };
-			}
-
-			throw { message: err.message, error: true};
-		})
 		.spread(function (photoSaved) {
 			var ownerObj = _session.getOnline(null, photoSaved.user);
 
@@ -738,29 +731,88 @@ var revokePhoto = Bluebird.method(function (socket, data) {
 				User.update({ _id: photoSaved.user }, { $inc: { pfcount: -1 } }).exec();
 			}
 
-			return Bluebird.props({
-					// Заново выбираем данные для отображения
-					givenPhoto: core.givePhotoAsProps(iAm, { cid: photoSaved.cid }),
-					// Сохраняем в истории предыдущий статус
-					snapshot: savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false)
-				})
-				.catch(function (err) {
-					throw { message: 'Revoked ok, but error: ' + err.message, error: true };
-				});
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
 		})
-		.then(function (result) {
-			return { message: 'ok', photo: result.givenPhoto.photo, can: result.givenPhoto.can }
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+
+			return { message: err.message, error: true};
 		});
-});
+};
+
+//Подтверждаем новую фотографию
+var approvePhoto = function (socket, data) {
+	var iAm = socket.handshake.usObj;
+
+	return prefetchPhoto(iAm, data, 'approve')
+		.bind({})
+		.then(function (photo) {
+			if (!photo.r0) {
+				throw {message: msg.mustCoord, error: true};
+			}
+
+			this.oldPhotoObj = photo.toObject();
+
+			photo.s = status.PUBLIC;
+			photo.cdate = photo.adate = photo.sdate = new Date();
+
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			var ownerObj = _session.getOnline(null, photoSaved.user);
+
+			// Обновляем количество у автора фотографии
+			if (ownerObj) {
+				ownerObj.user.pcount = ownerObj.user.pcount + 1;
+				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
+				_session.saveEmitUser(ownerObj);
+			} else {
+				User.update({ _id: photoSaved.user }, { $inc: { pcount: 1, pfcount: -1 } }).exec();
+			}
+
+			//Подписываем автора фотографии на неё
+			subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
+
+			// Добавляем фото на карту
+			if (Utils.geo.check(photoSaved.geo)) {
+				photoToMap(photoSaved);
+			}
+
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+
+			return { message: err.message, error: true};
+		});
+};
 
 /**
  * Отправить фотографию, ожидающую публикацию на доработку автору
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-function sendPhotoForRevision(socket, data) {
+var sendPhotoForRevision = function (socket, data) {
 
-}
+};
 
 
 /**
@@ -941,54 +993,6 @@ function restorePhoto(socket, cid, cb) {
 	});
 }
 
-//Подтверждаем новую фотографию
-function approvePhoto(iAm, cid, cb) {
-	cid = Number(cid);
-	if (!cid) {
-		return cb({message: msg.notExists, error: true});
-	}
-
-	Photo.findOne({cid: cid}, function (err, photo) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		if (!photo) {
-			return cb({message: msg.notExists, error: true});
-		}
-		if (photo.s !== status.NEW && photo.s !== status.READY) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
-		if (!photo.r0) {
-			return cb({message: msg.mustCoord, error: true});
-		}
-
-		photo.s = status.PUBLIC;
-		photo.adate = photo.sdate = new Date();
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({message: 'Photo approved successfully'});
-
-			if (Utils.geo.check(photoSaved.geo)) {
-				photoToMap(photoSaved);
-			}
-
-			//Обновляем количество у автора фотографии
-			var userObj = _session.getOnline(null, photoSaved.user);
-			if (userObj) {
-				userObj.user.pcount = userObj.user.pcount + 1;
-				userObj.user.pfcount = userObj.user.pfcount - 1;
-				_session.saveEmitUser(userObj);
-			} else {
-				User.update({_id: photoSaved.user}, {$inc: {pcount: 1, pfcount: -1}}).exec();
-			}
-
-			//Подписываем автора фотографии на неё
-			subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
-		});
-	});
-}
 
 //Активация/деактивация фото
 function activateDeactivate(socket, data, cb) {
@@ -1567,9 +1571,9 @@ function savePhoto(iAm, data, cb) {
 		function save() {
 			_.assign(photo, newValues);
 
-			if (photo.s !== status.NEW) {
+			//if (photo.s !== status.NEW) {
 				photo.cdate = new Date();
-			}
+			//}
 
 			photo.save(function (err, photoSaved) {
 				if (err) {
@@ -1638,35 +1642,13 @@ function readyPhoto(iAm, data, cb) {
 			return cb({message: msg.mustCoord, error: true});
 		}
 
-		if (iAm.user.ranks && iAm.user.ranks.indexOf('mec_gold') > -1) {
-			//Если пользователь - золотой меценат, значит он сразу публикует фото, если таких действий еще менее 100
-			UserSelfPublishedPhotos.find({user: iAm.user._id}, {_id: 0, photos: 1}, {lean: true}, function (err, obj) {
-				if (obj && obj.photos && obj.photos.length >= 100) {
-					justSetReady();
-				} else {
-					approvePhoto(iAm, cid, function (result) {
-						if (result.error) {
-							return cb(result);
-						}
-						cb({message: 'Ok', published: true});
-						UserSelfPublishedPhotos.update({user: iAm.user._id}, {$push: {photos: photo._id}}, {upsert: true}).exec();
-					});
-				}
-			});
-		} else {
-			//Если пользователь обычный, то просто ставим флаг готовности
-			justSetReady();
-		}
-
-		function justSetReady() {
-			photo.s = status.READY;
-			photo.save(function finish(err) {
-				if (err) {
-					return cb({message: err && err.message, error: true});
-				}
-				cb({message: 'Ok'});
-			});
-		}
+		photo.s = status.READY;
+		photo.save(function finish(err) {
+			if (err) {
+				return cb({message: err && err.message, error: true});
+			}
+			cb({message: 'Ok'});
+		});
 	});
 }
 
@@ -2008,11 +1990,16 @@ module.exports.loadController = function (app, db, io) {
 			revokePhoto(socket, data)
 				.then(function (resultData) {
 					socket.emit('revokePhotoCallback', resultData);
-				})
-				.catch(function (err) {
-					socket.emit('revokePhotoCallback', err);
 				});
 		});
+
+		socket.on('approvePhoto', function (data) {
+			approvePhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('approvePhotoResult', resultData);
+				});
+		});
+
 		socket.on('removePhoto', function (data) {
 			removePhoto(socket, data, function (resultData) {
 				socket.emit('removePhotoCallback', resultData);
@@ -2027,16 +2014,6 @@ module.exports.loadController = function (app, db, io) {
 			restorePhoto(socket, data, function (resultData) {
 				socket.emit('restorePhotoCallback', resultData);
 			});
-		});
-
-		socket.on('approvePhoto', function (data) {
-			if (hs.usObj && hs.usObj.user.role > 4) {
-				approvePhoto(hs.usObj, data, function (resultData) {
-					socket.emit('approvePhotoResult', resultData);
-				});
-			} else {
-				socket.emit('approvePhotoResult', {message: msg.deny, error: true});
-			}
 		});
 
 		socket.on('disablePhoto', function (data) {

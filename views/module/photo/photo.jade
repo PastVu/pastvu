@@ -94,7 +94,7 @@
 		|  На публикацию
 	// /ko
 	//ko if: can.approve()
-	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: setApprove, attr: {disabled: exe()}")
+	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: approve, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-ok
 		|  Опубликовать
 	// /ko

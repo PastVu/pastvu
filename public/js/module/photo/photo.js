@@ -88,6 +88,17 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		});
 	}
 
+	function notyError(message, timeout) {
+		window.noty({
+			text: message || 'Возникла ошибка',
+			type: 'error',
+			layout: 'center',
+			timeout: timeout || 2000,
+			force: true
+		});
+	}
+
+
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
@@ -739,27 +750,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.edit(false);
 			}
 		},
-		setApprove: function (data, event) {
-			if (this.can.approve()) {
-				this.exe(true);
-				socket.once('approvePhotoResult', function (data) {
-					if (data && !data.error) {
-						this.setApproveSuccess();
-					} else {
-						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
-						ga('send', 'event', 'photo', 'edit', 'photo approve error');
-					}
-					this.exe(false);
-				}, this);
-				socket.emit('approvePhoto', this.p.cid());
-			}
-		},
-		setApproveSuccess: function () {
-			this.p.s(5);
-			this.originData.s = 5;
-			this.commentsActivate({checkTimeout: 100});
-			ga('send', 'event', 'photo', 'approve', 'photo approve success');
-		},
 		toggleDisable: function (data, event) {
 			if (this.can.disable()) {
 				this.exe(true);
@@ -931,7 +921,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							ga('send', 'event', 'photo', 'revoke', 'photo revoke success');
 							globalVM.router.navigate('/u/' + self.p.user.login() + '/photo');
 						} else {
-							confirmer.error(data.message || 'Error occurred', 'Закрыть', function () {
+							confirmer.error(data.message, 'Закрыть', function () {
 								self.exe(false);
 							});
 							ga('send', 'event', 'photo', 'revoke', 'photo revoke error');
@@ -942,6 +932,50 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					self.exe(false);
 				}
 			});
+		},
+
+		approve: function (data, event) {
+			var self = this;
+
+			if (!self.can.approve()) {
+				return false;
+			}
+
+			var cid = self.p.cid();
+
+			self.exe(true);
+			(function request (confirmer) {
+				socket.once('approvePhotoResult', function (data) {
+					if (data && data.changed) {
+						confirm({
+							message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+							okText: 'Продолжить публикацию',
+							cancelText: 'Отменить',
+							onOk: function (confirmer) {
+								request(confirmer);
+							},
+							onCancel: function () {
+								self.exe(false);
+							}
+						});
+					} else {
+						if (data && !data.error) {
+							self.rechargeData(data.photo, data.can);
+							self.commentsActivate({ checkTimeout: 100 });
+
+							if (confirmer) {
+								confirmer.close();
+							}
+							ga('send', 'event', 'photo', 'approve', 'photo approve success');
+						} else {
+							notyError(data.message);
+							ga('send', 'event', 'photo', 'edit', 'photo approve error');
+						}
+						self.exe(false);
+					}
+				});
+				socket.emit('approvePhoto', {cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: !!confirmer});
+			}());
 		},
 
 		reject: function (data, event) {
@@ -1296,12 +1330,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.exe(true);
 			socket.once('readyPhotoResult', function (data) {
 				if (data && !data.error) {
-					if (data.published) {
-						this.setApproveSuccess();
-					} else {
-						this.p.s(1);
-						this.originData.s = 1;
-					}
+					this.p.s(1);
+					this.originData.s = 1;
 					ga('send', 'event', 'photo', 'ready', 'photo ready success');
 				} else {
 					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
