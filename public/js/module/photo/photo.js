@@ -945,7 +945,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				return false;
 			}
 			if (_.isEmpty(p.geo()) && _.isEmpty(p.regions())) {
-				return this.askForGeo();
+				return self.askForGeo();
 			}
 
 			self.exe(true);
@@ -978,19 +978,19 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						self.exe(false);
 					}
 				});
-				socket.emit('readyPhoto', {cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: !!confirmer});
+				socket.emit('readyPhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
 
 		},
 
 		approve: function (data, event) {
 			var self = this;
+			var p = self.p;
+			var cid = p.cid();
 
 			if (!self.can.approve()) {
 				return false;
 			}
-
-			var cid = self.p.cid();
 
 			self.exe(true);
 			(function request (confirmer) {
@@ -1023,7 +1023,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 						self.exe(false);
 					}
 				});
-				socket.emit('approvePhoto', {cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: !!confirmer});
+				socket.emit('approvePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
 		},
 

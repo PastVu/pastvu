@@ -87,7 +87,7 @@ var FragmentSchema = new Schema({
             // Значения изменившихся полей
             snapshot: { type: Schema.Types.Mixed }
         },
-        { collection: 'photos_history', strict: true }
+        { collection: 'photos_history', strict: true, versionKey: false }
     ),
     PhotoMapSchema = new Schema(
         {
