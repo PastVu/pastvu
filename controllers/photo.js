@@ -134,11 +134,15 @@ var _session = require('./_session.js'),
 			if (photo.s === status.PUBLIC) {
 				return true;
 			} else if (usObj.registered && photo.user) {
+				// Владелец всегда может видеть свою фотографию
+				if (photo.user.equals(usObj.user._id)) {
+					return true;
+				}
+				// Удаленную может видеть админ
 				if (photo.s === status.REMOVED) {
 					return usObj.isAdmin;
-				} else {
-					return photo.user.equals(usObj.user._id) || permissions.canModerate(photo, usObj);
 				}
+				return permissions.canModerate(photo, usObj);
 			}
 
 			return false;
