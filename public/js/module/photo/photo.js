@@ -125,6 +125,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			this.can = ko_mapping.fromJS({
 				edit: false,
+				ready: false,
+				revision: false,
 				revoke: false,
 				reject: false,
 				approve: false,
@@ -934,6 +936,53 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			});
 		},
 
+		ready: function (data, event) {
+			var self = this;
+			var p = self.p;
+			var cid = p.cid();
+
+			if (!self.can.ready()) {
+				return false;
+			}
+			if (_.isEmpty(p.geo()) && _.isEmpty(p.regions())) {
+				return this.askForGeo();
+			}
+
+			self.exe(true);
+			(function request (confirmer) {
+				socket.once('readyPhotoResult', function (data) {
+					if (data && data.changed) {
+						confirm({
+							message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+							okText: 'Продолжить отправку',
+							cancelText: 'Отменить',
+							onOk: function (confirmer) {
+								request(confirmer);
+							},
+							onCancel: function () {
+								self.exe(false);
+							}
+						});
+					} else {
+						if (data && !data.error) {
+							self.rechargeData(data.photo, data.can);
+
+							if (confirmer) {
+								confirmer.close();
+							}
+							ga('send', 'event', 'photo', 'ready', 'photo ready success');
+						} else {
+							notyError(data.message);
+							ga('send', 'event', 'photo', 'ready', 'photo ready error');
+						}
+						self.exe(false);
+					}
+				});
+				socket.emit('readyPhoto', {cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: !!confirmer});
+			}());
+
+		},
+
 		approve: function (data, event) {
 			var self = this;
 
@@ -969,7 +1018,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							ga('send', 'event', 'photo', 'approve', 'photo approve success');
 						} else {
 							notyError(data.message);
-							ga('send', 'event', 'photo', 'edit', 'photo approve error');
+							ga('send', 'event', 'photo', 'approve', 'photo approve error');
 						}
 						self.exe(false);
 					}
@@ -1316,30 +1365,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			delete this.descEditOrigin;
 			delete this.sourceEditOrigin;
 			delete this.authorEditOrigin;
-		},
-		setReady: function (data, event) {
-			if (this.p.s() === 0) {
-				if (_.isEmpty(this.p.geo()) && _.isEmpty(this.p.regions())) {
-					this.askForGeo();
-				} else {
-					this.sendReady();
-				}
-			}
-		},
-		sendReady: function (data, event) {
-			this.exe(true);
-			socket.once('readyPhotoResult', function (data) {
-				if (data && !data.error) {
-					this.p.s(1);
-					this.originData.s = 1;
-					ga('send', 'event', 'photo', 'ready', 'photo ready success');
-				} else {
-					window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-					ga('send', 'event', 'photo', 'ready', 'photo ready error');
-				}
-				this.exe(false);
-			}, this);
-			socket.emit('readyPhoto', this.p.cid());
 		},
 
 		toConvert: function (data, event) {

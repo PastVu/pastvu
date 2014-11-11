@@ -88,8 +88,8 @@
 	button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-pencil
 		|  Редактировать
-	//ko if: IOwner() && p.s()===0
-	button.btn.btn-success(type="button", title="Отправить на премодерацию и дальнейшую публикацию", data-bind="click: setReady, attr: {disabled: exe()}")
+	//ko if: can.ready()
+	button.btn.btn-success(type="button", title="Отправить на премодерацию и дальнейшую публикацию", data-bind="click: ready, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-check
 		|  На публикацию
 	// /ko

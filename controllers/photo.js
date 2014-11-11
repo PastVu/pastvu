@@ -87,8 +87,9 @@ var _session = require('./_session.js'),
 		getCan: function (photo, usObj, canModerate) {
 			var can = {
 					edit: false,
-					revoke: false,
+					ready: false,
 					revision: false,
+					revoke: false,
 					reject: false,
 					approve: false,
 					disable: false,
@@ -107,6 +108,8 @@ var _session = require('./_session.js'),
 
 				// Редактировать может модератор и владелец, если оно не удалено. Администратор - всегда
 				can.edit = usObj.isAdmin || s !== status.REMOVED && (canModerate || ownPhoto);
+				// Отправлять на премодерацию может владелец и фото новое или на доработке
+				can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto;
 				// Отозвать может только владелец пока фото новое
 				can.revoke = s < status.REVOKE && ownPhoto;
 				// Модератор может отклонить не свое фото пока оно новое
@@ -744,12 +747,56 @@ var revokePhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-
 			return { message: err.message, error: true};
 		});
 };
 
-//Подтверждаем новую фотографию
+
+/**
+ * Говорим, что фото готово к премодерации и публикации
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
+function readyPhoto(socket, data) {
+	var iAm = socket.handshake.usObj;
+
+	return prefetchPhoto(iAm, data, 'ready')
+		.bind({})
+		.then(function (photo) {
+			if (!photo.r0) {
+				throw {message: msg.mustCoord, error: true};
+			}
+
+			this.oldPhotoObj = photo.toObject();
+
+			photo.s = status.READY;
+			photo.cdate = new Date();
+
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+			return { message: err.message, error: true};
+		});
+}
+
+/**
+ * Публикация (подтверждение) новой фотографии
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
 var approvePhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
@@ -800,7 +847,6 @@ var approvePhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-
 			return { message: err.message, error: true};
 		});
 };
@@ -1618,40 +1664,6 @@ function savePhoto(iAm, data, cb) {
 	});
 }
 
-//Говорим, что фото готово к премодерации и публикации
-function readyPhoto(iAm, data, cb) {
-	var cid = Number(data);
-
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-	if (!cid) {
-		return cb({message: msg.notExists, error: true});
-	}
-	Photo.findOne({cid: cid}, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || msg.notExists, error: true});
-		}
-		if (photo.s !== status.NEW) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
-		if (!permissions.getCan(photo, iAm).edit) {
-			return cb({message: msg.deny, error: true});
-		}
-		if (!photo.r0) {
-			return cb({message: msg.mustCoord, error: true});
-		}
-
-		photo.s = status.READY;
-		photo.save(function finish(err) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({message: 'Ok'});
-		});
-	});
-}
-
 //Фотографии и кластеры по границам
 //{z: Масштаб, bounds: [[]]}
 function getBounds(data, cb) {
@@ -1986,10 +1998,18 @@ module.exports.loadController = function (app, db, io) {
 				socket.emit('rejectPhotoCallback', resultData);
 			});
 		});
+
 		socket.on('revokePhoto', function (data) {
 			revokePhoto(socket, data)
 				.then(function (resultData) {
 					socket.emit('revokePhotoCallback', resultData);
+				});
+		});
+
+		socket.on('readyPhoto', function (data) {
+			readyPhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('readyPhotoResult', resultData);
 				});
 		});
 
@@ -2091,12 +2111,6 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('savePhoto', function (data) {
 			savePhoto(hs.usObj, data, function (resultData) {
 				socket.emit('savePhotoResult', resultData);
-			});
-		});
-
-		socket.on('readyPhoto', function (data) {
-			readyPhoto(hs.usObj, data, function (resultData) {
-				socket.emit('readyPhotoResult', resultData);
 			});
 		});
 
