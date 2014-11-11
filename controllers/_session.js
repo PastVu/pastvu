@@ -177,25 +177,37 @@ function sessionCreate(ip, headers, browser) {
 }
 //Обновляет сессию в базе, если при входе она была выбрана из базы
 function sessionUpdate(session, ip, headers, browser, cb) {
+	var stamp = new Date();
+	var data = session.data;
+
 	//Обновляем время сессии
-	session.stamp = new Date();
+	session.stamp = stamp;
+
 	//Если пользователь зарегистрирован, обнуляем поле anonym, т.к. при выборке из базы mongoose его автоматически заполняет {}
 	if (session.user) {
 		session.anonym = undefined;
 	}
+
 	//Если ip пользователя изменился, записываем в историю старый с временем изменения
-	if (ip !== session.data.ip) {
-		if (!session.data.ip_hist) {
-			session.data.ip_hist = [];
+	if (ip !== data.ip) {
+		if (!data.ip_hist) {
+			data.ip_hist = [];
 		}
-		session.data.ip_hist.push({ip: session.data.ip, off: session.stamp});
-		session.data.ip = ip;
+		data.ip_hist.push({ip: data.ip, off: stamp});
+		data.ip = ip;
 	}
-	//Если user-agent заголовка изменился, заново парсим агента
-	if (headers['user-agent'] !== session.data.headers['user-agent']) {
-		session.data.agent = getBrowserAgent(browser);
+
+	//Если user-agent заголовка изменился, заново парсим агента и записываем предыдущего в историю с временем изменения
+	if (headers['user-agent'] !== data.headers['user-agent']) {
+		if (data.agent) {
+			if (!data.agent_hist) {
+				data.agent_hist = [];
+			}
+			data.agent_hist.push({agent: data.agent, off: stamp});
+		}
+		data.agent = getBrowserAgent(browser);
 	}
-	session.data.headers = headers;
+	data.headers = headers;
 	session.markModified('data');
 
 	session.save(cb);
