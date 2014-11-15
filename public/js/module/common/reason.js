@@ -1,4 +1,3 @@
-/*global requirejs:true, require:true, define:true*/
 /**
  * Выбор причины
  */
