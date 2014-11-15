@@ -93,6 +93,11 @@
 		span.glyphicon.glyphicon-check
 		|  На публикацию
 	// /ko
+	//ko if: can.revision()
+	button.btn.btn-warning(type="button", title="Отправить пользователю на доработку", data-bind="click: toRevision, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-check
+		|  На доработку
+	// /ko
 	//ko if: can.approve()
 	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: approve, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-ok

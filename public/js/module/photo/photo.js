@@ -833,41 +833,39 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 
 			renderer(
-				[
-					{
-						module: 'm/common/reason',
-						options: {
-							text: text,
-							select: reasons
-						},
-						modal: {
-							topic: topic,
-							maxWidthRatio: 0.75,
-							animateScale: true,
-							offIcon: {text: 'Отмена', click: function () {
+				[{
+					module: 'm/common/reason',
+					options: {
+						text: text,
+						select: reasons
+					},
+					modal: {
+						topic: topic,
+						maxWidthRatio: 0.75,
+						animateScale: true,
+						offIcon: {text: 'Отмена', click: function () {
+							cb.call(ctx, true);
+							this.reasonDestroy();
+						}, ctx: this},
+						btns: [
+							{css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
+								var reason = this.reasonVM.getReason();
+								if (reason) {
+									cb.call(ctx, null, reason);
+									this.reasonDestroy();
+								}
+							}, ctx: this},
+							{css: 'btn-success', text: 'Отмена', click: function () {
 								cb.call(ctx, true);
 								this.reasonDestroy();
-							}, ctx: this},
-							btns: [
-								{css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
-									var reason = this.reasonVM.getReason();
-									if (reason) {
-										cb.call(ctx, null, reason);
-										this.reasonDestroy();
-									}
-								}, ctx: this},
-								{css: 'btn-success', text: 'Отмена', click: function () {
-									cb.call(ctx, true);
-									this.reasonDestroy();
-								}, ctx: this}
-							]
-						},
-						callback: function (vm) {
-							this.reasonVM = vm;
-							this.childModules[vm.id] = vm;
-						}.bind(this)
-					}
-				],
+							}, ctx: this}
+						]
+					},
+					callback: function (vm) {
+						this.reasonVM = vm;
+						this.childModules[vm.id] = vm;
+					}.bind(this)
+				}],
 				{
 					parent: this,
 					level: this.level + 1
@@ -981,6 +979,66 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				socket.emit('readyPhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
 
+		},
+
+		toRevision: function (data, event) {
+			var self = this;
+
+			if (!self.can.revision()) {
+				return false;
+			}
+
+			var p = self.p;
+			var cid = p.cid();
+			var topic = 'Причина отклонения';
+			var text = 'Фотография будет отправлена на доработку загрузившему её пользователю<br>' +
+				'Укажите, что нужно изменить, чтобы фотография прошла публикацию';
+			var reasons = [
+				{key: '0', name: 'Свободное описание'},
+				{key: '1', name: 'Необходимо исправить название'},
+				{key: '2', name: 'Необходимо указать источник'}
+			];
+
+			self.exe(true);
+
+			self.reasonSelect(reasons, topic, text, function (cancel, reason) {
+				if (cancel) {
+					self.exe(false);
+					return;
+				}
+
+				(function request(confirmer) {
+					socket.once('revisionPhotoResult', function (data) {
+						if (data && data.changed) {
+							confirm({
+								message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+								okText: 'Продолжить операцию',
+								cancelText: 'Отменить',
+								onOk: function (confirmer) {
+									request(confirmer);
+								},
+								onCancel: function () {
+									self.exe(false);
+								}
+							});
+						} else {
+							if (data && !data.error) {
+								self.rechargeData(data.photo, data.can);
+
+								if (confirmer) {
+									confirmer.close();
+								}
+								ga('send', 'event', 'photo', 'revision', 'photo revision success');
+							} else {
+								notyError(data.message);
+								ga('send', 'event', 'photo', 'revision', 'photo revision error');
+							}
+							self.exe(false);
+						}
+					});
+					socket.emit('revisionPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+				}());
+			});
 		},
 
 		approve: function (data, event) {

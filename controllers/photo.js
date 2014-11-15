@@ -37,6 +37,7 @@ var _session = require('./_session.js'),
 		badParams: 'Неверные параметры запроса',
 		deny: 'У вас нет прав на это действие',
 		noUser: 'Запрашиваемый пользователь не существует',
+		needReason: 'Необходимо указать причину операции',
 		notExists: 'Запрашиваемая фотография не существует',
 		notExistsRegion: 'Such region does not exist',
 		changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена', // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
@@ -106,8 +107,8 @@ var _session = require('./_session.js'),
 					canModerate = permissions.canModerate(photo, usObj);
 				}
 
-				// Редактировать может модератор и владелец, если оно не удалено. Администратор - всегда
-				can.edit = usObj.isAdmin || s !== status.REMOVED && (canModerate || ownPhoto);
+				// Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
+				can.edit = usObj.isAdmin || s !== status.REMOVED && s !== status.REVOKE && (canModerate || ownPhoto);
 				// Отправлять на премодерацию может владелец и фото новое или на доработке
 				can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto;
 				// Отозвать может только владелец пока фото новое
@@ -120,6 +121,8 @@ var _session = require('./_session.js'),
 				can.convert = usObj.isAdmin;
 
 				if (canModerate) {
+					// Модератор может отправить на доработку
+					can.revision = s === status.READY;
 					// Модератор может одобрить новое фото
 					can.approve = s < status.REJECT;
 					// Модератор может деактивировать только опубликованное
@@ -652,7 +655,7 @@ function getPhotoSnaphotFields(oldPhoto, newPhoto) {
     }, {});
 }
 
-var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate) {
+var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason) {
     var snapshot = getPhotoSnaphotFields(oldPhotoObj, photo.toObject());
 
     if (Object.keys(snapshot).length) {
@@ -662,6 +665,18 @@ var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 			user: iAm.user._id,
 			snapshot: snapshot
 		});
+
+		if (Number(reason.key)) {
+			history.reason.key = Number(reason.key);
+		}
+		if (_.isString(reason.desc) && reason.desc.length) {
+			history.reason.desc = Utils.inputIncomingParse(reason.desc).result;
+		}
+
+		if (!_.isBoolean(canModerate)) {
+			// При проверке стоит смотреть на oldPhotoObj, так как права проверяются перед сохраннением
+			canModerate = permissions.canModerate(oldPhotoObj, iAm);
+		}
 
 		if (canModerate && iAm.user.role) {
 			// Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
@@ -761,7 +776,7 @@ var revokePhoto = function (socket, data) {
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
  */
-function readyPhoto(socket, data) {
+var readyPhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
 	return prefetchPhoto(iAm, data, 'ready')
@@ -794,7 +809,47 @@ function readyPhoto(socket, data) {
 			}
 			return { message: err.message, error: true};
 		});
-}
+};
+
+/**
+ * Отправить фотографию, ожидающую публикацию на доработку автору
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
+var toRevision = Bluebird.method(function (socket, data) {
+	var iAm = socket.handshake.usObj;
+
+	if (_.isEmpty(data.reason)) {
+		throw {message: msg.needReason};
+	}
+
+	return prefetchPhoto(iAm, data, 'revision')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
+
+			photo.s = status.REVISION;
+			photo.cdate = new Date();
+
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+			return { message: err.message, error: true};
+		});
+});
 
 /**
  * Публикация (подтверждение) новой фотографии
@@ -839,7 +894,7 @@ var approvePhoto = function (socket, data) {
 			}
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -853,15 +908,6 @@ var approvePhoto = function (socket, data) {
 			}
 			return { message: err.message, error: true};
 		});
-};
-
-/**
- * Отправить фотографию, ожидающую публикацию на доработку автору
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- */
-var sendPhotoForRevision = function (socket, data) {
-
 };
 
 
@@ -2014,6 +2060,12 @@ module.exports.loadController = function (app, db, io) {
 			readyPhoto(socket, data)
 				.then(function (resultData) {
 					socket.emit('readyPhotoResult', resultData);
+				});
+		});
+		socket.on('revisionPhoto', function (data) {
+			toRevision(socket, data)
+				.then(function (resultData) {
+					socket.emit('revisionPhotoResult', resultData);
 				});
 		});
 

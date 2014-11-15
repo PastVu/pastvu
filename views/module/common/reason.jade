@@ -7,7 +7,7 @@
 		// /ko
 		.form-group
 			//ko if: options.select.length > 1 && selected().key !== '0' || selected().desclable
-			label.desclabel(for="desc", data-bind="html: selected().desclable || 'Дополнительная информация'")
+			label.desclabel(for="desc", data-bind="html: selected().desclable || 'Дополнительная информация (опционально)'")
 			// /ko
 			textarea#desc.form-control(data-bind="value: desc, attr: {maxlength: selected().descmax || '1000'}", style="resize: vertical;")
 		.form-group
