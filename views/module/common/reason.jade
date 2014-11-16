@@ -1,15 +1,18 @@
 .reason(data-bind="with: repository[M!M]")
-	h5(data-bind="html: options.text")
+	//ko if: title()
+	h5(data-bind="html: title()")
+	// /ko
 	form
-		//ko if: options.select.length > 1
+		//ko if: selections().length > 1
 		.form-group
-			select#presetoptions.form-control(size="1", data-bind="options: options.select, optionsValue: 'key', optionsText: 'name', value: selectedKey")
+			select#presetoptions.form-control(size="1", data-bind="options: selections, optionsValue: 'cid', optionsText: 'title', value: selectedCid")
 		// /ko
 		.form-group
-			//ko if: options.select.length > 1 && selected().key !== '0' || selected().desclable
-			label.desclabel(for="desc", data-bind="html: selected().desclable || 'Дополнительная информация (опционально)'")
+			//- Выводим заголовок описания, если он есть или это не свободное описание и вариантов выбора несколько
+			//ko if: selected().desc.label || selections().length > 1 && Number(selected().cid) !== 0
+			label.desclabel(for="desc", data-bind="html: selected().desc.label || ('Дополнительная информация' + (selected().desc.required ? '' : ' (опционально)'))")
 			// /ko
-			textarea#desc.form-control(data-bind="value: desc, attr: {maxlength: selected().descmax || '1000'}", style="resize: vertical;")
+			textarea#desc.form-control(data-bind="value: desc, attr: {placeholder: selected().desc.placeholder || '', minLength: minLength(), maxlength: selected().desc.max || '1000'}", style="resize: vertical;")
 		.form-group
 			//ko if: errMsg()
 			.error(data-bind="html: errMsg()")

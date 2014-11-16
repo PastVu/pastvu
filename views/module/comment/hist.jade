@@ -24,12 +24,12 @@
 					span.glyphicon.glyphicon-remove
 					|  Комментарий удален
 				.histText
-					| {{?h.del.origin || h.del.reason && h.del.reason.key}}
+					| {{?h.del.origin || h.del.reason && h.del.reason.cid}}
 					div
 						.histCat Причина:
 						| {{?h.del.origin}} Удаление родительского комментария&nbsp;
 						a(href="?hl=comment-{{=h.del.origin}}") {{='#'+h.del.origin}}
-						| {{??}} {{=it.reasonKeys[h.del.reason.key]}}{{?}}
+						| {{??!!h.del.reason.title}} {{=h.del.reason.title}}{{?}}
 					| {{?}}
 
 					| {{?h.del.reason && h.del.reason.desc}}

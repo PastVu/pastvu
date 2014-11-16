@@ -35,6 +35,7 @@ var _session = require('./_session.js'),
 	regionController = require('./region.js'),
 	photoController = require('./photo.js'),
 	subscrController = require('./subscr.js'),
+	reasonController = require('./reason.js'),
 
 	maxRegionLevel = global.appVar.maxRegionLevel,
 
@@ -996,7 +997,7 @@ function removeComment(socket, data, cb) {
 	if (!iAm.registered) {
 		return cb({message: msg.deny, error: true});
 	}
-	if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.key) && !data.reason.desc)) {
+	if (!_.isObject(data) || !Number(data.cid) || !data.reason || (!Number(data.reason.cid) && !data.reason.desc)) {
 		return cb({message: 'Bad params', error: true});
 	}
 	var cid = Number(data.cid),
@@ -1099,8 +1100,8 @@ function removeComment(socket, data, cb) {
 					}
 				}
 
-				if (Number(data.reason.key)) {
-					delInfo.reason.key = Number(data.reason.key);
+				if (Number(data.reason.cid)) {
+					delInfo.reason.cid = Number(data.reason.cid);
 				}
 				if (data.reason.desc) {
 					delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc).result;
@@ -1513,8 +1514,9 @@ function giveCommentHist(data, cb) {
 		var i,
 			hist,
 			hists = comment.hist || [],
-			lastTxtIndex = 0, //Позиция последнего изменение текста в стеке событий
-			lastTxtObj = {user: comment.user, stamp: comment.stamp}, //Первое событие изменения текста будет равнятся созданию комментария
+			histDel,
+			lastTxtIndex = 0, // Позиция последнего изменение текста в стеке событий
+			lastTxtObj = {user: comment.user, stamp: comment.stamp}, // Первое событие изменения текста будет равнятся созданию комментария
 			result = [],
 			getregion = function (regionId) {
 				var result;
@@ -1540,12 +1542,16 @@ function giveCommentHist(data, cb) {
 
 		for (i = 0; i < hists.length; i++) {
 			hist = hists[i];
+			histDel = hist.del;
 
 			if (hist.role && hist.roleregion) {
 				hist.roleregion = getregion(hist.roleregion);
 			}
 
-			if (hist.del || hist.restore) {
+			if (histDel || hist.restore) {
+				if (histDel && histDel.reason && histDel.reason.cid) {
+					histDel.reason.title = reasonController.giveReasonTitle({ cid: histDel.reason.cid });
+				}
 				result.push(hist);
 			} else {
 				if (hist.txt) {

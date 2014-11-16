@@ -65,11 +65,11 @@ var FragmentSchema = new Schema({
         conv: { type: Boolean }, // Конвертируется
         convqueue: { type: Boolean }, // В очереди на конвертацию
 
-        vdcount: { type: Number, index: true }, //Кол-во просмотров за день
-        vwcount: { type: Number, index: true }, //Кол-во просмотров за неделю
-        vcount: { type: Number, index: true }, //Кол-во просмотров всего
-        ccount: { type: Number, index: true }, //Кол-во комментариев
-        frags: [FragmentSchema], //Фрагменты с комментариями
+        vdcount: { type: Number, index: true }, // Кол-во просмотров за день
+        vwcount: { type: Number, index: true }, // Кол-во просмотров за неделю
+        vcount: { type: Number, index: true }, // Кол-во просмотров всего
+        ccount: { type: Number, index: true }, // Кол-во комментариев
+        frags: [FragmentSchema], // Фрагменты с комментариями
 
         nocomments: { type: Boolean } //Запретить комментирование
     }),
@@ -81,7 +81,7 @@ var FragmentSchema = new Schema({
             role: { type: Number }, // Реализуемая на момент операции роль пользователя. Например, если это модератор
             roleregion: { type: Number }, // Регион реализуемой роли
             reason: {
-                key: { type: Number },
+                cid: { type: Number },
                 desc: { type: String }
             },
             // Значения изменившихся полей

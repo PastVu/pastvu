@@ -151,9 +151,11 @@ async.waterfall([
 			require(__dirname + '/models/ActionLog.js').makeModel(db);
 			require(__dirname + '/models/Counter.js').makeModel(db);
 			require(__dirname + '/models/Settings.js').makeModel(db);
+			require(__dirname + '/models/Reason.js').makeModel(db);
 			require(__dirname + '/models/User.js').makeModel(db);
 			require(__dirname + '/models/UserSettings.js').makeModel(db);
 			require(__dirname + '/models/UserStates.js').makeModel(db);
+			require(__dirname + '/models/UserAction.js').makeModel(db);
 			require(__dirname + '/models/Sessions.js').makeModel(db);
 			require(__dirname + '/models/Photo.js').makeModel(db);
 			require(__dirname + '/models/Comment.js').makeModel(db);
@@ -284,6 +286,7 @@ async.waterfall([
 			require('./controllers/actionlog.js').loadController(app, db, io);
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
+			require('./controllers/reason.js').loadController(app, db, io);
 			require('./controllers/index.js').loadController(app, db, io);
 			require('./controllers/photo.js').loadController(app, db, io);
 			require('./controllers/subscr.js').loadController(app, db, io);
@@ -308,7 +311,7 @@ async.waterfall([
 
 			require('./controllers/errors.js').registerErrorHandling(app);
 			require('./controllers/systemjs.js').loadController(app, db);
-			//require('./basepatch/v1.1.1.js').loadController(app, db);
+			require('./basepatch/v1.3.0.js').loadController(app, db);
 
 			CoreServer = require('./controllers/coreadapter.js');
 			callback(null);

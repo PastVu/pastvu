@@ -17,6 +17,7 @@ var ReasonSchema = new Schema(
         }
     },
     {
+        collection: 'reasons',
         strict: true
     }
 );

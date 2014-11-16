@@ -827,7 +827,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			);
 		},
 
-		reasonSelect: function (reasons, topic, text, cb, ctx) {
+		reasonSelect: function (action, topic, cb, ctx) {
 			if (this.reasonVM) {
 				return;
 			}
@@ -836,8 +836,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				[{
 					module: 'm/common/reason',
 					options: {
-						text: text,
-						select: reasons
+						action: action
 					},
 					modal: {
 						topic: topic,
@@ -990,18 +989,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 			var p = self.p;
 			var cid = p.cid();
-			var topic = 'Причина отклонения';
-			var text = 'Фотография будет отправлена на доработку загрузившему её пользователю<br>' +
-				'Укажите, что нужно изменить, чтобы фотография прошла публикацию';
-			var reasons = [
-				{key: '0', name: 'Свободное описание'},
-				{key: '1', name: 'Необходимо исправить название'},
-				{key: '2', name: 'Необходимо указать источник'}
-			];
 
 			self.exe(true);
 
-			self.reasonSelect(reasons, topic, text, function (cancel, reason) {
+			self.reasonSelect('photo.revision', 'Причина возврата', function (cancel, reason) {
 				if (cancel) {
 					self.exe(false);
 					return;

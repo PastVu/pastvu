@@ -744,21 +744,22 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			var that = this,
 				comment = this.commentsHash[cid],
 				parent = comment.parent && this.commentsHash[comment.parent],
-				reasonsselect = true;
+				action = 'comment.remove';
 
 			if (!comment || !this.canModerate() && (!this.canReply() || !comment.can.del)) {
 				return;
 			}
 
-			//Подсвечиваем удаляемые текстом
+			// Подсвечиваем удаляемые текстом
 			getChildComments(comment, $c).add($c).addClass('hlRemove');
 
-			//Когда пользователь удаляет свой последний комментарий, независимо от прав, он должен объяснить это просто текстом
+			// Когда пользователь удаляет свой последний комментарий, независимо от прав,
+			// он должен объяснить это просто текстом. Для этого есть отдельный action
 			if (_.isEmpty(comment.comments) && comment.user.login === this.auth.iAm.login()) {
-				reasonsselect = false;
+				action += '.own';
 			}
 
-			this.reasonSelect(reasonsselect, function (cancel, reason) {
+			this.reasonSelect(action, 'Причина удаления', function (cancel, reason) {
 				if (cancel) {
 					$('.hlRemove', this.$cmts).removeClass('hlRemove');
 					return;
@@ -986,57 +987,49 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 			getChildComments(comment, $c).remove(); //Удаляем дочерние элементы dom
 			$c.replaceWith(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
 		},
-		reasonSelect: function (reasonsselect, cb, ctx) {
-			if (!this.reasonVM) {
-				var select = [
-					{key: '0', name: 'Свободное описание причины'}
-				];
-				if (reasonsselect) {
-					select.push({key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'});
-					select.push({key: '2', name: 'Спам'});
-				}
-				renderer(
-					[
-						{
-							module: 'm/common/reason',
-							options: {
-								text: 'Ветка комментариев будет удалена вместе с содержащимися в ней фрагментами<br>Укажите причину и подтвердите операцию',
-								select: select
-							},
-							modal: {
-								topic: 'Причина удаления',
-								maxWidthRatio: 0.75,
-								animateScale: true,
-								offIcon: {text: 'Отмена', click: function () {
-									cb.call(ctx, true);
-									this.reasonDestroy();
-								}, ctx: this},
-								btns: [
-									{css: 'btn-warning', text: 'Удалить', glyphicon: 'glyphicon-ok', click: function () {
-										var reason = this.reasonVM.getReason();
-										if (reason) {
-											cb.call(ctx, null, reason);
-											this.reasonDestroy();
-										}
-									}, ctx: this},
-									{css: 'btn-success', text: 'Отмена', click: function () {
-										cb.call(ctx, true);
-										this.reasonDestroy();
-									}, ctx: this}
-								]
-							},
-							callback: function (vm) {
-								this.reasonVM = vm;
-								this.childModules[vm.id] = vm;
-							}.bind(this)
-						}
-					],
-					{
-						parent: this,
-						level: this.level + 1
-					}
-				);
+		reasonSelect: function (action, topic, cb, ctx) {
+			if (this.reasonVM) {
+				return;
 			}
+
+			renderer(
+				[{
+					module: 'm/common/reason',
+					options: {
+						action: action
+					},
+					modal: {
+						topic: topic,
+						maxWidthRatio: 0.75,
+						animateScale: true,
+						offIcon: {text: 'Отмена', click: function () {
+							cb.call(ctx, true);
+							this.reasonDestroy();
+						}, ctx: this},
+						btns: [
+							{css: 'btn-warning', text: 'Выполнить', glyphicon: 'glyphicon-ok', click: function () {
+								var reason = this.reasonVM.getReason();
+								if (reason) {
+									cb.call(ctx, null, reason);
+									this.reasonDestroy();
+								}
+							}, ctx: this},
+							{css: 'btn-success', text: 'Отмена', click: function () {
+								cb.call(ctx, true);
+								this.reasonDestroy();
+							}, ctx: this}
+						]
+					},
+					callback: function (vm) {
+						this.reasonVM = vm;
+						this.childModules[vm.id] = vm;
+					}.bind(this)
+				}],
+				{
+					parent: this,
+					level: this.level + 1
+				}
+			);
 		},
 		reasonDestroy: function () {
 			if (this.reasonVM) {

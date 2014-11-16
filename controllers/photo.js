@@ -303,7 +303,7 @@ var core = {
 				if (!iAm.registered || !photo.ccount) {
 					return photo;
 				} else {
-					return commentController.getNewCommentsCountPromised([photo._id], iAm.user._id)
+					return commentController.getNewCommentsCountPromised([photo._id], iAm.user._id, 'photo')
 						.then(function (countsHash) {
 							if (countsHash[photo._id]) {
 								photo.ccount_new = countsHash[photo._id];
@@ -666,8 +666,8 @@ var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 			snapshot: snapshot
 		});
 
-		if (Number(reason.key)) {
-			history.reason.key = Number(reason.key);
+		if (Number(reason.cid)) {
+			history.reason.cid = Number(reason.cid);
 		}
 		if (_.isString(reason.desc) && reason.desc.length) {
 			history.reason.desc = Utils.inputIncomingParse(reason.desc).result;
