@@ -93,20 +93,15 @@
 		span.glyphicon.glyphicon-check
 		|  На публикацию
 	// /ko
-	//ko if: can.revision()
-	button.btn.btn-warning(type="button", title="Отправить пользователю на доработку", data-bind="click: toRevision, attr: {disabled: exe()}")
-		span.glyphicon.glyphicon-check
-		|  На доработку
-	// /ko
 	//ko if: can.approve()
 	button.btn.btn-success(type="button", title="Подтвердить и опубликовать эту фотографию", data-bind="click: approve, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-ok
 		|  Опубликовать
 	// /ko
-	//ko if: can.disable()
-	button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
-		span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
-		span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
+	//ko if: can.revision()
+	button.btn.btn-warning(type="button", title="Отправить пользователю на доработку", data-bind="click: toRevision, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-check
+		|  На доработку
 	// /ko
 	//ko if: can.revoke()
 	button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe()}", title="Отозвать эту фотографию, снять с возможной публикации")
@@ -114,9 +109,14 @@
 		|  Отозвать
 	// /ko
 	//ko if: can.reject()
-	button.btn.btn-danger(type="button", data-bind="click: revoke, attr: {disabled: exe()}", title="Отклонить фотографию, снять с возможной публикации")
+	button.btn.btn-danger(type="button", data-bind="click: reject, attr: {disabled: exe()}", title="Отклонить фотографию, снять с возможной публикации")
 		span.glyphicon.glyphicon-remove
 		|  Отклонить
+	// /ko
+	//ko if: can.disable()
+	button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
+		span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
+		span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
 	// /ko
 	//ko if: p.s()!==9 && can.remove()
 	button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")

@@ -26,7 +26,7 @@ module.exports.loadController = function (app, db) {
         db.reasons.save({ cid: 6, title: 'Фотография сделана после 2000 года' });
         db.reasons.save({ cid: 7, title: 'Мат, брань или переход на личности' });
         db.reasons.save({ cid: 8, title: 'Не относится к обсуждаемой теме (совсем)' });
-        db.reasons.save({ cid: 9, title: 'Просьба по оформлению, удовлетворенная пользователем' });
+        db.reasons.save({ cid: 9, title: 'Удовлетворенная просьба по оформлению' });
 
         // Добавляем пользовательские действия с причинами
         db.user_actions.save({
@@ -52,10 +52,16 @@ module.exports.loadController = function (app, db) {
 
 
         // Переименовываем key причин удаления комментариев в cid и проставляем cid=0 свободным причинам
-        db.comments.update({'del.reason.key': {$exists: true}}, {$rename: {'del.reason.key': 'del.reason.cid'}}, {multi: true});
-        db.comments.update({'del': {$exists: true}, 'del.reason.cid': {$exists: false}}, {$set: {'del.reason.cid': 0}}, {multi: true});
-        db.comments.update({'hist.del.reason.key': {$exists: true}}, {$rename: {'hist.del.reason.key': 'hist.del.reason.cid'}}, {multi: true});
-        db.comments.update({'hist.del': {$exists: true}, 'hist.del.reason.cid': {$exists: false}}, {$set: {'hist.del.reason.cid': 0}}, {multi: true});
+        db.comments.update({ 'del.reason.key': { $exists: true } }, { $rename: { 'del.reason.key': 'del.reason.cid' } }, { multi: true });
+        db.comments.update({
+            'del': { $exists: true },
+            'del.reason.cid': { $exists: false }
+        }, { $set: { 'del.reason.cid': 0 } }, { multi: true });
+        db.comments.update({ 'hist.del.reason.key': { $exists: true } }, { $rename: { 'hist.del.reason.key': 'hist.del.reason.cid' } }, { multi: true });
+        db.comments.update({
+            'hist.del': { $exists: true },
+            'hist.del.reason.cid': { $exists: false }
+        }, { $set: { 'hist.del.reason.cid': 0 } }, { multi: true });
 
         return { message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's' };
     });

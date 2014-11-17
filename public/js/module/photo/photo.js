@@ -1032,6 +1032,59 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			});
 		},
 
+
+		reject: function (data, event) {
+			var self = this;
+
+			if (!self.can.reject()) {
+				return false;
+			}
+
+			var p = self.p;
+			var cid = p.cid();
+
+			self.exe(true);
+
+			self.reasonSelect('photo.reject', 'Причина отклонения', function (cancel, reason) {
+				if (cancel) {
+					self.exe(false);
+					return;
+				}
+
+				(function request(confirmer) {
+					socket.once('rejectPhotoResult', function (data) {
+						if (data && data.changed) {
+							confirm({
+								message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+								okText: 'Продолжить операцию',
+								cancelText: 'Отменить',
+								onOk: function (confirmer) {
+									request(confirmer);
+								},
+								onCancel: function () {
+									self.exe(false);
+								}
+							});
+						} else {
+							var error = !data || data.error;
+							if (error) {
+								notyError(data && data.message);
+							} else {
+								self.rechargeData(data.photo, data.can);
+
+								if (confirmer) {
+									confirmer.close();
+								}
+							}
+							ga('send', 'event', 'photo', 'reject', 'photo reject ' + (error ? 'error' : 'success'));
+							self.exe(false);
+						}
+					});
+					socket.emit('rejectPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+				}());
+			});
+		},
+
 		approve: function (data, event) {
 			var self = this;
 			var p = self.p;
@@ -1074,41 +1127,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				});
 				socket.emit('approvePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
-		},
-
-		reject: function (data, event) {
-			if (!this.can.reject()) {
-				return false;
-			}
-
-			var self = this;
-			var topic = 'Причина отклонения';
-			var text = 'Фотография будет отклонена<br>Укажите причину и подтвердите операцию';
-			var reasons = [
-				{key: '0', name: 'Свободное описание причины'},
-				{key: '1', name: 'Нарушение Правил', desc: true, descmin: 3, desclable: 'Укажите пункты правил'},
-				{key: '2', name: 'Спам'}
-			];
-
-			self.reasonSelect(reasons, topic, text, function (cancel, reason) {
-				if (cancel) {
-					return;
-				}
-				socket.once('rejectPhotoCallback', function (result) {
-					if (result && !result.error) {
-						self.p.s(result.s);
-						self.originData.s = result.s;
-						self.can = ko_mapping.fromJS(data.can, self.can);
-
-						ga('send', 'event', 'photo', 'reject', 'photo reject success');
-					} else {
-						window.noty({text: result && result.message || 'Ошибка отклонения', type: 'info', layout: 'center', timeout: 2200, force: true});
-
-						ga('send', 'event', 'photo', 'reject', 'photo reject error');
-					}
-				});
-				socket.emit('rejectPhoto', {cid: self.p.cid(), s: self.p.s()});
-			});
 		},
 
 		remove: function (data, event) {

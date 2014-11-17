@@ -657,20 +657,27 @@ function getPhotoSnaphotFields(oldPhoto, newPhoto) {
 
 var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason) {
     var snapshot = getPhotoSnaphotFields(oldPhotoObj, photo.toObject());
+	var history;
+	var reasonCid;
 
     if (Object.keys(snapshot).length) {
-		var history = new PhotoHistory({
+		history = new PhotoHistory({
 			cid: photo.cid,
 			stamp: photo.cdate || new Date(),
 			user: iAm.user._id,
 			snapshot: snapshot
 		});
 
-		if (Number(reason.cid)) {
-			history.reason.cid = Number(reason.cid);
-		}
-		if (_.isString(reason.desc) && reason.desc.length) {
-			history.reason.desc = Utils.inputIncomingParse(reason.desc).result;
+		if (reason) {
+			history.reason = {};
+			reasonCid = Number(reason.cid);
+
+			if (reasonCid >= 0) {
+				history.reason.cid = reasonCid;
+			}
+			if (_.isString(reason.desc) && reason.desc.length) {
+				history.reason.desc = Utils.inputIncomingParse(reason.desc).result;
+			}
 		}
 
 		if (!_.isBoolean(canModerate)) {
@@ -852,6 +859,46 @@ var toRevision = Bluebird.method(function (socket, data) {
 });
 
 /**
+ * Отклонение фотографии
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
+var rejectPhoto = Bluebird.method(function (socket, data) {
+	var iAm = socket.handshake.usObj;
+
+	if (_.isEmpty(data.reason)) {
+		throw { message: msg.needReason };
+	}
+
+	return prefetchPhoto(iAm, data, 'reject')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
+
+			photo.s = status.REJECT;
+			photo.cdate = new Date();
+
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+			return { message: err.message, error: true};
+		});
+});
+
+/**
  * Публикация (подтверждение) новой фотографии
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
@@ -909,71 +956,6 @@ var approvePhoto = function (socket, data) {
 			return { message: err.message, error: true};
 		});
 };
-
-
-/**
- * Отклонение фотографии
- * @param {Object} socket Сокет пользователя
- * @param {Object} data
- * @param cb Коллбэк
- */
-function rejectPhoto(socket, data, cb) {
-	var iAm = socket.handshake.usObj;
-
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-	var cid = data && Number(data.cid);
-
-	if (!cid) {
-		return cb({message: 'Bad params', error: true});
-	}
-
-	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || 'No such photo', error: true});
-		}
-
-		if (_.isNumber(data.s) && data.s !== photo.s) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
-
-		var canModerate = permissions.canModerate(photo, iAm);
-
-		if (!permissions.getCan(photo, iAm, canModerate).reject) {
-			return cb({message: msg.deny, error: true});
-		}
-
-		var oldPhotoObj = photo.toObject();
-
-		photo.s = status.REJECT;
-		photo.cdate = new Date();
-
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			var ownerObj = _session.getOnline(null, photo.user);
-
-			// Пересчитывам кол-во новых фото у владельца
-			if (ownerObj) {
-				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
-				_session.saveEmitUser(ownerObj);
-			} else {
-				User.update({_id: photo.user}, {$inc: {pfcount: -1}}).exec();
-			}
-
-			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, canModerate, function (err) {
-				if (err) {
-					return cb({message: 'Rejected ok, but snapshot save error: ' + (err && err.message || ''), error: true});
-				}
-				cb({message: 'ok', s: photoSaved.s, can: permissions.getCan(photoSaved, iAm, canModerate)});
-			});
-		});
-
-	});
-}
 
 /**
  * Удаление фотографии
@@ -2043,12 +2025,6 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('rejectPhoto', function (data) {
-			rejectPhoto(socket, data, function (resultData) {
-				socket.emit('rejectPhotoCallback', resultData);
-			});
-		});
-
 		socket.on('revokePhoto', function (data) {
 			revokePhoto(socket, data)
 				.then(function (resultData) {
@@ -2062,10 +2038,18 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('readyPhotoResult', resultData);
 				});
 		});
+
 		socket.on('revisionPhoto', function (data) {
 			toRevision(socket, data)
 				.then(function (resultData) {
 					socket.emit('revisionPhotoResult', resultData);
+				});
+		});
+
+		socket.on('rejectPhoto', function (data) {
+			rejectPhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('rejectPhotoResult', resultData);
 				});
 		});
 
