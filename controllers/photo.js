@@ -109,7 +109,7 @@ var _session = require('./_session.js'),
 				}
 
 				// Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
-				can.edit = usObj.isAdmin || s !== status.REMOVED && s !== status.REVOKE && (canModerate || ownPhoto);
+				can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto);
 				// Отправлять на премодерацию может владелец и фото новое или на доработке
 				can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto;
 				// Отозвать может только владелец пока фото новое
@@ -127,11 +127,11 @@ var _session = require('./_session.js'),
 					// Модератор может одобрить новое фото
 					can.approve = s < status.REJECT;
 					// Модератор может активировать только деактивированное
-					can.activate = s === status.DEACTIVATED;
+					can.activate = s === status.DEACTIVATE;
 					// Модератор может деактивировать только опубликованное
 					can.deactivate = s === status.PUBLIC;
 					// Модератор может удалить уже опубликованное и не удаленное фото
-					can.remove = s >= status.PUBLIC && s !== status.REMOVED;
+					can.remove = s >= status.PUBLIC && s !== status.REMOVE;
 				}
 			}
 			return can;
@@ -145,7 +145,7 @@ var _session = require('./_session.js'),
 					return true;
 				}
 				// Удаленную может видеть админ
-				if (photo.s === status.REMOVED) {
+				if (photo.s === status.REMOVE) {
 					return usObj.isAdmin;
 				}
 				return permissions.canModerate(photo, usObj);
@@ -976,7 +976,7 @@ var activateDeactivate = function (socket, data) {
 		.then(function (photo) {
 			this.oldPhotoObj = photo.toObject();
 
-			photo.s = status[disable ? 'DEACTIVATED' : 'PUBLIC'];
+			photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
 			photo.cdate = new Date();
 
 			return photo.saveAsync();
@@ -1018,7 +1018,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 		.then(function (photo) {
 			this.oldPhotoObj = photo.toObject();
 
-			photo.s = status.REMOVED;
+			photo.s = status.REMOVE;
 			photo.cdate = new Date();
 
 			return photo.saveAsync();
@@ -1053,49 +1053,46 @@ var removePhoto = Bluebird.method(function (socket, data) {
 
 /**
  * Восстановление фотографии
- * @param socket Сокет пользователя
- * @param cid
- * @param cb Коллбэк
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
  */
-function restorePhoto(socket, cid, cb) {
+var restorePhoto = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	if (!iAm.isAdmin) {
-		return cb({message: msg.deny, error: true});
-	}
-	cid = Number(cid);
-	if (!cid) {
-		return cb({message: 'Bad params', error: true});
+	if (_.isEmpty(data.reason)) {
+		throw { message: msg.needReason };
 	}
 
-	findPhoto({cid: cid, s: status.REMOVED}, {}, iAm, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || (msg.notExists + ' в удалёном статусе'), error: true});
-		}
+	return prefetchPhoto(iAm, data, 'restore')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
 
-		if (!permissions.getCan(photo, iAm).restore) {
-			return cb({message: msg.deny, error: true});
-		}
+			photo.s = status.PUBLIC;
+			photo.cdate = new Date();
 
-		photo.s = status.PUBLIC;
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+
+			changePublicPhotoExternality(photoSaved, iAm, true);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
 			}
-			step(
-				function () {
-					changePublicPhotoExternality(socket, photoSaved, iAm, true, this.parallel());
-				},
-				function (err) {
-					if (err) {
-						return cb({message: 'Restore ok, but: ' + (err && err.message || 'other changes error'), error: true});
-					}
-					cb({message: 'ok'});
-				}
-			);
+			return { message: err.message, error: true};
 		});
-	});
-}
+});
+
 
 //Отдаем фотографию для её страницы
 function givePhoto(iAm, data, cb) {
@@ -1430,7 +1427,7 @@ function giveUserPhotosPrivate(iAm, data, cb) {
 		var query = {user: userid};
 
 		if (iAm.isModerator) {
-			query.s = {$ne: status.REMOVED};
+			query.s = {$ne: status.REMOVE};
 			_.assign(query, iAm.mod_rquery);
 		}
 
@@ -1779,7 +1776,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 
 	if (!squery_public_only && filter.s && filter.s.length) {
 		//Если есть публичный, убираем, так как непубличный squery будет использован только в rquery_mod
-		filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVED : undefined);
+		filter.s = _.without(filter.s, status.PUBLIC, !iAm.isAdmin ? status.REMOVE : undefined);
 	}
 
 	if (Array.isArray(filter.r) && filter.r.length) {
@@ -1923,7 +1920,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
 			}
 			Array.prototype.push.apply(result.s, filter.s);
 		} else if (!iAm.isAdmin) {
-			query_mod.s = {$ne: status.REMOVED};
+			query_mod.s = {$ne: status.REMOVE};
 		}
 
 		if (rquery_mod) {
@@ -1960,7 +1957,7 @@ var planResetDisplayStat = (function () {
 		if (needWeek) {
 			setQuery.vwcount = 0;
 		}
-		Photo.update({s: {$in: [status.PUBLIC, status.DEACTIVATED, status.REMOVED]}}, {$set: setQuery}, {multi: true}, function (err, count) {
+		Photo.update({s: {$in: [status.PUBLIC, status.DEACTIVATE, status.REMOVE]}}, {$set: setQuery}, {multi: true}, function (err, count) {
 			planResetDisplayStat();
 			if (err) {
 				return logger.error(err);
@@ -2055,15 +2052,18 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('removePhotoResult', resultData);
 				});
 		});
+
 		socket.on('removePhotoInc', function (data) {
 			removePhotoIncoming(hs.usObj, data, function (err) {
 				socket.emit('removePhotoIncCallback', {error: !!err});
 			});
 		});
+
 		socket.on('restorePhoto', function (data) {
-			restorePhoto(socket, data, function (resultData) {
-				socket.emit('restorePhotoCallback', resultData);
-			});
+			restorePhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('restorePhotoResult', resultData);
+				});
 		});
 
 		socket.on('givePhoto', function (data) {

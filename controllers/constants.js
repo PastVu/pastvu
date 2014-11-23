@@ -8,8 +8,8 @@ module.exports = {
             REVOKE: 3, // Отозвано владельцем
             REJECT: 4, // Отклонено
             PUBLIC: 5, // Опубликованное
-            DEACTIVATED: 7, // Деактивировано
-            REMOVED: 9 // Удалено
+            DEACTIVATE: 7, // Деактивировано
+            REMOVE: 9 // Удалено
         },
 
         snaphotFields: [

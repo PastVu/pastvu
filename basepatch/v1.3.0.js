@@ -77,6 +77,11 @@ module.exports.loadController = function (app, db) {
             reasons: [12, 13, 10, 5, 6, 1, 2, 0],
             reason_text: 'Фотография будет удалена с возможностью восстановления только администратором<br>Укажите причину'
         });
+        db.user_actions.save({
+            key: 'photo.restore',
+            reasons: [0],
+            reason_text: 'Фотография будет восстановлена и станет публичной<br>Укажите причину'
+        });
 
         // Переименовываем key причин удаления комментариев в cid и проставляем cid=0 свободным причинам
         db.comments.update({ 'del.reason.key': { $exists: true } }, { $rename: { 'del.reason.key': 'del.reason.cid' } }, { multi: true });
