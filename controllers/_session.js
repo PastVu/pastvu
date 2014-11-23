@@ -7,6 +7,7 @@ var app,
 	User,
 	Utils = require('../commons/Utils.js'),
 	_ = require('lodash'),
+	Bluebird = require('bluebird'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	cookie = require('express/node_modules/cookie'),
 	logger = require('log4js').getLogger("session"),
@@ -543,11 +544,12 @@ function logoutUser(socket, cb) {
 	});
 }
 
-//Отправка текущего пользователя всем его подключеным клиентам
+// Отправка текущего пользователя всем его подключеным клиентам
 function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
 	var userPlain,
 		sessions,
 		sockets,
+		count = 0,
 		i,
 		j;
 
@@ -564,24 +566,27 @@ function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
 				sockets = sessions[i].sockets;
 				for (j in sockets) {
 					if (sockets[j] !== undefined && sockets[j] !== excludeSocket && sockets[j].emit !== undefined) {
+						count++;
 						sockets[j].emit('youAre', {user: userPlain, registered: usObj.registered});
 					}
 				}
 			}
 		}
 	}
+
+	return Bluebird.resolve(count);
 }
 
-//Сохранение и последующая отправка
+// Сохранение и последующая отправка
 function saveEmitUser(usObj, excludeSocket, cb) {
 	if (usObj && usObj.user !== undefined) {
-		usObj.user.save(function (err) {
-			emitUser(usObj, null, excludeSocket);
-			if (cb) {
-				cb();
-			}
-		});
+		return usObj.user.saveAsync()
+			.spread(function () {
+				return emitUser(usObj, null, excludeSocket);
+			})
+			.nodeify(cb);
 	}
+	return 0;
 }
 
 function emitSidCookie(socket) {

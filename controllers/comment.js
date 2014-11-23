@@ -1631,65 +1631,56 @@ function setNoComments(iAm, data, cb) {
 }
 
 /**
- * Скрывает комментарии объекта (делает их не публичными)
+ * Скрывает/открывает комментарии объекта (делает их не публичными/публичными)
  * @param oid _id объекта
  * @param hide Скрыть или наоборот
  * @param iAm Объект пользователя, считаем сколько его комментариев затронуто
- * @param cb Коллбэк
  */
-function hideObjComments(oid, hide, iAm, cb) {
-	step(
-		function () {
-			var command = {};
-			if (hide) {
-				command.$set = {hidden: true};
-			} else {
-				command.$unset = {hidden: 1};
-			}
-			Comment.update({obj: oid}, command, {multi: true}, this);
-		},
-		function (err, count) {
-			if (err) {
-				return cb(err);
-			}
-			if (count === 0) {
-				return cb(null, {myCount: 0});
-			}
-			Comment.collection.find({obj: oid}, this);
-		},
-		Utils.cursorExtract,
-		function (err, comments) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				len = comments.length,
-				cdelta,
-				userObj,
-				comment,
-				hashUsers = {};
+function hideObjComments(oid, hide, iAm) {
+	var command = {};
 
-			for (i = 0; i < len; i++) {
-				comment = comments[i];
-				if (comment.del === undefined) {
-					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
-				}
+	if (hide) {
+		command.$set = { hidden: true };
+	} else {
+		command.$unset = { hidden: 1 };
+	}
+
+	return Comment.updateAsync({ obj: oid }, command, { multi: true })
+		.spread(function (count) {
+			if (count === 0) {
+				return { myCount: 0 };
 			}
-			for (i in hashUsers) {
-				if (hashUsers[i] !== undefined) {
-					cdelta = hide ? -hashUsers[i] : hashUsers[i];
-					userObj = _session.getOnline(null, i);
-					if (userObj !== undefined) {
-						userObj.user.ccount = userObj.user.ccount + cdelta;
-						_session.saveEmitUser(userObj);
-					} else {
-						User.update({_id: i}, {$inc: {ccount: cdelta}}).exec();
+
+			return Comment.collection.findAsync({ obj: oid }, {}, { lean: true })
+				.then(function (comments) {
+					var i,
+						len = comments.length,
+						cdelta,
+						userObj,
+						comment,
+						hashUsers = {};
+
+					for (i = 0; i < len; i++) {
+						comment = comments[i];
+						if (comment.del === undefined) {
+							hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
+						}
 					}
-				}
-			}
-			cb(null, {myCount: hashUsers[iAm.user._id] || 0});
-		}
-	);
+					for (i in hashUsers) {
+						if (hashUsers[i] !== undefined) {
+							cdelta = hide ? -hashUsers[i] : hashUsers[i];
+							userObj = _session.getOnline(null, i);
+							if (userObj !== undefined) {
+								userObj.user.ccount = userObj.user.ccount + cdelta;
+								_session.saveEmitUser(userObj);
+							} else {
+								User.update({ _id: i }, { $inc: { ccount: cdelta } }).exec();
+							}
+						}
+					}
+					return { myCount: hashUsers[iAm.user._id] || 0 };
+				});
+		});
 }
 
 /**

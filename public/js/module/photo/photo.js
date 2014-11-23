@@ -130,7 +130,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				revoke: false,
 				reject: false,
 				approve: false,
-				disable: false,
+				activate: false,
+				deactivate: false,
 				remove: false,
 				restore: false,
 				convert: false
@@ -147,18 +148,25 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.msgTitle = ko.observable('');
 
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
+				var iOwner = this.IOwner();
+				var s = this.p.s();
+
 				if (this.edit()) {
 					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
-				} else if (this.p.s() < 2) {
-					if (this.p.s() === 0) {
-						this.setMessage('Новая фотография. Должна быть заполнена и отправлена модератору для публикации', '', 'warn'); //Photo is new. Administrator must approve it
-					} else {
-						this.setMessage('Новая фотография. Ожидает подтверждения модератором', '', 'warn'); //Photo is new. Administrator must approve it
-					}
-				} else if (this.p.s() === 7) {
+				} else if (s === 0) {
+					this.setMessage('Новая фотография. Должна быть заполнена и отправлена на премодерацию для публикации', '', 'warn'); //Photo is new. Administrator must approve it
+				} else if (s === 1) {
+					this.setMessage('Информация о фотографии должна быть доработана по требованию модератора', '', 'warn'); //Photo is new. Administrator must approve it
+				} else if (s === 2) {
+					this.setMessage('Фотография находится на премодерации в ожидании публикации', '', 'warn'); // Administrator must approve it
+				} else if (s === 3) {
+					this.setMessage(iOwner ? 'Вы отозвали фотографию': 'Фотография отозвана пользователем', '', 'error'); // Administrator must approve it
+				} else if (s === 4) {
+					this.setMessage('Фотография отклонена модератором', '', 'error');
+				} else if (s === 7) {
 					this.setMessage('Фотография деактивирована модератором', 'Только вы и модераторы можете видеть её и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
-				} else if (this.p.s() === 9) {
+				} else if (s === 9) {
 					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
 				} else {
 					this.setMessage('', 'muted');
@@ -752,23 +760,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				this.edit(false);
 			}
 		},
-		toggleDisable: function (data, event) {
-			if (this.can.disable()) {
-				this.exe(true);
-				socket.once('disablePhotoResult', function (data) {
-					if (data && !data.error) {
-						this.p.s(data.s);
-						this.originData.s = data.s;
-						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' success');
-					} else {
-						window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 2000, force: true});
-						ga('send', 'event', 'photo', data.s === 7 ? 'disabled' : 'enabled', 'photo ' + (data.s === 7 ? 'disabled' : 'enabled') + ' error');
-					}
-					this.exe(false);
-				}, this);
-				socket.emit('disablePhoto', {cid: this.p.cid(), disable: this.p.s() !== 7});
-			}
-		},
 
 		notifyReady: function () {
 			window.noty(
@@ -1127,6 +1118,63 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				});
 				socket.emit('approvePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
+		},
+
+		toggleDisable: function (data, event) {
+			var self = this;
+			var p = self.p;
+			var cid = p.cid();
+			var disable = self.can.deactivate();
+
+			if (!disable && !self.can.activate()) {
+				return false;
+			}
+
+			self.exe(true);
+
+			if (disable) {
+				self.reasonSelect('photo.deactivate', 'Причина деактивации', function (cancel, reason) {
+					if (cancel) {
+						self.exe(false);
+					} else {
+						request(reason);
+					}
+				});
+			} else {
+				request();
+			}
+
+			function request(reason, confirmer) {
+				socket.once('disablePhotoResult', function (data) {
+					if (data && data.changed) {
+						confirm({
+							message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+							okText: 'Продолжить операцию',
+							cancelText: 'Отменить',
+							onOk: function (confirmer) {
+								request(reason, confirmer);
+							},
+							onCancel: function () {
+								self.exe(false);
+							}
+						});
+					} else {
+						var error = !data || data.error;
+						if (error) {
+							notyError(data && data.message);
+						} else {
+							self.rechargeData(data.photo, data.can);
+
+							if (confirmer) {
+								confirmer.close();
+							}
+						}
+						ga('send', 'event', 'photo', 'reject', 'photo ' + (data.photo.s === 7 ? 'disabled ' : 'enabled ') + (error ? 'error' : 'success'));
+						self.exe(false);
+					}
+				});
+				socket.emit('disablePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), disable: disable, reason: reason, ignoreChange: !!confirmer });
+			}
 		},
 
 		remove: function (data, event) {

@@ -113,10 +113,15 @@
 		span.glyphicon.glyphicon-remove
 		|  Отклонить
 	// /ko
-	//ko if: can.disable()
-	button.btn(type="button", data-bind="css: p.s()===7 ? 'btn-success':'btn-warning', click: toggleDisable, attr: {disabled: exe()}")
-		span.glyphicon(data-bind="css: p.s()===7 ? 'glyphicon-ok-sign':'glyphicon-exclamation-sign'")
-		span(data-bind="text: p.s()===7 ? ' Активировать' : ' Деактивировать'")
+	//ko if: can.activate()
+	button.btn.btn-success(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-ok-sign
+		|  Активировать
+	// /ko
+	//ko if: can.deactivate()
+	button.btn.btn-warning(type="button", data-bind="click: toggleDisable, attr: {disabled: exe()}")
+		span.glyphicon.glyphicon-exclamation-sign
+		|  Деактивировать
 	// /ko
 	//ko if: p.s()!==9 && can.remove()
 	button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")

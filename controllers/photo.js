@@ -93,7 +93,8 @@ var _session = require('./_session.js'),
 					revoke: false,
 					reject: false,
 					approve: false,
-					disable: false,
+					activate: false,
+					deactivate: false,
 					remove: false,
 					restore: false,
 					convert: false
@@ -125,8 +126,10 @@ var _session = require('./_session.js'),
 					can.revision = s === status.READY;
 					// Модератор может одобрить новое фото
 					can.approve = s < status.REJECT;
+					// Модератор может активировать только деактивированное
+					can.activate = s === status.DEACTIVATED;
 					// Модератор может деактивировать только опубликованное
-					can.disable = s === status.PUBLIC;
+					can.deactivate = s === status.PUBLIC;
 					// Модератор может удалить уже опубликованное и не удаленное фото
 					can.remove = s >= status.PUBLIC && s !== status.REMOVED;
 				}
@@ -560,37 +563,35 @@ function createPhotos(socket, data, cb) {
 	);
 }
 
-function changePublicPhotoExternality(socket, photo, iAm, makePublic, cb) {
-	step(
-		function () {
-			//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-			commentController.hideObjComments(photo._id, !makePublic, iAm, this.parallel());
+var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePublic) {
+	var promises = {};
 
-			//Пересчитывам кол-во публичных фото у владельца фотографии
-			var userObj = _session.getOnline(null, photo.user);
-			if (userObj) {
-				userObj.user.pcount = userObj.user.pcount + (makePublic ? 1 : -1);
-				_session.saveEmitUser(userObj);
-			} else {
-				User.update({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}}, this.parallel());
-			}
+	//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+	promises.hideComments = commentController.hideObjComments(photo._id, !makePublic, iAm);
 
-			//Если у фото есть координаты, значит надо провести действие с картой
-			if (Utils.geo.check(photo.geo)) {
-				if (makePublic) {
-					photoToMap(photo, null, null, this.parallel());
-				} else {
-					photoFromMap(photo, this.parallel());
-				}
-			}
-		},
-		function (err) {
-			cb(err);
+	//Пересчитывам кол-во публичных фото у владельца фотографии
+	var userObj = _session.getOnline(null, photo.user);
+	if (userObj) {
+		userObj.user.pcount = userObj.user.pcount + (makePublic ? 1 : -1);
+		promises.updatedSockets = _session.saveEmitUser(userObj);
+	} else {
+		User.updateAsync({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}});
+		promises.updatedSockets = 0;
+	}
+
+	//Если у фото есть координаты, значит надо провести действие с картой
+	if (Utils.geo.check(photo.geo)) {
+		if (makePublic) {
+			photoToMap(photo, null, null);
+		} else {
+			photoFromMap(photo);
 		}
-	);
-}
+	}
 
-//Добавляет фото на карту
+	return Bluebird.props(promises);
+});
+
+// Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
 	step(
 		function () {
@@ -910,7 +911,7 @@ var approvePhoto = function (socket, data) {
 		.bind({})
 		.then(function (photo) {
 			if (!photo.r0) {
-				throw {message: msg.mustCoord, error: true};
+				throw { message: msg.mustCoord, error: true };
 			}
 
 			this.oldPhotoObj = photo.toObject();
@@ -953,7 +954,50 @@ var approvePhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			return { message: err.message, error: true };
+		});
+};
+
+/**
+ * Активация/деактивация фото
+ * @param {Object} socket Сокет пользователя
+ * @param {Object} data
+ */
+var activateDeactivate = function (socket, data) {
+	var iAm = socket.handshake.usObj;
+	var disable = !!data.disable;
+
+	if (disable && _.isEmpty(data.reason)) {
+		throw { message: msg.needReason };
+	}
+
+	return prefetchPhoto(iAm, data, disable ? 'deactivate' : 'activate')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
+
+			photo.s = status[disable ? 'DEACTIVATED' : 'PUBLIC'];
+			photo.cdate = new Date();
+
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			changePublicPhotoExternality(photoSaved, iAm, !disable);
+
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, disable && data.reason);
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+			return { message: err.message, error: true };
 		});
 };
 
@@ -1067,50 +1111,6 @@ function restorePhoto(socket, cid, cb) {
 					cb({message: 'ok'});
 				}
 			);
-		});
-	});
-}
-
-
-//Активация/деактивация фото
-function activateDeactivate(socket, data, cb) {
-	var iAm = socket.handshake.usObj;
-	if (!iAm.registered || iAm.user.role < 5) {
-		return cb({message: msg.deny, error: true});
-	}
-	if (!data || !Utils.isType('object', data)) {
-		return cb({message: 'Bad params', error: true});
-	}
-	var cid = Number(data.cid),
-		makeDisabled = !!data.disable;
-
-	if (!cid) {
-		return cb({message: msg.notExists, error: true});
-	}
-
-	Photo.findOne({cid: cid}, function createInNewModel(err, photo) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		if (!photo) {
-			return cb({message: msg.notExists, error: true});
-		}
-		if (makeDisabled && photo.s === status.DEACTIVATED || !makeDisabled && photo.s === status.PUBLIC) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
-
-		photo.s = makeDisabled ? status.DEACTIVATED : status.PUBLIC;
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-
-			changePublicPhotoExternality(socket, photoSaved, iAm, !makeDisabled, function (err) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-				cb({s: photoSaved.s});
-			});
 		});
 	});
 }
@@ -2060,6 +2060,13 @@ module.exports.loadController = function (app, db, io) {
 				});
 		});
 
+		socket.on('disablePhoto', function (data) {
+			activateDeactivate(socket, data)
+				.then(function (resultData) {
+					socket.emit('disablePhotoResult', resultData);
+				});
+		});
+
 		socket.on('removePhoto', function (data) {
 			removePhoto(socket, data, function (resultData) {
 				socket.emit('removePhotoCallback', resultData);
@@ -2073,12 +2080,6 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('restorePhoto', function (data) {
 			restorePhoto(socket, data, function (resultData) {
 				socket.emit('restorePhotoCallback', resultData);
-			});
-		});
-
-		socket.on('disablePhoto', function (data) {
-			activateDeactivate(socket, data, function (resultData) {
-				socket.emit('disablePhotoResult', resultData);
 			});
 		});
 

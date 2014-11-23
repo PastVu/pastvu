@@ -27,6 +27,8 @@ module.exports.loadController = function (app, db) {
         db.reasons.save({ cid: 7, title: 'Мат, брань или переход на личности' });
         db.reasons.save({ cid: 8, title: 'Не относится к обсуждаемой теме (совсем)' });
         db.reasons.save({ cid: 9, title: 'Удовлетворенная просьба по оформлению' });
+        db.reasons.save({ cid: 10, title: 'Дубликат/Повтор', desc: { required: true, min: 3, max: 200, label: 'Укажите ссылку на присутствующую на сайте фотографию' }  });
+        db.reasons.save({ cid: 11, title: 'Претензия возможного правообладателя', desc: { required: true, min: 5, max: 500, label: 'Суть претензии', placeholder: 'Краткое и емкое описание' }  });
 
         // Добавляем пользовательские действия с причинами
         db.user_actions.save({
@@ -46,8 +48,13 @@ module.exports.loadController = function (app, db) {
         });
         db.user_actions.save({
             key: 'photo.reject',
-            reasons: [5, 6, 1, 2, 0],
+            reasons: [5, 10, 6, 1, 2, 0],
             reason_text: 'Фотография будет отклонена<br>Укажите причину'
+        });
+        db.user_actions.save({
+            key: 'photo.deactivate',
+            reasons: [11, 10, 5, 6, 1, 2, 0],
+            reason_text: 'Фотография будет деактивирована с возможностью обратной активации<br>Укажите причину'
         });
 
 

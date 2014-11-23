@@ -100,8 +100,10 @@ var logger = log4js.getLogger('app.js'),
 	logger404 = log4js.getLogger("404.js");
 
 logger.info('~~~');
-logger.info('Starting Node[' + process.versions.node + '] with v8[' + process.versions.v8 + '] on process pid:' + process.pid);
-logger.info('Platform: ' + process.platform + ', architecture: ' + process.arch + ' with ' + os.cpus().length + ' cpu cores');
+
+// Вывод информации об окружении
+logger.info('Platform: %s, architecture: %s with %d cpu cores', process.platform, process.arch, os.cpus().length);
+logger.info('Node.js [%s] with v8 [%s] on process pid: %d', process.versions.node,  process.versions.v8, process.pid);
 
 // Включаем подробный stack trace промисов не на проде
 if (land !== 'prod') {
