@@ -12,6 +12,9 @@ module.exports.loadController = function (app, db) {
     saveSystemJSFunc(function pastvuPatch(byNumPerPackage) {
         var startTime = Date.now();
 
+        // Раньше статус 1 - ожидает публикации. Теперь 1 - на доработке, 2 - ожидает публикации
+        db.photos.update({ s: 1 }, { $set: { s: 2 } }, { multi: true });
+
         // Добавляем причины
         db.reasons.save({
             cid: 0,
@@ -27,8 +30,16 @@ module.exports.loadController = function (app, db) {
         db.reasons.save({ cid: 7, title: 'Мат, брань или переход на личности' });
         db.reasons.save({ cid: 8, title: 'Не относится к обсуждаемой теме (совсем)' });
         db.reasons.save({ cid: 9, title: 'Удовлетворенная просьба по оформлению' });
-        db.reasons.save({ cid: 10, title: 'Дубликат/Повтор', desc: { required: true, min: 3, max: 200, label: 'Укажите ссылку на присутствующую на сайте фотографию' }  });
-        db.reasons.save({ cid: 11, title: 'Претензия возможного правообладателя', desc: { required: true, min: 5, max: 500, label: 'Суть претензии', placeholder: 'Краткое и емкое описание' }  });
+        db.reasons.save({
+            cid: 10,
+            title: 'Дубликат/Повтор',
+            desc: { required: true, min: 3, max: 200, label: 'Укажите ссылку на присутствующую на сайте фотографию' }
+        });
+        db.reasons.save({
+            cid: 11,
+            title: 'Претензия возможного правообладателя',
+            desc: { required: true, min: 5, max: 500, label: 'Суть претензии', placeholder: 'Краткое и емкое описание' }
+        });
 
         // Добавляем пользовательские действия с причинами
         db.user_actions.save({
@@ -56,7 +67,6 @@ module.exports.loadController = function (app, db) {
             reasons: [11, 10, 5, 6, 1, 2, 0],
             reason_text: 'Фотография будет деактивирована с возможностью обратной активации<br>Укажите причину'
         });
-
 
         // Переименовываем key причин удаления комментариев в cid и проставляем cid=0 свободным причинам
         db.comments.update({ 'del.reason.key': { $exists: true } }, { $rename: { 'del.reason.key': 'del.reason.cid' } }, { multi: true });
