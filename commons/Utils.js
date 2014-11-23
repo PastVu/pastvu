@@ -414,9 +414,9 @@ Utils.math = (function () {
 	/**
 	 * Обрезание числа с плавающей запятой до указанного количества знаков после запятой
 	 * http://jsperf.com/math-round-vs-tofixed-with-decimals/2
-	 * @param number Число для обрезания
-	 * @param precision Точность
-	 * @return {Number}
+	 * @param {number} number Число для обрезания
+	 * @param {number} [precision] Точность
+	 * @return {number}
 	 */
 	function toPrecision(number, precision) {
 		var divider = precision ? Math.pow(10, precision) : defDivider;
@@ -425,9 +425,9 @@ Utils.math = (function () {
 
 	/**
 	 * Обрезание с округлением числа с плавающей запятой до указанного количества знаков после запятой
-	 * @param number Число
-	 * @param precision Точность
-	 * @return {Number}
+	 * @param {number} number Число
+	 * @param {number} [precision] Точность
+	 * @return {number}
 	 */
 	function toPrecisionRound(number, precision) {
 		var divider = precision ? Math.pow(10, precision) : defDivider;

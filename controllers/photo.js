@@ -17,14 +17,14 @@ var _session = require('./_session.js'),
 	subscrController = require('./subscr.js'),
 	commentController = require('./comment.js'),
 
-	_ = require('lodash'),
-	Bluebird = require('bluebird'),
     fs = require('fs'),
-	ms = require('ms'), // Tiny milisecond conversion utility
-	moment = require('moment'),
+	ms = require('ms'),
+	_ = require('lodash'),
 	step = require('step'),
-	Utils = require('../commons/Utils.js'),
+	moment = require('moment'),
 	log4js = require('log4js'),
+	Bluebird = require('bluebird'),
+	Utils = require('../commons/Utils.js'),
 	logger,
 	incomeDir = global.appVar.storePath + 'incoming/',
 	privateDir = global.appVar.storePath + 'private/photos/',
@@ -34,12 +34,12 @@ var _session = require('./_session.js'),
 	maxRegionLevel = global.appVar.maxRegionLevel,
 
 	msg = {
-		badParams: 'Неверные параметры запроса',
 		deny: 'У вас нет прав на это действие',
 		noUser: 'Запрашиваемый пользователь не существует',
+		noPhoto: 'Запрашиваемой фотографии не существует или не доступна',
+		noRegion: 'Такого региона не существует',
+		badParams: 'Неверные параметры запроса',
 		needReason: 'Необходимо указать причину операции',
-		notExists: 'Запрашиваемая фотография не существует',
-		notExistsRegion: 'Such region does not exist',
 		changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена', // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
 		anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
 		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
@@ -161,7 +161,7 @@ var _session = require('./_session.js'),
  * @param query
  * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
  * @param usObj Объект пользователя
- * @param cb
+ * @callback [cb]
  */
 function findPhoto(query, fieldSelect, usObj, cb) {
 	if (!usObj.registered) {
@@ -169,7 +169,7 @@ function findPhoto(query, fieldSelect, usObj, cb) {
 	}
 	return Photo.findOneAsync(query, fieldSelect).then(function (photo) {
 		if (!photo || !permissions.canSee(photo, usObj)) {
-			throw { message: 'No such photo' };
+			throw { message: msg.noPhoto };
 		}
 
 		return photo;
@@ -219,7 +219,7 @@ var core = {
 			.bind({})
 			.then(function (photo) {
 				if (!photo || !permissions.canSee(photo, iAm)) {
-					throw { message: msg.notExists };
+					throw { message: msg.noPhoto };
 				}
 
 				if (iAm.registered) {
@@ -248,7 +248,7 @@ var core = {
 						select: { _id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1 }
 					}).then(function (photo) {
 						if (!photo) {
-							throw { message: msg.notExists };
+							throw { message: msg.noPhoto };
 						}
 						return photo.toObject();
 					});
@@ -581,58 +581,41 @@ var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePub
 
 	//Если у фото есть координаты, значит надо провести действие с картой
 	if (Utils.geo.check(photo.geo)) {
-		if (makePublic) {
-			photoToMap(photo, null, null);
-		} else {
-			photoFromMap(photo);
-		}
+		promises.mapOperaton = makePublic ? photoToMap(photo) : photoFromMap(photo);
 	}
 
 	return Bluebird.props(promises);
 });
 
 // Добавляет фото на карту
-function photoToMap(photo, geoPhotoOld, yearPhotoOld, cb) {
-	step(
-		function () {
-			PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld, this.parallel()); //Отправляем на кластеризацию
-			PhotoMap.update(
-				{cid: photo.cid},
-				{
-					$setOnInsert: {cid: photo.cid},
-					$set: {
-						geo: photo.geo,
-						file: photo.file,
-						dir: photo.dir,
-						title: photo.title,
-						year: photo.year,
-						year2: photo.year2 || photo.year
-					}
-				},
-				{upsert: true},
-				this.parallel()
-			);
-		},
-		function (err) {
-			if (cb) {
-				cb(err);
-			}
-		}
-	);
+function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
+	return Bluebird.all([
+		// Отправляем на кластеризацию
+		PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld),
+		PhotoMap.updateAsync(
+			{ cid: photo.cid },
+			{
+				$setOnInsert: { cid: photo.cid },
+				$set: {
+					geo: photo.geo,
+					file: photo.file,
+					dir: photo.dir,
+					title: photo.title,
+					year: photo.year,
+					year2: photo.year2 || photo.year
+				}
+			},
+			{ upsert: true }
+		)
+	]);
 }
-//Удаляет фото с карты
-function photoFromMap(photo, cb) {
-	step(
-		function () {
-			PhotoCluster.declusterPhoto(photo, this.parallel());
-			PhotoMap.remove({cid: photo.cid}, this.parallel());
-		},
-		function (err) {
-			if (cb) {
-				cb(err);
-			}
-		}
-	);
+
+// Удаляет фото с карты
+function photoFromMap(photo) {
+	return Bluebird.all([
+		PhotoCluster.declusterPhoto(photo),
+		PhotoMap.removeAsync({ cid: photo.cid })
+	]);
 }
 
 function getPhotoSnaphotFields(oldPhoto, newPhoto) {
@@ -699,7 +682,7 @@ var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
 	if (!iAm.registered) {
 		throw {message: msg.deny};
 	}
-	if (!cid) {
+	if (isNaN(cid) || cid < 1) {
 		throw {message: msg.badParams};
 	}
 
@@ -1382,7 +1365,7 @@ function giveUserPhotosAround(iAm, data, cb) {
 
 	findPhoto({cid: cid}, null, iAm, function (err, photo) {
 		if (err || !photo || !photo.user) {
-			return cb({message: msg.notExists, error: true});
+			return cb({message: msg.noPhoto, error: true});
 		}
 
 		step(
@@ -1520,7 +1503,7 @@ function giveCanPhoto(iAm, data, cb) {
 	var cid = Number(data.cid);
 
 	if (!cid) {
-		return cb({message: msg.notExists, error: true});
+		return cb({message: msg.noPhoto, error: true});
 	}
 	if (iAm.registered) {
 		Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
@@ -1534,163 +1517,157 @@ function giveCanPhoto(iAm, data, cb) {
 	}
 }
 
-//Сохраняем информацию о фотографии
-function savePhoto(iAm, data, cb) {
-	var cid = Number(data.cid),
-		photoOldObj,
-		newValues,
-		oldGeo,
-		newGeo,
-		geoToNull,
-		sendingBack = {};
+/**
+ * Сохраняем информацию о фотографии
+ * @param {Object} iAm Объект пользователя
+ * @param {Object} data
+ */
+var savePhoto = Bluebird.method(function (iAm, data) {
+	var newValues;
+	var oldGeo;
+	var newGeo;
+	var geoToNull;
+	var sendingBack = {};
 
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-	if (!Utils.isType('object', data) || !Number(data.cid)) {
-		return cb({message: 'Bad params', error: true});
-	}
+	return prefetchPhoto(iAm, data, 'edit')
+		.bind({})
+		.then(function (photo) {
+			this.photo = photo;
+			this.oldPhotoObj = photo.toObject();
 
-	findPhoto({cid: cid}, {frags: 0}, iAm, function (err, photo) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		if (!photo) {
-			return cb({message: msg.notExists, error: true});
-		}
-		if (!permissions.getCan(photo, iAm).edit) {
-			return cb({message: msg.deny, error: true});
-		}
-
-		photoOldObj = photo.toObject();
-
-		//Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-		if (data.desc) {
-			data.desc = Utils.inputIncomingParse(data.desc).result;
-		}
-		if (data.source) {
-			data.source = Utils.inputIncomingParse(data.source).result;
-		}
-		if (data.author) {
-			data.author = Utils.inputIncomingParse(data.author).result;
-		}
-		if (data.geo) {
-			if (Utils.geo.checkLatLng(data.geo)) {
-				data.geo = Utils.geo.geoToPrecisionRound(data.geo.reverse());
-			} else {
-				delete data.geo;
+			// Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
+			if (data.desc) {
+				data.desc = Utils.inputIncomingParse(data.desc).result;
 			}
-		}
-
-		//Новые значения действительно изменяемых свойств
-		newValues = Utils.diff(_.pick(data, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), photoOldObj);
-		if (_.isEmpty(newValues)) {
-			return cb({message: 'Nothing to save'});
-		}
-
-		if (newValues.geo === null) {
-			//Обнуляем координату
-			geoToNull = true;
-			newValues.geo = undefined; //Удаляем координату
-		}
-		if (newValues.desc !== undefined) {
-			sendingBack.desc = newValues.desc;
-		}
-		if (newValues.source !== undefined) {
-			sendingBack.source = newValues.source;
-		}
-		if (newValues.author !== undefined) {
-			sendingBack.author = newValues.author;
-		}
-
-		oldGeo = photoOldObj.geo;
-		newGeo = newValues.geo;
-
-		//Если координата обнулилась или её нет, то должны присвоить регион
-		if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
-			if (Number(newValues.region)) {
-				sendingBack.regions = regionController.setObjRegionsByRegionCid(photo, Number(newValues.region), ['cid', 'parents', 'title_en', 'title_local']);
-				//Если вернулся false, значит переданного региона не существует
-				if (!sendingBack.regions) {
-					return cb({message: msg.notExistsRegion, error: true});
-				}
-			} else {
-				//Не иметь ни координаты ни региона могут только новые фотографии
-				if (photo.s !== status.NEW) {
-					return cb({message: msg.mustCoord, error: true});
-				}
-				regionController.clearObjRegions(photo); //Очищаем привязку к регионам
-				sendingBack.regions = [];
+			if (data.source) {
+				data.source = Utils.inputIncomingParse(data.source).result;
 			}
-		}
-
-		if (geoToNull && photo.s === status.PUBLIC) {
-			//При обнулении координаты
-			//Если фото публичное, значит оно было на карте. Удаляем с карты.
-			//Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
-			photoFromMap(photo, save);
-		} else if (newGeo) {
-			//Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
-			regionController.setObjRegionsByGeo(photo, newGeo, {_id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1}, function (err, regionsArr) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-				sendingBack.regions = regionsArr;
-				save();
-			});
-		} else {
-			save();
-		}
-
-		function save() {
-			_.assign(photo, newValues);
-
-			//if (photo.s !== status.NEW) {
-				photo.cdate = new Date();
-			//}
-
-			photo.save(function (err, photoSaved) {
-				if (err) {
-					return cb({message: err.message || 'Save error', error: true});
-				}
-
-				var newKeys = Object.keys(newValues),
-					oldValues = {}, //Старые значения изменяемых свойств
-					i;
-
-				for (i = newKeys.length; i--;) {
-					oldValues[newKeys[i]] = photoOldObj[newKeys[i]];
-				}
-
-				if (photoSaved.s === status.PUBLIC && !_.isEmpty(photoSaved.geo) && (newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))) {
-					//Если фото публичное, добавилась/изменилась координата или есть чем обновить постер кластера, то пересчитываем на карте
-					//Здесь координата должна проверятся именно photoSaved.geo, а не newGeo, так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
-					photoToMap(photoSaved, oldGeo, photoOldObj.year, finish);
+			if (data.author) {
+				data.author = Utils.inputIncomingParse(data.author).result;
+			}
+			if (data.geo) {
+				if (Utils.geo.checkLatLng(data.geo)) {
+					data.geo = Utils.geo.geoToPrecisionRound(data.geo.reverse());
 				} else {
-					finish();
+					delete data.geo;
 				}
+			}
 
-				function finish(err) {
-					if (err) {
-						return cb({message: 'Photo saved, but ' + err.message, error: true});
-					}
+			// Новые значения действительно изменяемых свойств
+			newValues = Utils.diff(_.pick(data, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
+			if (_.isEmpty(newValues)) {
+				throw { emptySave: true };
+			}
 
-					//Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
-					if (photoSaved.s >= status.PUBLIC && sendingBack.regions) {
-						var commentAdditionUpdate = {};
-						if (geoToNull) {
-							commentAdditionUpdate.$unset = {geo: 1};
-						} else if (newGeo) {
-							commentAdditionUpdate.$set = {geo: newGeo};
-						}
-						regionController.updateObjsRegions(Comment, {obj: photoSaved._id}, sendingBack.regions, commentAdditionUpdate);
+			if (newValues.geo === null) {
+				geoToNull = true; // Обнуляем координату
+				newValues.geo = undefined; // Удаляем координату
+			}
+			if (newValues.desc !== undefined) {
+				sendingBack.desc = newValues.desc;
+			}
+			if (newValues.source !== undefined) {
+				sendingBack.source = newValues.source;
+			}
+			if (newValues.author !== undefined) {
+				sendingBack.author = newValues.author;
+			}
+
+			oldGeo = this.oldPhotoObj.geo;
+			newGeo = newValues.geo;
+
+			// Если координата обнулилась или её нет, то должны присвоить регион
+			if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
+				if (Number(newValues.region)) {
+					sendingBack.regions = regionController.setObjRegionsByRegionCid(
+						photo, Number(newValues.region),
+						['cid', 'parents', 'title_en', 'title_local']
+					);
+					// Если вернулся false, значит переданного региона не существует
+					if (!sendingBack.regions) {
+						throw { message: msg.noRegion };
 					}
-					cb({message: 'Photo saved successfully', saved: true, data: sendingBack});
+				} else {
+					// Не иметь ни координаты ни региона могут только новые фотографии
+					if (photo.s !== status.NEW) {
+						throw { message: msg.mustCoord };
+					}
+					regionController.clearObjRegions(photo); // Очищаем привязку к регионам
+					sendingBack.regions = [];
 				}
-			});
-		}
-	});
-}
+			}
+
+			if (geoToNull && photo.s === status.PUBLIC) {
+				// При обнулении координаты, если фото публичное, значит оно было на карте. Удаляем с карты.
+				// Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
+				return photoFromMap(photo);
+			} else if (newGeo) {
+				// Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
+				return regionController.setObjRegionsByGeo(
+					photo, newGeo,
+					{ _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
+				)
+					.then(function (regionsArr) {
+						sendingBack.regions = regionsArr;
+						return null;
+					});
+			} else {
+				return null;
+			}
+		})
+		.then(function () {
+			_.assign(this.photo, newValues);
+
+			if (this.photo.s !== status.NEW) {
+				this.photo.cdate = new Date();
+			}
+
+			return this.photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			this.photo = photoSaved;
+
+			var newKeys = Object.keys(newValues);
+			var oldValues = {}; // Старые значения изменяемых свойств
+
+			for (var i = newKeys.length; i--;) {
+				oldValues[newKeys[i]] = this.oldPhotoObj[newKeys[i]];
+			}
+
+			if (
+				photoSaved.s === status.PUBLIC && !_.isEmpty(photoSaved.geo) &&
+				(newGeo || !_.isEmpty(_.pick(oldValues, 'dir', 'title', 'year', 'year2')))
+			) {
+				// Если фото публичное, добавилась/изменилась координата или есть чем обновить постер кластера, то пересчитываем на карте
+				// Здесь координата должна проверятся именно photoSaved.geo, а не newGeo,
+				// так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
+				return photoToMap(photoSaved, oldGeo, this.oldPhotoObj.year);
+			} else {
+				return null;
+			}
+		})
+		.then(function () {
+			// Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
+			if (this.photo.s >= status.PUBLIC && sendingBack.regions) {
+				var commentAdditionUpdate = {};
+				if (geoToNull) {
+					commentAdditionUpdate.$unset = { geo: 1 };
+				} else if (newGeo) {
+					commentAdditionUpdate.$set = { geo: newGeo };
+				}
+				regionController.updateObjsRegions(Comment, { obj: this.photo._id }, sendingBack.regions, commentAdditionUpdate);
+			}
+			return { message: 'Photo saved successfully', saved: true, data: sendingBack };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			} else if (err.emptySave === true) {
+				return { emptySave: true };
+			}
+			throw err;
+		});
+});
 
 //Фотографии и кластеры по границам
 //{z: Масштаб, bounds: [[]]}
@@ -2179,9 +2156,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('savePhoto', function (data) {
-			savePhoto(hs.usObj, data, function (resultData) {
-				socket.emit('savePhotoResult', resultData);
-			});
+			savePhoto(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('savePhotoResult', resultData);
+				});
 		});
 
 		socket.on('getBounds', function (data) {

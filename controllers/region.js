@@ -10,6 +10,7 @@ var _session = require('./_session.js'),
 	dbNative,
 	_ = require('lodash'),
 	step = require('step'),
+	Bluebird = require('bluebird'),
 	Utils = require('../commons/Utils.js'),
 	msg = {
 		badParams: 'Bad params',
@@ -1352,34 +1353,34 @@ function getObjRegionList(obj, fields, cb) {
  * @param obj Объект (фото, комментарий и т.д.)
  * @param geo Координата
  * @param returnArrFields В коллбек вернётся массив регионов с выбранными полями
- * @param cb Коллбек
  */
-function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
+function setObjRegionsByGeo(obj, geo, returnArrFields) {
 	if (!returnArrFields) {
-		returnArrFields = {_id: 0, cid: 1, parents: 1};
+		returnArrFields = { _id: 0, cid: 1, parents: 1 };
 	} else if (!returnArrFields.cid || !returnArrFields.parents) {
 		returnArrFields.cid = 1;
 		returnArrFields.parents = 1;
 	}
-	getRegionsByGeoPoint(geo, returnArrFields, function (err, regions) {
-		if (err || !regions) {
-			return cb(err || {message: 'No regions'});
-		}
-		var regionsArr = [],
-			i;
-
-		for (i = 0; i <= maxRegionLevel; i++) {
-			if (regions[i]) {
-				obj['r' + regions[i].parents.length] = regions[i].cid;
-				regionsArr[regions[i].parents.length] = regions[i];
-			} else {
-				obj['r' + i] = undefined;
+	return getRegionsByGeoPoint(geo, returnArrFields)
+		.then(function (regions) {
+			if (!regions) {
+				throw { message: 'No regions' };
 			}
-		}
+			var regionsArr = [];
 
-		cb(null, regionsArr);
-	});
+			for (var i = 0; i <= maxRegionLevel; i++) {
+				if (regions[i]) {
+					obj['r' + regions[i].parents.length] = regions[i].cid;
+					regionsArr[regions[i].parents.length] = regions[i];
+				} else {
+					obj['r' + i] = undefined;
+				}
+			}
+
+			return regionsArr;
+		});
 }
+
 /**
  * Устанавливает объекту свойства регионов r0-rmaxRegionLevel на основе cid региона
  * @param obj Объект (фото, комментарий и т.д.)
@@ -1387,9 +1388,9 @@ function setObjRegionsByGeo(obj, geo, returnArrFields, cb) {
  * @param returnArrFields Массив выбираемых полей. В коллбек вернётся массив регионов с выбранными полями
  */
 function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
-	var region = regionCacheHash[cid],
-		regionsArr = [],
-		i;
+	var region = regionCacheHash[cid];
+	var regionsArr = [];
+	var i;
 
 	if (region) {
 		//Сначала обнуляем все
@@ -1424,20 +1425,18 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
  * @param criteria
  * @param regions Массив объектов регионов с обязательным свойстов cid
  * @param additionalUpdate
- * @param cb
  */
-function updateObjsRegions(model, criteria, regions, additionalUpdate, cb) {
-	var $set = {},
-		$unset = {},
-		$update = {},
-		region,
-		i;
+var updateObjsRegions = Bluebird.method(function (model, criteria, regions, additionalUpdate) {
+	var $set = {};
+	var $unset = {};
+	var $update = {};
+	var region;
 
 	if (!Array.isArray(regions)) {
 		regions = [];
 	}
 
-	for (i = 0; i <= maxRegionLevel; i++) {
+	for (var i = 0; i <= maxRegionLevel; i++) {
 		region = regions[i];
 		if (region) {
 			$set['r' + (Array.isArray(region.parents) ? region.parents.length : 0)] = region.cid;
@@ -1456,16 +1455,11 @@ function updateObjsRegions(model, criteria, regions, additionalUpdate, cb) {
 	}
 
 	if (Object.keys($update).length) {
-		model.update(criteria || {}, $update, {multi: true}, finish);
+		return model.updateAsync(criteria || {}, $update, {multi: true});
 	} else {
-		finish(null);
+		return null;
 	}
-	function finish() {
-		if (cb) {
-			cb.apply(null, arguments);
-		}
-	}
-}
+});
 
 /**
  * Очищает все регионы у объекта
@@ -1477,24 +1471,30 @@ function clearObjRegions(obj) {
 	}
 }
 
-//Возвращает список регионов, в которые попадает заданая точка
+// Возвращает список регионов, в которые попадает заданая точка
 var getRegionsByGeoPoint = (function () {
-	var defRegion = 1000000,//Если регион не найден, возвращаем Открытое море
-		defFields = {_id: 0, geo: 0, __v: 0};
+	var defRegion = 1000000; // Если регион не найден, возвращаем Открытое море
+	var defFields = { _id: 0, geo: 0, __v: 0 };
 
 	return function (geo, fields, cb) {
-		Region.find({geo: {$nearSphere: {$geometry: {type: 'Point', coordinates: geo}, $maxDistance: 1}} }, fields || defFields, {lean: true, sort: {parents: -1}}, function (err, regions) {
-			if (err) {
-				return cb(err);
+		return Region.findAsync({
+			geo: {
+				$nearSphere: {
+					$geometry: { type: 'Point', coordinates: geo },
+					$maxDistance: 1
+				}
 			}
-			if (!regions) {
-				regions = [];
-			}
-			if (!regions.length && regionCacheHash[defRegion]) {
-				regions.push(regionCacheHash[defRegion]);
-			}
-			cb(null, regions);
-		});
+		}, fields || defFields, { lean: true, sort: { parents: -1 } })
+			.then(function (regions) {
+				if (!regions) {
+					regions = [];
+				}
+				if (!regions.length && regionCacheHash[defRegion]) {
+					regions.push(regionCacheHash[defRegion]);
+				}
+				return regions;
+			})
+			.nodeify(cb);
 	};
 }());
 

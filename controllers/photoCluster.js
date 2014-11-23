@@ -12,6 +12,7 @@ var dbNative,
 
 	_ = require('lodash'),
 	step = require('step'),
+	Bluebird = require('bluebird'),
 	Utils = require('../commons/Utils.js'),
 	log4js = require('log4js'),
 	logger;
@@ -111,25 +112,19 @@ module.exports.loadController = function (app, db, io) {
 };
 
 
-function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
-	var $update = {$set: {}};
+var clusterRecalcByPhoto = Bluebird.method(function (g, zParam, geoPhotos, yearPhotos, cb) {
+	var $update = { $set: {} };
 
 	if (g[0] < -180 || g[0] > 180) {
 		Utils.geo.spinLng(g);
 	}
 
-	step(
-		function () {
-			Cluster.collection.findOne({g: g, z: zParam.z}, {_id: 0, c: 1, geo: 1, y: 1, p: 1}, this);
-		},
-		function (err, cluster) {
-			if (err) {
-				return cb(err);
-			}
-			var c = (cluster && cluster.c) || 0,
-				yCluster = (cluster && cluster.y) || {},
-				geoCluster,
-				inc = 0;
+	return Cluster.findOneAsync({ g: g, z: zParam.z }, { _id: 0, c: 1, geo: 1, y: 1, p: 1 }, {}, { lean: true })
+		.then(function (cluster) {
+			var yCluster = (cluster && cluster.y) || {};
+			var c = (cluster && cluster.c) || 0;
+			var geoCluster;
+			var inc = 0;
 
 			if (cluster && cluster.geo) {
 				geoCluster = cluster.geo;
@@ -148,12 +143,12 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 			if (cluster && c <= 1 && inc === -1) {
 				// Если после удаления фото из кластера, кластер останется пустым - удаляем его
-				Cluster.remove({g: g, z: zParam.z}).exec();
-				return cb(null);
+				Cluster.remove({ g: g, z: zParam.z }).exec();
+				return null;
 			}
 
 			if (inc !== 0) {
-				$update.$inc = {c: inc};
+				$update.$inc = { c: inc };
 			}
 
 			if (yearPhotos.o !== yearPhotos.n) {
@@ -169,7 +164,8 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 				$update.$set.y = yCluster;
 			}
 
-			//Такой ситуации не должно быть. Она означает что у фото перед изменением координаты уже была координата, но она не участвовала в кластеризации
+			// Такой ситуации не должно быть
+			// Она означает что у фото перед изменением координаты уже была координата, но она не участвовала в кластеризации
 			if (geoPhotos.o && !c) {
 				logger.warn('Strange. While recluster photo trying to remove it old geo from unexisting cluster.');
 			}
@@ -193,145 +189,117 @@ function clusterRecalcByPhoto(g, zParam, geoPhotos, yearPhotos, cb) {
 			}
 
 			$update.$set.geo = geoCluster;
-			Photo.collection.findOne({s: constants.photo.status.PUBLIC, geo: {$near: geoCluster}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}, this);
-		},
-		function (err, photo) {
-			if (err) {
-				return cb(err);
-			}
-			$update.$set.p = photo;
-			Cluster.update({g: g, z: zParam.z}, $update, {multi: false, upsert: true}, this);
-		},
-		function (err) {
-			cb(err);
-		}
-	);
-}
+			return Photo.findOneAsync(
+				{ s: constants.photo.status.PUBLIC, geo: { $near: geoCluster } },
+				{ _id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1 }
+			)
+				.then(function (photo) {
+					$update.$set.p = photo;
+					return Cluster.updateAsync({ g: g, z: zParam.z }, $update, { multi: false, upsert: true });
+				})
+				.spread(function (count) {
+					return count;
+				});
+		})
+		.nodeify(cb);
+});
 
 /**
  * Создает кластер для новых координат фото
  * @param photo Фото
  * @param geoPhotoOld гео-координаты до изменения
  * @param yearPhotoOld год фотографии до изменения
- * @param cb Коллбэк
  */
-module.exports.clusterPhoto = function (photo, geoPhotoOld, yearPhotoOld, cb) {
+module.exports.clusterPhoto = Bluebird.method(function (photo, geoPhotoOld, yearPhotoOld) {
 	if (!photo.year) {
-		if (Utils.isType('function', cb)) {
-			cb({message: 'Bad params to set photo cluster'});
-		}
-		return;
+		throw { message: 'Bad params to set photo cluster' };
 	}
-	//var start = Date.now();
-	geoPhotoOld = !_.isEmpty(geoPhotoOld) ? geoPhotoOld : undefined;
 
-	step(
-		function () {
-			var geoPhoto = photo.geo, // Новые координаты фото, которые уже сохранены в базе
-				geoPhotoCorrection,
-				geoPhotoOldCorrection,
+	var g; // Координаты левого верхнего угла ячейки кластера для новой координаты
+	var gOld;
+	var clusterZoom;
+	var geoPhoto = photo.geo; // Новые координаты фото, которые уже сохранены в базе
+	var geoPhotoCorrection;
+	var geoPhotoOldCorrection;
+	var recalcPromises = [];
 
-				g, // Координаты левого верхнего угла ячейки кластера для новой координаты
-				gOld,
+	if (_.isEmpty(geoPhotoOld)) {
+		geoPhotoOld = undefined;
+	}
 
-				clusterZoom,
-				i = clusterParams.length;
+	// Коррекция для кластера.
+	// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
+	// Так как отображение кластера идет от верхнего угла, то для положительного lat надо прибавить единицу
+	if (geoPhoto) {
+		geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0]; // Корекция для кластера текущих координат
+	}
+	if (geoPhotoOld) {
+		geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0]; // Корекция для кластера старых координат
+	}
 
-			// Коррекция для кластера.
-			// Так как кластеры высчитываются бинарным округлением (>>), то для отрицательного lng надо отнять единицу.
-			// Так как отображение кластера идет от верхнего угла, то для положительного lat надо прибавить единицу
-			if (geoPhoto) {
-				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0]; // Корекция для кластера текущих координат
+	for (var i = clusterParams.length; i--;) {
+		clusterZoom = clusterParams[i];
+		clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
+		clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
+
+		// Определяем ячейки для старой и новой координаты, если они есть
+		if (geoPhotoOld) {
+			gOld = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]), clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1])]);
+		}
+		if (geoPhoto) {
+			g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+		}
+
+		if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
+			// Если старые и новые координаты заданы и для них ячейка кластера на этом масштабе одна,
+			// то если координата не изменилась, пересчитываем только постер,
+			// если изменилась - пересчитаем центр тяжести (отнимем старую, прибавим новую)
+			if (geoPhotoOld[0] === geoPhoto[0] && geoPhotoOld[1] === geoPhoto[1]) {
+				recalcPromises.push(clusterRecalcByPhoto(g, clusterZoom, {}, { o: yearPhotoOld, n: photo.year }));
+			} else {
+				recalcPromises.push(clusterRecalcByPhoto(g, clusterZoom, { o: geoPhotoOld, n: geoPhoto }, { o: yearPhotoOld, n: photo.year }));
 			}
-			if (geoPhotoOld) {
-				geoPhotoOldCorrection = [geoPhotoOld[0] < 0 ? -1 : 0, geoPhotoOld[1] > 0 ? 1 : 0]; // Корекция для кластера старых координат
+		} else {
+			// Если ячейка для координат изменилась, или какой-либо координаты нет вовсе,
+			// то пересчитываем старую и новую ячейку, если есть соответствующая координата
+			if (gOld) {
+				recalcPromises.push(clusterRecalcByPhoto(gOld, clusterZoom, { o: geoPhotoOld }, { o: yearPhotoOld }));
 			}
-
-			while (i--) {
-				clusterZoom = clusterParams[i];
-				clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
-				clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
-
-				// Определяем ячейки для старой и новой координаты, если они есть
-				if (geoPhotoOld) {
-					gOld = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhotoOld[0] / clusterZoom.w >> 0) + geoPhotoOldCorrection[0]), clusterZoom.h * ((geoPhotoOld[1] / clusterZoom.h >> 0) + geoPhotoOldCorrection[1])]);
-				}
-				if (geoPhoto) {
-					g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
-				}
-
-				if (gOld && g && gOld[0] === g[0] && gOld[1] === g[1]) {
-					// Если старые и новые координаты заданы и для них ячейка кластера на этом масштабе одна,
-					// то если координата не изменилась, пересчитываем только постер,
-					// если изменилась - пересчитаем центр тяжести (отнимем старую, прибавим новую)
-					if (geoPhotoOld[0] === geoPhoto[0] && geoPhotoOld[1] === geoPhoto[1]) {
-						clusterRecalcByPhoto(g, clusterZoom, {}, {o: yearPhotoOld, n: photo.year}, this.parallel());
-					} else {
-						clusterRecalcByPhoto(g, clusterZoom, {o: geoPhotoOld, n: geoPhoto}, {o: yearPhotoOld, n: photo.year}, this.parallel());
-					}
-				} else {
-					// Если ячейка для координат изменилась, или какой-либо координаты нет вовсе,
-					// то пересчитываем старую и новую ячейку, если есть соответствующая координата
-					if (gOld) {
-						clusterRecalcByPhoto(gOld, clusterZoom, {o: geoPhotoOld}, {o: yearPhotoOld}, this.parallel());
-					}
-					if (g) {
-						clusterRecalcByPhoto(g, clusterZoom, {n: geoPhoto}, {n: photo.year}, this.parallel());
-					}
-				}
-			}
-		},
-		function (err) {
-			//console.log(photo.cid + ' reclustered in ' + (Date.now() - start));
-			if (Utils.isType('function', cb)) {
-				cb(err);
+			if (g) {
+				recalcPromises.push(clusterRecalcByPhoto(g, clusterZoom, { n: geoPhoto }, { n: photo.year }));
 			}
 		}
-	);
-};
+	}
+
+	return Bluebird.all(recalcPromises);
+});
 
 /**
  * Удаляет фото из кластеров
  * @param photo фото
- * @param cb Коллбэк добавления
- * @return {Boolean}
  */
-module.exports.declusterPhoto = function (photo, cb) {
+module.exports.declusterPhoto = Bluebird.method(function (photo) {
 	if (!Utils.geo.check(photo.geo) || !photo.year) {
-		if (Utils.isType('function', cb)) {
-			cb({message: 'Bad params to decluster photo'});
-		}
-		return;
+		throw { message: 'Bad params to decluster photo' };
 	}
-	//var start = Date.now();
 
-	step(
-		function () {
-			var geoPhoto = photo.geo,
-				geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0],
+	var g;
+	var clusterZoom;
+	var recalcPromises = [];
+	var geoPhoto = photo.geo;
+	var geoPhotoCorrection = [geoPhoto[0] < 0 ? -1 : 0, geoPhoto[1] > 0 ? 1 : 0];
 
-				g,
+	for (var i = clusterParams.length; i--;) {
+		clusterZoom = clusterParams[i];
+		clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
+		clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
 
-				clusterZoom,
-				i = clusterParams.length;
+		g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
+		recalcPromises.push(clusterRecalcByPhoto(g, clusterZoom, { o: geoPhoto }, { o: photo.year }));
+	}
 
-			while (i--) {
-				clusterZoom = clusterParams[i];
-				clusterZoom.wHalf = Utils.math.toPrecisionRound(clusterZoom.w / 2);
-				clusterZoom.hHalf = Utils.math.toPrecisionRound(clusterZoom.h / 2);
-
-				g = Utils.geo.geoToPrecisionRound([clusterZoom.w * ((geoPhoto[0] / clusterZoom.w >> 0) + geoPhotoCorrection[0]), clusterZoom.h * ((geoPhoto[1] / clusterZoom.h >> 0) + geoPhotoCorrection[1])]);
-				clusterRecalcByPhoto(g, clusterZoom, {o: geoPhoto}, {o: photo.year}, this.parallel());
-			}
-		},
-		function (err) {
-			//console.log(photo.cid + ' declustered in ' + (Date.now() - start));
-			if (Utils.isType('function', cb)) {
-				cb(err);
-			}
-		}
-	);
-};
+	return Bluebird.all(recalcPromises);
+});
 
 
 /**
