@@ -635,15 +635,6 @@ function photoFromMap(photo, cb) {
 	);
 }
 
-//Удаляет из Incoming загруженное, но не созданное фото
-function removePhotoIncoming(iAm, data, cb) {
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-
-	fs.unlink(incomeDir + data.file, cb);
-}
-
 function getPhotoSnaphotFields(oldPhoto, newPhoto) {
     return snaphotFields.reduce(function (result, field) {
         var oldValue = oldPhoto[field];
@@ -998,6 +989,30 @@ var activateDeactivate = function (socket, data) {
 				return { message: msg.changed, changed: true };
 			}
 			return { message: err.message, error: true };
+		});
+};
+
+/**
+ * Удаляет из Incoming загруженное, но не созданное фото
+ * @param {Object} iAm Объект пользователя
+ * @param {Object} data
+ */
+var removePhotoIncoming = function (iAm, data) {
+	return new Bluebird(function (resolve, reject) {
+		if (!iAm.registered) {
+			reject({ message: msg.deny });
+		}
+
+		fs.unlink(incomeDir + data.file, function (err) {
+			if (err) {
+				reject(err);
+			} else {
+				resolve({});
+			}
+		});
+	})
+		.catch(function (err) {
+			return { message: err.message, error: true};
 		});
 };
 
@@ -2054,9 +2069,10 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('removePhotoInc', function (data) {
-			removePhotoIncoming(hs.usObj, data, function (err) {
-				socket.emit('removePhotoIncCallback', {error: !!err});
-			});
+			removePhotoIncoming(hs.usObj, data)
+				.then(function (resultData) {
+					socket.emit('removePhotoIncCallback', resultData);
+				});
 		});
 
 		socket.on('restorePhoto', function (data) {
