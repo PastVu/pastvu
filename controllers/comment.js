@@ -1695,15 +1695,15 @@ function upsertCommentsView(objId, userId, cb) {
 /**
  * Удаляет время просмотра объекта, если указан _id пользователя, то только у него
  * @param objId
- * @param userId Опционально. Без этого параметра удалит время просмотра у всех пользователей
- * @param cb
+ * @param [userId] Опционально. Без этого параметра удалит время просмотра у всех пользователей
+ * @callback [cb]
  */
 function dropCommentsView(objId, userId, cb) {
 	var query = {obj: objId};
 	if (userId) {
 		query.user = userId;
 	}
-	UserCommentsView.remove(query, cb);
+	return UserCommentsView.removeAsync(query).nodeify(cb);
 }
 
 /**

@@ -144,15 +144,15 @@ function unSubscribeObjForAll(iAm, data, cb) {
 /**
  * Удаляет подписки на объект, если указан _id пользователя, то только его подписку
  * @param objId
- * @param userId Опционально. Без этого параметра удалит подписки на объект у всех пользователей
- * @param cb
+ * @param [userId] Опционально. Без этого параметра удалит подписки на объект у всех пользователей
+ * @callback [cb]
  */
 function unSubscribeObj(objId, userId, cb) {
 	var query = {obj: objId};
 	if (userId) {
 		query.user = userId;
 	}
-	UserSubscr.remove(query, cb);
+	return UserSubscr.removeAsync(query).nodeify(cb);
 }
 
 /**

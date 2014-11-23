@@ -123,12 +123,12 @@
 		span.glyphicon.glyphicon-exclamation-sign
 		|  Деактивировать
 	// /ko
-	//ko if: p.s()!==9 && can.remove()
+	//ko if: can.remove()
 	button.btn.btn-danger(type="button", data-bind="click: remove, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-trash
-		span(data-bind="text: !IOwner() && p.s()<2 ? ' Отклонить' : ' Удалить'")
+		|  Удалить
 	// /ko
-	//ko if: p.s()===9 && can.restore()
+	//ko if: can.restore()
 	button.btn.btn-success(type="button", data-bind="click: restore, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-repeat
 		span  Восстановить

@@ -117,7 +117,7 @@ var _session = require('./_session.js'),
 				// Модератор может отклонить не свое фото пока оно новое
 				can.reject = s < status.REVOKE && canModerate && !ownPhoto;
 				// Восстанавливать из удаленных может только администратор
-				can.restore = usObj.isAdmin;
+				can.restore = s === status.REMOVE && usObj.isAdmin;
 				// Отправить на конвертацию может только администратор
 				can.convert = usObj.isAdmin;
 
@@ -1005,69 +1005,51 @@ var activateDeactivate = function (socket, data) {
  * Удаление фотографии
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
- * @param cb Коллбэк
  */
-function removePhoto(socket, data, cb) {
+var removePhoto = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
+	if (_.isEmpty(data.reason)) {
+		throw { message: msg.needReason };
 	}
 
-	var cid = data && Number(data.cid);
+	return prefetchPhoto(iAm, data, 'remove')
+		.bind({})
+		.then(function (photo) {
+			this.oldPhotoObj = photo.toObject();
 
-	if (!cid) {
-		return cb({message: 'Bad params', error: true});
-	}
+			photo.s = status.REMOVED;
+			photo.cdate = new Date();
 
-	findPhoto({cid: cid}, {}, iAm, function (err, photo) {
-		if (err || !photo) {
-			return cb({message: err && err.message || 'No such photo', error: true});
-		}
+			return photo.saveAsync();
+		})
+		.spread(function (photoSaved) {
+			// Сохраняем в истории предыдущий статус
+			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
 
-		if (_.isNumber(data.s) && data.s !== photo.s) {
-			return cb({message: msg.anotherStatus, error: true});
-		}
+			// Отписываем всех пользователей
+			subscrController.unSubscribeObj(photoSaved._id);
 
-		var canModerate = permissions.canModerate(photo, iAm);
+			// Удаляем время просмотра комментариев у пользователей
+			commentController.dropCommentsView(photoSaved._id);
 
-		if (!permissions.getCan(photo, iAm, canModerate).remove) {
-			return cb({message: msg.deny, error: true});
-		}
-
-        var oldPhotoObj = photo.toObject();
-
-		photo.s = status.REMOVED;
-		photo.cdate = new Date();
-
-		photo.save(function (err, photoSaved) {
-			if (err) {
-				return cb({ message: err && err.message, error: true });
+			if (this.oldPhotoObj.s === status.PUBLIC) {
+				changePublicPhotoExternality(photoSaved, iAm);
 			}
 
-			step(
-				function () {
-					// Сохраняем в истории предыдущий статус
-					savePhotoSnaphot(iAm, oldPhotoObj, photoSaved, canModerate, this.parallel());
-					//Отписываем всех пользователей
-					subscrController.unSubscribeObj(photoSaved._id, null, this.parallel());
-					//Удаляем время просмотра комментариев у пользователей
-					commentController.dropCommentsView(photoSaved._id, null, this.parallel());
-					if (oldPhotoObj.s === status.PUBLIC) {
-						changePublicPhotoExternality(socket, photoSaved, iAm, false, this.parallel());
-					}
-				},
-				function (err) {
-					if (err) {
-						return cb({message: 'Removed ok, but: ' + (err && err.message || 'other changes error'), error: true});
-					}
-					cb({ message: 'ok', s: photoSaved.s, can: permissions.getCan(photoSaved, iAm, canModerate) });
-				}
-			);
-
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: photoSaved.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
+		})
+		.catch(function (err) {
+			if (err.changed === true) {
+				return { message: msg.changed, changed: true };
+			}
+			return { message: err.message, error: true};
 		});
-	});
-}
+});
 
 /**
  * Восстановление фотографии
@@ -2068,9 +2050,10 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('removePhoto', function (data) {
-			removePhoto(socket, data, function (resultData) {
-				socket.emit('removePhotoCallback', resultData);
-			});
+			removePhoto(socket, data)
+				.then(function (resultData) {
+					socket.emit('removePhotoResult', resultData);
+				});
 		});
 		socket.on('removePhotoInc', function (data) {
 			removePhotoIncoming(hs.usObj, data, function (err) {

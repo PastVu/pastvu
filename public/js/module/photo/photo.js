@@ -32,8 +32,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 							.attr('disabled', false)
 							.on('click', function () {
 								$noty.close();
-								onFinish && onFinish.call(ctx);
-							}.bind(this));
+								if (onFinish) {
+									onFinish.call(ctx);
+								}
+							});
 					};
 					var methods = {
 						close: function () {
@@ -86,6 +88,49 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}}
 			]
 		});
+	}
+
+	function notyAlert(params) {
+		var buttonText = params.text || 'Ok';
+		var countdown = params.countdown;
+
+		var $noty = window.noty({
+			text: params.message,
+			type: 'confirm',
+			layout: 'center',
+			modal: true,
+			force: true,
+			animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 100 },
+			buttons: [
+				{addClass: 'btn btn-primary', text: buttonText, onClick: function ($noty) {
+					// this = button element
+					// $noty = $noty element
+
+					$noty.close();
+					if (params.onOk) {
+						params.onOk.call(params.ctx);
+					}
+
+
+				}}
+			]
+		});
+
+		var finishButton = $('.btn-primary', $noty);
+
+		if (_.isNumber(countdown) && countdown > 0) {
+			finishButton.text(buttonText + ' (' + (countdown - 1)+ ')');
+
+			Utils.timer(
+				countdown * 1000,
+				function (timeleft) {
+					finishButton.text(buttonText + ' (' + timeleft + ')');
+				},
+				function () {
+					finishButton.trigger('click');
+				}
+			);
+		}
 	}
 
 	function notyError(message, timeout) {
@@ -1023,16 +1068,14 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			});
 		},
 
-
 		reject: function (data, event) {
 			var self = this;
+			var p = self.p;
+			var cid = p.cid();
 
 			if (!self.can.reject()) {
 				return false;
 			}
-
-			var p = self.p;
-			var cid = p.cid();
 
 			self.exe(true);
 
@@ -1178,165 +1221,66 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		remove: function (data, event) {
-			if (!this.can.revoke()) {
+			var self = this;
+			var p = self.p;
+			var cid = p.cid();
+
+			if (!self.can.remove()) {
 				return false;
 			}
-			var reasons = [{key: '0', name: 'Свободное описание причины'}];
-			var topic = 'Причина отклонения';
-			var text = 'Фотография будет удалена и не попадет в очередь на публикацию<br>Укажите причину и подтвердите операцию';
 
-			this.reasonSelect(reasons, text, function (cancel, reason) {
+			self.exe(true);
+
+			self.reasonSelect('photo.remove', 'Причина удаления', function (cancel, reason) {
 				if (cancel) {
+					self.exe(false);
 					return;
 				}
-				socket.once('removeCommentResult', function (result) {
-					var i,
-						msg,
-						count,
-						$cdel;
 
-					if (result && !result.error) {
-						count = Number(result.countComments);
-						if (!count) {
-							return;
-						}
-						if (!tplCommentDel) {
-							tplCommentDel = doT.template(dotCommentDel, _.defaults({varname: 'c,it'}, doT.templateSettings));
-						}
-
-						comment.lastChanged = result.stamp;
-						this.count(this.count() - count);
-						this.parentModule.commentCountIncrement(-count);
-
-						if (Array.isArray(result.frags)) {
-							this.parentModule.fragReplace(result.frags);
-						}
-
-						comment.del = result.delInfo;
-						//Очищаем массив дочерних как в delHide
-						delete comment.comments;
-						//Удаляем дочерние, если есть (нельзя просто удалить все .hlRemove, т.к. могут быть дочерние уже удалённые, на которых hlRemove не распространяется, но убрать их из дерева тоже надо)
-						getChildComments(comment, $c).remove();
-						//Заменяем корневой удаляемый комментарий на удалённый(схлопнутый)
-						$cdel = $(tplCommentDel(comment, {fDate: formatDateRelative, fDateIn: formatDateRelativeIn}));
-						$c.replaceWith($cdel);
-
-						//Если обычный пользователь удаляет свой ответ на свой же комментарий,
-						//пока может тот редактировать, и у того не осталось неудаленных дочерних, то проставляем у родителя кнопку удалить
-						if (!this.canModerate() && parent && parent.user.login === this.auth.iAm.login() && parent.can.edit) {
-							parent.can.del = true;
-							for (i = 0; i < parent.comments.length; i++) {
-								if (parent.comments[i].del === undefined) {
-									parent.can.del = false;
-									break;
+				(function request(confirmer) {
+					socket.once('removePhotoResult', function (data) {
+						if (data && data.changed) {
+							confirm({
+								message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+								okText: 'Продолжить удаление',
+								cancelText: 'Отменить',
+								onOk: function (confirmer) {
+									request(confirmer);
+								},
+								onCancel: function () {
+									self.exe(false);
 								}
+							});
+						} else {
+							var error = !data || data.error;
+							if (error) {
+								self.exe(false);
+								notyError(data && data.message);
+							} else {
+								self.rechargeData(data.photo, data.can);
+
+								if (confirmer) {
+									confirmer.close();
+								}
+
+								notyAlert({
+									message: 'Фотография удалена',
+									text: 'Завершить',
+									countdown: 5,
+									onOk: function () {
+										self.exe(false);
+										globalVM.router.navigate('/u/' + p.user.login() + '/photo');
+									}
+								});
 							}
-							if (parent.can.del) {
-								$('<div class="dotDelimeter">·</div><span class="cact remove">Удалить</span>').insertAfter($('#c' + parent.cid + ' .cact.edit', this.$cmts));
-							}
+							ga('send', 'event', 'photo', 'reject', 'photo delete ' + (error ? 'error' : 'success'));
 						}
-
-						//Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
-						if ($cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
-							$window.scrollTo($cdel, {duration: 600});
-						}
-
-						if (count > 1) {
-							msg = 'Удалено комментариев: ' + count + ',<br>от ' + result.countUsers + ' пользователя(ей)';
-						}
-						ga('send', 'event', 'comment', 'delete', 'comment delete success', count);
-					} else {
-						msg = result && result.message || '';
-						$('.hlRemove', this.$cmts).removeClass('hlRemove');
-						ga('send', 'event', 'comment', 'delete', 'comment delete error');
-					}
-
-					if (msg) {
-						window.noty({text: msg, type: 'info', layout: 'center', timeout: 2200, force: true});
-					}
-				}, that);
-				socket.emit('removeComment', {type: that.type, cid: cid, reason: reason});
-			}, this);
+					});
+					socket.emit('removePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+				}());
+			});
 		},
 
-		removeOld: function (data, event) {
-			if (!this.can.remove()) {
-				return false;
-			}
-
-			var self = this;
-
-			this.exe(true);
-			window.noty(
-				{
-					text: 'Фотография будет удалена<br>Подтвердить операцию?',
-					type: 'confirm',
-					layout: 'center',
-					modal: true,
-					force: true,
-					animation: {
-						open: {height: 'toggle'},
-						close: {},
-						easing: 'swing',
-						speed: 500
-					},
-					buttons: [
-						{addClass: 'btn btn-danger', text: 'Да', onClick: function ($noty) {
-							// this = button element
-							// $noty = $noty element
-							if ($noty.$buttons && $noty.$buttons.find) {
-								$noty.$buttons.find('button').attr('disabled', true);
-							}
-
-							socket.once('removePhotoCallback', function (data) {
-								$noty.$buttons.find('.btn-danger').remove();
-								var okButton = $noty.$buttons.find('button')
-									.attr('disabled', false)
-									.off('click');
-
-								if (data && !data.error) {
-									this.p.s(9);
-									this.originData.s = 9;
-
-									$noty.$message.children().html('Photo successfully removed');
-
-									okButton.text('Ok (4)').on('click', function () {
-										document.location.href = '/u/' + this.p.user.login() + '/photo';
-									}.bind(this));
-
-									Utils.timer(
-										5000,
-										function (timeleft) {
-											okButton.text('Ok (' + timeleft + ')');
-										},
-										function () {
-											okButton.trigger('click');
-										}
-									);
-
-									this.can = ko_mapping.fromJS(data.can, this.can);
-
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' success');
-								} else {
-									$noty.$message.children().html(data.message || 'Error occurred');
-									okButton.text('Close').on('click', function () {
-										$noty.close();
-										this.exe(false);
-									}.bind(this));
-									ga('send', 'event', 'photo', (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete'), 'photo ' + (!this.IOwner() && this.p.s() < 2 ? 'decline' : 'delete') + ' error');
-								}
-							}, self);
-							socket.emit('removePhoto', {cid: self.p.cid(), s: self.p.s()});
-
-						}},
-						{addClass: 'btn btn-primary', text: 'Отмена', onClick: function ($noty) {
-							$noty.close();
-							self.exe(false);
-						}}
-					]
-				}
-			);
-		},
 		restore: function (data, event) {
 			if (!this.can.restore()) {
 				return false;

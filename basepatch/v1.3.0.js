@@ -1,4 +1,3 @@
-/*global*/
 'use strict';
 
 var log4js = require('log4js'),
@@ -40,6 +39,12 @@ module.exports.loadController = function (app, db) {
             title: 'Претензия возможного правообладателя',
             desc: { required: true, min: 5, max: 500, label: 'Суть претензии', placeholder: 'Краткое и емкое описание' }
         });
+        db.reasons.save({
+            cid: 12,
+            title: 'Обоснованная претензия правообладателя',
+            desc: { required: true, min: 5, max: 500, label: 'Суть претензии', placeholder: 'Краткое и емкое описание' }
+        });
+        db.reasons.save({ cid: 13, title: 'По требованию автора фотографии' });
 
         // Добавляем пользовательские действия с причинами
         db.user_actions.save({
@@ -66,6 +71,11 @@ module.exports.loadController = function (app, db) {
             key: 'photo.deactivate',
             reasons: [11, 10, 5, 6, 1, 2, 0],
             reason_text: 'Фотография будет деактивирована с возможностью обратной активации<br>Укажите причину'
+        });
+        db.user_actions.save({
+            key: 'photo.remove',
+            reasons: [12, 13, 10, 5, 6, 1, 2, 0],
+            reason_text: 'Фотография будет удалена с возможностью восстановления только администратором<br>Укажите причину'
         });
 
         // Переименовываем key причин удаления комментариев в cid и проставляем cid=0 свободным причинам
