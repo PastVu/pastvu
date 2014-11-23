@@ -765,7 +765,7 @@ var revokePhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 };
 
@@ -806,7 +806,7 @@ var readyPhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 };
 
@@ -819,7 +819,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
 	if (_.isEmpty(data.reason)) {
-		throw {message: msg.needReason};
+		throw { message: msg.needReason };
 	}
 
 	return prefetchPhoto(iAm, data, 'revision')
@@ -846,7 +846,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 });
 
@@ -886,7 +886,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 });
 
@@ -945,7 +945,7 @@ var approvePhoto = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true };
+			throw err;
 		});
 };
 
@@ -988,7 +988,7 @@ var activateDeactivate = function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true };
+			throw err;
 		});
 };
 
@@ -1062,7 +1062,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 });
 
@@ -1104,28 +1104,30 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 			if (err.changed === true) {
 				return { message: msg.changed, changed: true };
 			}
-			return { message: err.message, error: true};
+			throw err;
 		});
 });
 
 
-//Отдаем фотографию для её страницы
-function givePhoto(iAm, data, cb) {
-	if (!data || !Number(data.cid)) {
-		return cb({message: msg.notExists, error: true});
+/**
+ * Отдаем фотографию для её страницы
+ * @param {Object} iAm Объект пользователя
+ * @param {Object} data
+ */
+var givePhotoForPage = Bluebird.method(function (iAm, data) {
+	if (!_.isObject(data)) {
+		throw ({ message: msg.badParams });
 	}
-	var params = {
-		cid: Number(data.cid),
-		countView: true
-	};
+	var cid = Number(data.cid);
+	if (!cid || cid < 1) {
+		throw ({ message: msg.badParams });
+	}
 
-	core.givePhoto(iAm, params, function (err, photo, can) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		cb({photo: photo, can: can});
-	});
-}
+	return core.givePhoto(iAm, { cid: cid, countView: true })
+		.spread(function (photo, can) {
+			return { photo: photo, can: can };
+		});
+});
 
 //Отдаем последние публичные фотографии на главной
 var givePhotosPublicIndex = (function () {
@@ -2021,6 +2023,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('revokePhoto', function (data) {
 			revokePhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('revokePhotoCallback', resultData);
 				});
@@ -2028,6 +2033,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('readyPhoto', function (data) {
 			readyPhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('readyPhotoResult', resultData);
 				});
@@ -2035,6 +2043,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('revisionPhoto', function (data) {
 			toRevision(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('revisionPhotoResult', resultData);
 				});
@@ -2042,6 +2053,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('rejectPhoto', function (data) {
 			rejectPhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('rejectPhotoResult', resultData);
 				});
@@ -2049,6 +2063,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('approvePhoto', function (data) {
 			approvePhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('approvePhotoResult', resultData);
 				});
@@ -2056,6 +2073,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('disablePhoto', function (data) {
 			activateDeactivate(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('disablePhotoResult', resultData);
 				});
@@ -2063,6 +2083,9 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('removePhoto', function (data) {
 			removePhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('removePhotoResult', resultData);
 				});
@@ -2077,15 +2100,22 @@ module.exports.loadController = function (app, db, io) {
 
 		socket.on('restorePhoto', function (data) {
 			restorePhoto(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
 				.then(function (resultData) {
 					socket.emit('restorePhotoResult', resultData);
 				});
 		});
 
 		socket.on('givePhoto', function (data) {
-			givePhoto(hs.usObj, data, function (resultData) {
-				socket.emit('takePhoto', resultData);
-			});
+			givePhotoForPage(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takePhoto', resultData);
+				});
 		});
 
 		socket.on('givePhotosPublicIndex', function () {
