@@ -85,9 +85,11 @@
 
 	//-ACTIONS VIEW MODE
 	| <script id="photoActionsView" type="text/html">
+	//ko if: can.edit()
 	button.btn.btn-primary(type="button", data-bind="click: editSave, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-pencil
 		|  Редактировать
+	// /ko
 	//ko if: can.ready()
 	button.btn.btn-success(type="button", title="Отправить на премодерацию и дальнейшую публикацию", data-bind="click: ready, attr: {disabled: exe()}")
 		span.glyphicon.glyphicon-check

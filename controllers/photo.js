@@ -677,11 +677,15 @@ var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 });
 
 var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
-	var cid = data && Number(data.cid);
-
+	if (!_.isObject(data)) {
+		throw {message: msg.badParams};
+	}
 	if (!iAm.registered) {
 		throw {message: msg.deny};
 	}
+
+	var cid = Number(data.cid);
+
 	if (isNaN(cid) || cid < 1) {
 		throw {message: msg.badParams};
 	}
@@ -1522,39 +1526,46 @@ function giveCanPhoto(iAm, data, cb) {
  * @param {Object} iAm Объект пользователя
  * @param {Object} data
  */
-var savePhoto = Bluebird.method(function (iAm, data) {
+var savePhoto = function (iAm, data) {
 	var newValues;
 	var oldGeo;
 	var newGeo;
 	var geoToNull;
-	var sendingBack = {};
+	var newRegions;
 
 	return prefetchPhoto(iAm, data, 'edit')
 		.bind({})
 		.then(function (photo) {
+			var changes = data.changes;
+
+			if (_.isEmpty(changes)) {
+				throw { emptySave: true };
+			}
+
 			this.photo = photo;
 			this.oldPhotoObj = photo.toObject();
+			this.saveHistory = this.photo.s !== status.NEW;
 
 			// Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-			if (data.desc) {
-				data.desc = Utils.inputIncomingParse(data.desc).result;
+			if (changes.desc) {
+				changes.desc = Utils.inputIncomingParse(changes.desc).result;
 			}
-			if (data.source) {
-				data.source = Utils.inputIncomingParse(data.source).result;
+			if (changes.source) {
+				changes.source = Utils.inputIncomingParse(changes.source).result;
 			}
-			if (data.author) {
-				data.author = Utils.inputIncomingParse(data.author).result;
+			if (changes.author) {
+				changes.author = Utils.inputIncomingParse(data.author).result;
 			}
-			if (data.geo) {
-				if (Utils.geo.checkLatLng(data.geo)) {
-					data.geo = Utils.geo.geoToPrecisionRound(data.geo.reverse());
+			if (changes.geo) {
+				if (Utils.geo.checkLatLng(changes.geo)) {
+					changes.geo = Utils.geo.geoToPrecisionRound(changes.geo.reverse());
 				} else {
-					delete data.geo;
+					delete changes.geo;
 				}
 			}
 
 			// Новые значения действительно изменяемых свойств
-			newValues = Utils.diff(_.pick(data, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
+			newValues = Utils.diff(_.pick(changes, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
 			if (_.isEmpty(newValues)) {
 				throw { emptySave: true };
 			}
@@ -1563,15 +1574,6 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 				geoToNull = true; // Обнуляем координату
 				newValues.geo = undefined; // Удаляем координату
 			}
-			if (newValues.desc !== undefined) {
-				sendingBack.desc = newValues.desc;
-			}
-			if (newValues.source !== undefined) {
-				sendingBack.source = newValues.source;
-			}
-			if (newValues.author !== undefined) {
-				sendingBack.author = newValues.author;
-			}
 
 			oldGeo = this.oldPhotoObj.geo;
 			newGeo = newValues.geo;
@@ -1579,12 +1581,12 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 			// Если координата обнулилась или её нет, то должны присвоить регион
 			if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
 				if (Number(newValues.region)) {
-					sendingBack.regions = regionController.setObjRegionsByRegionCid(
+					newRegions = regionController.setObjRegionsByRegionCid(
 						photo, Number(newValues.region),
 						['cid', 'parents', 'title_en', 'title_local']
 					);
 					// Если вернулся false, значит переданного региона не существует
-					if (!sendingBack.regions) {
+					if (!newRegions) {
 						throw { message: msg.noRegion };
 					}
 				} else {
@@ -1593,7 +1595,7 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 						throw { message: msg.mustCoord };
 					}
 					regionController.clearObjRegions(photo); // Очищаем привязку к регионам
-					sendingBack.regions = [];
+					newRegions = [];
 				}
 			}
 
@@ -1608,7 +1610,7 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 					{ _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
 				)
 					.then(function (regionsArr) {
-						sendingBack.regions = regionsArr;
+						newRegions = regionsArr;
 						return null;
 					});
 			} else {
@@ -1618,7 +1620,7 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 		.then(function () {
 			_.assign(this.photo, newValues);
 
-			if (this.photo.s !== status.NEW) {
+			if (this.saveHistory) {
 				this.photo.cdate = new Date();
 			}
 
@@ -1647,17 +1649,28 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 			}
 		})
 		.then(function () {
-			// Если это опубликованная фотография (не обязательно публичная) и изменились регионы, устанавливаем их комментариям
-			if (this.photo.s >= status.PUBLIC && sendingBack.regions) {
+			// Если это опубликованная фотография (не обязательно публичная) и изменились регионы,
+			// устанавливаем их возможным комментариям
+			if (this.photo.s >= status.PUBLIC && newRegions) {
 				var commentAdditionUpdate = {};
 				if (geoToNull) {
 					commentAdditionUpdate.$unset = { geo: 1 };
 				} else if (newGeo) {
 					commentAdditionUpdate.$set = { geo: newGeo };
 				}
-				regionController.updateObjsRegions(Comment, { obj: this.photo._id }, sendingBack.regions, commentAdditionUpdate);
+				regionController.updateObjsRegions(Comment, { obj: this.photo._id }, newRegions, commentAdditionUpdate);
 			}
-			return { message: 'Photo saved successfully', saved: true, data: sendingBack };
+
+			// Сохраняем в истории предыдущий статус
+			if (this.saveHistory) {
+				savePhotoSnaphot(iAm, this.oldPhotoObj, this.photo);
+			}
+
+			// Заново выбираем данные для отображения
+			return core.givePhoto(iAm, { cid: this.photo.cid });
+		})
+		.spread(function (photo, can) {
+			return { message: 'ok', photo: photo, can: can };
 		})
 		.catch(function (err) {
 			if (err.changed === true) {
@@ -1667,7 +1680,7 @@ var savePhoto = Bluebird.method(function (iAm, data) {
 			}
 			throw err;
 		});
-});
+};
 
 //Фотографии и кластеры по границам
 //{z: Масштаб, bounds: [[]]}

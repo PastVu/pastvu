@@ -690,7 +690,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 
 		getRegionsByGeo: function (geo, cb, ctx) {
 			this.exeregion(true);
-			socket.off('takeRegionsByGeo'); //Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			// Отменяем возможно существующий прошлый обработчик, так как в нем замкнут неактуальный cb
+			socket.off('takeRegionsByGeo');
 			//Устанавливаем on, а не once, чтобы он срабатывал всегда, в том числе и на последнем обработчике, который нам и нужен
 			socket.on('takeRegionsByGeo', function (data) {
 				//Если вернулись данные для другой(прошлой) точки или мы уже не в режиме редактирования, то выходим
@@ -768,41 +769,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (this.regselectVM) {
 				this.regselectVM.destroy();
 				delete this.regselectVM;
-			}
-		},
-
-		editSave: function () {
-			if (this.can.edit()) {
-				if (!this.edit()) {
-					this.edit(true);
-					//Если включаем редактирования, обнуляем количество новых комментариев,
-					//так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
-					this.p.ccount_new(0);
-					this.originData.ccount_new = 0;
-				} else {
-					this.exe(true);
-					this.save(function (data) {
-						if (!data.error) {
-							this.edit(false);
-
-							if (this.p.s() === 0) {
-								this.notifyReady();
-							}
-							ga('send', 'event', 'photo', 'edit', 'photo edit success');
-						} else {
-							window.noty({text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
-							ga('send', 'event', 'photo', 'edit', 'photo edit error');
-						}
-						this.exe(false);
-					}, this);
-
-				}
-			}
-		},
-		editCancel: function (data, event) {
-			if (this.can.edit() && this.edit()) {
-				this.cancel();
-				this.edit(false);
 			}
 		},
 
@@ -915,15 +881,129 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			}
 		},
 
+		editSave: function () {
+			var self = this;
+			var p = self.p;
+			var origin = self.originData;
+			var cid = p.cid();
+
+			if (!self.can.edit()) {
+				return false;
+			}
+
+			if (!self.edit()) {
+				self.edit(true);
+				// Если включаем редактирования, обнуляем количество новых комментариев,
+				// так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
+				p.ccount_new(0);
+				origin.ccount_new = 0;
+				return false;
+			}
+
+			var changes = _.pick(ko_mapping.toJS(p), 'geo', 'dir', 'title', 'year', 'year2', 'address');
+			var key;
+
+			for (key in changes) {
+				if (changes.hasOwnProperty(key)) {
+					if (!_.isUndefined(origin[key]) && _.isEqual(changes[key], origin[key])) {
+						delete changes[key];
+					} else if (_.isUndefined(origin[key]) && _.isEqual(changes[key], Photo.def.full[key])) {
+						delete changes[key];
+					}
+				}
+			}
+
+			if (!changes.geo) {
+				if (p.regions().length) {
+					changes.region = _.last(ko_mapping.toJS(p.regions)).cid;
+				} else {
+					changes.region = 0;
+				}
+			}
+
+			if (p.desc() !== self.descEditOrigin) {
+				changes.desc = p.desc();
+			}
+			if (p.source() !== self.sourceEditOrigin) {
+				changes.source = p.source();
+			}
+			if (p.author() !== self.authorEditOrigin) {
+				changes.author = p.author();
+			}
+
+			if (!_.isEmpty(changes)) {
+				self.exe(true);
+
+				(function request (confirmer) {
+					socket.once('savePhotoResult', function (data) {
+						if (data && data.changed) {
+							confirm({
+								message: data.message +
+								'<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
+								'<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
+								okText: 'Продолжить сохранение',
+								cancelText: 'Отменить',
+								onOk: function (confirmer) {
+									request(confirmer);
+								},
+								onCancel: function () {
+									self.exe(false);
+								}
+							});
+						} else if (data && data.emptySave) {
+							self.exe(false);
+							self.edit(false);
+						} else {
+							var error = !data || data.error;
+
+							if (error) {
+								notyError(data && data.message);
+							} else {
+								self.rechargeData(data.photo, data.can);
+
+								if (confirmer) {
+									confirmer.close();
+								}
+								if (p.s() === 0) {
+									self.notifyReady();
+								}
+
+								// Заново запрашиваем ближайшие фотографии
+								self.getNearestRibbon(8, self.applyNearestRibbon, self);
+								self.edit(false);
+							}
+							ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
+							self.exe(false);
+						}
+					});
+					socket.emit('savePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), changes: changes, ignoreChange: !!confirmer});
+				}());
+			} else {
+				self.edit(false);
+			}
+		},
+		editCancel: function () {
+			var self = this;
+
+			if (self.edit()) {
+				ko_mapping.fromJS(self.originData, self.p);
+				delete self.descEditOrigin;
+				delete self.sourceEditOrigin;
+				delete self.authorEditOrigin;
+
+				self.edit(false);
+			}
+		},
+
 		revoke: function (data, event) {
 			var self = this;
+			var confimingChanges;
+			var cid = self.p.cid();
 
 			if (!self.can.revoke()) {
 				return false;
 			}
 
-			var confimingChanges;
-			var cid = self.p.cid();
 			var request = function (cb, ctx) {
 				socket.once('revokePhotoCallback', function (data) {
 					cb.call(ctx, data);
@@ -1013,7 +1093,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				});
 				socket.emit('readyPhoto', {cid: cid, cdate: p.cdate(), s: p.s(), ignoreChange: !!confirmer});
 			}());
-
 		},
 
 		toRevision: function (data, event) {
@@ -1332,85 +1411,6 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			});
 		},
 
-		save: function (cb, ctx) {
-			var target = _.pick(ko_mapping.toJS(this.p), 'geo', 'dir', 'title', 'year', 'year2', 'address', 'author'),
-				key;
-
-			for (key in target) {
-				if (target.hasOwnProperty(key)) {
-					if (!_.isUndefined(this.originData[key]) && _.isEqual(target[key], this.originData[key])) {
-						delete target[key];
-					} else if (_.isUndefined(this.originData[key]) && _.isEqual(target[key], Photo.def.full[key])) {
-						delete target[key];
-					}
-				}
-			}
-
-			if (!target.geo) {
-				if (this.p.regions().length) {
-					target.region = _.last(ko_mapping.toJS(this.p.regions)).cid;
-				} else {
-					target.region = 0;
-				}
-			}
-
-			if (this.p.desc() !== this.descEditOrigin) {
-				target.desc = this.p.desc();
-			}
-			if (this.p.source() !== this.sourceEditOrigin) {
-				target.source = this.p.source();
-			}
-			if (this.p.author() !== this.authorEditOrigin) {
-				target.author = this.p.author();
-			}
-
-			if (Utils.getObjectPropertyLength(target) > 0) {
-				target.cid = this.p.cid();
-				socket.once('savePhotoResult', function (result) {
-					if (result && !result.error && result.saved) {
-						if (target.geo) {
-							this.getNearestRibbon(8, this.applyNearestRibbon, this);
-						}
-						if (result.data.regions) {
-							Photo.vm({regions: result.data.regions}, this.p, true); //Обновляем регионы
-						}
-						replaceDataWithHTML('desc', this);
-						replaceDataWithHTML('source', this);
-						replaceDataWithHTML('author', this);
-						_.assign(this.originData, target); //Обновляем originData тем что сохранилось
-					}
-					if (cb) {
-						cb.call(ctx, result);
-					}
-
-					//Замена значени поля, в котором присутствует html-разметка
-					function replaceDataWithHTML(propName, ctx) {
-						if (typeof result.data[propName] === 'string') {
-							ctx.p[propName](result.data[propName]);
-							target[propName] = result.data[propName];
-						} else {
-							//Если свойство не было изменено или не вернулось (тоже значит, что не было изменено),
-							//то возвращаем оригинальное значение, т.к. в нем содержится html разметка
-							ctx.p[propName](ctx.originData[propName]);
-							delete target[propName];
-						}
-						delete ctx[propName + 'EditOrigin'];
-					}
-				}, this);
-				socket.emit('savePhoto', target);
-			} else {
-				if (cb) {
-					cb.call(ctx, {message: 'Nothing to save'});
-				}
-			}
-		},
-		cancel: function () {
-			ko_mapping.fromJS(this.originData, this.p);
-			delete this.descEditOrigin;
-			delete this.sourceEditOrigin;
-			delete this.authorEditOrigin;
-		},
-
 		toConvert: function (data, event) {
 			var convertVarsSel = _.intersection(this.convertVarsSel(), [ "a", "d", "h", "m", "q", "s", "x"]);
 			if (!this.can.convert() || !convertVarsSel.length) {
@@ -1430,24 +1430,23 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			]);
 		},
 
-		//Стандартная обработка поступающего массива лент фотографий,
-		//если пришедшая фотография есть, она вставляется в новый массив
+		// Стандартная обработка поступающего массива лент фотографий,
+		// если пришедшая фотография есть, она вставляется в новый массив
 		processRibbonItem: function (incomingArr, targetArr) {
 			var resultArr = [],
-				i,
 				item,
 				itemExistFunc = function (element) {
 					return element.cid === item.cid;
 				};
 
-			for (i = 0; i < incomingArr.length; i++) {
+			for (var i = 0; i < incomingArr.length; i++) {
 				item = incomingArr[i];
 				resultArr.push(_.find(targetArr, itemExistFunc) || Photo.factory(item, 'base', 'q'));
 			}
 			return resultArr;
 		},
 
-		//Берем ленту ближайших фотографий к текущей в галерее пользователя
+		// Берем ленту ближайших фотографий к текущей в галерее пользователя
 		getUserRibbon: function (left, right, cb, ctx) {
 			socket.once('takeUserPhotosAround', function (data) {
 				if (!data || data.error) {
@@ -1471,27 +1470,27 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.userRibbon(newRibbon);
 		},
 
-		//Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
+		// Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
 		getNearestRibbon: function (limit, cb, ctx) {
 			if (this.nearestForCenterDebounced) {
-				//Если уже есть обработчик на moveend, удаляем его
+				// Если уже есть обработчик на moveend, удаляем его
 				this.mapVM.map.off('moveend', this.nearestForCenterDebounced, this);
 				this.nearestForCenterDebounced = null;
 			}
 
 			if (this.p.geo()) {
-				//Если у фото есть координата - берем ближайшие для неё
+				// Если у фото есть координата - берем ближайшие для неё
 				this.receiveNearestRibbon(this.p.geo(), limit, this.p.cid(), cb, ctx);
 			} else {
-				//Если у фото нет координат - берем ближайшие к центру карты
+				// Если у фото нет координат - берем ближайшие к центру карты
 				$.when(this.mapModulePromise).done(function () {
-					//Сразу берем, если зашли первый раз
+					// Сразу берем, если зашли первый раз
 					this.nearestForCenter(limit, cb, ctx);
-					//Дебаунс для moveend карты
+					// Дебаунс для moveend карты
 					this.nearestForCenterDebounced = _.debounce(function () {
 						this.nearestForCenter(limit, cb, ctx);
 					}, 1500);
-					//Вешаем обработчик перемещения
+					// Вешаем обработчик перемещения
 					this.mapVM.map.on('moveend', this.nearestForCenterDebounced, this);
 				}.bind(this));
 			}
