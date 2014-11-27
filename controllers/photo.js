@@ -171,7 +171,7 @@ function findPhoto(query, fieldSelect, usObj, cb) {
 		query.s = status.PUBLIC; // Анонимам ищем только публичные
 	}
 	return Photo.findOneAsync(query, fieldSelect).then(function (photo) {
-		if (!photo || !permissions.canSee(photo, usObj)) {
+		if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
 			throw { message: msg.noPhoto };
 		}
 
@@ -1360,50 +1360,44 @@ function givePhotosForApprove(iAm, data, cb) {
 	});
 }
 
-//Берем массив до и после указанной фотографии пользователя указанной длины
-function giveUserPhotosAround(iAm, data, cb) {
-	var cid = Number(data && data.cid),
-		limitL = Math.min(Number(data.limitL), 100),
-		limitR = Math.min(Number(data.limitR), 100);
+/**
+ * Берем массив до и после указанной фотографии пользователя указанной длины
+ * @param {Object} iAm Объект пользователя
+ * @param {Object} data
+ */
+var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
+	var cid = Number(data && data.cid);
+	var limitL = Math.min(Number(data.limitL), 100);
+	var limitR = Math.min(Number(data.limitR), 100);
 
 	if (!cid || (!limitL && !limitR)) {
-		return cb({message: 'Bad params', error: true});
+		throw { message: msg.badParams };
 	}
 
-	findPhoto({cid: cid}, null, iAm, function (err, photo) {
-		if (err || !photo || !photo.user) {
-			return cb({message: msg.noPhoto, error: true});
-		}
+	return findPhoto({ cid: cid }, null, iAm)
+		.then(function (photo) {
+			var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
+			var query = buildPhotosQuery(filter, photo.user, iAm).query;
+			var promises = [];
 
-		step(
-			function () {
-				var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? {r: 0} : {},
-					query = buildPhotosQuery(filter, photo.user, iAm).query;
-				query.user = photo.user;
+			query.user = photo.user;
 
-				if (limitL) {
-					query.sdate = {$gt: photo.sdate};
-					Photo.find(query, compactFields, {lean: true, sort: {sdate: 1}, limit: limitL}, this.parallel());
-				} else {
-					this.parallel()(null, []);
-				}
-
-				if (limitR) {
-					query.sdate = {$lt: photo.sdate};
-					Photo.find(query, compactFields, {lean: true, sort: {sdate: -1}, limit: limitL}, this.parallel());
-				} else {
-					this.parallel()(null, []);
-				}
-			},
-			function (err, photosL, photosR) {
-				if (err) {
-					return cb({message: err.message, error: true});
-				}
-				cb({left: photosL || [], right: photosR || []});
+			if (limitL) {
+				query.sdate = { $gt: photo.sdate };
+				promises.push(Photo.findAsync(query, compactFields, { lean: true, sort: { sdate: 1 }, limit: limitL }));
 			}
-		);
-	});
-}
+
+			if (limitR) {
+				query.sdate = { $lt: photo.sdate };
+				promises.push(Photo.findAsync(query, compactFields, { lean: true, sort: { sdate: -1 }, limit: limitR }));
+			}
+
+			return Bluebird.all(promises);
+		})
+		.spread(function (photosL, photosR) {
+			return { left: photosL || [], right: photosR || [] };
+		});
+});
 
 //Берем массив ближайших фотографий
 function giveNearestPhotos(data, cb) {
@@ -2142,9 +2136,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveUserPhotosAround', function (data) {
-			giveUserPhotosAround(hs.usObj, data, function (resultData) {
-				socket.emit('takeUserPhotosAround', resultData);
-			});
+			giveUserPhotosAround(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takeUserPhotosAround', resultData);
+				});
 		});
 
 		socket.on('giveUserPhotosPrivate', function (data) {
