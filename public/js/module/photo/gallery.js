@@ -460,7 +460,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				}
 				this.loading(false);
 
-				if (Utils.isType('function', cb)) {
+				if (_.isFunction(cb)) {
 					cb.call(ctx, data);
 				}
 			}, this);

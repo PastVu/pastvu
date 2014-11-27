@@ -1,12 +1,12 @@
 /*global define:true*/
-define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region'], function ($, _, ko, ko_mapping, Utils, P, User, Region) {
+define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region', 'm/photo/status'], function ($, _, ko, ko_mapping, Utils, P, User, Region, statuses) {
 	'use strict';
 
 	var defaults = {
 			// Следующие типы включают друг друга по нарастающей
 			base: {
 				cid: '',
-				s: 5,
+				s: statuses.keys.PUBLIC,
 
 				file: '',
 				title: '',
@@ -118,6 +118,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			User.factory(origin.user, 'base');
 		}
 
+		origin.status = statuses.nums[origin.s] || {};
 		origin.sfile = P.preaddr + picFormats[picType] + origin.file;
 
 		return origin;
