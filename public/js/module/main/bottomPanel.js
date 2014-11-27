@@ -1,7 +1,7 @@
 /**
  * Модель нижней панели на главной
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/Photo', 'model/User', 'model/storage', 'm/photo/status', 'text!tpl/main/bottomPanel.jade', 'css!style/main/bottomPanel'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, Photo, User, storage, statuses, jade) {
 	'use strict';
 
 	var catsObj = {
@@ -238,7 +238,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					} else {
 						this.processPhotos(data.photos, data.rhash, Photo.picFormats.m);
 						this.photos(data.photos);
-						this.moreLink('/ps/2?f=r!0_s!1');
+						this.moreLink('/ps/2?f=r!0_s!' + statuses.keys.READY);
 						success = true;
 					}
 				}
