@@ -1,17 +1,15 @@
 /**
  * Модель галереи фотографий
  */
-define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, Uri, jade) {
+define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Photo', 'model/storage', 'm/photo/status', 'lib/jsuri', 'text!tpl/photo/gallery.jade', 'css!style/photo/gallery'], function (_, Browser, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Photo, storage, statuses, Uri, jade) {
 	'use strict';
-	var $window = $(window),
-		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>'),
-		filter_s = [
-			{cid: '0', title: 'Новые'},
-			{cid: '1', title: 'Готовые'},
-			{cid: '5', title: 'Публичные'},
-			{cid: '7', title: 'Неактивные'},
-			{cid: '9', title: 'Удаленные'}
-		];
+	var $window = $(window);
+	var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+	var statusNums = statuses.nums;
+
+	var filter_s = _.transform(statusNums, function (result, status, num) {
+		result.push({s: num, title: status.filter_title});
+	}, []);
 
 	return Cliche.extend({
 		jade: jade,
@@ -68,12 +66,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 				available: {
 					s: this.co.filteravailables = ko.computed(function () {
 						if (this.auth.iAm) {
-							if (this.auth.iAm.role() > 9) {
+							// Владелец или модератор видят все статусы, можно регулировать
+							if (this.auth.iAm.role() > 4 || this.itsMine()) {
 								return filter_s;
-							} else if (this.itsMine() || this.auth.iAm.role() > 4) {
-								return filter_s.filter(function (item) {
-									return item.cid !== '9';
-								});
 							}
 						}
 						return [];

@@ -207,7 +207,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn');
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
 				} else if (status && status.title) {
-					this.setMessage(iOwner ? status.title_owner : status.title, status.label, 'warn');
+					this.setMessage(iOwner ? status.title_owner : status.title, '', status.label);
 				} else {
 					this.setMessage();
 				}

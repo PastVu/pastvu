@@ -1141,7 +1141,7 @@ var givePhotosPublicNoGeoIndex = (function () {
 	};
 }());
 
-var filterProps = {geo: [], r: [], rp: [], s: []},
+var filterProps = { geo: [], r: [], rp: [], s: [] },
 	delimeterParam = '_',
 	delimeterVal = '!';
 function parseFilter(filterString) {
@@ -1157,10 +1157,12 @@ function parseFilter(filterString) {
 		for (i = filterParams.length; i--;) {
 			filterParam = filterParams[i];
 			dividerIndex = filterParam.indexOf(delimeterVal);
+
 			if (dividerIndex > 0) {
 				filterVal = filterParam.substr(dividerIndex + 1);
 				filterParam = filterParam.substring(0, dividerIndex);
 			}
+
 			if (filterProps[filterParam] !== undefined) {
 				if (typeof filterProps[filterParam] === 'boolean') {
 					result[filterParam] = true;
