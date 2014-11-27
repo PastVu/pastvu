@@ -97,7 +97,8 @@ var _session = require('./_session.js'),
 					deactivate: false,
 					remove: false,
 					restore: false,
-					convert: false
+					convert: false,
+					comment: false
 				},
 				s = photo.s,
 				ownPhoto;
@@ -120,6 +121,8 @@ var _session = require('./_session.js'),
 				can.restore = s === status.REMOVE && usObj.isAdmin;
 				// Отправить на конвертацию может только администратор
 				can.convert = usObj.isAdmin;
+				// Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
+				can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate;
 
 				if (canModerate) {
 					// Модератор может отправить на доработку

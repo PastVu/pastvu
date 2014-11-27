@@ -694,14 +694,14 @@ function saveRegion(iAm, data, cb) {
 		return cb({message: msg.deny, error: true});
 	}
 
-	if (!Utils.isType('object', data) || !data.title_en || !data.title_local) {
+	if (!_.isObject(data) || !data.title_en || !data.title_local) {
 		return cb({message: msg.badParams, error: true});
 	}
 
 	data.title_en = data.title_en.trim();
 	data.title_local = data.title_local.trim();
 	if (!data.title_en || !data.title_local) {
-		return cb({message: msg.badParams, error: true});
+		return cb({ message: msg.badParams, error: true });
 	}
 
 	data.parent = data.parent && Number(data.parent);
@@ -746,7 +746,7 @@ function saveRegion(iAm, data, cb) {
 			resultStat = {};
 
 		if (!data.cid) {
-			//Создаем объект региона
+			// Создаем объект региона
 			Counter.increment('region', function (err, count) {
 				if (err || !count) {
 					return cb({message: err && err.message || 'Increment comment counter error', error: true});
@@ -754,7 +754,7 @@ function saveRegion(iAm, data, cb) {
 				fill(new Region({cid: count.next, parents: parentsArray}));
 			});
 		} else {
-			//Ищем регион по переданному cid
+			// Ищем регион по переданному cid
 			var region;
 
 			step(
@@ -794,15 +794,15 @@ function saveRegion(iAm, data, cb) {
 		}
 
 		function fill(region) {
-			//Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
+			// Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
 			if (data.geo) {
-				//Если мультиполигон состоит из одного полигона, берем только его и делаем тип Polygon
+				// Если мультиполигон состоит из одного полигона, берем только его и делаем тип Polygon
 				if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
 					data.geo.coordinates = data.geo.coordinates[0];
 					data.geo.type = 'Polygon';
 				}
 
-				//Считаем количество точек
+				// Считаем количество точек
 				region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
 				if (data.geo.type === 'Polygon' || data.geo.type === 'MultiPolygon') {
 					region.polynum = Utils.calcGeoJSONPolygonsNum(data.geo);
@@ -810,7 +810,7 @@ function saveRegion(iAm, data, cb) {
 					region.polynum = {exterior: 0, interior: 0};
 				}
 
-				//Вычисляем bbox
+				// Вычисляем bbox
 				region.bbox = Utils.geo.polyBBOX(data.geo).map(Utils.math.toPrecision6);
 
 				region.geo = data.geo;
@@ -821,13 +821,13 @@ function saveRegion(iAm, data, cb) {
 			if (Utils.geo.checkbboxLatLng(data.bboxhome)) {
 				region.bboxhome = Utils.geo.bboxReverse(data.bboxhome).map(Utils.math.toPrecision6);
 			} else if (data.bboxhome === null) {
-				region.bboxhome = undefined; //Если пришел null - надо обнулить, т.е. bbox будет авто
+				region.bboxhome = undefined; // Если пришел null - надо обнулить, т.е. bbox будет авто
 			}
 
 			if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
 				if (data.geo || !region.centerAuto) {
 					region.centerAuto = true;
-					//Если Polygon - то в качестве центра берется его центр тяжести, если MultiPolygon - центр bbox
+					// Если Polygon - то в качестве центра берется его центр тяжести, если MultiPolygon - центр bbox
 					region.center = Utils.geo.geoToPrecision(region.geo.type === 'MultiPolygon' ? [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] : Utils.geo.polyCentroid(region.geo.coordinates[0]));
 				}
 			} else {
@@ -846,7 +846,7 @@ function saveRegion(iAm, data, cb) {
 
 				step(
 					function () {
-						//Если изменились координаты, отправляем на пересчет входящие объекты
+						// Если изменились координаты, отправляем на пересчет входящие объекты
 						if (data.geo) {
 							calcRegionIncludes(region, this);
 						} else {
@@ -861,7 +861,7 @@ function saveRegion(iAm, data, cb) {
 							_.assign(resultStat, geoRecalcRes);
 						}
 						if (parentChange) {
-							//Если изменился родитель - пересчитываем все зависимости от уровня
+							// Если изменился родитель - пересчитываем все зависимости от уровня
 							changeRegionParentExternality(region, parentsArrayOld, childLenArray, this);
 						} else {
 							this();
@@ -874,7 +874,7 @@ function saveRegion(iAm, data, cb) {
 						if (moveRes) {
 							_.assign(resultStat, moveRes);
 						}
-						fillCache(this); //Обновляем кэш регионов
+						fillCache(this); // Обновляем кэш регионов
 					},
 					function (err) {
 						if (err) {
@@ -913,7 +913,7 @@ function saveRegion(iAm, data, cb) {
 							}
 						}
 
-						//Обновляем онлайн-пользователей, у которых данный регион установлен как домашний или фильтруемый по умолчанию или модерируемый
+						// Обновляем онлайн-пользователей, у которых данный регион установлен как домашний или фильтруемый по умолчанию или модерируемый
 						_session.regetUsers(function (usObj) {
 							return usObj.rhash && usObj.rhash[region.cid] ||
 								usObj.mod_rhash && usObj.mod_rhash[region.cid] ||

@@ -9,7 +9,7 @@
 		//ko if: !auth.loggedIn()
 		.addZero.headElem.interact.strokeBefore(data-bind="click: function(data, evt){auth.show('login')}", title="Кликните, чтобы войти или зарегистрироваться")
 			span.glyphicon.glyphicon-log-in
-			| &nbsp;&nbsp;Войдите, чтобы поделиться мнением
+			|   Войдите, чтобы поделиться мнением
 		// /ko
 		//ko if: auth.loggedIn()
 		.commSubscr.headElem.interact.strokeBefore(data-bind="click: subscribe, css: {isSubscr: subscr()}, attr: {title: subscr() ? 'Вы подписаны на новые комментарии. Нажмите, чтобы отписаться' : 'Подписаться на новые комментарии'}")

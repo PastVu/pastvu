@@ -1,10 +1,13 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, jade) {
+define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, statuses, jade) {
 	'use strict';
-	var $window = $(window),
-		imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+
+	var $window = $(window);
+	var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
+	var statusKeys = statuses.keys;
+	var statusNums = statuses.nums;
 
 	function confirm(params) {
 		return window.noty({
@@ -147,11 +150,13 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 	return Cliche.extend({
 		jade: jade,
 		create: function () {
-			var _this = this;
+			var self = this;
 
 			this.auth = globalVM.repository['m/common/auth'];
 			this.p = Photo.vm(Photo.def.full);
 			this.binded = false;
+
+			this.status = status;
 
 			this.photoSrc = ko.observable('');
 			this.photoLoading = ko.observable(true);
@@ -179,7 +184,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				deactivate: false,
 				remove: false,
 				restore: false,
-				convert: false
+				convert: false,
+				comment: false
 			});
 
 			this.IOwner = this.co.IOwner = ko.computed(function () {
@@ -195,26 +201,15 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				var iOwner = this.IOwner();
 				var s = this.p.s();
+				var status = statusNums[s];
 
 				if (this.edit()) {
-					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn'); //Photo is in edit mode. Please fill in the underlying fields and save the changes
+					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warn');
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
-				} else if (s === 0) {
-					this.setMessage('Новая фотография. Должна быть заполнена и отправлена на премодерацию для публикации', '', 'warn'); //Photo is new. Administrator must approve it
-				} else if (s === 1) {
-					this.setMessage('Информация о фотографии должна быть доработана по требованию модератора', '', 'warn'); //Photo is new. Administrator must approve it
-				} else if (s === 2) {
-					this.setMessage('Фотография находится на премодерации в ожидании публикации', '', 'warn'); // Administrator must approve it
-				} else if (s === 3) {
-					this.setMessage(iOwner ? 'Вы отозвали фотографию': 'Фотография отозвана пользователем', '', 'error'); // Administrator must approve it
-				} else if (s === 4) {
-					this.setMessage('Фотография отклонена модератором', '', 'error');
-				} else if (s === 7) {
-					this.setMessage('Фотография деактивирована модератором', 'Только вы и модераторы можете видеть её и редактировать', 'warn'); //Photo is disabled by Administrator. Only You and other Administrators can see and edit it
-				} else if (s === 9) {
-					this.setMessage('Фотография удалена', 'error'); //Photo is deleted by Administrator
+				} else if (status && status.title) {
+					this.setMessage(iOwner ? status.title_owner : status.title, status.label, 'warn');
 				} else {
-					this.setMessage('', 'muted');
+					this.setMessage();
 				}
 			}, this);
 
@@ -254,7 +249,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				buttonText: function (options, select) {
 					if (options.length === 0) {
 						return 'Convert variants <b class="caret"></b>';
-					} else if (options.length === _this.convertVars().length) {
+					} else if (options.length === self.convertVars().length) {
 						return 'All variants selected <b class="caret"></b>';
 					} else if (options.length > 2) {
 						return options.length + ' variants selected <b class="caret"></b>';
@@ -362,69 +357,70 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		},
 
 		routeHandler: function () {
-			var cid = Number(globalVM.router.params().cid),
-				hl = globalVM.router.params().hl;
+			var self = this;
+			var cid = Number(globalVM.router.params().cid);
+			var hl = globalVM.router.params().hl;
 
-			this.toComment = this.toFrag = undefined;
-			window.clearTimeout(this.scrollTimeout);
+			self.toComment = self.toFrag = undefined;
+			window.clearTimeout(self.scrollTimeout);
 
 			if (hl) {
 				if (hl.indexOf('comment-') === 0) {
-					this.toComment = hl.substr(8) || undefined; //Навигация к конкретному комментарию
+					self.toComment = hl.substr(8) || undefined; // Навигация к конкретному комментарию
 				} else if (hl.indexOf('comments') === 0) {
-					this.toComment = true; //Навигация к секции комментариев
+					self.toComment = true; // Навигация к секции комментариев
 				} else if (hl.indexOf('frag-') === 0) {
-					this.toFrag = parseInt(hl.substr(5), 10) || undefined; //Навигация к фрагменту
+					self.toFrag = parseInt(hl.substr(5), 10) || undefined; // Навигация к фрагменту
 				}
 			}
 
-			if (this.p && Utils.isType('function', this.p.cid) && this.p.cid() !== cid) {
-				this.photoLoading(true);
+			if (self.p && Utils.isType('function', self.p.cid) && self.p.cid() !== cid) {
+				self.photoLoading(true);
 
-				this.commentsVM.deactivate();
+				self.commentsVM.deactivate();
 
 				storage.photo(cid, function (data) {
-					var editModeCurr = this.edit(),
+					var editModeCurr = self.edit(),
 						editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
 
 					if (data) {
-						this.rechargeData(data.origin, data.can);
+						self.rechargeData(data.origin, data.can);
 
-						Utils.title.setTitle({title: this.p.title()});
+						Utils.title.setTitle({title: self.p.title()});
 
-						editModeNew = this.can.edit() && this.IOwner() && this.p.s() === 0;
+						editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statuses.NEW;
 
-						if (this.photoLoadContainer) {
-							this.photoLoadContainer.off('load').off('error');
+						if (self.photoLoadContainer) {
+							self.photoLoadContainer.off('load').off('error');
 						}
-						this.photoLoadContainer = $(new Image())
-							.on('load', this.onPhotoLoad.bind(this))
-							.on('error', this.onPhotoError.bind(this))
-							.attr('src', this.p.sfile());
+						self.photoLoadContainer = $(new Image())
+							.on('load', self.onPhotoLoad.bind(self))
+							.on('error', self.onPhotoError.bind(self))
+							.attr('src', self.p.sfile());
 
-						this.processRanks(this.p.user.ranks());
-						this.getUserRibbon(3, 4, this.applyUserRibbon, this);
-						this.getNearestRibbon(8, this.applyNearestRibbon, this);
+						self.processRanks(self.p.user.ranks());
+						self.getUserRibbon(3, 4, self.applyUserRibbon, self);
+						self.getNearestRibbon(8, self.applyNearestRibbon, self);
 
 						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
-						if (this.binded) {
-							$.when(this.mapModulePromise).done(this.setMapPoint.bind(this));
+						if (self.binded) {
+							$.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
 						}
 
 						if (editModeCurr !== editModeNew) {
-							this.edit(editModeNew);
+							self.edit(editModeNew);
 						} else {
-							this.editHandler(editModeCurr);
+							self.editHandler(editModeCurr);
 						}
 
-						if (!this.binded) {
-							this.makeBinding();
+						if (!self.binded) {
+							self.makeBinding();
 						}
 						ga('send', 'pageview');
 					}
-				}, this, this.p);
-			} else if (this.toFrag || this.toComment) {
-				this.scrollTimeout = window.setTimeout(this.scrollToBind, 50);
+				});
+			} else if (self.toFrag || self.toComment) {
+				self.scrollTimeout = setTimeout(self.scrollToBind, 50);
 			}
 		},
 
@@ -964,7 +960,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								if (confirmer) {
 									confirmer.close();
 								}
-								if (p.s() === 0) {
+								if (p.s() === statusKeys.NEW) {
 									self.notifyReady();
 								}
 
@@ -1291,7 +1287,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 								confirmer.close();
 							}
 						}
-						ga('send', 'event', 'photo', 'reject', 'photo ' + (data.photo.s === 7 ? 'disabled ' : 'enabled ') + (error ? 'error' : 'success'));
+						ga('send', 'event', 'photo', 'reject', 'photo ' + (data.photo.s === statusKeys.DEACTIVATE ? 'disabled ' : 'enabled ') + (error ? 'error' : 'success'));
 						self.exe(false);
 					}
 				});
@@ -1467,7 +1463,12 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				newRibbon = this.ribbonUserLeft.slice(-nLeft);
 
 			Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
-			this.userRibbon(newRibbon);
+			this.userRibbon(this.setRibbonStatus(newRibbon));
+		},
+		setRibbonStatus: function (ribbon) {
+			return _.each(ribbon, function (element) {
+				element.status = statusNums[element.s] || {};
+			});
 		},
 
 		// Берем ленту ближайщих на карте либо к текущей (если у неё есть координата), либо к центру карты
@@ -1533,23 +1534,25 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 		 * COMMENTS
 		 */
 		commentsActivate: function (options) {
-			//Активируем, если фото не новое и не редактируется
-			if (!this.edit() && this.p.s() > 1) {
-				this.commentsVM.activate(
-					{cid: this.p.cid(), count: this.p.ccount(), countNew: this.p.ccount_new(), subscr: this.p.subscr(), nocomments: this.p.nocomments()},
-					_.defaults(options || {}, {instant: !!this.toComment || this.p.frags().length, checkTimeout: this.p.ccount() > 30 ? 500 : 300}),
-					function () {
-						//На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
-						window.setTimeout(this.scrollToBind, 150);
+			var self = this;
+			var p = self.p;
 
-						//Если у нас есть новые комментарии, то нужно сбросить их количество,
-						//но только у оригинального ресурса, чтобы сейчас надпись новых отображалась,
-						//а при уходе и возврате уже нет
-						if (this.p.ccount_new()) {
-							this.originData.ccount_new = 0;
+			// Активируем комментарии, если фото не редактируется и разрешено комментировать
+			if (!self.edit()/* && self.can.comment()*/ && p.s() >= statusKeys.PUBLIC) {
+				self.commentsVM.activate(
+					{cid: p.cid(), count: p.ccount(), countNew: p.ccount_new(), subscr: p.subscr(), nocomments: p.nocomments()},
+					_.defaults(options || {}, {instant: !!self.toComment || p.frags().length, checkTimeout: p.ccount() > 30 ? 500 : 300}),
+					function () {
+						// На случай наличия параметра подсветки фрагментов или комментариев вызываем scrollTo, после окончания receive
+						setTimeout(self.scrollToBind, 150);
+
+						// Если у нас есть новые комментарии, то нужно сбросить их количество,
+						// но только у оригинального ресурса, чтобы сейчас надпись новых отображалась,
+						// а при уходе и возврате уже нет
+						if (p.ccount_new()) {
+							self.originData.ccount_new = 0;
 						}
-					},
-					this
+					}
 				);
 			}
 		},
@@ -1763,29 +1766,10 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			parent.classList.add('showPrv');
 		},
 
-		setMessage: function (text, abbr, type) {
-			var css = '';
-			switch (type) {
-				case 'error':
-					css = 'label-danger';
-					break;
-				case 'warn':
-					css = 'label-warning';
-					break;
-				case 'info':
-					css = 'label-info';
-					break;
-				case 'success':
-					css = 'label-success';
-					break;
-				default:
-					css = 'label-default';
-					break;
-			}
-
-			this.msg(text);
-			this.msgCss(css);
-			this.msgTitle(abbr);
+		setMessage: function (text, abbr, labelMod) {
+			this.msg(text || '');
+			this.msgCss('label-' + (labelMod || 'default'));
+			this.msgTitle(abbr || '');
 		}
 	});
 });

@@ -63,9 +63,9 @@
 									.photoBox
 										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 										.curtain
-										//ko if: $data.s!==5
-										.status.fringe(data-bind="attr: {title: s<2 ? (s===1 ? 'Новая. Ждет подтверждения' : 'Новая фотография') : (s===7 ? 'Фотография неактивна' : 'Фотография удалена')}")
-											span.glyphicon(data-bind="css: {'glyphicon-asterisk': s===0, 'glyphicon-flag': s===1, 'glyphicon-lock': s===7, 'glyphicon-trash': s===9}")
+										//ko if: status.icon
+										.status.fringe(data-bind="attr: {title: status.tip}")
+											span.glyphicon(data-bind="css: status.icon")
 										// /ko
 								// /ko
 							// /ko
