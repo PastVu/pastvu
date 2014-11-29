@@ -309,7 +309,7 @@ var core = {
 				if (!iAm.registered || !photo.ccount) {
 					return photo;
 				} else {
-					return commentController.getNewCommentsCountPromised([photo._id], iAm.user._id, 'photo')
+					return commentController.getNewCommentsCount([photo._id], iAm.user._id, 'photo')
 						.then(function (countsHash) {
 							if (countsHash[photo._id]) {
 								photo.ccount_new = countsHash[photo._id];
@@ -1119,6 +1119,88 @@ var givePhotoForPage = Bluebird.method(function (iAm, data) {
 		});
 });
 
+
+/**
+ * Отдаем полную галерею с учетом прав и фильтров в компактном виде
+ * @param iAm Объект пользователя
+ * @param filter Объект фильтра (распарсенный)
+ * @param data Объект параметров, включая стринг фильтра
+ * @param user_id _id пользователя, если хотим галерею только для него получить
+ * @param [cb]
+ */
+var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
+	var skip = Math.abs(Number(data.skip)) || 0;
+	var limit = Math.min(data.limit || 40, 100);
+	var buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
+	var query = buildQueryResult.query;
+	var fieldsSelect;
+
+	if (query) {
+		if (filter.geo) {
+			if (filter.geo[0] === '0') {
+				query.geo = null;
+			}
+			if (filter.geo[0] === '1') {
+				query.geo = { $size: 2 };
+			}
+		}
+		if (user_id) {
+			query.user = user_id;
+		}
+
+		//Для подсчета новых комментариев нужны _id
+		fieldsSelect = iAm.registered ? compactFieldsIdWithRegions : compactFieldsWithRegions;
+
+		return Bluebird.all([
+			Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
+			Photo.countAsync(query)
+		])
+			.bind({})
+			.spread(function (photos, count) {
+				this.count = count;
+
+				if (!iAm.registered || !photos.length) {
+					//Если аноним или фотографий нет, сразу возвращаем
+					return photos;
+				} else {
+					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+					return commentController.fillNewCommentsCount(photos, iAm.user._id);
+				}
+			})
+			.then(function (photos) {
+				if (iAm.registered) {
+					for (var i = photos.length; i--;) {
+						delete photos[i]._id;
+					}
+				}
+				var shortRegionsParams;
+				var shortRegionsHash;
+
+				if (photos.length) {
+					//Заполняем для каждой фотографии краткие регионы и хэш этих регионов
+					shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
+					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
+				}
+
+				return {
+					photos: photos,
+					filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
+					rhash: shortRegionsHash,
+					count: this.count,
+					skip: skip
+				};
+			})
+			.nodeify(cb);
+	} else {
+		return Bluebird.resolve({
+			photos: [],
+			filter: { r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo },
+			count: 0,
+			skip: skip
+		}).nodeify(cb);
+	}
+});
+
 //Отдаем последние публичные фотографии на главной
 var givePhotosPublicIndex = (function () {
 	var options = {skip: 0, limit: 30},
@@ -1229,86 +1311,10 @@ function parseFilter(filterString) {
 	return result;
 }
 
-/**
- * Отдаем полную галерею с учетом прав и фильтров в компактном виде
- * @param iAm Объект пользователя
- * @param filter Объект фильтра (распарсенный)
- * @param data Объект параметров, включая стринг фильтра
- * @param user_id _id пользователя, если хотим галерею только для него получить
- * @param cb
- */
-function givePhotos(iAm, filter, data, user_id, cb) {
-	var skip = Math.abs(Number(data.skip)) || 0,
-		limit = Math.min(data.limit || 40, 100),
-		buildQueryResult,
-		query;
-
-	buildQueryResult = buildPhotosQuery(filter, user_id, iAm);
-	query = buildQueryResult.query;
-
-	if (query) {
-		if (filter.geo) {
-			if (filter.geo[0] === '0') {
-				query.geo = null;
-			}
-			if (filter.geo[0] === '1') {
-				query.geo = {$size: 2};
-			}
-		}
-		if (user_id) {
-			query.user = user_id;
-		}
-
-		//console.log(query);
-		step(
-			function () {
-				var fieldsSelect = iAm.registered ? compactFieldsIdWithRegions : compactFieldsWithRegions; //Для подсчета новых комментариев нужны _id
-
-				Photo.find(query, fieldsSelect, {lean: true, skip: skip, limit: limit, sort: {sdate: -1}}, this.parallel());
-				Photo.count(query, this.parallel());
-			},
-			function finishOrNewCommentsCount(err, photos, count) {
-				if (err || !photos) {
-					return cb({message: err && err.message || 'Photos does not exist', error: true});
-				}
-				var shortRegionsParams, shortRegionsHash;
-
-				if (photos.length) {
-					//Заполняем для каждой фотографии краткие регионы и хэш этих регионов
-					shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
-					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
-				}
-
-				if (!iAm.registered || !photos.length) {
-					//Если аноним или фотографий нет, сразу возвращаем
-					finish(null, photos);
-				} else {
-					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-					commentController.fillNewCommentsCount(photos, iAm.user._id, null, finish);
-				}
-
-				function finish(err, photos) {
-					if (err) {
-						return cb({message: err.message, error: true});
-					}
-					if (iAm.registered) {
-						for (var i = photos.length; i--;) {
-							delete photos[i]._id;
-						}
-					}
-					cb({photos: photos, filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, rhash: shortRegionsHash, count: count, skip: skip});
-				}
-			}
-		);
-	} else {
-		cb({photos: [], filter: {r: buildQueryResult.rarr, rp: filter.rp, s: buildQueryResult.s, geo: filter.geo}, count: 0, skip: skip});
-	}
-}
-
 //Отдаем общую галерею
-function givePhotosPS(iAm, data, cb) {
+var givePhotosPS = Bluebird.method(function (iAm, data) {
 	if (!_.isObject(data)) {
-		return cb({message: 'Bad params', error: true});
+		throw { message: msg.badParams };
 	}
 
 	var filter = data.filter ? parseFilter(data.filter) : {};
@@ -1316,8 +1322,9 @@ function givePhotosPS(iAm, data, cb) {
 		filter.s = [status.PUBLIC];
 	}
 
-	givePhotos(iAm, filter, data, null, cb);
-}
+	return givePhotos(iAm, filter, data);
+});
+
 //Отдаем галерею пользователя
 function giveUserPhotos(iAm, data, cb) {
 	if (!Utils.isType('object', data) || !data.login) {
@@ -1526,10 +1533,10 @@ function giveCanPhoto(iAm, data, cb) {
  * @param {Object} data
  */
 var savePhoto = function (iAm, data) {
-	var newValues;
 	var oldGeo;
 	var newGeo;
 	var geoToNull;
+	var newValues;
 	var newRegions;
 
 	return prefetchPhoto(iAm, data, 'edit')
@@ -1620,7 +1627,7 @@ var savePhoto = function (iAm, data) {
 			_.assign(this.photo, newValues);
 
 			if (this.saveHistory) {
-				this.photo.cdate = new Date();
+				this.photo.cdate = this.photo.ucdate = new Date();
 			}
 
 			return this.photo.saveAsync();
@@ -2120,9 +2127,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotos', function (data) {
-			givePhotosPS(hs.usObj, data, function (resultData) {
-				socket.emit('takePhotos', resultData);
-			});
+			givePhotosPS(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takePhotos', resultData);
+				});
 		});
 
 		socket.on('giveUserPhotos', function (data) {

@@ -1709,108 +1709,89 @@ function dropCommentsView(objId, userId, cb) {
 /**
  * Находим количество новых комментариев для списка объектов для пользователя
  * @param objIds Массив _id объектов
- * @param type Тип объекта
  * @param userId _id пользователя
- * @param cb
+ * @param type Тип объекта
+ * @param [cb]
  */
-function getNewCommentsCount(objIds, userId, type, cb) {
+var getNewCommentsCount = function (objIds, userId, type, cb) {
 	var objIdsWithCounts = [];
 
-	step(
-		function () {
-			UserCommentsView.find({obj: {$in: objIds}, user: userId}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
-		},
-		function (err, views) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				commentModel,
-				objId,
-				stamp,
-				stampsHash = {};
+	return UserCommentsView.findAsync({ obj: { $in: objIds }, user: userId }, { _id: 0, obj: 1, stamp: 1 }, { lean: true })
+		.then(function (views) {
+			var commentModel = type === 'news' ? CommentN : Comment;
+			var stampsHash = {};
+			var promises = [];
+			var stamp;
+			var objId;
+			var i;
 
-			if (type === 'news') {
-				commentModel = CommentN;
-			} else {
-				commentModel = Comment;
-			}
-
-			//Собираем хеш {idPhoto: stamp}
+			// Собираем хеш { idPhoto: stamp }
 			for (i = views.length; i--;) {
 				stampsHash[views[i].obj] = views[i].stamp;
 			}
 
-			//Запоняем массив id объектов теми у которых действительно
-			//есть последние посещения, и по каждому считаем кол-во комментариев с этого посещения
+			// Запоняем массив id объектов теми у которых действительно,
+			// и по каждому считаем кол-во комментариев с этого посещения
 			for (i = objIds.length; i--;) {
 				objId = objIds[i];
 				stamp = stampsHash[objId];
 				if (stamp !== undefined) {
 					objIdsWithCounts.push(objId);
-					commentModel.count({obj: objId, del: null, stamp: {$gt: stamp}, user: {$ne: userId}}, this.parallel());
+					promises.push(commentModel.countAsync({ obj: objId, del: null, stamp: { $gt: stamp }, user: { $ne: userId } }));
 				}
 			}
-			this.parallel()();
-		},
-		function (err, counts) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				countsHash = {};
+			return Bluebird.all(promises);
+		})
+		.then(function (counts) {
+			var countsHash = {};
 
-			//Собираем хеш {idPhoto: commentsNewCount}
-			for (i = 0; i < objIdsWithCounts.length; i++) {
-				countsHash[objIdsWithCounts[i]] = arguments[i + 1] || 0;
+			// Собираем хеш { idPhoto: commentsNewCount }
+			for (var i = 0; i < objIdsWithCounts.length; i++) {
+				countsHash[objIdsWithCounts[i]] = counts[i] || 0;
 			}
 
-			cb(null, countsHash);
-		}
-	);
-}
+			return countsHash;
+		})
+		.nodeify(cb);
+};
 
 /**
  * Заполняет для каждого из массива переданных объектов кол-во новых комментариев - поле ccount_new
  * Т.е. модифицирует исходные объекты
  * @param objs Массив объектов
- * @param type Тип объекта
  * @param userId _id пользователя
- * @param cb
+ * @param type Тип объекта
+ * @param [cb]
  */
-function fillNewCommentsCount(objs, userId, type, cb) {
-	var objIdsWithCounts = [],
-		obj,
-		i = objs.length;
+var fillNewCommentsCount = Bluebird.method(function (objs, userId, type, cb) {
+	var objIdsWithCounts = [];
+	var obj;
 
 	//Составляем массив id объектов, у которых есть комментарии
-	while (i) {
-		obj = objs[--i];
+	for (var i = objs.length; i--;) {
+		obj = objs[i];
 		if (obj.ccount) {
 			objIdsWithCounts.push(obj._id);
 		}
 	}
 
 	if (!objIdsWithCounts.length) {
-		cb(null, objs);
-
+		return Bluebird.resolve(objs).nodeify(cb);
 	} else {
-		getNewCommentsCount(objIdsWithCounts, userId, type, function (err, countsHash) {
-			if (err) {
-				return cb(err);
-			}
-
-			//Присваиваем каждому объекту количество новых комментариев, если они есть
-			for (i = objs.length; i--;) {
-				obj = objs[i];
-				if (countsHash[obj._id]) {
-					obj.ccount_new = countsHash[obj._id];
+		return getNewCommentsCount(objIdsWithCounts, userId, type)
+			.then(function (countsHash) {
+				//Присваиваем каждому объекту количество новых комментариев, если они есть
+				for (var i = objs.length; i--;) {
+					obj = objs[i];
+					if (countsHash[obj._id]) {
+						obj.ccount_new = countsHash[obj._id];
+					}
 				}
-			}
-			cb(null, objs);
-		});
+				return objs;
+			})
+			.nodeify(cb);
 	}
-}
+});
 
 
 /**
@@ -1980,6 +1961,5 @@ module.exports.hideObjComments = hideObjComments;
 module.exports.upsertCommentsView = upsertCommentsView;
 module.exports.dropCommentsView = dropCommentsView;
 module.exports.getNewCommentsCount = getNewCommentsCount;
-module.exports.getNewCommentsCountPromised = Bluebird.promisify(getNewCommentsCount);
 module.exports.fillNewCommentsCount = fillNewCommentsCount;
 module.exports.getNewCommentsBrief = getNewCommentsBrief;
