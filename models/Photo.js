@@ -27,6 +27,9 @@ var FragmentSchema = new Schema({
         sdate: { type: Date, 'default': Date.now, required: true, index: true },
         // Время последнего изменения
         cdate: { type: Date },
+        // Время последнего изменения для уведомления пользователя о изменении
+        // cdate - записывает время изменения многих атрибутов (в т.ч. статусов), а ucdate только для читаемых
+        ucdate: { type: Date },
 
         // Координаты, индексированный массив [lng, lat]
         geo: { type: [Number], index: '2d' },
