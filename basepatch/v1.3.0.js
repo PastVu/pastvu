@@ -11,16 +11,78 @@ module.exports.loadController = function (app, db) {
     saveSystemJSFunc(function pastvuPatch(byNumPerPackage) {
         var startTime = Date.now();
         var relsWithoutObject = {};
+        var BULK_SIZE = 1000;
+        var subscrIds = [];
+        var insertBulk;
+        var fullcount;
+        var counter;
 
         // Переименовываем коллекцию отправки уведомлений пользователям
         db.users_noty.drop();
         db.users_subscr_noty.renameCollection('users_noty');
 
+        db.users_objects_rel.drop();
+
         // На основе коллекции подписки пользвателей делаем коллекцию связки пользователей и фотографий/новостей
-        db.users_objects_rel.remove({});
-        print('Start merging users_subscr ' + db.users_subscr.count() + ' and users_comments_view ' + db.users_comments_view.count());
+        fullcount = db.users_comments_view.count();
+        insertBulk = [];
+        counter = 0;
+        print('Start merging users_comments_view ' + fullcount + ' and users_subscr' + db.users_subscr.count() + ' into users_objects_rel');
+        db.users_comments_view.find({}, { _id: 0 }).forEach(function (row) {
+            var user_rel = { obj: row.obj, user: row.user, view: row.stamp, comments: row.stamp };
+            var user_subscr = db.users_subscr.findOne({ obj: row.obj, user: row.user });
+
+            counter++;
+
+            if (db.photos.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'photo';
+            } else if (db.news.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'news';
+            }
+
+            if (user_subscr) {
+                subscrIds.push(user_subscr._id);
+            }
+
+            if (user_rel.type) {
+                if (user_subscr && user_subscr.cdate) {
+                    user_rel.sbscr_create = user_subscr.cdate;
+
+                    if (user_subscr.ndate) {
+                        user_rel.sbscr_noty_change = user_subscr.ndate;
+                    }
+
+                    if (user_subscr.noty === true) {
+                        user_rel.sbscr_noty = true;
+                    }
+                }
+
+                insertBulk.push(user_rel);
+            } else {
+                relsWithoutObject[row.obj] = 1;
+            }
+
+            if (insertBulk.length >= BULK_SIZE || counter >= fullcount && insertBulk.length) {
+                db.users_objects_rel.insert(insertBulk);
+                insertBulk = [];
+                print('Inserted ' + counter + ' rels from users_comments_view ' + ((Date.now() - startTime) / 1000 + 's'));
+            }
+            if (subscrIds.length >= BULK_SIZE || counter >= fullcount && subscrIds.length) {
+                print('Removing another ' + BULK_SIZE + ' from users_subscr ' + ((Date.now() - startTime) / 1000 + 's'));
+                db.users_subscr.remove({ _id: { $in: subscrIds } });
+                subscrIds = [];
+            }
+        });
+        db.users_comments_view.drop();
+
+        fullcount = db.users_subscr.count();
+        insertBulk = [];
+        counter = 0;
+        print('Start inserting from users_subscr ' + fullcount + ' into users_objects_rel');
         db.users_subscr.find({}, { _id: 0 }).forEach(function (row) {
             var user_rel = { obj: row.obj, user: row.user, sbscr_create: row.cdate, sbscr_noty_change: row.ndate };
+
+            counter++;
 
             if (db.photos.findOne({ _id: row.obj }, { _id: 1 })) {
                 user_rel.type = 'photo';
@@ -29,51 +91,34 @@ module.exports.loadController = function (app, db) {
             }
 
             if (user_rel.type) {
-                var user_comments = db.users_comments_view.findAndModify({
-                    query: { obj: row.obj, user: row.user },
-                    fields: { _id: 0, stamp: 1 },
-                    remove: true
-                });
-
-                if (user_comments && user_comments.stamp) {
-                    user_rel.view = user_rel.comments = user_comments.stamp;
-                }
-
                 if (row.noty === true) {
                     user_rel.sbscr_noty = true;
                 }
 
-                db.users_objects_rel.insert(user_rel);
+                insertBulk.push(user_rel);
             } else {
                 relsWithoutObject[row.obj] = 1;
+            }
+
+            if (insertBulk.length >= BULK_SIZE || counter >= fullcount && insertBulk.length) {
+                db.users_objects_rel.insert(insertBulk);
+                insertBulk = [];
+                print('Inserted ' + counter + ' rels from users_subscr ' + ((Date.now() - startTime) / 1000 + 's'));
             }
         });
         db.users_subscr.drop();
-
-        print('Finish merging. Left ' + db.users_comments_view.count() + ' users_comments_view');
-        db.users_comments_view.find({}, { _id: 0 }).forEach(function (row) {
-            var user_rel = { obj: row.obj, user: row.user, view: row.stamp, comments: row.stamp };
-
-            if (db.photos.findOne({ _id: row.obj }, { _id: 1 })) {
-                user_rel.type = 'photo';
-            } else if (db.news.findOne({ _id: row.obj }, { _id: 1 })) {
-                user_rel.type = 'news';
-            }
-
-            if (user_rel.type) {
-                db.users_objects_rel.insert(user_rel);
-            } else {
-                relsWithoutObject[row.obj] = 1;
-            }
-        });
-        db.users_comments_view.drop();
 
         print('relsWithoutObject:');
         Object.keys(relsWithoutObject).forEach(function (obj) {
             print(obj);
         });
 
-        print('users_objects_rel ok');
+        print('Building index of users_objects_rel ' + ((Date.now() - startTime) / 1000 + 's'));
+        db.users_objects_rel.ensureIndex( { obj: 1 } );
+        db.users_objects_rel.ensureIndex( { user: 1 } );
+        db.users_objects_rel.ensureIndex( { obj: 1, user: 1 } );
+
+        print('users_objects_rel OK ' + ((Date.now() - startTime) / 1000 + 's'));
 
         // Раньше статус 1 - ожидает публикации. Теперь 1 - на доработке, 2 - ожидает публикации
         db.photos.update({ s: 1 }, { $set: { s: 2 } }, { multi: true });
