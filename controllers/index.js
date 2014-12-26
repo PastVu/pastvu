@@ -368,7 +368,7 @@ var giveAllNews = function (iAm) {
 				return news;
 			} else {
 				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				return userObjectRelController.fillObjectByRels(news, iAm._id, 'news');
+				return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
 			}
 		})
 		.then(function (news) {

@@ -15,10 +15,14 @@ var CommentN;
  * @param [rels] Уже выбранные записи (например в отдаче подписок пользователя)
  */
 var getRel = function (objIds, userId, type, rels) {
+    if (!type) {
+        type = 'photo';
+    }
+
     var objIdsWithCounts = [];
     var relHash = Object.create(null);
     var promise = rels ? Bluebird.resolve(rels) : UserObjectRel.findAsync(
-        { obj: { $in: objIds }, user: userId },
+        { obj: { $in: objIds }, user: userId, type: type },
         { _id: 0, obj: 1, view: 1, comments: 1, sbscr_create: 1 },
         { lean: true }
     );
@@ -39,7 +43,7 @@ var getRel = function (objIds, userId, type, rels) {
         for (i = objIds.length; i--;) {
             rel = relHash[objIds[i]];
             if (rel && rel.comments) {
-                objIdsWithCounts[rel.obj] = 1;
+                objIdsWithCounts.push(rel.obj);
                 promises.push(commentModel.countAsync({ obj: rel.obj, del: null, stamp: { $gt: rel.comments }, user: { $ne: userId } }));
             }
         }
