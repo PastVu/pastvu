@@ -10,6 +10,70 @@ module.exports.loadController = function (app, db) {
     //Подписываем всех пользователей на свои фотографии
     saveSystemJSFunc(function pastvuPatch(byNumPerPackage) {
         var startTime = Date.now();
+        var relsWithoutObject = {};
+
+        // Переименовываем коллекцию отправки уведомлений пользователям
+        db.users_noty.drop();
+        db.users_subscr_noty.renameCollection('users_noty');
+
+        // На основе коллекции подписки пользвателей делаем коллекцию связки пользователей и фотографий/новостей
+        db.users_objects_rel.remove({});
+        print('Start merging users_subscr ' + db.users_subscr.count() + ' and users_comments_view ' + db.users_comments_view.count());
+        db.users_subscr.find({}, { _id: 0 }).forEach(function (row) {
+            var user_rel = { obj: row.obj, user: row.user, sbscr_create: row.cdate, sbscr_noty_change: row.ndate };
+
+            if (db.photos.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'photo';
+            } else if (db.news.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'news';
+            }
+
+            if (user_rel.type) {
+                var user_comments = db.users_comments_view.findAndModify({
+                    query: { obj: row.obj, user: row.user },
+                    fields: { _id: 0, stamp: 1 },
+                    remove: true
+                });
+
+                if (user_comments && user_comments.stamp) {
+                    user_rel.view = user_rel.comments = user_comments.stamp;
+                }
+
+                if (row.noty === true) {
+                    user_rel.sbscr_noty = true;
+                }
+
+                db.users_objects_rel.insert(user_rel);
+            } else {
+                relsWithoutObject[row.obj] = 1;
+            }
+        });
+        db.users_subscr.drop();
+
+        print('Finish merging. Left ' + db.users_comments_view.count() + ' users_comments_view');
+        db.users_comments_view.find({}, { _id: 0 }).forEach(function (row) {
+            var user_rel = { obj: row.obj, user: row.user, view: row.stamp, comments: row.stamp };
+
+            if (db.photos.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'photo';
+            } else if (db.news.findOne({ _id: row.obj }, { _id: 1 })) {
+                user_rel.type = 'news';
+            }
+
+            if (user_rel.type) {
+                db.users_objects_rel.insert(user_rel);
+            } else {
+                relsWithoutObject[row.obj] = 1;
+            }
+        });
+        db.users_comments_view.drop();
+
+        print('relsWithoutObject:');
+        Object.keys(relsWithoutObject).forEach(function (obj) {
+            print(obj);
+        });
+
+        print('users_objects_rel ok');
 
         // Раньше статус 1 - ожидает публикации. Теперь 1 - на доработке, 2 - ожидает публикации
         db.photos.update({ s: 1 }, { $set: { s: 2 } }, { multi: true });

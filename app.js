@@ -289,6 +289,7 @@ async.waterfall([
 			require('./controllers/mail.js').loadController(app);
 			require('./controllers/auth.js').loadController(app, db, io);
 			require('./controllers/reason.js').loadController(app, db, io);
+			require('./controllers/userobjectrel.js').loadController(app, db, io);
 			require('./controllers/index.js').loadController(app, db, io);
 			require('./controllers/photo.js').loadController(app, db, io);
 			require('./controllers/subscr.js').loadController(app, db, io);

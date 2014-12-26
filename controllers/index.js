@@ -1,15 +1,15 @@
 'use strict';
 
-var auth = require('./auth.js'),
-	_session = require('./_session.js'),
+var _session = require('./_session.js'),
 	Settings,
 	User,
 	Photo,
 	Comment,
 	CommentN,
 	News,
-	UserSubscr,
+	UserObjectRel,
 	_ = require('lodash'),
+	Bluebird = require('bluebird'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	moment = require('moment'),
 	Utils = require('../commons/Utils.js'),
@@ -18,6 +18,7 @@ var auth = require('./auth.js'),
 	appvar,
 	appEnv = {},
 	commentController = require('./comment.js'),
+	userObjectRelController = require('./userobjectrel'),
 
 	dayStart, //Время начала дня
 	weekStart; //Время начала недели
@@ -309,8 +310,8 @@ var giveFastStats = (function () {
  * Новости на главной для анонимных в memoize
  */
 var giveIndexNewsAnonym = (function () {
-	var select = {_id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}};
+	var select = {_id: 0, user: 0, cdate: 0, tdate: 0, nocomments: 0};
+	var options = {lean: true, limit: 3, sort: {pdate: -1}};
 
 	return Utils.memoizeAsync(function (handler) {
 		var now = new Date();
@@ -325,85 +326,72 @@ var giveIndexNewsAnonym = (function () {
  * Новости на главной для авторизованного пользователя
  */
 var giveIndexNews = (function () {
-	var select = {user: 0, cdate: 0, tdate: 0, nocomments: 0},
-		options = {lean: true, limit: 3, sort: {pdate: -1}};
+	var select = { user: 0, cdate: 0, tdate: 0, nocomments: 0 };
+	var options = { lean: true, limit: 3, sort: { pdate: -1 } };
 
-	return function (iAm, cb) {
+	return function (iAm) {
 		var now = new Date();
 
-		News.find({pdate: {$lte: now}, $or: [
-			{tdate: {$gt: now}},
-			{tdate: {$exists: false}}
-		]}, select, options, function (err, news) {
-			if (err) {
-				return cb(err);
-			}
-
-			if (!news.length) {
-				finish(null, news);
-			} else {
-				commentController.fillNewCommentsCount(news, iAm._id, 'news', finish);
-			}
-
-			function finish(err, news) {
-				if (err) {
-					return cb(err);
+		return News.findAsync(
+			{
+				pdate: { $lte: now }, $or: [
+				{ tdate: { $gt: now } },
+				{ tdate: { $exists: false } }
+			]
+			}, select, options
+		)
+			.then(function (news) {
+				if (news.length) {
+					return userObjectRelController.fillObjectByRels(news, iAm._id, 'news');
+				} else {
+					return news;
 				}
-
+			})
+			.then(function (news) {
 				for (var i = news.length; i--;) {
 					delete news[i]._id;
 				}
-				cb(null, news);
-			}
-		});
-
+				return { news: news };
+			});
 	};
 }());
 
 /**
  * Архив новостей
  */
-function giveAllNews(iAm, cb) {
-	News.find({pdate: {$lte: new Date()}}, {cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}})
+var giveAllNews = function (iAm) {
+	return News.find({pdate: {$lte: new Date()}}, {cdate: 0, tdate: 0, nocomments: 0}, {lean: true, sort: {pdate: -1}})
 		.populate({path: 'user', select: {_id: 0, login: 1, avatar: 1, disp: 1}})
-		.exec(function (err, news) {
-			if (err) {
-				return cb(err);
-			}
-
+		.execAsync()
+		.then(function (news) {
 			if (!iAm.registered || !news.length) {
-				finish(null, news);
+				return news;
 			} else {
 				//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-				commentController.fillNewCommentsCount(news, iAm.user._id, 'news', finish);
+				return userObjectRelController.fillObjectByRels(news, iAm._id, 'news');
 			}
-
-			function finish(err, news) {
-				if (err) {
-					return cb(err);
-				}
-
-				for (var i = news.length; i--;) {
-					delete news[i]._id;
-				}
-				cb(null, {news: news});
+		})
+		.then(function (news) {
+			for (var i = news.length; i--;) {
+				delete news[i]._id;
 			}
+			return {news: news};
 		});
-}
+};
 
 function giveNewsFull(data, cb) {
-	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
-		return cb({message: 'Bad params', error: true});
+	if (!_.isObject(data) || !_.isNumber(data.cid) || data.cid < 1) {
+		return cb({ message: 'Bad params', error: true });
 	}
 	step(
 		function () {
-			News.collection.findOne({cid: data.cid}, {_id: 0}, this);
+			News.collection.findOne({ cid: data.cid }, { _id: 0 }, this);
 		},
 		function (err, news) {
 			if (err) {
-				return cb({message: err && err.message, error: true});
+				return cb({ message: err && err.message, error: true });
 			}
-			cb({news: news});
+			cb({ news: news });
 		}
 	);
 }
@@ -413,70 +401,48 @@ function giveNewsFull(data, cb) {
  * @param iAm
  * @param data
  * @param cb
- * @returns {*}
  */
-function giveNewsPublic(iAm, data, cb) {
-	if (!Utils.isType('object', data) || !Utils.isType('number', data.cid)) {
-		return cb({message: 'Bad params'});
+var giveNewsPublic = Bluebird.method(function (iAm, data) {
+	if (!_.isObject(data) || !_.isNumber(data.cid)) {
+		throw { message: 'Bad params' };
 	}
 
-	News.findOne({cid: data.cid}, {_id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1}, {lean: true}, function (err, news) {
-		if (err || !news) {
-			return cb(err);
-		}
-
-		step(
-			function () {
-				var userObj = _session.getOnline(null, news.user),
-					paralellUser = this.parallel();
-
-				if (userObj) {
-					news.user = {
-						login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, online: true
-					};
-					paralellUser(null, news);
-				} else {
-					User.findOne({_id: news.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, {lean: true}, function (err, user) {
-						if (err) {
-							return cb(err);
-						}
-						news.user = user;
-						paralellUser(err, news);
-					});
-				}
-
-				if (iAm.registered) {
-					UserSubscr.findOne({obj: news._id, user: iAm.user._id}, {_id: 0}, this.parallel());
-				}
-			},
-			function (err, news, subscr) {
-				if (err) {
-					return cb(err);
-				}
-
-				if (subscr) {
-					news.subscr = true;
-				}
-
-				if (!iAm.registered || !news.ccount) {
-					delete news._id;
-					cb(null, {news: news});
-				} else {
-					commentController.getNewCommentsCount([news._id], iAm.user._id, 'news', function (err, countsHash) {
-						if (err) {
-							return cb(err);
-						}
-						if (countsHash[news._id]) {
-							news.ccount_new = countsHash[news._id];
-						}
-						delete news._id;
-						cb(null, {news: news});
-					});
-				}
+	return News.findOneAsync(
+		{ cid: data.cid },
+		{ _id: 1, cid: 1, user: 1, pdate: 1, title: 1, txt: 1, ccount: 1, nocomments: 1 },
+		{ lean: true }
+	)
+		.then(function (news) {
+			if (!news) {
+				throw { message: 'No such news' };
 			}
-		);
-	});
-}
+			var userObj = _session.getOnline(null, news.user);
+
+			if (userObj) {
+				news.user = {
+					login: userObj.user.login, avatar: userObj.user.avatar, disp: userObj.user.disp, online: true
+				};
+				return news;
+			} else {
+				return User.findOneAsync({ _id: news.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true })
+					.then(function (user) {
+						news.user = user;
+						return news;
+					});
+			}
+		})
+		.then(function (news) {
+			if (iAm.registered) {
+				return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
+			} else {
+				return news;
+			}
+		})
+		.then(function (news) {
+			delete news._id;
+			return { news: news };
+		});
+});
 
 /**
  * Аватары для About
@@ -512,26 +478,36 @@ module.exports.loadController = function (app, db, io) {
 	Comment = db.model('Comment');
 	CommentN = db.model('CommentN');
 	News = db.model('News');
-	UserSubscr = db.model('UserSubscr');
+	UserObjectRel = db.model('UserObjectRel');
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
 
 		socket.on('giveIndexNews', function () {
 			if (hs.usObj.registered) {
-				giveIndexNews(hs.usObj.user, returnIndexNews);
+				giveIndexNews(hs.usObj.user)
+					.catch(function (err) {
+						return { message: err.message, error: true };
+					})
+					.then(function (result) {
+						socket.emit('takeIndexNews', result);
+					});
 			} else {
-				giveIndexNewsAnonym(returnIndexNews);
+				giveIndexNewsAnonym(function (err, news) {
+					socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
+				});
 			}
 		});
-		function returnIndexNews(err, news) {
-			socket.emit('takeIndexNews', err ? {message: err.message, error: true} : {news: news});
-		}
 
-		socket.on('giveAllNews', function (data) {
-			giveAllNews(hs.usObj, function (err, result) {
-				socket.emit('takeAllNews', err ? {message: err.message, error: true} : result);
-			});
+
+		socket.on('giveAllNews', function () {
+			giveAllNews(hs.usObj)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (result) {
+					socket.emit('takeAllNews', result);
+				});
 		});
 		socket.on('giveNews', function (data) {
 			giveNewsFull(data, function (resultData) {
@@ -539,9 +515,13 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 		socket.on('giveNewsPublic', function (data) {
-			giveNewsPublic(hs.usObj, data, function (err, result) {
-				socket.emit('takeNewsPublic', err ? {message: err.message, error: true} : result);
-			});
+			giveNewsPublic(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (result) {
+					socket.emit('takeNewsPublic', result);
+				});
 		});
 
 		socket.on('giveRatings', function (data) {

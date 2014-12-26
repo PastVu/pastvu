@@ -3,19 +3,19 @@
 var _session = require('./_session.js'),
 	Settings,
 	User,
-	UserCommentsView,
 	UserSelfPublishedPhotos,
 	Photo,
 	PhotoMap,
     PhotoHistory,
 	Comment,
 	Counter,
-	UserSubscr,
+	UserObjectRel,
 	regionController = require('./region.js'),
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
 	subscrController = require('./subscr.js'),
 	commentController = require('./comment.js'),
+	userObjectRelController = require('./userobjectrel'),
 
     fs = require('fs'),
 	ms = require('ms'),
@@ -51,9 +51,9 @@ var _session = require('./_session.js'),
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
-	compactFieldsId = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
+	compactFieldsForReg = {_id: 1, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, ucdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
 	compactFieldsWithRegions = _.assign({geo: 1}, compactFields, regionController.regionsAllSelectHash),
-	compactFieldsIdWithRegions = _.assign({geo: 1}, compactFieldsId, regionController.regionsAllSelectHash),
+	compactFieldsForRegWithRegions = _.assign({geo: 1}, compactFieldsForReg, regionController.regionsAllSelectHash),
 
 	permissions = {
 		// Определяет может ли модерировать фотографию пользователь
@@ -257,7 +257,6 @@ var core = {
 					});
 				}
 
-
 				// Если у фото нет координаты, берем домашнее положение региона
 				if (!photo.geo) {
 					regionFields.center = 1;
@@ -266,19 +265,14 @@ var core = {
 				}
 				promiseProps.regions = regionController.getObjRegionList(photo, regionFields);
 
-				if (iAm.registered) {
-					promiseProps.subscr = UserSubscr.findOneAsync({ obj: photo._id, user: iAm.user._id }, { _id: 0 });
-				}
-
 				return Bluebird.props(promiseProps);
 			})
 			.then(function (result) {
-				var photo = result.photo;
 				var regions = result.regions;
-				var subscr = result.subscr;
-				var i = 0;
+				var photo = result.photo;
 				var frags;
 				var frag;
+				var i;
 
 				//Не отдаем фрагменты удаленных комментариев
 				if (photo.frags) {
@@ -292,10 +286,6 @@ var core = {
 					photo.frags = frags;
 				}
 
-				if (subscr) {
-					photo.subscr = true;
-				}
-
 				for (i = 0; i <= maxRegionLevel; i++) {
 					delete photo['r' + i];
 				}
@@ -306,16 +296,10 @@ var core = {
 					photo.geo = photo.geo.reverse();
 				}
 
-				if (!iAm.registered || !photo.ccount) {
-					return photo;
+				if (iAm.registered) {
+					return userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo');
 				} else {
-					return commentController.getNewCommentsCount([photo._id], iAm.user._id, 'photo')
-						.then(function (countsHash) {
-							if (countsHash[photo._id]) {
-								photo.ccount_new = countsHash[photo._id];
-							}
-							return photo;
-						});
+					return photo;
 				}
 			})
 			.then(function (photo) {
@@ -1035,9 +1019,6 @@ var removePhoto = Bluebird.method(function (socket, data) {
 			// Отписываем всех пользователей
 			subscrController.unSubscribeObj(photoSaved._id);
 
-			// Удаляем время просмотра комментариев у пользователей
-			commentController.dropCommentsView(photoSaved._id);
-
 			if (this.oldPhotoObj.s === status.PUBLIC) {
 				changePublicPhotoExternality(photoSaved, iAm);
 			}
@@ -1148,8 +1129,8 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
 			query.user = user_id;
 		}
 
-		//Для подсчета новых комментариев нужны _id
-		fieldsSelect = iAm.registered ? compactFieldsIdWithRegions : compactFieldsWithRegions;
+		// Для подсчета новых комментариев нужны _id, а для проверки на изменение - ucdate
+		fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
 		return Bluebird.all([
 			Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
@@ -1164,19 +1145,24 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
 					return photos;
 				} else {
 					//Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
-					return commentController.fillNewCommentsCount(photos, iAm.user._id);
+					return userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
 				}
 			})
 			.then(function (photos) {
-				if (iAm.registered) {
-					for (var i = photos.length; i--;) {
-						delete photos[i]._id;
-					}
-				}
-				var shortRegionsParams;
+				var photo;
 				var shortRegionsHash;
+				var shortRegionsParams;
+				var i = photos.length;
 
-				if (photos.length) {
+				if (i) {
+					if (iAm.registered) {
+						while (i--) {
+							photo = photos[i];
+							delete photo._id;
+							delete photo.ucdate;
+						}
+					}
+
 					//Заполняем для каждой фотографии краткие регионы и хэш этих регионов
 					shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
 					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
@@ -1201,25 +1187,25 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
 	}
 });
 
-//Отдаем последние публичные фотографии на главной
+// Отдаем последние публичные фотографии на главной
 var givePhotosPublicIndex = (function () {
-	var options = {skip: 0, limit: 30},
-		filter = {s: [status.PUBLIC]};
+	var options = { skip: 0, limit: 30 };
+	var filter = { s: [status.PUBLIC] };
 
-	return function (iAm, cb) {
-		//Всегда выбираем заново, т.к. могут быть региональные фильтры
-		givePhotos(iAm, filter, options, null, cb);
+	return function (iAm) {
+		// Всегда выбираем заново, т.к. могут быть региональные фильтры
+		return givePhotos(iAm, filter, options);
 	};
 }());
 
-//Отдаем последние публичные "Где это?" фотографии для главной
+// Отдаем последние публичные "Где это?" фотографии для главной
 var givePhotosPublicNoGeoIndex = (function () {
-	var options = {skip: 0, limit: 30},
-		filter = {geo: ['0'], s: [status.PUBLIC]};
+	var options = { skip: 0, limit: 30 };
+	var filter = { geo: ['0'], s: [status.PUBLIC] };
 
-	return function (iAm, cb) {
-		//Выбираем заново, т.к. могут быть региональные фильтры
-		givePhotos(iAm, filter, options, null, cb);
+	return function (iAm) {
+		// Выбираем заново, т.к. могут быть региональные фильтры
+		return givePhotos(iAm, filter, options);
 	};
 }());
 
@@ -1325,25 +1311,28 @@ var givePhotosPS = Bluebird.method(function (iAm, data) {
 	return givePhotos(iAm, filter, data);
 });
 
-//Отдаем галерею пользователя
-function giveUserPhotos(iAm, data, cb) {
-	if (!Utils.isType('object', data) || !data.login) {
-		return cb({message: 'Bad params', error: true});
+// Отдаем галерею пользователя
+var giveUserPhotos = Bluebird.method(function (iAm, data) {
+	if (!_.isObject(data) || !data.login) {
+		throw { message: msg.badParams };
 	}
 
-	User.getUserID(data.login, function (err, user_id) {
-		if (err || !user_id) {
-			return cb({message: err && err.message || 'Such user does not exist', error: true});
-		}
-		var filter = data.filter ? parseFilter(data.filter) : {};
-		//Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
-		//и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
-		if (filter.r === undefined && iAm.registered && iAm.user.login !== data.login && iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
-			filter.r = 0;
-		}
-		givePhotos(iAm, filter, data, user_id, cb);
-	});
-}
+	return User.getUserID(data.login)
+		.then(function (user_id) {
+			if (!user_id) {
+				throw { message: msg.noUser };
+			}
+			var filter = data.filter ? parseFilter(data.filter) : {};
+
+			// Если фильтр по регионам не установлен, это чужая галерея, есть свои регионы
+			// и стоит настройка не фильтровать по ним галереи пользователя, то задаем весь мир
+			if (filter.r === undefined && iAm.registered && iAm.user.login !== data.login && iAm.user.regions && iAm.user.regions.length && iAm.user.settings && !iAm.user.settings.r_f_user_gal) {
+				filter.r = 0;
+			}
+
+			return givePhotos(iAm, filter, data, user_id);
+		});
+});
 
 //Отдаем последние фотографии, ожидающие подтверждения
 function givePhotosForApprove(iAm, data, cb) {
@@ -1995,9 +1984,7 @@ module.exports.loadController = function (app, db, io) {
     PhotoHistory = db.model('PhotoHistory');
     Counter = db.model('Counter');
 	Comment = db.model('Comment');
-	UserSubscr = db.model('UserSubscr');
-
-	UserCommentsView = db.model('UserCommentsView');
+	UserObjectRel = db.model('UserObjectRel');
 	UserSelfPublishedPhotos = db.model('UserSelfPublishedPhotos');
 
 	PhotoCluster.loadController(app, db, io);
@@ -2115,15 +2102,23 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('givePhotosPublicIndex', function () {
-			givePhotosPublicIndex(hs.usObj, function (resultData) {
-				socket.emit('takePhotosPublicIndex', resultData);
-			});
+			givePhotosPublicIndex(hs.usObj)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takePhotosPublicIndex', resultData);
+				});
 		});
 
 		socket.on('givePhotosPublicNoGeoIndex', function () {
-			givePhotosPublicNoGeoIndex(hs.usObj, function (resultData) {
-				socket.emit('takePhotosPublicNoGeoIndex', resultData);
-			});
+			givePhotosPublicNoGeoIndex(hs.usObj)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takePhotosPublicNoGeoIndex', resultData);
+				});
 		});
 
 		socket.on('givePhotos', function (data) {
@@ -2137,9 +2132,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveUserPhotos', function (data) {
-			giveUserPhotos(hs.usObj, data, function (resultData) {
-				socket.emit('takeUserPhotos', resultData);
-			});
+			giveUserPhotos(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takeUserPhotos', resultData);
+				});
 		});
 
 		socket.on('givePhotosForApprove', function (data) {

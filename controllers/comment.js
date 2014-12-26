@@ -3,7 +3,7 @@
 var _session = require('./_session.js'),
 	Settings,
 	User,
-	UserCommentsView,
+	UserObjectRel,
 	Photo,
 	News,
 	Comment,
@@ -133,15 +133,20 @@ var core = {
 					//Берём все комментарии
 					commentModel.find({obj: obj._id}, {_id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0}, {lean: true, sort: {stamp: 1}}, this.parallel());
 					//Берём последнее время просмотра комментариев объекта
-					UserCommentsView.findOneAndUpdate({obj: obj._id, user: iAm.user._id}, {$set: {stamp: new Date()}}, {new: false, upsert: true, select: {_id: 0, stamp: 1}}, this.parallel());
+					UserObjectRel.findOneAndUpdate(
+						{obj: obj._id, user: iAm.user._id, type: data.type},
+						{$set: {comments: new Date()}},
+						{new: false, upsert: true, select: {_id: 0, comments: 1}},
+						this.parallel()
+					);
 					//Отмечаем в менеджере подписок, что просмотрели комментарии объекта
 					subscrController.commentViewed(obj._id, iAm.user);
 				},
-				function (err, comments, userView) {
+				function (err, comments, objectRel) {
 					if (err || !comments) {
 						return cb({message: err && err.message || 'Cursor extract error', error: true});
 					}
-					var previousViewStamp = userView && userView.stamp && userView.stamp.getTime();
+					var previousViewStamp = objectRel && objectRel.comments && objectRel.comments.getTime();
 
 					canModerate = permissions.canModerate(data.type, obj, iAm);
 					canReply = canModerate || permissions.canReply(data.type, obj, iAm);
@@ -1683,205 +1688,6 @@ function hideObjComments(oid, hide, iAm) {
 		});
 }
 
-/**
- * Вставляет время просмотра объекта пользователем, если его еще нет
- * @param objId
- * @param userId
- * @param cb
- */
-function upsertCommentsView(objId, userId, cb) {
-	UserCommentsView.update({obj: objId, user: userId}, {$setOnInsert: {stamp: new Date()}}, {upsert: true}).exec(cb);
-}
-/**
- * Удаляет время просмотра объекта, если указан _id пользователя, то только у него
- * @param objId
- * @param [userId] Опционально. Без этого параметра удалит время просмотра у всех пользователей
- * @callback [cb]
- */
-function dropCommentsView(objId, userId, cb) {
-	var query = {obj: objId};
-	if (userId) {
-		query.user = userId;
-	}
-	return UserCommentsView.removeAsync(query).nodeify(cb);
-}
-
-/**
- * Находим количество новых комментариев для списка объектов для пользователя
- * @param objIds Массив _id объектов
- * @param userId _id пользователя
- * @param type Тип объекта
- * @param [cb]
- */
-var getNewCommentsCount = function (objIds, userId, type, cb) {
-	var objIdsWithCounts = [];
-
-	return UserCommentsView.findAsync({ obj: { $in: objIds }, user: userId }, { _id: 0, obj: 1, stamp: 1 }, { lean: true })
-		.then(function (views) {
-			var commentModel = type === 'news' ? CommentN : Comment;
-			var stampsHash = {};
-			var promises = [];
-			var stamp;
-			var objId;
-			var i;
-
-			// Собираем хеш { idPhoto: stamp }
-			for (i = views.length; i--;) {
-				stampsHash[views[i].obj] = views[i].stamp;
-			}
-
-			// Запоняем массив id объектов теми у которых действительно,
-			// и по каждому считаем кол-во комментариев с этого посещения
-			for (i = objIds.length; i--;) {
-				objId = objIds[i];
-				stamp = stampsHash[objId];
-				if (stamp !== undefined) {
-					objIdsWithCounts.push(objId);
-					promises.push(commentModel.countAsync({ obj: objId, del: null, stamp: { $gt: stamp }, user: { $ne: userId } }));
-				}
-			}
-			return Bluebird.all(promises);
-		})
-		.then(function (counts) {
-			var countsHash = {};
-
-			// Собираем хеш { idPhoto: commentsNewCount }
-			for (var i = 0; i < objIdsWithCounts.length; i++) {
-				countsHash[objIdsWithCounts[i]] = counts[i] || 0;
-			}
-
-			return countsHash;
-		})
-		.nodeify(cb);
-};
-
-/**
- * Заполняет для каждого из массива переданных объектов кол-во новых комментариев - поле ccount_new
- * Т.е. модифицирует исходные объекты
- * @param objs Массив объектов
- * @param userId _id пользователя
- * @param type Тип объекта
- * @param [cb]
- */
-var fillNewCommentsCount = Bluebird.method(function (objs, userId, type, cb) {
-	var objIdsWithCounts = [];
-	var obj;
-
-	//Составляем массив id объектов, у которых есть комментарии
-	for (var i = objs.length; i--;) {
-		obj = objs[i];
-		if (obj.ccount) {
-			objIdsWithCounts.push(obj._id);
-		}
-	}
-
-	if (!objIdsWithCounts.length) {
-		return Bluebird.resolve(objs).nodeify(cb);
-	} else {
-		return getNewCommentsCount(objIdsWithCounts, userId, type)
-			.then(function (countsHash) {
-				//Присваиваем каждому объекту количество новых комментариев, если они есть
-				for (var i = objs.length; i--;) {
-					obj = objs[i];
-					if (countsHash[obj._id]) {
-						obj.ccount_new = countsHash[obj._id];
-					}
-				}
-				return objs;
-			})
-			.nodeify(cb);
-	}
-});
-
-
-/**
- * Находим количество новых комментариев для формирования письма уведомления пользователю
- * @param objs Массив _id объектов
- * @param newestFromDate Время, с которого считается кол-во новых
- * @param userId _id пользователя
- * @param type Тип объекта
- * @param cb
- */
-function getNewCommentsBrief(objs, newestFromDate, userId, type, cb) {
-	var commentModel = type === 'news' ? CommentN : Comment,
-		objIdsWithCounts = [],
-		objIds = [],
-		i = objs.length;
-
-	while (i) {
-		objIds.push(objs[--i]._id);
-	}
-
-	step(
-		function () {
-			UserCommentsView.find({obj: {$in: objIds}, user: userId}, {_id: 0, obj: 1, stamp: 1}, {lean: true}, this);
-		},
-		function (err, views) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				objId,
-				stamp,
-				stampsHash = {};
-
-			//Собираем хеш {idPhoto: stamp}
-			for (i = views.length; i--;) {
-				stampsHash[views[i].obj] = views[i].stamp;
-			}
-
-			//Запоняем массив id объектов теми у которых действительно есть последние посещения,
-			//и по каждому выбираем комментарии со времени stamp
-			for (i = objIds.length; i--;) {
-				objId = objIds[i];
-				stamp = stampsHash[objId];
-				if (stamp !== undefined) {
-					objIdsWithCounts.push(objId);
-					commentModel
-						.find({obj: objId, del: null, stamp: {$gt: stamp}, user: {$ne: userId}}, {_id: 0, user: 1, stamp: 1}, {lean: true, sort: {stamp: 1}})
-						.populate({path: 'user', select: {_id: 0, login: 1, disp: 1}})
-						.exec(this.parallel());
-				}
-			}
-			if (!objIdsWithCounts.length) {
-				this();
-			}
-		},
-		function (err) {
-			if (err) {
-				return cb(err);
-			}
-			var i,
-				j,
-				obj,
-				comment,
-				comments,
-				briefsHash = {};
-
-			for (i = 0; i < objIdsWithCounts.length; i++) {
-				comments = arguments[i + 1];
-				obj = {unread: comments.length, newest: 0, users: {}};
-
-				for (j = 0; j < comments.length; j++) {
-					comment = comments[j];
-					if (!newestFromDate || comment.stamp > newestFromDate) {
-						obj.newest++;
-						obj.users[comment.user.login] = comment.user.disp;
-					}
-				}
-				briefsHash[objIdsWithCounts[i]] = obj;
-			}
-
-			//Присваиваем каждому объекту brief
-			for (i = objs.length; i--;) {
-				obj = objs[i];
-				obj.brief = briefsHash[obj._id];
-			}
-			cb(null, objs);
-		}
-	);
-}
-
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("comment.js");
@@ -1895,7 +1701,7 @@ module.exports.loadController = function (app, db, io) {
 	Comment = db.model('Comment');
 	CommentN = db.model('CommentN');
 	Counter = db.model('Counter');
-	UserCommentsView = db.model('UserCommentsView');
+	UserObjectRel = db.model('UserObjectRel');
 
 	io.sockets.on('connection', function (socket) {
 		var hs = socket.handshake;
@@ -1958,8 +1764,3 @@ module.exports.loadController = function (app, db, io) {
 };
 module.exports.core = core;
 module.exports.hideObjComments = hideObjComments;
-module.exports.upsertCommentsView = upsertCommentsView;
-module.exports.dropCommentsView = dropCommentsView;
-module.exports.getNewCommentsCount = getNewCommentsCount;
-module.exports.fillNewCommentsCount = fillNewCommentsCount;
-module.exports.getNewCommentsBrief = getNewCommentsBrief;

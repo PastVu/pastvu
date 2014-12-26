@@ -267,9 +267,11 @@ UserScheme.statics.getUserAllLoginMail = function (login, cb) {
 };
 
 UserScheme.statics.getUserID = function (login, cb) {
-	this.collection.findOne({login: login}, {_id: 1}, function (err, user) {
-		cb(err, user && user._id);
-	});
+	return this.collection.findOneAsync({ login: login }, { _id: 1 })
+		.then(function (user) {
+			return user && user._id;
+		})
+		.nodeify(cb);
 };
 
 

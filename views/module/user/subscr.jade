@@ -26,7 +26,7 @@
 		//ko if: $data.ccount
 		br
 		a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
-		//ko if: $data.noty
+		//ko if: $data.sbscr_noty
 		.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
 			span.glyphicon.glyphicon-bullhorn
 		// /ko
@@ -39,7 +39,7 @@
 		//ko if: $data.ccount
 		br
 		a.count(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
-		//ko if: $data.noty
+		//ko if: $data.sbscr_noty
 		.planed(title="Сообщение о новых комментариях запланированно к отправке в предстоящем уведомлении.")
 			span.glyphicon.glyphicon-bullhorn
 		// /ko
