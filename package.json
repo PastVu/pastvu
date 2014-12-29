@@ -44,7 +44,7 @@
 		"yamlparser": "0.0.2",
 		"bcrypt": "0.8.0",
 		"step": "",
-		"socket.io": "1.2.0",
+		"socket.io": "1.2.1",
 		"nodemailer": "1.3.0",
 		"nodemailer-smtp-pool": "0.1.7",
 		"nodemailer-ses-transport": "1.1.0",
