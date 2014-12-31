@@ -206,9 +206,9 @@ var core = {
 		};
 	}()),
 	givePhoto: function (iAm, params, cb) {
-		var cid = params.cid,
-			defaultNoSelect = {sign: 0},
-			fieldNoSelect = {};
+		var cid = params.cid;
+		var defaultNoSelect = {sign: 0};
+		var fieldNoSelect = {};
 
 		if (params.noselect !== undefined) {
 			_.assign(fieldNoSelect, params.noselect);
@@ -303,27 +303,30 @@ var core = {
 				}
 			})
 			.then(function (photo) {
-				delete photo._id;
 
-				// Инкрементируем кол-во просмотров только у публичных фото
-				if (params.countView === true && photo.s === status.PUBLIC) {
-					photo.vdcount = (photo.vdcount || 0) + 1;
-					photo.vwcount = (photo.vwcount || 0) + 1;
-					photo.vcount = (photo.vcount || 0) + 1;
+				if (params.countView === true) {
 
-					// В базе через инкремент, чтобы избежать race conditions
-					Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+					// Инкрементируем кол-во просмотров только у публичных фото
+					if (photo.s === status.PUBLIC) {
+						photo.vdcount = (photo.vdcount || 0) + 1;
+						photo.vwcount = (photo.vwcount || 0) + 1;
+						photo.vcount = (photo.vcount || 0) + 1;
+
+						// В базе через инкремент, чтобы избежать race conditions
+						Photo.update({ cid: cid }, { $inc: { vdcount: 1, vwcount: 1, vcount: 1 } }).exec();
+					}
+
+					// Обновляем время просмотра объекта пользователем
+					if (iAm.registered) {
+						userObjectRelController.setObjectView(photo._id, iAm.user._id);
+					}
 				}
+
+				delete photo._id;
 
 				return [photo, this.can];
 			})
 			.nodeify(cb, {spread: true});
-	},
-	givePhotoAsProps: function (iAm, params) {
-		return core.givePhoto(iAm, params)
-			.spread(function (photo, can) {
-				return {photo: photo, can: can};
-			});
 	},
 	getBounds: function (data, cb) {
 		var year = false;

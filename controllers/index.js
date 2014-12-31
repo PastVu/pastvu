@@ -433,7 +433,14 @@ var giveNewsPublic = Bluebird.method(function (iAm, data) {
 		})
 		.then(function (news) {
 			if (iAm.registered) {
-				return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news');
+				return userObjectRelController.fillObjectByRels(news, iAm.user._id, 'news')
+					.then(function (news) {
+						// Обновляем время просмотра объекта пользователем
+						userObjectRelController.setObjectView(news._id, iAm.user._id, 'news');
+					})
+					.then(function () {
+						return news;
+					});
 			} else {
 				return news;
 			}

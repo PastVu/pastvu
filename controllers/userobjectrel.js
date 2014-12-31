@@ -134,7 +134,11 @@ var setObjectView = Bluebird.method(function (objId, userId, type) {
         type = 'photo';
     }
 
-    return UserObjectRel.updateAsync({ obj: objId, user: userId, type: type }, { $set: { view: new Date() } }, { upsert: true });
+    return UserObjectRel.updateAsync(
+        { obj: objId, user: userId, type: type },
+        { $set: { view: new Date() } },
+        { upsert: true }
+    );
 });
 
 /**
