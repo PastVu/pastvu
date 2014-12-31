@@ -117,7 +117,11 @@ function unSubscribeObj(objId, userId) {
  * @param objId
  * @param user
  */
-function commentAdded(objId, user) {
+function commentAdded(objId, user, stamp) {
+    if (!stamp) {
+        stamp = new Date();
+    }
+
     // Находим всех пользователей, кроме создающего, подписанных на комментарии объекта, но еще не ожидающих уведомления
     return UserObjectRel.findAsync(
         { obj: objId, user: { $ne: user._id }, sbscr_create: { $exists: true }, sbscr_noty: { $exists: false } },
@@ -140,7 +144,7 @@ function commentAdded(objId, user) {
             // Устанавливаем флаг готовности уведомления по объекту, для подписанных пользователей
             return UserObjectRel.updateAsync(
                 { _id: { $in: ids } },
-                { $set: { sbscr_noty_change: new Date(), sbscr_noty: true } },
+                { $set: { sbscr_noty_change: stamp, sbscr_noty: true } },
                 { multi: true }
             );
         })
@@ -155,23 +159,34 @@ function commentAdded(objId, user) {
  * Устанавливает объект комментариев как просмотренный, т.е. ненужный для уведомления
  * @param objId
  * @param user
+ * @param [setInRel]
  */
-function commentViewed(objId, user) {
-    return UserObjectRel.updateAsync(
-        { obj: objId, user: user._id },
-        { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
-        { upsert: false }
-    )
-        .spread(function (numberAffected) {
-            if (!numberAffected) {
+function commentViewed(objId, user, setInRel) {
+    var promise;
+
+    if (setInRel) {
+        promise = UserObjectRel.updateAsync(
+            { obj: objId, user: user._id },
+            { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
+            { upsert: false }
+        )
+            .spread(function (numberAffected) {
+                return numberAffected;
+            });
+    } else {
+        promise = Bluebird.resolve();
+    }
+
+    return promise
+        .then(function (numberAffected) {
+            if (numberAffected === 0) {
                 return;
             }
-
             // Считаем кол-во оставшихся готовых к отправке уведомлений для пользователя
             return UserObjectRel.countAsync({ user: user._id, sbscr_noty: true });
         })
         .then(function (count) {
-            if (!count) {
+            if (count === 0) {
                 // Если уведомлений, готовых к отправке больше нет, то сбрасываем запланированное уведомление для пользователя
                 UserNoty.update({ user: user._id }, { $unset: { nextnoty: 1 } }).exec();
             }
@@ -212,7 +227,7 @@ function userThrottleChange(userId, newThrottle) {
  * @param users Массив _id пользователй
  */
 function scheduleUserNotice(users) {
-    return Bluebird.all(
+    return Bluebird.join(
         // Находим для каждого пользователя параметр throttle
         User.findAsync({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }),
         // Находим noty пользователей из списка, и берем даже запланированных,
@@ -355,7 +370,7 @@ function sendUserNotice(userId, lastsend) {
 
             for (var i = rels.length; i--;) {
                 rel = rels[i];
-                relHash[rel.obj] = rels;
+                relHash[rel.obj] = rel;
 
                 this.relIds.push(rel._id);
                 if (rel.type === 'news') {
@@ -534,7 +549,7 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 return [];
             }
 
-            return Bluebird.all([
+            return Bluebird.join(
                 // Ищем кол-во новых комментариев для каждого объекта
                 userObjectRelController.fillObjectByRels(objs, this.user_id, data.type, this.rels),
                 // Считаем общее кол-во фотографий в подписках
@@ -543,7 +558,7 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 UserObjectRel.countAsync({ user: this.user_id, type: 'news', sbscr_create: { $exists: true } }),
                 // Берем время следующего запланированного уведомления
                 UserNoty.findOneAsync({ user: this.user_id, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true })
-            ]);
+            );
         })
         .spread(function (objs, countPhoto, countNews, nextNoty) {
             var obj;

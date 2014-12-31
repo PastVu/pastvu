@@ -882,6 +882,7 @@ function createComment(socket, data, cb) {
 		return cb({message: msg.maxLength, error: true});
 	}
 
+	var stamp = new Date();
 	var cid = Number(data.obj),
 		obj,
 		CommentModel,
@@ -933,7 +934,7 @@ function createComment(socket, data, cb) {
 				cid: countC.next,
 				obj: obj,
 				user: iAm.user,
-				stamp: new Date(),
+				stamp: stamp,
 				txt: Utils.inputIncomingParse(content).result,
 				del: undefined
 			};
@@ -997,7 +998,7 @@ function createComment(socket, data, cb) {
 			_session.emitUser(iAm, null, socket);
 			cb({message: 'ok', comment: comment, frag: fragObj});
 
-			subscrController.commentAdded(obj._id, iAm.user);
+			subscrController.commentAdded(obj._id, iAm.user, stamp);
 		}
 	);
 }

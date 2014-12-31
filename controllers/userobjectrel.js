@@ -123,6 +123,58 @@ var fillObjectByRels = function (objs, userId, type, rels) {
         });
 };
 
+/**
+ * Записываем время последнего просмотра объекта пользователем
+ * @param objId _id объекта
+ * @param userId _id пользователя
+ * @param [type] Тип объекта
+ */
+var setObjectView = Bluebird.method(function (objId, userId, type) {
+    if (!type) {
+        type = 'photo';
+    }
+
+    return UserObjectRel.updateAsync({ obj: objId, user: userId, type: type }, { $set: { view: new Date() } }, { upsert: true });
+});
+
+/**
+ * Записываем время последнего просмотра объекта пользователем
+ * @param objId _id объекта
+ * @param userId _id пользователя
+ * @param [type] Тип объекта
+ */
+var setCommentView = Bluebird.method(function (objId, userId, type, stamp) {
+    if (!type) {
+        type = 'photo';
+    }
+    if (!stamp) {
+        stamp = new Date();
+    }
+
+    var query = { obj: objId, user: userId, type: type };
+
+    return UserObjectRel.findOneAsync(query, { _id: 0, obj: 0, user: 0, type: 0 }, { lean: true })
+        .bind({})
+        .then(function (relBeforeUpdate) {
+            var update = { $set: { comments: stamp } };
+
+            if (relBeforeUpdate) {
+                if (relBeforeUpdate.sbscr_noty) {
+                    // Если было установлено время следующей отправки уведолмления, сбрасываем его
+                    update.$unset = { sbscr_noty: 1 };
+                    update.$set.sbscr_noty_change = stamp;
+                }
+            }
+
+            this.relBeforeUpdate = relBeforeUpdate;
+
+            return UserObjectRel.updateAsync(query, update, { upsert: true });
+        })
+        .spread(function () {
+            return this.relBeforeUpdate;
+        });
+});
+
 
 /**
  * Находим количество новых комментариев для формирования письма уведомления пользователю
@@ -137,6 +189,7 @@ function getNewCommentsBrief(objs, relHash, userId, type) {
     }
 
     var commentModel = type === 'news' ? CommentN : Comment;
+    var objsCommentsIds = [];
     var promises = [];
     var commentFrom;
     var objId;
@@ -148,9 +201,12 @@ function getNewCommentsBrief(objs, relHash, userId, type) {
         objId = objs[i]._id;
         rel = relHash[objId];
         commentFrom = rel && (rel.comments || rel.sbscr_noty_change || rel.sbscr_create);
+
         if (!commentFrom) {
             continue;
         }
+
+        objsCommentsIds.push(objId);
         promises.push(
             commentModel.find(
                 { obj: objId, del: null, stamp: { $gt: commentFrom }, user: { $ne: userId } },
@@ -160,17 +216,21 @@ function getNewCommentsBrief(objs, relHash, userId, type) {
                 .execAsync()
         );
     }
+
     return Bluebird
         .all(promises)
         .then(function (objComments) {
-            var briefsHash = objComments.reduce(function (result, comments) {
-                result[comments.obj] = comments.reduce(function (brief, comment) {
-                    if (comment.stamp > relHash[comments.obj].sbscr_noty_change) {
+            var briefsHash = objComments.reduce(function (result, comments, index) {
+                var objId = objsCommentsIds[index];
+
+                result[objId] = comments.reduce(function (brief, comment) {
+                    if (comment.stamp >= relHash[objId].sbscr_noty_change) {
                         brief.newest++;
                         brief.users[comment.user.login] = comment.user.disp;
                     }
                     return brief;
                 }, { unread: comments.length, newest: 0, users: {} });
+
                 return result;
             }, {});
 
@@ -192,3 +252,5 @@ module.exports.loadController = function (app, db, io) {
 module.exports.getViewCommentsRel = getRel;
 module.exports.fillObjectByRels = fillObjectByRels;
 module.exports.getNewCommentsBrief = getNewCommentsBrief;
+module.exports.setObjectView = setObjectView;
+module.exports.setCommentView = setCommentView;
