@@ -10,11 +10,11 @@
 					button.btn.btn-primary.btnConvert(data-bind="click: toConvert, attr: {disabled: exe()}")
 						| start
 				// /ko
-				//ko if: msg().length
-				.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle}")
-					span.glyphicon.glyphicon-warning-sign
-					span(data-bind="text: ' ' + msg()")
-				// /ko
+			// /ko
+			//ko if: msg().length
+			.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle}")
+				span.glyphicon.glyphicon-warning-sign
+				span(data-bind="text: ' ' + msg()")
 			// /ko
 			.imgRow
 				.imgSuperWrap
@@ -212,9 +212,9 @@
 		span(data-bind="foreach: p.regions")
 			.region
 				a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
-				//ko if: $index() < $parent.p.regions().length - 1
-				| ,&#32;
-				// /ko
+			//ko if: $index() < $parent.p.regions().length - 1
+			| ,&#32;
+			// /ko
 		// /ko
 		//ko if: !p.regions().length
 		.region.err Не привязан
