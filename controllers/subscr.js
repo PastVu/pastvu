@@ -529,10 +529,10 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
             var query;
             var objIds = [];
 
-            this.subscrHash = {};
+            this.relHash = {};
 
             for (var i = rels.length; i--;) {
-                this.subscrHash[rels[i].obj] = rels[i];
+                this.relHash[rels[i].obj] = rels[i];
                 objIds.push(rels[i].obj);
             }
 
@@ -562,11 +562,17 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
         })
         .spread(function (objs, countPhoto, countNews, nextNoty) {
             var obj;
+            var rel;
+
             for (var i = objs.length; i--;) {
                 obj = objs[i];
-                if (this.subscrHash[obj._id].sbscr_noty) {
+                rel = this.relHash[obj._id];
+
+                if (rel.sbscr_noty) {
                     obj.sbscr_noty = true;
                 }
+                obj.sbscr_create = rel.sbscr_create.getTime();
+
                 delete obj.subscr;
                 delete obj._id;
             }
