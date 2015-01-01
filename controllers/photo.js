@@ -579,7 +579,7 @@ var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePub
 
 // Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
-	return Bluebird.all([
+	return Bluebird.join(
 		// Отправляем на кластеризацию
 		PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld),
 		PhotoMap.updateAsync(
@@ -597,7 +597,7 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
 			},
 			{ upsert: true }
 		)
-	]);
+	);
 }
 
 // Удаляет фото с карты
@@ -1680,8 +1680,8 @@ var savePhoto = function (iAm, data) {
 		});
 };
 
-//Фотографии и кластеры по границам
-//{z: Масштаб, bounds: [[]]}
+// Фотографии и кластеры по границам
+// {z: Масштаб, bounds: [[]]}
 function getBounds(data, cb) {
 	if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
 		cb({message: 'Bad params', error: true});

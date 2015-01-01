@@ -156,7 +156,7 @@ module.exports.loadController = function (app, db) {
 		var startTime = Date.now();
 
 		print('Clearing photos map collection');
-		db.photos_map.remove();
+		db.photos_map.remove({});
 
 		print('Start to fill conveyer for ' + db.photos.count({s: 5, geo: {$exists: true}}) + ' photos');
 		db.photos.find({s: 5, geo: {$exists: true}}, {_id: 0, cid: 1, geo: 1, file: 1, dir: 1, title: 1, year: 1, year2: 1}).sort({cid: 1}).forEach(function (photo) {
