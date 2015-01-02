@@ -1554,7 +1554,7 @@ var savePhoto = function (iAm, data) {
 				changes.source = Utils.inputIncomingParse(changes.source).result;
 			}
 			if (changes.author) {
-				changes.author = Utils.inputIncomingParse(data.author).result;
+				changes.author = Utils.inputIncomingParse(changes.author).result;
 			}
 			if (changes.geo) {
 				if (Utils.geo.checkLatLng(changes.geo)) {
