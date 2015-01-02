@@ -744,45 +744,42 @@ var getCommentsUser = Bluebird.method(function (data) {
 /**
  * Берем комментарии
  * @param data Объект параметров, включая стринг фильтра
- * @param cb
  */
 var getComments = (function () {
-	var commentSelect = {_id: 0, cid: 1, obj: 1, user: 1, txt: 1};
-	var photosSelectAllRegions = _.assign({_id: 1, cid: 1, file: 1, title: 1, geo: 1}, regionController.regionsAllSelectHash);
+	var commentSelect = { _id: 0, cid: 1, obj: 1, user: 1, txt: 1 };
+	var photosSelectAllRegions = _.assign({ _id: 1, cid: 1, file: 1, title: 1, geo: 1 }, regionController.regionsAllSelectHash);
 
-	return function (iAm, query, data, cb) {
-		var skip = Math.abs(Number(data.skip)) || 0,
-			limit = Math.min(data.limit || 30, 100),
-			options = {lean: true, limit: limit, sort: {stamp: -1}},
-			commentsArr,
-			photosHash = {},
-			usersHash = {};
+	return Bluebird.method(function (iAm, query, data) {
+		var skip = Math.abs(Number(data.skip)) || 0;
+		var limit = Math.min(data.limit || 30, 100);
+		var options = { lean: true, limit: limit, sort: { stamp: -1 } };
+		var commentsArr;
+		var photosHash = {};
+		var usersHash = {};
 
 		if (skip) {
 			options.skip = skip;
 		}
 
-		step(
-			function createCursor() {
-				Comment.find(query, commentSelect, options, this);
-			},
-			function (err, comments) {
-				if (err || !comments) {
-					return cb({message: err && err.message || 'Comments get error', error: true});
+		return Comment.findAsync(query, commentSelect, options)
+			.then(function (comments) {
+				if (!comments) {
+					throw { message: 'Comments get error' };
 				}
-				var i = comments.length,
-					photoId,
-					photosArr = [],
-					photosSelect = {_id: 1, cid: 1, file: 1, title: 1, geo: 1},
-					userId,
-					usersArr = [];
 
-				while (i--) {
+				var photosSelect = { _id: 1, cid: 1, file: 1, title: 1, geo: 1 };
+				var photosArr = [];
+				var usersArr = [];
+				var photoId;
+				var userId;
+
+				for (var i = comments.length; i--;) {
 					photoId = comments[i].obj;
 					if (photosHash[photoId] === undefined) {
 						photosHash[photoId] = true;
 						photosArr.push(photoId);
 					}
+
 					userId = comments[i].user;
 					if (usersHash[userId] === undefined) {
 						usersHash[userId] = true;
@@ -791,23 +788,30 @@ var getComments = (function () {
 				}
 
 				commentsArr = comments;
-				Photo.find({_id: {$in: photosArr}}, iAm && iAm.rshortsel ? _.assign(photosSelect, iAm.rshortsel) : photosSelectAllRegions, {lean: true}, this.parallel());
-				User.find({_id: {$in: usersArr}}, {_id: 1, login: 1, disp: 1}, {lean: true}, this.parallel());
-			},
-			function (err, photos, users) {
-				if (err || !photos || !users) {
-					return cb({message: err && err.message || 'Cursor extract error', error: true});
-				}
-				var i,
-					comment,
-					photo,
-					photoFormatted,
-					photoFormattedHash = {},
-					user,
-					userFormatted,
-					userFormattedHash = {},
 
-					shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls);
+				return Bluebird.join(
+					Photo.findAsync(
+						{ _id: { $in: photosArr } },
+						iAm && iAm.rshortsel ? _.assign(photosSelect, iAm.rshortsel) : photosSelectAllRegions,
+						{ lean: true }
+					),
+					User.findAsync(
+						{ _id: { $in: usersArr } },
+						{ _id: 1, login: 1, disp: 1 },
+						{ lean: true }
+					)
+				);
+			})
+			.spread(function (photos, users) {
+				var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls);
+				var photoFormattedHash = {};
+				var userFormattedHash = {};
+				var photoFormatted;
+				var userFormatted;
+				var comment;
+				var photo;
+				var user;
+				var i;
 
 				for (i = photos.length; i--;) {
 					photo = photos[i];
@@ -815,7 +819,7 @@ var getComments = (function () {
 						cid: photo.cid,
 						file: photo.file,
 						title: photo.title,
-						rs: photo.rs //Массив регионов краткого отображения
+						rs: photo.rs // Массив регионов краткого отображения
 					};
 					photoFormattedHash[photo.cid] = photosHash[photo._id] = photoFormatted;
 				}
@@ -825,7 +829,7 @@ var getComments = (function () {
 					userFormatted = {
 						login: user.login,
 						disp: user.disp,
-						online: _session.usLogin[user.login] !== undefined //Для скорости смотрим непосредственно в хеше, без функции isOnline
+						online: _session.usLogin[user.login] !== undefined // Для скорости смотрим непосредственно в хеше, без функции isOnline
 					};
 					userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
 				}
@@ -836,30 +840,31 @@ var getComments = (function () {
 					comment.user = usersHash[comment.user].login;
 				}
 
-				//console.dir('comments in ' + ((Date.now() - start) / 1000) + 's');
-				cb({message: 'ok', comments: commentsArr, photos: photoFormattedHash, users: userFormattedHash, regions: shortRegionsHash});
-			}
-		);
-	};
+				return {
+					photos: photoFormattedHash,
+					regions: shortRegionsHash,
+					users: userFormattedHash,
+					comments: commentsArr
+				};
+			});
+	});
 }());
 
 /**
  * Выбирает последние комментарии по публичным фотографиям
- * @param data Объект
- * @param cb Коллбэк
  */
 var getCommentsFeed = (function () {
-	var globalOptions = {limit: 30},
-		globalQuery = {del: null, hidden: null},
-		globalFeed = Utils.memoizeAsync(function (handler) {
-			getComments(null, globalQuery, globalOptions, handler);
-		}, ms('10s'));
+	var globalOptions = { limit: 30 };
+	var globalQuery = { del: null, hidden: null };
+	var globalFeed = Utils.memoizePromise(function () {
+		return getComments(null, globalQuery, globalOptions);
+	}, ms('10s'));
 
-	return function (iAm, cb) {
-		if (iAm.rquery) {
-			getComments(iAm, _.assign({del: null, hidden: null}, iAm.rquery), globalOptions, cb);
+	return function (iAm) {
+		if (_.isEmpty(iAm.rquery)) {
+			return globalFeed();
 		} else {
-			return globalFeed(cb);
+			return getComments(iAm, _.assign({ del: null, hidden: null }, iAm.rquery), globalOptions);
 		}
 	};
 }());
@@ -1779,9 +1784,13 @@ module.exports.loadController = function (app, db, io) {
 				});
 		});
 		socket.on('giveCommentsFeed', function () {
-			getCommentsFeed(hs.usObj, function (result) {
-				socket.emit('takeCommentsFeed', result);
-			});
+			getCommentsFeed(hs.usObj)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takeCommentsFeed', resultData);
+				});
 		});
 	});
 

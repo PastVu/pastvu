@@ -152,8 +152,8 @@ Utils.pathForExpress = function (paths) {
 Utils.memoizeAsync = function (memoizedFunc, ttl) {
 	'use strict';
 
-	var cache,
-		waitings = []; //Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
+	var cache;
+	var waitings = []; // Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
 
 	function memoizeHandler() {
 		cache = arguments;
@@ -161,7 +161,7 @@ Utils.memoizeAsync = function (memoizedFunc, ttl) {
 			waitings[i].apply(null, arguments);
 		}
 		waitings = [];
-		if (ttl) {
+		if (typeof ttl === 'number' && ttl > 0) {
 			setTimeout(function () {
 				cache = undefined;
 			}, ttl);
@@ -172,11 +172,40 @@ Utils.memoizeAsync = function (memoizedFunc, ttl) {
 		if (cache !== undefined) {
 			cb.apply(null, cache);
 		} else {
-			waitings.push(cb); //Сначала кладем, а потом проверяем на то что положили первый, чтобы корректно вызвалось, когда memoizedFunc выполнится мгновенно
+			// Сначала кладем, а потом проверяем на то что положили первый,
+			// чтобы корректно вызвалось, когда memoizedFunc выполнится мгновенно
+			waitings.push(cb);
 			if (waitings.length === 1) {
 				memoizedFunc(memoizeHandler);
 			}
 		}
+	};
+};
+
+/**
+ * Promise-memoize с опциональным временем жизни
+ * @param func Функция, возвращаемый promise которой будет запомнен
+ * @param ttl Время жизни в ms
+ */
+Utils.memoizePromise= function (func, ttl) {
+	'use strict';
+
+	var memoizedPromise;
+
+	function resetPromise() {
+		memoizedPromise = func();
+
+		if (typeof ttl === 'number' && ttl > 0) {
+			setTimeout(function () {
+				memoizedPromise = undefined;
+			}, ttl);
+		}
+
+		return memoizedPromise;
+	}
+
+	return function () {
+		return memoizedPromise || resetPromise();
 	};
 };
 
