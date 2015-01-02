@@ -400,7 +400,9 @@ module.exports.loadController = function (app, db, io) {
     logger = require('log4js').getLogger('photoCluster.js');
 
     dbNative = db.db;
+    /* jshint evil:true */
     dbEval = Bluebird.promisify(dbNative.eval, dbNative);
+    /* jshint evil:false */
 
     Photo = db.model('Photo');
     Cluster = db.model('Cluster');
