@@ -105,8 +105,10 @@ var _session = require('./_session.js'),
 
 			if (usObj.registered) {
 				ownPhoto = !!photo.user && photo.user.equals(usObj.user._id);
-				if (canModerate === undefined) {
-					canModerate = permissions.canModerate(photo, usObj);
+				if (canModerate !== undefined) {
+					canModerate = !!canModerate;
+				} else {
+					canModerate = !!permissions.canModerate(photo, usObj);
 				}
 
 				// Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
