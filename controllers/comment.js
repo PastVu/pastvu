@@ -12,9 +12,7 @@ var _session = require('./_session.js'),
 	_ = require('lodash'),
 	Bluebird = require('bluebird'),
 	ms = require('ms'), // Tiny milisecond conversion utility
-	step = require('step'),
 	Utils = require('../commons/Utils.js'),
-	log4js = require('log4js'),
 	appEnv = {},
 	host,
 	logger,
@@ -1681,46 +1679,41 @@ var giveCommentHist = Bluebird.method(function (data) {
  * Переключает возможность комментирования объекта
  * @param iAm Объект пользователя
  * @param data
- * @param cb Коллбэк
  */
-function setNoComments(iAm, data, cb) {
-	var cid = data && Number(data.cid);
-
+var setNoComments = Bluebird.method(function (iAm, data) {
 	if (!iAm.registered || !iAm.user.role) {
-		return cb({message: msg.deny, error: true});
+		throw { message: msg.deny };
 	}
 
-	if (!Utils.isType('object', data) || !cid) {
-		return cb({message: 'Bad params', error: true});
+	var cid = data && Number(data.cid);
+	var promise;
+
+	if (!_.isObject(data) || !cid) {
+		throw { message: msg.badParams };
 	}
 
-	step(
-		function () {
-			if (data.type === 'news') {
-				News.findOne({cid: cid}, this);
-			} else {
-				photoController.findPhoto({cid: cid}, null, iAm, this);
-			}
-		},
-		function (err, obj) {
-			if (err || !obj) {
-				return cb({message: err && err.message || msg.noObject, error: true});
+	if (data.type === 'news') {
+		promise = News.findOneAsync({cid: cid});
+	} else {
+		promise = photoController.findPhoto({cid: cid}, null, iAm);
+	}
+
+	return promise
+		.then(function (obj) {
+			if (!obj) {
+				throw { message: msg.noObject };
 			}
 			if (!permissions.canModerate(data.type, obj, iAm)) {
-				return cb({message: msg.deny, error: true});
+				throw { message: msg.deny };
 			}
 
 			obj.nocomments = data.val ? true : undefined;
-			obj.save(this);
-		},
-		function (err, obj) {
-			if (err || !obj) {
-				return cb({message: err && err.message || 'Save error', error: true});
-			}
-			cb({message: 'Ok', nocomments: obj.nocomments});
-		}
-	);
-}
+			return obj.saveAsync();
+		})
+		.then(function (objResult) {
+			return { nocomments: objResult[0].nocomments };
+		});
+});
 
 /**
  * Скрывает/открывает комментарии объекта (делает их не публичными/публичными)
@@ -1777,7 +1770,7 @@ function hideObjComments(oid, hide, iAm) {
 
 
 module.exports.loadController = function (app, db, io) {
-	logger = log4js.getLogger("comment.js");
+	logger = require('log4js').getLogger('comment.js');
 	appEnv = app.get('appEnv');
 	host = appEnv.serverAddr.host;
 
@@ -1820,7 +1813,6 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('takeCommentHist', resultData);
 				});
 		});
-
 		socket.on('removeComment', function (data) {
 			removeComment(socket, data)
 				.catch(function (err) {
@@ -1839,13 +1831,15 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('restoreCommentResult', resultData);
 				});
 		});
-
 		socket.on('setNoComments', function (data) {
-			setNoComments(hs.usObj, data, function (result) {
-				socket.emit('setNoCommentsResult', result);
-			});
+			setNoComments(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('setNoCommentsResult', resultData);
+				});
 		});
-
 		socket.on('giveCommentsObj', function (data) {
 			getCommentsObj(hs.usObj, data)
 				.catch(function (err) {
