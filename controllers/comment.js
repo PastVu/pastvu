@@ -862,6 +862,7 @@ var getCommentsFeed = (function () {
 
 	return function (iAm) {
 		if (_.isEmpty(iAm.rquery)) {
+			// Пользователям без установленной региональной фильтрации отдаем запомненный результат глобальной выборки
 			return globalFeed();
 		} else {
 			return getComments(iAm, _.assign({ del: null, hidden: null }, iAm.rquery), globalOptions);
@@ -873,28 +874,26 @@ var getCommentsFeed = (function () {
  * Создает комментарий
  * @param socket Сокет пользователя
  * @param data Объект
- * @param cb Коллбэк
  */
-function createComment(socket, data, cb) {
+var createComment = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
+
 	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
-	}
-	if (!Utils.isType('object', data) || !Number(data.obj) || !data.txt || data.level > 9) {
-		return cb({message: 'Bad params', error: true});
-	}
-	if (data.txt.length > commentMaxLength) {
-		return cb({message: msg.maxLength, error: true});
+		throw { message: msg.deny };
 	}
 
+	if (!_.isObject(data) || !Number(data.obj) || !data.txt || data.level > 9) {
+		throw { message: msg.badParams };
+	}
+	if (data.txt.length > commentMaxLength) {
+		throw { message: msg.maxLength };
+	}
+
+	var fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj);
+	var cid = Number(data.obj);
 	var stamp = new Date();
-	var cid = Number(data.obj),
-		obj,
-		CommentModel,
-		content = data.txt,
-		comment,
-		fragAdded = data.type === 'photo' && !data.frag && _.isObject(data.fragObj),
-		fragObj;
+	var promises = [];
+	var CommentModel;
 
 	if (data.type === 'news') {
 		CommentModel = CommentN;
@@ -902,111 +901,116 @@ function createComment(socket, data, cb) {
 		CommentModel = Comment;
 	}
 
-	step(
-		function findObjectAndParent() {
-			if (data.type === 'news') {
-				News.findOne({cid: cid}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
-			} else {
-				photoController.findPhoto({cid: cid}, null, iAm, this.parallel());
-			}
+	// Find object and comment's parent
+	if (data.type === 'news') {
+		promises.push(News.findOneAsynv({ cid: cid }, { _id: 1, ccount: 1, nocomments: 1 }));
+	} else {
+		promises.push(photoController.findPhoto({ cid: cid }, null, iAm));
+	}
 
-			if (data.parent) {
-				CommentModel.findOne({cid: data.parent}, {_id: 0, level: 1, del: 1}, {lean: true}, this.parallel());
+	if (data.parent) {
+		promises.push(CommentModel.findOneAsync({ cid: data.parent }, { _id: 0, level: 1, del: 1 }, { lean: true }));
+	}
+
+	return Bluebird.all(promises)
+		.bind({})
+		.spread(function counterUp(obj, parent) {
+			if (!obj) {
+				throw { message: msg.noObject };
 			}
-		},
-		function counterUp(err, o, parent) {
-			if (err || !o) {
-				return cb({message: err && err.message || msg.noObject, error: true});
-			}
-			if (!permissions.canReply(data.type, o, iAm) && !permissions.canModerate(data.type, o, iAm)) {
-				return cb({message: o.nocomments ? msg.noComments : msg.deny, error: true});
+			if (!permissions.canReply(data.type, obj, iAm) && !permissions.canModerate(data.type, obj, iAm)) {
+				throw { message: obj.nocomments ? msg.noComments : msg.deny };
 			}
 			if (data.parent && (!parent || parent.del || parent.level >= 9 || data.level !== (parent.level || 0) + 1)) {
-				return cb({message: 'Что-то не так с родительским комментарием. Возможно его удалили. Пожалуйста, обновите страницу.', error: true});
+				throw { message: 'Что-то не так с родительским комментарием. Возможно его удалили. Пожалуйста, обновите страницу.' };
 			}
 
-			obj = o;
+			this.obj = obj;
+			this.parent = parent;
 
-			Counter.increment('comment', this);
-		},
-		function (err, countC) {
-			if (err || !countC) {
-				return cb({message: err && err.message || 'Increment comment counter error', error: true});
+			return Counter.increment('comment');
+		})
+		.then(function (countC) {
+			if (!countC) {
+				throw { message: 'Increment comment counter error' };
 			}
-			var i, r;
 
-			comment = {
+			this.comment = {
 				cid: countC.next,
-				obj: obj,
+				obj: this.obj,
 				user: iAm.user,
 				stamp: stamp,
-				txt: Utils.inputIncomingParse(content).result,
+				txt: Utils.inputIncomingParse(data.txt).result,
 				del: undefined
 			};
-			//Записываем комментарию фотографии ее регионы
+
+			var i;
+			var r;
+
+			// Записываем комментарию фотографии ее регионы
 			if (data.type === 'photo') {
-				if (obj.geo) {
-					comment.geo = obj.geo;
+				if (this.obj.geo) {
+					this.comment.geo = this.obj.geo;
 				}
 				for (i = 0; i <= maxRegionLevel; i++) {
 					r = 'r' + i;
-					if (obj[r]) {
-						comment[r] = obj[r];
+					if (this.obj[r]) {
+						this.comment[r] = this.obj[r];
 					}
 				}
 			}
 			if (data.parent) {
-				comment.parent = data.parent;
-				comment.level = data.level;
+				this.comment.parent = data.parent;
+				this.comment.level = data.level;
 			}
-			if (obj.s !== undefined && obj.s !== constants.photo.status.PUBLIC) {
-				comment.hidden = true;
-			}
-			if (fragAdded) {
-				comment.frag = true;
-			}
-			new CommentModel(comment).save(this);
-		},
-		function (err, savedComment) {
-			if (err) {
-				return cb({message: err.message || 'Comment save error', error: true});
+			if (this.obj.s !== undefined && this.obj.s !== constants.photo.status.PUBLIC) {
+				this.comment.hidden = true;
 			}
 			if (fragAdded) {
-				fragObj = {
-					cid: savedComment.cid,
+				this.comment.frag = true;
+			}
+
+			return new CommentModel(this.comment).saveAsync();
+		})
+		.then(function () {
+			var promises = [];
+
+			if (fragAdded) {
+				this.fragObj = {
+					cid: this.comment.cid,
 					l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
 					t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
 					w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
 					h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
 				};
-				obj.frags.push(fragObj);
+				this.obj.frags.push(this.fragObj);
 			}
 
-			obj.ccount = (obj.ccount || 0) + 1;
-			obj.save(this.parallel());
+			this.obj.ccount = (this.obj.ccount || 0) + 1;
+			promises.push(this.obj.saveAsync());
 
-			if (!savedComment.hidden) {
+			if (!this.comment.hidden) {
 				iAm.user.ccount += 1;
-				iAm.user.save(this.parallel());
+				promises.push(iAm.user.saveAsync());
 			}
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			comment.user = iAm.user.login;
-			comment.obj = cid;
-			comment.can = {};
-			if (comment.level === undefined) {
-				comment.level = 0;
-			}
-			_session.emitUser(iAm, null, socket);
-			cb({message: 'ok', comment: comment, frag: fragObj});
 
-			subscrController.commentAdded(obj._id, iAm.user, stamp);
-		}
-	);
-}
+			return Bluebird.all(promises);
+		})
+		.then(function () {
+			this.comment.user = iAm.user.login;
+			this.comment.obj = cid;
+			this.comment.can = {};
+
+			if (this.comment.level === undefined) {
+				this.comment.level = 0;
+			}
+
+			_session.emitUser(iAm, null, socket);
+			subscrController.commentAdded(this.obj._id, iAm.user, stamp);
+
+			return { comment: this.comment, frag: this.fragObj };
+		});
+});
 
 /**
  * Удаляет комментарий и его дочерние комментарии
@@ -1724,9 +1728,13 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('createComment', function (data) {
-			createComment(socket, data, function (result) {
-				socket.emit('createCommentResult', result);
-			});
+			createComment(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('createCommentResult', resultData);
+				});
 		});
 		socket.on('updateComment', function (data) {
 			updateComment(socket, data, function (result) {
