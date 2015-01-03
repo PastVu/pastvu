@@ -1173,7 +1173,7 @@ var removeComment = Bluebird.method(function (socket, data) {
 
 				if (userObj !== undefined) {
 					userObj.user.ccount = userObj.user.ccount - this.hashUsers[u];
-					promises.push(_session.saveEmitUser(userObj, null));
+					promises.push(_session.saveEmitUser(userObj));
 				} else {
 					promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: -this.hashUsers[u] } }));
 				}
@@ -1225,29 +1225,26 @@ var removeComment = Bluebird.method(function (socket, data) {
  * Восстанавливает комментарий и его потомков
  * @param socket Сокет пользователя
  * @param data
- * @param cb Коллбэк
  */
-function restoreComment(socket, data, cb) {
-	var iAm = socket.handshake.usObj,
-		cid = data && Number(data.cid),
-		canModerate,
-		obj,
-		commentsHash = {},
-		hashUsers = {},
-		countCommentsRestored = 1,
-		commentModel,
-
-		stamp,
-		hist,
-		histChilds,
-		childsCids;
+var restoreComment = Bluebird.method(function (socket, data) {
+	var iAm = socket.handshake.usObj;
 
 	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
+		throw { message: msg.deny };
 	}
 	if (!_.isObject(data) || !Number(data.cid)) {
-		return cb({message: 'Bad params', error: true});
+		throw { message: msg.badParams };
 	}
+
+	var countCommentsRestored = 1;
+	var cid = Number(data.cid);
+	var commentsHash = {};
+	var hashUsers = {};
+	var commentModel;
+	var histChilds;
+	var childsCids;
+	var stamp;
+	var hist;
 
 	if (data.type === 'news') {
 		commentModel = CommentN;
@@ -1255,139 +1252,173 @@ function restoreComment(socket, data, cb) {
 		commentModel = Comment;
 	}
 
-	commentModel.findOne({cid: cid, del: {$exists: true}}, {_id: 1, obj: 1, user: 1, hidden: 1, del: 1}, {lean: true}, function (err, comment) {
-		if (err || !comment) {
-			return cb({message: err && err.message || msg.noCommentExists, error: true});
-		}
-		step(
-			function () {
-				if (data.type === 'news') {
-					News.findOne({_id: comment.obj}, {_id: 1, ccount: 1, nocomments: 1}, this.parallel());
-				} else {
-					photoController.findPhoto({_id: comment.obj}, null, iAm, this.parallel());
-				}
-			},
-			function (err, o) {
-				if (err || !o) {
-					return cb({message: err && err.message || msg.noObject, error: true});
-				}
-				obj = o;
-
-				//Нужны права модератора/администратора
-				canModerate = permissions.canModerate(data.type, obj, iAm);
-				if (!canModerate) {
-					return cb({message: msg.deny, error: true});
-				}
-
-				//Находим все комментарии, дочерние восстанавливаемому, которые были удалены вместе с ним,
-				//т.е. у которых origin указывает на текущий
-				commentModel.find({obj: obj._id, 'del.origin': cid}, {_id: 0, obj: 0, stamp: 0, txt: 0, hist: 0}, {lean: true, sort: {stamp: 1}}, this);
-			},
-			function (err, childs) {
-				if (err || !childs) {
-					return cb({message: err && err.message || 'Cursor extract error', error: true});
-				}
-				var child,
-					len = childs.length,
-					i = 0;
-
-				stamp = new Date();
-
-				//Операции с корневым удаляемым комментарием
-				commentsHash[cid] = comment;
-				if (!comment.hidden) {
-					hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
-				}
-
-				childsCids = [];
-				countCommentsRestored += len;
-				//Обходим потомков восстанавливаемого комментария
-				for (; i < len; i++) {
-					child = childs[i];
-					if (!child.hidden) {
-						hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
-					}
-					childsCids.push(child.cid);
-					commentsHash[child.cid] = child;
-				}
-
-				hist = [
-					_.assign(_.omit(comment.del, 'origin'), {del: {reason: comment.del.reason}}),
-					{user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role}
-				];
-				if (iAm.isModerator && _.isNumber(canModerate)) {
-					hist[1].roleregion = canModerate;
-				}
-				commentModel.update({cid: cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: hist}}}, this.parallel());
-
-				if (childsCids.length) {
-					histChilds = [
-						_.assign(_.omit(comment.del, 'reason'), {del: {origin: cid}}),
-						{user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role}
-					];
-					if (iAm.isModerator && _.isNumber(canModerate)) {
-						histChilds[1].roleregion = canModerate;
-					}
-					commentModel.update({obj: obj._id, 'del.origin': cid}, {$set: {lastChanged: stamp}, $unset: {del: 1}, $push: {hist: {$each: histChilds}}}, {multi: true}, this.parallel());
-				}
-			},
-			function (err) {
-				if (err) {
-					return cb({message: err.message || 'Comment restore error', error: true});
-				}
-				var frags = obj.frags && obj.frags.toObject(),
-					userObj,
-					u, i;
-
-				if (frags) {
-					for (i = frags.length; i--;) {
-						if (commentsHash[frags[i].cid] !== undefined) {
-							obj.frags.id(frags[i]._id).del = undefined;
-						}
-					}
-				}
-
-				obj.ccount += countCommentsRestored;
-				obj.save(this.parallel());
-
-				for (u in hashUsers) {
-					if (hashUsers[u] !== undefined) {
-						userObj = _session.getOnline(null, u);
-						if (userObj !== undefined) {
-							userObj.user.ccount = userObj.user.ccount + hashUsers[u];
-							_session.saveEmitUser(userObj, null, this.parallel());
-						} else {
-							User.update({_id: u}, {$inc: {ccount: hashUsers[u]}}, this.parallel());
-						}
-					}
-				}
-			},
-			function (err) {
-				if (err) {
-					return cb({message: err.message || 'Object or user update error', error: true});
-				}
-				var frags,
-					frag,
-					i;
-
-				//Не отдаем фрагменты только не удаленных комментариев, для замены на клиенте
-				if (obj.frags) {
-					obj.frags = obj.frags.toObject();
-					frags = [];
-					for (i = 0; i < obj.frags.length; i++) {
-						frag = obj.frags[i];
-						if (!frag.del) {
-							frags.push(frag);
-						}
-					}
-				}
-
-				actionLogController.logIt(iAm.user, comment._id, actionLogController.OBJTYPES.COMMENT, actionLogController.TYPES.RESTORE, stamp, undefined, iAm.isModerator && _.isNumber(canModerate) ? canModerate : undefined, childsCids.length ? {childs: childsCids.length} : undefined);
-				cb({message: 'Ok', frags: frags, countComments: countCommentsRestored, myCountComments: ~~hashUsers[iAm.user._id], countUsers: Object.keys(hashUsers).length, stamp: stamp.getTime()});
+	return commentModel.findOneAsync({ cid: cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, hidden: 1, del: 1 }, { lean: true })
+		.bind({})
+		.then(function (comment) {
+			if (!comment) {
+				throw { message: msg.noCommentExists };
 			}
-		);
-	});
-}
+
+			this.comment = comment;
+
+			if (data.type === 'news') {
+				return News.findOneAsync({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 });
+			}
+
+			return photoController.findPhoto({ _id: comment.obj }, null, iAm);
+		})
+		.then(function (obj) {
+			if (!obj) {
+				throw { message: msg.noObject };
+			}
+			this.obj = obj;
+
+			// Нужны права модератора/администратора
+			this.canModerate = permissions.canModerate(data.type, obj, iAm);
+			if (!this.canModerate) {
+				throw { message: msg.deny };
+			}
+
+			// Находим все комментарии, дочерние восстанавливаемому, которые были удалены вместе с ним,
+			// т.е. у которых origin указывает на текущий
+			return commentModel.findAsync(
+				{ obj: obj._id, 'del.origin': cid },
+				{ _id: 0, obj: 0, stamp: 0, txt: 0, hist: 0 },
+				{ lean: true, sort: { stamp: 1 } }
+			);
+		})
+		.then(function (childs) {
+			var len = childs.length;
+			var promises = [];
+			var child;
+
+			stamp = new Date();
+
+			// Операции с корневым удаляемым комментарием
+			commentsHash[cid] = this.comment;
+			if (!this.comment.hidden) {
+				hashUsers[this.comment.user] = (hashUsers[this.comment.user] || 0) + 1;
+			}
+
+			childsCids = [];
+			countCommentsRestored += len;
+			// Обходим потомков восстанавливаемого комментария
+			for (var i = 0; i < len; i++) {
+				child = childs[i];
+				if (!child.hidden) {
+					hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
+				}
+				childsCids.push(child.cid);
+				commentsHash[child.cid] = child;
+			}
+
+			hist = [
+				_.assign(_.omit(this.comment.del, 'origin'), { del: { reason: this.comment.del.reason } }),
+				{ user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role }
+			];
+			if (iAm.isModerator && _.isNumber(this.canModerate)) {
+				hist[1].roleregion = this.canModerate;
+			}
+
+			promises.push(
+				commentModel.updateAsync({ cid: cid }, {
+					$set: { lastChanged: stamp },
+					$unset: { del: 1 },
+					$push: { hist: { $each: hist } }
+				})
+			);
+
+			if (childsCids.length) {
+				histChilds = [
+					_.assign(_.omit(this.comment.del, 'reason'), { del: { origin: cid } }),
+					{ user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role }
+				];
+
+				if (iAm.isModerator && _.isNumber(this.canModerate)) {
+					histChilds[1].roleregion = this.canModerate;
+				}
+
+				promises.push(
+					commentModel.updateAsync({ obj: this.obj._id, 'del.origin': cid }, {
+						$set: { lastChanged: stamp },
+						$unset: { del: 1 },
+						$push: { hist: { $each: histChilds } }
+					}, { multi: true })
+				);
+			}
+
+			return Bluebird.all(promises);
+		})
+		.then(function () {
+			var frags = this.obj.frags && this.obj.frags.toObject();
+			var promises = [];
+			var userObj;
+			var u;
+			var i;
+
+			if (frags) {
+				for (i = frags.length; i--;) {
+					if (commentsHash[frags[i].cid] !== undefined) {
+						this.obj.frags.id(frags[i]._id).del = undefined;
+					}
+				}
+			}
+
+			this.obj.ccount += countCommentsRestored;
+			promises.push(this.obj.saveAsync());
+
+			for (u in hashUsers) {
+				if (hashUsers[u] !== undefined) {
+					userObj = _session.getOnline(null, u);
+					if (userObj !== undefined) {
+						userObj.user.ccount = userObj.user.ccount + hashUsers[u];
+						promises.push(_session.saveEmitUser(userObj));
+					} else {
+						promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: hashUsers[u] } }));
+					}
+				}
+			}
+
+			return Bluebird.all(promises);
+		})
+		.then(function () {
+			var frags;
+			var frag;
+			var i;
+
+			//Не отдаем фрагменты только не удаленных комментариев, для замены на клиенте
+			if (this.obj.frags) {
+				this.obj.frags = this.obj.frags.toObject();
+				frags = [];
+
+				for (i = 0; i < this.obj.frags.length; i++) {
+					frag = this.obj.frags[i];
+					if (!frag.del) {
+						frags.push(frag);
+					}
+				}
+			}
+
+			actionLogController.logIt(
+				iAm.user,
+				this.comment._id,
+				actionLogController.OBJTYPES.COMMENT,
+				actionLogController.TYPES.RESTORE,
+				stamp,
+				undefined,
+				iAm.isModerator && _.isNumber(this.canModerate) ? this.canModerate : undefined,
+				childsCids.length ? { childs: childsCids.length } : undefined
+			);
+
+			return {
+				frags: frags,
+				countComments: countCommentsRestored,
+				myCountComments: ~~hashUsers[iAm.user._id],
+				countUsers: Object.keys(hashUsers).length,
+				stamp: stamp.getTime()
+			};
+		});
+});
 
 /**
  * Редактирует комментарий
@@ -1777,9 +1808,13 @@ module.exports.loadController = function (app, db, io) {
 				});
 		});
 		socket.on('restoreComment', function (data) {
-			restoreComment(socket, data, function (result) {
-				socket.emit('restoreCommentResult', result);
-			});
+			restoreComment(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('restoreCommentResult', resultData);
+				});
 		});
 
 		socket.on('setNoComments', function (data) {
