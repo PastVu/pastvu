@@ -903,7 +903,7 @@ var createComment = Bluebird.method(function (socket, data) {
 
 	// Find object and comment's parent
 	if (data.type === 'news') {
-		promises.push(News.findOneAsynv({ cid: cid }, { _id: 1, ccount: 1, nocomments: 1 }));
+		promises.push(News.findOneAsync({ cid: cid }, { _id: 1, ccount: 1, nocomments: 1 }));
 	} else {
 		promises.push(photoController.findPhoto({ cid: cid }, null, iAm));
 	}
