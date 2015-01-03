@@ -21,7 +21,7 @@ var _session = require('./_session.js'),
 
 	constants = require('./constants'),
 
-	weekMS = ms('7d'),
+	dayMS = ms('1d'),
 	commentMaxLength = 12e3,
 	msg = {
 		deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
@@ -47,7 +47,7 @@ var _session = require('./_session.js'),
 			return usObj.registered && (type === 'photo' && photoController.permissions.canModerate(obj, usObj) || type === 'news' && usObj.isAdmin);
 		},
 		canEdit: function (comment, obj, usObj) {
-			return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - weekMS);
+			return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
 		},
 		canReply: function (type, obj, usObj) {
 			return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s >= constants.photo.status.PUBLIC || type === 'news');
@@ -99,7 +99,7 @@ var commentsTreeBuildAnonym = Bluebird.method(function (comments, usersHash) {
 });
 
 var commentsTreeBuildAuth = Bluebird.method(function (myId, comments, previousViewStamp, canReply) {
-	var weekAgo = Date.now() - weekMS;
+	var dayAgo = Date.now() - dayMS;
 	var comment;
 	var commentParent;
 	var commentIsDeleted;
@@ -181,8 +181,8 @@ var commentsTreeBuildAuth = Bluebird.method(function (myId, comments, previousVi
 			countTotal++;
 			if (canReply) {
 				comment.can = {};
-				if (commentIsMine && comment.stamp > weekAgo) {
-					// Пользователь может удалить свой последний комментарий или редактировать свои в течении недели
+				if (commentIsMine && comment.stamp > dayAgo) {
+					// Пользователь может удалить свой последний комментарий или редактировать свои в течении суток
 					comment.can.edit = comment.can.del = true;
 				}
 			}
@@ -1424,54 +1424,62 @@ var restoreComment = Bluebird.method(function (socket, data) {
  * Редактирует комментарий
  * @param socket Сокет пользователя
  * @param data Объект
- * @param cb Коллбэк
  */
-function updateComment(socket, data, cb) {
+var updateComment = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
+
 	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
+		throw { message: msg.deny };
 	}
+
 	if (!_.isObject(data) || !data.obj || !Number(data.cid) || !data.txt) {
-		return cb({message: 'Bad params', error: true});
+		throw { message: msg.badParams };
 	}
+
 	if (data.txt.length > commentMaxLength) {
-		return cb({message: msg.maxLength, error: true});
+		throw { message: msg.maxLength };
 	}
-	var cid = Number(data.cid),
-		canEdit,
-		canModerate,
-		fragRecieved;
 
-	step(
-		function () {
-			if (data.type === 'news') {
-				News.findOne({cid: data.obj}, {cid: 1, frags: 1, nocomments: 1}, this.parallel());
-				CommentN.findOne({cid: cid}, this.parallel());
-			} else {
-				photoController.findPhoto({cid: data.obj}, null, iAm, this.parallel());
-				Comment.findOne({cid: cid}, this.parallel());
+	var cid = Number(data.cid);
+	var canEdit;
+	var canModerate;
+	var fragRecieved;
+	var promise;
+
+	if (data.type === 'news') {
+		promise = Bluebird.join(
+			News.findOneAsync({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }),
+			CommentN.findOneAsync({ cid: cid })
+		);
+	} else {
+		promise = Bluebird.join(
+			photoController.findPhoto({ cid: data.obj }, null, iAm),
+			Comment.findOneAsync({ cid: cid })
+		);
+	}
+
+	return promise
+		.spread(function (obj, comment) {
+			if (!comment || !obj || data.obj !== obj.cid) {
+				throw { message: msg.noCommentExists };
 			}
-		},
-		function (err, obj, comment) {
-			if (err || !comment || !obj || data.obj !== obj.cid) {
-				return cb({message: err && err.message || msg.noCommentExists, error: true});
-			}
 
-			var i,
-				hist = {user: iAm.user},
-				parsedResult,
-				content,
-				fragExists,
-				fragChangedType,
-				txtChanged;
+			var i;
+			var hist = { user: iAm.user };
+			var promises;
+			var parsedResult;
+			var content;
+			var fragExists;
+			var fragChangedType;
+			var txtChanged;
 
-			//Возможно редактировать как простой пользователь, если это собственный комментарий моложе недели
+			// Возможно редактировать как простой пользователь, если это собственный комментарий моложе суток
 			canEdit = permissions.canEdit(comment, obj, iAm);
 			if (!canEdit) {
-				//В противном случае нужны права модератора/администратора
+				// В противном случае нужны права модератора/администратора
 				canModerate = permissions.canModerate(data.type, obj, iAm);
 				if (!canModerate) {
-					return cb({message: obj.nocomments ? msg.noComments : msg.deny, error: true});
+					throw { message: obj.nocomments ? msg.noComments : msg.deny };
 				}
 			}
 			parsedResult = Utils.inputIncomingParse(data.txt);
@@ -1496,27 +1504,27 @@ function updateComment(socket, data, cb) {
 
 			if (fragRecieved) {
 				if (!fragExists) {
-					//Если фрагмент получен и его небыло раньше, просто вставляем полученный
+					// Если фрагмент получен и его небыло раньше, просто вставляем полученный
 					fragChangedType = 1;
 					comment.frag = true;
 					obj.frags.push(fragRecieved);
 				} else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
-					//Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
+					// Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
 					fragChangedType = 2;
 					obj.frags.pull(fragExists._id);
 					obj.frags.push(fragRecieved);
 				}
 			} else if (fragExists) {
-				//Если фрагмент не получен, но раньше он был, то просто удаляем старый
+				// Если фрагмент не получен, но раньше он был, то просто удаляем старый
 				fragChangedType = 3;
 				comment.frag = undefined;
 				obj.frags.pull(fragExists._id);
 			}
 
 			if (content !== comment.txt) {
-				//Записываем текущий текст(до смены) в объект истории
+				// Записываем текущий текст(до смены) в объект истории
 				hist.txt = comment.txt;
-				//Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
+				// Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
 				hist.txtd = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
 				txtChanged = true;
 			}
@@ -1525,33 +1533,35 @@ function updateComment(socket, data, cb) {
 				hist.frag = fragChangedType || undefined;
 
 				if (canModerate && iAm.user.role) {
-					//Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент изменения
+					// Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент изменения
 					hist.role = iAm.user.role;
 					if (iAm.isModerator && _.isNumber(canModerate)) {
-						hist.roleregion = canModerate; //В случае с модератором региона, permissions.canModerate возвращает cid роли,
+						hist.roleregion = canModerate; // В случае с модератором региона, permissions.canModerate возвращает cid роли,
 					}
 				}
 
 				comment.hist.push(hist);
 				comment.lastChanged = new Date();
-
 				comment.txt = content;
-				comment.save(this.parallel());
+
+				promises = [];
+				promises.push(comment.saveAsync());
 				if (fragChangedType) {
-					obj.save(this.parallel());
+					promises.push(obj.saveAsync());
 				}
-			} else {
-				this(null, comment);
+
+				return Bluebird.all(promises)
+					.spread(function (commentResult, objResult) {
+						return commentResult[0];
+					});
 			}
-		},
-		function (err, comment) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			cb({message: 'ok', comment: comment.toObject({transform: commentDeleteHist}), frag: fragRecieved});
-		}
-	);
-}
+
+			return comment;
+		})
+		.then(function (comment) {
+			return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };
+		});
+});
 function commentDeleteHist(doc, ret, options) {
 	delete ret.hist;
 }
@@ -1788,9 +1798,13 @@ module.exports.loadController = function (app, db, io) {
 				});
 		});
 		socket.on('updateComment', function (data) {
-			updateComment(socket, data, function (result) {
-				socket.emit('updateCommentResult', result);
-			});
+			updateComment(socket, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('updateCommentResult', resultData);
+				});
 		});
 		socket.on('giveCommentHist', function (data) {
 			giveCommentHist(data, function (result) {
