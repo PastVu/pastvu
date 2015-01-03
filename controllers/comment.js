@@ -1580,11 +1580,10 @@ function commentDeleteHist(doc, ret, options) {
  * оно будет установленно именно временем этого события
  * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
  * @param data Объект
- * @param cb Коллбэк
  */
-function giveCommentHist(data, cb) {
-	if (!Utils.isType('object', data) || !Number(data.cid)) {
-		return cb({message: 'Bad params', error: true});
+var giveCommentHist = Bluebird.method(function (data) {
+	if (!_.isObject(data) || !Number(data.cid)) {
+		throw { message: msg.badParams };
 	}
 	var commentModel;
 
@@ -1594,18 +1593,23 @@ function giveCommentHist(data, cb) {
 		commentModel = Comment;
 	}
 
-	commentModel.findOne({cid: Number(data.cid)}, {_id: 0, user: 1, txt: 1, txtd: 1, stamp: 1, hist: 1, del: 1}, {lean: true}).populate({path: 'user hist.user del.user', select: {_id: 0, login: 1, avatar: 1, disp: 1}}).exec(function (err, comment) {
-		if (err || !comment) {
-			return cb({message: err && err.message || msg.noCommentExists, error: true});
-		}
-		var i,
-			hist,
-			hists = comment.hist || [],
-			histDel,
-			lastTxtIndex = 0, // Позиция последнего изменение текста в стеке событий
-			lastTxtObj = {user: comment.user, stamp: comment.stamp}, // Первое событие изменения текста будет равнятся созданию комментария
-			result = [],
-			getregion = function (regionId) {
+	return commentModel.findOne({ cid: Number(data.cid) }, { _id: 0, user: 1, txt: 1, txtd: 1, stamp: 1, hist: 1, del: 1 }, { lean: true })
+		.populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
+		.execAsync()
+		.then(function (comment) {
+			if (!comment) {
+				throw { message: msg.noCommentExists };
+			}
+
+			var i;
+			var hist;
+			var hists = comment.hist || [];
+			var histDel;
+			var lastTxtIndex = 0; // Позиция последнего изменение текста в стеке событий
+			var lastTxtObj = { user: comment.user, stamp: comment.stamp }; // Первое событие изменения текста будет равнятся созданию комментария
+			var result = [];
+
+			var getregion = function (regionId) {
 				var result;
 				if (regionId) {
 					result = regionController.getRegionsHashFromCache([regionId])[regionId];
@@ -1617,60 +1621,61 @@ function giveCommentHist(data, cb) {
 			};
 
 
-		if (comment.del) {
-			hists.push({
-				user: comment.del.user,
-				stamp: comment.del.stamp,
-				del: _.pick(comment.del, 'reason', 'origin'),
-				role: comment.del.role,
-				roleregion: comment.del.roleregion
-			});
-		}
-
-		for (i = 0; i < hists.length; i++) {
-			hist = hists[i];
-			histDel = hist.del;
-
-			if (hist.role && hist.roleregion) {
-				hist.roleregion = getregion(hist.roleregion);
+			if (comment.del) {
+				hists.push({
+					user: comment.del.user,
+					stamp: comment.del.stamp,
+					del: _.pick(comment.del, 'reason', 'origin'),
+					role: comment.del.role,
+					roleregion: comment.del.roleregion
+				});
 			}
 
-			if (histDel || hist.restore) {
-				if (histDel && histDel.reason && histDel.reason.cid) {
-					histDel.reason.title = reasonController.giveReasonTitle({ cid: histDel.reason.cid });
+			for (i = 0; i < hists.length; i++) {
+				hist = hists[i];
+				histDel = hist.del;
+
+				if (hist.role && hist.roleregion) {
+					hist.roleregion = getregion(hist.roleregion);
 				}
-				result.push(hist);
-			} else {
-				if (hist.txt) {
-					//Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
-					lastTxtObj.txt = hist.txt;
+
+				if (histDel || hist.restore) {
+					if (histDel && histDel.reason && histDel.reason.cid) {
+						histDel.reason.title = reasonController.giveReasonTitle({ cid: histDel.reason.cid });
+					}
+					result.push(hist);
+				} else {
+					if (hist.txt) {
+						// Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
+						lastTxtObj.txt = hist.txt;
+						if (!lastTxtObj.frag) {
+							// Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
+							result.splice(lastTxtIndex, 0, lastTxtObj);
+						}
+						// Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
+						delete hist.txt;
+						lastTxtIndex = result.length;
+						lastTxtObj = hist;
+					}
+					// Если в записи есть изменение фрагмента, то вставляем её
+					if (hist.frag) {
+						result.push(hist);
+					}
+				}
+
+				// Если это последняя запись (в случае текущего состояние удаления - предпоследняя) в истории и ранее была смена текста,
+				// то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
+				if (i === hists.length - 1 && lastTxtIndex > 0) {
+					lastTxtObj.txt = comment.txt;
 					if (!lastTxtObj.frag) {
-						//Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
 						result.splice(lastTxtIndex, 0, lastTxtObj);
 					}
-					//Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
-					delete hist.txt;
-					lastTxtIndex = result.length;
-					lastTxtObj = hist;
-				}
-				//Если в записи есть изменение фрагмента, то вставляем её
-				if (hist.frag) {
-					result.push(hist);
 				}
 			}
-			//Если это последняя запись (в случае текущего состояние удаления - предпоследняя) в истории и ранее была смена текста,
-			//то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
-			if (i === hists.length - 1 && lastTxtIndex > 0) {
-				lastTxtObj.txt = comment.txt;
-				if (!lastTxtObj.frag) {
-					result.splice(lastTxtIndex, 0, lastTxtObj);
-				}
-			}
-		}
 
-		cb({hists: result});
-	});
-}
+			return { hists: result };
+		});
+});
 
 /**
  * Переключает возможность комментирования объекта
@@ -1807,9 +1812,13 @@ module.exports.loadController = function (app, db, io) {
 				});
 		});
 		socket.on('giveCommentHist', function (data) {
-			giveCommentHist(data, function (result) {
-				socket.emit('takeCommentHist', result);
-			});
+			giveCommentHist(data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takeCommentHist', resultData);
+				});
 		});
 
 		socket.on('removeComment', function (data) {
