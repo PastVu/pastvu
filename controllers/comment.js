@@ -1044,12 +1044,11 @@ var removeComment = Bluebird.method(function (socket, data) {
 			if (!comment) {
 				throw { message: msg.noCommentExists };
 			}
+			this.comment = comment;
 
 			if (data.type === 'news') {
 				return News.findOneAsync({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 });
 			}
-
-			this.comment = comment;
 
 			return photoController.findPhoto({ _id: comment.obj }, null, iAm);
 		})
