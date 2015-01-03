@@ -727,7 +727,7 @@ var getCommentsUser = Bluebird.method(function (data) {
 			}
 
 			// Для каждого комментария проверяем существование публичной фотографии и присваиваем ему cid фотографии
-			for (i = photos.length; i--;) {
+			for (i = this.comments.length; i--;) {
 				comment = this.comments[i];
 				if (photoFormattedHashId[comment.obj] !== undefined) {
 					comment.obj = photoFormattedHashId[comment.obj].cid;
