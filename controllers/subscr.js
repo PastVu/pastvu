@@ -622,6 +622,7 @@ module.exports.loadController = function (app, db, io) {
         socket.on('giveUserSubscr', function (data) {
             getUserSubscr(hs.usObj, data)
                 .catch(function (err) {
+                    logger.error(err);
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {

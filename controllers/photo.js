@@ -10,6 +10,7 @@ var _session = require('./_session.js'),
 	Comment,
 	Counter,
 	UserObjectRel,
+	reasonController = require('./reason.js'),
 	regionController = require('./region.js'),
 	PhotoCluster = require('./photoCluster.js'),
 	PhotoConverter = require('./photoConverter.js'),
@@ -166,19 +167,19 @@ var _session = require('./_session.js'),
  * @param query
  * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
  * @param usObj Объект пользователя
- * @callback [cb]
  */
-function findPhoto(query, fieldSelect, usObj, cb) {
+function findPhoto(query, fieldSelect, usObj) {
 	if (!usObj.registered) {
 		query.s = status.PUBLIC; // Анонимам ищем только публичные
 	}
+
 	return Photo.findOneAsync(query, fieldSelect).then(function (photo) {
 		if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
 			throw { message: msg.noPhoto };
 		}
 
 		return photo;
-	}).nodeify(cb);
+	});
 }
 
 var core = {
@@ -615,7 +616,7 @@ function getPhotoSnaphotFields(oldPhoto, newPhoto) {
         var oldValue = oldPhoto[field];
 
         if (!_.isEqual(oldValue, newPhoto[field])) {
-            result[field] = oldValue;
+            result[field] = oldValue || '';
         }
 
         return result;
@@ -1137,10 +1138,10 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
 		// Для подсчета новых комментариев нужны _id, а для проверки на изменение - ucdate
 		fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
-		return Bluebird.all([
+		return Bluebird.join(
 			Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
 			Photo.countAsync(query)
-		])
+		)
 			.bind({})
 			.spread(function (photos, count) {
 				this.count = count;
@@ -1978,6 +1979,153 @@ var planResetDisplayStat = (function () {
 	};
 }());
 
+/**
+ * Возвращает историю редактирования объекта (фотографии)
+ * В базе история хранится по строкам. В одной строке содержится одно событие.
+ * Такое событие может содержать 2 паказателя: изменение текста и(или) фрагмента.
+ * Причем в это событие текст комментария сохраняется старый, т.е.
+ * писался он в комментарий в другое время (во время другого события),
+ * а флаг изменения фрагмента относится именно к этому событию.
+ * Следовательно одна строка содержит события 2-х разных времен.
+ * Для представления этого в более нормальном по временной шкале виде
+ * необходимо изменение текста переносить во времена события предыдущего изменения текста, а
+ * текущие событие отражать только если в нём есть изменение фрагмента или в будущем будет изменение текста и
+ * оно будет установленно именно временем этого события
+ * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
+ * @param data Объект
+ */
+var diffFileds = { title: 1, desc: 1, source: 1, author: 1, address: 1 };
+var diffFiledsArr = Object.keys(diffFileds);
+var getHistoryRegion = function (regionId) {
+	var result;
+	if (regionId) {
+		result = regionController.getRegionsHashFromCache([regionId])[regionId];
+		if (result) {
+			result = _.omit(result, '_id', 'parents');
+		}
+	}
+	return result;
+};
+var giveObjHist = Bluebird.method(function (iAm, data) {
+	if (!_.isObject(data) || !Number(data.cid)) {
+		throw { message: msg.badParams };
+	}
+
+	var cid = Number(data.cid);
+
+	return findPhoto({cid: cid}, null, iAm)
+		.bind({})
+		.then(function (photo) {
+			this.photo = photo.toObject();
+
+			return Bluebird.join(
+				User.findOneAsync({ _id: photo.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, { lean: true }),
+				PhotoHistory.find({ cid: cid }, { _id: 0, cid: 0 }, { lean: true, sort: { stamp: 1 } })
+					.populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
+					.execAsync()
+			);
+		})
+		.spread(function (photoUser, hists) {
+			if (_.isEmpty(hists)) {
+				throw { message: 'No history' };
+			}
+
+			var photo = this.photo;
+			// Позиция последнего изменение поля в стеке событий
+			var lastFieldsIndexes = snaphotFields.reduce(function (result, field) {
+				result[field] = 0;
+				return result;
+			}, {});
+			var snapshot;
+			var snapshotFieldValue;
+			var snapshotFieldLastIndex = 0;
+			var result = [];
+			var resultRow;
+			var reason;
+			var field;
+			var hist;
+			var i;
+
+			result.push({ user: photoUser, stamp: photo.ldate.getTime(), values: {}, add: [], del: [] });
+
+			for (i = 0; i < hists.length; i++) {
+				hist = hists[i];
+
+				snapshot = hist.snapshot;
+
+				if (_.isEmpty(snapshot) || !hist.user || !hist.stamp) {
+					logger.warn('Object %d has corrupted history entry', cid);
+					continue;
+				}
+
+				resultRow = { user: hist.user, stamp: hist.stamp.getTime(), values: {}, add: [], del: [] };
+
+				for (field in snapshot) {
+					snapshotFieldLastIndex = lastFieldsIndexes[field];
+					if (snapshotFieldLastIndex !== undefined) {
+						snapshotFieldValue = snapshot[field];
+
+						if (!snapshotFieldValue && field !== 's') {
+							// Если в snapshot пустое значение поля, значит оно было таким,
+							// а в этой записи значение целиком добавили, ставим флаг добавления
+							resultRow.add.push(field);
+							// А в предыдущей записи изменения этого поля надо поставить флаг удаления
+							result[snapshotFieldLastIndex].del.push(field);
+						} else {
+							result[snapshotFieldLastIndex].values[field] = snapshotFieldValue;
+						}
+
+						lastFieldsIndexes[field] = result.length;
+					}
+				}
+
+				reason = hist.reason;
+				if (!_.isEmpty(reason)) {
+					reason.title = reasonController.giveReasonTitle({ cid: reason.cid });
+					resultRow.reason = reason;
+				}
+
+				if (hist.role && hist.roleregion) {
+					resultRow.role = hist.role;
+					resultRow.roleregion = getHistoryRegion(hist.roleregion);
+				}
+
+				result.push(resultRow);
+			}
+
+			// Бежим по всем полям, которые изменялись в истории и последней записи изменения ставим текущие значения этих полей
+			for (field in lastFieldsIndexes) {
+				if (lastFieldsIndexes[field] > 0) {
+					snapshotFieldValue = photo[field];
+
+					if (!snapshotFieldValue && field !== 's') {
+						// Если в текущей версии объекта нет значения поля,
+						// значит нужно проставить флаг удаления записи о последнем изменении
+						result[lastFieldsIndexes[field]].del.push(field);
+					} else {
+						result[lastFieldsIndexes[field]].values[field] = snapshotFieldValue;
+					}
+				}
+			}
+
+			// Очищаем некоторые поля, если их значения пусты
+			for (i = result.length; i--;) {
+				resultRow = result[i];
+				if (!Object.keys(resultRow.values).length) {
+					delete resultRow.values;
+				}
+				if (!resultRow.add.length) {
+					delete resultRow.add;
+				}
+				if (!resultRow.del.length) {
+					delete resultRow.del;
+				}
+			}
+
+			return { hists: result };
+		});
+});
+
 
 module.exports.loadController = function (app, db, io) {
 	logger = log4js.getLogger("photo.js");
@@ -2195,6 +2343,26 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('savePhotoResult', resultData);
 				});
 		});
+
+		socket.on('giveObjHist', function (data) {
+			giveObjHist(hs.usObj, data)
+				.catch(function (err) {
+					return { message: err.message, error: true };
+				})
+				.then(function (resultData) {
+					socket.emit('takeObjHist', resultData);
+				});
+		});
+		var util = require('util');
+		setTimeout(function () {
+			giveObjHist(hs.usObj, {cid: 289983})
+				.catch(function (err) {
+					console.error(err);
+				})
+				.then(function (resultData) {
+					console.log(util.inspect(resultData, { depth: null, colors: true }));
+				});
+		}, 1500);
 
 		socket.on('getBounds', function (data) {
 			getBounds(data, function (resultData) {
