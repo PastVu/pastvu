@@ -396,6 +396,13 @@ body {
 .diffDel {
 	background-color: #F5BFBF;
 	text-decoration: line-through;
+
+	a {
+		text-decoration: line-through !important;
+		&:hover {
+			text-decoration: line-through !important;
+		}
+	}
 }
 //Стиль неизменившегося текста в отображении разницы двух текстов
 .diffEq {

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/*global gc:true*/
 'use strict';
 
 var express = require('express'),
@@ -20,6 +19,7 @@ var express = require('express'),
 	ms = require('ms'), // Tiny milisecond conversion utility
 	Utils,
 
+	constants = require('./controllers/constants.js'),
 	app, io, db,
 	startStamp,
 	CoreServer,
@@ -27,7 +27,7 @@ var express = require('express'),
 	httpServer;
 
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
-global.appVar.maxRegionLevel = 5; //6 уровней регионов: 0..5
+global.appVar.maxRegionLevel = constants.region.maxLevel;
 
 /**
  * Включаем "наши" расширения js

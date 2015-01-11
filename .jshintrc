@@ -22,7 +22,8 @@
 		"require",
 		"define",
 		"init",
-		"ga"
+		"ga",
+	  	"gc"
 	],
 
 	// Development.

@@ -24,52 +24,52 @@ define([
 		arr.splice(indexToPush, +!!moduleName, promise);
 	}
 
-	function createModal(modal) {
-		if (!tplModal) {
-			tplModal = doT.template(dotModal);
-		}
-		var $modal = $(tplModal(modal)),
-			$btns,
-			btn,
-			i,
-			btnClickClosure = function (b) {
-				return function (evt) {
-					evt.stopPropagation();
-					b.click.call(b.ctx, $(this), evt);
-				};
-			};
+    function createModal(modal) {
+        if (!tplModal) {
+            tplModal = doT.template(dotModal);
+        }
+        var $modal = $(tplModal(modal));
+        var $btns;
+        var btn;
+        var i;
+        var btnClickClosure = function (b) {
+            return function (evt) {
+                evt.stopPropagation();
+                b.click.call(b.ctx, $(this), evt);
+            };
+        };
 
-		if (modal.btns) {
-			$btns = $('.neoModalFoot > .btn', $modal);
-			for (i = 0; i < modal.btns.length; i++) {
-				btn = modal.btns[i];
-				$($btns[i]).on('click', btnClickClosure(btn));
-			}
-		}
-		if (modal.offIcon && modal.offIcon.click) {
-			$('.off', $modal).on('click', function (evt) {
-				evt.stopPropagation();
-				modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
-			});
-		}
-		if (modal.curtainClick) {
-			$modal
-				.on('click', function (evt) {
-					if(!$(evt.target).closest('a').length){
-						//Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
-						evt.stopPropagation();
-						modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
-					}
-				})
-				.find('.neoModal').on('click', function (evt) {
-					if(!$(evt.target).closest('a').length){
-						//Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
-						evt.stopPropagation();
-					}
-				});
-		}
-		return $modal.appendTo('body');
-	}
+        if (modal.btns) {
+            $btns = $('.neoModalFoot > .btn', $modal);
+            for (i = 0; i < modal.btns.length; i++) {
+                btn = modal.btns[i];
+                $($btns[i]).on('click', btnClickClosure(btn));
+            }
+        }
+        if (modal.offIcon && modal.offIcon.click) {
+            $('.off', $modal).on('click', function (evt) {
+                evt.stopPropagation();
+                modal.offIcon.click.call(modal.offIcon.ctx, $(this), evt);
+            });
+        }
+        if (modal.curtainClick) {
+            $modal
+                .on('click', function (evt) {
+                    if (!$(evt.target).closest('a').length) {
+                        //Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+                        evt.stopPropagation();
+                        modal.curtainClick.click.call(modal.curtainClick.ctx, $(this), evt);
+                    }
+                })
+                .find('.neoModal').on('click', function (evt) {
+                    if (!$(evt.target).closest('a').length) {
+                        //Блокируем всплытие события, только если это не ahref, т.к. в этом случае должен сработать обработчик ссылок RoutManager на document
+                        evt.stopPropagation();
+                    }
+                });
+        }
+        return $modal.appendTo('body');
+    }
 
 	return function render(modules, options) {
 		var replacedContainers = {},

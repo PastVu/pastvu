@@ -1,7 +1,10 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, statuses, jade) {
+define(
+	['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'],
+	function (_, _s, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, fields, statuses, jade) {
+
 	'use strict';
 
 	var $window = $(window);
@@ -169,6 +172,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.nearestRibbonOrigin = [];
 
 			this.rnks = ko.observable(''); //Звания пользователя в виде готового шаблона
+			this.fields = fields;
 
 			this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
 			this.exeregion = ko.observable(false); //Указывает, что сейчас идет запрос региона по координате
@@ -191,6 +195,8 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			this.IOwner = this.co.IOwner = ko.computed(function () {
 				return this.auth.iAm.login() === this.p.user.login();
 			}, this);
+
+			this.fDateIn = Utils.format.date.relativeIn;
 
 			this.edit = ko.observable(undefined);
 
@@ -754,7 +760,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 					],
 					{
 						parent: this,
-						level: this.level + 3 //Чтобы не удалился модуль комментариев
+						level: this.level + 3 //Чтобы не удалился модуль карты
 					}
 				);
 			}
@@ -863,7 +869,7 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 				}],
 				{
 					parent: this,
-					level: this.level + 1
+					level: this.level + 3
 				}
 			);
 
@@ -872,6 +878,45 @@ define(['underscore', 'underscore.string', 'Utils', 'socket!', 'Params', 'knocko
 			if (this.reasonVM) {
 				this.reasonVM.destroy();
 				delete this.reasonVM;
+			}
+		},
+
+		showHistory: function () {
+			var self = this;
+			var cid = self.p.cid();
+
+			if (!self.histVM) {
+				renderer(
+					[{
+						module: 'm/photo/hist',
+						options: { cid: cid },
+						modal: {
+							topic: 'История изменений фотографии',
+							initWidth: '1000px',
+							maxWidthRatio: 0.9,
+							animateScale: true,
+							curtainClick: { click: self.closeHistory, ctx: self },
+							offIcon: { text: 'Закрыть', click: self.closeHistory, ctx: self },
+							btns: [
+								{ css: 'btn-primary', text: 'Закрыть', click: self.closeHistory, ctx: self }
+							]
+						},
+						callback: function (vm) {
+							self.histVM = self.childModules[vm.id] = vm;
+							ga('send', 'event', 'photo', 'history');
+						}
+					}],
+					{
+						parent: self,
+						level: self.level + 3
+					}
+				);
+			}
+		},
+		closeHistory: function () {
+			if (this.histVM) {
+				this.histVM.destroy();
+				delete this.histVM;
 			}
 		},
 

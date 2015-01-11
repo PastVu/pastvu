@@ -32,7 +32,9 @@ var _session = require('./_session.js'),
 	publicDir = global.appVar.storePath + 'public/photos/',
 	imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
 
-	maxRegionLevel = global.appVar.maxRegionLevel,
+	constants = require('./constants.js'),
+
+	maxRegionLevel = constants.region.maxLevel,
 
 	msg = {
 		deny: 'У вас нет прав на это действие',
@@ -46,9 +48,9 @@ var _session = require('./_session.js'),
 		mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
 	},
 
-	constants = require('./constants.js'),
 	status = constants.photo.status,
 	snaphotFields = constants.photo.snaphotFields,
+	snapshotFieldsDiff = constants.photo.snapshotFieldsDiff,
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
@@ -234,8 +236,8 @@ var core = {
 				}
 
 				var userObj = _session.getOnline(null, photo.user);
-				var regionFields = { _id: 0, cid: 1, title_en: 1, title_local: 1 };
 				var promiseProps = {};
+				var regionFields;
 
 				if (userObj) {
 					photo = photo.toObject();
@@ -260,13 +262,13 @@ var core = {
 					});
 				}
 
-				// Если у фото нет координаты, берем домашнее положение региона
-				if (!photo.geo) {
-					regionFields.center = 1;
-					regionFields.bbox = 1;
-					regionFields.bboxhome = 1;
+				if (photo.geo) {
+					regionFields = ['cid', 'title_local'];
+				} else {
+					// Если у фото нет координаты, дополнительно берем домашнее положение региона и выбираем их из базы
+					regionFields = { _id: 0, cid: 1, title_local: 1, center: 1, bbox: 1, bboxhome: 1 };
 				}
-				promiseProps.regions = regionController.getObjRegionList(photo, regionFields);
+				promiseProps.regions = regionController.getObjRegionList(photo, regionFields, !photo.geo);
 
 				return Bluebird.props(promiseProps);
 			})
@@ -612,15 +614,34 @@ function photoFromMap(photo) {
 }
 
 function getPhotoSnaphotFields(oldPhoto, newPhoto) {
-    return snaphotFields.reduce(function (result, field) {
+	var result = {};
+	var region;
+
+	// Если хотя бы один регион изменился, записываем весь массив текущих регионов
+	for (var i = 0; i <= maxRegionLevel; i++) {
+		if (oldPhoto['r' + i] !== newPhoto['r' + i]) {
+			result.regions = [];
+			for (i = 0; i <= maxRegionLevel; i++) {
+				region = oldPhoto['r' + i];
+				if (region) {
+					result.regions.push(region);
+				} else {
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+    snaphotFields.forEach(function (field) {
         var oldValue = oldPhoto[field];
 
         if (!_.isEqual(oldValue, newPhoto[field])) {
-            result[field] = oldValue || '';
+			result[field] = oldValue || '';
         }
+    });
 
-        return result;
-    }, {});
+	return result;
 }
 
 var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason) {
@@ -648,7 +669,7 @@ var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 			}
 		}
 
-		if (!_.isBoolean(canModerate)) {
+		if (canModerate === undefined || canModerate === null) {
 			// При проверке стоит смотреть на oldPhotoObj, так как права проверяются перед сохраннением
 			canModerate = permissions.canModerate(oldPhotoObj, iAm);
 		}
@@ -1996,16 +2017,6 @@ var planResetDisplayStat = (function () {
  */
 var diffFileds = { title: 1, desc: 1, source: 1, author: 1, address: 1 };
 var diffFiledsArr = Object.keys(diffFileds);
-var getHistoryRegion = function (regionId) {
-	var result;
-	if (regionId) {
-		result = regionController.getRegionsHashFromCache([regionId])[regionId];
-		if (result) {
-			result = _.omit(result, '_id', 'parents');
-		}
-	}
-	return result;
-};
 var giveObjHist = Bluebird.method(function (iAm, data) {
 	if (!_.isObject(data) || !Number(data.cid)) {
 		throw { message: msg.badParams };
@@ -2039,12 +2050,17 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			var snapshot;
 			var snapshotFieldValue;
 			var snapshotFieldLastIndex = 0;
+			var regions = {};
 			var result = [];
 			var resultRow;
 			var reason;
 			var field;
 			var hist;
 			var i;
+			var j;
+
+			// Добавляем в поля поле массива регионов
+			lastFieldsIndexes.regions = 0;
 
 			result.push({ user: photoUser, stamp: photo.ldate.getTime(), values: {}, add: [], del: [] });
 
@@ -2070,9 +2086,20 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 							// а в этой записи значение целиком добавили, ставим флаг добавления
 							resultRow.add.push(field);
 							// А в предыдущей записи изменения этого поля надо поставить флаг удаления
-							result[snapshotFieldLastIndex].del.push(field);
+							if (snapshotFieldLastIndex > 0) {
+								result[snapshotFieldLastIndex].del.push(field);
+							}
 						} else {
-							result[snapshotFieldLastIndex].values[field] = snapshotFieldValue;
+							result[snapshotFieldLastIndex].values[field] = {
+								val: snapshotFieldValue
+							};
+
+							// Если это изменение регионов, одбавляем каждый из них в хэш
+							if (field === 'regions') {
+								for (j = snapshotFieldValue.length; j--;) {
+									regions[snapshotFieldValue[j]] = 1;
+								}
+							}
 						}
 
 						lastFieldsIndexes[field] = result.length;
@@ -2087,10 +2114,20 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 
 				if (hist.role && hist.roleregion) {
 					resultRow.role = hist.role;
-					resultRow.roleregion = getHistoryRegion(hist.roleregion);
+					resultRow.roleregion = hist.roleregion;
+					regions[resultRow.roleregion] = 1;
 				}
 
 				result.push(resultRow);
+			}
+
+			// Если изменялись регионы, то сформировать массив для текущей версии фотографии
+			if (lastFieldsIndexes.regions > 0) {
+				photo.regions = regionController.getObjRegionCids(photo);
+
+				for (j = photo.regions.length; j--;) {
+					regions[photo.regions[j]] = 1;
+				}
 			}
 
 			// Бежим по всем полям, которые изменялись в истории и последней записи изменения ставим текущие значения этих полей
@@ -2103,7 +2140,9 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 						// значит нужно проставить флаг удаления записи о последнем изменении
 						result[lastFieldsIndexes[field]].del.push(field);
 					} else {
-						result[lastFieldsIndexes[field]].values[field] = snapshotFieldValue;
+						result[lastFieldsIndexes[field]].values[field] = {
+							val: snapshotFieldValue
+						};
 					}
 				}
 			}
@@ -2111,18 +2150,29 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			// Очищаем некоторые поля, если их значения пусты
 			for (i = result.length; i--;) {
 				resultRow = result[i];
+
 				if (!Object.keys(resultRow.values).length) {
 					delete resultRow.values;
+				} else if (resultRow.add.length) {
+					for (j = resultRow.add.length; j--;) {
+						resultRow.values[resultRow.add[j]].add = true;
+					}
 				}
-				if (!resultRow.add.length) {
-					delete resultRow.add;
-				}
+				delete resultRow.add;
+
 				if (!resultRow.del.length) {
 					delete resultRow.del;
 				}
 			}
 
-			return { hists: result };
+			result = { hists: result };
+
+			// Если есть регионы, запрашиваем их объекты
+			if (Object.keys(regions).length) {
+				result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+			}
+
+			return result;
 		});
 });
 

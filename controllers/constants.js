@@ -1,5 +1,9 @@
 module.exports = {
 
+    region: {
+        maxLevel: 5 // 6 уровней регионов: 0..5
+    },
+
     photo: {
         status: {
             NEW: 0, // Новое
@@ -13,9 +17,13 @@ module.exports = {
         },
 
         snaphotFields: [
-            's', 'geo', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5',
+            's', 'geo',
             'file', 'type', 'format', 'sign', 'size', 'w', 'h', 'ws', 'hs',
-            'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author', 'nocomments'
+            'title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'y', 'dir',
+            'nocomments'
+        ],
+        snapshotFieldsDiff: [
+            'title', 'desc', 'source', 'author', 'address', 'y'
         ]
     }
 };

@@ -1,0 +1,63 @@
+.objHist(data-bind="with: repository[M!M]")
+    .diffSwitch(data-bind="text: showdiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    .hist
+
+    | <script id="dotRegions" type="text/x-dot-template">
+    | {{~it :region:index}}
+    | {{?index}}, {{?}}
+    .region: a(target="_blank", href="{{='/ps?f=r!'+region.cid}}") {{=region.title_local}}
+    | {{~}}
+    | </script>
+
+    | <script id="dotRegionsDiff" type="text/x-dot-template">
+    span.regions
+        | {{?it.base}}{{=it.base}},{{?}}
+        | {{?it.del}}&#32;
+        span.diffDel {{=it.del}}
+        | {{?}}
+        | {{?it.add}}&#32;
+        span.diffIns {{=it.add}}
+        | {{?}}
+    | </script>
+
+    | <script id="dothist" type="text/x-dot-template">
+    ul.media-list
+        | {{~it.hists :h:index}}
+        li.media.hist
+            a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
+                img.media-object(src="{{=h.user.avatar}}")
+            .media-body
+                .histHead
+                    a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
+                    ='{{?h.role}} '
+                    .role
+                        | {{?h.role===5}}как модератор
+                        | {{?h.roleregion}} региона&nbsp;
+                        a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
+                        | {{??h.role>9}}как администратор{{?}}
+                    | {{?}}
+                    .dotDelimeter ·
+                    .histStamp {{=it.fDate(new Date(h.stamp))}}
+
+                | {{?h.del}}
+                .info.red.iconed
+                    span.glyphicon.glyphicon-minus
+                    | Удален{{?h.del.length>1}}ы поля:{{??}}о поле{{?}}
+                    | {{~h.del :del:delIndex}}
+                    | {{?delIndex}},{{?}}&#32;
+                    span.del {{=it.fields[del]}}
+                    | {{~}}
+                | {{?}}
+
+                | {{~h.txtValues :value}}
+                .value(class="{{?index}}iconed{{?}}")
+                    .name(class="{{?value.add}}green{{??index}}orange{{?}}")
+                        | {{?index}}
+                        span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
+                        | {{?}}
+                        | {{=it.fields[value.field]}}:
+                    |  {{=value.txt}}
+                | {{~}}
+
+        | {{~}}
+    | </script>

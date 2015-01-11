@@ -1,0 +1,118 @@
+@import "../_vars.less";
+@import "../bs/variables.less";
+@import "../bs/mixins.less";
+
+.objHist {
+    padding: 8px 0;
+
+    .hist {
+        position: relative;
+        display: block;
+        margin: 5px 0 9px 0;
+
+        .pull-left {
+            padding: 2px 0 3px 0;
+        }
+        .media-object {
+            width: 50px;
+            height: 50px;
+        }
+        .histHead {
+            margin-bottom: 4px;
+            line-height: 14px;
+        }
+        .author {
+            display: inline-block;
+            cursor: pointer;
+        }
+        .role {
+            display: inline-block;
+            font-size: @font-size-mini;
+            color: #888;
+            cursor: default;
+        }
+        .histStamp {
+            display: inline-block;
+            font-size: @font-size-mini;
+            color: #888;
+            cursor: default;
+        }
+
+
+        .histCat {
+            display: inline;
+            font-weight: bold;
+        }
+        .histDel {
+            max-width: 1000px;
+            color: @text-color;
+        }
+    }
+
+
+    .info, .diffSwitch {
+        display: inline-block;
+        margin-bottom: 2px;
+        color: @gray;
+        font-size: @font-size-small;
+        line-height: 16px;
+        border-color: @gray;
+    }
+    .info {
+        margin-right: 7px;
+        padding-left: 3px;
+        border-style: solid;
+        border-width: 0 0 1px 1px;
+    }
+    .diffSwitch {
+        margin-left: -2px;
+        cursor: pointer;
+        border-style: dotted;
+        border-width: 0 0 1px 0;
+
+        &:hover {
+            color: @MainBlueColor;
+            border-color: @MainBlueColor;
+        }
+    }
+
+    .del {
+        color: desaturate(@MainRedColor, 30%);
+        font-style: italic;
+    }
+
+    .regions > .diffDel, .regions > .diffIns, .region {
+        display: inline-block;
+    }
+
+    .value {
+        max-width: 1000px;
+
+        color: @text-color;
+        line-height: 18px;
+
+        > .name {
+            display: inline-block;
+        }
+    }
+
+    .iconed {
+        padding-left: 1.6em;
+
+        .glyphicon {
+            margin-left: -1.3em;
+            margin-right: 0.3em;
+        }
+    }
+
+    .red {
+        color: @MainRedColor;
+    }
+    .green {
+        color: @MainGreenColor;
+    }
+    .orange {
+        color: #D89444;
+    }
+
+}

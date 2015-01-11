@@ -8,6 +8,7 @@ var _session = require('./_session.js'),
 	Comment,
 	Counter,
 	dbNative,
+	dbEval,
 	_ = require('lodash'),
 	step = require('step'),
 	Bluebird = require('bluebird'),
@@ -24,7 +25,8 @@ var _session = require('./_session.js'),
 
 	DEFAULT_REGION,
 
-	maxRegionLevel = global.appVar.maxRegionLevel,
+	constants = require('./constants.js'),
+	maxRegionLevel = constants.region.maxLevel,
 	regionsAllSelectHash = Object.create(null),
 
 	regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
@@ -135,6 +137,87 @@ function fillRegionsHash(hash, fileds) {
 	}
 	return hash;
 }
+
+
+/**
+ * Возвращает список регионов по массиву cid в том же порядке, что и переданный массив
+ * @param cidArr Массив номеров регионов
+ * @param [cb]
+ */
+var getOrderedRegionList = (function () {
+	var defFields = { _id: 0, geo: 0, __v: 0 };
+
+	return function (cidArr, fields, cb) {
+		if (_.isEmpty(cidArr)) {
+			return [];
+		}
+
+		return Region.findAsync({ cid: { $in: cidArr } }, fields || defFields, { lean: true })
+			.then(function (regions) {
+				var parentsSortedArr = [],
+					parent,
+					i = cidArr.length,
+					parentfind = function (parent) {
+						return parent.cid === cidArr[i];
+					};
+
+				if (cidArr.length === regions.length) {
+					//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
+					while (i--) {
+						parent = _.find(regions, parentfind);
+						if (parent) {
+							parentsSortedArr.unshift(parent);
+						}
+					}
+				}
+				return parentsSortedArr;
+			})
+			.nodeify(cb);
+	};
+}());
+
+/**
+ * Возвращает массив cid регионов объекта
+ * @param obj Объект (фото, комментарий и т.д.)
+ */
+function getObjRegionCids(obj) {
+	var result = [];
+	var rcid;
+
+	for (i = 0; i <= maxRegionLevel; i++) {
+		rcid = obj['r' + i];
+		if (rcid) {
+			result.push(rcid);
+		}
+	}
+
+	return result;
+}
+
+/**
+ * Возвращает спопулированный массив регионов для заданного объекта
+ * @param obj Объект (фото, комментарий и т.д.)
+ * @param fields Выбранные поля регионов. Массив, а в случае fromDb - объект
+ * @param [fromDb] Выбирать ли из базы (не все поля есть в кеше)
+ */
+function getObjRegionList(obj, fields, fromDb) {
+	if (fromDb) {
+		return getOrderedRegionList(getObjRegionCids(obj), fields);
+	}
+
+	var cidArr = [];
+	var rcid;
+
+	for (var i = 0; i <= maxRegionLevel; i++) {
+		rcid = obj['r' + i];
+		if (rcid) {
+			cidArr.push(fields ? _.pick(regionCacheHash[rcid], fields) : regionCacheHash[rcid]);
+		}
+	}
+
+	return cidArr;
+}
+
 
 //Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
 //Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
@@ -337,45 +420,44 @@ function calcRegionIncludes(cidOrRegion, cb) {
  * Пересчет входящих объектов в переданный список регионов. Если список пуст - пересчет всех регионов
  * @param iAm
  * @param cids Массив cid регионов
- * @param cb
  */
-function calcRegionsIncludes(iAm, cids, cb) {
+var calcRegionsIncludes = Bluebird.method(function (iAm, cids) {
 	if (!iAm.isAdmin) {
-		return cb({message: msg.deny, error: true});
+		throw { message: msg.deny };
 	}
 	if (!Array.isArray(cids)) {
-		return cb({message: msg.badParams, error: true});
+		throw { message: msg.badParams };
 	}
 
 	if (!cids.length) {
 		//Если массив пуст - пересчитываем все фотографии
-		dbNative['eval']('function () {regionsAssignObjects()', [], {nolock: true}, function (err, ret) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			if (ret && ret.error) {
-				return cb({message: ret.message || '', error: true});
-			}
-
-			cb(ret);
-		});
-	} else {
-		//Проходим по каждому региону и пересчитываем
-		(function iterate(i) {
-			calcRegionIncludes(cids[i], function (err) {
-				if (err) {
-					return cb({message: err.message, error: true});
+		return dbEval('function () {regionsAssignObjects()', [], { nolock: true })
+			.then(function (ret) {
+				if (ret && ret.error) {
+					throw { message: ret.message };
 				}
 
-				if (++i < cids.length) {
-					iterate();
-				} else {
-					cb({message: 'ok'});
-				}
+				return ret;
 			});
-		}(0));
+	} else {
+		return new Promise(function (resolve, reject) {
+			//Проходим по каждому региону и пересчитываем
+			(function iterate(i) {
+				calcRegionIncludes(cids[i], function (err) {
+					if (err) {
+						reject({ message: err.message });
+					}
+
+					if (++i < cids.length) {
+						iterate();
+					} else {
+						resolve({ message: 'ok' });
+					}
+				});
+			}(0));
+		});
 	}
-}
+});
 
 function changeRegionParentExternality(region, oldParentsArray, childLenArray, cb) {
 	var moveTo,
@@ -1292,61 +1374,6 @@ function getRegionsPublic(data, cb) {
 	cb({regions: regionCacheArr});
 }
 
-/**
- * Возвращает список регионов по массиву cid в том же порядке, что и переданный массив
- * @param cidArr Массив номеров регионов
- * @param cb
- */
-var getOrderedRegionList = (function () {
-	var defFields = {_id: 0, geo: 0, __v: 0};
-
-	return function (cidArr, fields, cb) {
-		return Region.findAsync({cid: {$in: cidArr}}, fields || defFields, {lean: true})
-			.then(function (regions) {
-				var parentsSortedArr = [],
-					parent,
-					i = cidArr.length,
-					parentfind = function (parent) {
-						return parent.cid === cidArr[i];
-					};
-
-				if (cidArr.length === regions.length) {
-					//$in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
-					while (i--) {
-						parent = _.find(regions, parentfind);
-						if (parent) {
-							parentsSortedArr.unshift(parent);
-						}
-					}
-				}
-				return parentsSortedArr;
-			}).nodeify(cb);
-	};
-}());
-
-/**
- * Возвращает спопулированный массив регионов для заданного объекта
- * @param obj Объект (фото, комментарий и т.д.)
- * @param fields Выбранные поля регионов
- * @param cb Коллбек
- */
-function getObjRegionList(obj, fields, cb) {
-	var cidArr = [],
-		rcid,
-		i;
-
-	for (i = 0; i <= maxRegionLevel; i++) {
-		rcid = obj['r' + i];
-		if (rcid) {
-			cidArr.push(rcid);
-		}
-	}
-	if (!cidArr.length) {
-		return cb ? cb(null, cidArr) : cidArr;
-	} else {
-		return getOrderedRegionList(cidArr, fields, cb);
-	}
-}
 
 /**
  * Устанавливает объекту свойства регионов r0-rmaxRegionLevel на основе переданной координаты
@@ -1477,14 +1504,10 @@ var getRegionsByGeoPoint = (function () {
 	var defFields = { _id: 0, geo: 0, __v: 0 };
 
 	return function (geo, fields, cb) {
-		return Region.findAsync({
-			geo: {
-				$nearSphere: {
-					$geometry: { type: 'Point', coordinates: geo },
-					$maxDistance: 1
-				}
-			}
-		}, fields || defFields, { lean: true, sort: { parents: -1 } })
+		return Region.findAsync(
+			{ geo: { $nearSphere: { $geometry: { type: 'Point', coordinates: geo }, $maxDistance: 1 } } },
+			fields || defFields, { lean: true, sort: { parents: -1 } }
+		)
 			.then(function (regions) {
 				if (!regions) {
 					regions = [];
@@ -1746,6 +1769,9 @@ module.exports.loadController = function (app, db, io, cb) {
 	Comment = db.model('Comment');
 
 	dbNative = db.db;
+	/* jshint evil:true */
+	dbEval = Bluebird.promisify(dbNative.eval, dbNative);
+	/* jshint evil:false */
 
 	fillCache(function () {
 		io.sockets.on('connection', function (socket) {
@@ -1834,6 +1860,8 @@ module.exports.genObjsShortRegionsArr = genObjsShortRegionsArr;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 module.exports.getOrderedRegionList = getOrderedRegionList;
+
+module.exports.getObjRegionCids = getObjRegionCids;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegionsByGeo = setObjRegionsByGeo;
 module.exports.setObjRegionsByRegionCid = setObjRegionsByRegionCid;
