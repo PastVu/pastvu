@@ -60,6 +60,7 @@ var FragmentSchema = new Schema({
         title: { type: String, 'default': '' },
         year: { type: Number, 'default': 2000 },
         year2: { type: Number, 'default': 2000 },
+        y: { type: String, 'default': '' },
         address: { type: String },
         desc: { type: String },
         source: { type: String },
@@ -152,9 +153,7 @@ PhotoSchema.index({ r3: 1, sdate: 1 });
 PhotoSchema.index({ r4: 1, sdate: 1 });
 PhotoSchema.index({ r5: 1, sdate: 1 });
 
-
 PhotoSchema.pre('save', function (next) {
-    // check year2
     if (this.isModified('year') || this.isModified('year2')) {
         if (this.year < 1826) {
             this.year = 1826;
@@ -164,6 +163,8 @@ PhotoSchema.pre('save', function (next) {
         if (!Number(this.year2) || this.year2 < this.year || this.year2 > 2000) {
             this.year2 = this.year;
         }
+        // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
+        this.y = this.year === this.year2 ? String(this.year) : this.year + '—' + this.year2;
     }
 
     return next();

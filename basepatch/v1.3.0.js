@@ -114,11 +114,16 @@ module.exports.loadController = function (app, db) {
         });
 
         print('Building index of users_objects_rel ' + ((Date.now() - startTime) / 1000 + 's'));
-        db.users_objects_rel.ensureIndex( { obj: 1 } );
-        db.users_objects_rel.ensureIndex( { user: 1 } );
-        db.users_objects_rel.ensureIndex( { obj: 1, user: 1 } );
+        db.users_objects_rel.ensureIndex({ obj: 1 });
+        db.users_objects_rel.ensureIndex({ user: 1 });
+        db.users_objects_rel.ensureIndex({ obj: 1, user: 1 });
 
         print('users_objects_rel OK ' + ((Date.now() - startTime) / 1000 + 's'));
+
+        // Проставляем поле 'y' для всех фотографий
+        db.photos.find({}, { year: 1, year2: 1 }).forEach(function (photo) {
+            db.photos.update({ _id: photo._id }, { $set: { y: photo.year === photo.year2 ? String(photo.year) : photo.year + '—' + photo.year2 } });
+        });
 
         // Раньше статус 1 - ожидает публикации. Теперь 1 - на доработке, 2 - ожидает публикации
         db.photos.update({ s: 1 }, { $set: { s: 2 } }, { multi: true });
