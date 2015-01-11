@@ -7,12 +7,13 @@ define(['underscore'], function (_) {
     var fields = {
         s: 'Статус',
         y: 'Год',
+        geo: 'Координаты',
         regions: 'Регион',
         title: 'Название фотографии',
         desc: 'Описание',
         source: 'Источник',
         author: 'Автор',
-        adress: 'Адрес точки сьемки'
+        address: 'Адрес точки сьемки'
     };
 
     return fields;

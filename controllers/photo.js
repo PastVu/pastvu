@@ -49,8 +49,17 @@ var _session = require('./_session.js'),
 	},
 
 	status = constants.photo.status,
+	parsingFields = constants.photo.parsingFields,
+	parsingFieldsHash = parsingFields.reduce(function (result, field) {
+		result[field] = field;
+		return result;
+	}, {}),
 	snaphotFields = constants.photo.snaphotFields,
 	snapshotFieldsDiff = constants.photo.snapshotFieldsDiff,
+	snapshotFieldsDiffHash = snapshotFieldsDiff.reduce(function (result, field) {
+		result[field] = field;
+		return result;
+	}, {}),
 
 	shift10y = ms('10y'),
 	compactFields = {_id: 0, cid: 1, file: 1, s: 1, ldate: 1, adate: 1, sdate: 1, title: 1, year: 1, ccount: 1, conv: 1, convqueue: 1, ready: 1},
@@ -613,18 +622,20 @@ function photoFromMap(photo) {
 	]);
 }
 
-function getPhotoSnaphotFields(oldPhoto, newPhoto) {
-	var result = {};
+function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 	var region;
+	var diff = {};
+	var snapshot = {};
+	var result = { snapshot: snapshot };
 
 	// Если хотя бы один регион изменился, записываем весь массив текущих регионов
 	for (var i = 0; i <= maxRegionLevel; i++) {
 		if (oldPhoto['r' + i] !== newPhoto['r' + i]) {
-			result.regions = [];
+			snapshot.regions = [];
 			for (i = 0; i <= maxRegionLevel; i++) {
 				region = oldPhoto['r' + i];
 				if (region) {
-					result.regions.push(region);
+					snapshot.regions.push(region);
 				} else {
 					break;
 				}
@@ -635,27 +646,50 @@ function getPhotoSnaphotFields(oldPhoto, newPhoto) {
 
     snaphotFields.forEach(function (field) {
         var oldValue = oldPhoto[field];
+		var newValue = newPhoto[field];
 
-        if (!_.isEqual(oldValue, newPhoto[field])) {
-			result[field] = oldValue || '';
+        if (!_.isEqual(oldValue, newValue)) {
+
+			if (!oldValue && field !== 's') {
+				oldValue = '';
+			}
+
+			// У полей, для которых вычисляется разница в значении будет объект с полями последней версии и разницы
+			if (snapshotFieldsDiffHash[field] && oldValue && newValue) {
+				// Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п., разницу с последней версии надо брать с plain
+				if (parsingFieldsHash[field]) {
+					//oldValue = Utils.txtHtmlToPlain(oldValue);
+					newValue = parsedFileds[field] ? parsedFileds[field].plain : Utils.txtHtmlToPlain(newValue);
+				}
+
+				// Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
+				diff[field] = Utils.txtdiff(Utils.txtHtmlToPlain(Utils.txtHtmlToPlain(oldValue)), newValue);
+			}
+
+			snapshot[field] = oldValue;
         }
     });
+
+	if (Object.keys(diff).length) {
+		result.diff = diff;
+	}
 
 	return result;
 }
 
-var savePhotoSnaphot = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason) {
-    var snapshot = getPhotoSnaphotFields(oldPhotoObj, photo.toObject());
+var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
+    var changed = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
 	var history;
 	var reasonCid;
 
-    if (Object.keys(snapshot).length) {
-		history = new PhotoHistory({
-			cid: photo.cid,
-			stamp: photo.cdate || new Date(),
-			user: iAm.user._id,
-			snapshot: snapshot
-		});
+    if (Object.keys(changed.snapshot).length) {
+		history = new PhotoHistory(
+			_.assign({
+				cid: photo.cid,
+				stamp: photo.cdate || new Date(),
+				user: iAm.user._id
+			}, changed)
+		);
 
 		if (reason) {
 			history.reason = {};
@@ -754,7 +788,7 @@ var revokePhoto = function (socket, data) {
 			}
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -795,7 +829,7 @@ var readyPhoto = function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, false);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -835,7 +869,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -875,7 +909,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -934,7 +968,7 @@ var approvePhoto = function (socket, data) {
 			}
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -977,7 +1011,7 @@ var activateDeactivate = function (socket, data) {
 			changePublicPhotoExternality(photoSaved, iAm, !disable);
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, disable && data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, disable && data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -1041,7 +1075,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
 
 			// Отписываем всех пользователей
 			subscrController.unSubscribeObj(photoSaved._id);
@@ -1088,7 +1122,7 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoSnaphot(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
 
 			changePublicPhotoExternality(photoSaved, iAm, true);
 
@@ -1567,17 +1601,16 @@ var savePhoto = function (iAm, data) {
 			this.photo = photo;
 			this.oldPhotoObj = photo.toObject();
 			this.saveHistory = this.photo.s !== status.NEW;
+			this.parsedFileds = {};
 
 			// Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
-			if (changes.desc) {
-				changes.desc = Utils.inputIncomingParse(changes.desc).result;
-			}
-			if (changes.source) {
-				changes.source = Utils.inputIncomingParse(changes.source).result;
-			}
-			if (changes.author) {
-				changes.author = Utils.inputIncomingParse(changes.author).result;
-			}
+			parsingFields.forEach(function (filed) {
+				if (changes[filed]) {
+					this.parsedFileds = Utils.inputIncomingParse(changes[filed]);
+					changes[filed] = this.parsedFileds.result;
+				}
+			}, this);
+
 			if (changes.geo) {
 				if (Utils.geo.checkLatLng(changes.geo)) {
 					changes.geo = Utils.geo.geoToPrecisionRound(changes.geo.reverse());
@@ -1685,7 +1718,7 @@ var savePhoto = function (iAm, data) {
 
 			// Сохраняем в истории предыдущий статус
 			if (this.saveHistory) {
-				savePhotoSnaphot(iAm, this.oldPhotoObj, this.photo);
+				savePhotoHistory(iAm, this.oldPhotoObj, this.photo, null, null, this.parsedFileds);
 			}
 
 			// Заново выбираем данные для отображения
@@ -2015,23 +2048,29 @@ var planResetDisplayStat = (function () {
  * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
  * @param data Объект
  */
-var diffFileds = { title: 1, desc: 1, source: 1, author: 1, address: 1 };
-var diffFiledsArr = Object.keys(diffFileds);
 var giveObjHist = Bluebird.method(function (iAm, data) {
-	if (!_.isObject(data) || !Number(data.cid)) {
+	if (!_.isObject(data) || !Number(data.cid) || !Number(data.fetchId)) {
 		throw { message: msg.badParams };
 	}
 
 	var cid = Number(data.cid);
+	var showDiff = !!data.showDiff;
 
 	return findPhoto({cid: cid}, null, iAm)
 		.bind({})
 		.then(function (photo) {
 			this.photo = photo.toObject();
 
+			var historySelect = { _id: 0, cid: 0 };
+
+			if (!showDiff) {
+				historySelect.diff = 0;
+			}
+
 			return Bluebird.join(
 				User.findOneAsync({ _id: photo.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, { lean: true }),
-				PhotoHistory.find({ cid: cid }, { _id: 0, cid: 0 }, { lean: true, sort: { stamp: 1 } })
+				PhotoHistory
+					.find({ cid: cid }, historySelect, { lean: true, sort: { stamp: 1 } })
 					.populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
 					.execAsync()
 			);
@@ -2056,6 +2095,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			var reason;
 			var field;
 			var hist;
+			var diff;
 			var i;
 			var j;
 
@@ -2068,6 +2108,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 				hist = hists[i];
 
 				snapshot = hist.snapshot;
+				diff = hist.diff;
 
 				if (_.isEmpty(snapshot) || !hist.user || !hist.stamp) {
 					logger.warn('Object %d has corrupted history entry', cid);
@@ -2090,9 +2131,18 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 								result[snapshotFieldLastIndex].del.push(field);
 							}
 						} else {
-							result[snapshotFieldLastIndex].values[field] = {
-								val: snapshotFieldValue
-							};
+							if (!result[snapshotFieldLastIndex].values[field]) {
+								result[snapshotFieldLastIndex].values[field] = {
+									val: snapshotFieldValue
+								};
+							}
+
+							// Если для этого поля есть diff, то он сохраняется в эту запись, и следующией не перезапишется
+							if (showDiff && diff && diff[field]) {
+								resultRow.values[field] = {
+									val: diff[field]
+								};
+							}
 
 							// Если это изменение регионов, одбавляем каждый из них в хэш
 							if (field === 'regions') {
@@ -2139,7 +2189,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 						// Если в текущей версии объекта нет значения поля,
 						// значит нужно проставить флаг удаления записи о последнем изменении
 						result[lastFieldsIndexes[field]].del.push(field);
-					} else {
+					} else if (!result[lastFieldsIndexes[field]].values[field]) {
 						result[lastFieldsIndexes[field]].values[field] = {
 							val: snapshotFieldValue
 						};
@@ -2165,7 +2215,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 				}
 			}
 
-			result = { hists: result };
+			result = { hists: result, fetchId: data.fetchId };
 
 			// Если есть регионы, запрашиваем их объекты
 			if (Object.keys(regions).length) {
@@ -2405,7 +2455,7 @@ module.exports.loadController = function (app, db, io) {
 		});
 		var util = require('util');
 		setTimeout(function () {
-			giveObjHist(hs.usObj, {cid: 289983})
+			giveObjHist(hs.usObj, {cid: 289983, fetchId: 1})
 				.catch(function (err) {
 					console.error(err);
 				})

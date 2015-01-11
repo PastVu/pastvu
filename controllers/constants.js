@@ -24,6 +24,9 @@ module.exports = {
         ],
         snapshotFieldsDiff: [
             'title', 'desc', 'source', 'author', 'address', 'y'
+        ],
+        parsingFields: [
+            'desc', 'source', 'author'
         ]
     }
 };

@@ -25,8 +25,8 @@ define(
             },
             create: function () {
                 this.cid = this.options.cid;
-                this.hist_id = {};
-                this.showdiff = ko.observable(true);
+                this.fetchId = 0;
+                this.showDiff = ko.observable(true);
 
                 if (!tplHist) {
                     tplHist = doT.template(document.getElementById('dothist').text);
@@ -40,9 +40,8 @@ define(
 
                 this.getHist(function (err, data) {
                     if (data && data.hists && data.hists.length) {
-                        this.data = data;
-                        this.renderHist(data);
                         ko.applyBindings(globalVM, this.$dom[0]);
+                        this.renderHist(data);
                     }
                     this.show();
                 }, this);
@@ -59,12 +58,17 @@ define(
                 this.showing = false;
             },
             switchDiff: function () {
-                this.showdiff(!this.showdiff());
-                this.renderHist(this.data);
+                this.showDiff(!this.showDiff());
+
+                this.getHist(function (err, data) {
+                    if (data && data.hists && data.hists.length) {
+                        this.renderHist(data);
+                    }
+                }, this);
             },
             renderHist: function (data) {
                 var regionsHash = data.regions;
-                var showDiff = this.showdiff();
+                var showDiff = this.showDiff();
                 var regionsPrev;
                 var regionsArr;
                 var regionCids;
@@ -140,7 +144,7 @@ define(
                             value = hist.values[txtFields[j]];
                             if (value) {
                                 value.field = txtFields[j];
-                                value.txt = value.txt || showDiff && value.vald || value.val;
+                                value.txt = value.txt || value.val;
                                 hist.txtValues.push(value);
                             }
                         }
@@ -160,7 +164,14 @@ define(
                 });
             },
             getHist: function (cb, ctx) {
+                this.fetchId += 1;
+
                 socket.once('takeObjHist', function (data) {
+                    // Проверяем что запрос не устарел
+                    if (data && data.fetchId !== this.fetchId) {
+                        return;
+                    }
+
                     var error = !data || data.error || !Array.isArray(data.hists);
 
                     if (error) {
@@ -176,7 +187,7 @@ define(
                     cb.call(ctx, error, data);
                 }, this);
 
-                socket.emit('giveObjHist', { cid: this.cid });
+                socket.emit('giveObjHist', { cid: this.cid, showDiff: this.showDiff(), fetchId: this.fetchId });
             }
         });
     });

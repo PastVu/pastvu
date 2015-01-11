@@ -88,8 +88,8 @@ var FragmentSchema = new Schema({
                 cid: { type: Number },
                 desc: { type: String }
             },
-            // Значения изменившихся полей
-            snapshot: { type: Schema.Types.Mixed }
+            snapshot: { type: Schema.Types.Mixed }, // Старые значения изменившихся полей
+            diff: { type: Schema.Types.Mixed } // Diff для некоторых полей, изменившихся в этой записи
         },
         { collection: 'photos_history', strict: true, versionKey: false }
     ),

@@ -244,6 +244,6 @@
 		input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
 		| &nbsp;и&nbsp;
 		input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
-		| &nbsp;&nbsp;Направление съемки&nbsp;
+		|  &nbsp;Направление съемки&nbsp;
 		select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
 	| </script>
