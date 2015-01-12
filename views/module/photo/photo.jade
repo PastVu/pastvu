@@ -153,12 +153,15 @@
 		//ko if: p.title().length
 		.info.title(data-bind="text: p.title()")
 		// /ko
-		//ko if: p.regions().length
-		.regions
+
+		div
 			//ko if: p.y()
 			span.years(data-bind="html: p.y()")
+			// /ko
+			//ko if: p.y() && p.regions().length
 			=', '
 			// /ko
+			//ko if: p.regions().length
 			//ko foreach: p.regions
 			| <!--ko if: $index()-->, <!-- /ko -->
 			.region
@@ -169,30 +172,30 @@
 			.region
 				a(data-bind="text: 'Где это?', attr: {href: '/ps?f=geo!0_r!' + p.regions()[p.regions().length-1].cid()}", style="color: #BEA265;")
 			// /ko
-		// /ko
+			// /ko
 		//ko if: p.desc().length
 		.info(data-bind="html: p.desc()")
 		// /ko
 	.infoBlock
 		//ko if: p.source().length
 		.info
-			span.infoName Источник:
+			span.infoName(data-bind="html: fields.source+':'")
 			span(data-bind="html: p.source()")
 		// /ko
 		//ko if: p.author().length
 		.info
-			span.infoName Автор:
+			span.infoName(data-bind="html: fields.author+':'")
 			span(data-bind="html: p.author()")
 		// /ko
 		//ko if: p.address().length
 		.info
-			span.infoName Адрес снимка:
+			span.infoName(data-bind="html: fields.address+':'")
 			span(data-bind="text: p.address()")
 		// /ko
 		//ko if: p.dir && p.dir() && p.dir().length
 		.info
-			span.infoName Направление съемки:
-			span(data-bind="text: $root.P.photoDirsTxt[p.dir()]", style="text-transform: lowercase;")
+			span.infoName(data-bind="html: fields.dir+':'")
+			span(data-bind="text: fields.dirVals[p.dir()]", style="text-transform: lowercase;")
 		// /ko
 	//ko if: p.cdate
 	.infoBlock
@@ -206,27 +209,34 @@
 
 	//-EDIT MODE
 	| <script id="photoEdit" type="text/html">
-	.fieldWrap(data-bind="css: {hasContent: p.title().length}")
-		label(for="pName", data-bind="html: fields.title")
+	.fieldWrap
+		label(for="pName")
+			span(data-bind="html: fields.title")
+			span(Dcnf)
 		input.form-control.title(name="pName", type="text", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-	.fieldWrap.regions(data-bind="css: {loading: exeregion()}")
-		span.infoName Регион:
-		//ko if: p.regions().length
-		span(data-bind="foreach: p.regions")
-			.region
-				a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
-			//ko if: $index() < $parent.p.regions().length - 1
-			| ,&#32;
+	.fieldWrap.asrow(data-bind="css: {loading: exeregion()}")
+		.yearsEdit
+			span.infoName(data-bind="html: fields.y+':'")
+			input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
+			| —
+			input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
+		.regions
+			span.infoName(data-bind="html: fields.regions+':'")
+			//ko if: p.regions().length
+			span(data-bind="foreach: p.regions")
+				.region
+					a(target="_blank", data-bind="text: ' ' + $data.title_local(), attr: {href: '/ps?f=r!' + $data.cid()}")
+				//ko if: $index() < $parent.p.regions().length - 1
+				| ,&#32;
+				// /ko
 			// /ko
-		// /ko
-		//ko if: !p.regions().length
-		.region.err Не привязан
-		// /ko
-		//ko if: !p.geo()
-		span.regionEdit(data-bind="click: regionSelect")
-			span.glyphicon.glyphicon-pencil
-			| Выбрать
-		// /ko
+			//ko if: !p.regions().length
+			.region.err Не привязан
+			// /ko
+			//ko if: !p.geo()
+			span.regionEdit(data-bind="click: regionSelect")
+				| [Выбрать]
+			// /ko
 	.fieldWrap(data-bind="css: {hasContent: p.desc().length}")
 		label(for="pDesc", data-bind="html: fields.desc")
 		textarea.form-control.descInput(name="pDesc", wrap="soft", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
@@ -237,13 +247,9 @@
 		label(for="pAuthor", data-bind="html: fields.author")
 		input.form-control(name="pAuthor", type="text", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
 	.fieldWrap(data-bind="css: {hasContent: p.address().length}")
-		label(for="pAddr", data-bind="html: fields.adress")
+		label(for="pAddr", data-bind="html: fields.address")
 		input.form-control(name="pAddr", type="text", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-	.fieldWrap
-		| Я считаю, что снимок сделан между&nbsp;
-		input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'afterkeydown', event: {blur: yearCheck}")
-		| &nbsp;и&nbsp;
-		input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'afterkeydown', event: {blur: year2Check}")
-		|  &nbsp;Направление съемки&nbsp;
-		select(data-bind="options: $root.P.photoDirsArr, value: p.dir, optionsText: function(item) {return $root.P.photoDirsTxt[item]}, optionsCaption: 'Выберите направление...'")
+	.fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
+		label(for="pDir", data-bind="html: fields.dir")
+		select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")
 	| </script>

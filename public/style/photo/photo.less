@@ -396,19 +396,8 @@
 					}
 				}
 
-				&.regions {
-					display: inline-block;
+				&.asrow {
 					line-height: 19px;
-
-					&.loading {
-						padding-right: 72px;
-						background: url(/img/misc/load.gif) 100% 50% no-repeat;
-					}
-				}
-
-				> .infoName {
-					margin-right: 5px;
-					font-weight: bold;
 				}
 			}
 			.form-control {
@@ -429,19 +418,47 @@
 					width: 38px;
 					padding: 0;
 					text-align: center;
+					vertical-align: top;
 				}
 
 				&:focus {
 					background-color: #fdfdfd;
 				}
 			}
+
+			.infoName {
+				display: inline-block;
+				margin-right: 5px;
+				font-weight: bold;
+				line-height: 20px;
+			}
+
+			.yearsEdit, .regions {
+				display: inline-block;
+			}
+			.yearsEdit {
+				margin-right: 10px;
+			}
+			.regions {
+				&.loading {
+					padding-right: 72px;
+					background: url(/img/misc/load.gif) 100% 50% no-repeat;
+				}
+			}
+
 			textarea.hasFocus {
 				min-height: 60px;
 			}
 
 			select {
 				margin-bottom: 4px;
-				background-color: #F0F0F0;
+				border-radius: 0;
+				-webkit-appearance: none;
+
+				&.empty {
+					color: #999;
+				}
+
 				&:focus {
 					background-color: #fdfdfd;
 				}
