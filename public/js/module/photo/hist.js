@@ -16,7 +16,7 @@ define(
         };
         var maxRegionLevel = 5;
         var infoFields = ['s', 'nocomments'];
-        var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address'];
+        var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir'];
 
         return Cliche.extend({
             jade: jade,
@@ -138,6 +138,10 @@ define(
                             }
 
                             regionsPrev = regionsArr;
+                        }
+
+                        if (hist.values.dir && hist.values.dir.val) {
+                            hist.values.dir.txt = fields.dirVals[hist.values.dir.val];
                         }
 
                         for (j = 0; j < txtFields.length; j++) {

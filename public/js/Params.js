@@ -32,18 +32,6 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
 				locDefRangeUser: ['last', 'home', 'gpsip', '_def_'],
 
 				REGISTRATION_ALLOWED: false
-			},
-			photoDirsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
-			photoDirsTxt: {
-				n: 'Север',
-				ne: 'Северо-Восток',
-				e: 'Восток',
-				se: 'Юго-Восток',
-				s: 'Юг',
-				sw: 'Юго-Запад',
-				w: 'Запад',
-				nw: 'Северо-Запад',
-				aero: 'Аэро/Спутник'
 			}
 		};
 
