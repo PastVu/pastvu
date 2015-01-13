@@ -3,18 +3,14 @@
  * Модель истории комментария
  */
 define(
-    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'lib/doT', 'text!tpl/photo/hist.jade', 'css!style/photo/hist'],
-    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, doT, jade) {
+    ['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'model/storage', 'm/photo/fields', 'm/photo/status', 'lib/doT', 'text!tpl/photo/hist.jade', 'css!style/photo/hist'],
+    function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, storage, fields, statuses, doT, jade) {
         'use strict';
         var tplHist;
         var tplRegions;
         var tplRegionsDiff;
-        var changeFragTexts = {
-            f1: '<span class="glyphicon glyphicon-plus"></span> Добавлен фрагмент',
-            f2: '<span class="glyphicon glyphicon-retweet"></span> Изменен фрагмент',
-            f3: '<span class="glyphicon glyphicon-minus"></span> Удален фрагмент'
-        };
         var maxRegionLevel = 5;
+        var statusNums = statuses.nums;
         var infoFields = ['s', 'nocomments'];
         var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir'];
 
@@ -223,6 +219,10 @@ define(
 
                         if (hist.values.dir && hist.values.dir.val) {
                             hist.values.dir.txt = fields.dirVals[hist.values.dir.val];
+                        }
+
+                        if (hist.values.s) {
+                            hist.s = statusNums[hist.values.s.val];
                         }
 
                         for (j = 0; j < txtFields.length; j++) {

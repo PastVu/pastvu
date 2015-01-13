@@ -11,10 +11,11 @@ define(['underscore'], function (_) {
             title_owner: 'Новая фотография. Заполните необходимую информацию и отправьте на премодерацию для публикации',
             filter_title: 'Новые',
             action: 'Загружена пользователем',
-            tip: 'Новая фотография',
+            tip: 'Новая загруженная фотография',
             icon: 'glyphicon-asterisk',
+            icon_history: 'glyphicon-cloud-upload',
             label: 'success',
-            color: '#03a81c'
+            color: '#333'
         },
         REVISION: { // На доработке
             num: 1,
@@ -35,7 +36,7 @@ define(['underscore'], function (_) {
             filter_title: 'Готовые',
             icon: 'glyphicon-flag',
             label: 'success',
-            color: '#03a81c'
+            color: '#5FA803'
         },
         REVOKE: { // Отозвано владельцем
             num: 3,
@@ -61,7 +62,9 @@ define(['underscore'], function (_) {
         PUBLIC: { // Опубликованное
             num: 5,
             filter_title: 'Публичные',
-            action: 'Опубликована'
+            action: 'Опубликована',
+            icon_history: 'glyphicon-globe',
+            color: '#0a6d04'
         },
         DEACTIVATE: { // Деактивировано
             num: 7,

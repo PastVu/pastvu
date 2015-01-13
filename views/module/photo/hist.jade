@@ -38,6 +38,12 @@
                 .dotDelimeter ·
                 a.histStamp(href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
 
+            | {{?h.s}}
+            .info.iconed(style="color: {{=h.s.color}};")
+                span.glyphicon(class="{{=h.s.icon_history||h.s.icon}}")
+                | {{=h.s.action}}
+            | {{?}}
+
             | {{?h.del}}
             .info.red.iconed
                 span.glyphicon.glyphicon-minus
