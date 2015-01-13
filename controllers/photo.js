@@ -1220,6 +1220,7 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id, cb) {
 						while (i--) {
 							photo = photos[i];
 							delete photo._id;
+							delete photo.vdate;
 							delete photo.ucdate;
 						}
 					}

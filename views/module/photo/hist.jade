@@ -1,6 +1,6 @@
 .objHist(data-bind="with: repository[M!M]")
     .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
-    .hist
+    ul.media-list.hists
 
     | <script id="dotRegions" type="text/x-dot-template">
     | {{~it :region:index}}
@@ -21,43 +21,42 @@
     | </script>
 
     | <script id="dothist" type="text/x-dot-template">
-    ul.media-list
-        | {{~it.hists :h:index}}
-        li.media.hist
-            a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
-                img.media-object(src="{{=h.user.avatar}}")
-            .media-body
-                .histHead
-                    a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
-                    ='{{?h.role}} '
-                    .role
-                        | {{?h.role===5}}как модератор
-                        | {{?h.roleregion}} региона&nbsp;
-                        a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
-                        | {{??h.role>9}}как администратор{{?}}
-                    | {{?}}
-                    .dotDelimeter ·
-                    .histStamp {{=it.fDate(new Date(h.stamp))}}
-
-                | {{?h.del}}
-                .info.red.iconed
-                    span.glyphicon.glyphicon-minus
-                    | Удален{{?h.del.length>1}}ы поля:{{??}}о поле{{?}}
-                    | {{~h.del :del:delIndex}}
-                    | {{?delIndex}},{{?}}&#32;
-                    span.del {{=it.fields[del]}}
-                    | {{~}}
+    | {{~it.hists :h:index}}
+    li.media(id="h{{=h.stamp}}", class="hist{{?h.isnew}} isnew{{?}}{{?h.hl}} hl{{?}}")
+        a.pull-left(target="_blank", href="{{='/u/'+h.user.login}}")
+            img.media-object(src="{{=h.user.avatar}}")
+        .media-body
+            .histHead
+                a.author(target="_blank", href="{{='/u/'+h.user.login}}") {{=h.user.disp}}
+                ='{{?h.role}} '
+                .role
+                    | {{?h.role===5}}как модератор
+                    | {{?h.roleregion}} региона&nbsp;
+                    a(target="_blank", href="{{='/ps?f=r!' + h.roleregion.cid}}") {{=h.roleregion.title_local}}{{?}}
+                    | {{??h.role>9}}как администратор{{?}}
                 | {{?}}
+                .dotDelimeter ·
+                a.histStamp(href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
 
-                | {{~h.txtValues :value}}
-                .value(class="{{?index}}iconed{{?}}")
-                    .name(class="{{?value.add}}green{{??index}}orange{{?}}")
-                        | {{?index}}
-                        span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
-                        | {{?}}
-                        | {{=it.fields[value.field]}}:
-                    |  {{=value.txt}}
+            | {{?h.del}}
+            .info.red.iconed
+                span.glyphicon.glyphicon-minus
+                | Удален{{?h.del.length>1}}ы поля:{{??}}о поле{{?}}
+                | {{~h.del :del:delIndex}}
+                | {{?delIndex}},{{?}}&#32;
+                span.del {{=it.fields[del]}}
                 | {{~}}
+            | {{?}}
 
-        | {{~}}
+            | {{~h.txtValues :value}}
+            .value(class="{{?index}}iconed{{?}}")
+                .name(class="{{?value.add}}green{{??index}}orange{{?}}")
+                    | {{?index}}
+                    span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
+                    | {{?}}
+                    | {{=it.fields[value.field]}}:
+                |  {{=value.txt}}
+            | {{~}}
+
+    | {{~}}
     | </script>

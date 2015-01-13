@@ -108,8 +108,12 @@ var fillObjectByRels = function (objs, userId, type, rels) {
                 obj = objs[i];
                 rel = relHash[obj._id];
                 if (rel !== undefined) {
-                    if (rel.view && obj.ucdate && rel.view > obj.ucdate) {
-                        obj.changed = true;
+                    if (rel.view) {
+                        obj.vdate = rel.view;
+
+                        if (obj.ucdate && rel.view > obj.ucdate) {
+                            obj.changed = true;
+                        }
                     }
                     if (rel.subscr) {
                         obj.subscr = true;

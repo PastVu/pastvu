@@ -362,8 +362,10 @@ define(
 
 		routeHandler: function () {
 			var self = this;
-			var cid = Number(globalVM.router.params().cid);
-			var hl = globalVM.router.params().hl;
+			var params = globalVM.router.params();
+			var cid = Number(params.cid);
+			var hl = params.hl;
+			self.history = Number(params.history) >= 0 ? Number(params.history) : false;
 
 			self.toComment = self.toFrag = undefined;
 			window.clearTimeout(self.scrollTimeout);
@@ -378,7 +380,7 @@ define(
 				}
 			}
 
-			if (self.p && Utils.isType('function', self.p.cid) && self.p.cid() !== cid) {
+			if (self.p && _.isFunction(self.p.cid) && self.p.cid() !== cid) {
 				self.photoLoading(true);
 
 				self.commentsVM.deactivate();
@@ -392,7 +394,7 @@ define(
 
 						Utils.title.setTitle({title: self.p.title()});
 
-						editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statuses.NEW;
+						editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statusKeys.NEW;
 
 						if (self.photoLoadContainer) {
 							self.photoLoadContainer.off('load').off('error');
@@ -420,11 +422,24 @@ define(
 						if (!self.binded) {
 							self.makeBinding();
 						}
+
+						if (self.history !== false && !self.edit()) {
+							self.showHistory();
+						} else {
+							self.destroyHistory();
+						}
 						ga('send', 'pageview');
 					}
 				});
-			} else if (self.toFrag || self.toComment) {
-				self.scrollTimeout = setTimeout(self.scrollToBind, 50);
+			} else {
+				if (self.toFrag || self.toComment) {
+					self.scrollTimeout = setTimeout(self.scrollToBind, 50);
+				}
+				if (self.history !== false) {
+					self.showHistory();
+				} else {
+					self.destroyHistory();
+				}
 			}
 		},
 
@@ -889,7 +904,11 @@ define(
 				renderer(
 					[{
 						module: 'm/photo/hist',
-						options: { cid: cid },
+						options: {
+							cid: cid,
+							scroll: this.history || 0,
+							newSince: self.p.vdate()
+						},
 						modal: {
 							topic: 'История изменений фотографии',
 							initWidth: '1000px',
@@ -911,9 +930,14 @@ define(
 						level: self.level + 3
 					}
 				);
+			} else if (this.history !== false) {
+				self.histVM.setNewScroll(this.history);
 			}
 		},
 		closeHistory: function () {
+			globalVM.router.navigate('/p/' + this.p.cid());
+		},
+		destroyHistory: function () {
 			if (this.histVM) {
 				this.histVM.destroy();
 				delete this.histVM;

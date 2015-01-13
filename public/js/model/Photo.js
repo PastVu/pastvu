@@ -33,6 +33,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				geo: null,
 				regions: [],
 				cdate: null, // Время изменения
+				vdate: null, // Время последнего просмотра
 
 				dir: undefined,
 
@@ -114,6 +115,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			}
 			if (origin.cdate) {
 				origin.cdate = new Date(origin.cdate);
+			}
+			if (origin.vdate) {
+				origin.vdate = new Date(origin.vdate);
 			}
 			User.factory(origin.user, 'base');
 		}

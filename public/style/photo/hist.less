@@ -3,12 +3,31 @@
 @import "../bs/mixins.less";
 
 .objHist {
+    position: relative; // Нужно, чтобы правильно считался position элемента истории
     padding: 8px 0;
+
+    .hists {
+        padding-left: 0;
+        list-style: none;
+    }
 
     .hist {
         position: relative;
         display: block;
-        margin: 5px 0 9px 0;
+        margin: 3px 0;
+        padding: 2px 0 6px;
+        border-width: 1px;
+        border-style: solid;
+        border-color: transparent;
+
+        &.isnew {
+            border-left-color: #81DF7D;
+            border-right-color: #81DF7D;
+            background-color: rgba(174, 255, 184, .1);
+        }
+        &.hl {
+            background-color: #D2D7DC;
+        }
 
         .pull-left {
             padding: 2px 0 3px 0;
@@ -35,9 +54,8 @@
             display: inline-block;
             font-size: @font-size-mini;
             color: #888;
-            cursor: default;
+            cursor: pointer;
         }
-
 
         .histCat {
             display: inline;

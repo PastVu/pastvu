@@ -21,10 +21,14 @@ define(
         return Cliche.extend({
             jade: jade,
             options: {
-                cid: 0
+                cid: 0,
+                scroll: 0,
+                newSince: null
             },
             create: function () {
                 this.cid = this.options.cid;
+                this.scroll = this.options.scroll;
+                this.newSince = this.options.newSince && this.options.newSince.getTime();
                 this.fetchId = 0;
                 this.showDiff = ko.observable(true);
 
@@ -44,14 +48,19 @@ define(
                         this.renderHist(data);
                     }
                     this.show();
+
                 }, this);
             },
             show: function () {
-                globalVM.func.showContainer(this.$container);
-                if (this.modal) {
-                    this.modal.$curtain.addClass('showModalCurtain');
+                var self = this;
+                globalVM.func.showContainer(self.$container);
+
+                self.scrollByParams();
+
+                if (self.modal) {
+                    self.modal.$curtain.addClass('showModalCurtain');
                 }
-                this.showing = true;
+                self.showing = true;
             },
             hide: function () {
                 globalVM.func.hideContainer(this.$container);
@@ -65,6 +74,69 @@ define(
                         this.renderHist(data);
                     }
                 }, this);
+            },
+            scrollByParams: function (soft) {
+                var self = this;
+                var dom = self.$dom[0];
+                var $container = self.$container;
+                var viewHeight = $container.height();
+                var contentHeight = $container[0].scrollHeight;
+                var element;
+                var elementHeight;
+                var elementTop;
+
+                if (self.scroll > 1) {
+                    element = self.setHl(self.scroll);
+                }
+
+                if (contentHeight > viewHeight) {
+                    // Если в параметре scroll пришло число больше единцы, значит это stamp нужной записи истории
+                    // Если такая запись нашлась навигируемся к ней
+                    if (element) {
+                        element = $(element);
+
+                        //Если высота комментария меньше высоты контейнера, позиционируем комментарий по центру контейнера
+                        elementHeight = element.outerHeight();
+                        elementTop = element.position().top;
+                        if (elementHeight < viewHeight) {
+                            elementTop += elementHeight / 2 - viewHeight / 2;
+                        }
+                    }
+
+                    // Если с момента последнего посещения добавились новые записи в историю и нет навигируемой записи scroll,
+                    // Навигируемся к первой новой записи
+                    if (self.newSince > 0 && !element) {
+                        element = dom.querySelector('.isnew');
+                        if (element) {
+                            elementTop = $(element).position().top - 10;
+                        }
+                    }
+                    // Если на предыдцщих шагах ничего не нашли и стоит значение скроллить в конец, скроллимся
+                    if (self.scroll === 1 && !element) {
+                        elementTop = contentHeight;
+                    }
+
+                    // Если элемент найден, скроллим к нему
+                    if (elementTop) {
+                        if (soft) {
+                            $container.scrollTo(elementTop, 400);
+                        } else {
+                            $container[0].scrollTop = elementTop;
+                        }
+                    }
+                }
+            },
+            setNewScroll: function (scroll) {
+                this.scroll = scroll;
+                $('.hist.hl', this.$dom).removeClass('hl');
+                this.scrollByParams(true);
+            },
+            setHl: function (stamp) {
+                var element = this.$dom[0].querySelector('#h' + stamp);
+                if (element) {
+                    element.classList.add('hl');
+                }
+                return element;
             },
             renderHist: function (data) {
                 var regionsHash = data.regions;
@@ -81,8 +153,17 @@ define(
                 var hist;
                 var j;
 
+                var newSince = this.newSince;
+                var hightlightNew = newSince > 0;
+
                 for (var i = 0; i < data.hists.length; i++) {
                     hist = data.hists[i];
+
+                    // Если указано время последнего просмотра объекта и это не первая запись,
+                    // Подсвечиваем все записи после этого времени как новые
+                    if (hightlightNew && i > 0 && hist.stamp >= newSince) {
+                        hist.isnew = true;
+                    }
 
                     hist.user.avatar = hist.user.avatar ? P.preaddr + '/_a/h/' + hist.user.avatar : '/img/caps/avatarth.png';
 
@@ -160,7 +241,8 @@ define(
 
                 }
 
-                this.$dom[0].querySelector('.hist').innerHTML = tplHist({
+                this.$dom[0].querySelector('.hists').innerHTML = tplHist({
+                    cid: this.cid,
                     hists: data.hists,
                     fields: fields,
                     infoFields: infoFields,
