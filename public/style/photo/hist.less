@@ -15,7 +15,7 @@
         position: relative;
         display: block;
         margin: 3px 0;
-        padding: 2px 0 6px;
+        padding: 4px;
         border-width: 1px;
         border-style: solid;
         border-color: transparent;
@@ -104,13 +104,18 @@
     }
 
     .value {
-        max-width: 1000px;
-
+        display: table;
         color: @text-color;
         line-height: 18px;
 
         > .name {
-            display: inline-block;
+            display: table-cell;
+            padding-right: 0.5em;
+            font-weight: bold;
+
+            &::after {
+                content: ':';
+            }
         }
     }
 
@@ -120,6 +125,23 @@
         .glyphicon {
             margin-left: -1.3em;
             margin-right: 0.3em;
+        }
+    }
+
+    .reasonDesc {
+        padding-left: 5px;
+        font-style: italic;
+        border-left: 1px dotted #ccc;
+
+        &::before {
+            content: '\201c';
+            margin-left: -0.1em;
+            margin-right: 0.25em;
+            font-family: sans-serif;
+            font-size: 2em;
+            color: #ccc;
+            line-height: 0.1em;
+            vertical-align: -0.4em;
         }
     }
 

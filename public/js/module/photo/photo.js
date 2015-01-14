@@ -911,8 +911,8 @@ define(
 						},
 						modal: {
 							topic: 'История изменений фотографии',
-							initWidth: '1000px',
-							maxWidthRatio: 0.9,
+							initWidth: '1400px',
+							maxWidthRatio: 0.82,
 							animateScale: true,
 							curtainClick: { click: self.closeHistory, ctx: self },
 							offIcon: { text: 'Закрыть', click: self.closeHistory, ctx: self },

@@ -33,6 +33,24 @@ function periodicFetchReasons() {
         });
 }
 
+/**
+ *
+ * @param cids Массив cid причин
+ */
+function getReasonHashFromCache(cids) {
+    var result = {};
+    var reason;
+
+    for (var i = cids.length; i--;) {
+        reason = reasonsHash[cids[i]];
+        if (reason !== undefined) {
+            result[reason.cid] = reason;
+        }
+    }
+
+    return result;
+}
+
 var giveActionReasons = Bluebird.method(function (params) {
     if (!_.isObject(params) || !_.isString(params.action) || !params.action.length) {
         throw { message: 'Need user action' };
@@ -85,3 +103,4 @@ module.exports.loadController = function (app, db, io) {
 
 module.exports.reasonsHash = reasonsHash;
 module.exports.giveReasonTitle = giveReasonTitle;
+module.exports.getReasonHashFromCache = getReasonHashFromCache;

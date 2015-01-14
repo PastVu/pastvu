@@ -73,11 +73,10 @@ function getRegionFromCache(cid) {
 	return regionCacheHash[cid];
 }
 function getRegionsArrFromCache(cids) {
-	var result = [],
-		region,
-		i = cids.length;
+	var result = [];
+	var region;
 
-	while (i--) {
+	for (var i = cids.length; i--;) {
 		region = regionCacheHash[cids[i]];
 		if (region !== undefined) {
 			result.unshift(region);
@@ -88,14 +87,13 @@ function getRegionsArrFromCache(cids) {
 }
 
 function getRegionsHashFromCache(cids) {
-	var result = {},
-		region,
-		i = cids.length;
+	var result = {};
+	var region;
 
-	while (i--) {
+	for (var i = cids.length; i--;) {
 		region = regionCacheHash[cids[i]];
 		if (region !== undefined) {
-			result[cids[i]] = region;
+			result[region.cid] = region;
 		}
 	}
 

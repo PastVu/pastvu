@@ -136,6 +136,7 @@ define(
             },
             renderHist: function (data) {
                 var regionsHash = data.regions;
+                var reasonsHash = data.reasons;
                 var showDiff = this.showDiff();
                 var regionsPrev;
                 var regionsArr;
@@ -234,18 +235,13 @@ define(
                             }
                         }
                     }
-
-                    /*if (hist.frag) {
-                     hist.frag = changeFragTexts['f' + hist.frag];
-                     }*/
-
                 }
 
                 this.$dom[0].querySelector('.hists').innerHTML = tplHist({
                     cid: this.cid,
                     hists: data.hists,
                     fields: fields,
-                    infoFields: infoFields,
+                    reasonsHash: reasonsHash,
                     fDate: Utils.format.date.relative
                 });
             },

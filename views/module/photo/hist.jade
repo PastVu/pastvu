@@ -54,14 +54,24 @@
                 | {{~}}
             | {{?}}
 
+            | {{?h.reason}}
+            .value
+                .name Причина
+                .val
+                    | {{?h.reason.cid}}{{=it.reasonsHash[h.reason.cid].title}}{{?}}
+                    | {{?h.reason.desc}}
+                    .reasonDesc {{=h.reason.desc}}
+                    | {{?}}
+            | {{?}}
+
             | {{~h.txtValues :value}}
             .value(class="{{?index}}iconed{{?}}")
                 .name(class="{{?value.add}}green{{??index}}orange{{?}}")
                     | {{?index}}
                     span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
                     | {{?}}
-                    | {{=it.fields[value.field]}}:
-                |  {{=value.txt}}
+                    | {{=it.fields[value.field]}}
+                .val {{=value.txt}}
             | {{~}}
 
     | {{~}}

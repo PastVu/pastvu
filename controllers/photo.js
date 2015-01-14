@@ -2091,6 +2091,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			var snapshotFieldValue;
 			var snapshotFieldLastIndex = 0;
 			var regions = {};
+			var reasons = {};
 			var result = [];
 			var resultRow;
 			var reason;
@@ -2159,7 +2160,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 
 				reason = hist.reason;
 				if (!_.isEmpty(reason)) {
-					reason.title = reasonController.giveReasonTitle({ cid: reason.cid });
+					reasons[reason.cid] = 1;
 					resultRow.reason = reason;
 				}
 
@@ -2221,6 +2222,12 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			// Если есть регионы, запрашиваем их объекты
 			if (Object.keys(regions).length) {
 				result.regions = regionController.fillRegionsHash(regions, ['cid', 'title_local']);
+			}
+
+			// Если есть причины, запрашиваем их заголовки
+			reasons = Object.keys(reasons);
+			if (reasons.length) {
+				result.reasons = reasonController.getReasonHashFromCache(reasons);
 			}
 
 			return result;
