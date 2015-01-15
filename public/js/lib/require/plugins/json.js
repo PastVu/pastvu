@@ -2,7 +2,7 @@
  * RequireJS plugin for loading JSON files
  * - depends on Text plugin and it was HEAVILY "inspired" by it as well.
  * Author: Miller Medeiros
- * Version: 0.3.1 (2013/02/04)
+ * Version: 0.4.0 (2014/04/10)
  * Released under the MIT license
  */
 define(['text'], function(text){
@@ -24,8 +24,9 @@ define(['text'], function(text){
     return {
 
         load : function(name, req, onLoad, config) {
-            if ( config.isBuild && (config.inlineJSON === false || name.indexOf(CACHE_BUST_QUERY_PARAM +'=') !== -1) ) {
+            if (( config.isBuild && (config.inlineJSON === false || name.indexOf(CACHE_BUST_QUERY_PARAM +'=') !== -1)) || (req.toUrl(name).indexOf('empty:') === 0)) {
                 //avoid inlining cache busted JSON or if inlineJSON:false
+                //and don't inline files marked as empty!
                 onLoad(null);
             } else {
                 text.get(req.toUrl(name), function(data){
@@ -44,8 +45,12 @@ define(['text'], function(text){
         },
 
         normalize : function (name, normalize) {
-            //used normalize to avoid caching references to a "cache busted" request
-            return (name.indexOf(CACHE_BUST_FLAG) === -1)? name : cacheBust(name);
+            // used normalize to avoid caching references to a "cache busted" request
+            if (name.indexOf(CACHE_BUST_FLAG) !== -1) {
+                name = cacheBust(name);
+            }
+            // resolve any relative paths
+            return normalize(name);
         },
 
         //write method based on RequireJS official text plugin by James Burke
