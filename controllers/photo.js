@@ -72,9 +72,9 @@ var _session = require('./_session.js'),
 		// Если да, то в случае регионального модератора вернёт номер региона,
 		// в случае, глобального модератора и админа - true
 		canModerate: function (photo, usObj) {
-			var rhash,
-				photoRegion,
-				i;
+			var photoRegion;
+			var rhash;
+			var i;
 
 			if (usObj.isModerator) {
 				// Если у пользователя роль модератора регионов, смотрим его регионы
@@ -99,25 +99,25 @@ var _session = require('./_session.js'),
 		},
 		getCan: function (photo, usObj, canModerate) {
 			var can = {
-					edit: false,
-					ready: false,
-					revision: false,
-					revoke: false,
-					reject: false,
-					approve: false,
-					activate: false,
-					deactivate: false,
-					remove: false,
-					restore: false,
-					convert: false,
-					comment: false
-				},
-				s = photo.s,
-				ownPhoto;
+				edit: false,
+				ready: false,
+				revision: false,
+				revoke: false,
+				reject: false,
+				approve: false,
+				activate: false,
+				deactivate: false,
+				remove: false,
+				restore: false,
+				convert: false,
+				comment: false
+			};
+			var s = photo.s;
+			var ownPhoto;
 
 			if (usObj.registered) {
 				ownPhoto = !!photo.user && photo.user.equals(usObj.user._id);
-				if (canModerate !== undefined) {
+				if (canModerate !== undefined && canModerate !== null) {
 					canModerate = !!canModerate;
 				} else {
 					canModerate = !!permissions.canModerate(photo, usObj);
@@ -340,7 +340,7 @@ var core = {
 
 				return [photo, this.can];
 			})
-			.nodeify(cb, {spread: true});
+			.nodeify(cb, { spread: true });
 	},
 	getBounds: function (data, cb) {
 		var year = false;
@@ -678,11 +678,11 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 }
 
 var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
-    var changed = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
+	var changed = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
 	var history;
 	var reasonCid;
 
-    if (Object.keys(changed.snapshot).length) {
+	if (Object.keys(changed.snapshot).length) {
 		history = new PhotoHistory(
 			_.assign({
 				cid: photo.cid,
@@ -719,32 +719,34 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 		}
 
 		return history.saveAsync();
-    } else {
+	} else {
 		return null;
-    }
+	}
 });
 
 var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
 	if (!_.isObject(data)) {
-		throw {message: msg.badParams};
+		throw { message: msg.badParams };
 	}
 	if (!iAm.registered) {
-		throw {message: msg.deny};
+		throw { message: msg.deny };
 	}
 
 	var cid = Number(data.cid);
 
 	if (isNaN(cid) || cid < 1) {
-		throw {message: msg.badParams};
+		throw { message: msg.badParams };
 	}
 
-	return findPhoto({cid: cid}, {}, iAm)
+	return findPhoto({ cid: cid }, {}, iAm)
 		.then(function (photo) {
 			if (_.isNumber(data.s) && data.s !== photo.s) {
 				throw { message: msg.anotherStatus };
 			}
 
-			if (can && permissions.getCan(photo, iAm)[can] !== true) {
+			var canModerate = permissions.canModerate(photo, iAm);
+
+			if (can && permissions.getCan(photo, iAm, canModerate)[can] !== true) {
 				throw { message: msg.deny };
 			}
 
@@ -754,7 +756,7 @@ var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
 				throw { changed: true };
 			}
 
-			return photo;
+			return [photo, canModerate];
 		});
 });
 
@@ -768,7 +770,7 @@ var revokePhoto = function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'revoke')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo) {
 			this.oldPhotoObj = photo.toObject();
 
 			photo.s = status.REVOKE;
@@ -815,12 +817,13 @@ var readyPhoto = function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'ready')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			if (!photo.r0) {
-				throw {message: msg.mustCoord, error: true};
+				throw { message: msg.mustCoord, error: true };
 			}
 
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.READY;
 			photo.cdate = new Date();
@@ -829,7 +832,7 @@ var readyPhoto = function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -859,8 +862,9 @@ var toRevision = Bluebird.method(function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'revision')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.REVISION;
 			photo.cdate = new Date();
@@ -869,7 +873,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -899,8 +903,9 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'reject')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.REJECT;
 			photo.cdate = new Date();
@@ -909,7 +914,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -935,12 +940,13 @@ var approvePhoto = function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'approve')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			if (!photo.r0) {
 				throw { message: msg.mustCoord, error: true };
 			}
 
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.PUBLIC;
 			photo.cdate = photo.adate = photo.sdate = new Date();
@@ -968,7 +974,7 @@ var approvePhoto = function (socket, data) {
 			}
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -999,8 +1005,9 @@ var activateDeactivate = function (socket, data) {
 
 	return prefetchPhoto(iAm, data, disable ? 'deactivate' : 'activate')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
 			photo.cdate = new Date();
@@ -1011,7 +1018,7 @@ var activateDeactivate = function (socket, data) {
 			changePublicPhotoExternality(photoSaved, iAm, !disable);
 
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, disable && data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, disable && data.reason);
 
 			// Заново выбираем данные для отображения
 			return core.givePhoto(iAm, { cid: photoSaved.cid });
@@ -1065,8 +1072,9 @@ var removePhoto = Bluebird.method(function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'remove')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.REMOVE;
 			photo.cdate = new Date();
@@ -1075,7 +1083,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			// Отписываем всех пользователей
 			subscrController.unSubscribeObj(photoSaved._id);
@@ -1112,8 +1120,9 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 
 	return prefetchPhoto(iAm, data, 'restore')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 
 			photo.s = status.PUBLIC;
 			photo.cdate = new Date();
@@ -1122,7 +1131,7 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 		})
 		.spread(function (photoSaved) {
 			// Сохраняем в истории предыдущий статус
-			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, true, data.reason);
+			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			changePublicPhotoExternality(photoSaved, iAm, true);
 
@@ -1590,9 +1599,10 @@ var savePhoto = function (iAm, data) {
 	var newValues;
 	var newRegions;
 
+
 	return prefetchPhoto(iAm, data, 'edit')
 		.bind({})
-		.then(function (photo) {
+		.spread(function (photo, canModerate) {
 			var changes = data.changes;
 
 			if (_.isEmpty(changes)) {
@@ -1601,6 +1611,7 @@ var savePhoto = function (iAm, data) {
 
 			this.photo = photo;
 			this.oldPhotoObj = photo.toObject();
+			this.canModerate = canModerate;
 			this.saveHistory = this.photo.s !== status.NEW;
 			this.parsedFileds = {};
 
@@ -1719,7 +1730,7 @@ var savePhoto = function (iAm, data) {
 
 			// Сохраняем в истории предыдущий статус
 			if (this.saveHistory) {
-				savePhotoHistory(iAm, this.oldPhotoObj, this.photo, null, null, this.parsedFileds);
+				savePhotoHistory(iAm, this.oldPhotoObj, this.photo, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate, null, this.parsedFileds);
 			}
 
 			// Заново выбираем данные для отображения
@@ -2164,10 +2175,13 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 					resultRow.reason = reason;
 				}
 
-				if (hist.role && hist.roleregion) {
+				if (hist.role) {
 					resultRow.role = hist.role;
-					resultRow.roleregion = hist.roleregion;
-					regions[resultRow.roleregion] = 1;
+
+					if (hist.roleregion) {
+						resultRow.roleregion = hist.roleregion;
+						regions[resultRow.roleregion] = 1;
+					}
 				}
 
 				result.push(resultRow);
@@ -2461,16 +2475,6 @@ module.exports.loadController = function (app, db, io) {
 					socket.emit('takeObjHist', resultData);
 				});
 		});
-		var util = require('util');
-		setTimeout(function () {
-			giveObjHist(hs.usObj, {cid: 289983, fetchId: 1})
-				.catch(function (err) {
-					console.error(err);
-				})
-				.then(function (resultData) {
-					console.log(util.inspect(resultData, { depth: null, colors: true }));
-				});
-		}, 1500);
 
 		socket.on('getBounds', function (data) {
 			getBounds(data, function (resultData) {
