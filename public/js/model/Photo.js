@@ -34,6 +34,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				regions: [],
 				cdate: null, // Время изменения
 				vdate: null, // Время последнего просмотра
+				stdate: null, // Время установки текущего статуса фотографии
 
 				dir: undefined,
 
@@ -118,6 +119,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			}
 			if (origin.vdate) {
 				origin.vdate = new Date(origin.vdate);
+			}
+			if (origin.stdate) {
+				origin.stdate = new Date(origin.stdate);
 			}
 			User.factory(origin.user, 'base');
 		}

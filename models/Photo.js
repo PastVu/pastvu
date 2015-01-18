@@ -16,8 +16,8 @@ var FragmentSchema = new Schema({
         cid: { type: Number, index: { unique: true } },
         user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
 
-        // Статус фотографии, перечислены в константах
-        s: { type: Number, index: true },
+        s: { type: Number, index: true }, // Статус фотографии, перечислены в константах
+        stdate: { type: Date }, // Время установки текущего статуса фотографии
 
         // Время загрузки
         ldate: { type: Date, 'default': Date.now, required: true, index: true },

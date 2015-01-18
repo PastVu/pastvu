@@ -203,15 +203,21 @@ define(
 			this.msg = ko.observable('');
 			this.msgCss = ko.observable('');
 			this.msgTitle = ko.observable('');
+			this.msgLink = ko.observable('');
 
 			this.msgByStatus = this.co.msgByStatus = ko.computed(function () {
 				var status = statusNums[this.p.s()];
+				var link;
+
+				if (this.p.stdate()) {
+					link = '?history=' + this.p.stdate().getTime();
+				}
 
 				if (this.edit()) {
 					this.setMessage('Фото в режиме редактирования', 'Внесите необходимую информацию и сохраните изменения', 'warning');
 					//globalVM.pb.publish('/top/message', ['Photo is in edit mode. Please fill in the underlying fields and save the changes', 'warn']);
 				} else if (status && status.title) {
-					this.setMessage(this.IOwner() ? status.title_owner : status.title, '', status.label);
+					this.setMessage(this.IOwner() ? status.title_owner : status.title, '', status.label, link);
 				} else {
 					this.setMessage();
 				}
@@ -1833,10 +1839,11 @@ define(
 			parent.classList.add('showPrv');
 		},
 
-		setMessage: function (text, abbr, labelMod) {
+		setMessage: function (text, abbr, labelMod, link) {
 			this.msg(text || '');
 			this.msgCss('label-' + (labelMod || 'default'));
 			this.msgTitle(abbr || '');
+			this.msgLink(link || '');
 		}
 	});
 });

@@ -12,9 +12,14 @@
 				// /ko
 			// /ko
 			//ko if: msg().length
-			.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle}")
+			.photoMsg.label(data-bind="css: msgCss(), attr: {title: msgTitle()}")
 				span.glyphicon.glyphicon-warning-sign
 				span(data-bind="text: ' ' + msg()")
+				//ko if: msgLink()
+				|  [
+				a.msgLink(data-bind="attr: {href: msgLink()}") Подробнее..
+				| ]
+				// /ko
 			// /ko
 			.imgRow
 				.imgSuperWrap

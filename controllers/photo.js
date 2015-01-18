@@ -55,11 +55,8 @@ var _session = require('./_session.js'),
 		return result;
 	}, {}),
 	historyFields = constants.photo.historyFields,
-	inputFields = constants.photo.inputFields,
-	flagFields = constants.photo.flagFields,
-	snaphotFields = constants.photo.snaphotFields,
-	snapshotFieldsDiff = constants.photo.snapshotFieldsDiff,
-	snapshotFieldsDiffHash = snapshotFieldsDiff.reduce(function (result, field) {
+	historyFieldsDiff = constants.photo.historyFieldsDiff,
+	historyFieldsDiffHash = historyFieldsDiff.reduce(function (result, field) {
 		result[field] = field;
 		return result;
 	}, {}),
@@ -669,7 +666,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 
 			// Получаем форматированную разницу старого и нового текста (неформатированных)
 			// для полей, для которых нужно вычислять разницу, и только если они не пустые
-			if (snapshotFieldsDiffHash[field] && oldValue && newValue) {
+			if (historyFieldsDiffHash[field] && oldValue && newValue) {
 				diff[field] = Utils.txtdiff(
 					Utils.txtHtmlToPlain(oldValue),
 					// Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п.,
@@ -875,7 +872,7 @@ var revokePhoto = function (socket, data) {
 			this.oldPhotoObj = photo.toObject();
 
 			photo.s = status.REVOKE;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -927,7 +924,7 @@ var readyPhoto = function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.READY;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -968,7 +965,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.REVISION;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -1009,7 +1006,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.REJECT;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -1050,7 +1047,7 @@ var approvePhoto = function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.PUBLIC;
-			photo.cdate = photo.adate = photo.sdate = new Date();
+			photo.stdate = photo.cdate = photo.adate = photo.sdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -1111,7 +1108,7 @@ var activateDeactivate = function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -1178,7 +1175,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.REMOVE;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -1226,7 +1223,7 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.PUBLIC;
-			photo.cdate = new Date();
+			photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -2160,7 +2157,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 	var cid = Number(data.cid);
 	var showDiff = !!data.showDiff;
 
-	return findPhoto({ cid: cid }, { _id: 0, user: 1 }, iAm)
+	return findPhoto({ cid: cid }, { _id: 0 }, iAm)
 		.bind({})
 		.then(function (photo) {
 			var historySelect = { _id: 0, cid: 0 };
@@ -2179,7 +2176,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 		})
 		.spread(function (photoUser, histories) {
 			if (_.isEmpty(histories)) {
-				throw { message: 'No history' };
+				throw { message: 'Для объекта еще нет истории' };
 			}
 
 			var regions = {};
@@ -2474,7 +2471,7 @@ module.exports.loadController = function (app, db, io) {
 		socket.on('giveObjHist', function (data) {
 			giveObjHist(hs.usObj, data)
 				.catch(function (err) {
-					return { message: err.message, error: true };
+					return { message: err.message, error: true, fetchId: data && data.fetchId };
 				})
 				.then(function (resultData) {
 					socket.emit('takeObjHist', resultData);
