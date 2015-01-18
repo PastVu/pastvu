@@ -26,6 +26,7 @@ define(
                 this.newSince = this.options.newSince && this.options.newSince.getTime();
                 this.fetchId = 0;
                 this.showDiff = ko.observable(true);
+                this.switchDiff2 = ko.observable(false);
 
                 if (!tplHist) {
                     tplHist = doT.template(document.getElementById('dothist').text);
@@ -279,6 +280,8 @@ define(
                             timeout: 3000,
                             force: true
                         });
+                    } else {
+                        this.switchDiff2(data.hists.length > 4);
                     }
 
                     cb.call(ctx, error, data);

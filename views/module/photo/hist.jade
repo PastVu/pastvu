@@ -1,6 +1,9 @@
 .objHist(data-bind="with: repository[M!M]")
     .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
     ul.media-list.hists
+    //ko if: switchDiff2()
+    .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    // /ko
 
     | <script id="dotRegions" type="text/x-dot-template">
     | {{~it :region:index}}
