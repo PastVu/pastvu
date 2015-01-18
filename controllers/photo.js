@@ -54,6 +54,9 @@ var _session = require('./_session.js'),
 		result[field] = field;
 		return result;
 	}, {}),
+	historyFields = constants.photo.historyFields,
+	inputFields = constants.photo.inputFields,
+	flagFields = constants.photo.flagFields,
 	snaphotFields = constants.photo.snaphotFields,
 	snapshotFieldsDiff = constants.photo.snapshotFieldsDiff,
 	snapshotFieldsDiffHash = snapshotFieldsDiff.reduce(function (result, field) {
@@ -625,52 +628,71 @@ function photoFromMap(photo) {
 function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 	var region;
 	var diff = {};
-	var snapshot = {};
-	var result = { snapshot: snapshot };
+	var fields = [];
+	var oldValues = {};
+	var newValues = {};
+	var result = {};
 
 	// Если хотя бы один регион изменился, записываем весь массив текущих регионов
 	for (var i = 0; i <= maxRegionLevel; i++) {
 		if (oldPhoto['r' + i] !== newPhoto['r' + i]) {
-			snapshot.regions = [];
+			oldValues.regions = [];
+			newValues.regions = [];
+			fields.push('regions');
 			for (i = 0; i <= maxRegionLevel; i++) {
 				region = oldPhoto['r' + i];
 				if (region) {
-					snapshot.regions.push(region);
-				} else {
-					break;
+					oldValues.regions.push(region);
+				}
+				region = newPhoto['r' + i];
+				if (region) {
+					newValues.regions.push(region);
 				}
 			}
 			break;
 		}
 	}
 
-    snaphotFields.forEach(function (field) {
+    historyFields.forEach(function (field) {
         var oldValue = oldPhoto[field];
 		var newValue = newPhoto[field];
 
         if (!_.isEqual(oldValue, newValue)) {
-
-			if (!oldValue && field !== 's') {
-				oldValue = '';
+			// Если это строка и она "", обнуляем её
+			if (!oldValue && _.isString(oldValue)) {
+				oldValue = undefined;
+			}
+			if (!newValue && _.isString(newValue)) {
+				newValue = undefined;
 			}
 
-			// У полей, для которых вычисляется разница в значении будет объект с полями последней версии и разницы
+			// Получаем форматированную разницу старого и нового текста (неформатированных)
+			// для полей, для которых нужно вычислять разницу, и только если они не пустые
 			if (snapshotFieldsDiffHash[field] && oldValue && newValue) {
-				// Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п., разницу с последней версии надо брать с plain
-				if (parsingFieldsHash[field]) {
-					//oldValue = Utils.txtHtmlToPlain(oldValue);
-					newValue = parsedFileds[field] ? parsedFileds[field].plain : Utils.txtHtmlToPlain(newValue);
-				}
-
-				// Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
-				diff[field] = Utils.txtdiff(Utils.txtHtmlToPlain(Utils.txtHtmlToPlain(oldValue)), newValue);
+				diff[field] = Utils.txtdiff(
+					Utils.txtHtmlToPlain(oldValue),
+					// Некоторые поля (описание, автор и др.) парсятся на предмет разметки и т.п.,
+					// разницу с последней версии при этом надо брать с plain
+					parsingFieldsHash[field] ? parsedFileds[field] ? parsedFileds[field].plain : Utils.txtHtmlToPlain(newValue): newValue
+				);
 			}
 
-			snapshot[field] = oldValue;
+			oldValues[field] = oldValue;
+			newValues[field] = newValue;
+			fields.push(field);
         }
     });
 
-	if (Object.keys(diff).length) {
+	if (fields.length) {
+		result.fields = fields;
+	}
+	if (!_.isEmpty(oldValues)) {
+		result.oldValues = oldValues;
+	}
+	if (!_.isEmpty(newValues)) {
+		result.newValues = newValues;
+	}
+	if (!_.isEmpty(diff)) {
 		result.diff = diff;
 	}
 
@@ -678,50 +700,108 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 }
 
 var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
-	var changed = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
-	var history;
-	var reasonCid;
+	var changes = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
 
-	if (Object.keys(changed.snapshot).length) {
-		history = new PhotoHistory(
-			_.assign({
-				cid: photo.cid,
-				stamp: photo.cdate || new Date(),
-				user: iAm.user._id
-			}, changed)
-		);
-
-		if (reason) {
-			history.reason = {};
-			reasonCid = Number(reason.cid);
-
-			if (reasonCid >= 0) {
-				history.reason.cid = reasonCid;
-			}
-			if (_.isString(reason.desc) && reason.desc.length) {
-				history.reason.desc = Utils.inputIncomingParse(reason.desc).result;
-			}
-		}
-
-		if (canModerate === undefined || canModerate === null) {
-			// При проверке стоит смотреть на oldPhotoObj, так как права проверяются перед сохраннением
-			canModerate = permissions.canModerate(oldPhotoObj, iAm);
-		}
-
-		if (canModerate && iAm.user.role) {
-			// Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
-			history.role = iAm.user.role;
-
-			// В случае с модератором региона, permissions.canModerate возвращает cid роли
-			if (iAm.isModerator && _.isNumber(canModerate)) {
-				history.roleregion = canModerate;
-			}
-		}
-
-		return history.saveAsync();
-	} else {
+	if (_.isEmpty(changes)) {
 		return null;
 	}
+
+	return PhotoHistory.findAsync({ cid: oldPhotoObj.cid }, { _id: 1, values: 1 }, { lean: true, sort: { stamp: 1 } })
+		.then(function (histories) {
+			var add = [];
+			var del = [];
+			var reasonCid;
+			var firstTime;
+			var values = {};
+			var promises = [];
+			var firstEntryChanged;
+			var newEntry = { cid: photo.cid, user: iAm.user._id, stamp: photo.cdate || new Date() };
+
+			// Если это первое изменение объекта, создаем первую запись (по премени создания),
+			// чтобы писать туда первоначальные значения полей, и сразу сохраняем её (массивый undefined, чтобы не сохранялись пустыми)
+			if (_.isEmpty(histories)) {
+				firstTime = true;
+				histories = [{ cid: photo.cid, user: photo.user, stamp: photo.ldate.getTime(), values: {}, add: undefined, del: undefined }];
+			}
+
+			var lastFieldsIndexes = histories.reduce(function (result, historyEntry, historyIndex) {
+				var del = historyEntry.del;
+				var values = historyEntry.values;
+
+				_.forEach(changes.fields, function (field) {
+					if (!historyIndex || values && values[field] || del && del.indexOf(field) >= 0) {
+						result[field] = historyIndex;
+					}
+				});
+				return result;
+			}, {});
+
+			_.forOwn(changes.newValues, function (value, field) {
+				values[field] = value;
+				// Если не было значения и новое значение не флаг, говорим что оно добавлено
+				if (changes.oldValues[field] === undefined && !_.isBoolean(value)) {
+					add.push(field);
+					delete changes.oldValues[field];
+				}
+			});
+
+			_.forOwn(changes.oldValues, function (value, field) {
+				if (!lastFieldsIndexes[field]) {
+					firstEntryChanged = true;
+					histories[0].values[field] = value;
+				}
+				// Если нет нового значения и старое значение не флаг, говорим что оно удалено
+				if (changes.newValues[field] === undefined && !_.isBoolean(value)) {
+					del.push(field);
+				}
+			});
+
+			if (!_.isEmpty(values)) {
+				newEntry.values = values;
+			}
+			if (changes.diff) {
+				newEntry.diff = changes.diff;
+			}
+			newEntry.add = add.length ? add : undefined;
+			newEntry.del = del.length ? del : undefined;
+
+			if (reason) {
+				newEntry.reason = {};
+				reasonCid = Number(reason.cid);
+
+				if (reasonCid >= 0) {
+					newEntry.reason.cid = reasonCid;
+				}
+				if (_.isString(reason.desc) && reason.desc.length) {
+					newEntry.reason.desc = Utils.inputIncomingParse(reason.desc).result;
+				}
+			}
+
+			if (canModerate === undefined || canModerate === null) {
+				// При проверке стоит смотреть на oldPhotoObj, так как права проверяются перед сохраннением
+				canModerate = permissions.canModerate(oldPhotoObj, iAm);
+			}
+
+			if (canModerate && iAm.user.role) {
+				// Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент удаления
+				newEntry.role = iAm.user.role;
+
+				// В случае с модератором региона, permissions.canModerate возвращает cid роли
+				if (iAm.isModerator && _.isNumber(canModerate)) {
+					newEntry.roleregion = canModerate;
+				}
+			}
+
+			promises.push(new PhotoHistory(newEntry).saveAsync());
+
+			if (firstTime) {
+				promises.push(new PhotoHistory(histories[0]).saveAsync());
+			} else if (firstEntryChanged) {
+				promises.push(PhotoHistory.updateAsync({ _id: histories[0]._id }, { $set: { values: histories[0].values } }));
+			}
+
+			return Bluebird.all(promises);
+		});
 });
 
 var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
@@ -2047,17 +2127,7 @@ var planResetDisplayStat = (function () {
 
 /**
  * Возвращает историю редактирования объекта (фотографии)
- * В базе история хранится по строкам. В одной строке содержится одно событие.
- * Такое событие может содержать 2 паказателя: изменение текста и(или) фрагмента.
- * Причем в это событие текст комментария сохраняется старый, т.е.
- * писался он в комментарий в другое время (во время другого события),
- * а флаг изменения фрагмента относится именно к этому событию.
- * Следовательно одна строка содержит события 2-х разных времен.
- * Для представления этого в более нормальном по временной шкале виде
- * необходимо изменение текста переносить во времена события предыдущего изменения текста, а
- * текущие событие отражать только если в нём есть изменение фрагмента или в будущем будет изменение текста и
- * оно будет установленно именно временем этого события
- * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
+ * @param iAm Объект пользователя сессии
  * @param data Объект
  */
 var giveObjHist = Bluebird.method(function (iAm, data) {
@@ -2068,11 +2138,9 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 	var cid = Number(data.cid);
 	var showDiff = !!data.showDiff;
 
-	return findPhoto({cid: cid}, null, iAm)
+	return findPhoto({ cid: cid }, { _id: 0, user: 1 }, iAm)
 		.bind({})
 		.then(function (photo) {
-			this.photo = photo.toObject();
-
 			var historySelect = { _id: 0, cid: 0 };
 
 			if (!showDiff) {
@@ -2080,155 +2148,68 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			}
 
 			return Bluebird.join(
-				User.findOneAsync({ _id: photo.user}, {_id: 0, login: 1, avatar: 1, disp: 1}, { lean: true }),
+				User.findOneAsync({ _id: photo.user }, { _id: 0, login: 1, avatar: 1, disp: 1 }, { lean: true }),
 				PhotoHistory
 					.find({ cid: cid }, historySelect, { lean: true, sort: { stamp: 1 } })
 					.populate({ path: 'user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
 					.execAsync()
 			);
 		})
-		.spread(function (photoUser, hists) {
-			if (_.isEmpty(hists)) {
+		.spread(function (photoUser, histories) {
+			if (_.isEmpty(histories)) {
 				throw { message: 'No history' };
 			}
 
-			var photo = this.photo;
-			// Позиция последнего изменение поля в стеке событий
-			var lastFieldsIndexes = snaphotFields.reduce(function (result, field) {
-				result[field] = 0;
-				return result;
-			}, {});
-			var snapshot;
-			var snapshotFieldValue;
-			var snapshotFieldLastIndex = 0;
 			var regions = {};
 			var reasons = {};
 			var result = [];
-			var resultRow;
-			var reason;
-			var field;
-			var hist;
-			var diff;
+			var history;
+			var values;
 			var i;
 			var j;
 
-			// Добавляем в поля поле массива регионов
-			lastFieldsIndexes.regions = 0;
+			for (i = 0; i < histories.length; i++) {
+				history = histories[i];
 
-			result.push({ user: photoUser, stamp: photo.ldate.getTime(), values: {}, add: [], del: [] });
-
-			for (i = 0; i < hists.length; i++) {
-				hist = hists[i];
-
-				snapshot = hist.snapshot;
-				diff = hist.diff;
-
-				if (_.isEmpty(snapshot) || !hist.user || !hist.stamp) {
-					logger.warn('Object %d has corrupted history entry', cid);
+				if (!history.user || !history.stamp) {
+					logger.warn('Object %d has corrupted %dth history entry', cid, i);
 					continue;
 				}
 
-				resultRow = { user: hist.user, stamp: hist.stamp.getTime(), values: {}, add: [], del: [] };
+				values = history.values;
 
-				for (field in snapshot) {
-					snapshotFieldLastIndex = lastFieldsIndexes[field];
-					if (snapshotFieldLastIndex !== undefined) {
-						snapshotFieldValue = snapshot[field];
+				// Если это первая запись с пустыми значениям - пропускаем
+				if (i === 0 && _.isEmpty(values)) {
+					continue;
+				}
 
-						if (!snapshotFieldValue && field !== 's') {
-							// Если в snapshot пустое значение поля, значит оно было таким,
-							// а в этой записи значение целиком добавили, ставим флаг добавления
-							resultRow.add.push(field);
-							// А в предыдущей записи изменения этого поля надо поставить флаг удаления
-							if (snapshotFieldLastIndex > 0) {
-								result[snapshotFieldLastIndex].del.push(field);
-							}
-						} else {
-							if (!result[snapshotFieldLastIndex].values[field]) {
-								result[snapshotFieldLastIndex].values[field] = {
-									val: snapshotFieldValue
-								};
-							}
-
-							// Если для этого поля есть diff, то он сохраняется в эту запись, и следующией не перезапишется
-							if (showDiff && diff && diff[field]) {
-								resultRow.values[field] = {
-									val: diff[field]
-								};
-							}
-
-							// Если это изменение регионов, одбавляем каждый из них в хэш
-							if (field === 'regions') {
-								for (j = snapshotFieldValue.length; j--;) {
-									regions[snapshotFieldValue[j]] = 1;
-								}
-							}
+				if (values) {
+					// Если выбран режим показа разницы и в этой записи она есть, присваиваем значения из разницы
+					if (history.diff) {
+						for (j in history.diff) {
+							values[j] = history.diff[j];
 						}
+						delete history.diff;
+					}
 
-						lastFieldsIndexes[field] = result.length;
+					// Если в этой записи измененись регионы, добавляем каждый из них в хэш для последующей выборки
+					if (values.regions) {
+						for (j = values.regions.length; j--;) {
+							regions[values.regions[j]] = 1;
+						}
 					}
 				}
 
-				reason = hist.reason;
-				if (!_.isEmpty(reason)) {
-					reasons[reason.cid] = 1;
-					resultRow.reason = reason;
+				if (history.roleregion) {
+					regions[history.roleregion] = 1;
 				}
 
-				if (hist.role) {
-					resultRow.role = hist.role;
-
-					if (hist.roleregion) {
-						resultRow.roleregion = hist.roleregion;
-						regions[resultRow.roleregion] = 1;
-					}
+				// Если в этой записи есть причина (не нулевая/свободная), добавляем её в хэш для последующей выборки
+				if (!_.isEmpty(history.reason) && history.reason.cid) {
+					reasons[history.reason.cid] = 1;
 				}
 
-				result.push(resultRow);
-			}
-
-			// Если изменялись регионы, то сформировать массив для текущей версии фотографии
-			if (lastFieldsIndexes.regions > 0) {
-				photo.regions = regionController.getObjRegionCids(photo);
-
-				for (j = photo.regions.length; j--;) {
-					regions[photo.regions[j]] = 1;
-				}
-			}
-
-			// Бежим по всем полям, которые изменялись в истории и последней записи изменения ставим текущие значения этих полей
-			for (field in lastFieldsIndexes) {
-				if (lastFieldsIndexes[field] > 0) {
-					snapshotFieldValue = photo[field];
-
-					if (!snapshotFieldValue && field !== 's') {
-						// Если в текущей версии объекта нет значения поля,
-						// значит нужно проставить флаг удаления записи о последнем изменении
-						result[lastFieldsIndexes[field]].del.push(field);
-					} else if (!result[lastFieldsIndexes[field]].values[field]) {
-						result[lastFieldsIndexes[field]].values[field] = {
-							val: snapshotFieldValue
-						};
-					}
-				}
-			}
-
-			// Очищаем некоторые поля, если их значения пусты
-			for (i = result.length; i--;) {
-				resultRow = result[i];
-
-				if (!Object.keys(resultRow.values).length) {
-					delete resultRow.values;
-				} else if (resultRow.add.length) {
-					for (j = resultRow.add.length; j--;) {
-						resultRow.values[resultRow.add[j]].add = true;
-					}
-				}
-				delete resultRow.add;
-
-				if (!resultRow.del.length) {
-					delete resultRow.del;
-				}
+				result.push(history);
 			}
 
 			result = { hists: result, fetchId: data.fetchId };
@@ -2504,6 +2485,7 @@ module.exports.loadController = function (app, db, io) {
 module.exports.findPhoto = findPhoto;
 module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
+module.exports.savePhotoHistory = savePhotoHistory;
 
 
 module.exports.core = core;

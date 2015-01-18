@@ -88,7 +88,9 @@ var FragmentSchema = new Schema({
                 cid: { type: Number },
                 desc: { type: String }
             },
-            snapshot: { type: Schema.Types.Mixed }, // Старые значения изменившихся полей
+            values: { type: Schema.Types.Mixed },  // Значения полей, установленные в этот stamp
+            add: { type: [String] }, // Список добавившихся полей
+            del: { type: [String] }, // Список удаленных полей
             diff: { type: Schema.Types.Mixed } // Diff для некоторых полей, изменившихся в этой записи
         },
         { collection: 'photos_history', strict: true, versionKey: false }

@@ -16,6 +16,19 @@ module.exports = {
             REMOVE: 9 // Удалено
         },
 
+        historyFields: [
+            's', 'geo',
+            'file', 'type', 'format', 'sign', 'size', 'w', 'h', 'ws', 'hs',
+            'title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'y', 'dir',
+            'nocomments'
+        ],
+        inputFields: [
+            'geo', 'title', 'desc', 'source', 'author', 'address', 'year', 'year2', 'y', 'dir'
+        ],
+        flagFields: [
+            'nocomments'
+        ],
+
         snaphotFields: [
             's', 'geo',
             'file', 'type', 'format', 'sign', 'size', 'w', 'h', 'ws', 'hs',

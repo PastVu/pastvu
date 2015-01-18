@@ -146,6 +146,8 @@ define(
                 var regionsBase;
                 var regionsDel;
                 var regionsAdd;
+                var addHash;
+                var field;
                 var value;
                 var hist;
                 var j;
@@ -168,12 +170,17 @@ define(
                         hist.roleregion = regionsHash[hist.roleregion];
                     }
 
-                    hist.txtValues = [];
+                    hist.textValuesArr = [];
 
                     if (!hist.values) {
                         hist.values = {};
                     } else {
-                        regionCids = hist.values.regions && hist.values.regions.val;
+
+                        if (hist.values.s) {
+                            hist.values.s = statusNums[hist.values.s];
+                        }
+
+                        regionCids = hist.values.regions;
 
                         if (regionCids) {
                             regionsArr = [];
@@ -206,34 +213,43 @@ define(
                                     }
                                 }
 
-                                hist.values.regions.txt = tplRegionsDiff({
+                                hist.values.regions = tplRegionsDiff({
                                     base: tplRegions(regionsBase),
                                     del: tplRegions(regionsDel),
                                     add: tplRegions(regionsAdd)
                                 });
                             } else {
-                                hist.values.regions.txt = tplRegions(regionsArr);
+                                hist.values.regions = tplRegions(regionsArr);
                             }
 
                             regionsPrev = regionsArr;
                         }
 
-                        if (hist.values.dir && hist.values.dir.val) {
-                            hist.values.dir.txt = fields.dirVals[hist.values.dir.val];
+                        if (hist.values.dir) {
+                            hist.values.dir = fields.dirVals[hist.values.dir];
                         }
 
-                        if (hist.values.s) {
-                            hist.s = statusNums[hist.values.s.val];
+                        if (hist.add) {
+                            addHash = {};
+                            for (j = 0; j < hist.add.length; j++) {
+                                addHash[hist.add[j]] = true;
+                            }
                         }
 
                         for (j = 0; j < txtFields.length; j++) {
-                            value = hist.values[txtFields[j]];
+                            field = txtFields[j];
+                            value = hist.values[field];
                             if (value) {
-                                value.field = txtFields[j];
-                                value.txt = value.txt || value.val;
-                                hist.txtValues.push(value);
+                                // doT не умеет итерироваться по объектам, превращаем в массив
+                                hist.textValuesArr.push({
+                                    field: field,
+                                    val: value,
+                                    add: addHash && addHash[field]
+                                });
                             }
                         }
+
+                        addHash = undefined;
                     }
                 }
 

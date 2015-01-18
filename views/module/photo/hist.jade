@@ -38,10 +38,10 @@
                 .dotDelimeter ·
                 a.histStamp(href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
 
-            | {{?h.s}}
-            .info.iconed(style="color: {{=h.s.color}};")
-                span.glyphicon(class="{{=h.s.icon_history||h.s.icon}}")
-                | {{=h.s.action}}
+            | {{?h.values.s}}
+            .info.iconed(style="color: {{=h.values.s.color}};")
+                span.glyphicon(class="{{=h.values.s.icon_history||h.values.s.icon}}")
+                | {{=h.values.s.action}}
             | {{?}}
 
             | {{?h.del}}
@@ -54,6 +54,12 @@
                 | {{~}}
             | {{?}}
 
+            | {{?h.values.nocomments}}
+            .info.iconed
+                span.glyphicon(class="{{?h.values.nocomments.val}}запрещено{{??}}разрешено{{?}}")
+                | Комментирование {{?h.values.nocomments.val}}запрещено{{??}}разрешено{{?}}
+            | {{?}}
+
             | {{?h.reason}}
             .value
                 .name Причина
@@ -64,14 +70,14 @@
                     | {{?}}
             | {{?}}
 
-            | {{~h.txtValues :value}}
+            | {{~h.textValuesArr :value}}
             .value(class="{{?index}}iconed{{?}}")
                 .name(class="{{?value.add}}green{{??index}}orange{{?}}")
                     | {{?index}}
                     span.glyphicon(class="glyphicon-{{?value.add}}plus{{??}}pencil{{?}}")
                     | {{?}}
                     | {{=it.fields[value.field]}}
-                .val {{=value.txt}}
+                .val {{=value.val}}
             | {{~}}
 
     | {{~}}
