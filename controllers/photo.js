@@ -314,7 +314,7 @@ var core = {
 				}
 
 				if (iAm.registered) {
-					return userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo');
+					return userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo', params.rel);
 				} else {
 					return photo;
 				}
@@ -801,7 +801,15 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 		});
 });
 
-var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
+/**
+ * Выборка объекта фотографии для редактирования с проверкой прав на указанный can
+ * Проверяет не редактировался ли объект после указанного времени cdate. Если да - бросит { changed: true }
+ * Возвращает объект и свойство canModerate
+ * @param iAm
+ * @param data
+ * @param can
+ */
+var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
 	if (!_.isObject(data)) {
 		throw { message: msg.badParams };
 	}
@@ -838,6 +846,22 @@ var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
 });
 
 /**
+ * Сохраняем объект фотографии с подъемом времени просмотра пользователем объекта
+ * @param iAm
+ * @param photo
+ * @param [stamp] Принудительно устанавливает временем просмотра это время
+ */
+var photoUpdate = function (iAm, photo, stamp) {
+	return Bluebird.join(
+		photo.saveAsync(),
+		userObjectRelController.setObjectView(photo._id, iAm.user._id, 'photo', stamp),
+		function (savedResult, rel) {
+			return [savedResult[0], rel];
+		}
+	);
+};
+
+/**
  * Отзыв собственной фотографии
  * @param {Object} socket Сокет пользователя
  * @param {Object} data
@@ -845,7 +869,7 @@ var prefetchPhoto = Bluebird.method(function (iAm, data, can) {
 var revokePhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	return prefetchPhoto(iAm, data, 'revoke')
+	return photoEditPrefetch(iAm, data, 'revoke')
 		.bind({})
 		.spread(function (photo) {
 			this.oldPhotoObj = photo.toObject();
@@ -853,9 +877,9 @@ var revokePhoto = function (socket, data) {
 			photo.s = status.REVOKE;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			var ownerObj = _session.getOnline(null, photoSaved.user);
 
 			// Пересчитывам кол-во новых фото у владельца
@@ -870,7 +894,7 @@ var revokePhoto = function (socket, data) {
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -892,7 +916,7 @@ var revokePhoto = function (socket, data) {
 var readyPhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	return prefetchPhoto(iAm, data, 'ready')
+	return photoEditPrefetch(iAm, data, 'ready')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			if (!photo.r0) {
@@ -905,14 +929,14 @@ var readyPhoto = function (socket, data) {
 			photo.s = status.READY;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -937,7 +961,7 @@ var toRevision = Bluebird.method(function (socket, data) {
 		throw { message: msg.needReason };
 	}
 
-	return prefetchPhoto(iAm, data, 'revision')
+	return photoEditPrefetch(iAm, data, 'revision')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
@@ -946,14 +970,14 @@ var toRevision = Bluebird.method(function (socket, data) {
 			photo.s = status.REVISION;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -978,7 +1002,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 		throw { message: msg.needReason };
 	}
 
-	return prefetchPhoto(iAm, data, 'reject')
+	return photoEditPrefetch(iAm, data, 'reject')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
@@ -987,14 +1011,14 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 			photo.s = status.REJECT;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -1015,7 +1039,7 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 var approvePhoto = function (socket, data) {
 	var iAm = socket.handshake.usObj;
 
-	return prefetchPhoto(iAm, data, 'approve')
+	return photoEditPrefetch(iAm, data, 'approve')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			if (!photo.r0) {
@@ -1028,9 +1052,9 @@ var approvePhoto = function (socket, data) {
 			photo.s = status.PUBLIC;
 			photo.cdate = photo.adate = photo.sdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			var ownerObj = _session.getOnline(null, photoSaved.user);
 
 			// Обновляем количество у автора фотографии
@@ -1054,7 +1078,7 @@ var approvePhoto = function (socket, data) {
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -1080,7 +1104,7 @@ var activateDeactivate = function (socket, data) {
 		throw { message: msg.needReason };
 	}
 
-	return prefetchPhoto(iAm, data, disable ? 'deactivate' : 'activate')
+	return photoEditPrefetch(iAm, data, disable ? 'deactivate' : 'activate')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
@@ -1089,16 +1113,16 @@ var activateDeactivate = function (socket, data) {
 			photo.s = status[disable ? 'DEACTIVATE' : 'PUBLIC'];
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			changePublicPhotoExternality(photoSaved, iAm, !disable);
 
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, disable && data.reason);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -1147,7 +1171,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 		throw { message: msg.needReason };
 	}
 
-	return prefetchPhoto(iAm, data, 'remove')
+	return photoEditPrefetch(iAm, data, 'remove')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
@@ -1156,9 +1180,9 @@ var removePhoto = Bluebird.method(function (socket, data) {
 			photo.s = status.REMOVE;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
@@ -1170,7 +1194,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
 			}
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -1195,7 +1219,7 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 		throw { message: msg.needReason };
 	}
 
-	return prefetchPhoto(iAm, data, 'restore')
+	return photoEditPrefetch(iAm, data, 'restore')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			this.oldPhotoObj = photo.toObject();
@@ -1204,16 +1228,16 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 			photo.s = status.PUBLIC;
 			photo.cdate = new Date();
 
-			return photo.saveAsync();
+			return photoUpdate(iAm, photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
 			changePublicPhotoExternality(photoSaved, iAm, true);
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: photoSaved.cid });
+			return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };
@@ -1677,7 +1701,7 @@ var savePhoto = function (iAm, data) {
 	var newRegions;
 
 
-	return prefetchPhoto(iAm, data, 'edit')
+	return photoEditPrefetch(iAm, data, 'edit')
 		.bind({})
 		.spread(function (photo, canModerate) {
 			var changes = data.changes;
@@ -1768,10 +1792,11 @@ var savePhoto = function (iAm, data) {
 				this.photo.cdate = this.photo.ucdate = new Date();
 			}
 
-			return this.photo.saveAsync();
+			return photoUpdate(iAm, this.photo);
 		})
-		.spread(function (photoSaved) {
+		.spread(function (photoSaved, rel) {
 			this.photo = photoSaved;
+			this.rel = rel;
 
 			var newKeys = Object.keys(newValues);
 			var oldValues = {}; // Старые значения изменяемых свойств
@@ -1811,7 +1836,7 @@ var savePhoto = function (iAm, data) {
 			}
 
 			// Заново выбираем данные для отображения
-			return core.givePhoto(iAm, { cid: this.photo.cid });
+			return core.givePhoto(iAm, { cid: this.photo.cid, rel: this.rel });
 		})
 		.spread(function (photo, can) {
 			return { message: 'ok', photo: photo, can: can };

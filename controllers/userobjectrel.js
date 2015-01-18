@@ -19,6 +19,10 @@ var getRel = function (objIds, userId, type, rels) {
         type = 'photo';
     }
 
+    if (rels && !Array.isArray(rels)) {
+        rels = [rels];
+    }
+
     var objIdsWithCounts = [];
     var relHash = Object.create(null);
     var promise = rels ? Bluebird.resolve(rels) : UserObjectRel.findAsync(
@@ -138,10 +142,10 @@ var setObjectView = Bluebird.method(function (objId, userId, type) {
         type = 'photo';
     }
 
-    return UserObjectRel.updateAsync(
+    return UserObjectRel.findOneAndUpdateAsync(
         { obj: objId, user: userId, type: type },
         { $set: { view: new Date() } },
-        { upsert: true }
+        { upsert: true, new: true, lean: true, fields: { _id: 0 } }
     );
 });
 

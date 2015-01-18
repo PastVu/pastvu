@@ -356,7 +356,7 @@ define(
 
 		rechargeData: function (photo, can) {
 			this.originData = photo;
-			this.p = Photo.vm(photo, this.p, true);
+			this.p = Photo.vm(photo, this.p);
 			this.can = ko_mapping.fromJS(can, this.can);
 		},
 
@@ -1035,8 +1035,8 @@ define(
 								self.getNearestRibbon(8, self.applyNearestRibbon, self);
 								self.edit(false);
 							}
-							ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
 							self.exe(false);
+							ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
 						}
 					});
 					socket.emit('savePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), changes: changes, ignoreChange: !!confirmer});
