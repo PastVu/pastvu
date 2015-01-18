@@ -54,10 +54,10 @@
                 | {{~}}
             | {{?}}
 
-            | {{?h.values.nocomments}}
-            .info.iconed
-                span.glyphicon(class="{{?h.values.nocomments.val}}запрещено{{??}}разрешено{{?}}")
-                | Комментирование {{?h.values.nocomments.val}}запрещено{{??}}разрешено{{?}}
+            | {{?h.values.nocomments !== undefined}}
+            .info.iconed(class="{{?h.values.nocomments}}red{{??}}green{{?}}")
+                span.glyphicon(class="glyphicon-{{?h.values.nocomments}}ban-circle{{??}}ok{{?}}")
+                | Комментирование {{?h.values.nocomments}}запрещено{{??}}разрешено{{?}}
             | {{?}}
 
             | {{?h.reason}}

@@ -11,7 +11,6 @@ define(
         var tplRegionsDiff;
         var maxRegionLevel = 5;
         var statusNums = statuses.nums;
-        var infoFields = ['s', 'nocomments'];
         var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir'];
 
         return Cliche.extend({
@@ -176,7 +175,7 @@ define(
                         hist.values = {};
                     } else {
 
-                        if (hist.values.s) {
+                        if (hist.values.s !== undefined) {
                             hist.values.s = statusNums[hist.values.s];
                         }
 

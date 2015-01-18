@@ -639,6 +639,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 			oldValues.regions = [];
 			newValues.regions = [];
 			fields.push('regions');
+
 			for (i = 0; i <= maxRegionLevel; i++) {
 				region = oldPhoto['r' + i];
 				if (region) {
@@ -677,24 +678,20 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 				);
 			}
 
-			oldValues[field] = oldValue;
-			newValues[field] = newValue;
+			if (oldValue !== undefined) {
+				oldValues[field] = oldValue;
+			}
+			if (newValue !== undefined) {
+				newValues[field] = newValue;
+			}
 			fields.push(field);
         }
     });
 
-	if (fields.length) {
-		result.fields = fields;
-	}
-	if (!_.isEmpty(oldValues)) {
-		result.oldValues = oldValues;
-	}
-	if (!_.isEmpty(newValues)) {
-		result.newValues = newValues;
-	}
-	if (!_.isEmpty(diff)) {
-		result.diff = diff;
-	}
+	result.fields = fields;
+	result.oldValues = oldValues;
+	result.newValues = newValues;
+	result.diff = diff;
 
 	return result;
 }
@@ -702,7 +699,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
 	var changes = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
 
-	if (_.isEmpty(changes)) {
+	if (_.isEmpty(changes.fields)) {
 		return null;
 	}
 
@@ -739,7 +736,7 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 			_.forOwn(changes.newValues, function (value, field) {
 				values[field] = value;
 				// Если не было значения и новое значение не флаг, говорим что оно добавлено
-				if (changes.oldValues[field] === undefined && !_.isBoolean(value)) {
+				if (!_.isBoolean(value) && changes.oldValues[field] === undefined) {
 					add.push(field);
 					delete changes.oldValues[field];
 				}
@@ -751,7 +748,7 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 					histories[0].values[field] = value;
 				}
 				// Если нет нового значения и старое значение не флаг, говорим что оно удалено
-				if (changes.newValues[field] === undefined && !_.isBoolean(value)) {
+				if (!_.isBoolean(value) && changes.newValues[field] === undefined) {
 					del.push(field);
 				}
 			});
@@ -759,7 +756,7 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
 			if (!_.isEmpty(values)) {
 				newEntry.values = values;
 			}
-			if (changes.diff) {
+			if (!_.isEmpty(changes.diff)) {
 				newEntry.diff = changes.diff;
 			}
 			newEntry.add = add.length ? add : undefined;
@@ -2208,6 +2205,8 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 				if (!_.isEmpty(history.reason) && history.reason.cid) {
 					reasons[history.reason.cid] = 1;
 				}
+
+				history.stamp = history.stamp.getTime();
 
 				result.push(history);
 			}

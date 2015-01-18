@@ -1278,8 +1278,8 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				if (!data || data.error) {
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else {
-					this.parentModule.setNoComments(data.nocomments);
-					this.nocomments(data.nocomments);
+					this.parentModule.setNoComments(!!data.nocomments);
+					this.nocomments(!!data.nocomments);
 				}
 			}, this);
 			socket.emit('setNoComments', {cid: this.cid, type: this.type, val: !this.nocomments()});

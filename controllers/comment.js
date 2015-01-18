@@ -1693,25 +1693,41 @@ var setNoComments = Bluebird.method(function (iAm, data) {
 	}
 
 	if (data.type === 'news') {
-		promise = News.findOneAsync({cid: cid});
+		promise = News.findOneAsync({ cid: cid });
 	} else {
-		promise = photoController.findPhoto({cid: cid}, null, iAm);
+		promise = photoController.findPhoto({ cid: cid }, null, iAm);
 	}
 
 	return promise
+		.bind({})
 		.then(function (obj) {
 			if (!obj) {
 				throw { message: msg.noObject };
 			}
-			if (!permissions.canModerate(data.type, obj, iAm)) {
+			this.canModerate = permissions.canModerate(data.type, obj, iAm);
+
+			if (!this.canModerate) {
 				throw { message: msg.deny };
 			}
 
+			if (data.type === 'photo') {
+				this.oldPhotoObj = obj.toObject();
+				this.obj = obj;
+				obj.cdate = new Date();
+			}
+
 			obj.nocomments = data.val ? true : undefined;
+
 			return obj.saveAsync();
 		})
-		.then(function (objResult) {
-			return { nocomments: objResult[0].nocomments };
+		.spread(function (objSaved) {
+			if (data.type === 'photo') {
+				// Сохраняем в истории предыдущее значение nocomments
+				// Чтобы в истории установился false вместо undefined
+				objSaved.nocomments = !!objSaved.nocomments;
+				photoController.savePhotoHistory(iAm, this.oldPhotoObj, objSaved, this.canModerate);
+			}
+			return { nocomments: objSaved.nocomments };
 		});
 });
 
