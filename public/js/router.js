@@ -125,10 +125,10 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
 
 				if (!href || href.length === 0 || router.blockHrefs) {
 					evt.preventDefault();
-				} else if (target !== '_blank' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+				} else if (target !== '_blank' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
 					//target === '_blank' --> Open a link in a new tab in foreground.
-					//Ctrl + Shift + Click --> Open a link in a new tab in foreground.
-					//Ctrl + Click --> Open a link in a new tab in backgroud.
+					//Ctrl/Cmd + Shift + Click --> Open a link in a new tab in foreground.
+					//Ctrl/Cmd + Click --> Open a link in a new tab in backgroud.
 					//Shift + Click --> Open a link in a new window.
 					//Alt + Click --> Save the target on disk (open the Save As dialog).
 
