@@ -941,7 +941,9 @@ define(
 			}
 		},
 		closeHistory: function () {
-			globalVM.router.navigate('/p/' + this.p.cid());
+			// При закрытии надо сделать replaceState, чтобы текущей страницей истории стала страница самой фотографии,
+			// чтобы при переходе назад, перейти не на историю, а на исходный referrer
+			globalVM.router.navigate('/p/' + this.p.cid(), { replace: true });
 		},
 		destroyHistory: function () {
 			if (this.histVM) {

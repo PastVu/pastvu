@@ -7,6 +7,6 @@
 			.ranks {{=c.user.rnks}}
 			| {{?}}
 			.dotDelimeter ·
-			a.stamp(href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
+			a.stamp(data-replace="true", href="{{='?hl=comment-'+c.cid}}") {{=it.fDate(new Date(c.stamp))}}
 			.dotDelimeter ·
 			.changed(title="Показать историю изменений") {{='Комментарий удален '+it.fDateIn(new Date(c.lastChanged))}}

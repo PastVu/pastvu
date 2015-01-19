@@ -1,6 +1,6 @@
 .fullComments(data-bind="with: repository[M!M]")
 	.cmtsHead
-		a.count.headElem.interact(href="?hl=comments", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Ссылка на область комментариев")
+		a.count.headElem.interact(href="?hl=comments", data-replace="true", data-bind="html: count() + (countNew() ? '<span class=\"cnew\"> +' + countNew() + '</span>' : '')", title="Ссылка на область комментариев")
 		//ko if: canReply()
 		.addZero.headElem.interact.strokeBefore(data-bind="click: replyZero", title="Добавить комментарий первого уровня")
 			span.glyphicon.glyphicon-edit
