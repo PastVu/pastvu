@@ -67,8 +67,11 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 		defType = defType || 'full';
 
 		if (origin.avatar) {
-			origin.avatarth = P.preaddr + '/_a/h/' + origin.avatar;
-			origin.avatar = P.preaddr + '/_a/d/' + origin.avatar;
+            // Сохраняем исходное значение поля avatar в ava, чтобы при повторном factory не добавить префиксы еще раз
+            origin.ava = origin.ava || origin.avatar;
+
+			origin.avatarth = P.preaddr + '/_a/h/' + origin.ava;
+			origin.avatar = P.preaddr + '/_a/d/' + origin.ava;
 		}
 		if (!origin.disp) {
 			origin.disp = origin.login;
