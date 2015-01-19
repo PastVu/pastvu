@@ -16,6 +16,41 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 		}
 	};
 
+
+    // Отключает скроллинг body путем задания overflow:hidden и правого marging равного ширине скроллинга
+    function bodyScrollOff($body) {
+        var bodyWidth;
+
+        if (!$body) {
+            $body = $(document.body);
+        }
+
+        if (!$body.hasClass('modal')) {
+            bodyWidth = $body.innerWidth();
+
+            $body
+                .addClass('modal')
+                .add('#topContainer')
+                .css({ marginRight: $body.innerWidth() - bodyWidth + 'px' });
+        }
+
+        return $body;
+    }
+
+    function bodyScrollOn($body) {
+        if (!$body) {
+            $body = $(document.body);
+        }
+        if ($body.hasClass('modal') && $('.neoModalCurtain').length <= 1) {
+            $body
+                .removeClass('modal')
+                .add('#topContainer')
+                .css({ marginRight: '0px' });
+        }
+
+        return $body;
+    }
+
 	return {
 		P: P,
 		pb: ps,
@@ -34,10 +69,16 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 
 		func: {
 			showContainer: function ($container, cb, ctx) {
-				var container = $container[0],
-					noDisplay = container.classList.contains('mNoDisplay'),
-					hidden = container.classList.contains('mHidden'),
-					fade = container.classList.contains('mFadeIn');
+				var container = $container[0];
+                var isModal = container.classList.contains('neoModalContainer');
+                var noDisplay = container.classList.contains('mNoDisplay');
+                var hidden = container.classList.contains('mHidden');
+                var fade = container.classList.contains('mFadeIn');
+
+                if (isModal) {
+                    // Отключаем скроллинг body, если это модальное окно
+                    bodyScrollOff();
+                }
 
 				if (noDisplay || hidden) {
 					if (fade && Browser.support.cssAnimation) {
@@ -59,17 +100,26 @@ define(['jquery', 'Browser', 'Utils', 'underscore', 'Params', 'i18n', 'knockout'
 				}
 			},
 			hideContainer: function ($container, cb, ctx) {
-				var container = $container[0],
-					noDisplay = container.classList.contains('mNoDisplay'),
-					hidden = container.classList.contains('mHidden');
+				var container = $container[0];
+                var isModal = container.classList.contains('neoModalContainer');
+                var noDisplay = container.classList.contains('mNoDisplay');
+                var hidden = container.classList.contains('mHidden');
 
 				if (noDisplay || hidden) {
 					container.classList.remove('mShow');
 				}
+
+                if (isModal) {
+                    // Включаем скроллинг body, если это было модальное окно
+                    bodyScrollOn();
+                }
+
 				if (Utils.isType('function', cb)) {
 					cb.call(ctx || window);
 				}
-			}
+			},
+            bodyScrollOff: bodyScrollOff,
+            bodyScrollOn: bodyScrollOn
 		}
 	};
 });

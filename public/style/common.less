@@ -32,6 +32,10 @@ body {
 	background-color: @body-bg;
 	padding-top: 33px; /* equal to topContainer height */
 	overflow-y: scroll; // Для правильного подсчета ширины страницы всегда показываем вертикалььный скролл
+
+    &.modal {
+        overflow: hidden; // Для предотвращения скроллинга всей страницы когда активно модальное окно
+    }
 }
 
 ::-webkit-scrollbar {
