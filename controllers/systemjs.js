@@ -534,57 +534,68 @@ module.exports.loadController = function (app, db) {
 		return {message: 'Renamed ' + renamedCounter + ' photo titles. All done in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
-	saveSystemJSFunc(function calcUserStats() {
-		var startTime = Date.now(),
-			users = db.users.find({}, {_id: 1}).sort({cid: -1}).toArray(),
-			user,
-			userCounter = users.length,
-			$set,
-			$unset,
-			$update,
-			pcount,
-			pfcount,
-			ccount;
+    saveSystemJSFunc(function calcUserStats() {
+        var startTime = Date.now();
+        var users = db.users.find({}, { _id: 1 }).sort({ cid: -1 }).toArray();
+        var user;
+        var userCounter = users.length;
+        var $set;
+        var $unset;
+        var $update;
+        var pcount;
+        var pfcount;
+        var pdcount;
+        var ccount;
 
-		print('Start to calc for ' + userCounter + ' users');
-		while (userCounter--) {
-			user = users[userCounter];
-			$set = {};
-			$unset = {};
-			$update = {};
-			pcount = db.photos.count({user: user._id, s: 5});
-			pfcount = db.photos.count({user: user._id, s: {$in: [0, 1]}});
-			ccount = db.comments.count({user: user._id, del: null, hidden: null}) + db.commentsn.count({user: user._id, del: null, hidden: null});
+        print('Start to calc for ' + userCounter + ' users');
+        while (userCounter--) {
+            user = users[userCounter];
+            $set = {};
+            $unset = {};
+            $update = {};
+            pcount = db.photos.count({ user: user._id, s: 5 });
+            pfcount = db.photos.count({ user: user._id, s: { $in: [0, 1, 2] } });
+            pdcount = db.photos.count({ user: user._id, s: { $in: [3, 4, 7, 9] } });
+            ccount = db.comments.count({ user: user._id, del: null, hidden: null }) + db.commentsn.count({
+                user: user._id,
+                del: null,
+                hidden: null
+            });
 
-			if (pcount > 0) {
-				$set.pcount = pcount;
-			} else {
-				$unset.pcount = 1;
-			}
-			if (pfcount > 0) {
-				$set.pfcount = pfcount;
-			} else {
-				$unset.pfcount = 1;
-			}
-			if (ccount > 0) {
-				$set.ccount = ccount;
-			} else {
-				$unset.ccount = 1;
-			}
+            if (pcount > 0) {
+                $set.pcount = pcount;
+            } else {
+                $unset.pcount = 1;
+            }
+            if (pfcount > 0) {
+                $set.pfcount = pfcount;
+            } else {
+                $unset.pfcount = 1;
+            }
+            if (pdcount > 0) {
+                $set.pdcount = pdcount;
+            } else {
+                $unset.pdcount = 1;
+            }
+            if (ccount > 0) {
+                $set.ccount = ccount;
+            } else {
+                $unset.ccount = 1;
+            }
 
-			//Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
-			if (Object.keys($set).length) {
-				$update.$set = $set;
-			}
-			if (Object.keys($unset).length) {
-				$update.$unset = $unset;
-			}
+            //Нельзя присваивать пустой объект $set или $unset - обновления не будет, поэтому проверяем на кол-во ключей
+            if (Object.keys($set).length) {
+                $update.$set = $set;
+            }
+            if (Object.keys($unset).length) {
+                $update.$unset = $unset;
+            }
 
-			db.users.update({_id: user._id}, $update, {upsert: false});
-		}
+            db.users.update({ _id: user._id }, $update, { upsert: false });
+        }
 
-		return {message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's'};
-	});
+        return { message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
+    });
 
 	saveSystemJSFunc(function calcPhotoStats() {
 		var startTime = Date.now(),

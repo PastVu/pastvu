@@ -57,10 +57,11 @@ var UserScheme = new mongoose.Schema({
 		aboutme: {type: String},
 
 		regdate: {type: Date, 'default': Date.now },
-		pcount: {type: Number, 'default': 0, index: true}, //Кол-во публичных фотографий
-		pfcount: {type: Number, 'default': 0}, //Кол-во неподтвержденных фотографий
-		bcount: {type: Number, 'default': 0}, //Кол-во публичных блогов
-		ccount: {type: Number, 'default': 0, index: true}, //Кол-во публичных комментариев
+		pcount: {type: Number, 'default': 0, index: true}, // Кол-во публичных фотографий
+		pfcount: {type: Number, 'default': 0}, // Кол-во неподтвержденных фотографий
+		pdcount: {type: Number, 'default': 0}, // Кол-во неподтвержденных фотографий
+		bcount: {type: Number, 'default': 0}, // Кол-во публичных блогов
+		ccount: {type: Number, 'default': 0, index: true}, // Кол-во публичных комментариев
 
 		dateFormat: {type: String, 'default': "dd.mm.yyyy" },
 		active: {type: Boolean, 'default': false },

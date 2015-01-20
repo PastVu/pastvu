@@ -198,23 +198,24 @@ var core = {
 	getNewPhotosLimit: (function () {
 		return function (user) {
 			var canCreate = 0;
+            var pfcount = user.pfcount;
 
 			if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
-				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - user.pfcount);
+				canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - pfcount);
 			} else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
-				canCreate = core.maxNewPhotosLimit - user.pfcount; //Серебряный и золотой меценаты имеют максимально возможный лимит
+				canCreate = core.maxNewPhotosLimit - pfcount; //Серебряный и золотой меценаты имеют максимально возможный лимит
 			} else if (user.ranks && ~user.ranks.indexOf('mec')) {
-				canCreate = Math.max(0, 100 - user.pfcount); //Меценат имеет лимит 100
+				canCreate = Math.max(0, 100 - pfcount); //Меценат имеет лимит 100
 			} else if (user.pcount < 25) {
-				canCreate = Math.max(0, 3 - user.pfcount);
+				canCreate = Math.max(0, 3 - pfcount);
 			} else if (user.pcount < 50) {
-				canCreate = Math.max(0, 5 - user.pfcount);
+				canCreate = Math.max(0, 5 - pfcount);
 			} else if (user.pcount < 200) {
-				canCreate = Math.max(0, 10 - user.pfcount);
+				canCreate = Math.max(0, 10 - pfcount);
 			} else if (user.pcount < 1000) {
-				canCreate = Math.max(0, 50 - user.pfcount);
+				canCreate = Math.max(0, 50 - pfcount);
 			} else if (user.pcount >= 1000) {
-				canCreate = Math.max(0, 100 - user.pfcount);
+				canCreate = Math.max(0, 100 - pfcount);
 			}
 			return canCreate;
 		};
@@ -567,30 +568,6 @@ function createPhotos(socket, data, cb) {
 	);
 }
 
-var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePublic) {
-	var promises = {};
-
-	//Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-	promises.hideComments = commentController.hideObjComments(photo._id, !makePublic, iAm);
-
-	//Пересчитывам кол-во публичных фото у владельца фотографии
-	var userObj = _session.getOnline(null, photo.user);
-	if (userObj) {
-		userObj.user.pcount = userObj.user.pcount + (makePublic ? 1 : -1);
-		promises.updatedSockets = _session.saveEmitUser(userObj);
-	} else {
-		User.updateAsync({_id: photo.user}, {$inc: {pcount: makePublic ? 1 : -1}});
-		promises.updatedSockets = 0;
-	}
-
-	//Если у фото есть координаты, значит надо провести действие с картой
-	if (Utils.geo.check(photo.geo)) {
-		promises.mapOperaton = makePublic ? photoToMap(photo) : photoFromMap(photo);
-	}
-
-	return Bluebird.props(promises);
-});
-
 // Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
 	return Bluebird.join(
@@ -846,7 +823,7 @@ var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
  * Сохраняем объект фотографии с подъемом времени просмотра пользователем объекта
  * @param iAm
  * @param photo
- * @param [stamp] Принудительно устанавливает временем просмотра это время
+ * @param [stamp] Принудительно устанавливает время просмотра
  */
 var photoUpdate = function (iAm, photo, stamp) {
 	return Bluebird.join(
@@ -857,6 +834,43 @@ var photoUpdate = function (iAm, photo, stamp) {
 		}
 	);
 };
+
+// Обновляем счетчики количества у пользователя
+var userPCountUpdate = function (userId, newDelta, publicDelta, inactiveDelta) {
+    var ownerObj = _session.getOnline(null, userId);
+
+    if (ownerObj) {
+        ownerObj.user.pfcount = ownerObj.user.pfcount + (newDelta || 0);
+        ownerObj.user.pcount = ownerObj.user.pcount + (publicDelta || 0);
+        ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
+        return _session.saveEmitUser(ownerObj);
+    } else {
+        return User.updateAsync({ _id: userId }, {
+            $inc: {
+                pfcount: newDelta || 0,
+                pcount: publicDelta || 0,
+                pdcount: inactiveDelta || 0
+            }
+        });
+    }
+};
+
+var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePublic) {
+    var promises = {};
+
+    //Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+    promises.hideComments = commentController.hideObjComments(photo._id, !makePublic, iAm);
+
+    // Пересчитываем кол-во фото у владельца
+    promises.pcount = userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1);
+
+    //Если у фото есть координаты, значит надо провести действие с картой
+    if (Utils.geo.check(photo.geo)) {
+        promises.mapOperaton = makePublic ? photoToMap(photo) : photoFromMap(photo);
+    }
+
+    return Bluebird.props(promises);
+});
 
 /**
  * Отзыв собственной фотографии
@@ -877,15 +891,8 @@ var revokePhoto = function (socket, data) {
 			return photoUpdate(iAm, photo);
 		})
 		.spread(function (photoSaved, rel) {
-			var ownerObj = _session.getOnline(null, photoSaved.user);
-
-			// Пересчитывам кол-во новых фото у владельца
-			if (ownerObj) {
-				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
-				_session.saveEmitUser(ownerObj);
-			} else {
-				User.update({ _id: photoSaved.user }, { $inc: { pfcount: -1 } }).exec();
-			}
+			// Пересчитываем кол-во фото у владельца
+            userPCountUpdate(photoSaved.user, -1, 0, 1);
 
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, false);
@@ -1011,6 +1018,9 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 			return photoUpdate(iAm, photo);
 		})
 		.spread(function (photoSaved, rel) {
+            // Пересчитываем кол-во фото у владельца
+            userPCountUpdate(photoSaved.user, -1, 0, 1);
+            
 			// Сохраняем в истории предыдущий статус
 			savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
@@ -1052,16 +1062,8 @@ var approvePhoto = function (socket, data) {
 			return photoUpdate(iAm, photo);
 		})
 		.spread(function (photoSaved, rel) {
-			var ownerObj = _session.getOnline(null, photoSaved.user);
-
-			// Обновляем количество у автора фотографии
-			if (ownerObj) {
-				ownerObj.user.pcount = ownerObj.user.pcount + 1;
-				ownerObj.user.pfcount = ownerObj.user.pfcount - 1;
-				_session.saveEmitUser(ownerObj);
-			} else {
-				User.update({ _id: photoSaved.user }, { $inc: { pcount: 1, pfcount: -1 } }).exec();
-			}
+            // Пересчитываем кол-во фото у владельца
+            userPCountUpdate(photoSaved.user, -1, 1, 0);
 
 			//Подписываем автора фотографии на неё
 			subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
@@ -1728,6 +1730,11 @@ var savePhoto = function (iAm, data) {
 					delete changes.geo;
 				}
 			}
+
+            if (_.isString(changes.title) && changes.title.length) {
+                // Trim and remove last dot in title, if it is not part of ellipsis
+                changes.title = changes.title.trim().replace(/([^\.])\.$/, '$1');
+            }
 
 			// Новые значения действительно изменяемых свойств
 			newValues = Utils.diff(_.pick(changes, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
