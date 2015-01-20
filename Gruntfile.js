@@ -151,7 +151,7 @@ module.exports = function (grunt) {
 		'clean:publicTpl',
 		'writeBuildParams',
 		'copy:imagemagick',
-		//'exec:npm',
+		'exec:npm',
 		'compress'
 	]);
 
