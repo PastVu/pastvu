@@ -25,6 +25,7 @@ define(
                 this.scroll = this.options.scroll;
                 this.newSince = this.options.newSince && this.options.newSince.getTime();
                 this.fetchId = 0;
+                this.haveDiff = ko.observable(false);
                 this.showDiff = ko.observable(true);
                 this.switchDiff2 = ko.observable(false);
 
@@ -255,8 +256,8 @@ define(
 
                 this.$dom[0].querySelector('.hists').innerHTML = tplHist({
                     cid: this.cid,
-                    hists: data.hists,
                     fields: fields,
+                    hists: data.hists,
                     reasonsHash: reasonsHash,
                     fDate: Utils.format.date.relative
                 });
@@ -281,6 +282,7 @@ define(
                             force: true
                         });
                     } else {
+                        this.haveDiff(!!data.haveDiff);
                         this.switchDiff2(data.hists.length > 4);
                     }
 

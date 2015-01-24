@@ -673,40 +673,45 @@ define(
 			}
 		},
 		yearCheck: function () {
-			var val = this.p.year(),
-				v = Number(val);
+            var p = this.p;
+            var year = Number(p.year());
+			var year2 = Number(p.year2());
 
-			if (!v || isNaN(v)) {
-				//Если значение не парсится, ставим дефолтное
-				v = Photo.def.full.year;
+			if (!year) {
+				// Если значение нулевое или не парсится, ставим дефолтное
+                year = Photo.def.full.year;
 			} else {
-				//Убеждаемся, что оно в допустимом интервале
-				v = Math.min(Math.max(v, 1826), 2000);
+				// Убеждаемся, что оно в допустимом интервале
+                year = Math.min(Math.max(year, 1826), 2000);
 			}
 
-			if (String(val) !== String(v)) {
-				//Если мы поправили значение, то перезаписываем его
-				this.p.year(v);
-			}
-			if (this.p.year() > parseInt(this.p.year2(), 10)) {
-				this.p.year2(v);
-			}
+            p.year(year);
+
+            // Если год начала пустой, то и конца обнуляем
+            // Если не пустой, а год конца не заполнен или меньше начала, ставим год конца равным началу
+            if (!year || year && (!year2 || year > year2)) {
+                p.year2(year);
+            }
 		},
 		year2Check: function () {
-			var val = this.p.year2(),
-				v = Number(val);
+            var p = this.p;
+            var year = Number(p.year());
+            var year2 = Number(p.year2());
 
-			if (!v || isNaN(v)) {
-				//Если значение не парсится, ставим дефолтное
-				v = Photo.def.full.year;
-			} else {
-				//Убеждаемся, что оно в допустимом интервале и не мене year
-				v = Math.min(Math.max(v, this.p.year()), 2000);
-			}
+            if (!year2) {
+                // Если значение нулевое или не парсится, ставим год начала или дефолтное
+                year2 = year || Photo.def.full.year2;
+            } else {
+                // Убеждаемся, что оно в допустимом интервале и не мене year
+                year2 = Math.min(Math.max(year2, year || 1826), 2000);
+            }
 
-			if (String(val) !== String(v)) {
-				this.p.year2(v);
-			}
+            p.year2(year2);
+
+            // Если год конца заполнен, а начала - нет, заполняем
+            if (year2 && !year) {
+                p.year(year2);
+            }
 		},
 
 		getRegionsByGeo: function (geo, cb, ctx) {
@@ -952,119 +957,127 @@ define(
 			}
 		},
 
-		editSave: function () {
-			var self = this;
-			var p = self.p;
-			var origin = self.originData;
-			var cid = p.cid();
+        editSave: function () {
+            var self = this;
+            var p = self.p;
+            var origin = self.originData;
+            var cid = p.cid();
 
-			if (!self.can.edit()) {
-				return false;
-			}
+            if (!self.can.edit()) {
+                return false;
+            }
 
-			if (!self.edit()) {
-				self.edit(true);
-				// Если включаем редактирования, обнуляем количество новых комментариев,
-				// так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
-				p.ccount_new(0);
-				origin.ccount_new = 0;
-				return false;
-			}
+            if (!self.edit()) {
+                self.edit(true);
+                // Если включаем редактирования, обнуляем количество новых комментариев,
+                // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
+                p.ccount_new(0);
+                origin.ccount_new = 0;
+                return false;
+            }
 
-			var changes = _.pick(ko_mapping.toJS(p), 'geo', 'dir', 'title', 'year', 'year2', 'address');
-			var key;
+            var changes = _.chain(ko_mapping.toJS(p))
+                .pick('geo', 'dir', 'title', 'year', 'year2', 'address')
+                .transform(function (result, value, key) {
+                    var valueOrigin = origin[key];
 
-			for (key in changes) {
-				if (changes.hasOwnProperty(key)) {
-					if (!_.isUndefined(origin[key]) && _.isEqual(changes[key], origin[key])) {
-						delete changes[key];
-					} else if (_.isUndefined(origin[key]) && _.isEqual(changes[key], Photo.def.full[key])) {
-						delete changes[key];
-					}
-				}
-			}
+                    if (!_.isEqual(value, valueOrigin)) {
+                        if (!_.isNumber(value) && _.isEmpty(value)) {
+                            result[key] = null;
+                        } else {
+                            result[key] = value;
+                        }
+                    }
+                }, {})
+                .value();
 
-			if (!changes.geo) {
-				if (p.regions().length) {
-					changes.region = _.last(ko_mapping.toJS(p.regions)).cid;
-				} else {
-					changes.region = 0;
-				}
-			}
+            if (changes.year || changes.year2) {
+                changes.year = p.year() || null;
+                changes.year2 = p.year2() || null;
+            }
 
-			if (p.desc() !== self.descEditOrigin) {
-				changes.desc = p.desc();
-			}
-			if (p.source() !== self.sourceEditOrigin) {
-				changes.source = p.source();
-			}
-			if (p.author() !== self.authorEditOrigin) {
-				changes.author = p.author();
-			}
+            if (_.isEmpty(p.geo())) {
+                if (p.regions().length) {
+                    changes.region = _.last(ko_mapping.toJS(p.regions)).cid;
+                } else {
+                    changes.region = null;
+                }
+            }
 
-			if (!_.isEmpty(changes)) {
-				self.exe(true);
+            if (p.desc() !== self.descEditOrigin) {
+                changes.desc = p.desc() || null;
+            }
+            if (p.source() !== self.sourceEditOrigin) {
+                changes.source = p.source() || null;
+            }
+            if (p.author() !== self.authorEditOrigin) {
+                changes.author = p.author() || null;
+            }
 
-				(function request (confirmer) {
-					socket.once('savePhotoResult', function (data) {
-						if (data && data.changed) {
-							confirm({
-								message: data.message +
-								'<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
-								'<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
-								okText: 'Продолжить сохранение',
-								cancelText: 'Отменить',
-								onOk: function (confirmer) {
-									request(confirmer);
-								},
-								onCancel: function () {
-									self.exe(false);
-								}
-							});
-						} else if (data && data.emptySave) {
-							self.exe(false);
-							self.edit(false);
-						} else {
-							var error = !data || data.error;
+            if (!_.isEmpty(changes)) {
+                self.exe(true);
 
-							if (error) {
-								notyError(data && data.message);
-							} else {
-								self.rechargeData(data.photo, data.can);
+                (function request(confirmer) {
+                    socket.once('savePhotoResult', function (data) {
+                        if (data && data.changed) {
+                            confirm({
+                                message: data.message +
+                                '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
+                                '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
+                                '<br><a target="_blank" href="/p/' + cid + '">Открыть последнюю версию</a>',
+                                okText: 'Продолжить сохранение',
+                                cancelText: 'Отменить',
+                                onOk: function (confirmer) {
+                                    request(confirmer);
+                                },
+                                onCancel: function () {
+                                    self.exe(false);
+                                }
+                            });
+                        } else if (data && data.emptySave) {
+                            self.exe(false);
+                            self.edit(false);
+                        } else {
+                            var error = !data || data.error;
 
-								if (confirmer) {
-									confirmer.close();
-								}
-								if (p.s() === statusKeys.NEW) {
-									self.notifyReady();
-								}
+                            if (error) {
+                                notyError(data && data.message);
+                            } else {
+                                self.rechargeData(data.photo, data.can);
 
-								// Заново запрашиваем ближайшие фотографии
-								self.getNearestRibbon(8, self.applyNearestRibbon, self);
-								self.edit(false);
-							}
-							self.exe(false);
-							ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
-						}
-					});
-					socket.emit('savePhoto', {cid: cid, cdate: p.cdate(), s: p.s(), changes: changes, ignoreChange: !!confirmer});
-				}());
-			} else {
-				self.edit(false);
-			}
-		},
-		editCancel: function () {
-			var self = this;
+                                if (confirmer) {
+                                    confirmer.close();
+                                }
+                                if (p.s() === statusKeys.NEW) {
+                                    self.notifyReady();
+                                }
 
-			if (self.edit()) {
-				ko_mapping.fromJS(self.originData, self.p);
-				delete self.descEditOrigin;
-				delete self.sourceEditOrigin;
-				delete self.authorEditOrigin;
+                                // Заново запрашиваем ближайшие фотографии
+                                self.getNearestRibbon(8, self.applyNearestRibbon, self);
+                                self.edit(false);
+                            }
+                            self.exe(false);
+                            ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
+                        }
+                    });
+                    socket.emit('savePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes, ignoreChange: !!confirmer });
+                }());
+            } else {
+                self.edit(false);
+            }
+        },
+        editCancel: function () {
+            var self = this;
 
-				self.edit(false);
-			}
-		},
+            if (self.edit()) {
+                ko_mapping.fromJS(self.originData, self.p);
+                delete self.descEditOrigin;
+                delete self.sourceEditOrigin;
+                delete self.authorEditOrigin;
+
+                self.edit(false);
+            }
+        },
 
 		revoke: function (data, event) {
 			var self = this;

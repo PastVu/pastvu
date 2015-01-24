@@ -1,7 +1,9 @@
 .objHist(data-bind="with: repository[M!M]")
+    // ko if: haveDiff()
     .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
+    // /ko
     ul.media-list.hists
-    //ko if: switchDiff2()
+    //ko if: haveDiff() && switchDiff2()
     .diffSwitch(data-bind="text: showDiff() ? 'Скрыть подсветку разницы значений' : 'Показать разницу значений', click: switchDiff")
     // /ko
 
@@ -39,7 +41,7 @@
                     | {{??h.role>9}}как администратор{{?}}
                 | {{?}}
                 .dotDelimeter ·
-                a.histStamp(href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
+                a.histStamp(data-replace="true", href="/p/{{=it.cid}}?history={{=h.stamp}}") {{=it.fDate(new Date(h.stamp))}}
 
             | {{?h.values.s}}
             .info.iconed(style="color: {{=h.values.s.color}};")

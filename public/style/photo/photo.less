@@ -356,7 +356,7 @@
 		display: inline-block;
 
 		&.err {
-			color: #be0000;
+			color: #E49F0D;
 		}
 	}
 	.regionEdit {
@@ -475,6 +475,12 @@
 			}
 		}
 	}
+    .mandatory:not(.hasContent) {
+        .form-control {
+            border-color: #E49F0D;
+        }
+    }
+
 	.commentsContainer {
 		position: relative;
 		clear: left;

@@ -1687,6 +1687,77 @@ function giveCanPhoto(iAm, data, cb) {
 	}
 }
 
+var photoValidate = function (values) {
+    var result = {};
+
+    if (!values) {
+        return result;
+    }
+
+    // Validate geo
+    if (values.geo && Utils.geo.checkLatLng(values.geo)) {
+        result.geo = Utils.geo.geoToPrecisionRound(values.geo.reverse());
+    } else if (values.geo === null) {
+        result.geo = undefined;
+    }
+
+    if (_.isNumber(values.region) && values.region > 0) {
+        result.region = values.region;
+    } else if (values.region === null) {
+        result.region = undefined;
+    }
+
+    // Both year fields must be felled and 1826-2000
+    if (_.isNumber(values.year) && _.isNumber(values.year2) &&
+        values.year >=1826 && values.year <= 2000 &&
+        values.year2 >= values.year && values.year2 <= 2000) {
+        result.year = values.year;
+        result.year2 = values.year2;
+    } else if (values.year === null) {
+        result.year = undefined;
+        result.year2 = undefined;
+    }
+
+    if (_.isString(values.dir) && values.dir.length) {
+        result.dir = values.dir.trim();
+    } else if (values.dir === null) {
+        result.dir = undefined;
+    }
+
+    // Trim and remove last dot in title, if it is not part of ellipsis
+    if (_.isString(values.title) && values.title.length) {
+        result.title = values.title.trim().substr(0, 120).replace(/([^\.])\.$/, '$1');
+    } else if (values.title === null) {
+        result.title = undefined;
+    }
+
+    if (_.isString(values.desc) && values.desc.length) {
+        result.desc = values.desc.trim().substr(0, 4000);
+    } else if (values.title === null) {
+        result.title = undefined;
+    }
+
+    if (_.isString(values.source) && values.source.length) {
+        result.source = values.source.trim().substr(0, 250);
+    } else if (values.source === null) {
+        result.source = undefined;
+    }
+
+    if (_.isString(values.author) && values.author.length) {
+        result.author = values.author.trim().substr(0, 250);
+    } else if (values.author === null) {
+        result.author = undefined;
+    }
+
+    if (_.isString(values.address) && values.address.length) {
+        result.address = values.address.trim().substr(0, 250);
+    } else if (values.address === null) {
+        result.address = undefined;
+    }
+
+    return result;
+};
+
 /**
  * Сохраняем информацию о фотографии
  * @param {Object} iAm Объект пользователя
@@ -1703,7 +1774,7 @@ var savePhoto = function (iAm, data) {
 	return photoEditPrefetch(iAm, data, 'edit')
 		.bind({})
 		.spread(function (photo, canModerate) {
-			var changes = data.changes;
+			var changes = photoValidate(data.changes);
 
 			if (_.isEmpty(changes)) {
 				throw { emptySave: true };
@@ -1723,28 +1794,14 @@ var savePhoto = function (iAm, data) {
 				}
 			}, this);
 
-			if (changes.geo) {
-				if (Utils.geo.checkLatLng(changes.geo)) {
-					changes.geo = Utils.geo.geoToPrecisionRound(changes.geo.reverse());
-				} else {
-					delete changes.geo;
-				}
-			}
-
-            if (_.isString(changes.title) && changes.title.length) {
-                // Trim and remove last dot in title, if it is not part of ellipsis
-                changes.title = changes.title.trim().replace(/([^\.])\.$/, '$1');
-            }
-
 			// Новые значения действительно изменяемых свойств
-			newValues = Utils.diff(_.pick(changes, 'geo', 'region', 'dir', 'title', 'year', 'year2', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
+			newValues = Utils.diff(_.pick(changes, 'geo', 'region', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
 			if (_.isEmpty(newValues)) {
 				throw { emptySave: true };
 			}
 
-			if (newValues.geo === null) {
-				geoToNull = true; // Обнуляем координату
-				newValues.geo = undefined; // Удаляем координату
+			if (newValues.hasOwnProperty('geo') && newValues.geo === undefined) {
+				geoToNull = true; // Флаг обнуления координат
 			}
 
 			oldGeo = this.oldPhotoObj.geo;
@@ -1752,9 +1809,9 @@ var savePhoto = function (iAm, data) {
 
 			// Если координата обнулилась или её нет, то должны присвоить регион
 			if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
-				if (Number(newValues.region)) {
+				if (changes.region) {
 					newRegions = regionController.setObjRegionsByRegionCid(
-						photo, Number(newValues.region),
+						photo, changes.region,
 						['cid', 'parents', 'title_en', 'title_local']
 					);
 					// Если вернулся false, значит переданного региона не существует
@@ -2185,12 +2242,14 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 			if (_.isEmpty(histories)) {
 				throw { message: 'Для объекта еще нет истории' };
 			}
+            var haveDiff;
 
 			var regions = {};
 			var reasons = {};
 			var result = [];
 			var history;
 			var values;
+            var del;
 			var i;
 			var j;
 
@@ -2212,6 +2271,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 				if (values) {
 					// Если выбран режим показа разницы и в этой записи она есть, присваиваем значения из разницы
 					if (history.diff) {
+                        haveDiff = true;
 						for (j in history.diff) {
 							values[j] = history.diff[j];
 						}
@@ -2225,6 +2285,20 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 						}
 					}
 				}
+
+                // Убираем из удаленных поля year, т.к. будет выведено поле y
+                if (!_.isEmpty(history.del)) {
+                    del = history.del;
+                    history.del = [];
+                    for (j = 0; j < del.length; j++) {
+                        if (del[j] !== 'year' && del[j] !== 'year2') {
+                            history.del.push(del[j]);
+                        }
+                    }
+                    if (!history.del.length) {
+                        delete history.del;
+                    }
+                }
 
 				if (history.roleregion) {
 					regions[history.roleregion] = 1;
@@ -2240,7 +2314,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 				result.push(history);
 			}
 
-			result = { hists: result, fetchId: data.fetchId };
+			result = { hists: result, fetchId: data.fetchId, haveDiff: haveDiff };
 
 			// Если есть регионы, запрашиваем их объекты
 			if (Object.keys(regions).length) {

@@ -19,8 +19,9 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				adate: Date.now(), // Время активации
 				sdate: Date.now(), // Время сортировки
 
-				year: 2000,
-				year2: 2000,
+                y: '',
+				year: null,
+				year2: null,
 
 				ccount: 0
 			},

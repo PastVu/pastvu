@@ -423,16 +423,13 @@ Utils.cursorsExtract = function cursorsExtract(err) {
 	}
 };
 
-//Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
+// Находит свойства объекта a, значения которых не совпадают с такими свойствами объекта b
 Utils.diff = function (a, b) {
-	var res = {},
-		i;
-	for (i in a) {
-		if (a[i] !== undefined && !_.isEqual(a[i], b[i])) {
-			res[i] = a[i];
-		}
-	}
-	return res;
+    return _.transform(a, function (result, val, key) {
+        if (!_.isEqual(val, b[key])) {
+            result[key] = val;
+        }
+    }, {});
 };
 
 Utils.math = (function () {
