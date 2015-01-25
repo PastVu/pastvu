@@ -288,15 +288,23 @@ function sessionToArchive(session) {
 
 function userObjectTreatUser(usObj, cb) {
 	var user = usObj.user;
-	//Присваиваем ему настройки по умолчанию
+	// Присваиваем ему настройки по умолчанию
 	user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
-	//Популируем регионы
-	popUserRegions(usObj, function (err) {
-		cb(err);
-	});
+
+    return new Bluebird(function (resolve, reject) {
+        // Популируем регионы
+        popUserRegions(usObj, function (err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    })
+        .nodeify(cb);
 }
 
-//Пупулируем регионы пользователя и строим запросы для них
+// Пупулируем регионы пользователя и строим запросы для них
 function popUserRegions(usObj, cb) {
 	var user = usObj.user,
 		registered = usObj.registered,
@@ -346,42 +354,36 @@ function popUserRegions(usObj, cb) {
 	});
 }
 
-//Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-function regetUser(usObj, emitHim, emitExcludeSocket, cb) {
+// Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
+var regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSocket, cb) {
 	if (!usObj.registered) {
-		return cb({message: 'Can reget only registered user'});
+		throw { message: 'Can reget only registered user' };
 	}
-	User.findOne({login: usObj.user.login}, function (err, user) {
-		if (err || !user) {
-			logger.error('Error while regeting user (' + usObj.user.login + ')', err && err.message || 'No such user for reget');
-			if (cb) {
-				cb(err || {message: 'No such user for reget'});
-			}
-		}
 
-		//usObj и всем его сессиям присваиваем новую модель пользователя
-		usObj.user = user;
-		_.forIn(usObj.sessions, function (session) {
-			session.user = user;
-		});
+	return User.findOneAsync({login: usObj.user.login})
+        .tap(function (user) {
+            if (!user) {
+                throw { message: 'No such user for reget' };
+            }
 
-		userObjectTreatUser(usObj, function (err) {
-			if (err || !user) {
-				logger.error('Error while treating regeted user (' + usObj.user.login + ')', err && err.message || 'Не могу выбрать зависимости пользователя');
-				if (cb) {
-					cb(err || {message: 'Не могу выбрать зависимости пользователя'});
-				}
-			}
+            //usObj и всем его сессиям присваиваем новую модель пользователя
+            usObj.user = user;
+            _.forIn(usObj.sessions, function (session) {
+                session.user = user;
+            });
 
-			if (emitHim) {
-				emitUser(usObj, null, emitExcludeSocket);
-			}
-			if (cb) {
-				cb(null, user);
-			}
-		});
-	});
-}
+            return userObjectTreatUser(usObj);
+        })
+        .then(function (user) {
+            if (emitHim) {
+                emitUser(usObj, null, emitExcludeSocket);
+            }
+
+            return user;
+        })
+        .nodeify(cb);
+});
+
 //TODO: Обрабатывать и анонимных пользователей, популировать у них регионы
 //Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
 //Принимает на вход 'all' или функцию фильтра пользователей
