@@ -918,7 +918,7 @@ define([
 
 
 	MarkerManager.prototype.makeTextYear = function (photo) {
-		return photo.year + (photo.year2 && photo.year2 > photo.year ? ' - ' + photo.year2 : '');
+		return photo.year + (photo.year2 && photo.year2 > photo.year ? '—' + photo.year2 : '');
 	};
 	MarkerManager.prototype.popupPhotoOpen = function () {
 		var popup,

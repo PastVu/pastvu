@@ -282,7 +282,9 @@ define(
                             force: true
                         });
                     } else {
-                        this.haveDiff(!!data.haveDiff);
+                        if (data.haveDiff === true) {
+                            this.haveDiff(data.haveDiff);
+                        }
                         this.switchDiff2(data.hists.length > 4);
                     }
 
