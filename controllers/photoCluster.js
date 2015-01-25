@@ -264,9 +264,8 @@ module.exports.declusterPhoto = Bluebird.method(function (photo) {
 /**
  * Берет кластеры по границам
  * @param data
- * @param [cb] Коллбэк
  */
-module.exports.getBounds = Bluebird.method(function (data, cb) {
+module.exports.getBounds = Bluebird.method(function (data) {
     var promises = [];
 
     for (var i = data.bounds.length; i--;) {
@@ -301,16 +300,14 @@ module.exports.getBounds = Bluebird.method(function (data, cb) {
             }
 
             return [photos, clusters];
-        })
-        .nodeify(cb, { spread: true });
+        });
 });
 
 /**
  * Берет кластеры по границам c учетом интервала лет
  * @param data
- * @param [cb] Коллбэк
  */
-module.exports.getBoundsByYear = Bluebird.method(function (data, cb) {
+module.exports.getBoundsByYear = Bluebird.method(function (data) {
     var clustersAll = [];
     var promises = [];
 
@@ -378,8 +375,7 @@ module.exports.getBoundsByYear = Bluebird.method(function (data, cb) {
             }
 
             return [photos, clusters];
-        })
-        .nodeify(cb, { spread: true });
+        });
 });
 
 function getClusterPoster(cluster, yearCriteria) {

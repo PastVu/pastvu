@@ -343,77 +343,42 @@ var core = {
 			})
 			.nodeify(cb, { spread: true });
 	},
-	getBounds: function (data, cb) {
+	getBounds: function (data) {
 		var year = false;
 
 		// Определяем, нужна ли выборка по границам лет
-		if (Number(data.year) && Number(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000 && (1 + data.year2 - data.year < 175)) {
+		if (_.isNumber(data.year) && _.isNumber(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000) {
 			year = true;
 		}
 
 		if (data.z < 17) {
-			if (year) {
-				PhotoCluster.getBoundsByYear(data, res);
-			} else {
-				PhotoCluster.getBounds(data, res);
-			}
-		} else {
-			step(
-				function () {
-					var i = data.bounds.length,
-						criteria,
-						yearCriteria;
-
-					if (year) {
-						if (data.year === data.year2) {
-							yearCriteria = data.year;
-						} else {
-							yearCriteria = {$gte: data.year, $lte: data.year2};
-						}
-					}
-
-					while (i--) {
-						criteria = {geo: {$geoWithin: {$box: data.bounds[i]}}};
-						if (year) {
-							criteria.year = yearCriteria;
-						}
-						PhotoMap.collection.find(criteria, {_id: 0}, this.parallel());
-					}
-				},
-				function cursors(err) {
-					if (err) {
-						return cb(err);
-					}
-					var i = arguments.length;
-					while (i > 1) {
-						arguments[--i].toArray(this.parallel());
-					}
-				},
-				function (err, photos) {
-					if (err) {
-						return cb(err);
-					}
-					var i = arguments.length;
-
-					while (i > 2) {
-						photos.push.apply(photos, arguments[--i]);
-					}
-					res(err, photos);
-				}
-			);
+			return (year ? PhotoCluster.getBoundsByYear(data) : PhotoCluster.getBounds(data));
 		}
 
-		function res(err, photos, clusters) {
-			if (err) {
-				return cb(err);
-			}
+        var promises = [];
+        var yearCriteria;
+        var criteria;
 
-			// Реверсируем geo
-			for (var i = photos.length; i--;) {
-				photos[i].geo.reverse();
-			}
-			cb(null, photos, clusters);
-		}
+        if (year) {
+            if (data.year === data.year2) {
+                yearCriteria = data.year;
+            } else {
+                yearCriteria = { $gte: data.year, $lte: data.year2 };
+            }
+        }
+
+        for (var i = data.bounds.length; i--;) {
+            criteria = { geo: { $geoWithin: { $box: data.bounds[i] } } };
+            if (year) {
+                criteria.year = yearCriteria;
+            }
+            promises.push(PhotoMap.findAsync(criteria, { _id: 0 }, { lean: true }));
+        }
+
+        return Bluebird.all(promises)
+            .then(function (photos) {
+                return [photos.length > 1 ? _.flatten(photos) : photos[0]];
+            });
 	},
 
 	giveNearestPhotos: function (data, cb) {
@@ -570,25 +535,28 @@ function createPhotos(socket, data, cb) {
 
 // Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
-	return Bluebird.join(
-		// Отправляем на кластеризацию
-		PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld),
-		PhotoMap.updateAsync(
-			{ cid: photo.cid },
-			{
-				$setOnInsert: { cid: photo.cid },
-				$set: {
-					geo: photo.geo,
-					file: photo.file,
-					dir: photo.dir,
-					title: photo.title,
-					year: photo.year,
-					year2: photo.year2 || photo.year
-				}
-			},
-			{ upsert: true }
-		)
-	);
+    var $update = {
+        $setOnInsert: { cid: photo.cid },
+        $set: {
+            geo: photo.geo,
+            file: photo.file,
+            title: photo.title,
+            year: photo.year,
+            year2: photo.year2 || photo.year
+        }
+    };
+
+    if (_.isString(photo.dir) && photo.dir.length) {
+        $update.$set.dir = photo.dir;
+    } else {
+        $update.$unset = { dir: 1 };
+    }
+
+    return Bluebird.join(
+        PhotoMap.updateAsync({ cid: photo.cid }, $update, { upsert: true }),
+        // Отправляем на кластеризацию
+        PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
+    );
 }
 
 // Удаляет фото с карты
@@ -923,11 +891,9 @@ var readyPhoto = function (socket, data) {
 	return photoEditPrefetch(iAm, data, 'ready')
 		.bind({})
 		.spread(function (photo, canModerate) {
-			if (!photo.r0) {
-				throw { message: msg.mustCoord, error: true };
-			}
+            photoCheckPublickRequired(photo);
 
-			this.oldPhotoObj = photo.toObject();
+            this.oldPhotoObj = photo.toObject();
 			this.canModerate = canModerate;
 
 			photo.s = status.READY;
@@ -1049,9 +1015,7 @@ var approvePhoto = function (socket, data) {
 	return photoEditPrefetch(iAm, data, 'approve')
 		.bind({})
 		.spread(function (photo, canModerate) {
-			if (!photo.r0) {
-				throw { message: msg.mustCoord, error: true };
-			}
+            photoCheckPublickRequired(photo);
 
 			this.oldPhotoObj = photo.toObject();
 			this.canModerate = canModerate;
@@ -1106,6 +1070,10 @@ var activateDeactivate = function (socket, data) {
 	return photoEditPrefetch(iAm, data, disable ? 'deactivate' : 'activate')
 		.bind({})
 		.spread(function (photo, canModerate) {
+            if (!disable) {
+                photoCheckPublickRequired(photo);
+            }
+
 			this.oldPhotoObj = photo.toObject();
 			this.canModerate = canModerate;
 
@@ -1221,6 +1189,8 @@ var restorePhoto = Bluebird.method(function (socket, data) {
 	return photoEditPrefetch(iAm, data, 'restore')
 		.bind({})
 		.spread(function (photo, canModerate) {
+            photoCheckPublickRequired(photo);
+
 			this.oldPhotoObj = photo.toObject();
 			this.canModerate = canModerate;
 
@@ -1670,21 +1640,42 @@ function givePhotosFresh(iAm, data, cb) {
 
 //Отдаем разрешенные can для фото
 function giveCanPhoto(iAm, data, cb) {
-	var cid = Number(data.cid);
+    var cid = Number(data.cid);
 
-	if (!cid) {
-		return cb({message: msg.noPhoto, error: true});
-	}
-	if (iAm.registered) {
-		Photo.findOne({cid: cid}, {_id: 0, user: 1}, function (err, photo) {
-			if (err) {
-				return cb({message: err && err.message, error: true});
-			}
-			cb({can: permissions.getCan(photo, iAm)});
-		});
-	} else {
-		cb({});
-	}
+    if (!cid) {
+        return cb({ message: msg.noPhoto, error: true });
+    }
+    if (iAm.registered) {
+        Photo.findOne({ cid: cid }, { _id: 0, user: 1 }, function (err, photo) {
+            if (err) {
+                return cb({ message: err && err.message, error: true });
+            }
+            cb({ can: permissions.getCan(photo, iAm) });
+        });
+    } else {
+        cb({});
+    }
+}
+
+function photoCheckPublickRequired(photo) {
+    if (!photo.r0) {
+        throw { message: msg.mustCoord, error: true };
+    }
+
+    if (_.isEmpty(photo.title)) {
+        throw { message: 'Необходимо заполнить название фотографии', error: true };
+    }
+
+    if (!_.isNumber(photo.year) || !_.isNumber(photo.year2) ||
+        photo.year < 1826 || photo.year > 2000 ||
+        photo.year2 < photo.year && photo.year2 > 2000) {
+        throw {
+            message: 'Опубликованные фотогрфии должны содержать предполагаемую датировку фотографии в интервале 1826—2000гг.',
+            error: true
+        };
+    }
+
+    return true;
 }
 
 var photoValidate = function (values) {
@@ -1709,7 +1700,7 @@ var photoValidate = function (values) {
 
     // Both year fields must be felled and 1826-2000
     if (_.isNumber(values.year) && _.isNumber(values.year2) &&
-        values.year >=1826 && values.year <= 2000 &&
+        values.year >= 1826 && values.year <= 2000 &&
         values.year2 >= values.year && values.year2 <= 2000) {
         result.year = values.year;
         result.year2 = values.year2;
@@ -1795,12 +1786,14 @@ var savePhoto = function (iAm, data) {
 			}, this);
 
 			// Новые значения действительно изменяемых свойств
-			newValues = Utils.diff(_.pick(changes, 'geo', 'region', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
-			if (_.isEmpty(newValues)) {
+			newValues = Utils.diff(_.pick(changes, 'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
+			if (_.isEmpty(newValues) && !changes.hasOwnProperty('region')) {
 				throw { emptySave: true };
 			}
 
-			if (newValues.hasOwnProperty('geo') && newValues.geo === undefined) {
+            _.assign(this.photo, newValues);
+
+            if (newValues.hasOwnProperty('geo') && newValues.geo === undefined) {
 				geoToNull = true; // Флаг обнуления координат
 			}
 
@@ -1810,8 +1803,10 @@ var savePhoto = function (iAm, data) {
 			// Если координата обнулилась или её нет, то должны присвоить регион
 			if (geoToNull || _.isEmpty(oldGeo) && !newGeo) {
 				if (changes.region) {
-					newRegions = regionController.setObjRegionsByRegionCid(
-						photo, changes.region,
+					// Если регион присвоен вручную, определяем его родитлей и проставляем объекту
+                    newRegions = regionController.setObjRegionsByRegionCid(
+						photo,
+                        changes.region,
 						['cid', 'parents', 'title_en', 'title_local']
 					);
 					// Если вернулся false, значит переданного региона не существует
@@ -1819,41 +1814,45 @@ var savePhoto = function (iAm, data) {
 						throw { message: msg.noRegion };
 					}
 				} else {
-					// Не иметь ни координаты ни региона могут только новые фотографии
-					if (photo.s !== status.NEW) {
-						throw { message: msg.mustCoord };
-					}
-					regionController.clearObjRegions(photo); // Очищаем привязку к регионам
+                    // Очищаем привязку к регионам
+					regionController.clearObjRegions(photo);
 					newRegions = [];
 				}
 			}
 
-			if (geoToNull && photo.s === status.PUBLIC) {
-				// При обнулении координаты, если фото публичное, значит оно было на карте. Удаляем с карты.
-				// Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
-				return photoFromMap(photo);
-			} else if (newGeo) {
-				// Если координата добавилась/изменилась, запрашиваем новые регионы фотографии
-				return regionController.setObjRegionsByGeo(
-					photo, newGeo,
-					{ _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
-				)
-					.then(function (regionsArr) {
-						newRegions = regionsArr;
-						return null;
-					});
-			} else {
-				return null;
-			}
+            // Если координата добавилась/изменилась, запрашиваем по ней новые регионы фотографии
+            if (newGeo) {
+                return regionController.setObjRegionsByGeo(
+                    photo, newGeo,
+                    { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
+                )
+                    .then(function (regionsArr) {
+                        newRegions = regionsArr;
+                        return null;
+                    });
+            }
 		})
 		.then(function () {
-			_.assign(this.photo, newValues);
+            // Проверяем, что заполненны обязательные поля для опубликованных
+            if (this.photo.s === status.READY || this.photo.s === status.PUBLIC) {
+                photoCheckPublickRequired(this.photo);
+            }
 
-			if (this.saveHistory) {
+            if (this.saveHistory) {
 				this.photo.cdate = this.photo.ucdate = new Date();
 			}
 
-			return photoUpdate(iAm, this.photo);
+            var promise = photoUpdate(iAm, this.photo).bind(this);
+
+            if (geoToNull && this.photo.s === status.PUBLIC) {
+                // При обнулении координаты, если фото публичное, значит оно было на карте. Удаляем с карты.
+                // Мы должны удалить с карты до удаления координаты, так как декластеризация смотрит на неё
+                promise = promise.tap(function () {
+                    photoFromMap(this.oldPhotoObj);
+                });
+            }
+
+			return promise;
 		})
 		.spread(function (photoSaved, rel) {
 			this.photo = photoSaved;
@@ -1874,8 +1873,6 @@ var savePhoto = function (iAm, data) {
 				// Здесь координата должна проверятся именно photoSaved.geo, а не newGeo,
 				// так как случай newGeo undefined может означать, что координата не изменилась, но для постера данные могли измениться
 				return photoToMap(photoSaved, oldGeo, this.oldPhotoObj.year);
-			} else {
-				return null;
 			}
 		})
 		.then(function () {
@@ -1914,24 +1911,26 @@ var savePhoto = function (iAm, data) {
 
 // Фотографии и кластеры по границам
 // {z: Масштаб, bounds: [[]]}
-function getBounds(data, cb) {
-	if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
-		cb({message: 'Bad params', error: true});
-		return;
-	}
-	// Реверсируем geo границы баунда
-	for (var i = data.bounds.length; i--;) {
-		data.bounds[i][0].reverse();
-		data.bounds[i][1].reverse();
-	}
+var getBounds = Bluebird.method(function (data) {
+    if (!_.isObject(data) || !Array.isArray(data.bounds) || !data.z) {
+        throw { message: msg.badParams };
+    }
+    // Реверсируем geo границы баунда
+    for (var i = data.bounds.length; i--;) {
+        data.bounds[i][0].reverse();
+        data.bounds[i][1].reverse();
+    }
 
-	core.getBounds(data, function (err, photos, clusters) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		cb({photos: photos, clusters: clusters, startAt: data.startAt, z: data.z});
-	});
-}
+    return core.getBounds(data)
+        .spread(function (photos, clusters) {
+            // Реверсируем geo
+            for (var i = photos.length; i--;) {
+                photos[i].geo.reverse();
+            }
+
+            return { photos: photos, clusters: clusters, startAt: data.startAt, z: data.z };
+        });
+});
 
 //Отправляет выбранные фото на конвертацию
 function convertPhotos(iAm, data, cb) {
@@ -2560,9 +2559,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('getBounds', function (data) {
-			getBounds(data, function (resultData) {
-				socket.emit('getBoundsResult', resultData);
-			});
+            getBounds(data)
+                .catch(function (err) {
+                    return { message: err.message, error: true, startAt: data.startAt };
+                })
+                .then(function (resultData) {
+                    socket.emit('getBoundsResult', resultData);
+                });
 		});
 
 		socket.on('convertPhotos', function (data) {

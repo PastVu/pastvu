@@ -100,7 +100,7 @@ var FragmentSchema = new Schema({
             cid: { type: Number, index: { unique: true } },
             geo: { type: [Number], index: '2d' },
             file: { type: String, required: true },
-            dir: { type: String, 'default': '' },
+            dir: { type: String },
             title: { type: String, 'default': '' },
             year: { type: Number, 'default': 2000 },
             year2: { type: Number, 'default': 2000 }

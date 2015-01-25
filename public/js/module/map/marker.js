@@ -314,7 +314,7 @@ define([
 
 					this.processIncomingDataZoom(data, boundChanged, localWork, localCluster);
 				} else {
-					console.log('Ошибка загрузки новых камер: ' + data.message);
+					console.log('Ошибка загрузки новых фотографий: ' + data.message);
 				}
 				newZoom = bound = null;
 				this.startPendingAt = undefined;
@@ -445,7 +445,7 @@ define([
 
 				this.processIncomingDataMove(data, boundChanged, localWork, localCluster);
 			} else {
-				console.log('Ошибка загрузки новых камер: ' + data.message);
+				console.log('Ошибка загрузки новых фотографий: ' + data.message);
 			}
 			zoom = bound = null;
 		}, this);

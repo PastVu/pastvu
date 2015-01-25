@@ -176,27 +176,27 @@ if ("document" in self && !("classList" in document.createElement("_"))) {
  * Console Gag
  */
 (function (global) {
-	var noop = function () {
-		},
-		getConsoleTime = function () {
-			return new Date().toLocaleTimeString();
-		},
-		logOriginal = global.console.log || noop;
+    var noop = function () {
+        }/*,
+        getConsoleTime = function () {
+            return new Date().toLocaleTimeString();
+        },
+        logOriginal = global.console.log || noop*/;
 
-	if (!global.console) {
-		global.console = {};
-	}
-	["debug", "info", "warn", "error", "assert", "clear", "dir", "dirxml", "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd", "timeStamp", "profile", "profileEnd", "count", "exception", "table"]
-		.forEach(function (method, index) {
-			if (!global.console[method]) {
-				global.console[method] = noop;
-			}
-		});
-	global.console.log = function () {
-		var args = Array.prototype.slice.call(arguments);
-		args[0] = getConsoleTime() + ' ' + args[0];
-		logOriginal.apply(this, args);
-	};
+    if (!global.console) {
+        global.console = {};
+    }
+    ["debug", "info", "warn", "error", "assert", "clear", "dir", "dirxml", "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd", "timeStamp", "profile", "profileEnd", "count", "exception", "table"]
+        .forEach(function (method) {
+            if (!global.console[method]) {
+                global.console[method] = noop;
+            }
+        });
+    /*global.console.log = function () {
+        var args = Array.prototype.slice.call(arguments);
+        args[0] = getConsoleTime() + ' ' + args[0];
+        logOriginal.apply(this, args);
+    };*/
 }(window));
 
 

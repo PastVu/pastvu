@@ -1439,9 +1439,9 @@ function setObjRegionsByRegionCid(obj, cid, returnArrFields) {
 		regionsArr.push(returnArrFields ? _.pick(region, returnArrFields) : region);
 
 		return regionsArr;
-	} else {
-		return false;
 	}
+
+    return false;
 }
 
 /**

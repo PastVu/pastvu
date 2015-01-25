@@ -1375,7 +1375,7 @@ define(
 								confirmer.close();
 							}
 						}
-						ga('send', 'event', 'photo', 'reject', 'photo ' + (data.photo.s === statusKeys.DEACTIVATE ? 'disabled ' : 'enabled ') + (error ? 'error' : 'success'));
+						ga('send', 'event', 'photo', 'reject', 'photo ' + (p.s() === statusKeys.DEACTIVATE ? 'enabled ' : 'disabled ') + (error ? 'error' : 'success'));
 						self.exe(false);
 					}
 				});
