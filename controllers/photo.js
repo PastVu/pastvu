@@ -854,7 +854,7 @@ var revokePhoto = function (socket, data) {
 			this.oldPhotoObj = photo.toObject();
 
 			photo.s = status.REVOKE;
-			photo.stdate = photo.cdate = new Date();
+            photo.sdate = photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
@@ -979,7 +979,8 @@ var rejectPhoto = Bluebird.method(function (socket, data) {
 			this.canModerate = canModerate;
 
 			photo.s = status.REJECT;
-			photo.stdate = photo.cdate = new Date();
+            //TODO: При возврате на доработку возвращать sdate +shift10y
+            photo.sdate = photo.stdate = photo.cdate = new Date();
 
 			return photoUpdate(iAm, photo);
 		})
