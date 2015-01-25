@@ -477,7 +477,7 @@ var getChildsLenByLevel = Bluebird.method(function (region, cb) {
         childrenQuery['parents.' + level] = region.cid;
         while (level++ < maxRegionLevel) { //level инкрементируется после сравнения
             childrenQuery.parents = { $size: level };
-            promises.push(Region.count(childrenQuery, this.parallel()));
+            promises.push(Region.countAsync(childrenQuery));
         }
     }
 
@@ -511,7 +511,7 @@ var getParentsAndChilds = function (region, cb) {
         promises.push(getOrderedRegionList(region.parents));
     }
 
-    return Bluebird.all(promises.push).nodeify(cb, { spread: true });
+    return Bluebird.all(promises).nodeify(cb, { spread: true });
 };
 
 function changeRegionParentExternality(region, oldParentsArray, childLenArray, cb) {
