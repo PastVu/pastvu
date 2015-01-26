@@ -1,136 +1,137 @@
 'use strict';
 
-var net = require('net'),
-	util = require('util'),
-	events = require('events'),
-	_ = require('lodash');
+var _ = require('lodash');
+var net = require('net');
+var util = require('util');
+var events = require('events');
+var Bluebird = require('bluebird');
 
-var Client = module.exports = function (logger) {
-	this.logger = logger || console;
-	this.socketClosed = true;
+var Client = function (logger) {
+    this.logger = logger || console;
+    this.socketClosed = true;
 };
 util.inherits(Client, events.EventEmitter);
 
 Client.prototype.connect = function () {
-	var that = this;
+    var that = this;
 
-	this.reset();
-	this.connectargs = this.connectargs || _.toArray(arguments);
+    this.reset();
+    this.connectargs = this.connectargs || _.toArray(arguments);
 
-	this.socket = new net.Socket();
-	this.socket.setEncoding('utf8');
-	this.socket.setNoDelay(true);
+    this.socket = new net.Socket();
+    this.socket.setEncoding('utf8');
+    this.socket.setNoDelay(true);
 
-	this.socket
-		.on('data', function (data) {
-			var messages = that._tokenizer(data),
-				len = messages.length,
-				i = 0;
+    this.socket
+        .on('data', function (data) {
+            var messages = that._tokenizer(data);
 
-			while (i < len) {
-				that.handleMessage(messages[i++]);
-			}
-		})
-		.on('connect', function () {
-			that.logger.info('Connected to core at :%s', that.connectargs[0]);
-			that.socketClosed = false;
-			that.emit('connect');
-		})
-		.on('error', function (e) {
-			if (e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET') {
-				that.logger.warn('Can\'t connect to Core. Retrying...');
-				setTimeout(function () {
-					that.connect();
-				}, 1000);
-			} else {
-				that.logger.error('Core connnection error: ', e);
-				that.emit('error', e);
-			}
-		})
-		.on('close', function () {
-			that.socketClosed = true;
-			that.emit('close');
-		});
+            for (var i = 0, len = messages.length; i < len; i++) {
+                that.handleMessage(messages[i]);
+            }
+        })
+        .on('connect', function () {
+            that.logger.info('Connected to core at :%s', that.connectargs[0]);
+            that.socketClosed = false;
+            that.emit('connect');
+        })
+        .on('error', function (e) {
+            if (e.code === 'ECONNREFUSED' || e.code === 'ECONNRESET') {
+                that.logger.warn('Can\'t connect to Core. Retrying...');
+                setTimeout(function () {
+                    that.connect();
+                }, 1000);
+            } else {
+                that.logger.error('Core connnection error: ', e);
+                that.emit('error', e);
+            }
+        })
+        .on('close', function () {
+            that.socketClosed = true;
+            that.emit('close');
+        });
 
-	this.socket.connect.apply(this.socket, this.connectargs);
+    this.socket.connect.apply(this.socket, this.connectargs);
 };
-Client.prototype.request = function (category, method, args, cb, stringifyResultArgs) {
-	if (this.socketClosed) {
-		if (cb) {
-			cb(99);
-		}
-		return false;
-	}
-	var msg = {
-			category: category,
-			method: method,
-			args: args,
-			stringifyResultArgs: stringifyResultArgs
-		},
-		cbDescriptor;
+Client.prototype.request = Bluebird.method(function (category, method, args, stringifyResultArgs) {
+    if (this.socketClosed) {
+        throw { code: 99 };
+    }
+    var that = this;
 
-	if (cb) {
-		cbDescriptor = this.cbDescriptorNext++;
-		msg.descriptor = cbDescriptor;
-		this.cbDescriptors[cbDescriptor] = cb;
-	}
+    return new Bluebird(function (resolve, reject) {
+        var msg = {
+            category: category,
+            method: method,
+            args: args,
+            stringifyResultArgs: stringifyResultArgs
+        };
 
-	this.socket.write(JSON.stringify(msg) + '\0');
-	return true;
-};
+        msg.descriptor = that.promiseDescriptorNext++;
+        that.promiseDescriptors[msg.descriptor] = { resolve: resolve, reject: reject };
+
+        that.socket.write(JSON.stringify(msg) + '\0');
+    });
+});
 Client.prototype.close = function () {
-	this.socket.end();
+    this.socket.end();
 };
 
 Client.prototype.handleMessage = function (msg) {
-	var descriptor,
-		cb;
+    var descriptor;
+    var promise;
 
-	try {
-		msg = JSON.parse(msg);
-	} catch (e) {
-		this.emit('parseError', e);
-		return;
-	}
+    try {
+        msg = JSON.parse(msg);
+    } catch (e) {
+        this.emit('parseError', e);
+        return;
+    }
 
-	descriptor = msg.descriptor;
-	if (descriptor === undefined) {
-		return;
-	}
-	cb = this.cbDescriptors[descriptor];
-	if (cb === undefined) {
-		return;
-	}
+    descriptor = msg.descriptor;
+    if (descriptor === undefined) {
+        return;
+    }
 
-	cb.apply(null, msg.args);
-	delete this.cbDescriptors[msg.descriptor];
+    promise = this.promiseDescriptors[descriptor];
+    if (promise === undefined) {
+        return;
+    } else if (msg.error) {
+        promise.reject(msg.error);
+    } else {
+        promise.resolve(msg.result);
+    }
+
+    delete this.promiseDescriptors[descriptor];
 };
 
 Client.prototype.reset = function () {
-	var connResetErr = new Error('Connection lost');
-	if (this.cbDescriptors) {
-		for (var key in this.cbDescriptors) {
-			this.cbDescriptors[key](connResetErr);
-		}
-	}
-	if (this.socket) {
-		this.socket.destroy();
-	}
+    var connResetErr = new Error('Connection lost');
+    if (this.promiseDescriptors) {
+        for (var key in this.promiseDescriptors) {
+            this.promiseDescriptors[key].reject(connResetErr);
+        }
+    }
+    if (this.socket) {
+        this.socket.destroy();
+    }
 
-	this.buffer = '';
-	this.socket = null;
-	this.cbDescriptorNext = 1;
-	this.cbDescriptors = Object.create(null);
+    this.buffer = '';
+    this.socket = null;
+    this.promiseDescriptorNext = 1;
+    this.promiseDescriptors = Object.create(null);
 };
 
 Client.prototype._tokenizer = function (data) {
-	this.buffer += data;
+    this.buffer += data;
 
-	var result = this.buffer.split('\0');
-	if (result.length === 1) {
-		return [];
-	}
+    var result = this.buffer.split('\0');
+    if (result.length === 1) {
+        return [];
+    }
 
-	this.buffer = result.pop();
-	return result;
+    this.buffer = result.pop();
+    return result;
 };
+
+module.exports = Client;
