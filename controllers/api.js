@@ -41,8 +41,8 @@ var getPhotoRequest = (function () {
             throw { code: 21 };
         }
 
-        core.request('photo', 'givePhoto', [{}, { cid: cid, countView: true, noselect: noselect }])
-            .then(function (photo) {
+        return core.request('photo', 'givePhoto', [{}, { cid: cid, countView: true, noselect: noselect }])
+            .spread(function (photo) {
                 if (photo.ldate) {
                     photo.ldate = new Date(photo.ldate).getTime();
                 }
@@ -229,13 +229,10 @@ function requestFinish(err, req, res, start, result, stringified) {
         sendStatus = 200;
 
         if (stringified === true) {
-            console.log('Prestringed');
             sendResult = '{"rid":' + query.rid + ',"stamp":' + query.stamp + ',"result":' + result + '}';
         } else {
-            console.log('stringify');
             sendResult = JSON.stringify({ rid: query.rid, stamp: query.stamp, result: result });
         }
-
     }
 
     res.statusCode = sendStatus;
