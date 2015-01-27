@@ -342,43 +342,55 @@ var core = {
 				return [photo, this.can];
 			});
 	},
-	getBounds: function (data) {
-		var year = false;
-
-		// Определяем, нужна ли выборка по границам лет
-		if (_.isNumber(data.year) && _.isNumber(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000) {
-			year = true;
-		}
-
-		if (data.z < 17) {
-			return (year ? PhotoCluster.getBoundsByYear(data) : PhotoCluster.getBounds(data));
-		}
-
-        var promises = [];
+    getBounds: function (data) {
         var yearCriteria;
+        var year = false;
         var criteria;
+        var promises;
+        var promise;
 
-        if (year) {
-            if (data.year === data.year2) {
-                yearCriteria = data.year;
-            } else {
-                yearCriteria = { $gte: data.year, $lte: data.year2 };
-            }
+        // Определяем, нужна ли выборка по границам лет
+        if (_.isNumber(data.year) && _.isNumber(data.year2) && data.year >= 1826 && data.year <= 2000 && data.year2 >= data.year && data.year2 <= 2000) {
+            year = true;
         }
 
-        for (var i = data.bounds.length; i--;) {
-            criteria = { geo: { $geoWithin: { $box: data.bounds[i] } } };
+        if (data.z < 17) {
+            promise = year ? PhotoCluster.getBoundsByYear(data) : PhotoCluster.getBounds(data);
+        } else {
+            promises = [];
+
             if (year) {
-                criteria.year = yearCriteria;
+                if (data.year === data.year2) {
+                    yearCriteria = data.year;
+                } else {
+                    yearCriteria = { $gte: data.year, $lte: data.year2 };
+                }
             }
-            promises.push(PhotoMap.findAsync(criteria, { _id: 0 }, { lean: true }));
+
+            for (var i = data.bounds.length; i--;) {
+                criteria = { geo: { $geoWithin: { $box: data.bounds[i] } } };
+                if (year) {
+                    criteria.year = yearCriteria;
+                }
+                promises.push(PhotoMap.findAsync(criteria, { _id: 0 }, { lean: true }));
+            }
+
+            promise = Bluebird.all(promises)
+                .then(function (photos) {
+                    return [photos.length > 1 ? _.flatten(photos) : photos[0]];
+                });
         }
 
-        return Bluebird.all(promises)
-            .then(function (photos) {
-                return [photos.length > 1 ? _.flatten(photos) : photos[0]];
+        return promise
+            .tap(function (result) {
+                var photos = result[0];
+
+                // Реверсируем geo
+                for (var i = photos.length; i--;) {
+                    photos[i].geo.reverse();
+                }
             });
-	},
+    },
 
     giveNearestPhotos: function (data) {
         var query = { geo: { $near: data.geo }, s: status.PUBLIC };
@@ -1921,11 +1933,6 @@ var getBounds = Bluebird.method(function (data) {
 
     return core.getBounds(data)
         .spread(function (photos, clusters) {
-            // Реверсируем geo
-            for (var i = photos.length; i--;) {
-                photos[i].geo.reverse();
-            }
-
             return { photos: photos, clusters: clusters, startAt: data.startAt, z: data.z };
         });
 });
