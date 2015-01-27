@@ -251,7 +251,7 @@
         input.form-control(name="pAuthor", type="text", maxlength="250", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: p.address().length}")
         label(for="pAddr", data-bind="html: fields.address")
-        input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Вы знаете адрес точки сьемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+        input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Вы знаете адрес точки съемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
         select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")

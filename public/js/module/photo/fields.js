@@ -13,7 +13,7 @@ define(['underscore'], function (_) {
         desc: 'Описание',
         source: 'Источник',
         author: 'Автор',
-        address: 'Адрес точки сьемки',
+        address: 'Адрес точки съемки',
         dir: 'Направление съемки',
         dirVals: {
             n: 'Север',
