@@ -65,14 +65,26 @@ ClientSocket.prototype.handleMessage = function (msg) {
             coreCallerPromise
                 .bind(this)
                 .then(function (methodResult) {
+                    var spread = msg.spread;
                     var stringifyResultArgs = msg.stringifyResultArgs;
 
-                    //Если передано сколько аргументов надо передавать как строка, стрингуем их (не включая нулевой аргумент - err)
-                    if (typeof stringifyResultArgs === 'number') {
-                        while (stringifyResultArgs--) {
-                            methodResult[stringifyResultArgs] = JSON.stringify(methodResult[stringifyResultArgs]);
+                    // Если передано что аргументы надо передавать как строка, стрингуем их
+                    if (stringifyResultArgs) {
+                        // Если указан параметр spread, значит в methodResult массив с несколькими аргументами
+                        if (spread) {
+                            // Если передано не число аргументов, а флаг, значит надо стригифаить каждый аргумент
+                            if (stringifyResultArgs === true) {
+                                stringifyResultArgs = methodResult.length;
+                            }
+
+                            for (var i = 0; i < stringifyResultArgs; i++) {
+                                methodResult[i] = JSON.stringify(methodResult[i]);
+                            }
+                        } else {
+                            methodResult = JSON.stringify(methodResult);
                         }
                     }
+
                     result.result = methodResult;
                 })
                 .catch(function (err) {

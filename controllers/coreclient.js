@@ -53,7 +53,7 @@ Client.prototype.connect = function () {
 
     this.socket.connect.apply(this.socket, this.connectargs);
 };
-Client.prototype.request = Bluebird.method(function (category, method, args, stringifyResultArgs) {
+Client.prototype.request = Bluebird.method(function (category, method, args, stringifyResultArgs, spread) {
     if (this.socketClosed) {
         throw { code: 99 };
     }
@@ -64,6 +64,7 @@ Client.prototype.request = Bluebird.method(function (category, method, args, str
             category: category,
             method: method,
             args: args,
+            spread: spread,
             stringifyResultArgs: stringifyResultArgs
         };
 
