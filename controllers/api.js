@@ -32,25 +32,26 @@ var errors = {
 };
 
 var getPhotoRequest = (function () {
-    var noselect = { frags: 0, album: 0, adate: 0, sdate: 0 };
+    var noselect = { frags: 0, album: 0, adate: 0, stdate: 0, sdate: 0, ucdate: 0 };
 
-    return function (data, cb) {
+    return Bluebird.method(function (data) {
         var cid = Number(data.cid);
 
         if (!cid || cid < 0) {
-            return cb({ code: 21 });
+            throw { code: 21 };
         }
 
-        core.request('photo', 'givePhoto', [{}, { cid: cid, countView: true, noselect: noselect }], function (err, photo) {
-            if (err) {
-                return cb({ code: 101 });
-            }
-            if (photo.ldate) {
-                photo.ldate = new Date(photo.ldate).getTime();
-            }
-            cb(null, photo);
-        });
-    };
+        core.request('photo', 'givePhoto', [{}, { cid: cid, countView: true, noselect: noselect }])
+            .then(function (photo) {
+                if (photo.ldate) {
+                    photo.ldate = new Date(photo.ldate).getTime();
+                }
+                return [photo];
+            })
+            .catch(function () {
+                throw { code: 101 };
+            });
+    });
 }());
 
 var getPhotoBoundsRequest = (function () {
@@ -86,18 +87,19 @@ var getPhotoBoundsRequest = (function () {
         }
 
         data.bounds = bounds;
-        return core.request('photo', 'getBounds', [data], 2)
-            .then(function (result) {
-                return ['{"photos":' + result[0] + ',"clusters":' + result[1] + '}', true];
+        return core.request('photo', 'getBounds', [data], true, true)
+            .spread(function (photos, clusters) {
+                return ['{"photos":' + photos + ',"clusters":' + clusters + '}', true];
             });
     });
 }());
 
 var getPhotoNearRequest = (function () {
-    return function (data, cb) {
+    return Bluebird.method(function (data) {
         if (!data || !Utils.geo.checkLatLng(data.geo)) {
-            return cb({ code: 21 });
+            throw { code: 21 };
         }
+
         data.geo.reverse();
 
         if (data.limit) {
@@ -110,13 +112,14 @@ var getPhotoNearRequest = (function () {
             data.distance = Math.abs(Number(data.distance));
         }
 
-        core.request('photo', 'giveNearestPhotos', [data], function (err, photos) {
-            if (err) {
-                return cb({ code: 101 });
-            }
-            cb(null, photos, true);
-        }, 1);
-    };
+        return core.request('photo', 'giveNearestPhotos', [data], true)
+            .then(function (photos) {
+                return [photos, true];
+            })
+            .catch(function () {
+                throw { code: 101 };
+            });
+    });
 }());
 
 var getObjCommentsRequest = (function () {
@@ -205,7 +208,6 @@ function requestFinish(err, req, res, start, result, stringified) {
     var errorCode;
     var errorMessage;
 
-    console.log(result);
     if (err) {
         errorCode = err.code;
         error = errors[errorCode];
@@ -228,8 +230,10 @@ function requestFinish(err, req, res, start, result, stringified) {
         sendStatus = 200;
 
         if (stringified === true) {
+            console.log('Prestringed');
             sendResult = '{"rid":' + query.rid + ',"stamp":' + query.stamp + ',"result":' + result + '}';
         } else {
+            console.log('stringify');
             sendResult = JSON.stringify({ rid: query.rid, stamp: query.stamp, result: result });
         }
 

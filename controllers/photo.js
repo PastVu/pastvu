@@ -220,7 +220,7 @@ var core = {
 			return canCreate;
 		};
 	}()),
-	givePhoto: function (iAm, params, cb) {
+	givePhoto: function (iAm, params) {
 		var cid = params.cid;
 		var defaultNoSelect = {sign: 0};
 		var fieldNoSelect = {};
@@ -340,8 +340,7 @@ var core = {
 				delete photo._id;
 
 				return [photo, this.can];
-			})
-			.nodeify(cb, { spread: true });
+			});
 	},
 	getBounds: function (data) {
 		var year = false;
@@ -381,32 +380,32 @@ var core = {
             });
 	},
 
-	giveNearestPhotos: function (data, cb) {
-		var query = {geo: {$near: data.geo}, s: status.PUBLIC};
-        var options = {lean: true};
+    giveNearestPhotos: function (data) {
+        var query = { geo: { $near: data.geo }, s: status.PUBLIC };
+        var options = { lean: true };
 
-		if (typeof data.except === 'number' && data.except > 0) {
-			query.cid = {$ne: data.except};
-		}
+        if (typeof data.except === 'number' && data.except > 0) {
+            query.cid = { $ne: data.except };
+        }
 
-		if (typeof data.distance === 'number' && data.distance > 0 && data.distance < 100000) {
-			query.geo.$maxDistance = data.distance;
-		} else {
+        if (typeof data.distance === 'number' && data.distance > 0 && data.distance < 100000) {
+            query.geo.$maxDistance = data.distance;
+        } else {
             query.geo.$maxDistance = 2000;
         }
 
-		if (typeof data.limit === 'number' && data.limit > 0 && data.limit < 30) {
+        if (typeof data.limit === 'number' && data.limit > 0 && data.limit < 30) {
             options.limit = data.limit;
-		} else {
+        } else {
             options.limit = 30;
         }
 
-		if (typeof data.skip === 'number' && data.skip > 0 && data.skip < 1000) {
+        if (typeof data.skip === 'number' && data.skip > 0 && data.skip < 1000) {
             options.skip = data.skip;
-		}
+        }
 
-		Photo.find(query, compactFields, options, cb);
-	}
+        return Photo.findAsync(query, compactFields, options);
+    }
 };
 
 function giveNewPhotosLimit(iAm, data, cb) {
@@ -1539,21 +1538,19 @@ var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
 		});
 });
 
-//Берем массив ближайших фотографий
-function giveNearestPhotos(data, cb) {
-	if (!data || !Utils.geo.checkLatLng(data.geo)) {
-		return cb({message: 'Bad params', error: true});
-	}
-	data.limit = Number(data.limit);
-	data.geo.reverse();
+// Берем массив ближайших фотографий
+var giveNearestPhotos = Bluebird.method(function (data) {
+    if (!data || !Utils.geo.checkLatLng(data.geo)) {
+        throw { message: msg.badParams };
+    }
+    data.limit = Number(data.limit);
+    data.geo.reverse();
 
-	core.giveNearestPhotos(data, function (err, photos) {
-		if (err) {
-			return cb({message: err.message, error: true});
-		}
-		cb({photos: photos || []});
-	});
-}
+    return core.giveNearestPhotos(data)
+        .then(function (photos) {
+            return { photos: photos || [] };
+        });
+});
 
 //Отдаем непубличные фотографии
 function giveUserPhotosPrivate(iAm, data, cb) {
@@ -2527,11 +2524,15 @@ module.exports.loadController = function (app, db, io) {
 			});
 		});
 
-		socket.on('giveNearestPhotos', function (data) {
-			giveNearestPhotos(data, function (resultData) {
-				socket.emit('takeNearestPhotos', resultData);
-			});
-		});
+        socket.on('giveNearestPhotos', function (data) {
+            giveNearestPhotos(data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeNearestPhotos', resultData);
+                });
+        });
 
 		socket.on('giveCanPhoto', function (data) {
 			giveCanPhoto(hs.usObj, data, function (resultData) {
