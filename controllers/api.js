@@ -123,22 +123,21 @@ var getPhotoNearRequest = (function () {
 }());
 
 var getObjCommentsRequest = (function () {
-    return function (data, cb) {
+    return Bluebird.method(function (data) {
         var cid = Number(data.cid);
 
         if (!cid || cid < 0) {
-            return cb({ code: 21 });
+            throw { code: 21 };
         }
 
-        core.request('comment', 'getCommentsObjAnonym', [
-            {}, { type: 'photo', cid: cid }
-        ], function (err, commentsTree) {
-            if (err) {
-                return cb({ code: 101 });
-            }
-            cb(null, commentsTree, true);
-        }, 1);
-    };
+        return core.request('comment', 'getCommentsObjAnonym', [{}, { type: 'photo', cid: cid }], true)
+            .then(function (commentsTree) {
+                return [commentsTree, true];
+            })
+            .catch(function () {
+                throw { code: 101 };
+            });
+    });
 }());
 
 var methodMap = {
