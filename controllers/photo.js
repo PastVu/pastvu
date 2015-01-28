@@ -1711,8 +1711,8 @@ var photoValidate = function (values) {
 
     if (_.isString(values.desc) && values.desc.length) {
         result.desc = values.desc.trim().substr(0, 4000);
-    } else if (values.title === null) {
-        result.title = undefined;
+    } else if (values.desc === null) {
+        result.desc = undefined;
     }
 
     if (_.isString(values.source) && values.source.length) {
