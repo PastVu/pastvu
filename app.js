@@ -111,8 +111,9 @@ if (land !== 'prod') {
 	Bluebird.longStackTraces();
 }
 
-// Промисифаем mongoose, методы будут с постфиксом Async, например, model.saveAsync().then(..)
+// Промисифаем mongoose и fs, методы будут с постфиксом Async, например, model.saveAsync().then(..)
 Bluebird.promisifyAll(require('mongoose'));
+Bluebird.promisifyAll(fs);
 
 mkdirp.sync(storePath + "incoming");
 mkdirp.sync(storePath + "private");

@@ -217,6 +217,7 @@ var core = {
 			} else if (user.pcount >= 1000) {
 				canCreate = Math.max(0, 100 - pfcount);
 			}
+
 			return canCreate;
 		};
 	}()),
@@ -420,31 +421,27 @@ var core = {
     }
 };
 
-function giveNewPhotosLimit(iAm, data, cb) {
+var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
 	if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
-		return cb({message: msg.deny, error: true});
+		throw { message: msg.deny };
 	}
-	step(
-		function () {
-			if (iAm.user.login === data.login) {
-				this(null, iAm.user);
-			} else {
-				var userObj = _session.getOnline(data.login);
-				if (userObj) {
-					this(null, userObj.user);
-				} else {
-					User.findOne({login: data.login}, this);
-				}
-			}
-		},
-		function (err, user) {
-			if (err || !user) {
-				return cb({message: err && err.message || msg.noUser, error: true});
-			}
-			cb(core.getNewPhotosLimit(user));
-		}
-	);
-}
+    var userObj = _session.getOnline(data.login);
+    var promise;
+
+    if (userObj) {
+        promise = Bluebird.resolve(userObj.user);
+    } else {
+        promise = User.findOneAsync({ login: data.login });
+    }
+
+    return promise.then(function (user) {
+        if (!user) {
+            throw { message: msg.noUser };
+        }
+
+        return core.getNewPhotosLimit(user);
+    });
+});
 
 /**
  * Создает фотографии в базе данных
@@ -453,96 +450,76 @@ function giveNewPhotosLimit(iAm, data, cb) {
  * @param cb Коллбэк
  */
 //var dirs = ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'];
-function createPhotos(socket, data, cb) {
+var createPhotos = Bluebird.method(function (socket, data) {
 	var iAm = socket.handshake.usObj;
 	if (!iAm.registered) {
-		return cb({message: msg.deny, error: true});
+        throw { message: msg.deny };
 	}
-	if (!data || (!Array.isArray(data) && !Utils.isType('object', data))) {
-		return cb({message: 'Bad params', error: true});
+	if (!Array.isArray(data) && !_.isObject(data)) {
+		throw { message: 'Bad params' };
 	}
 
-	if (!Array.isArray(data) && Utils.isType('object', data)) {
+	if (!Array.isArray(data)) {
 		data = [data];
 	}
 
-	var result = [],
-		canCreate = core.getNewPhotosLimit(iAm.user);
+    var cids = [];
+	var canCreate = core.getNewPhotosLimit(iAm.user);
 
 	if (!canCreate || !data.length) {
-		cb({message: 'Nothing to save', cids: result});
+        return { message: 'Nothing to save', cids: cids };
 	}
 	if (data.length > canCreate) {
 		data = data.slice(0, canCreate);
 	}
 
-	step(
-		function filesToPrivateFolder() {
-			var item,
-				i = data.length;
+    return Bluebird.all(data.map(function (item) {
+        item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
+        return fs.renameAsync(incomeDir + item.file, privateDir + item.fullfile);
+    }))
+        .then(function () {
+            return Counter.incrementBy('photo', data.length);
+        })
+        .then(function savePhotos(count) {
+            if (!count) {
+                throw { message: 'Increment photo counter error' };
+            }
+            var now = Date.now();
+            var next = count.next - data.length + 1;
 
-			while (i--) {
-				item = data[i];
-				item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
-				fs.rename(incomeDir + item.file, privateDir + item.fullfile, this.parallel());
-			}
-		},
-		function increment(err) {
-			if (err) {
-				return cb({message: err.message || 'File transfer error', error: true});
-			}
-			Counter.incrementBy('photo', data.length, this);
-		},
-		function savePhotos(err, count) {
-			if (err || !count) {
-				return cb({message: err && err.message || 'Increment photo counter error', error: true});
-			}
-			var photo,
-				now = Date.now(),
-				next = count.next - data.length + 1,
-				item,
-				i;
+            return Bluebird.all(data.map(function (item, i) {
+                var photo = new Photo({
+                    cid: next + i,
+                    user: iAm.user,
+                    file: item.fullfile,
+                    ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
+                    sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
+                    type: item.type,
+                    size: item.size,
+                    geo: undefined,
+                    s: 0,
+                    title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
+                    frags: undefined,
+                    convqueue: true
+                    //geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
+                    //dir: dirs[_.random(0, dirs.length - 1)],
+                });
+                item.photoObj = photo;
 
-			for (i = 0; i < data.length; i++) {
-				item = data[i];
+                cids.push({cid: photo.cid});
+                return photo.saveAsync();
+            }));
+        })
+        .then(function () {
+            PhotoConverter.addPhotos(cids);
 
-				photo = new Photo({
-					cid: next + i,
-					user: iAm.user,
-					file: item.fullfile,
-					ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
-					sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
-					type: item.type,
-					size: item.size,
-					geo: undefined,
-					s: 0,
-					title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
-					frags: undefined,
-					convqueue: true
-					//geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
-					//dir: dirs[_.random(0, dirs.length - 1)],
-				});
-				item.photoObj = photo;
-
-				result.push({cid: photo.cid});
-				photo.save(this.parallel());
-			}
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			iAm.user.pfcount = iAm.user.pfcount + data.length;
-			_session.saveEmitUser(iAm, socket, this);
-		},
-		function (err) {
-			if (err) {
-				return cb({message: err.message, error: true});
-			}
-			cb({message: data.length + ' photo successfully saved', cids: result});
-		}
-	);
-}
+            iAm.user.pfcount = iAm.user.pfcount + data.length;
+            return _session.saveEmitUser(iAm, socket);
+        })
+        .then(function () {
+            return { message: data.length + ' photo successfully saved', cids: cids };
+        });
+});
 
 // Добавляет фото на карту
 function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
@@ -2358,12 +2335,13 @@ module.exports.loadController = function (app, db, io) {
 		var hs = socket.handshake;
 
 		socket.on('createPhoto', function (data) {
-			createPhotos(socket, data, function (createData) {
-				if (!createData.error && createData.cids && createData.cids.length) {
-					PhotoConverter.addPhotos(createData.cids);
-				}
-				socket.emit('createPhotoCallback', createData);
-			});
+            createPhotos(socket, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('createPhotoCallback', resultData);
+                });
 		});
 
 		socket.on('revokePhoto', function (data) {
@@ -2590,9 +2568,13 @@ module.exports.loadController = function (app, db, io) {
 		});
 
 		socket.on('giveNewPhotosLimit', function (data) {
-			giveNewPhotosLimit(hs.usObj, data, function (resultData) {
-				socket.emit('takeNewPhotosLimit', resultData);
-			});
+            giveNewPhotosLimit(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeNewPhotosLimit', resultData);
+                });
 		});
 	});
 };

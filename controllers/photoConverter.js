@@ -334,7 +334,7 @@ function CollectConveyerStat() {
 /**
  * Добавление в конвейер конвертации фотографий
  * @param data Массив объектов {cid: 123, variants: []}
- * @param cb Коллбэк успешности добавления
+ * @param [cb] Коллбэк успешности добавления
  */
 module.exports.addPhotos = function (data, cb) {
 	var cid,
