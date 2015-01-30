@@ -2,9 +2,11 @@
 
 var path = require('path'),
 	async = require('async'),
+    Bluebird = require('bluebird'),
 	imageMagick = require('imagemagick'),
 	mkdirp = require('mkdirp'),
 	dbNative,
+    dbEval,
 	User,
 	Photo,
 	PhotoConveyer,
@@ -220,6 +222,9 @@ module.exports.loadController = function (app, db, io) {
 	appEnv = app.get('appEnv');
 
 	dbNative = db.db;
+    /* jshint evil:true */
+    dbEval = Bluebird.promisify(dbNative.eval, dbNative);
+    /* jshint evil:false */
 
 	Photo = db.model('Photo');
 	PhotoConveyer = db.model('PhotoConveyer');
@@ -334,77 +339,59 @@ function CollectConveyerStat() {
 /**
  * Добавление в конвейер конвертации фотографий
  * @param data Массив объектов {cid: 123, variants: []}
- * @param [cb] Коллбэк успешности добавления
  */
-module.exports.addPhotos = function (data, cb) {
-	var cid,
-		toConvertObj,
-		toConvertObjs = [],
-		stamp = new Date();
+module.exports.addPhotos = function (data) {
+    var cid;
+    var toConvertObj;
+    var toConvertObjs = [];
+    var stamp = new Date();
 
-	step(
-		function () {
-			for (var i = 0; i < data.length; i++) {
-				cid = Number(data[i].cid);
-				if (cid) {
-					toConvertObj = {cid: cid, added: stamp};
-					if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
-						toConvertObj.variants = data[i].variants;
-					}
-					toConvertObjs.push(toConvertObj);
-				}
-			}
-			if (toConvertObjs.length) {
-				PhotoConveyer.collection.insert(toConvertObjs, this);
-			} else {
-				this();
-			}
-		},
-		function (err) {
-			if (err) {
-				if (cb) {
-					cb(err);
-				}
-				return;
-			}
+    for (var i = 0; i < data.length; i++) {
+        cid = Number(data[i].cid);
 
-			conveyerLength += toConvertObjs.length;
-			conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
+        if (cid) {
+            toConvertObj = { cid: cid, added: stamp };
+            if (Array.isArray(data[i].variants) && data[i].variants.length > 0) {
+                toConvertObj.variants = data[i].variants;
+            }
+            toConvertObjs.push(toConvertObj);
+        }
+    }
 
-			if (cb) {
-				cb(null, {message: toConvertObjs.length + ' photos added to convert conveyer'});
-			}
-			conveyerControl();
-		}
-	);
+    return (toConvertObjs.length ? PhotoConveyer.collection.insertAsync(toConvertObjs, { safe: true }) : Bluebird.resolve())
+        .then(function () {
+            conveyerLength += toConvertObjs.length;
+            conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
+
+            conveyerControl();
+
+            return { message: toConvertObjs.length + ' photos added to convert conveyer' };
+        });
 };
 
 /**
  * Добавление в конвейер конвертации всех фотографий
  * @param data Объект с вариантами {variants: []}
- * @param cb Коллбэк успешности добавления
  */
-module.exports.addPhotosAll = function (data, cb) {
-	var variantsArrString = '';
+module.exports.addPhotosAll = function (data) {
+    var variantsArrString = '';
 
-	if (Array.isArray(data.variants) && data.variants.length > 0 && data.variants.length < imageVersionsKeys.length) {
-		variantsArrString = JSON.stringify(data.variants);
-	}
+    if (Array.isArray(data.variants) && data.variants.length > 0 && data.variants.length < imageVersionsKeys.length) {
+        variantsArrString = JSON.stringify(data.variants);
+    }
 
-	dbNative.eval('function (variants) {convertPhotosAll(variants)', [data.variants], {nolock:true}, function (err, ret) {
-		if (err) {
-			return cb({message: err && err.message, error: true});
-		}
-		if (ret && ret.error) {
-			return cb({message: ret.message || '', error: true});
-		}
+    return dbEval('function (variants) {convertPhotosAll(variants)', [data.variants], { nolock: true })
+        .then(function (ret) {
+            if (ret && ret.error) {
+                throw { message: ret.message || '' };
+            }
 
-		conveyerLength += ret.photosAdded;
-		conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
-		conveyerControl();
+            conveyerLength += ret.photosAdded;
+            conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
+            conveyerControl();
 
-		cb(ret);
-	});
+            return ret;
+        });
 };
 
 /**
