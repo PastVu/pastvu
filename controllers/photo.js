@@ -245,7 +245,7 @@ var core = {
     }()),
     givePhoto: function (iAm, params) {
         var cid = params.cid;
-        var defaultNoSelect = { sign: 0 };
+        var defaultNoSelect = { sign: 0, sdate: 0 };
         var fieldNoSelect = {};
 
         if (params.noselect !== undefined) {
@@ -336,9 +336,9 @@ var core = {
 
                 if (iAm.registered) {
                     return userObjectRelController.fillObjectByRels(photo, iAm.user._id, 'photo', params.rel);
-                } else {
-                    return photo;
                 }
+
+                return photo;
             })
             .then(function (photo) {
 

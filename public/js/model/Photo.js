@@ -34,6 +34,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				cdate: null, // Время изменения
 				vdate: null, // Время последнего просмотра
 				stdate: null, // Время установки текущего статуса фотографии
+                changed: false,
 
 				dir: undefined,
 

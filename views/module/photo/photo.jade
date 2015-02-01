@@ -205,7 +205,7 @@
     //ko if: p.cdate
     .infoBlock
         .info
-            a(href="?history=1", data-replace="true", data-bind="html: 'Последнее изменение ' + fDateIn(p.cdate())")
+            a(href="?history=1", data-replace="true", data-bind="css: {changed: p.changed()}, html: 'Последнее изменение ' + fDateIn(p.cdate())")
     // /ko
 
     //-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
