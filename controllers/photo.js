@@ -66,9 +66,6 @@ var _session = require('./_session.js'),
         cid: 1,
         file: 1,
         s: 1,
-        ldate: 1,
-        adate: 1,
-        sdate: 1,
         title: 1,
         year: 1,
         ccount: 1,
@@ -81,9 +78,6 @@ var _session = require('./_session.js'),
         cid: 1,
         file: 1,
         s: 1,
-        ldate: 1,
-        adate: 1,
-        sdate: 1,
         ucdate: 1,
         title: 1,
         year: 1,
@@ -1292,10 +1286,10 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
                 this.count = count;
 
                 if (!iAm.registered || !photos.length) {
-                    //Если аноним или фотографий нет, сразу возвращаем
+                    // Если аноним или фотографий нет, сразу возвращаем
                     return photos;
                 } else {
-                    //Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
+                    // Если пользователь залогинен, заполняем кол-во новых комментариев для каждого объекта
                     return userObjectRelController.fillObjectByRels(photos, iAm.user._id, 'photo');
                 }
             })
@@ -1315,7 +1309,7 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
                         }
                     }
 
-                    //Заполняем для каждой фотографии краткие регионы и хэш этих регионов
+                    // Заполняем для каждой фотографии краткие регионы и хэш этих регионов
                     shortRegionsParams = regionController.getShortRegionsParams(buildQueryResult.rhash);
                     shortRegionsHash = regionController.genObjsShortRegionsArr(photos, shortRegionsParams.lvls, true);
                 }
@@ -1359,17 +1353,18 @@ var givePhotosPublicNoGeoIndex = (function () {
     };
 }());
 
-var filterProps = { geo: [], r: [], rp: [], s: [] },
-    delimeterParam = '_',
-    delimeterVal = '!';
+var filterProps = { geo: [], r: [], rp: [], s: [] };
+var delimeterParam = '_';
+var delimeterVal = '!';
 function parseFilter(filterString) {
-    var filterParams = filterString && filterString.split(delimeterParam),
-        filterParam,
-        filterVal,
-        filterValItem,
-        dividerIndex,
-        result = {},
-        i, j;
+    var filterParams = filterString && filterString.split(delimeterParam);
+    var filterParam;
+    var filterVal;
+    var filterValItem;
+    var dividerIndex;
+    var result = {};
+    var i;
+    var j;
 
     if (filterParams) {
         for (i = filterParams.length; i--;) {
@@ -1447,7 +1442,7 @@ function parseFilter(filterString) {
     return result;
 }
 
-//Отдаем общую галерею
+// Отдаем общую галерею
 var givePhotosPS = Bluebird.method(function (iAm, data) {
     if (!_.isObject(data)) {
         throw { message: msg.badParams };
@@ -1484,7 +1479,7 @@ var giveUserPhotos = Bluebird.method(function (iAm, data) {
         });
 });
 
-//Отдаем последние фотографии, ожидающие подтверждения
+// Отдаем последние фотографии, ожидающие подтверждения
 var givePhotosForApprove = Bluebird.method(function (iAm, data) {
     var query = { s: status.READY };
 

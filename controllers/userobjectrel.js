@@ -115,7 +115,7 @@ var fillObjectByRels = function (objs, userId, type, rels) {
                     if (rel.view) {
                         obj.vdate = rel.view;
 
-                        if (obj.ucdate && rel.view > obj.ucdate) {
+                        if (obj.ucdate && obj.ucdate > rel.view) {
                             obj.changed = true;
                         }
                     }

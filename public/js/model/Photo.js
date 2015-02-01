@@ -16,8 +16,6 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			},
 			compact: {
 				ldate: Date.now(), // Время загрузки
-				adate: Date.now(), // Время активации
-				sdate: Date.now(), // Время сортировки
 
                 y: '',
 				year: null,
@@ -103,11 +101,10 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 			origin = _.defaults(origin, defaults[defType]);
 		}
 
-		if (defType === 'compact' || defType === 'full') {
-			origin.ldate = new Date(origin.ldate);
-			origin.adate = new Date(origin.adate);
-			origin.sdate = new Date(origin.sdate);
-		}
+        if (origin.ldate) {
+            origin.ldate = new Date(origin.ldate);
+        }
+
 		if (defType === 'full') {
 			if (!Utils.geo.checkLatLng(origin.geo)) {
 				origin.geo = defaults[defType].geo;

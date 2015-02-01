@@ -580,15 +580,14 @@ function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
 }
 
 // Сохранение и последующая отправка
-function saveEmitUser(usObj, excludeSocket, cb) {
+function saveEmitUser(usObj, excludeSocket) {
 	if (usObj && usObj.user !== undefined) {
 		return usObj.user.saveAsync()
 			.spread(function () {
 				return emitUser(usObj, null, excludeSocket);
-			})
-			.nodeify(cb);
+			});
 	}
-	return 0;
+	return Bluebird.resolve();
 }
 
 function emitSidCookie(socket) {

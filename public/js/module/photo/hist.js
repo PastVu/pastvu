@@ -161,7 +161,7 @@ define(
 
                     // Если указано время последнего просмотра объекта и это не первая запись,
                     // Подсвечиваем все записи после этого времени как новые
-                    if (hightlightNew && i > 0 && hist.stamp >= newSince) {
+                    if (hightlightNew && i > 0 && hist.stamp > newSince) {
                         hist.isnew = true;
                     }
 

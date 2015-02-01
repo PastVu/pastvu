@@ -466,9 +466,9 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 			}, this);
 		},
 		receivePhotos: function (skip, limit, cb, ctx) {
-			var reqName = this.u ? 'giveUserPhotos' : 'givePhotos',
-				resName = this.u ? 'takeUserPhotos' : 'takePhotos',
-				params = {skip: skip, limit: limit, filter: this.filter.origin};
+			var reqName = this.u ? 'giveUserPhotos' : 'givePhotos';
+            var resName = this.u ? 'takeUserPhotos' : 'takePhotos';
+            var params = {skip: skip, limit: limit, filter: this.filter.origin};
 
 			if (this.u) {
 				params.login = this.u.login();
@@ -480,12 +480,12 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					window.noty({text: data && data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true});
 				} else if (data.skip === skip) {
 					this.processPhotos(data.photos, data.rhash);
-					//Если фильтр активен - обновляем в нем данные
+					// Если фильтр активен - обновляем в нем данные
 					if (this.filter.active()) {
 						this.filterChangeHandleBlock = true;
 
-						//Если количество регионов равно, они пусты или массивы их cid равны,
-						//то и заменять их не надо, чтобы небыло "прыжка"
+						// Если количество регионов равно, они пусты или массивы их cid равны,
+						// то и заменять их не надо, чтобы небыло "прыжка"
 						rEquals = this.filter.disp.r().length === data.filter.r.length &&
 							(!data.filter.r.length || _.isEqual(_.pluck(this.filter.disp.r(), 'cid'), _.pluck(data.filter.r, 'cid')));
 						if (!rEquals) {
@@ -500,7 +500,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 						this.filterChangeHandleBlock = false;
 					}
 				}
-				if (Utils.isType('function', cb)) {
+				if (_.isFunction(cb)) {
 					cb.call(ctx, data);
 				}
 			}, this);

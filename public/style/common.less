@@ -550,22 +550,40 @@ body {
 		}
 	}
 
+    .rightBlocks {
+        position: absolute;
+        right: 3px;
+        bottom: 6px;
+        font-size: @font-size-small;
+        line-height: 16px;
+
+        > .rightBlock {
+            position: relative;
+            display: inline-block;
+            padding: 0 2px;
+            text-align: center;
+            text-decoration: none;
+            //vertical-align: top;
+            border: 1px solid #F0F0F0;
+            background-color: rgba(255, 255, 255, .7);
+            box-shadow: 0 1px 5px 1px #444;
+            text-shadow: 1px 1px 0 #F0F0F0, -1px 1px 0 #F0F0F0, 1px -1px 0 #F0F0F0, -1px -1px 0 #F0F0F0;
+
+            &:not(:first-child) {
+                margin-left: 5px;
+            }
+
+            &:hover {
+                font-weight: bold;
+                background-color: #fff;
+                text-shadow: none;
+            }
+        }
+    }
+
 	.comm {
-		position: absolute;
-		display: block;
-		right: 3px;
-		bottom: 6px;
 		min-width: 14px;
-		padding: 0 2px 0 2px;
-		font-size: 12px;
-		line-height: 15px;
 		color: #111;
-		text-align: center;
-		text-decoration: none;
-		text-shadow: 1px 1px 0 #F0F0F0, -1px 1px 0 #F0F0F0, 1px -1px 0 #F0F0F0, -1px -1px 0 #F0F0F0;
-		border: 1px solid #F0F0F0;
-		background-color: rgba(255, 255, 255, .7);
-		box-shadow: 0 1px 5px 1px #444;
 
 		&::after {
 			position: absolute;
@@ -579,23 +597,20 @@ body {
 			border-right: 7px solid transparent;
 		}
 
-		&:hover {
-			font-weight: bold;
-			background-color: #fff;
-			text-shadow: none;
-		}
-
 		.cnew {
 			color: #048D0F;
 			font-weight: bold;
 		}
 	}
+    .changed {
+        color: #DA8300;
+    }
 
 	&.withInfo {
 		margin: 0 7px 17px 7px;
 		padding-bottom: @PhotoInfoHeight;
 
-		.comm {
+		.rightBlocks {
 			bottom: @PhotoInfoHeight + 6;
 		}
 
