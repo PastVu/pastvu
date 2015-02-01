@@ -361,93 +361,104 @@ define(
 		},
 
 		rechargeData: function (photo, can) {
-			this.originData = photo;
+            var originData = this.originData;
+
+            // Если дынные уже были, то очищаем их и присваиваем заново, чтобы ссылка на сам объект origin сохранилась
+            if (_.isObject(originData)) {
+                Object.keys(originData).forEach(function (key) {
+                    delete originData[key];
+                });
+                _.assign(originData, photo);
+            } else {
+                this.originData = photo;
+            }
+
 			this.p = Photo.vm(photo, this.p);
 			this.can = ko_mapping.fromJS(can, this.can);
 		},
 
-		routeHandler: function () {
-			var self = this;
-			var params = globalVM.router.params();
-			var cid = Number(params.cid);
-			var hl = params.hl;
-			self.history = Number(params.history) >= 0 ? Number(params.history) : false;
+        routeHandler: function () {
+            var self = this;
+            var params = globalVM.router.params();
+            var cid = Number(params.cid);
+            var hl = params.hl;
+            self.history = Number(params.history) >= 0 ? Number(params.history) : false;
 
-			self.toComment = self.toFrag = undefined;
-			window.clearTimeout(self.scrollTimeout);
+            self.toComment = self.toFrag = undefined;
+            window.clearTimeout(self.scrollTimeout);
 
-			if (hl) {
-				if (hl.indexOf('comment-') === 0) {
-					self.toComment = hl.substr(8) || undefined; // Навигация к конкретному комментарию
-				} else if (hl.indexOf('comments') === 0) {
-					self.toComment = true; // Навигация к секции комментариев
-				} else if (hl.indexOf('frag-') === 0) {
-					self.toFrag = parseInt(hl.substr(5), 10) || undefined; // Навигация к фрагменту
-				}
-			}
+            if (hl) {
+                if (hl.indexOf('comment-') === 0) {
+                    self.toComment = hl.substr(8) || undefined; // Навигация к конкретному комментарию
+                } else if (hl.indexOf('comments') === 0) {
+                    self.toComment = true; // Навигация к секции комментариев
+                } else if (hl.indexOf('frag-') === 0) {
+                    self.toFrag = parseInt(hl.substr(5), 10) || undefined; // Навигация к фрагменту
+                }
+            }
 
-			if (self.p && _.isFunction(self.p.cid) && self.p.cid() !== cid) {
-				self.photoLoading(true);
+            if (self.p && _.isFunction(self.p.cid) && self.p.cid() !== cid) {
+                self.photoLoading(true);
 
-				self.commentsVM.deactivate();
+                self.commentsVM.deactivate();
 
-				storage.photo(cid, function (data) {
-					var editModeCurr = self.edit(),
-						editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
+                storage.photo(cid, function (data) {
+                    var editModeCurr = self.edit();
+                    var editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
 
-					if (data) {
-						self.rechargeData(data.origin, data.can);
+                    if (data) {
+                        self.rechargeData(data.origin, data.can);
 
-						Utils.title.setTitle({title: self.p.title()});
+                        Utils.title.setTitle({ title: self.p.title() });
 
-						editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statusKeys.NEW;
+                        editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statusKeys.NEW;
 
-						if (self.photoLoadContainer) {
-							self.photoLoadContainer.off('load').off('error');
-						}
-						self.photoLoadContainer = $(new Image())
-							.on('load', self.onPhotoLoad.bind(self))
-							.on('error', self.onPhotoError.bind(self))
-							.attr('src', self.p.sfile());
+                        if (self.photoLoadContainer) {
+                            self.photoLoadContainer.off('load').off('error');
+                        }
+                        self.photoLoadContainer = $(new Image())
+                            .on('load', self.onPhotoLoad.bind(self))
+                            .on('error', self.onPhotoError.bind(self))
+                            .attr('src', self.p.sfile());
 
-						self.processRanks(self.p.user.ranks());
-						self.getUserRibbon(3, 4, self.applyUserRibbon, self);
-						self.getNearestRibbon(8, self.applyNearestRibbon, self);
+                        self.processRanks(self.p.user.ranks());
+                        self.getUserRibbon(3, 4, self.applyUserRibbon, self);
+                        self.getNearestRibbon(8, self.applyNearestRibbon, self);
 
-						// В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
-						if (self.binded) {
-							$.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
-						}
+                        // В первый раз точку передаем сразу в модуль карты, в следующие устанавливам методами
+                        if (self.binded) {
+                            $.when(self.mapModulePromise).done(self.setMapPoint.bind(self));
+                        }
 
-						if (editModeCurr !== editModeNew) {
-							self.edit(editModeNew);
-						} else {
-							self.editHandler(editModeCurr);
-						}
+                        if (editModeCurr !== editModeNew) {
+                            self.edit(editModeNew);
+                        } else {
+                            self.editHandler(editModeCurr);
+                        }
 
-						if (!self.binded) {
-							self.makeBinding();
-						}
+                        if (!self.binded) {
+                            self.makeBinding();
+                        }
 
-						if (self.history !== false && !self.edit()) {
-							self.showHistory();
-						} else {
-							self.destroyHistory();
-						}
-						ga('send', 'pageview');
-					}
-				});
-			} else {
-				if (self.toFrag || self.toComment) {
-					self.scrollTimeout = setTimeout(self.scrollToBind, 50);
-				}
-				if (self.history !== false) {
-					self.showHistory();
-				} else {
-					self.destroyHistory();
-				}
-			}
-		},
+                        if (self.history !== false && !self.edit()) {
+                            self.showHistory();
+                        } else {
+                            self.destroyHistory();
+                        }
+                        ga('send', 'pageview');
+                    }
+                });
+            } else {
+                if (self.toFrag || self.toComment) {
+                    self.scrollTimeout = setTimeout(self.scrollToBind, 50);
+                }
+                if (self.history !== false) {
+                    self.showHistory();
+                } else {
+                    self.destroyHistory();
+                }
+            }
+        },
 
 		loggedInHandler: function () {
 			// После логина перезапрашиваем ленту фотографий пользователя
@@ -1114,7 +1125,7 @@ define(
 							);
 							confirmer.enable();
 						} else if (data && !data.error) {
-							self.originData = data.photo;
+                            self.rechargeData(data.photo, data.can);
 
 							confirmer.close();
 							ga('send', 'event', 'photo', 'revoke', 'photo revoke success');
