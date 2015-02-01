@@ -185,7 +185,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 					this.news(data.news);
 					success = true;
 				}
-				if (Utils.isType('function', cb)) {
+				if (_.isFunction(cb)) {
 					cb.call(ctx, success, scroll);
 				}
 			}, this);
@@ -300,21 +300,25 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 		},
 
 		ratSelect: function (data, event) {
-			var group = $(event.target).parents('.btn-group').attr('id'),
-				id = $(event.target).attr('data-time');
+			var group = $(event.target).parents('.btn-group').attr('id');
+			var id = $(event.target).attr('data-time');
 			this.ratings[group].selected(id);
 		},
 		processPhotos: function (photos, regionsHash, picFormat, numField, numFormat) {
-			var i = photos.length, j,
-				photo;
-			while (i) {
-				photo = photos[--i];
+			var photo;
+            var j;
+
+			for (var i = photos.length; i--;) {
+				photo = photos[i];
+
 				if (P.preaddrs.length > 1) {
 					photo.sfile = P.preaddrs[i % P.preaddrs.length] + picFormat + photo.file;
 				} else {
 					photo.sfile = P.preaddr + picFormat + photo.file;
 				}
+
 				photo.link = '/p/' + photo.cid;
+
 				if (!photo.title) {
 					photo.title = 'Без названия';
 				}

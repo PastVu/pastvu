@@ -48,8 +48,15 @@
 					| <!--ko if: $index()-->, <!-- /ko -->
 					a.shortRegion(data-bind="css: {where: !$data.cid}, attr: {href: '/ps?f='+(!$data.cid ? 'geo!0'+($parent.rs[$index()+1] ? '_r!'+$parent.rs[$index()+1].cid : '') : 'r!'+$data.cid), title: $data.title_local}, text: $data.title_local")
 				// /ko
-			//ko if: $data.ccount
-			a.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+			//ko if: $data.ccount || $data.changed
+			.rightBlocks
+				//ko if: $data.ccount
+				a.rightBlock.comm(data-bind="html: $data.ccount + ($data.ccount_new ? '<span class=\"cnew\"> +' + $data.ccount_new + '</span>' : ''), attr: {href: $data.link + '?hl=comments'}", title="Комментарии")
+				// /ko
+				//ko if: $data.changed
+				a.rightBlock.changed(data-bind="attr: {href: $data.link + '?history=1'}", title="Фотография изменена с момента прошлого просмотра")
+					span.glyphicon.glyphicon-pencil
+				// /ko
 			// /ko
 		// /ko
 		//ko if: moreLink()

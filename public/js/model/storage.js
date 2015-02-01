@@ -56,7 +56,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket
                         storage.timeouts[cid] = setTimeout(function () {
                             delete storage.photos[cid];
                             delete storage.timeouts[cid];
-                        }, 10000); // Через 10s отбрасываем из storage, чтобы запросить при необходимости заново
+                        }, 8000); // Через 8s отбрасываем из storage, чтобы запросить при необходимости заново
                     }
 
                     if (Array.isArray(storage.waitings['p' + cid])) {
