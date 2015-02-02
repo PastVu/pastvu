@@ -89,7 +89,7 @@ var getPhotoBoundsRequest = (function () {
         data.bounds = bounds;
         return core.request('photo', 'getBounds', [data], true, true)
             .spread(function (photos, clusters) {
-                return ['{"photos":' + photos + ',"clusters":' + clusters + '}', true];
+                return ['{"photos":' + (photos || '[]') + ',"clusters":' + (clusters || '[]') + '}', true];
             });
     });
 }());
