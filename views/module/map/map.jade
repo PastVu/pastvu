@@ -3,24 +3,27 @@
 		.map
 
 		//ko if: embedded
-		//ko if: editing()
-		.mapInfo.info
-			//ko if: point.geo()
-			button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
-				span.glyphicon.glyphicon-remove-circle
-				|  Обнулить координаты
+		.mapInfos
+			//ko if: editing()
+			.mapInfo.geoInput
+				input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup'", placeholder="Широта, долгота")
+			.mapInfo.info.geoInfo
+				//ko if: point.geo()
+				button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
+					span.glyphicon.glyphicon-remove-circle
+					|  Обнулить координаты
+				// /ko
+				//ko ifnot: point.geo()
+				span.glyphicon.glyphicon-map-marker
+				| Для установки координаты кликните по карте
+				// /ko
 			// /ko
-			//ko ifnot: point.geo()
-			span.glyphicon.glyphicon-map-marker
-			| Для установки координаты кликните по карте
-			// /ko
-		// /ko
 
-		//ko if: !editing() && !point.geo()
-		.mapInfo.warn
-			span.glyphicon.glyphicon-warning-sign
-			|  Координаты фотографии не указаны
-		// /ko
+			//ko if: !editing() && !point.geo()
+			.mapInfo.warn
+				span.glyphicon.glyphicon-warning-sign
+				|  Координаты фотографии не указаны
+			// /ko
 		// /ko
 
 		.mapYearSelector

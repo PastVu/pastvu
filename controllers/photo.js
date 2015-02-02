@@ -2262,6 +2262,10 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
                         delete history.diff;
                     }
 
+                    if (values.geo) {
+                        values.geo.reverse();
+                    }
+
                     // Если в этой записи измененись регионы, добавляем каждый из них в хэш для последующей выборки
                     if (values.regions) {
                         for (j = values.regions.length; j--;) {

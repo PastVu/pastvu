@@ -217,13 +217,13 @@
     .fieldWrap.mandatory(data-bind="css: {hasContent: p.title().length}")
         label(for="pName", data-bind="html: fields.title")
         input.form-control.title(name="pName", type="text", maxlength="120", placeholder="Введите название фотографии", data-bind="value: p.title, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
-    .fieldWrap.asrow(data-bind="css: {loading: exeregion()}")
+    .fieldWrap.asrow
         .yearsEdit.mandatory(data-bind="css: {hasContent: !!p.year()}")
             span.infoName(data-bind="html: fields.y+':'")
             input.form-control.year(type="text", data-bind="value: p.year, valueUpdate: 'keyup', event: {blur: yearCheck}", maxlength="4")
             | —
             input.form-control.year(type="text", data-bind="value: p.year2, valueUpdate: 'keyup', event: {blur: year2Check}", maxlength="4")
-        .regions
+        .regions(data-bind="css: {loading: exeregion()}")
             span.infoName.mandatory(data-bind="html: fields.regions+':'")
             //ko if: p.regions().length
             span(data-bind="foreach: p.regions")

@@ -50,6 +50,42 @@ define([
 			if (this.embedded) {
 				this.point = this.options.point; // Точка для выделения
 				this.pointLayer = L.layerGroup();
+
+                this.geoInputComputed = this.co.geoInputComputed = ko.computed({
+                    read: function () {
+                        var geo = this.point.geo();
+                        return _.isEmpty(geo) ? '' : geo[0] + "," + geo[1];
+                    },
+                    write: function (value) {
+                        var geo = this.point.geo();
+                        var inputGeo;
+
+                        if (_.isEmpty(value)) {
+                            this.delPointGeo();
+                        } else {
+                            inputGeo = value
+                                .split(',')
+                                .filter(function (val) {
+                                    val = val.trim();
+                                    return val && val[0] !== '.' && val[val.length - 1] !== '.';
+                                })
+                                .map(Number);
+
+                            if (Utils.geo.checkLatLng(inputGeo) && !_.isEqual(inputGeo, geo)) {
+                                inputGeo = Utils.geo.geoToPrecision(inputGeo);
+                                this.point.geo(inputGeo);
+
+                                if (this.pointMarkerEdit) {
+                                    this.pointMarkerEdit.setLatLng(inputGeo);
+                                } else {
+                                    this.pointEditMarkerCreate();
+                                }
+                                this.map.panTo(inputGeo);
+                            }
+                        }
+                    },
+                    owner: this
+                });
 			}
 
 			this.yearLow = 1826;
@@ -336,10 +372,10 @@ define([
 		},
 
 		setPoint: function (point) {
-			var geo = point.geo(),
-				bbox,
-				zoom,
-				region = _.last(point.regions());
+			var geo = point.geo();
+            var bbox;
+            var zoom;
+            var region = _.last(point.regions());
 
 			this.point = point;
 			if (this.editing()) {
@@ -376,26 +412,33 @@ define([
 			this.pointHighlightDestroy().pointEditMarkerDestroy().point.geo(null);
 		},
 
-		//Создает подсвечивающий маркер для point, если координаты точки есть
-		pointHighlightCreate: function () {
-			this.pointHighlightDestroy();
-			if (this.point && this.point.geo()) {
-				var divIcon = L.divIcon({
-					className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
-					iconSize: new L.Point(8, 8)
-				});
-				this.pointMarkerHL = L.marker(this.point.geo(), {zIndexOffset: 10000, draggable: false, title: this.point.title(), icon: divIcon, riseOnHover: true});
-				this.pointLayer.addLayer(this.pointMarkerHL);
-			}
-			return this;
-		},
-		pointHighlightDestroy: function () {
-			if (this.pointMarkerHL) {
-				this.pointLayer.removeLayer(this.pointMarkerHL);
-				delete this.pointMarkerHL;
-			}
-			return this;
-		},
+		// Создает подсвечивающий маркер для point, если координаты точки есть
+        pointHighlightCreate: function () {
+            this.pointHighlightDestroy();
+            if (this.point && this.point.geo()) {
+                var divIcon = L.divIcon({
+                    className: 'photoIcon highlight ' + 'y' + this.point.year() + ' ' + this.point.dir(),
+                    iconSize: new L.Point(8, 8)
+                });
+
+                this.pointMarkerHL = L.marker(this.point.geo(), {
+                    zIndexOffset: 10000,
+                    draggable: false,
+                    title: this.point.title(),
+                    icon: divIcon,
+                    riseOnHover: true
+                });
+                this.pointLayer.addLayer(this.pointMarkerHL);
+            }
+            return this;
+        },
+        pointHighlightDestroy: function () {
+            if (this.pointMarkerHL) {
+                this.pointLayer.removeLayer(this.pointMarkerHL);
+                delete this.pointMarkerHL;
+            }
+            return this;
+        },
 
 		// Создает редактирующий маркер, если координаты точки есть, а если нет, то создает по клику на карте
 		pointEditCreate: function () {
@@ -424,11 +467,11 @@ define([
 			return this;
 		},
 		pointEditMarkerCreate: function () {
-			var _this = this;
+			var self = this;
 			this.pointMarkerEdit = L.marker(this.point.geo(), {draggable: true, title: 'Точка съемки', icon: L.icon({iconSize: [26, 43], iconAnchor: [13, 36], iconUrl: '/img/map/pinEdit.png', className: 'pointMarkerEdit'})})
 				.on('dragend', function () {
 					var latlng = Utils.geo.geoToPrecision(this.getLatLng());
-					_this.point.geo([latlng.lat, latlng.lng]);
+                    self.point.geo([latlng.lat, latlng.lng]);
 				})
 				.addTo(this.pointLayer);
 			return this;

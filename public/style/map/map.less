@@ -62,22 +62,52 @@
 		.user-select(none);
 	}
 
-	.mapInfo {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 26px;
-		height: 27px;
-		line-height: 26px;
-		text-align: center;
+    .mapInfos {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 26px;
+    }
 
-		&.warn {
-			background-color: #FFD62D;
-		}
-		&.info {
-			background-color: #A7C4F0;
-		}
-	}
+    .mapInfo {
+        text-align: center;
+
+        &.warn {
+            background-color: #FFD62D;
+        }
+        &.info {
+            background-color: #A7C4F0;
+        }
+    }
+
+    .geoInput {
+        height: 23px;
+        line-height: 23px;
+
+        > input {
+            width: 157px;
+            color: #333;
+            line-height: 19px;
+            text-align: center;
+            border-style: solid;
+            border-color: #A7C4F0;
+            border-width: 2px 2px 0 2px;
+            background-color: #F0F0F0;
+
+            &:focus {
+                outline: 0;
+            }
+        }
+    }
+
+    .geoInfo {
+        height: 27px;
+        line-height: 26px;
+
+        .btn {
+            margin: 0;
+        }
+    }
 
 	.mapYearSelector {
 		position: absolute;
