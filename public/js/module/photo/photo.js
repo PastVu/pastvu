@@ -445,7 +445,7 @@ define(
                         } else {
                             self.destroyHistory();
                         }
-                        ga('send', 'pageview');
+                        ga('send', 'pageview', '/p');
                     }
                 });
             } else {
@@ -1081,7 +1081,7 @@ define(
             var self = this;
 
             if (self.edit()) {
-                ko_mapping.fromJS(self.originData, self.p);
+                this.p = Photo.vm(self.originData, this.p);
                 delete self.descEditOrigin;
                 delete self.sourceEditOrigin;
                 delete self.authorEditOrigin;
