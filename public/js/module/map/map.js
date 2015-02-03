@@ -54,7 +54,7 @@ define([
                 this.geoInputComputed = this.co.geoInputComputed = ko.computed({
                     read: function () {
                         var geo = this.point.geo();
-                        return _.isEmpty(geo) ? '' : geo[0] + "," + geo[1];
+                        return _.isEmpty(geo) ? '' : geo.join(',');
                     },
                     write: function (value) {
                         var geo = this.point.geo();
@@ -408,6 +408,23 @@ define([
 			}
 			return this;
 		},
+        geoInputBlur: function (vm, evt) {
+            var geo = this.point.geo();
+            var $inputGeo = $(evt.target);
+            var inputGeo = $inputGeo.val();
+
+            // При выходе фокуса с поля координаты, вставляем актуальное в него значение geo, например, если оно в поле не валидное
+            if (_.isEmpty(geo)) {
+                if (inputGeo) {
+                    $inputGeo.val('');
+                }
+            } else {
+                geo = geo.join(',');
+                if (geo !== inputGeo) {
+                    $inputGeo.val(geo);
+                }
+            }
+        },
 		delPointGeo: function () {
 			this.pointHighlightDestroy().pointEditMarkerDestroy().point.geo(null);
 		},

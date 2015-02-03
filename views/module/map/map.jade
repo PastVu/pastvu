@@ -6,7 +6,7 @@
 		.mapInfos
 			//ko if: editing()
 			.mapInfo.geoInput
-				input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup'", placeholder="Широта, долгота")
+				input(type="text", data-bind="value: geoInputComputed, valueUpdate: 'keyup', event: {focusout: geoInputBlur}", placeholder="Широта, долгота")
 			.mapInfo.info.geoInfo
 				//ko if: point.geo()
 				button.btn.btn-sm.btn-warning(type="button", data-bind="click: delPointGeo")
