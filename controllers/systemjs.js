@@ -597,6 +597,40 @@ module.exports.loadController = function (app, db) {
         return { message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
+    saveSystemJSFunc(function calcUsersObjectsRelStats() {
+        var startTime = Date.now();
+        var counter = 0;
+        var counter_updated = 0;
+
+        print('0s Start to calc for ' + db.users_objects_rel.count() + ' rels');
+        db.users_objects_rel.find({}).forEach(function (rel) {
+            var commentCollection = rel.type === 'news' ? db.commentsn : db.comments;
+            var update = { $set: {} };
+            var ccount_new;
+
+            if (rel.comments) {
+                ccount_new = commentCollection.count({ obj: rel.obj, del: null, stamp: { $gt: rel.comments }, user: { $ne: rel.user } });
+
+                if (ccount_new !== rel.ccount_new) {
+                    update.$set.ccount_new = ccount_new;
+                }
+            }
+
+            if (Object.keys(update.$set).length) {
+                counter_updated++;
+                db.users_objects_rel.update({ _id: rel._id }, update);
+            }
+
+            counter++;
+
+            if (counter % 50000 === 0) {
+                print(((Date.now() - startTime) / 1000) + 's Calculated ' + counter + ' rels. Updated: ' + counter_updated);
+            }
+        });
+
+        return { message: ((Date.now() - startTime) / 1000) + 's ' + counter + ' rels statistics were calculated. Updated: ' + counter_updated };
+    });
+
 	saveSystemJSFunc(function calcPhotoStats() {
 		var startTime = Date.now(),
 			photos = db.photos.find({}, {_id: 1}).sort({cid: -1}).toArray(),
