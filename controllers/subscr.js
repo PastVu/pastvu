@@ -85,14 +85,18 @@ function subscribeUser(iAm, data) {
  * Подписка объекта по id пользователя и объекта (внутренняя, например, после подтверждения фото)
  * @param userId
  * @param objId
+ * @param setCommentView
  * @param type
  */
-function subscribeUserByIds(userId, objId, type) {
-    return UserObjectRel.updateAsync(
-        { obj: objId, user: userId, type: type },
-        { $set: { sbscr_create: new Date() } },
-        { upsert: true }
-    )
+function subscribeUserByIds(userId, objId, setCommentView, type) {
+    var stamp = new Date();
+    var $update = { $set: { sbscr_create: stamp } };
+
+    if (setCommentView) {
+        $update.$set.comments = stamp;
+    }
+
+    return UserObjectRel.updateAsync({ obj: objId, user: userId, type: type }, $update, { upsert: true })
         .catch(function (err) {
             logger.error(err.message);
             return null;

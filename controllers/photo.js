@@ -1046,8 +1046,9 @@ var approvePhoto = function (socket, data) {
             // Пересчитываем кол-во фото у владельца
             userPCountUpdate(photoSaved.user, -1, 1, 0);
 
-            //Подписываем автора фотографии на неё
-            subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, 'photo');
+            // Подписываем владельца фотографии на неё и устанавливаем ему время просмотра комментариев,
+            // чтобы для него корректо считались кол-во новых пока сам не зайдет
+            subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, true, 'photo');
 
             // Добавляем фото на карту
             if (Utils.geo.check(photoSaved.geo)) {
