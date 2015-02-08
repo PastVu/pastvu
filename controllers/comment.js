@@ -990,6 +990,7 @@ var createComment = Bluebird.method(function (socket, data) {
 			if (!this.comment.hidden) {
 				iAm.user.ccount += 1;
 				promises.push(iAm.user.saveAsync());
+                promises.push(userObjectRelController.onCommentAdd(this.obj._id, iAm.user._id, data.type));
 			}
 
 			return Bluebird.all(promises);
@@ -1077,7 +1078,7 @@ var removeComment = Bluebird.method(function (socket, data) {
 				// Затем найдем из них потомков удаляемого
 				return commentModel.findAsync(
 					{ obj: this.obj._id, del: null, stamp: { $gte: this.comment.stamp }, level: { $gt: this.comment.level || 0 } },
-					{ _id: 0, obj: 0, stamp: 0, txt: 0, hist: 0 },
+					{ _id: 0, obj: 0, txt: 0, hist: 0 },
 					{ lean: true, sort: { stamp: 1 } }
 				);
 			}
@@ -1094,13 +1095,15 @@ var removeComment = Bluebird.method(function (socket, data) {
 
 			this.hashUsers = Object.create(null);
 			this.commentsHash = Object.create(null);
+            this.commentsForRelArr = [];
 
 			// Операции с корневым удаляемым комментарием
 			this.commentsHash[cid] = this.comment;
 
 			if (!this.comment.hidden) {
-				// Если комментарий скрыт (т.е. объект не публичный), его уже не надо вычитать из статистики пользователя
+				// Если комментарий скрыт (т.е. объект не публичный), его уже не надо вычитать из публичной статистики пользователя
 				this.hashUsers[this.comment.user] = (this.hashUsers[this.comment.user] || 0) + 1;
+                this.commentsForRelArr.push(this.comment);
 			}
 
 			// Находим потомков именно удаляемого комментария через заполнение commentsHash
@@ -1109,7 +1112,8 @@ var removeComment = Bluebird.method(function (socket, data) {
 				if (child.level && this.commentsHash[child.parent] !== undefined && !child.del) {
 					if (!child.hidden) {
 						this.hashUsers[child.user] = (this.hashUsers[child.user] || 0) + 1;
-					}
+                        this.commentsForRelArr.push(child);
+                    }
 					childsCids.push(child.cid);
 					this.commentsHash[child.cid] = child;
 				}
@@ -1176,6 +1180,10 @@ var removeComment = Bluebird.method(function (socket, data) {
 					promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: -this.hashUsers[u] } }));
 				}
 			}
+
+            if (this.commentsForRelArr.length) {
+                promises.push(userObjectRelController.onCommentsRemove(this.obj._id, this.commentsForRelArr, data.type));
+            }
 
 			return Bluebird.all(promises);
 		})

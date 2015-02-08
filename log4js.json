@@ -10,7 +10,7 @@
 		{
 			"type": "file",
 			"filename": "app.log",
-			"maxLogSize": 1048576,
+			"maxLogSize": 10485760,
 			"backups": 2,
 			"category": ["app.js", "systemjs.js"]
 		},
@@ -24,9 +24,9 @@
 		{
 			"type": "file",
 			"filename": "common.log",
-			"maxLogSize": 1048576,
+			"maxLogSize": 10485760,
 			"backups": 2,
-			"category": ["index.js", "profile.js", "photo.js", "photoCluster.js"]
+			"category": ["index.js", "profile.js", "photo.js", "photoCluster.js", "comment.js", "userobjectrel.js"]
 		},
 		{
 			"type": "file",
