@@ -12,6 +12,7 @@ var UserObjectRelSchema = new mongoose.Schema(
 
         view: { type: Date }, // Время последнего просмотра самого объекта
         comments: { type: Date }, // Время последнего просмотра комментариев объекта
+        ccount_new: { type: Number }, // Кол-во новых комментариев
         sbscr_create: { type: Date }, // Время создания подписки
         sbscr_noty_change: { type: Date }, // Время изменнения значения флага отправки уведомления sbscr_noty
         sbscr_noty: { type: Boolean } // Флаг, что нужно отправить уведомление
@@ -23,6 +24,8 @@ var UserObjectRelSchema = new mongoose.Schema(
 );
 // Составной индекс для запроса по объекту и юзеру
 UserObjectRelSchema.index({ obj: 1, user: 1 });
+// Составной индекс для запроса подписок пользователя
+UserObjectRelSchema.index({ user: 1, ccount_new: 1, sbscr_create: 1 });
 
 // Время отправки уведомления пользователю
 var UserNotySchema = new mongoose.Schema(
