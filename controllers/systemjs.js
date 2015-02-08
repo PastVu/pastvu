@@ -605,20 +605,34 @@ module.exports.loadController = function (app, db) {
         print('0s Start to calc for ' + db.users_objects_rel.count() + ' rels');
         db.users_objects_rel.find({}).forEach(function (rel) {
             var commentCollection = rel.type === 'news' ? db.commentsn : db.comments;
-            var update = { $set: {} };
+            var $update = { $set: {}, $unset: {} };
             var ccount_new;
 
             if (rel.comments) {
+                if (!rel.ccount_new) {
+                    rel.ccount_new = 0;
+                }
                 ccount_new = commentCollection.count({ obj: rel.obj, del: null, stamp: { $gt: rel.comments }, user: { $ne: rel.user } });
 
                 if (ccount_new !== rel.ccount_new) {
-                    update.$set.ccount_new = ccount_new;
+                    if (ccount_new) {
+                        $update.$set.ccount_new = ccount_new;
+                    } else {
+                        $update.$unset.ccount_new = 1;
+                    }
                 }
             }
 
-            if (Object.keys(update.$set).length) {
+            if (!Object.keys($update.$set).length) {
+                delete $update.$set;
+            }
+            if (!Object.keys($update.$unset).length) {
+                delete $update.$unset;
+            }
+
+            if (Object.keys($update).length) {
                 counter_updated++;
-                db.users_objects_rel.update({ _id: rel._id }, update);
+                db.users_objects_rel.update({ _id: rel._id }, $update);
             }
 
             counter++;
