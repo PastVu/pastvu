@@ -25,7 +25,7 @@ var UserObjectRelSchema = new mongoose.Schema(
 // Составной индекс для запроса по объекту и юзеру
 UserObjectRelSchema.index({ obj: 1, user: 1 });
 // Составной индекс для запроса подписок пользователя
-UserObjectRelSchema.index({ user: 1, ccount_new: 1, sbscr_create: 1 });
+UserObjectRelSchema.index({ user: 1, ccount_new: -1, sbscr_create: -1 });
 
 // Время отправки уведомления пользователю
 var UserNotySchema = new mongoose.Schema(

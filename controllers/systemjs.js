@@ -597,13 +597,23 @@ module.exports.loadController = function (app, db) {
         return { message: 'User statistics were calculated in ' + (Date.now() - startTime) / 1000 + 's' };
     });
 
-    saveSystemJSFunc(function calcUsersObjectsRelStats() {
+    saveSystemJSFunc(function calcUsersObjectsRelStats(userId, objId) {
         var startTime = Date.now();
         var counter = 0;
         var counter_updated = 0;
+        var query = {};
 
-        print('0s Start to calc for ' + db.users_objects_rel.count() + ' rels');
-        db.users_objects_rel.find({}).forEach(function (rel) {
+        if (userId) {
+            query.user = userId;
+        }
+        if (objId) {
+            query.obj = objId;
+        }
+
+        print('0s Start to calc for ' + db.users_objects_rel.count(query) + ' rels');
+        db.users_objects_rel.find(query).sort({ user: 1 }).forEach(function (rel) {
+            counter += 1;
+
             var commentCollection = rel.type === 'news' ? db.commentsn : db.comments;
             var $update = { $set: {}, $unset: {} };
             var ccount_new;
@@ -635,9 +645,7 @@ module.exports.loadController = function (app, db) {
                 db.users_objects_rel.update({ _id: rel._id }, $update);
             }
 
-            counter++;
-
-            if (counter % 50000 === 0) {
+            if (counter % 50000 === 0 && counter) {
                 print(((Date.now() - startTime) / 1000) + 's Calculated ' + counter + ' rels. Updated: ' + counter_updated);
             }
         });

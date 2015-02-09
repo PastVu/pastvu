@@ -494,6 +494,15 @@ function sortNotice(a, b) {
 
 var subscrPerPage = 24;
 function sortSubscr(a, b) {
+    var a_cc = a.ccount_new || 0;
+    var b_cc = b.ccount_new || 0;
+    if (a_cc < b_cc) {
+        return 1;
+    }
+    if (a_cc > b_cc) {
+        return -1;
+    }
+
     var a_date = a.sbscr_create;
     var b_date = b.sbscr_create;
     return a_date < b_date ? 1 : a_date > b_date ? -1 : 0;
@@ -522,7 +531,7 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
             return UserObjectRel.findAsync(
                 { user: user_id, type: data.type, sbscr_create: { $exists: true } },
                 { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
-                { lean: true, skip: skip, limit: subscrPerPage, sort: { sbscr_create: -1 } });
+                { lean: true, skip: skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } });
         })
         .then(function (rels) {
             if (!rels || !rels.length) {
@@ -542,20 +551,19 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
 
             if (data.type === 'news') {
                 return News.findAsync({ _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true });
-            } else {
-                query = photoController.buildPhotosQuery({ r: 0 }, null, iAm).query;
-                query._id = { $in: objIds };
-                return Photo.findAsync(query, { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true });
-            }
-        })
-        .then(function (objs) {
-            if (!objs || !objs.length) {
-                return [];
             }
 
+            query = photoController.buildPhotosQuery({ r: 0 }, null, iAm).query;
+            query._id = { $in: objIds };
+            return Photo.findAsync(query, { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true });
+        })
+        .then(function (objs) {
+            if (_.isEmpty(objs)) {
+                return [];
+            }
+            this.objs = objs;
+
             return Bluebird.join(
-                // Ищем кол-во новых комментариев для каждого объекта
-                userObjectRelController.fillObjectByRels(objs, this.user_id, data.type, this.rels),
                 // Считаем общее кол-во фотографий в подписках
                 UserObjectRel.countAsync({ user: this.user_id, type: 'photo', sbscr_create: { $exists: true } }),
                 // Считаем общее кол-во новостей в подписках
@@ -564,7 +572,8 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 UserNoty.findOneAsync({ user: this.user_id, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true })
             );
         })
-        .spread(function (objs, countPhoto, countNews, nextNoty) {
+        .spread(function (countPhoto, countNews, nextNoty) {
+            var objs = this.objs;
             var obj;
             var rel;
 
@@ -572,6 +581,9 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 obj = objs[i];
                 rel = this.relHash[obj._id];
 
+                if (rel.ccount_new) {
+                    obj.ccount_new = rel.ccount_new;
+                }
                 if (rel.sbscr_noty) {
                     obj.sbscr_noty = true;
                 }
@@ -580,6 +592,7 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 delete obj.subscr;
                 delete obj._id;
             }
+            // $in не гарантирует сортировку, поэтому сортируем результат
             objs.sort(sortSubscr);
 
             return {
