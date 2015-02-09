@@ -1258,7 +1258,7 @@ var restoreComment = Bluebird.method(function (socket, data) {
 		commentModel = Comment;
 	}
 
-	return commentModel.findOneAsync({ cid: cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, hidden: 1, del: 1 }, { lean: true })
+	return commentModel.findOneAsync({ cid: cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1 }, { lean: true })
 		.bind({})
 		.then(function (comment) {
 			if (!comment) {
@@ -1289,7 +1289,7 @@ var restoreComment = Bluebird.method(function (socket, data) {
 			// т.е. у которых origin указывает на текущий
 			return commentModel.findAsync(
 				{ obj: obj._id, 'del.origin': cid },
-				{ _id: 0, obj: 0, stamp: 0, txt: 0, hist: 0 },
+				{ _id: 0, obj: 0, txt: 0, hist: 0 },
 				{ lean: true, sort: { stamp: 1 } }
 			);
 		})
@@ -1298,12 +1298,14 @@ var restoreComment = Bluebird.method(function (socket, data) {
 			var promises = [];
 			var child;
 
-			stamp = new Date();
+            this.commentsForRelArr = [];
+            stamp = new Date();
 
 			// Операции с корневым удаляемым комментарием
 			commentsHash[cid] = this.comment;
 			if (!this.comment.hidden) {
 				hashUsers[this.comment.user] = (hashUsers[this.comment.user] || 0) + 1;
+                this.commentsForRelArr.push(this.comment);
 			}
 
 			childsCids = [];
@@ -1313,7 +1315,8 @@ var restoreComment = Bluebird.method(function (socket, data) {
 				child = childs[i];
 				if (!child.hidden) {
 					hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
-				}
+                    this.commentsForRelArr.push(child);
+                }
 				childsCids.push(child.cid);
 				commentsHash[child.cid] = child;
 			}
@@ -1384,6 +1387,10 @@ var restoreComment = Bluebird.method(function (socket, data) {
 					}
 				}
 			}
+
+            if (this.commentsForRelArr.length) {
+                promises.push(userObjectRelController.onCommentsRestore(this.obj._id, this.commentsForRelArr, data.type));
+            }
 
 			return Bluebird.all(promises);
 		})

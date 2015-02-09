@@ -181,7 +181,8 @@ var onCommentAdd = Bluebird.method(function (objId, userId, type) {
 });
 
 /**
- * При добавлении комментария увелививает счетчик новых у пользователей, прочитавших однажды комментрии объекта
+ * При удалении комментариев уменьшает счетчик новых у пользователей,
+ * которые прочитали комментарии объекта до создания последнего из удаленных
  * @param objId _id объекта
  * @param comments комментарии
  * @param [type] Тип объекта
@@ -212,24 +213,24 @@ var onCommentsRemove = Bluebird.method(function (objId, comments, type) {
             // и вычитаем их из кол-ва новых в этом отношении
             var updates = rels.reduce(function (result, rel) {
                 var commentsView = rel.comments;
-                var newDelCount = comments.reduce(function (result, comment) {
+                var newDeltaCount = comments.reduce(function (result, comment) {
                     if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
                         result++;
                     }
                     return result;
                 }, 0);
 
-                if (newDelCount) {
-                    if (newDelCount > rel.ccount_new) {
+                if (newDeltaCount) {
+                    if (newDeltaCount > rel.ccount_new) {
                         logger.warn('Try to decrease more new comments count due to comments removal, then they where calculated, objId: ' + objId + ', rel: ' + rel._id);
-                        newDelCount = rel.ccount_new;
+                        newDeltaCount = rel.ccount_new;
                     }
 
                     result.push(UserObjectRel.updateAsync(
                         // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
                         // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
                         { _id: rel._id, comments: { $lte: lastCommentStamp } },
-                        { $inc: { ccount_new: -newDelCount } }
+                        { $inc: { ccount_new: -newDeltaCount } }
                     ));
                 }
 
@@ -245,6 +246,74 @@ var onCommentsRemove = Bluebird.method(function (objId, comments, type) {
                         }, 0);
                     });
             }
+
+            return 0;
+        });
+});
+
+/**
+ * При восстановлении комментариев увелививает счетчик новых у пользователей,
+ * которые прочитали комментарии объекта до создания последнего из восстанавливаемых
+ * @param objId _id объекта
+ * @param comments комментарии
+ * @param [type] Тип объекта
+ */
+var onCommentsRestore = Bluebird.method(function (objId, comments, type) {
+    if (_.isEmpty(comments)) {
+        return;
+    }
+    if (!type) {
+        type = 'photo';
+    }
+
+    var lastCommentStamp = _.last(comments).stamp;
+
+    // Для каждого пользователя, который последний раз просматривал коментарии объекта до даты последнего восстанавливаемого комментария,
+    // надо индивидуально посчитать сколько из них для него новые и не его собственные, и увеличить на это кол-во
+    return UserObjectRel.findAsync(
+        { obj: objId, comments: { $lte: lastCommentStamp }, type: type },
+        { _id: 1, user: 1, comments: 1 },
+        { lean: true }
+    )
+        .then(function (rels) {
+            if (_.isEmpty(rels)) {
+                return 0;
+            }
+
+            // Для каждого отношения ищем сколько удаленных комментариев были написаны после последнего посещения
+            // и вычитаем их из кол-ва новых в этом отношении
+            var updates = rels.reduce(function (result, rel) {
+                var commentsView = rel.comments;
+                var newDeltaCount = comments.reduce(function (result, comment) {
+                    if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
+                        result++;
+                    }
+                    return result;
+                }, 0);
+
+                if (newDeltaCount) {
+                    result.push(UserObjectRel.updateAsync(
+                        // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
+                        // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
+                        { _id: rel._id, comments: { $lte: lastCommentStamp } },
+                        { $inc: { ccount_new: newDeltaCount } }
+                    ));
+                }
+
+                return result;
+            }, []);
+
+            if (updates.length) {
+                return Bluebird.all(updates)
+                    .then(function (updateResults) {
+                        return updateResults.reduce(function (result, updateResult) {
+                            result += updateResult[0] || 0;
+                            return result;
+                        }, 0);
+                    });
+            }
+
+            return 0;
         });
 });
 
@@ -331,3 +400,4 @@ module.exports.setObjectView = setObjectView;
 module.exports.setCommentView = setCommentView;
 module.exports.onCommentAdd = onCommentAdd;
 module.exports.onCommentsRemove = onCommentsRemove;
+module.exports.onCommentsRestore = onCommentsRestore;
