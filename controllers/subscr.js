@@ -534,8 +534,8 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
                 { lean: true, skip: skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } });
         })
         .then(function (rels) {
-            if (!rels || !rels.length) {
-                return;
+            if (_.isEmpty(rels)) {
+                return [];
             }
             this.rels = rels;
 
@@ -558,9 +558,6 @@ var getUserSubscr = Bluebird.method(function (iAm, data) {
             return Photo.findAsync(query, { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true });
         })
         .then(function (objs) {
-            if (_.isEmpty(objs)) {
-                return [];
-            }
             this.objs = objs;
 
             return Bluebird.join(
