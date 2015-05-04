@@ -122,44 +122,31 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'globalVM', 'renderer'], fu
             var hrefCurrent = location.href;
             var replaceState;
             var paramsVals;
-            var paramsValsCurrent;
+            var paramsCurrentVals;
             var paramsStringNew;
 
             if (!href || href.length === 0 || router.blockHrefs) {
                 evt.preventDefault();
             } else if (target !== '_blank' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
-                //target === '_blank' --> Open a link in a new tab in foreground.
-                //Ctrl/Cmd + Shift + Click --> Open a link in a new tab in foreground.
-                //Ctrl/Cmd + Click --> Open a link in a new tab in backgroud.
-                //Shift + Click --> Open a link in a new window.
-                //Alt + Click --> Save the target on disk (open the Save As dialog).
+                // target === '_blank' --> Open a link in a new tab in foreground.
+                // Ctrl/Cmd + Shift + Click --> Open a link in a new tab in foreground.
+                // Ctrl/Cmd + Click --> Open a link in a new tab in backgroud.
+                // Shift + Click --> Open a link in a new window.
+                // Alt + Click --> Save the target on disk (open the Save As dialog).
 
                 // Если на элементе стоит аттрибут data-replace="true", то вызываем replaceState вместо pushState
                 replaceState = (this.dataset && this.dataset.replace || this.getAttribute('data-replace')) === 'true';
 
                 if (href.indexOf('?') === 0 && href.indexOf('=') > 0) {
-                    //Если весь href состоит только из параметров '?x=1&y=1'
+                    // Если весь href состоит только из параметров '?x=1&y=1'
 
                     paramsVals = Utils.getURLParameters(href);
-                    paramsValsCurrent = Utils.getURLParameters(hrefCurrent);
-                    delete paramsValsCurrent.hl; //Удаляем во время перехода hl текущей страницы
+                    paramsCurrentVals = Utils.getURLParameters(hrefCurrent);
+                    delete paramsCurrentVals.hl; // Удаляем во время перехода hl текущей страницы
 
-                    if (_.size(paramsValsCurrent)) {
-                        paramsStringNew = hrefCurrent.substr(hrefCurrent.indexOf('?')) + '&';
-                        _(paramsVals).forEach(function (item, key) {
-                            if (paramsValsCurrent[key]) {
-                                paramsStringNew = Utils.urlReplaceParameterValue(paramsStringNew, key, item);
-                            }
-                        });
-                    } else {
-                        paramsStringNew = '?';
-                    }
-
-                    _(paramsVals).forEach(function (item, key) {
-                        if (!paramsValsCurrent[key]) {
-                            paramsStringNew += key + '=' + item + '&';
-                        }
-                    });
+                    paramsStringNew = _.reduce(paramsVals, function (result, item, key) {
+                        return result + (paramsCurrentVals[key] ? Utils.urlReplaceParameterValue(result, key, item) : key + '=' + item + '&');
+                    }, _.size(paramsCurrentVals) ? hrefCurrent.substr(hrefCurrent.indexOf('?')) + '&' : '?');
 
                     evt.preventDefault(); // Должен быть внутри этих if, т.к. если они не подходят должен продолжиться стандартный переход по ссылке
                     router.navigate(location.pathname + paramsStringNew.substring(0, paramsStringNew.length - 1), { replace: replaceState });
