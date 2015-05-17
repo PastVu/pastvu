@@ -174,33 +174,34 @@ module.exports.loadController = function (app, db) {
 		return {message: db.photos_map.count() + ' photos to map added in ' + (Date.now() - startTime) / 1000 + 's'};
 	});
 
-	saveSystemJSFunc(function convertPhotosAll(variants) {
-		var startTime = Date.now(),
-			addDate = new Date(),
-			conveyer = [],
-			selectFields = {_id: 0, cid: 1},
-			photoCounter,
-			iterator = function (photo) {
-				conveyer.push(
-					{
-						cid: photo.cid,
-						added: addDate
-					}
-				);
-			};
+	saveSystemJSFunc(function convertPhotosAll(params) {
+		var startTime = Date.now();
+		var addDate = new Date();
+		var query = {};
+		var selectFields = { _id: 0, cid: 1 };
+		var conveyer = [];
+		var iterator = function (photo) {
+			conveyer.push({ cid: photo.cid, added: addDate });
+		};
 
-		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
-		db.photos.find({}, selectFields).sort({sdate: 1}).forEach(iterator);
-
-		if (Array.isArray(variants) && variants.length > 0) {
-			photoCounter = conveyer.length;
-			while (photoCounter--) {
-				conveyer[photoCounter].variants = variants;
+		if (params.min) {
+			query.cid = { $gte: params.min };
+		}
+		if (params.max) {
+			if (!query.cid) {
+				query.cid = {};
 			}
+			query.cid.$lte = params.max;
 		}
 
+		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
+		db.photos.find(query, selectFields).sort({ sdate: 1 }).forEach(iterator);
 		db.photos_conveyer.insert(conveyer);
-		return {message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's', photosAdded: conveyer.length};
+
+		return {
+			message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's',
+			photosAdded: conveyer.length
+		};
 	});
 
 	//Для фотографий с координатой заново расчитываем регионы

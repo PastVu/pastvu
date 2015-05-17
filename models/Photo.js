@@ -55,6 +55,8 @@ var FragmentSchema = new Schema({
         h: { type: Number }, // Оригинальная высота
         ws: { type: Number }, // Стандартная ширина
         hs: { type: Number }, // Стандартная высота
+        waterh: { type: Number }, // Высота вотермарка оригинала
+        waterhs: { type: Number }, // Высота вотермарка стандартного размера
 
         dir: { type: String },
         title: { type: String },
