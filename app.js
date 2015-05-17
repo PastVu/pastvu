@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
+// Подключаем require-hook babel
+require('babel/register')({
+    only: /photoConverter\.js/,
+    stage: 0
+    //whitelist: [],
+    //blacklist: []
+});
+
+// Включаем "наши" расширения js
+require('./commons/JExtensions.js');
+
 var express = require('express'),
     async = require('async'),
     posix = require('posix'),
@@ -30,10 +41,6 @@ var express = require('express'),
 global.appVar = {}; //Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.maxRegionLevel = constants.region.maxLevel;
 
-/**
- * Включаем "наши" расширения js
- */
-require('./commons/JExtensions.js');
 
 var nofileLimits = posix.getrlimit('nofile');
 var interfaces = os.networkInterfaces();
