@@ -251,38 +251,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.thumbN = ko.observable(4);
             this.thumbNUser = ko.observable(3);
 
-            this.convertVars = ko.observableArray([
-                { vName: 'Origin', vId: 'a' },
-                { vName: 'Standard', vId: 'd' },
-                { vName: 'Thumb', vId: 'h' },
-                { vName: 'Midi', vId: 'm' },
-                { vName: 'Mini', vId: 'q' },
-                { vName: 'Micro', vId: 's' },
-                { vName: 'Micros', vId: 'x' }
-            ]);
-            this.convertVarsSel = ko.observableArray([]);
-            this.convertOptions = {
-                includeSelectAllOption: true,
-                //buttonContainer: '',
-                buttonClass: 'btn btn-primary',
-                buttonWidth: '150px',
-                buttonText: function (options, select) {
-                    if (options.length === 0) {
-                        return 'Convert variants <b class="caret"></b>';
-                    } else if (options.length === self.convertVars().length) {
-                        return 'All variants selected <b class="caret"></b>';
-                    } else if (options.length > 2) {
-                        return options.length + ' variants selected <b class="caret"></b>';
-                    } else {
-                        var selected = '';
-                        options.each(function () {
-                            selected += $(this).text() + ', ';
-                        });
-                        return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
-                    }
-                }
-            };
-
             this.scrollTimeout = null;
             this.scrollToBind = this.scrollTo.bind(this);
 
@@ -1561,11 +1529,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
-        toConvert: function (data, event) {
-            var convertVarsSel = _.intersection(this.convertVarsSel(), ["a", "d", "h", "m", "q", "s", "x"]);
-            if (!this.can.convert() || !convertVarsSel.length) {
+        toConvert: function () {
+            if (!this.can.convert()) {
                 return false;
             }
+
             this.exe(true);
             socket.once('convertPhotosResult', function (data) {
                 if (data && !data.error) {
@@ -1582,7 +1550,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.exe(false);
             }, this);
             socket.emit('convertPhotos', [
-                { cid: this.p.cid(), variants: convertVarsSel }
+                { cid: this.p.cid() }
             ]);
         },
 

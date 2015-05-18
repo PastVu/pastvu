@@ -1927,8 +1927,6 @@ var getBounds = Bluebird.method(function (data) {
 
 // Отправляет выбранные фото на конвертацию
 var convertPhotos = Bluebird.method(function (iAm, data) {
-    var cids = [];
-
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -1936,10 +1934,11 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
+    var cids = [];
+
     for (var i = data.length; i--;) {
         data[i].cid = Number(data[i].cid);
-        data[i].variants = _.intersection(data[i].variants, ["a", "d", "h", "m", "q", "s", "x"]);
-        if (data[i].cid && data[i].variants.length) {
+        if (data[i].cid > 0) {
             cids.push(data[i].cid);
         }
     }
