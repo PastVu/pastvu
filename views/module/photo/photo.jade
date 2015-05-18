@@ -23,8 +23,9 @@
             // /ko
             .imgRow
                 .imgSuperWrap
-                    .imgWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}, style: {height: hs() - waterhs() + 'px'}")
-                        img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
+                    .imgMiddleWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
+                        .imgWrap(data-bind="style: {height: hs() - waterhs() + 'px'}")
+                            img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
                         .photoLoading
                         //ko if: !edit()
                         //ko foreach: p.frags

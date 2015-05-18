@@ -331,7 +331,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.showing = true;
         },
         hide: function () {
-            this.$dom.find('.imgWrap').off();
+            this.$dom.find('.imgMiddleWrap').off();
             globalVM.func.hideContainer(this.$container);
             this.showing = false;
             //globalVM.pb.publish('/top/message', ['', 'muted']);
@@ -1774,7 +1774,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 
         fragAreasActivate: function () {
-            var $wrap = $('.imgWrap', this.$dom)
+            var $wrap = $('.imgMiddleWrap', this.$dom)
                 .on('mouseenter', '.photoFrag', function (evt) {
                     var $frag = $(evt.target),
                         fragOffset = $frag.offset(),
@@ -1824,7 +1824,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         fragAreaCreate: function (selections) {
             if (!this.fragArea) {
-                var $parent = this.$dom.find('.imgWrap'),
+                var $parent = this.$dom.find('.imgMiddleWrap'),
                     ws = this.p.ws(), hs = this.p.hs(),
                     ws2, hs2;
 
