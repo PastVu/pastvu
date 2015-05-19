@@ -13,10 +13,8 @@
 			.toConvertSection
 				span.stateDesc Отправить на конвертацию все фото:
 				br
-				.convertAction(data-bind="css: {disabled: exe()}")
-					select.multiselect(multiple="multiple", data-bind="options: convertVars, optionsValue: 'vId', optionsText: 'vName', selectedOptions: convertVarsSel, multiselect: convertOptions")
-					button.btn.btn-primary.btnConvert(data-bind="click: toConvert, attr: {disabled: exe()}")
-						| старт
+				.convertAction
+					button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
 		.col-xs-7.col-md-8
 			h5 Текущее состояние конвейера
 			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")

@@ -201,14 +201,15 @@ function CollectConveyerStat() {
 /**
  * Очищает конвейер, кроме тех фотографий, которые сейчас конвертируются
  */
-async function conveyerClear(cb) {
+async function conveyerClear() {
+    var removed = 0;
     try {
-        await PhotoConveyer.removeAsync({ converting: { $exists: false } });
+        removed = (await PhotoConveyer.removeAsync({ converting: { $exists: false } }))[0];
     } catch (err) {
-        return cb({ message: err || 'Error occurred', error: true });
+        return { message: err || 'Error occurred', error: true };
     }
     conveyerLength = await PhotoConveyer.countAsync({});
-    cb({ message: 'Cleared ok!' });
+    return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
 }
 
 /**
@@ -259,7 +260,9 @@ async function conveyerControl() {
         await * [photo.saveAsync(), photoConv.removeAsync()];
 
         working -= 1;
-        conveyerLength -= 1;
+        if (conveyerLength) {
+            conveyerLength -= 1;
+        }
         conveyerControl();
     }
 }
@@ -403,19 +406,18 @@ export async function addPhotos(data) {
  * Добавление в конвейер конвертации всех фотографий
  * @param data Объект
  */
-export function addPhotosAll(data) {
-    return dbEval('function (params) {convertPhotosAll(params)', [{min: 0, max: 1e6}], { nolock: true })
-        .then(function (ret) {
-            if (ret && ret.error) {
-                throw { message: ret.message || '' };
-            }
+export async function addPhotosAll(data) {
+    var result = await dbEval('function (params) {return convertPhotosAll(params);}', [{ min: 0, max: 1e6 }], { nolock: true });
 
-            conveyerLength += ret.photosAdded;
-            conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
-            conveyerControl();
+    if (result && result.error) {
+        throw { message: result.message || '' };
+    }
 
-            return ret;
-        });
+    conveyerLength += result.photosAdded;
+    conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
+    conveyerControl();
+
+    return result;
 }
 
 /**
@@ -484,12 +486,10 @@ export function loadController(app, db, io) {
             });
         }());
         (function () {
-            socket.on('conveyerClear', function (value) {
+            socket.on('conveyerClear', async function (value) {
                 if (value === true) {
                     conveyerEnabled = value;
-                    conveyerClear(function (result) {
-                        socket.emit('conveyerClearResult', result);
-                    });
+                    socket.emit('conveyerClearResult', await conveyerClear());
                 }
             });
         }());
