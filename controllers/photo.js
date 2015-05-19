@@ -1961,7 +1961,23 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
-    return PhotoConverter.addPhotosAll(data);
+    var params = {};
+    var region;
+
+    if (_.isNumber(data.min) && data.min > 0) {
+        params.min = data.min;
+    }
+    if (_.isNumber(data.max) && data.max > 0 && (!params.min || data.max >= params.min)) {
+        params.max = data.max;
+    }
+    if (_.isNumber(data.r) && data.r > 0) {
+        region = regionController.getRegionFromCache(data.r);
+        if (region) {
+            params.region = { level: _.size(region.parents), cid: region.cid };
+        }
+    }
+
+    return PhotoConverter.addPhotosAll(params);
 });
 
 /**

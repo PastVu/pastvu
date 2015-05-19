@@ -278,6 +278,9 @@ define([
 
             this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
             this.conveyerEnabled = ko.observable(true);
+            this.reconvertCidMin = ko.observable();
+            this.reconvertCidMax = ko.observable();
+            this.reconvertRegion = ko.observable();
 
             this.conveyerLengthData = [];
             this.conveyerConvertData = [];
@@ -501,7 +504,7 @@ define([
                 }
                 this.exe(false);
             }, this);
-            socket.emit('convertPhotosAll', {});
+            socket.emit('convertPhotosAll', { min: Number(this.reconvertCidMin()), max: Number(this.reconvertCidMax()), r: Number(this.reconvertRegion())});
         },
 
         statFast: function () {

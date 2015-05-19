@@ -193,6 +193,9 @@ module.exports.loadController = function (app, db) {
 			}
 			query.cid.$lte = params.max;
 		}
+		if (params.region) {
+			query['r' + params.region.level] = params.region.cid;
+		}
 
 		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
 		db.photos.find(query, selectFields).sort({ sdate: 1 }).forEach(iterator);

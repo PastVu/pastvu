@@ -406,8 +406,8 @@ export async function addPhotos(data) {
  * Добавление в конвейер конвертации всех фотографий
  * @param data Объект
  */
-export async function addPhotosAll(data) {
-    var result = await dbEval('function (params) {return convertPhotosAll(params);}', [{ min: 0, max: 1e6 }], { nolock: true });
+export async function addPhotosAll(params) {
+    var result = await dbEval('function (params) {return convertPhotosAll(params);}', [params], { nolock: true });
 
     if (result && result.error) {
         throw { message: result.message || '' };

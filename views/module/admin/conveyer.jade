@@ -10,12 +10,22 @@
 				span.glyphicon.glyphicon-trash
 				|  Очистить
 			br
+			br
 			.toConvertSection
-				span.stateDesc Отправить на конвертацию все фото:
-				br
-				.convertAction
-					button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
-		.col-xs-7.col-md-8
+				h5 Отправить на конвертацию все фото:
+				form.form-inline
+					.form-group
+						| Номера фотографий:&nbsp;
+						input.form-control(type="number", placeholder="min", data-bind="attr: {disabled: exe()}, value: reconvertCidMin, valueUpdate: 'afterkeydown'", style="width: 70px;")
+						input.form-control(type="number", placeholder="max", data-bind="attr: {disabled: exe()}, value: reconvertCidMax, valueUpdate: 'afterkeydown'", style="width: 70px;")
+						| &nbsp;
+				form.form-inline
+					.form-group
+						| Номер региона:&nbsp;
+						input.form-control(type="number", data-bind="attr: {disabled: exe()}, value: reconvertRegion, valueUpdate: 'afterkeydown'", style="width: 70px;")
+						| &nbsp;
+				button.btn.btn-primary(data-bind="click: toConvert, attr: {disabled: exe()}") Cтарт
+		.col-xs-7.col-md-8(style="padding-left: 10px;")
 			h5 Текущее состояние конвейера
 			div(data-bind="css: {'text-success': conveyerEnabled(), 'text-error': !conveyerEnabled()}, text: conveyerEnabled() ? 'Конвейер активен' : 'Конвейер остановлен'")
 			div
