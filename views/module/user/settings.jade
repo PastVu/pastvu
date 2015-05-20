@@ -155,6 +155,22 @@
 		.panel.panel-pastvu
 			.panel-heading
 				.panel-title
+					a(data-toggle="collapse", href="#photo") Фотографии
+			.panel-collapse.collapse.in#notice
+				.panel-body
+					dl.dl-horizontal
+						dt.helpexists
+							abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в фотографию")
+								span.glyphicon.glyphicon-info-sign
+								|  Показывать вотермарк фотографии
+						dd
+							.btn-group.btn-group-sm
+								button.btn.btn-primary.yes(type="button", data-bind="css: {active: u.settings.photo_show_watermark()}, click: watermarkShow") Да
+								button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_show_watermark()}, click: watermarkShow") Нет
+
+		.panel.panel-pastvu
+			.panel-heading
+				.panel-title
 					a(data-toggle="collapse", href="#collapseTwo") Карта
 			.panel-collapse.collapse#collapseTwo
 				.panel-body Раздел в процессе разработки...

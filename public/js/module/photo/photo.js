@@ -244,6 +244,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.waterhs = ko.observable(Photo.def.full.waterhs);
             this.hscalePossible = ko.observable(false);
             this.hscaleTumbler = ko.observable(true);
+            this.watermarkShow = ko.observable(this.auth.iAm.settings.photo_show_watermark());
             this.mapH = ko.observable('500px');
             this.thumbW = ko.observable('0px');
             this.thumbH = ko.observable('0px');
@@ -286,6 +287,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
             this.subscriptions.sizes = P.window.square.subscribe(this.sizesCalc, this);
             this.subscriptions.hscaleTumbler = this.hscaleTumbler.subscribe(this.sizesCalcPhoto, this);
+            this.subscriptions.watermarkShow = this.watermarkShow.subscribe(this.sizesCalcPhoto, this);
+            this.subscriptions.photo_show_watermark = this.auth.iAm.settings.photo_show_watermark.subscribe(function (val) {
+                if (val !== this.watermarkShow()) {
+                    this.watermarkShow(val);
+                }
+            }, this);
         },
         show: function () {
             if (this.showing) {
@@ -549,7 +556,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0;
             var ws = this.p.ws();
             var hs = this.p.hs();
-            var waterhs = this.p.waterhs();
+            var waterhs = this.watermarkShow() ? 0 : this.p.waterhs();
             var aspect = ws / hs;
             var fragSelection;
 

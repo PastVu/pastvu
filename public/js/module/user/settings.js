@@ -1,4 +1,3 @@
-/*global define:true, ga:true*/
 /**
  * Модель настроек пользователя
  */
@@ -110,6 +109,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 			this.showing = false;
 		},
 
+		watermarkShow: function (data, evt) {
+			this.changeSetting('photo_show_watermark', !!evt.target.classList.contains('yes'), true);
+		},
 		autoReply: function (data, evt) {
 			this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);
 		},

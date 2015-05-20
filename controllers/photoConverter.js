@@ -155,7 +155,7 @@ var waterMarkGen = (function () {
             params: params,
             commands: [
                 `-gravity South`,
-                `-background '#888888'`, // #285991
+                `-background '#555555'`, // #285991
                 `-splice 0x${params.splice}`,
                 `-gravity Southwest`,
                 `-font ${waterFontPath}`,
