@@ -367,7 +367,7 @@ async function conveyerStep(photo) {
         await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
         if (variantName === 'd') {
-            await tryPromise(3, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify ${variantName}-variant of photo ${photo.cid}`)
+            await tryPromise(6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify ${variantName}-variant of photo ${photo.cid}`)
                 .then(saveStandartSize);
         }
 
@@ -388,14 +388,14 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
         }
 
         if (attemp < attemps) {
-            await sleep(100);
+            await sleep(100 * attemp);
             logger.warn(`Trying execute the promise ${attemp + 1}th time. ${data || ''}`);
             return await tryPromise(attemps, promiseGenerator, data, attemp + 1);
         }
 
         logger.error(
             `After ${attemps} attemps promise execution considered failed. ${data || ''}
-            Error: ${err}`
+            ${err}`
         );
         throw err;
     }

@@ -198,7 +198,7 @@ module.exports.loadController = function (app, db) {
 		}
 
 		print('Start to fill conveyer for ' + db.photos.count() + ' photos');
-		db.photos.find(query, selectFields).sort({ sdate: 1 }).forEach(iterator);
+		db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(iterator);
 		db.photos_conveyer.insert(conveyer);
 
 		return {
