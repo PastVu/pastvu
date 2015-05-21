@@ -29,7 +29,7 @@ var sourceDir = global.appVar.storePath + 'private/photos/';
 var targetDir = global.appVar.storePath + 'public/photos/';
 var waterDir = __dirname + '/../misc/watermark/';
 
-var maxWorking = 2; // Возможно параллельно конвертировать
+var maxWorking = 6; // Возможно параллельно конвертировать
 var goingToWork = 0; // Происходит выборка для дальнейшей конвертации
 var working = 0; //Сейчас конвертируется
 
@@ -248,11 +248,9 @@ async function conveyerControl() {
             await conveyerStep(photo);
             conveyerConverted += 1;
         } catch (err) {
-            await (new PhotoConveyerError({
-                cid: photoConv.cid,
-                added: photoConv.added,
-                error: String(err && err.message)
-            })).saveAsync();
+            let errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
+            logger.error(errorObject);
+            await new PhotoConveyerError(errorObject).saveAsync();
         }
 
         photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
@@ -293,10 +291,15 @@ var sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
  */
 async function conveyerStep(photo) {
     var waterTxt = `pastvu.com/p/${photo.cid}  uploaded by ${photo.user.login}`;
+    var originSrcPath = path.normalize(sourceDir + photo.file);
+    var saveStandartSize = function (result) {
+        photo.ws = parseInt(result.w, 10) || undefined;
+        photo.hs = parseInt(result.h, 10) || undefined;
+    };
 
     // Запускаем identify оригинала
-    await identifyImage(path.normalize(sourceDir + photo.file), '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}')
-        .tap(function (result) {
+    await tryPromise(5, () => identifyImage(originSrcPath, '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}'), `identify origin of photo ${photo.cid}`)
+        .then(function (result) {
             photo.w = parseInt(result.w, 10) || undefined;
             photo.h = parseInt(result.h, 10) || undefined;
             photo.format = result.f || undefined;
@@ -332,7 +335,7 @@ async function conveyerStep(photo) {
                 }
                 commands.push(`-crop '${variant.width}x${variant.height}'`);
             } else {
-                commands.push(`-resize '${variant.width}x${variant.height}${variant.postfix||''}'`);
+                commands.push(`-resize '${variant.width}x${variant.height}${variant.postfix || ''}'`);
 
                 if (variant.gravity) {
                     // Превью генерируем путем вырезания аспекта из центра
@@ -343,7 +346,7 @@ async function conveyerStep(photo) {
                         gravity.extent : { w: variant.width, h: variant.height };
 
                     commands.push(`-gravity ${gravity.gravity}`);
-                    commands.push(`-extent '${extent.w}x${extent.h}${extent.options||''}'`);
+                    commands.push(`-extent '${extent.w}x${extent.h}${extent.options || ''}'`);
                 }
             }
         }
@@ -361,15 +364,40 @@ async function conveyerStep(photo) {
 
         commands.push(dstPath);
         //console.log(variantName, commands.join(' '));
-        await execAsync(commands.join(' '));
+        await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
         if (variantName === 'd') {
-            await identifyImage(dstPath, '{"w": "%w", "h": "%h"}')
-                .then(function (result) {
-                    photo.ws = parseInt(result.w, 10) || undefined;
-                    photo.hs = parseInt(result.h, 10) || undefined;
-                });
+            await tryPromise(3, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify ${variantName}-variant of photo ${photo.cid}`)
+                .then(saveStandartSize);
         }
+
+        // Have a sleep to give file system time to save variant, for staying on the safe side
+        await sleep(50);
+    }
+}
+
+async function tryPromise(attemps, promiseGenerator, data, attemp) {
+    try {
+        return await promiseGenerator(attemp);
+    } catch (err) {
+        if (!attemp) {
+            attemp = 1;
+        }
+        if (!attemps) {
+            attemps = 1;
+        }
+
+        if (attemp < attemps) {
+            await sleep(100);
+            logger.warn(`Trying execute the promise ${attemp + 1}th time. ${data || ''}`);
+            return await tryPromise(attemps, promiseGenerator, data, attemp + 1);
+        }
+
+        logger.error(
+            `After ${attemps} attemps promise execution considered failed. ${data || ''}
+            Error: ${err}`
+        );
+        throw err;
     }
 }
 
