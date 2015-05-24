@@ -532,7 +532,7 @@ var createPhotos = Bluebird.method(function (socket, data) {
             }));
         })
         .then(function () {
-            PhotoConverter.addPhotos(cids);
+            PhotoConverter.addPhotos(cids, 1);
 
             iAm.user.pfcount = iAm.user.pfcount + data.length;
             return _session.saveEmitUser(iAm, socket);
@@ -1948,7 +1948,7 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
 
     return Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true })
         .then(function () {
-            return PhotoConverter.addPhotos(data);
+            return PhotoConverter.addPhotos(data, 3);
         });
 });
 
@@ -1961,7 +1961,7 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
-    var params = {};
+    var params = { priority: 4 };
     var region;
 
     if (_.isNumber(data.min) && data.min > 0) {

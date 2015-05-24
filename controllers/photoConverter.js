@@ -223,7 +223,10 @@ async function conveyerControl() {
     }
     goingToWork += toWork;
 
-    var files = await PhotoConveyer.find({ converting: { $exists: false } }).sort('added').limit(toWork).execAsync();
+    var files = await PhotoConveyer.find({ converting: { $exists: false } })
+        .sort({ priority: 1, added: 1 })
+        .limit(toWork)
+        .execAsync();
 
     goingToWork -= toWork - files.length;
 
@@ -405,7 +408,7 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
  * Добавление в конвейер конвертации фотографий
  * @param data Массив объектов {cid: 123}
  */
-export async function addPhotos(data) {
+export async function addPhotos(data, priority) {
     var cid;
     var toConvertObjs = [];
     var stamp = new Date();
@@ -414,7 +417,7 @@ export async function addPhotos(data) {
         cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid: cid, added: stamp });
+            toConvertObjs.push({ cid: cid, priority: priority || 4, added: stamp });
         }
     }
 

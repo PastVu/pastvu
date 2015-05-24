@@ -181,7 +181,7 @@ module.exports.loadController = function (app, db) {
 		var selectFields = { _id: 0, cid: 1 };
 		var conveyer = [];
 		var iterator = function (photo) {
-			conveyer.push({ cid: photo.cid, added: addDate });
+			conveyer.push({ cid: photo.cid, priority: params.priority, added: addDate });
 		};
 
 		if (params.min) {
