@@ -24,14 +24,15 @@
 			.imgRow
 				.imgSuperWrap
 					.imgMiddleWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
-						.imgWrap(data-bind="style: {height: hs() - waterhs() + 'px'}")
-							img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {width: ws() + 'px', height: hs()+ 'px'}")
-						.photoLoading
+						.imgWrap(data-bind="style: {height: (watermarkShow() ? hsfull() : hs()) + 'px'}")
+							img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {height: hsfull() + 'px'}")
 						//ko if: !edit()
-						//ko foreach: p.frags
-						a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
+						.fragsWrap(data-bind="style: {height: hs() + 'px', bottom: (watermarkShow() ? waterhs() : 0) + 'px'}")
+							//ko foreach: p.frags
+							a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
+							// /ko
 						// /ko
-						// /ko
+						.photoLoading
 					.toolsRht
 						.tool.watched
 							span.glyphicon.glyphicon-eye-open.light(title="Количество просмотров фотографии")

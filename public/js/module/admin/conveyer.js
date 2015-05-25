@@ -1,5 +1,3 @@
-/*global define:true*/
-
 /**
  * Модель карты
  */
@@ -504,7 +502,11 @@ define([
                 }
                 this.exe(false);
             }, this);
-            socket.emit('convertPhotosAll', { min: Number(this.reconvertCidMin()), max: Number(this.reconvertCidMax()), r: Number(this.reconvertRegion())});
+            socket.emit('convertPhotosAll', {
+                min: Number(this.reconvertCidMin()),
+                max: Number(this.reconvertCidMax()),
+                r: Number(this.reconvertRegion())
+            });
         },
 
         statFast: function () {

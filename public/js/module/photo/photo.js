@@ -242,6 +242,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.ws = ko.observable(Photo.def.full.ws);
             this.hs = ko.observable(Photo.def.full.hs);
             this.waterhs = ko.observable(Photo.def.full.waterhs);
+            this.hsfull = ko.observable(this.hs() + this.waterhs());
             this.hscalePossible = ko.observable(false);
             this.hscaleTumbler = ko.observable(true);
             this.watermarkShow = ko.observable(this.auth.iAm.settings.photo_show_watermark());
@@ -550,20 +551,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.applyUserRibbon();
             this.applyNearestRibbon();
         },
-        //Пересчитывает размер фотографии
+        // Пересчитывает размер фотографии
         sizesCalcPhoto: function () {
             var maxWidth = this.$dom.find('.photoPanel').width() - 24 >> 0;
             var maxHeight = P.window.h() - this.$dom.find('.imgRow').offset().top - 58 >> 0;
             var ws = this.p.ws();
-            var hs = this.p.hs();
-            var waterhs = this.watermarkShow() ? 0 : this.p.waterhs();
-            var aspect = ws / hs;
+            var hs = this.p.hs(); // Image heigth without watermark
+            var water = this.p.waterhs(); // Watermark heigth
+            var hsfull = hs + water; // Image height with watermark
+            var waterRatio = water / hsfull;
+            var aspect = ws / hsfull;
             var fragSelection;
 
             // Подгоняем по максимальной ширине
             if (ws > maxWidth) {
                 ws = maxWidth;
-                hs = Math.round(ws / aspect);
+                hsfull = Math.round(ws / aspect);
+                water = Math.ceil(waterRatio * hsfull);
+                hs = hsfull - water;
             }
 
             // Если устанавливаемая высота больше максимальной высоты,
@@ -572,20 +577,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 this.hscalePossible(true);
                 if (this.hscaleTumbler()) {
                     hs = maxHeight;
-                    ws = Math.round(hs * aspect);
+                    if (water) {
+                        water = Math.ceil(waterRatio * hs / (1 - waterRatio));
+                    }
+                    hsfull = hs + water;
+                    ws = Math.round(hsfull * aspect);
                 }
             } else {
                 this.hscalePossible(false);
             }
 
-            // If image height scaled, do watermark scale
-            if (waterhs && hs !== this.p.hs()) {
-                waterhs = (waterhs * hs / this.p.hs());
-            }
-
             this.ws(ws);
             this.hs(hs);
-            this.waterhs(waterhs);
+            this.hsfull(hsfull);
+            this.waterhs(water);
 
             if (this.fragArea instanceof $.imgAreaSelect) {
                 fragSelection = this.fragAreaSelection();
@@ -1697,8 +1702,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         scrollToPhoto: function (duration, cb, ctx) {
             $window.scrollTo(this.$dom.find('.imgWrap'), {
+                offset: -P.window.head,
                 duration: duration || 400, onAfter: function () {
-                    if (Utils.isType('function', cb)) {
+                    if (_.isFunction(cb)) {
                         cb.call(ctx);
                     }
                 }
@@ -1747,16 +1753,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p.subscr(val);
         },
 
-
         fragAreasActivate: function () {
             var $wrap = $('.imgMiddleWrap', this.$dom)
                 .on('mouseenter', '.photoFrag', function (evt) {
-                    var $frag = $(evt.target),
-                        fragOffset = $frag.offset(),
-                        fragPosition = $frag.position(),
-                        fragWidth = $frag.width(),
-                        $comment = $("#c" + $frag.data('cid'), this.$dom),
-                        placement;
+                    var $frag = $(evt.target);
+                    var fragOffset = $frag.offset();
+                    var fragPosition = $frag.position();
+                    var fragWidth = $frag.width();
+                    var $comment = $('#c' + $frag.data('cid'), this.$dom);
+                    var placement;
 
                     if ($comment.length === 1) {
                         $wrap
@@ -1767,6 +1772,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 y1: fragPosition.top,
                                 x2: fragPosition.left + fragWidth + 2,
                                 y2: fragPosition.top + $frag.height() + 2,
+                                imageHeightScaled: this.hs(),
                                 zIndex: 1,
                                 parent: $wrap,
                                 disable: true
@@ -1799,9 +1805,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         fragAreaCreate: function (selections) {
             if (!this.fragArea) {
-                var $parent = this.$dom.find('.imgMiddleWrap'),
-                    ws = this.p.ws(), hs = this.p.hs(),
-                    ws2, hs2;
+                var $parent = this.$dom.find('.imgMiddleWrap');
+                var ws = this.p.ws(), hs = this.p.hs();
+                var ws2, hs2;
 
                 if (!selections) {
                     ws2 = ws / 2 >> 0;
@@ -1809,12 +1815,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     selections = { x1: ws2 - 50, y1: hs2 - 50, x2: ws2 + 50, y2: hs2 + 50 };
                 }
 
-                this.fragArea = $parent.find('.photoImg').imgAreaSelect(_.assign({
-                    classPrefix: 'photoFragAreaSelect imgareaselect',
-                    imageWidth: ws, imageHeight: hs,
-                    minWidth: 30, minHeight: 30,
-                    handles: true, parent: $parent, persistent: true, instance: true
-                }, selections));
+                this.fragArea = $parent.find('.photoImg')
+                    .imgAreaSelect(_.assign({
+                        classPrefix: 'photoFragAreaSelect imgareaselect',
+                        imageWidth: ws,
+                        imageHeight: hs, imageHeightScaled: this.hs(),
+                        minWidth: 30, minHeight: 30,
+                        handles: true, parent: $parent, persistent: true, instance: true
+                    }, selections));
             }
             this.fraging(true);
         },
@@ -1834,9 +1842,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             return result;
         },
         fragAreaObject: function () {
-            var selection,
-                result;
-            selection = this.fragAreaSelection(false);
+            var selection = this.fragAreaSelection(false);
+            var result;
+
             if (selection) {
                 result = {
                     l: 100 * selection.x1 / this.p.ws(),
@@ -1851,9 +1859,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p.frags.push(ko_mapping.fromJS(frag));
         },
         fragEdit: function (ccid, options) {
-            var frag = this.fragGetByCid(ccid),
-                ws1percent = this.p.ws() / 100,
-                hs1percent = this.p.hs() / 100;
+            var frag = this.fragGetByCid(ccid);
+            var ws1percent = this.p.ws() / 100;
+            var hs1percent = this.p.hs() / 100;
 
             this.fragAreaCreate(_.assign({
                 x1: frag.l() * ws1percent,
@@ -1876,12 +1884,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         onPhotoLoad: function (event) {
             var img = event.target;
+            var waterhs = this.p.waterhs();
+
             // Если реальные размеры фото не соответствуют тем что в базе, используем реальные
             if (_.isNumber(img.width) && this.p.ws() !== img.width) {
                 this.p.ws(img.width);
             }
-            if (_.isNumber(img.height) && this.p.hs() !== img.height) {
-                this.p.hs(img.height);
+            if (_.isNumber(img.height) && this.p.hs() + waterhs !== img.height) {
+                this.p.hs(img.height - waterhs);
             }
             this.photoSrc(this.p.sfile());
             this.sizesCalcPhoto();

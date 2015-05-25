@@ -29,9 +29,9 @@ var sourceDir = global.appVar.storePath + 'private/photos/';
 var targetDir = global.appVar.storePath + 'public/photos/';
 var waterDir = __dirname + '/../misc/watermark/';
 
-var maxWorking = 6; // Возможно параллельно конвертировать
-var goingToWork = 0; // Происходит выборка для дальнейшей конвертации
-var working = 0; //Сейчас конвертируется
+var maxWorking = 6; // Possible to convert in parallel
+var goingToWork = 0; // Выборка для дальнейшей конвертации
+var working = 0; // Now converting
 
 var imageVersions = {
     a: {
@@ -435,7 +435,7 @@ export async function addPhotos(data, priority) {
 
 /**
  * Добавление в конвейер конвертации всех фотографий
- * @param data Объект
+ * @param params Объект
  */
 export async function addPhotosAll(params) {
     var result = await dbEval('function (params) {return convertPhotosAll(params);}', [params], { nolock: true });

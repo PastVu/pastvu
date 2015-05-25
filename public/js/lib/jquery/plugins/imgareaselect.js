@@ -278,11 +278,12 @@ $.imgAreaSelect = function (img, options) {
         imgOfs = { left: round($img.offset().left), top: round($img.offset().top) };
         
         /* Get image dimensions */
-        imgWidth = $img.innerWidth();
-        imgHeight = $img.innerHeight();
+        /* Klimashkin: added image*Scaled for manual size set */
+        imgWidth = options.imageWidthScaled || $img.innerWidth();
+        imgHeight = options.imageHeightScaled || $img.innerHeight();
         
-        imgOfs.top += ($img.outerHeight() - imgHeight) >> 1;
-        imgOfs.left += ($img.outerWidth() - imgWidth) >> 1;
+        imgOfs.top += ((options.imageHeightScaled || $img.outerHeight()) - imgHeight) >> 1;
+        imgOfs.left += ((options.imageWidthScaled || $img.outerWidth()) - imgWidth) >> 1;
 
         /* Set minimum and maximum selection area dimensions */
         minWidth = round(options.minWidth / scaleX) || 0;
