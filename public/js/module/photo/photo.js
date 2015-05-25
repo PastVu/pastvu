@@ -677,12 +677,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
         descCheckInViewport: function (input, inputHeight) {
-            var cBottom = input.offset().top + (inputHeight || (input.height() + 2)) + 10,
-                wTop = $window.scrollTop(),
-                wFold = $window.height() + wTop;
+            var cBottom = input.offset().top + (inputHeight || (input.height() + 2)) + 10;
+            var wTop = $window.scrollTop();
+            var wFold = $window.height() + wTop;
 
             if (wFold < cBottom) {
-                $window.scrollTo('+=' + (cBottom - wFold) + 'px', { axis: 'y', duration: 200 });
+                $window.scrollTo('+=' + (cBottom - wFold - P.window.head) + 'px', { axis: 'y', duration: 200 });
             }
         },
         yearCheck: function () {
@@ -1726,6 +1726,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if ($element && $element.length === 1) {
                 this.highlightFragOff();
                 $window.scrollTo($element, {
+                    offset: -P.window.head,
                     duration: 400, onAfter: function () {
                         this.highlightFrag(frag);
                     }.bind(this)

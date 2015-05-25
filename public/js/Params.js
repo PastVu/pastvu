@@ -11,7 +11,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
             window: {
                 w: $window.width(),
                 h: $window.height(),
-                head: 33, // Top bar height
+                head: 35, // Top bar height
                 square: null
             },
             settings: {

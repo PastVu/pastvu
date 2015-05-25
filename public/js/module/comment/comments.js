@@ -463,7 +463,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 					}
 				} else {
 					//Анимация - 1ms на каждые 10px, но не менее 600ms
-					$window.scrollTo(scrollTopOffset, {duration: Math.max(600, scrollDelta / 10 >> 0), onAfter: function () {
+					$window.scrollTo(scrollTopOffset - P.window.head, { duration: Math.max(600, scrollDelta / 10 >> 0), onAfter: function () {
 						if (highlight) {
 							this.highlight(ccid);
 						}
@@ -656,7 +656,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				caddBottom = $cadd.offset().top + $cadd.outerHeight();
 
 			if (wFold < caddBottom) {
-				$window.scrollTo('+=' + (caddBottom - wFold) + 'px', {axis: 'y', duration: scrollDuration || 200, onAfter: function () {
+				$window.scrollTo('+=' + (caddBottom - wFold - P.window.head) + 'px', { axis: 'y', duration: scrollDuration || 200, onAfter: function () {
 					if (_.isFunction(cb)) {
 						cb.call(this);
 					}
@@ -813,7 +813,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 
 						//Если после "схлопывания" ветки корневой удалемый оказался выше вьюпорта, скроллим до него
 						if ($cdel.offset().top < (window.pageYOffset || $window.scrollTop())) {
-							$window.scrollTo($cdel, {duration: 600});
+							$window.scrollTo($cdel, { offset: -P.window.head, duration: 600 });
 						}
 
 						if (count > 1) {
@@ -1340,7 +1340,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
 				elementsArr.sort(function (a, b) {
 					return a.offset - b.offset;
 				});
-				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 >> 0, {duration: 400, onAfter: function () {
+				$window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + 26 - P.window.head >> 0, { duration: 400, onAfter: function () {
 					this.navigating(false);
 				}.bind(this)});
 			}

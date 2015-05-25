@@ -88,7 +88,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
 				this.getNews(cid, function (data) {
 					Utils.title.setTitle({title: data.news.title});
-					$(window).scrollTo($('body'), {duration: 400, onAfter: function () {
+					$(window).scrollTo($('body'), { offset: -P.window.head, duration: 400, onAfter: function () {
 						this.commentsActivate();
 					}.bind(this)});
 
