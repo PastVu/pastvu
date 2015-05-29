@@ -45,6 +45,7 @@ define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params
 				h: 700,
 				ws: 1050,
 				hs: 700,
+				signs: 'blank',
 				waterhs: 0,
 
 				desc: '',

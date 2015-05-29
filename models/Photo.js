@@ -49,10 +49,11 @@ var PhotoSchema = new Schema({
 
     type: { type: String }, // like 'image/jpeg'
     format: { type: String }, // like 'JPEG'
-    sign: { type: String },
+    sign: { type: String }, // Signature of original image
+    signs: { type: String }, // Signature of converted standart size image
     size: { type: Number },
-    w: { type: Number }, // Оригинальная ширина
-    h: { type: Number }, // Оригинальная высота
+    w: { type: Number }, // Original width
+    h: { type: Number }, // Original height
     ws: { type: Number }, // Стандартная ширина
     hs: { type: Number }, // Стандартная высота
     waterh: { type: Number }, // Высота вотермарка оригинала

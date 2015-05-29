@@ -130,12 +130,12 @@ var waterMarkGen = (function () {
     var logo = path.normalize(waterDir + 'logo.png');
     var base = {
         height: 600,
-        pointsize: 13,
-        splice: 18,
-        logo: 14,
+        pointsize: 12,
+        splice: 14,
+        logo: 12,
         indent_logo_l: 2,
         indent_logo_r: 3,
-        indent_label_b: 3
+        indent_label_b: 1
     };
 
     return function (options) {
@@ -149,7 +149,20 @@ var waterMarkGen = (function () {
             });
         }
 
-        var textPosition = `+${Math.round(params.indent_logo_l + params.logo + params.indent_logo_r)}+${params.indent_label_b}`;
+        function isEven(n) {
+            return n % 2 === 0;
+        }
+
+        function isOdd(n) {
+            return Math.abs(n) % 2 === 1;
+        }
+
+        var offset = (params.splice - params.pointsize) / 2;
+        var offsetBottomText = (isOdd(params.pointsize) ? Math.floor(offset) : offset) + Math.floor(offset / 2);
+        if (offsetBottomText > 4) {
+            offsetBottomText += Math.floor(offset / 2);
+        }
+        var textPosition = `+${Math.round(params.indent_logo_l + params.logo + params.indent_logo_r)}+${offsetBottomText}`;
 
         return {
             params: params,
@@ -164,7 +177,7 @@ var waterMarkGen = (function () {
                 `-fill '#f2f2f2'`,
                 `-annotate ${textPosition} '${options.txt}'`,
                 `\\( ${logo} -resize ${params.logo} \\)`,
-                `-geometry +${params.indent_logo_l}+${(params.splice - params.pointsize) / 2}`,
+                `-geometry +${params.indent_logo_l}+${Math.floor(offset)}`,
                 `-composite`
             ]
         };
@@ -295,9 +308,12 @@ var sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
 async function conveyerStep(photo) {
     var waterTxt = `pastvu.com/p/${photo.cid}  uploaded by ${photo.user.login}`;
     var originSrcPath = path.normalize(sourceDir + photo.file);
-    var saveStandartSize = function (result) {
+    var saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
         photo.hs = parseInt(result.h, 10) || undefined;
+    };
+    var saveStandardSign = function (result) {
+        photo.signs = result.signature ? result.signature.substr(0, 7) : undefined;
     };
 
     // Запускаем identify оригинала
@@ -354,6 +370,16 @@ async function conveyerStep(photo) {
             }
         }
 
+        commands.push(dstPath);
+        //console.log(variantName, commands.join(' '));
+        await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
+
+        // For standard photo we must get result size before creating watermark, because it depends on those sizes
+        if (variantName === 'd') {
+            await tryPromise(6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${photo.cid}`)
+                .then(saveStandardSize);
+        }
+
         if (variant.water) {
             let watermark = waterMarkGen({
                 w: original ? photo.w : photo.ws,
@@ -361,17 +387,22 @@ async function conveyerStep(photo) {
                 txt: waterTxt
             });
 
+            commands.pop();
             commands = commands.concat(watermark.commands);
+            commands.push(dstPath);
+            console.log(variantName, commands.join(' '));
+            await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
+
             photo[original ? 'waterh' : 'waterhs'] = watermark.params.splice;
+            if (variantName === 'd') {
+                photo.hs -= watermark.params.splice;
+            }
         }
 
-        commands.push(dstPath);
-        //console.log(variantName, commands.join(' '));
-        await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
-
+        // For standard photo we must get signature after watermark, to consider it as well
         if (variantName === 'd') {
-            await tryPromise(6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify ${variantName}-variant of photo ${photo.cid}`)
-                .then(saveStandartSize);
+            await tryPromise(6, () => identifyImage(dstPath, '{"signature": "%#"}'), `identify sign ${variantName}-variant of photo ${photo.cid}`)
+                .then(saveStandardSign);
         }
 
         // Have a sleep to give file system time to save variant, for staying on the safe side
