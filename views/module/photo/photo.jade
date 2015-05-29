@@ -25,9 +25,9 @@
 				.imgSuperWrap
 					.imgMiddleWrap(data-bind="css: {loading: photoLoading(), fragSensitive: !edit() && !fraging()}")
 						.imgWrap(data-bind="style: {height: (watermarkShow() ? hsfull() : hs()) + 'px'}")
-							img.photoImg(data-bind="attr: {src: photoSrc(), alt: p.title()}, style: {height: hsfull() + 'px'}")
+							img.photoImg(data-bind="attr: {src: photoSrc(), title: p.title()}, style: {height: hsfull() + 'px'}")
 						//ko if: !edit()
-						.fragsWrap(data-bind="style: {height: hs() + 'px', bottom: (watermarkShow() ? waterhs() : 0) + 'px'}")
+						.fragsWrap(data-bind="style: {bottom: (watermarkShow() ? waterhs() : 0) + 'px'}")
 							//ko foreach: p.frags
 							a.photoFrag(data-bind="attr: {'data-cid': $data.cid(), href: '?hl=comment-' + $data.cid()}, style: {top: $data.t() + '%', left: $data.l() + '%', width: $data.w() + '%', height: $data.h() + '%', zIndex: 10 + (10000 / ($data.w() * $data.h())) >> 0}")
 							// /ko
@@ -70,7 +70,7 @@
 								//ko foreach: userRibbon
 								a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: 's' + $data.s")
 									.photoBox
-										img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+										img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 										.curtain
 										//ko if: status.icon
 										.status.fringe(data-bind="attr: {title: status.tip}")
@@ -86,7 +86,7 @@
 				//ko foreach: nearestRibbon
 				a.photoPreview(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}")
 					.photoBox
-						img.img(data-bind="attr: {src: sfile, alt: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+						img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
 						.curtain
 				// /ko
 			// /ko
@@ -213,7 +213,7 @@
 	// /ko
 
 	//-a.help.visible-lg(href="http://start.planeta.ru/campaigns/1694", target="_blank", title="Узнайте как помочь проекту")
-		img.helpimg(src="/img/misc/fund2/bnline.jpg", alt="Помогите PastVu")
+		img.helpimg(src="/img/misc/fund2/bnline.jpg", title="Помогите PastVu")
 	| </script>
 
 	//-EDIT MODE

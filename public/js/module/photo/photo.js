@@ -1894,7 +1894,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             if (_.isNumber(img.height) && this.p.hs() + waterhs !== img.height) {
                 this.p.hs(img.height - waterhs);
             }
-            this.photoSrc(this.p.sfile());
+            this.photoSrc(this.p.sfile() + '?s=' + this.p.signs());
             this.sizesCalcPhoto();
             this.photoLoadContainer = null;
             this.photoLoading(false);
@@ -1915,9 +1915,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             event.target.parentNode.parentNode.classList.add('showPrv');
         },
         onPreviewErr: function (data, event) {
-            var $photoBox = $(event.target.parentNode),
-                parent = $photoBox[0].parentNode,
-                content = '';
+            var $photoBox = $(event.target.parentNode);
+            var parent = $photoBox[0].parentNode;
+            var content = '';
 
             event.target.style.visibility = 'hidden';
             if (data.conv) {

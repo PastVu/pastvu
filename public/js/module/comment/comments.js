@@ -1415,7 +1415,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                 elementsArr.sort(function (a, b) {
                     return a.offset - b.offset;
                 });
-                $window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + P.window.head >> 0, {
+                $window.scrollTo(elementsArr[dir > 0 ? 0 : elementsArr.length - 1].offset - P.window.h() / 2 + P.window.head - 2 >> 0, {
                     duration: 400, onAfter: function () {
                         this.navigating(false);
                     }.bind(this)
