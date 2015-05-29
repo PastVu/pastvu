@@ -390,7 +390,7 @@ async function conveyerStep(photo) {
             commands.pop();
             commands = commands.concat(watermark.commands);
             commands.push(dstPath);
-            console.log(variantName, commands.join(' '));
+            //console.log(variantName, commands.join(' '));
             await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
             photo[original ? 'waterh' : 'waterhs'] = watermark.params.splice;
