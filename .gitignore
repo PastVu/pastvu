@@ -8,7 +8,6 @@ public-build
 
 # OS generated files #
 ######################
-.DS_Store*
 ehthumbs.db
 Icon?
 Thumbs.db
@@ -35,12 +34,10 @@ public/tpl/**/*.html
 
 # We using LESS instead of CSS #
 ######################
-public/style/*.css
 public/style/**/*.css
-public/style/**/**/*.css
 
 # Except #
 ######################
 !.gitignore
-!.jshintrc
-!_dumb
+!.eslintrc
+!.editorconfig

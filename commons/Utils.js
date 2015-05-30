@@ -1,10 +1,17 @@
-var fs = require('fs'),
-    path = require('path'),
-    Utils = new Object(null),
-    _ = require('lodash'),
-    _s = require('underscore.string'),
-    useragent = require('useragent'),
-    DMP = require('./diff_match_patch.js');
+var fs = require('fs');
+var path = require('path');
+var Utils = Object.create(null);
+var _ = require('lodash');
+var _s = require('underscore.string');
+var useragent = require('useragent');
+var DMP = require('./diff_match_patch.js');
+
+Utils.isEven = function (n) {
+    return n % 2 === 0;
+};
+Utils.isOdd = function (n) {
+    return Math.abs(n) % 2 === 1;
+};
 
 //Проверяет user-agent на совпадение с передаными разрешенными версиями
 //Если такого браузера нет в списке проверок, возвращается true
@@ -97,7 +104,6 @@ Utils.dummyFn = function () {
 };
 
 Utils.randomString = (function () {
-    'use strict';
     var charsAll = String('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').split(''),
         charsLow = String('0123456789abcdefghijklmnopqrstuvwxyz').split('');
 
@@ -117,7 +123,6 @@ Utils.randomString = (function () {
         return str;
     };
 }());
-
 
 //Преобразование путей для express. http://stackoverflow.com/questions/16577396/express-optional-trailing-slash-for-top-level-path
 // '/dev' - везьмет и со слешом в конце и без. Чтобы взял и дочерние, добавляем /:p?*, где p - переменная с дальнейшим путем в request
@@ -150,8 +155,6 @@ Utils.pathForExpress = function (paths) {
  * @returns {Function}
  */
 Utils.memoizeAsync = function (memoizedFunc, ttl) {
-    'use strict';
-
     var cache;
     var waitings = []; // Массив коллбеков, которые будут наполняться пока функция работает и вызванны, после её завершения
 
@@ -188,8 +191,6 @@ Utils.memoizeAsync = function (memoizedFunc, ttl) {
  * @param ttl Время жизни в ms
  */
 Utils.memoizePromise = function (func, ttl) {
-    'use strict';
-
     var memoizedPromise;
 
     function resetPromise() {

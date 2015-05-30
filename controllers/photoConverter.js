@@ -7,18 +7,18 @@ import { default as gm } from 'gm';
 import { default as mkdirp } from 'mkdirp';
 import { default as moment } from 'moment';
 import { default as ms } from 'ms';
+import { default as Utils } from '../commons/Utils';
 
+var sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
 var mkdirpAsync = Bluebird.promisify(mkdirp);
 var execAsync = Bluebird.promisify(exec);
 var dbNative;
 var dbEval;
-var User;
 var Photo;
 var PhotoConveyer;
 var PhotoConveyerError;
 var STPhotoConveyer;
 var logger = log4js.getLogger('photoConverter.js');
-var appEnv = {};
 
 var conveyerEnabled = true;
 var conveyerLength = 0;
@@ -27,7 +27,7 @@ var conveyerConverted = 0;
 
 var sourceDir = global.appVar.storePath + 'private/photos/';
 var targetDir = global.appVar.storePath + 'public/photos/';
-var waterDir = __dirname + '/../misc/watermark/';
+var waterDir = path.join(__dirname, '/../misc/watermark/');
 
 var maxWorking = 6; // Possible to convert in parallel
 var goingToWork = 0; // Выборка для дальнейшей конвертации
@@ -149,16 +149,8 @@ var waterMarkGen = (function () {
             });
         }
 
-        function isEven(n) {
-            return n % 2 === 0;
-        }
-
-        function isOdd(n) {
-            return Math.abs(n) % 2 === 1;
-        }
-
         var offset = (params.splice - params.pointsize) / 2;
-        var offsetBottomText = (isOdd(params.pointsize) ? Math.floor(offset) : offset) + Math.floor(offset / 2);
+        var offsetBottomText = (Utils.isOdd(params.pointsize) ? Math.floor(offset) : offset) + Math.floor(offset / 2);
         if (offsetBottomText > 4) {
             offsetBottomText += Math.floor(offset / 2);
         }
@@ -296,10 +288,7 @@ var identifyImage = (src, format) =>
         resolve(result);
     }));
 
-var writeImage = (dst, gmInstance) =>
-    new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
-
-var sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
+//var writeImage = (dst, gmInstance) => new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
 
 /**
  * Очередной шаг конвейера
@@ -497,8 +486,6 @@ export function removePhotos(data, cb) {
 }
 
 export function loadController(app, db, io) {
-    appEnv = app.get('appEnv');
-
     dbNative = db.db;
     /* jshint evil:true */
     dbEval = Bluebird.promisify(dbNative.eval, dbNative);
@@ -508,7 +495,6 @@ export function loadController(app, db, io) {
     PhotoConveyer = db.model('PhotoConveyer');
     PhotoConveyerError = db.model('PhotoConveyerError');
     STPhotoConveyer = db.model('STPhotoConveyer');
-    User = db.model('User');
 
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
     setTimeout(function () {
@@ -522,6 +508,11 @@ export function loadController(app, db, io) {
     }, 5000);
 
     PhotoConveyer.count({}, function (err, count) {
+        if (err) {
+            logger.error(err);
+            return;
+        }
+
         conveyerLength = Math.max(count, conveyerMaxLength);
         conveyerMaxLength = conveyerLength;
     });
@@ -532,7 +523,6 @@ export function loadController(app, db, io) {
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
-
 
         (function () {
             socket.on('conveyerStartStop', function (value) {
@@ -566,16 +556,14 @@ export function loadController(app, db, io) {
                     result({ message: 'Not authorized for statConveyer', error: true });
                     return;
                 }
-                STPhotoConveyer.collection.find({}, { _id: 0, __v: 0 }, { sort: 'stamp' }, function (err, docs) {
-                    docs.toArray(function (err, docs) {
-                        var i = docs.length;
-                        while (i--) {
+                STPhotoConveyer.findAsync({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true })
+                    .then(function (docs) {
+
+                        for (var i = 0; i < docs.length; i++) {
                             docs[i].stamp = docs[i].stamp.getTime();
                         }
                         result({ data: docs });
                     });
-
-                });
             });
         }());
 

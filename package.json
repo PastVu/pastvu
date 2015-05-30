@@ -37,7 +37,7 @@
         "posix": "2.0.1",
         "mkdirp": "0.5.1",
         "lodash": "3.9.3",
-        "bluebird": "2.9.26",
+        "bluebird": "2.9.27",
         "underscore.string": "3.0.3",
         "ms": "0.7.1",
         "moment": "2.7.0",
@@ -73,7 +73,11 @@
         "grunt-exec": "~0.4.6",
         "jqueryui-amd": "~0.0.2",
         "xmldom": "~0.1.19",
-        "osm-and-geojson": "~0.1.2"
+        "osm-and-geojson": "~0.1.2",
+
+        "eslint": "0.21.2",
+        "babel-eslint": "3.1.9",
+        "eslint-plugin-react": "2.4.0"
     },
     "engines": {
         "node": "~0.10.36"
