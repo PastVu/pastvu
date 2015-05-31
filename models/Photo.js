@@ -1,37 +1,37 @@
-'use strict';
-
-var mongoose = require('mongoose'),
-    Schema = mongoose.Schema;
+var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
 
 var FragmentSchema = new Schema({
-    cid: { type: Number }, //Comment cid
-    l: { type: Number }, //Left
-    t: { type: Number }, //Top
-    w: { type: Number }, //Width
-    h: { type: Number },  //Height
+    cid: { type: Number }, // Comment cid
 
-    del: { type: Boolean } //Флаг, что комментарий этого фрагмента удалён
+    l: { type: Number }, // Left percent
+    t: { type: Number }, // Top percent
+    w: { type: Number }, // Width percent
+    h: { type: Number },  // Height percent
+
+    del: { type: Boolean } // Flag that fragment's comment has been deleted
 });
+
 var PhotoSchema = new Schema({
     cid: { type: Number, index: { unique: true } },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
 
-    s: { type: Number, index: true }, // Статус фотографии, перечислены в константах
-    stdate: { type: Date }, // Время установки текущего статуса фотографии
+    s: { type: Number, index: true }, // Photo's status (listed in constants)
+    stdate: { type: Date }, // Time of setting current photo status
 
-    // Время загрузки
+    // Load time
     ldate: { type: Date, 'default': Date.now, required: true, index: true },
-    // Время активации
+    // Activation time
     adate: { type: Date, sparse: true },
-    // Время для сортировки (например, новые должны быть всегда сверху в галерее пользователя)
+    // Time fo sort (for example, new photo must be always at top of user gallery)
     sdate: { type: Date, 'default': Date.now, required: true, index: true },
-    // Время последнего изменения
+    // Last change time
     cdate: { type: Date },
-    // Время последнего изменения для уведомления пользователя о изменении
-    // cdate - записывает время изменения многих атрибутов (в т.ч. статусов), а ucdate только для читаемых
+    // Time of last change, which used for notifying user about change
+    // cdate - shows change time of many attributes (including status), whereas ucdate tracks only human-readable attributes
     ucdate: { type: Date },
 
-    // Координаты, индексированный массив [lng, lat]
+    // Coordinates, [lng, lat]
     geo: { type: [Number], index: '2d' },
 
     // Нельзя сделать array вхождений в регионы, так как индекс по массивам не эффективен
@@ -54,10 +54,13 @@ var PhotoSchema = new Schema({
     size: { type: Number },
     w: { type: Number }, // Original width
     h: { type: Number }, // Original height
-    ws: { type: Number }, // Стандартная ширина
-    hs: { type: Number }, // Стандартная высота
-    waterh: { type: Number }, // Высота вотермарка оригинала
-    waterhs: { type: Number }, // Высота вотермарка стандартного размера
+    ws: { type: Number }, // Standard width
+    hs: { type: Number }, // Standard height
+    waterh: { type: Number }, // Original size watermark height
+    waterhs: { type: Number }, // Standard size watermark height
+
+    watersignOption: { type: String }, // Watermark option, appended to photo
+    watersignCustom: { type: String }, // Custom user text on watermark (except url)
 
     dir: { type: String },
     title: { type: String },
@@ -69,16 +72,16 @@ var PhotoSchema = new Schema({
     source: { type: String },
     author: { type: String },
 
-    conv: { type: Boolean }, // Конвертируется
-    convqueue: { type: Boolean }, // В очереди на конвертацию
+    conv: { type: Boolean }, // Converting now
+    convqueue: { type: Boolean }, // In the queue for conversion
 
-    vdcount: { type: Number, index: true }, // Кол-во просмотров за день
-    vwcount: { type: Number, index: true }, // Кол-во просмотров за неделю
-    vcount: { type: Number, index: true }, // Кол-во просмотров всего
-    ccount: { type: Number, index: true }, // Кол-во комментариев
-    frags: [FragmentSchema], // Фрагменты с комментариями
+    vdcount: { type: Number, index: true }, // Views per day
+    vwcount: { type: Number, index: true }, // Views per week
+    vcount: { type: Number, index: true }, // Total views
+    ccount: { type: Number, index: true }, // Number of comments
+    frags: [FragmentSchema], // Array of comment's fragments
 
-    nocomments: { type: Boolean } //Запретить комментирование
+    nocomments: { type: Boolean } // Prohibit commentation
 });
 
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
@@ -127,7 +130,8 @@ var PhotoConveyerSchema = new Schema(
         cid: { type: Number, index: true },
         priority: { type: Number, required: true },
         added: { type: Date, 'default': Date.now, required: true },
-        converting: { type: Boolean }
+        converting: { type: Boolean },
+        watersign: { type: String } // Additional text on watermark
     },
     {
         collection: 'photos_conveyer',
@@ -149,6 +153,7 @@ var PhotoConveyerErrorSchema = new Schema(
         strict: true
     }
 );
+
 //Статистика заполненности конвейера
 var STPhotoConveyerSchema = new Schema(
     {
@@ -160,7 +165,6 @@ var STPhotoConveyerSchema = new Schema(
         strict: true
     }
 );
-
 
 PhotoSchema.pre('save', function (next) {
     if (this.isModified('year') || this.isModified('year2')) {
@@ -174,7 +178,6 @@ PhotoSchema.pre('save', function (next) {
 
     return next();
 });
-
 
 module.exports.makeModel = function (db) {
     db.model('Photo', PhotoSchema);

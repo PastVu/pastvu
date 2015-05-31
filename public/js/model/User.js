@@ -26,6 +26,7 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 			regionHome: null, //Спопулированный домашний регион
 			regions: [], //Спопулированные регионы для фильтрации по умолчанию
 			mod_regions: [], //Спопулированные регионы модератора
+            watersignCustom: '',
 
 			//profile
 			birthdate: '',

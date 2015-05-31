@@ -10,8 +10,8 @@ module.exports.loadController = function (app, db) {
     saveSystemJSFunc(function pastvuPatch() {
         var startTime = Date.now();
 
-        // Показывать по умолчанию вотермарк pastvu.com, встроенный в фотографию
-        db.user_settings.save({ key: 'photo_show_watermark', val: false, vars: [true, false], desc: 'Показывать вотермарк фотографии' });
+        db.user_settings.save({ key: 'photo_watermark_let_download_pure', val: true, vars: [true, false], desc: 'Let other users download photo without watermark' });
+        db.user_settings.save({ key: 'photo_watermark_add_sign', val: 'default', vars: [false, 'default', 'custom'], desc: 'Add sign to watermark' });
 
         return { message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's' };
     });
