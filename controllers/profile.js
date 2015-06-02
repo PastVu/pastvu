@@ -301,7 +301,7 @@ function setWatersignCustom(socket, data) {
         });
 }
 
-//Меняем email
+// Меняем email
 function changeEmail(iAm, data, cb) {
     var user,
         login = data && data.login,

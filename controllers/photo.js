@@ -1952,7 +1952,7 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
         });
 });
 
-// Отправляет все фото выбранных вариантов на конвертацию
+// Sends all photo for convert
 var convertPhotosAll = Bluebird.method(function (iAm, data) {
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
@@ -1976,6 +1976,30 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
             params.region = { level: _.size(region.parents), cid: region.cid };
         }
     }
+
+    return PhotoConverter.addPhotosAll(params);
+});
+
+// Sends user's photo for convert
+var convertPhotosForUser = Bluebird.method(function (iAm, data) {
+    if (!_.isObject(data) || !data.login) {
+        throw { message: msg.badParams };
+    }
+    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    var params = { login: data.login, priority: 2 };
+    var region;
+
+    if (_.isNumber(data.r) && data.r > 0) {
+        region = regionController.getRegionFromCache(data.r);
+        if (region) {
+            params.region = { level: _.size(region.parents), cid: region.cid };
+        }
+    }
+
+    console.log(params);
 
     return PhotoConverter.addPhotosAll(params);
 });
@@ -2614,6 +2638,15 @@ module.exports.loadController = function (app, db, io) {
                 })
                 .then(function (resultData) {
                     socket.emit('convertPhotosAllResult', resultData);
+                });
+        });
+        socket.on('convertPhotosForUser', function (data) {
+            convertPhotosForUser(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('convertPhotosForUserResult', resultData);
                 });
         });
 

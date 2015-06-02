@@ -222,6 +222,12 @@ module.exports.loadController = function (app, db) {
             conveyer.push({ cid: photo.cid, priority: params.priority, added: addDate });
         };
 
+        if (params.login) {
+            var user = db.users.findOne({ login: params.login });
+            if (user) {
+                query.user = user._id;
+            }
+        }
         if (params.min) {
             query.cid = { $gte: params.min };
         }
@@ -235,12 +241,13 @@ module.exports.loadController = function (app, db) {
             query['r' + params.region.level] = params.region.cid;
         }
 
-        print('Start to fill conveyer for ' + db.photos.count() + ' photos');
+        print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
         db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(iterator);
         db.photos_conveyer.insert(conveyer);
 
         return {
-            message: 'Added ' + conveyer.length + ' photos to conveyer in ' + (Date.now() - startTime) / 1000 + 's',
+            added: conveyer.length,
+            time: (Date.now() - startTime) / 1000,
             photosAdded: conveyer.length
         };
     });

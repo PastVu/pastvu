@@ -68,8 +68,8 @@
                         | &nbsp;
                         span.glyphicon.glyphicon-filter
                         |  Фильтрация данных по умолчанию
-                dd
-                    .radio: label
+                dd: span.panel-block
+                    .radio(style="margin-top:0"): label
                         input(type="radio", name="regfilter_radios", value="all", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-globe
                         |  Весь мир (без фильтра)
@@ -77,7 +77,7 @@
                         input(type="radio", name="regfilter_radios", value="home", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-home
                         |  Домашний регион
-                    .radio: label
+                    .radio(style="margin-bottom:5px"): label
                         input(type="radio", name="regfilter_radios", value="list", data-bind="checked: regfiltercheck")
                         span.glyphicon.glyphicon-list
                         span  Список
@@ -136,7 +136,7 @@
                         |  Добавлять по-умолчанию подпись
                         br
                         |  на вотермарк загружаемых мной фотографий
-                dd
+                dd: span(data-bind="css: {'panel-block': !!u.settings.photo_watermark_add_sign()}")
                     .btn-group.btn-group-sm
                         button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!u.settings.photo_watermark_add_sign()}, click: watermarkAdd") Да
                         button.btn.btn-primary.no(type="button", data-bind="css: {active: !u.settings.photo_watermark_add_sign()}, click: watermarkAdd") Нет
@@ -147,7 +147,7 @@
                         | Настройки системы (
                         span(style="color:#777", data-bind="text: 'uploaded by ' + u.login()")
                         | )
-                    .row: .radio(style="margin-top:0")
+                    .radio(style="margin-top:0")
                         .input-group(style="max-width:500px")
                             input(type="radio", name="watersign", value="custom", data-bind="checked: watersigncheck")
                             span.input-group-addon Текст
@@ -157,6 +157,43 @@
                             span.input-group-addon.action.cancel(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomCancel")
                                 span.glyphicon.glyphicon-remove
                     // /ko
+
+            dl.dl-horizontal
+                dt.helpexists
+                    abbr(title="Сбросить установленные в конкретных фотографиях настройки подписи. В этом случае при следующей конвертации фотографии, будут использованы настройки подписи, указанные в вышестоящей настройке")
+                        span.glyphicon.glyphicon-info-sign
+                        |  Сбросить индивидуальные настройки
+                        br
+                        | подписи для загруженных мной фотографий
+                dd: span.panel-block(style="padding-top:0")
+                    div
+                        label.radio-inline
+                            input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
+                            | Всех моих фотографий
+                        label.radio-inline
+                            input(type="radio", name="resetwatersign", value="region", data-bind="checked: resetwatersigncheck")
+                            span
+                                | В регионе
+                                input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:170px;", type="number", placeholder="Введите номер региона", maxlength="6")
+                    div: button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: watersignReset") Сбросить
+
+            dl.dl-horizontal
+                dt.helpexists
+                    abbr(title="Отправить на конвертацию свои фотографии")
+                        span.glyphicon.glyphicon-info-sign
+                        |  Переконвертировать мои фотографии
+                dd: span.panel-block(style="padding-top:0")
+                    div
+                        label.radio-inline
+                            input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
+                            | Все
+                        label.radio-inline
+                            input(type="radio", name="reconvert", value="region", data-bind="checked: reconvertcheck")
+                            span
+                                | В регионе
+                                input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:170px;", type="number", placeholder="Введите номер региона", maxlength="6")
+                    div: button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos") Отправить
+
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления
         .panel-collapse.collapse.in#notice: .panel-body

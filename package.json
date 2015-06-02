@@ -76,7 +76,7 @@
         "osm-and-geojson": "0.1.2",
 
         "eslint": "0.22.1",
-        "babel-eslint": "3.1.9",
+        "babel-eslint": "3.1.10",
         "eslint-plugin-react": "2.4.0"
     },
     "engines": {

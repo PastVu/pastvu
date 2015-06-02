@@ -100,6 +100,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     },
                     owner: this
                 });
+                this.resetwatersigncheck = ko.observable('all');
+                this.reconvertcheck = ko.observable('all');
 
                 this.getSettingsVars(function () {
                     this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
@@ -167,6 +169,34 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         watermarkCustomCancel: function () {
             this.u.watersignCustom(this.originUser.watersignCustom);
             this.photo_watermark_add_sign(this.u.settings.photo_watermark_add_sign());
+        },
+        watersignReset: function () {
+            var option = this.resetwatersigncheck();
+        },
+        reconvertPhotos: function () {
+            var option = this.reconvertcheck();
+            var region = option === 'region' && $('#reconvertRegion', this.$dom).val();
+
+            if (region) {
+                region = Number(region) || undefined;
+            }
+
+            socket.once('convertPhotosForUserResult', function (data) {
+                var error = !data || data.error;
+                var warning = !error && !data.added;
+
+                window.noty({
+                    text: error ? data && data.message || 'Error occurred' :
+                        warning ? 'Ни одной фотографии не отправлено на конвертацию' :
+                        data.added + ' фотографий отправлено на повторную конвертацию',
+                    type: error ? 'error' : warning ? 'warning' : 'success',
+                    layout: 'center',
+                    timeout: 3000,
+                    force: true
+                });
+
+            }, this);
+            socket.emit('convertPhotosForUser', { login: this.u.login(), r: region });
         },
         autoReply: function (data, evt) {
             this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);

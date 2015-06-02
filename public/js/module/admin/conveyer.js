@@ -103,7 +103,6 @@ define([
             }
         },
 
-
         plotOptions: {
             line: {
                 dataLabels: {
@@ -490,7 +489,13 @@ define([
             this.exe(true);
             socket.once('convertPhotosAllResult', function (data) {
                 if (data && !data.error) {
-                    window.noty({ text: data.message || 'OK', type: 'success', layout: 'center', timeout: 2000, force: true });
+                    window.noty({
+                        text: 'Added ' + data.added + ' photos to conveyer in ' + data.time + 's',
+                        type: 'success',
+                        layout: 'center',
+                        timeout: 2000,
+                        force: true
+                    });
                 } else {
                     window.noty({
                         text: (data && data.message) || 'Error occurred',
