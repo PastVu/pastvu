@@ -71,7 +71,9 @@ var UserScheme = new Schema({
 
     dateFormat: { type: String, 'default': 'dd.mm.yyyy' },
     active: { type: Boolean, 'default': false },
-    activatedate: { type: Date }
+    activatedate: { type: Date },
+
+    nowaterchange: { type: Boolean } // Prohibit user to change his own default watersign setting and watersign of his own photos
 });
 
 var AnonymScheme = {

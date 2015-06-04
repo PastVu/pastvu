@@ -391,7 +391,7 @@ function changeAvatar(iAm, data, cb) {
     }
 
     file = data.file;
-    fullfile = file.replace(/((.)(.))/, "$2/$3/$1");
+    fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
 
     step(
         function () {
@@ -510,7 +510,45 @@ function delAvatar(iAm, data, cb) {
     );
 }
 
-//Сохраняем ранки пользователя
+// Change user ability to change his watersign setting
+function setUserWatermarkChange(socket, data) {
+    var iAm = socket.handshake.usObj;
+    var login = data && data.login;
+
+    if (!iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+    if (!_.isObject(data) || !login) {
+        throw { message: msg.badParams };
+    }
+
+    var userObjOnline = _session.getOnline(login);
+
+    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
+        .then(function (user) {
+            if (data.nowaterchange) {
+                if (user.nowaterchange) {
+                    return user;
+                }
+                user.nowaterchange = true;
+            } else if (user.nowaterchange !== undefined) {
+                user.nowaterchange = undefined;
+            }
+
+            return user.saveAsync().spread(function (user) {
+                if (userObjOnline) {
+                    _session.emitUser(userObjOnline, null, socket);
+                }
+
+                return user;
+            });
+        })
+        .then(function (user) {
+            return { nowaterchange: user.nowaterchange };
+        });
+}
+
+// Сохраняем ранки пользователя
 function saveUserRanks(iAm, data, cb) {
     var login = data && data.login,
         userObjOnline,
@@ -689,6 +727,16 @@ module.exports.loadController = function (app, db, io) {
                 })
                 .then(function (resultData) {
                     socket.emit('setWatersignCustomResult', resultData);
+                });
+
+        });
+        socket.on('setUserWatermarkChange', function (data) {
+            setUserWatermarkChange(socket, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('setUserWatermarkChangeResult', resultData);
                 });
 
         });

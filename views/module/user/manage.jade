@@ -1,81 +1,83 @@
 .user_manage(data-bind="with: repository[M!M]")
-	.panel-group#accordion
-		.panel.panel-pastvu
-			.panel-heading
-				.panel-title
-					a.accordion-toggle(data-toggle="collapse", href="#credentials") Полномочия
-			.panel-collapse.collapse.in#credentials
-				.panel-body
-					form
-						.form-group
-							.col-xs-12(data-bind="foreach: roles")
-								label.radio-inline
-									input(type="radio", name="credent_radios", data-bind="attr: {value: $data.cat}, checked: $parent.roleCategory")
-									span(data-bind="text: $data.name")
-						//ko if: roleCategory() === 'mod'
-						.form-group
-							.col-xs-12
-								.checkbox
-									label
-										input(type="checkbox", value = '5', data-bind="checked: role")
-										| Региональный:&nbsp;
-										//ko if: !regions().length
-										span.region
-											span.glyphicon.glyphicon-globe
-											|  Весь мир
-										// /ko
-										//ko foreach: regions
-										span.region.candrop(title="Убрать регион", data-bind="click: function() {$parent.regionDrop($data.cid);}")
-											span(data-bind="text: $data.title_local")
-										// /ko
-										span.regionEdit(data-bind="click: regionSelect")
-											span.glyphicon.glyphicon-pencil
-											| Изменить
-								.checkbox
-									label
-										input(type="checkbox", disabled)
-										| Языковой
+    .panel-group#accordion
+        .panel.panel-pastvu
+            .panel-heading: .panel-title
+                a.accordion-toggle(data-toggle="collapse", href="#credentials") Полномочия
+            .panel-collapse.collapse.in#credentials: .panel-body
+                form
+                    .form-group
+                        .col-xs-12(data-bind="foreach: roles"): label.radio-inline
+                            input(type="radio", name="credent_radios", data-bind="attr: {value: $data.cat}, checked: $parent.roleCategory")
+                            span(data-bind="text: $data.name")
+                    //ko if: roleCategory() === 'mod'
+                    .form-group: .col-xs-12
+                        .checkbox: label
+                            input(type="checkbox", value = '5', data-bind="checked: role")
+                            | Региональный:&nbsp;
+                            //ko if: !regions().length
+                            span.region
+                                span.glyphicon.glyphicon-globe
+                                |  Весь мир
+                            // /ko
+                            //ko foreach: regions
+                            span.region.candrop(title="Убрать регион", data-bind="click: function() {$parent.regionDrop($data.cid);}")
+                                span(data-bind="text: $data.title_local")
+                            // /ko
+                            span.regionEdit(data-bind="click: regionSelect")
+                                span.glyphicon.glyphicon-pencil
+                                | Изменить
+                        .checkbox: label
+                            input(type="checkbox", disabled)
+                            | Языковой
 
-						// /ko
-						//ko if: credentialsChanged()
-						.form-group
-							.col-xs-12
-								button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
-									span.glyphicon.glyphicon-ok
-									|  Сохранить полномочия
-								button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
-									span.glyphicon.glyphicon-remove
-									|  Отмена
-						// /ko
-		.panel.panel-pastvu
-			.panel-heading
-				.panel-title
-					a.accordion-toggle(data-toggle="collapse", href="#ranks") Специальные настройки
-			.panel-collapse.collapse.in#ranks
-				.panel-body
-					.setTitle Присваиваемые звания
-					form
-						.form-group
-							//ko foreach: ranks
-							label.checkbox-inline
-								input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
-								span(data-bind="text: $data.desc")
-							// /ko
+                    // /ko
+                    //ko if: credentialsChanged()
+                    .form-group: .col-xs-12
+                        button.btn.btn-sm.btn-success(type="button", data-bind="event: {click: saveCredentials}, attr: {disabled: exe()}")
+                            span.glyphicon.glyphicon-ok
+                            |  Сохранить полномочия
+                        button.btn.btn-sm.btn-danger(type="button", data-bind="event: {click: cancelCredentials}, attr: {disabled: exe()}")
+                            span.glyphicon.glyphicon-remove
+                            |  Отмена
+                    // /ko
 
-					.setTitle Лимит количества неподтвержденных фотографий
-					div(data-bind="html: 'Действующая настройка: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
-					.calcInfo(data-bind="html: 'Доступный лимит: <b>'+photoNewCan()+'</b>'")
-					.calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+u.pfcount()+'</b>'")
-					.calcInfo(data-bind="html: 'Всего опубликованных: <b>'+u.pcount()+'</b>'")
-					form.form-inline(style="margin-top: 7px;")
-						.form-group
-							.radio
-								label.radio-inline
-									input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-									| Авто
-							.radio
-								label.radio-inline
-									input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
-									| Вручную
-							.form-group
-								input.form-control.input-sm.photoLimit(type="text", title="Число от 0 до 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")
+        .panel.panel-pastvu
+            .panel-heading: .panel-title
+                a.accordion-toggle(data-toggle="collapse", href="#ranks") Ограничения
+            .panel-collapse.collapse.in#ranks: .panel-body
+                dl.dl-horizontal
+                    dt.helpexists
+                        abbr(title="Резрешать менять настройки подписи на своих фотографиях и по умолчанию на собственной странице настроек," +
+                        " отправлять свои фотографии на переконвертацию")
+                            span.glyphicon.glyphicon-info-sign
+                            |  Разрешать менять подпись на вотермарке
+                    dd: .btn-group.btn-group-sm
+                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Да
+                        button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange") Нет
+
+        .panel.panel-pastvu
+            .panel-heading: .panel-title
+                a.accordion-toggle(data-toggle="collapse", href="#ranks") Специальные настройки
+            .panel-collapse.collapse.in#ranks: .panel-body
+                .setTitle Присваиваемые звания
+                form: .form-group
+                    //ko foreach: ranks
+                    label.checkbox-inline
+                        input(type="checkbox", data-bind="attr: {value: $data.key}, checked: $parent.u.ranks")
+                        span(data-bind="text: $data.desc")
+                    // /ko
+
+                .setTitle Лимит количества неподтвержденных фотографий
+                div(data-bind="html: 'Действующая настройка: <b>'+photoNewLimitOrigin()+'</b>'", style="margin-bottom: 2px;")
+                .calcInfo(data-bind="html: 'Доступный лимит: <b>'+photoNewCan()+'</b>'")
+                .calcInfo(data-bind="html: 'Всего неподтвержденных: <b>'+u.pfcount()+'</b>'")
+                .calcInfo(data-bind="html: 'Всего опубликованных: <b>'+u.pcount()+'</b>'")
+                form.form-inline(style="margin-top: 7px;"): .form-group
+                    .radio: label.radio-inline
+                        input(type="radio", value="auto", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
+                        | Авто
+                    .radio: label.radio-inline
+                        input(type="radio", value="manual", name="photo_new_radios", data-bind="checked: photoNewLimitOption")
+                        | Вручную
+                    .form-group
+                        input.form-control.input-sm.photoLimit(type="text", title="Число от 0 до 10000", maxlength="5", pattern="[0-9]{1,5}", data-bind="value: photoNewLimit, valueUpdate: 'keyup', attr: {disabled: photoNewLimitOption() === 'auto'}, css: {}")

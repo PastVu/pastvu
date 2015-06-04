@@ -2,6 +2,10 @@
  * Модель настроек пользователя
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, Region, User, storage, jade) {
+    function isYes(evt) {
+        return !!evt.target.classList.contains('yes');
+    }
+
     return Cliche.extend({
         jade: jade,
         options: {
@@ -137,10 +141,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         watermarkShow: function (data, evt) {
-            this.changeSetting('photo_show_watermark', !!evt.target.classList.contains('yes'), true);
+            this.changeSetting('photo_show_watermark', isYes(evt), true);
         },
         watermarkAdd: function (data, evt) {
-            var flag = !!evt.target.classList.contains('yes');
+            var flag = isYes(evt);
             var watersignCustom = this.u.watersignCustom();
             var newVal = !flag ? false : watersignCustom ? 'custom' : 'default';
 
@@ -199,13 +203,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.emit('convertPhotosForUser', { login: this.u.login(), r: region });
         },
         autoReply: function (data, evt) {
-            this.changeSetting('subscr_auto_reply', !!evt.target.classList.contains('yes'), true);
+            this.changeSetting('subscr_auto_reply', isYes(evt), true);
         },
         regionUserGal: function (data, evt) {
-            this.changeSetting('r_f_user_gal', !!evt.target.classList.contains('yes'), true);
+            this.changeSetting('r_f_user_gal', isYes(evt), true);
         },
         regionPhotoUserGal: function (data, evt) {
-            this.changeSetting('r_f_photo_user_gal', !!evt.target.classList.contains('yes'), true);
+            this.changeSetting('r_f_photo_user_gal', isYes(evt), true);
         },
         subscr_throttleHandler: function (val) {
             //Изначальное значение число. А во время изменения radio в knockout это всегда будет строка
