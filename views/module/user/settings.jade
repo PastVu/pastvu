@@ -149,7 +149,7 @@
                         // ko if: !!u.settings.photo_watermark_add_sign()
                         br
                         .radio(style="margin-top: 13px"): label
-                            input(type="radio", name="watersign", value="default", data-bind="checked: watersigncheck")
+                            input(type="radio", name="watersign", value="true", data-bind="checked: watersigncheck")
                             | Настройки системы (
                             span(style="color:#777", data-bind="text: 'uploaded by ' + u.login()")
                             | )

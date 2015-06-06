@@ -81,7 +81,8 @@ var PhotoSchema = new Schema({
     ccount: { type: Number, index: true }, // Number of comments
     frags: [FragmentSchema], // Array of comment's fragments
 
-    nocomments: { type: Boolean } // Prohibit commentation
+    nocomments: { type: Boolean }, // Prohibit commentation
+    nowaterchange: { type: Boolean } // Prohibit watersign changing
 });
 
 //В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
@@ -131,7 +132,7 @@ var PhotoConveyerSchema = new Schema(
         priority: { type: Number, required: true },
         added: { type: Date, 'default': Date.now, required: true },
         converting: { type: Boolean },
-        watersign: { type: String } // Additional text on watermark
+        watersign: { type: Schema.Types.Mixed } // Additional text on watermark
     },
     {
         collection: 'photos_conveyer',

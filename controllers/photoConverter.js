@@ -253,7 +253,7 @@ async function conveyerControl() {
         await * [photo.saveAsync(), photoConv.saveAsync()];
 
         try {
-            await conveyerStep(photo);
+            await conveyerStep(photo, photoConv);
             conveyerConverted += 1;
         } catch (err) {
             let errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
@@ -288,14 +288,27 @@ var identifyImage = (src, format) =>
         resolve(result);
     }));
 
-//var writeImage = (dst, gmInstance) => new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
+//var writeImage = (dst, gmInstance) =>
+//    new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
+
+var originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
+
+function getWatertext(photo, photoConv) {
+    var watersign = '  ';
+
+    if (photoConv.watersign !== false) {
+        watersign += photoConv.watersign || `uploaded by ${photo.user.login}`;
+    }
+
+    return `pastvu.com/p/${photo.cid}${watersign}`;
+}
 
 /**
  * Очередной шаг конвейера
  * @param photo Объект фотографии
  */
-async function conveyerStep(photo) {
-    var waterTxt = `pastvu.com/p/${photo.cid}  uploaded by ${photo.user.login}`;
+async function conveyerStep(photo, photoConv) {
+    var waterTxt = getWatertext(photo, photoConv);
     var originSrcPath = path.normalize(sourceDir + photo.file);
     var saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
@@ -306,7 +319,7 @@ async function conveyerStep(photo) {
     };
 
     // Запускаем identify оригинала
-    await tryPromise(5, () => identifyImage(originSrcPath, '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}'), `identify origin of photo ${photo.cid}`)
+    await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${photo.cid}`)
         .then(function (result) {
             photo.w = parseInt(result.w, 10) || undefined;
             photo.h = parseInt(result.h, 10) || undefined;
@@ -427,6 +440,7 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
 /**
  * Добавление в конвейер конвертации фотографий
  * @param data Массив объектов {cid: 123}
+ * @param priority Priority of convertation in conveyer
  */
 export async function addPhotos(data, priority) {
     var cid;
@@ -437,7 +451,7 @@ export async function addPhotos(data, priority) {
         cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid: cid, priority: priority || 4, added: stamp });
+            toConvertObjs.push({ cid: cid, watersign: photo.watersign, priority: priority || 4, added: stamp });
         }
     }
 

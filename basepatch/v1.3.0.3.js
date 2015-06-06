@@ -11,7 +11,7 @@ module.exports.loadController = function (app, db) {
         var startTime = Date.now();
 
         db.user_settings.save({ key: 'photo_watermark_let_download_pure', val: true, vars: [true, false], desc: 'Let other users download photo without watermark' });
-        db.user_settings.save({ key: 'photo_watermark_add_sign', val: 'default', vars: [false, 'default', 'custom'], desc: 'Add sign to watermark' });
+        db.user_settings.save({ key: 'photo_watermark_add_sign', val: true, vars: [true, false, 'custom'], desc: 'Add sign to watermark' });
 
         return { message: 'FINISH in total ' + (Date.now() - startTime) / 1000 + 's' };
     });

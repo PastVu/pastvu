@@ -89,9 +89,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             return false;
                         }
 
-                        return current;
+                        return String(current);
                     },
                     write: function (valNew) {
+                        if (valNew === 'true') {
+                            valNew = true;
+                        }
                         // If clicked custom, but it value haven't set yet, do not save change.
                         if (valNew !== 'custom' || this.u.watersignCustom()) {
                             this.changeSetting('photo_watermark_add_sign', valNew, true);
@@ -148,7 +151,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         watermarkAdd: function (data, evt) {
             var flag = isYes(evt);
             var watersignCustom = this.u.watersignCustom();
-            var newVal = !flag ? false : watersignCustom ? 'custom' : 'default';
+            var newVal = !flag ? false : watersignCustom ? 'custom' : true;
 
             this.changeSetting('photo_watermark_add_sign', newVal, true);
         },

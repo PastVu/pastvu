@@ -135,7 +135,7 @@ function saveUser(iAm, data, cb) {
 }
 
 // Changes value of specified user setting
-var changeSetting = Bluebird.method(function (socket, data, cb) {
+var changeSetting = Bluebird.method(function (socket, data) {
     if (!_.isObject(data) || !data.login || !data.key) {
         throw { message: msg.badParams };
     }

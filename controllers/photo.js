@@ -1,6 +1,7 @@
 'use strict';
 
-var _session = require('./_session.js'),
+var _session = require('./_session.js');
+var settings = require('./settings.js'),
     Settings,
     User,
     UserSelfPublishedPhotos,
@@ -196,7 +197,6 @@ var _session = require('./_session.js'),
             return false;
         }
     };
-
 
 /**
  * Находим фотографию с учетом прав пользователя
@@ -488,7 +488,8 @@ var createPhotos = Bluebird.method(function (socket, data) {
     }
 
     var cids = [];
-    var canCreate = core.getNewPhotosLimit(iAm.user);
+    var user = iAm.user;
+    var canCreate = core.getNewPhotosLimit(user);
 
     if (!canCreate || !data.length) {
         return { message: 'Nothing to save', cids: cids };
@@ -510,11 +511,24 @@ var createPhotos = Bluebird.method(function (socket, data) {
             }
             var now = Date.now();
             var next = count.next - data.length + 1;
+            var watersignOption = user.settings && user.settings.photo_watermark_add_sign;
+            var watersign;
+
+            // If user watersign option is not valid, take default value
+            if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(watersignOption) < 0) {
+                watersignOption = settings.getUserSettingsDef().photo_watermark_add_sign;
+            }
+
+            if (watersignOption === 'custom' && user.watersignCustom) {
+                watersign = user.watersignCustom;
+            } else if (watersignOption === false) {
+                watersign = false;
+            }
 
             return Bluebird.all(data.map(function (item, i) {
                 var photo = new Photo({
                     cid: next + i,
-                    user: iAm.user,
+                    user: user,
                     file: item.fullfile,
                     ldate: new Date(now + i * 10), //Время загрузки каждого файла инкрементим на 10мс для правильной сортировки
                     sdate: new Date(now + i * 10 + shift10y), //Новые фотографии должны быть всегда сверху
@@ -530,14 +544,14 @@ var createPhotos = Bluebird.method(function (socket, data) {
                 });
                 item.photoObj = photo;
 
-                cids.push({ cid: photo.cid });
+                cids.push({ cid: photo.cid, watersign: watersign });
                 return photo.saveAsync();
             }));
         })
         .then(function () {
             PhotoConverter.addPhotos(cids, 1);
 
-            iAm.user.pfcount = iAm.user.pfcount + data.length;
+            user.pfcount = user.pfcount + data.length;
             return _session.saveEmitUser(iAm, socket);
         })
         .then(function () {
@@ -898,7 +912,6 @@ var revokePhoto = function (socket, data) {
         });
 };
 
-
 /**
  * Говорим, что фото готово к премодерации и публикации
  * @param {Object} socket Сокет пользователя
@@ -1229,7 +1242,6 @@ var restorePhoto = Bluebird.method(function (socket, data) {
         });
 });
 
-
 /**
  * Отдаем фотографию для её страницы
  * @param {Object} iAm Объект пользователя
@@ -1249,7 +1261,6 @@ var givePhotoForPage = Bluebird.method(function (iAm, data) {
             return { photo: photo, can: can };
         });
 });
-
 
 /**
  * Отдаем полную галерею с учетом прав и фильтров в компактном виде
@@ -1761,7 +1772,6 @@ var savePhoto = function (iAm, data) {
     var geoToNull;
     var newValues;
     var newRegions;
-
 
     return photoEditPrefetch(iAm, data, 'edit')
         .bind({})
@@ -2360,7 +2370,6 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
         });
 });
 
-
 module.exports.loadController = function (app, db, io) {
     logger = log4js.getLogger("photo.js");
 
@@ -2666,6 +2675,5 @@ module.exports.findPhoto = findPhoto;
 module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
 module.exports.savePhotoHistory = savePhotoHistory;
-
 
 module.exports.core = core;
