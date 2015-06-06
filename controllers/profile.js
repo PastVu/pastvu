@@ -17,7 +17,7 @@ var privateDir = global.appVar.storePath + 'private/avatars/';
 var publicDir = global.appVar.storePath + 'public/avatars/';
 var msg = {
     badParams: 'Bad params',
-    deny: 'You do not have permission for this action',
+    deny: 'У вас нет прав на это действие',
     nouser: 'Requested user does not exist',
     nosetting: 'Such setting does not exists'
 };
@@ -134,38 +134,41 @@ function saveUser(iAm, data, cb) {
     );
 }
 
-//Меняем значение настройки
-function changeSetting(iAm, data, cb) {
-    var login = data && data.login,
-        itsMe = iAm.registered && iAm.user.login === login,
-        userObjOnline;
-
-    if (!itsMe && !iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
-    }
-    if (!_.isObject(data) || !login || !data.key) {
-        return cb({ message: msg.badParams, error: true });
+// Changes value of specified user setting
+var changeSetting = Bluebird.method(function (socket, data, cb) {
+    if (!_.isObject(data) || !data.login || !data.key) {
+        throw { message: msg.badParams };
     }
 
-    step(
-        function () {
-            userObjOnline = _session.getOnline(login);
-            if (userObjOnline) {
-                this(null, userObjOnline.user);
-            } else {
-                User.findOne({ login: login }, this);
-            }
-        },
-        function (err, user) {
-            if (err || !user) {
-                return cb({ message: err && err.message || msg.nouser, error: true });
-            }
-            var defSetting = settings.getUserSettingsDef()[data.key],
-                vars = settings.getUserSettingsVars()[data.key];
+    var key = data.key;
+    var login = data.login;
+    var iAm = socket.handshake.usObj;
+    var itsMe = iAm.registered && iAm.user.login === login;
+    var forbidden = !itsMe && !iAm.isAdmin;
 
-            //Если такой настройки не существует или её значение недопустимо - выходим
+    if (!forbidden) {
+        if (key === 'photo_watermark_add_sign') {
+            forbidden = Boolean(itsMe && iAm.user.nowaterchange);
+        }
+    }
+
+    if (forbidden) {
+        throw { message: msg.deny };
+    }
+
+    var userObjOnline = _session.getOnline(login);
+
+    return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
+        .then(function (user) {
+            if (!user) {
+                throw { message: msg.nouser };
+            }
+            var defSetting = settings.getUserSettingsDef()[data.key];
+            var vars = settings.getUserSettingsVars()[data.key];
+
+            // If this setting does not exist or its value is not allowed - throw error
             if (defSetting === undefined || vars === undefined || vars.indexOf(data.val) < 0) {
-                return cb({ message: msg.nosetting, error: true });
+                throw { message: msg.nosetting };
             }
 
             if (!user.settings) {
@@ -173,31 +176,31 @@ function changeSetting(iAm, data, cb) {
             }
 
             if (user.settings[data.key] === data.val) {
-                //Если значение настройки не изменилось, просто возвращаемся
-                this(null, user);
+                // If the specified setting have not changed, just return
+                return user;
             } else {
-                //Сохраняем значение настройки и помечаем объект настройки изменившимся, т.к. он Mixed
+                // Saving new setting value and marking settings object as changed, because it has Mixed type
                 user.settings[data.key] = data.val;
                 user.markModified('settings');
-                user.save(this);
 
                 if (data.key === 'subscr_throttle') {
-                    //Если поменялся throttle, попытаемся пересчитать время запланированного уведомления
+                    // If throttle value has changed, trying to reschedule next notification time
                     subscrController.userThrottleChange(user._id, data.val);
                 }
+
+                return user.saveAsync().spread(function (user) {
+                    if (userObjOnline) {
+                        _session.emitUser(userObjOnline, null, socket);
+                    }
+
+                    return user;
+                });
             }
-        },
-        function (err, user) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (userObjOnline) {
-                _session.emitUser(userObjOnline); //Обновляем и в текущем сокете тоже, чтобы обновился auth.iAm
-            }
-            cb({ message: 'ok', saved: 1, key: data.key, val: user.settings[data.key] });
-        }
-    );
-}
+        })
+        .then(function (user) {
+            return { key: data.key, val: user.settings[data.key] };
+        });
+});
 
 // Меняем отображаемое имя
 function changeDispName(iAm, data, cb) {
@@ -249,12 +252,12 @@ function changeDispName(iAm, data, cb) {
 }
 
 // Set watermark custom sign
-function setWatersignCustom(socket, data) {
+var setWatersignCustom = Bluebird.method(function (socket, data) {
     var iAm = socket.handshake.usObj;
     var login = data && data.login;
     var itsMe = iAm.registered && iAm.user.login === login;
 
-    if (!itsMe && !iAm.isAdmin) {
+    if (itsMe && iAm.user.nowaterchange || !itsMe && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
     if (!_.isObject(data) || !login) {
@@ -297,9 +300,12 @@ function setWatersignCustom(socket, data) {
             });
         })
         .then(function (user) {
-            return { message: 'ok', saved: 1, watersignCustom: user.watersignCustom, photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign };
+            return {
+                watersignCustom: user.watersignCustom,
+                photo_watermark_add_sign: user.settings && user.settings.photo_watermark_add_sign
+            };
         });
-}
+});
 
 // Меняем email
 function changeEmail(iAm, data, cb) {
@@ -510,8 +516,8 @@ function delAvatar(iAm, data, cb) {
     );
 }
 
-// Change user ability to change his watersign setting
-function setUserWatermarkChange(socket, data) {
+// Change (by administrator) user ability to change his watersign setting
+var setUserWatermarkChange = Bluebird.method(function (socket, data) {
     var iAm = socket.handshake.usObj;
     var login = data && data.login;
 
@@ -546,7 +552,7 @@ function setUserWatermarkChange(socket, data) {
         .then(function (user) {
             return { nowaterchange: user.nowaterchange };
         });
-}
+});
 
 // Сохраняем ранки пользователя
 function saveUserRanks(iAm, data, cb) {
@@ -709,16 +715,20 @@ module.exports.loadController = function (app, db, io) {
             });
         });
 
-        socket.on('changeUserSetting', function (data) {
-            changeSetting(hs.usObj, data, function (resultData) {
-                socket.emit('changeUserSettingResult', resultData);
-            });
-        });
-
         socket.on('changeDispName', function (data) {
             changeDispName(hs.usObj, data, function (resultData) {
                 socket.emit('changeDispNameResult', resultData);
             });
+        });
+
+        socket.on('changeUserSetting', function (data) {
+            changeSetting(socket, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('changeUserSettingResult', resultData);
+                });
         });
         socket.on('setWatersignCustom', function (data) {
             setWatersignCustom(socket, data)
@@ -728,7 +738,6 @@ module.exports.loadController = function (app, db, io) {
                 .then(function (resultData) {
                     socket.emit('setWatersignCustomResult', resultData);
                 });
-
         });
         socket.on('setUserWatermarkChange', function (data) {
             setUserWatermarkChange(socket, data)
@@ -738,7 +747,6 @@ module.exports.loadController = function (app, db, io) {
                 .then(function (resultData) {
                     socket.emit('setUserWatermarkChangeResult', resultData);
                 });
-
         });
         socket.on('changeEmail', function (data) {
             changeEmail(hs.usObj, data, function (resultData) {

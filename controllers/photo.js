@@ -132,7 +132,8 @@ var _session = require('./_session.js'),
                 remove: false,
                 restore: false,
                 convert: false,
-                comment: false
+                comment: false,
+                water: false
             };
             var s = photo.s;
             var ownPhoto;
@@ -159,6 +160,8 @@ var _session = require('./_session.js'),
                 can.convert = usObj.isAdmin;
                 // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
                 can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate;
+                // Change watermark sign can administrator and owner if administrator didn't prohibit it for this photo or entire owner
+                can.water = usObj.isAdmin || ownPhoto && !usObj.user.nowaterchange && !photo.nowaterchange;
 
                 if (canModerate) {
                     // Модератор может отправить на доработку
@@ -1998,8 +2001,6 @@ var convertPhotosForUser = Bluebird.method(function (iAm, data) {
             params.region = { level: _.size(region.parents), cid: region.cid };
         }
     }
-
-    console.log(params);
 
     return PhotoConverter.addPhotosAll(params);
 });

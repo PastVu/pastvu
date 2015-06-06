@@ -44,10 +44,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             //Если устанавляаем фильтрацию по Домашнему региону, снчала ставим домашний регион в фильтр, затем сохраняем настройку r_as_home
                             this.saveFilterRegions([this.u.regionHome.cid()], function (err) {
                                 if (!err) {
-                                    this.changeSetting('r_as_home', true, true, function () {
-                                        this.originUser.regions = [ko.toJS(this.u.regionHome)];
-                                        User.vm({ regions: this.originUser.regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
-                                        ga('send', 'event', 'region', 'update', 'region update success', 1);
+                                    this.changeSetting('r_as_home', true, true, function (err) {
+                                        if (!err) {
+                                            this.originUser.regions = [ko.toJS(this.u.regionHome)];
+                                            User.vm({ regions: this.originUser.regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
+                                        }
+                                        ga('send', 'event', 'region', 'update', 'region update ' + (err ? 'error' : 'success'), 1);
                                     }, this);
                                 }
                             }, this);
@@ -59,7 +61,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                         User.vm({ regions: this.originUser.regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
                                         ga('send', 'event', 'region', 'update', 'region update success', 1);
 
-                                        //Если был установлена фильтрация по Домашнему региону, отменяем её
+                                        // Если был установлена фильтрация по Домашнему региону, отменяем её
                                         if (valPrev === 'home') {
                                             this.changeSetting('r_as_home', false, true);
                                         }
@@ -68,7 +70,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             } else if (valNew === 'list') {
                                 this.regionFilterSelect();
 
-                                //Если был установлена фильтрация по Домашнему региону, отменяем её
+                                // Если был установлена фильтрация по Домашнему региону, отменяем её
                                 if (valPrev === 'home') {
                                     this.changeSetting('r_as_home', false, true);
                                 }
@@ -155,7 +157,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
             socket.once('setWatersignCustomResult', function (result) {
-                if (result && !result.error && result.saved) {
+                if (result && !result.error) {
                     var photo_watermark_add_sign = result.photo_watermark_add_sign || false;
                     var watersignCustom = result.watersignCustom || '';
 
@@ -166,6 +168,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     this.originUser.watersignCustom = watersignCustom;
                     this.u.watersignCustom(_.random(9)); // Ugly hack to invoke watersignCustomChanged computing
                     this.u.watersignCustom(watersignCustom);
+                } else {
+                    window.noty({
+                        text: result && result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true
+                    });
                 }
             }, this);
             socket.emit('setWatersignCustom', { login: this.u.login(), watersign: this.u.watersignCustom() });
@@ -224,12 +230,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 return;
             }
             socket.once('changeUserSettingResult', function (result) {
-                if (result && !result.error && result.saved) {
+                var error = !result || result.error;
+
+                if (error) {
+                    window.noty({
+                        text: result && result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true
+                    });
+                } else {
                     this.u.settings[result.key](result.val);
                     this.originUser.settings[result.key] = result.val;
                 }
+
                 if (_.isFunction(cb)) {
-                    cb.call(ctx, result);
+                    cb.call(ctx, error, result);
                 }
             }, this);
             socket.emit('changeUserSetting', { login: this.u.login(), key: key, val: val });
