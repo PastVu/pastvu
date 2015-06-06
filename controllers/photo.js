@@ -468,6 +468,24 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
     });
 });
 
+function getUserWaterSign(user) {
+    var watersignOption = user.settings && user.settings.photo_watermark_add_sign;
+    var watersign;
+
+    // If user watersign option is not valid, take default value
+    if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(watersignOption) < 0) {
+        watersignOption = settings.getUserSettingsDef().photo_watermark_add_sign;
+    }
+
+    if (watersignOption === 'custom' && user.watersignCustom) {
+        watersign = user.watersignCustom;
+    } else if (watersignOption === false) {
+        watersign = false;
+    }
+
+    return watersign;
+}
+
 /**
  * Создает фотографии в базе данных
  * @param socket Сессия пользователя
@@ -511,19 +529,7 @@ var createPhotos = Bluebird.method(function (socket, data) {
             }
             var now = Date.now();
             var next = count.next - data.length + 1;
-            var watersignOption = user.settings && user.settings.photo_watermark_add_sign;
-            var watersign;
-
-            // If user watersign option is not valid, take default value
-            if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(watersignOption) < 0) {
-                watersignOption = settings.getUserSettingsDef().photo_watermark_add_sign;
-            }
-
-            if (watersignOption === 'custom' && user.watersignCustom) {
-                watersign = user.watersignCustom;
-            } else if (watersignOption === false) {
-                watersign = false;
-            }
+            var watersign = getUserWaterSign(user);
 
             return Bluebird.all(data.map(function (item, i) {
                 var photo = new Photo({
@@ -1938,7 +1944,7 @@ var getBounds = Bluebird.method(function (data) {
         });
 });
 
-// Отправляет выбранные фото на конвертацию
+// Sends selected photos for convert (By admin, whom pressed reconvert button on photo page)
 var convertPhotos = Bluebird.method(function (iAm, data) {
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
@@ -1949,7 +1955,7 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
 
     var cids = [];
 
-    for (var i = data.length; i--;) {
+    for (var i = 0; i < data.length; i++) {
         data[i].cid = Number(data[i].cid);
         if (data[i].cid > 0) {
             cids.push(data[i].cid);
@@ -1959,9 +1965,20 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
-    return Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true })
-        .then(function () {
-            return PhotoConverter.addPhotos(data, 3);
+    return Photo
+        .find({ cid: { $in: cids } }, { cid: 1, user: 1 }, { lean: true })
+        .populate({ path: 'user', select: { _id: 0, login: 1, watersignCustom: 1, settings: 1 } })
+        .execAsync()
+        .then(function (photos) {
+            var converterData = photos.map(function (photo) {
+                return { cid: photo.cid, watersign: getUserWaterSign(photo.user) };
+            });
+
+            if (converterData.length) {
+                Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true });
+            }
+
+            return PhotoConverter.addPhotos(converterData, 3);
         });
 });
 
