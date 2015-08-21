@@ -274,6 +274,9 @@ var core = {
                 var userObj = _session.getOnline(null, photo.user);
                 var promiseProps = {};
                 var regionFields;
+                var userSelectField;
+                var shouldBeEdit = this.can.edit &&
+                    (params.forEdit || params.fullView && photo.s === status.NEW && photo.user.equals(iAm.user._id));
 
                 if (userObj) {
                     photo = photo.toObject();
@@ -285,17 +288,24 @@ var core = {
                         sex: userObj.user.sex,
                         online: true
                     };
+                    if (shouldBeEdit) {
+                        photo.user.settings = userObj.user.settings;
+                        photo.user.watersignCustom = userObj.user.watersignCustom;
+                    }
                     promiseProps.photo = photo;
                 } else {
-                    promiseProps.photo = photo.populateAsync({
-                        path: 'user',
-                        select: { _id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1 }
-                    }).then(function (photo) {
-                        if (!photo) {
-                            throw { message: msg.noPhoto };
-                        }
-                        return photo.toObject();
-                    });
+                    userSelectField = { _id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1 };
+                    if (shouldBeEdit) {
+                        userSelectField.settings = 1;
+                        userSelectField.watersignCustom = 1;
+                    }
+                    promiseProps.photo = photo.populateAsync({ path: 'user', select: userSelectField })
+                        .then(function (photo) {
+                            if (!photo) {
+                                throw { message: msg.noPhoto };
+                            }
+                            return photo.toObject();
+                        });
                 }
 
                 if (photo.geo) {
@@ -468,22 +478,26 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
     });
 });
 
-function getUserWaterSign(user) {
-    var watersignOption = user.settings && user.settings.photo_watermark_add_sign;
-    var watersign;
+function getUserWaterSign(user, photo) {
+    var result;
+    var photoOption = photo && photo.watersignOption;
+    var userOption = user.settings && user.settings.photo_watermark_add_sign;
+    var validOptionValues = settings.getUserSettingsVars().photo_watermark_add_sign;
+
+    if (validOptionValues.indexOf(photoOption) > -1) {
+        result = photoOption === 'custom' && photo.watersignCustom ? photo.watersignCustom : photoOption;
+    }
+
+    if (result !== undefined) {
+        return result;
+    }
 
     // If user watersign option is not valid, take default value
-    if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(watersignOption) < 0) {
-        watersignOption = settings.getUserSettingsDef().photo_watermark_add_sign;
+    if (validOptionValues.indexOf(userOption) < 0) {
+        userOption = settings.getUserSettingsDef().photo_watermark_add_sign;
     }
 
-    if (watersignOption === 'custom' && user.watersignCustom) {
-        watersign = user.watersignCustom;
-    } else if (watersignOption === false) {
-        watersign = false;
-    }
-
-    return watersign;
+    return userOption === 'custom' && user.watersignCustom ? user.watersignCustom : userOption;
 }
 
 /**
@@ -1262,9 +1276,9 @@ var givePhotoForPage = Bluebird.method(function (iAm, data) {
         throw ({ message: msg.badParams });
     }
 
-    return core.givePhoto(iAm, { cid: cid, countView: true })
+    return core.givePhoto(iAm, { cid: cid, fullView: true, countView: !data.forEdit, forEdit: data.forEdit })
         .spread(function (photo, can) {
-            return { photo: photo, can: can };
+            return { photo: photo, can: can, forEdit: !!photo.user.settings };
         });
 });
 
@@ -1764,6 +1778,16 @@ var photoValidate = function (values) {
         result.address = undefined;
     }
 
+    if (values.watersignOption !== undefined && settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(values.watersignOption) > -1) {
+        result.watersignOption = values.watersignOption;
+    }
+
+    if (_.isString(values.watersignCustom) && values.watersignCustom.length) {
+        result.watersignCustom = values.watersignCustom;
+    } else if (values.watersignCustom === null) {
+        result.watersignCustom = undefined;
+    }
+
     return result;
 };
 
@@ -1803,7 +1827,14 @@ var savePhoto = function (iAm, data) {
             }, this);
 
             // Новые значения действительно изменяемых свойств
-            newValues = Utils.diff(_.pick(changes, 'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author'), this.oldPhotoObj);
+            newValues = Utils.diff(
+                _.pick(
+                    changes,
+                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author', 'watersignOption', 'watersignCustom'
+                ),
+                this.oldPhotoObj
+            );
+
             if (_.isEmpty(newValues) && !changes.hasOwnProperty('region')) {
                 throw { emptySave: true };
             }
@@ -1853,6 +1884,16 @@ var savePhoto = function (iAm, data) {
             // Проверяем, что заполненны обязательные поля для опубликованных
             if (this.photo.s === status.READY || this.photo.s === status.PUBLIC) {
                 photoCheckPublickRequired(this.photo);
+            }
+
+            // If photo individual watersign setting changed, sending it to reconvert
+            if (newValues.watersignOption !== this.oldPhotoObj.watersignOption || newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
+                this.reconvert = true;
+                this.photo.convqueue = true;
+
+                if (newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
+                    this.photo.markModified('watersignOption');
+                }
             }
 
             if (this.saveHistory) {
@@ -1910,11 +1951,15 @@ var savePhoto = function (iAm, data) {
                 savePhotoHistory(iAm, this.oldPhotoObj, this.photo, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate, null, this.parsedFileds);
             }
 
+            if (this.reconvert) {
+                PhotoConverter.addPhotos([{ cid: this.photo.cid, watersign: getUserWaterSign(this.photo.user, this.photo) }], 2);
+            }
+
             // Заново выбираем данные для отображения
             return core.givePhoto(iAm, { cid: this.photo.cid, rel: this.rel });
         })
         .spread(function (photo, can) {
-            return { photo: photo, can: can };
+            return { photo: photo, can: can, reconvert: this.reconvert };
         })
         .catch(function (err) {
             if (err.changed === true) {
@@ -1966,12 +2011,12 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
     }
 
     return Photo
-        .find({ cid: { $in: cids } }, { cid: 1, user: 1 }, { lean: true })
+        .find({ cid: { $in: cids } }, { cid: 1, user: 1, watersignOption: 1, watersignCustom: 1 }, { lean: true })
         .populate({ path: 'user', select: { _id: 0, login: 1, watersignCustom: 1, settings: 1 } })
         .execAsync()
         .then(function (photos) {
             var converterData = photos.map(function (photo) {
-                return { cid: photo.cid, watersign: getUserWaterSign(photo.user) };
+                return { cid: photo.cid, watersign: getUserWaterSign(photo.user, photo) };
             });
 
             if (converterData.length) {

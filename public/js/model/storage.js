@@ -1,7 +1,4 @@
-/*global define:true*/
 define(['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'socket!', 'globalVM', 'model/User', 'model/Photo'], function ($, _, ko, ko_mapping, Utils, socket, globalVM, User, Photo) {
-    'use strict';
-
     var storage = {
         users: {},
         photos: {},

@@ -190,7 +190,7 @@ async.waterfall([
                     logger404.error(JSON.stringify({
                         url: req.url,
                         method: req.method,
-                        ua: req.headers && req.headers['user-agent'],
+                        ua: req.headers && req.headers['usestatic404r-agent'],
                         referer: req.headers && req.headers.referer
                     }));
                     res.statusCode = status404Code;

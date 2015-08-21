@@ -2,12 +2,13 @@
  * Модель страницы фотографии
  */
 define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, fields, statuses, jade) {
-    'use strict';
-
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     var statusKeys = statuses.keys;
     var statusNums = statuses.nums;
+    var isYes = function (evt) {
+        return !!evt.target.classList.contains('yes');
+    };
 
     function confirm(params) {
         return window.noty({
@@ -118,8 +119,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     if (params.onOk) {
                         params.onOk.call(params.ctx);
                     }
-
-
                 }
                 }
             ]
@@ -151,7 +150,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             force: true
         });
     }
-
 
     return Cliche.extend({
         jade: jade,
@@ -225,6 +223,35 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     this.setMessage();
                 }
             }, this);
+
+            this.watersignOption = this.co.watersignOption = ko.computed(function () {
+                var photoOption = self.p.watersignOption();
+                return photoOption !== undefined ? photoOption : self.p.user.settings.photo_watermark_add_sign();
+            });
+            this.watersigncheck = this.co.watersigncheck = ko.computed({
+                read: function () {
+                    var current = self.watersignOption();
+
+                    if (!current) {
+                        return false;
+                    }
+
+                    return String(current);
+                },
+                write: function (valNew) {
+                    if (valNew === 'true') {
+                        valNew = true;
+                    }
+                    self.p.watersignOption(valNew);
+                },
+                owner: this
+            });
+            this.watersignCustomChanged = this.co.watersignCustomChanged = ko.computed({
+                read: function () {
+                    return self.originData && self.p.watersignCustom() !== self.originData.watersignCustom;
+                },
+                owner: this
+            });
 
             var userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
             this.userInfo = this.co.userInfo = ko.computed(function () {
@@ -390,19 +417,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             if (self.p && _.isFunction(self.p.cid) && self.p.cid() !== cid) {
                 self.photoLoading(true);
-
                 self.commentsVM.deactivate();
 
-                storage.photo(cid, function (data) {
-                    var editModeCurr = self.edit();
-                    var editModeNew; // Если фото новое и пользователь - владелец, открываем его на редактирование
+                this.receivePhoto(cid, false, function (err, data) {
+                    if (!err && data) {
+                        var editModeCurr = self.edit();
+                        var editModeNew = !!data.forEdit;
 
-                    if (data) {
-                        self.rechargeData(data.origin, data.can);
+                        self.rechargeData(data.photo, data.can || Photo.canDef);
 
                         Utils.title.setTitle({ title: self.p.title() });
-
-                        editModeNew = self.can.edit() && self.IOwner() && self.p.s() === statusKeys.NEW;
 
                         if (self.photoLoadContainer) {
                             self.photoLoadContainer.off('load').off('error');
@@ -438,7 +462,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         }
                         ga('send', 'pageview', '/p');
                     }
-                });
+                }, this);
             } else {
                 if (self.toFrag || self.toComment) {
                     self.scrollTimeout = setTimeout(self.scrollToBind, 50);
@@ -449,6 +473,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     self.destroyHistory();
                 }
             }
+        },
+
+        receivePhoto: function (cid, edit, cb, ctx) {
+            socket.once('takePhoto', function (data) {
+                var error = !data || data.error;
+
+                if (!error) {
+                    Photo.factory(data.photo, 'full', 'd', data.forEdit ? 'middle' : 'base');
+                }
+
+                cb.call(ctx, error, data);
+            });
+            socket.emit('givePhoto', { cid: cid, forEdit: edit });
         },
 
         loggedInHandler: function () {
@@ -509,27 +546,25 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         //Пересчитывает все размеры, зависимые от размера окна
         sizesCalc: function () {
-            var rightPanelW = this.$dom.find('.rightPanel').width(),
-                userRibbonW = rightPanelW - 85,
+            var rightPanelW = this.$dom.find('.rightPanel').width();
+            var userRibbonW = rightPanelW - 85;
 
-                thumbW,
-                thumbH,
+            var thumbW;
+            var thumbH;
 
-                thumbWV1 = 84, //Минимальная ширина thumb
-                thumbWV2 = 90, //Максимальная ширина thumb
-                thumbMarginMin = 1,
-                thumbMarginMax = 7,
-                thumbMargin,
-                thumbNMin = 2,
-                thumbNV1,
-                thumbNV2,
-                thumbNV1User,
-                thumbNV2User;
+            var thumbWV1 = 84; //Минимальная ширина thumb
+            var thumbWV2 = 90; //Максимальная ширина thumb
+            var thumbMarginMin = 1;
+            var thumbMarginMax = 7;
+            var thumbMargin;
+            var thumbNMin = 2;
+            var thumbNV1;
+            var thumbNV2;
+            var thumbNV1User;
 
             thumbNV1 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
             thumbNV2 = Math.max(thumbNMin, (rightPanelW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
             thumbNV1User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV1 + thumbMarginMin) >> 0);
-            thumbNV2User = Math.max(thumbNMin, (userRibbonW + thumbMarginMin) / (thumbWV2 + thumbMarginMin) >> 0);
 
             if (thumbNV1 === thumbNV2) {
                 thumbW = thumbWV2;
@@ -652,8 +687,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
         //Отслеживанием ввод, чтобы подгонять desc под высоту текста
         descKeyup: function (evt) {
-            var $input = $(evt.target),
-                realHeight = this.descCheckHeight($input);
+            var $input = $(evt.target);
+            var realHeight = this.descCheckHeight($input);
 
             //Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
             //(т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
@@ -664,9 +699,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         //Подгоняем desc под высоту текста.
         //Если высота изменилась, возвращаем её, если нет - false
         descCheckHeight: function ($input) {
-            var height = $input.height() + 2, //2 - border
-                heightScroll = ($input[0].scrollHeight) || height,
-                content = $.trim($input.val());
+            var height = $input.height() + 2; //2 - border
+            var heightScroll = ($input[0].scrollHeight) || height;
+            var content = $.trim($input.val());
 
             if (!content) {
                 $input.height('auto');
@@ -825,6 +860,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
+        watersignAdd: function (data, evt) {
+            var flag = isYes(evt);
+            var user = this.p.user;
+            var newOption;
+
+            if (!flag) {
+                newOption = false;
+            } else {
+                if (!this.p.watersignCustom() && user.settings.photo_watermark_add_sign() === 'custom' && user.watersignCustom()) {
+                    this.p.watersignCustom(user.watersignCustom());
+                }
+
+                newOption = this.p.watersignCustom() ? 'custom' : true;
+            }
+
+            this.p.watersignOption(newOption);
+        },
+
         notifyReady: function () {
             window.noty(
                 {
@@ -833,6 +886,24 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     layout: 'topRight',
                     force: true,
                     timeout: 6000,
+                    closeWith: ['click'],
+                    animation: {
+                        open: { height: 'toggle' },
+                        close: { height: 'toggle' },
+                        easing: 'swing',
+                        speed: 500
+                    }
+                }
+            );
+        },
+        notifyReconvert: function () {
+            window.noty(
+                {
+                    text: 'Вы изменили настройки подписи на вотермарке фотографии.<br>Изображение изменится в течении нескольких минут, обновите страницу позже',
+                    type: 'information',
+                    layout: 'topRight',
+                    force: true,
+                    timeout: 5000,
                     closeWith: ['click'],
                     animation: {
                         open: { height: 'toggle' },
@@ -998,30 +1069,53 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
         editSave: function () {
             var self = this;
+
+            if (!self.can.edit()) {
+                return;
+            }
+
+            self.edit() ? self.savePhoto() : self.editPhoto();
+        },
+        editCancel: function () {
+            var self = this;
+
+            if (self.edit()) {
+                this.p = Photo.vm(self.originData, this.p);
+                delete self.descEditOrigin;
+                delete self.sourceEditOrigin;
+                delete self.authorEditOrigin;
+
+                self.edit(false);
+            }
+        },
+        editPhoto: function () {
+            var self = this;
+
+            this.receivePhoto(self.p.cid(), true, function (err, data) {
+                if (!err && data && data.forEdit) {
+                    // Если включаем редактирование, обнуляем количество новых комментариев,
+                    // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
+                    data.photo.ccount_new = 0;
+
+                    self.rechargeData(data.photo, data.can || Photo.canDef);
+                    self.edit(true);
+                }
+            }, this);
+
+        },
+        savePhoto: function () {
+            var self = this;
             var p = self.p;
             var origin = self.originData;
             var cid = p.cid();
 
-            if (!self.can.edit()) {
-                return false;
-            }
-
-            if (!self.edit()) {
-                self.edit(true);
-                // Если включаем редактирования, обнуляем количество новых комментариев,
-                // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
-                p.ccount_new(0);
-                origin.ccount_new = 0;
-                return false;
-            }
-
             var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address')
+                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignOption', 'watersignCustom')
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 
                     if (!_.isEqual(value, valueOrigin)) {
-                        if (!_.isNumber(value) && _.isEmpty(value)) {
+                        if (!_.isNumber(value) && !_.isBoolean(value) && _.isEmpty(value)) {
                             result[key] = null;
                         } else {
                             result[key] = value;
@@ -1090,6 +1184,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 if (p.s() === statusKeys.NEW) {
                                     self.notifyReady();
                                 }
+                                if (data.reconvert) {
+                                    self.notifyReconvert();
+                                }
 
                                 // Заново запрашиваем ближайшие фотографии
                                 self.getNearestRibbon(8, self.applyNearestRibbon, self);
@@ -1105,20 +1202,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.edit(false);
             }
         },
-        editCancel: function () {
-            var self = this;
 
-            if (self.edit()) {
-                this.p = Photo.vm(self.originData, this.p);
-                delete self.descEditOrigin;
-                delete self.sourceEditOrigin;
-                delete self.authorEditOrigin;
-
-                self.edit(false);
-            }
-        },
-
-        revoke: function (data, event) {
+        revoke: function () {
             var self = this;
             var confimingChanges;
             var cid = self.p.cid();
@@ -1172,7 +1257,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
-        ready: function (data, event) {
+        ready: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1218,7 +1303,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }());
         },
 
-        toRevision: function (data, event) {
+        toRevision: function () {
             var self = this;
 
             if (!self.can.revision()) {
@@ -1270,7 +1355,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
-        reject: function (data, event) {
+        reject: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1321,7 +1406,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
-        approve: function (data, event) {
+        approve: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1365,7 +1450,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }());
         },
 
-        toggleDisable: function (data, event) {
+        toggleDisable: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1429,7 +1514,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
-        remove: function (data, event) {
+        remove: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1490,7 +1575,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             });
         },
 
-        restore: function (data, event) {
+        restore: function () {
             var self = this;
             var p = self.p;
             var cid = p.cid();
@@ -1569,11 +1654,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         // Стандартная обработка поступающего массива лент фотографий,
         // если пришедшая фотография есть, она вставляется в новый массив
         processRibbonItem: function (incomingArr, targetArr) {
-            var resultArr = [],
-                item,
-                itemExistFunc = function (element) {
-                    return element.cid === item.cid;
-                };
+            var resultArr = [];
+            var item;
+            var itemExistFunc = function (element) {
+                return element.cid === item.cid;
+            };
 
             for (var i = 0; i < incomingArr.length; i++) {
                 item = incomingArr[i];
@@ -1598,9 +1683,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.emit('giveUserPhotosAround', { cid: this.p.cid(), limitL: left, limitR: right });
         },
         applyUserRibbon: function () {
-            var n = this.thumbNUser(),
-                nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length),
-                newRibbon = this.ribbonUserLeft.slice(-nLeft);
+            var n = this.thumbNUser();
+            var nLeft = Math.min(Math.max(Math.ceil(n / 2), n - this.ribbonUserRight.length), this.ribbonUserLeft.length);
+            var newRibbon = this.ribbonUserLeft.slice(-nLeft);
 
             Array.prototype.push.apply(newRibbon, this.ribbonUserRight.slice(0, n - nLeft));
             this.userRibbon(this.setRibbonStatus(newRibbon));
@@ -1657,11 +1742,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         processRanks: function (ranks) {
-            var rank,
-                rnks = '',
-                r;
+            var rank;
+            var rnks = '';
 
-            for (r = 0; r < ranks.length; r++) {
+            for (var r = 0; r < ranks.length; r++) {
                 rank = globalVM.ranks[ranks[r]];
                 if (rank) {
                     rnks += '<img class="rank" src="' + rank.src + '" title="' + rank.title + '">';
@@ -1807,8 +1891,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         fragAreaCreate: function (selections) {
             if (!this.fragArea) {
                 var $parent = this.$dom.find('.imgMiddleWrap');
-                var ws = this.p.ws(), hs = this.p.hs();
-                var ws2, hs2;
+                var ws = this.p.ws();
+                var hs = this.p.hs();
+                var ws2;
+                var hs2;
 
                 if (!selections) {
                     ws2 = ws / 2 >> 0;
@@ -1899,7 +1985,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.photoLoadContainer = null;
             this.photoLoading(false);
         },
-        onPhotoError: function (event) {
+        onPhotoError: function () {
             this.photoSrc('');
             this.photoLoadContainer = null;
             this.photoLoading(false);

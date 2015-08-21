@@ -1,10 +1,8 @@
 /**
  * Модель статусов фотографии
  */
-define(['underscore'], function (_) {
-    'use strict';
-
-    var fields = {
+define(['underscore'], function () {
+    return {
         s: 'Статус',
         y: 'Год',
         geo: 'Координаты',
@@ -26,8 +24,13 @@ define(['underscore'], function (_) {
             nw: 'Северо-Запад',
             aero: 'Аэро/Спутник'
         },
-        dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero']
+        dirValsArr: ['w', 'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'aero'],
+        watersign: {
+            'title': 'Подпись на вотермарке фотографии',
+            'profile': 'Как указано в профиле',
+            'individual': 'Индивидуально',
+            'default': 'Настройки системы',
+            'text': 'Текст'
+        }
     };
-
-    return fields;
 });

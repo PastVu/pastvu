@@ -11,6 +11,10 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
 
             online: false
         },
+        middle: {
+            settings: {},
+            watersignCustom: ''
+        },
         full: {
             email: '',
             firstName: '',
@@ -19,12 +23,9 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             //role
             role: 0,
 
-            settings: {},
-
             regionHome: null, //Спопулированный домашний регион
             regions: [], //Спопулированные регионы для фильтрации по умолчанию
             mod_regions: [], //Спопулированные регионы модератора
-            watersignCustom: '',
 
             nowaterchange: false,
 
@@ -54,7 +55,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
         }
     };
 
-    _.assign(defaults.full, defaults.base);
+    _.assign(defaults.middle, defaults.base);
+    _.assign(defaults.full, defaults.middle);
 
     /**
      * Фабрика. Из входящих данных создает полноценный объект, в котором недостающие поля заполнены дефолтными значениями

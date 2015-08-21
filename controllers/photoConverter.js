@@ -250,7 +250,7 @@ async function conveyerControl() {
 
         photo.conv = true;
         photoConv.converting = true;
-        await * [photo.saveAsync(), photoConv.saveAsync()];
+        await* [photo.saveAsync(), photoConv.saveAsync()];
 
         try {
             await conveyerStep(photo, photoConv);
@@ -263,7 +263,7 @@ async function conveyerControl() {
 
         photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
         photo.convqueue = undefined;
-        await * [photo.saveAsync(), photoConv.removeAsync()];
+        await* [photo.saveAsync(), photoConv.removeAsync()];
 
         working -= 1;
         if (conveyerLength) {
@@ -297,7 +297,11 @@ function getWatertext(photo, photoConv) {
     var watersign = '  ';
 
     if (photoConv.watersign !== false) {
-        watersign += photoConv.watersign || `uploaded by ${photo.user.login}`;
+        if (_.isString(photoConv.watersign) && photoConv.watersign.length) {
+            watersign += photoConv.watersign;
+        } else {
+            watersign += `uploaded by ${photo.user.login}`;
+        }
     }
 
     return `pastvu.com/p/${photo.cid}${watersign}`;

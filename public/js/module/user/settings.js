@@ -148,7 +148,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         watermarkShow: function (data, evt) {
             this.changeSetting('photo_show_watermark', isYes(evt), true);
         },
-        watermarkAdd: function (data, evt) {
+        watersignAdd: function (data, evt) {
             var flag = isYes(evt);
             var watersignCustom = this.u.watersignCustom();
             var newVal = !flag ? false : watersignCustom ? 'custom' : true;
