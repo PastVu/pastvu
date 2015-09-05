@@ -40,4 +40,5 @@ public/style/**/*.css
 ######################
 !.gitignore
 !.eslintrc
+!.eslintignore
 !.editorconfig

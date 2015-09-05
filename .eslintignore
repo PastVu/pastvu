@@ -1,0 +1,8 @@
+# Common
+.git/**
+.idea/**
+
+# App specific
+logs/**
+misc/**
+views/**
