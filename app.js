@@ -300,6 +300,14 @@ async.waterfall([
                 serveClient: false
             });
 
+            /**
+             * Set zero for unlimited listeners
+             * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
+             */
+            httpServer.setMaxListeners(0);
+            io.sockets.setMaxListeners(0);
+            process.setMaxListeners(0);
+
             var _session = require('./controllers/_session.js');
             io.use(_session.handleSocket);
             _session.loadController(app, db, io);
@@ -360,12 +368,6 @@ async.waterfall([
                 process.exit(1); // Запускаем в setTimeout, т.к. в некоторых консолях в противном случае не выводятся предыдущие console.log
             }, 100);
         } else {
-            /**
-             * Set zero for unlimited listeners
-             * http://nodejs.org/docs/latest/api/events.html#events_emitter_setmaxlisteners_n
-             */
-            httpServer.setMaxListeners(0);
-            process.setMaxListeners(0);
             /**
              * Handling uncaught exceptions
              */

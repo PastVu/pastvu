@@ -886,6 +886,8 @@ module.exports.loadController = function (a, db, io) {
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 
+        socket.setMaxListeners(0); //TODO: Make only one listener with custom router
+
         socket.on('giveInitData', function () {
             var usObj = hs.usObj,
                 session = hs.session;
