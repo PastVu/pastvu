@@ -122,7 +122,7 @@
         "react/require-extension": [1, {"extensions": [".js", ".jsx"]}],
         "react/self-closing-comp": 1,
         "react/wrap-multilines": [1, {"declaration": false, "assignment": false, "return": true}],
-        "react/jsx-boolean-value": [2, "always"],
+        "react/jsx-boolean-value": 0,
         "react/jsx-max-props-per-line": 0,
         "react/jsx-no-duplicate-props": 1,
         "react/jsx-no-undef": 1,

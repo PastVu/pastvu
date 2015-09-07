@@ -9,31 +9,31 @@ import { default as moment } from 'moment';
 import { default as ms } from 'ms';
 import { default as Utils } from '../commons/Utils';
 
-var sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
-var mkdirpAsync = Bluebird.promisify(mkdirp);
-var execAsync = Bluebird.promisify(exec);
-var dbNative;
-var dbEval;
-var Photo;
-var PhotoConveyer;
-var PhotoConveyerError;
-var STPhotoConveyer;
-var logger = log4js.getLogger('photoConverter.js');
+const sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
+const mkdirpAsync = Bluebird.promisify(mkdirp);
+const execAsync = Bluebird.promisify(exec);
+const logger = log4js.getLogger('photoConverter.js');
+let dbNative;
+let dbEval;
+let Photo;
+let PhotoConveyer;
+let PhotoConveyerError;
+let STPhotoConveyer;
 
-var conveyerEnabled = true;
-var conveyerLength = 0;
-var conveyerMaxLength = 0;
-var conveyerConverted = 0;
+let conveyerEnabled = true;
+let conveyerLength = 0;
+let conveyerMaxLength = 0;
+let conveyerConverted = 0;
 
-var sourceDir = global.appVar.storePath + 'private/photos/';
-var targetDir = global.appVar.storePath + 'public/photos/';
-var waterDir = path.join(__dirname, '/../misc/watermark/');
+const sourceDir = global.appVar.storePath + 'private/photos/';
+const targetDir = global.appVar.storePath + 'public/photos/';
+const waterDir = path.join(__dirname, '/../misc/watermark/');
 
-var maxWorking = 6; // Possible to convert in parallel
-var goingToWork = 0; // Выборка для дальнейшей конвертации
-var working = 0; // Now converting
+const maxWorking = 6; // Possible to convert in parallel
+let goingToWork = 0; // Выборка для дальнейшей конвертации
+let working = 0; // Now converting
 
-var imageVersions = {
+const imageVersions = {
     a: {
         parent: sourceDir,
         desc: 'Origin with watermark',
@@ -62,10 +62,10 @@ var imageVersions = {
         height: 164,
         strip: true,
         filter: 'Sinc',
-        gravity: function (w, h, w2, h2) {
-            var result = { gravity: 'Center', extent: { w: w2, h: h2 } };
-            var aspect = w / h;
-            var newH; // Высота после пропорционального уменьшения ширины
+        gravity(w, h, w2, h2) {
+            const result = { gravity: 'Center', extent: { w: w2, h: h2 } };
+            const aspect = w / h;
+            let newH; // Высота после пропорционального уменьшения ширины
 
             if (aspect <= 0.75) {
                 // Портретная вытянутая более чем на 1.3(3)
@@ -79,6 +79,7 @@ var imageVersions = {
                 newH = h * w2 / w;
                 result.extent.options = '+0-' + (Math.min(newH * 0.1, (newH - h2) / 2) >> 0);
             }
+
             return result;
         },
         postfix: '^'
@@ -110,7 +111,7 @@ var imageVersions = {
         height: 60,
         gravity: 'Center',
         postfix: '^'
-        //crop: true // Crop занимает больше места чем ресайз http://www.imagemagick.org/discourse-server/viewtopic.php?f=1&t=20415
+        // crop: true // Crop занимает больше места чем ресайз http://www.imagemagick.org/discourse-server/viewtopic.php?f=1&t=20415
     },
     x: {
         parent: 's',
@@ -122,13 +123,13 @@ var imageVersions = {
         postfix: '^'
     }
 };
-var imageVersionsPriority = fillImgPrior(sourceDir, 0);
-var imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => (imageVersionsPriority[a] - imageVersionsPriority[b]));
+const imageVersionsPriority = fillImgPrior(sourceDir, 0);
+const imageVersionsKeys = Object.keys(imageVersionsPriority).sort((a, b) => (imageVersionsPriority[a] - imageVersionsPriority[b]));
 
-var waterMarkGen = (function () {
-    var waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
-    var logo = path.normalize(waterDir + 'logo.png');
-    var base = {
+const waterMarkGen = (function () {
+    const waterFontPath = path.normalize(waterDir + 'AdobeFanHeitiStd-Bold.otf');
+    const logo = path.normalize(waterDir + 'logo.png');
+    const base = {
         height: 600,
         pointsize: 12,
         splice: 14,
@@ -139,8 +140,8 @@ var waterMarkGen = (function () {
     };
 
     return function (options) {
-        var multiplier = 1;
-        var params = base;
+        let multiplier = 1;
+        let params = base;
 
         if (options.h > base.height) {
             multiplier = options.h / base.height;
@@ -149,15 +150,17 @@ var waterMarkGen = (function () {
             });
         }
 
-        var offset = (params.splice - params.pointsize) / 2;
-        var offsetBottomText = (Utils.isOdd(params.pointsize) ? Math.floor(offset) : offset) + Math.floor(offset / 2);
+        const offset = (params.splice - params.pointsize) / 2;
+        let offsetBottomText = (Utils.isOdd(params.pointsize) ? Math.floor(offset) : offset) + Math.floor(offset / 2);
+
         if (offsetBottomText > 4) {
             offsetBottomText += Math.floor(offset / 2);
         }
-        var textPosition = `+${Math.round(params.indent_logo_l + params.logo + params.indent_logo_r)}+${offsetBottomText}`;
+
+        const textPosition = `+${Math.round(params.indent_logo_l + params.logo + params.indent_logo_r)}+${offsetBottomText}`;
 
         return {
-            params: params,
+            params,
             commands: [
                 `-gravity South`,
                 `-background '#555555'`, // #285991
@@ -187,7 +190,7 @@ function fillImgPrior(parent, level) {
 
 // Собираем статистику конвейера на начало каждой 10-минутки
 function CollectConveyerStat() {
-    var st = new STPhotoConveyer({
+    const st = new STPhotoConveyer({
         stamp: new Date(+(moment().utc().startOf('minute'))),
         clength: conveyerMaxLength,
         converted: conveyerConverted
@@ -207,28 +210,28 @@ function CollectConveyerStat() {
  * Очищает конвейер, кроме тех фотографий, которые сейчас конвертируются
  */
 async function conveyerClear() {
-    var removed = 0;
     try {
-        removed = (await PhotoConveyer.removeAsync({ converting: { $exists: false } }))[0];
+        const removed = (await PhotoConveyer.removeAsync({ converting: { $exists: false } }))[0];
+
+        conveyerLength = await PhotoConveyer.countAsync({});
+        return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
     } catch (err) {
         return { message: err || 'Error occurred', error: true };
     }
-    conveyerLength = await PhotoConveyer.countAsync({});
-    return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
 }
 
 /**
  * Контроллер конвейера. Выбирает очередное фото из очереди и вызывает шаг конвейера
  */
 async function conveyerControl() {
-    var toWork = maxWorking - goingToWork - working;
+    const toWork = maxWorking - goingToWork - working;
 
     if (!conveyerEnabled || toWork < 1) {
         return;
     }
     goingToWork += toWork;
 
-    var files = await PhotoConveyer.find({ converting: { $exists: false } })
+    const files = await PhotoConveyer.find({ converting: { $exists: false } })
         .sort({ priority: 1, added: 1 })
         .limit(toWork)
         .execAsync();
@@ -239,12 +242,15 @@ async function conveyerControl() {
         return;
     }
 
-    for (let photoConv of files) {
+    for (const photoConv of files) {
         goingToWork -= 1;
         working += 1;
 
-        let photo = await Photo
-            .findOne({ cid: photoConv.cid }, { cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1 })
+        const photo = await Photo
+            .findOne(
+                { cid: photoConv.cid },
+                { cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1 }
+            )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .execAsync();
 
@@ -256,7 +262,8 @@ async function conveyerControl() {
             await conveyerStep(photo, photoConv);
             conveyerConverted += 1;
         } catch (err) {
-            let errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
+            const errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
+
             logger.error(errorObject);
             await new PhotoConveyerError(errorObject).saveAsync();
         }
@@ -273,7 +280,7 @@ async function conveyerControl() {
     }
 }
 
-var identifyImage = (src, format) =>
+const identifyImage = (src, format) =>
     new Bluebird((resolve, reject) => gm(src).identify(format, (err, result) => {
         if (err) {
             return reject(err);
@@ -288,23 +295,23 @@ var identifyImage = (src, format) =>
         resolve(result);
     }));
 
-//var writeImage = (dst, gmInstance) =>
-//    new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
+// const writeImage = (dst, gmInstance) =>
+// new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
 
-var originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
+const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 
 function getWatertext(photo, photoConv) {
-    var watersign = '  ';
+    let watersign = `pastvu.com/p/${photo.cid}`;
 
     if (photoConv.watersign !== false) {
         if (_.isString(photoConv.watersign) && photoConv.watersign.length) {
-            watersign += photoConv.watersign;
+            watersign += `  ${photoConv.watersign}`;
         } else {
-            watersign += `uploaded by ${photo.user.login}`;
+            watersign += `  uploaded by ${photo.user.login}`;
         }
     }
 
-    return `pastvu.com/p/${photo.cid}${watersign}`;
+    return watersign;
 }
 
 /**
@@ -312,13 +319,13 @@ function getWatertext(photo, photoConv) {
  * @param photo Объект фотографии
  */
 async function conveyerStep(photo, photoConv) {
-    var waterTxt = getWatertext(photo, photoConv);
-    var originSrcPath = path.normalize(sourceDir + photo.file);
-    var saveStandardSize = function (result) {
+    const waterTxt = getWatertext(photo, photoConv);
+    const originSrcPath = path.normalize(sourceDir + photo.file);
+    const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
         photo.hs = parseInt(result.h, 10) || undefined;
     };
-    var saveStandardSign = function (result) {
+    const saveStandardSign = function (result) {
         photo.signs = result.signature ? result.signature.substr(0, 7) : undefined;
     };
 
@@ -331,13 +338,13 @@ async function conveyerStep(photo, photoConv) {
             photo.sign = result.signature || undefined;
         });
 
-    for (let variantName of imageVersionsKeys) {
-        let original = variantName === 'a';
-        let variant = imageVersions[variantName];
-        let srcDir = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
-        let srcPath = path.normalize(srcDir + photo.file);
-        let dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5));
-        let dstPath = path.normalize(targetDir + variant.dir + photo.file);
+    for (const variantName of imageVersionsKeys) {
+        const isOriginal = variantName === 'a';
+        const variant = imageVersions[variantName];
+        const srcDir = variant.parent === sourceDir ? sourceDir : targetDir + imageVersions[variant.parent].dir;
+        const srcPath = path.normalize(srcDir + photo.file);
+        const dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5));
+        const dstPath = path.normalize(targetDir + variant.dir + photo.file);
 
         let commands = [`convert ${srcPath}`];
 
@@ -363,11 +370,11 @@ async function conveyerStep(photo, photoConv) {
                 commands.push(`-resize '${variant.width}x${variant.height}${variant.postfix || ''}'`);
 
                 if (variant.gravity) {
-                    // Превью генерируем путем вырезания аспекта из центра
+                    // Generating preview by cut aspect from center of photo
                     // Example http://www.jeff.wilcox.name/2011/10/node-express-imagemagick-square-resizing/
-                    let gravity = _.isFunction(variant.gravity) ?
+                    const gravity = _.isFunction(variant.gravity) ?
                         variant.gravity(photo.w, photo.h, variant.width, variant.height) : { gravity: variant.gravity };
-                    let extent = _.isObject(gravity) && gravity.extent ?
+                    const extent = _.isObject(gravity) && gravity.extent ?
                         gravity.extent : { w: variant.width, h: variant.height };
 
                     commands.push(`-gravity ${gravity.gravity}`);
@@ -377,7 +384,7 @@ async function conveyerStep(photo, photoConv) {
         }
 
         commands.push(dstPath);
-        //console.log(variantName, commands.join(' '));
+        // console.log(variantName, commands.join(' '));
         await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
         // For standard photo we must get result size before creating watermark, because it depends on those sizes
@@ -387,19 +394,19 @@ async function conveyerStep(photo, photoConv) {
         }
 
         if (variant.water) {
-            let watermark = waterMarkGen({
-                w: original ? photo.w : photo.ws,
-                h: original ? photo.h : photo.hs,
+            const watermark = waterMarkGen({
+                w: isOriginal ? photo.w : photo.ws,
+                h: isOriginal ? photo.h : photo.hs,
                 txt: waterTxt
             });
 
             commands.pop();
             commands = commands.concat(watermark.commands);
             commands.push(dstPath);
-            //console.log(variantName, commands.join(' '));
+            // console.log(variantName, commands.join(' '));
             await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
-            photo[original ? 'waterh' : 'waterhs'] = watermark.params.splice;
+            photo[isOriginal ? 'waterh' : 'waterhs'] = watermark.params.splice;
             if (variantName === 'd') {
                 photo.hs -= watermark.params.splice;
             }
@@ -407,8 +414,9 @@ async function conveyerStep(photo, photoConv) {
 
         // For standard photo we must get signature after watermark, to consider it as well
         if (variantName === 'd') {
-            await tryPromise(6, () => identifyImage(dstPath, '{"signature": "%#"}'), `identify sign ${variantName}-variant of photo ${photo.cid}`)
-                .then(saveStandardSign);
+            await tryPromise(
+                6, () => identifyImage(dstPath, '{"signature": "%#"}'), `identify sign ${variantName}-variant of photo ${photo.cid}`
+            ).then(saveStandardSign);
         }
 
         // Have a sleep to give file system time to save variant, for staying on the safe side
@@ -442,20 +450,19 @@ async function tryPromise(attemps, promiseGenerator, data, attemp) {
 }
 
 /**
- * Добавление в конвейер конвертации фотографий
- * @param data Массив объектов {cid: 123}
+ * Method for add photos to the conveyer
+ * @param data Array of objects like {cid: 123}
  * @param priority Priority of convertation in conveyer
  */
 export async function addPhotos(data, priority) {
-    var cid;
-    var toConvertObjs = [];
-    var stamp = new Date();
+    const toConvertObjs = [];
+    const stamp = new Date();
 
-    for (let photo of data) {
-        cid = Number(photo.cid);
+    for (const photo of data) {
+        const cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid: cid, watersign: photo.watersign, priority: priority || 4, added: stamp });
+            toConvertObjs.push({ cid, watersign: photo.watersign, priority: priority || 4, added: stamp });
         }
     }
 
@@ -476,7 +483,7 @@ export async function addPhotos(data, priority) {
  * @param params Объект
  */
 export async function addPhotosAll(params) {
-    var result = await dbEval('function (params) {return convertPhotosAll(params);}', [params], { nolock: true });
+    const result = await dbEval('function (params) {return convertPhotosAll(params);}', [params], { nolock: true });
 
     if (result && result.error) {
         throw { message: result.message || '' };
@@ -536,11 +543,11 @@ export function loadController(app, db, io) {
     });
 
     // Планируем запись статистики конвейера на начало следующей 10-минутки
-    var hourStart = +(moment().utc().startOf('hour'));
+    const hourStart = +(moment().utc().startOf('hour'));
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
         (function () {
             socket.on('conveyerStartStop', function (value) {
@@ -550,11 +557,10 @@ export function loadController(app, db, io) {
                         conveyerControl();
                     }
                 }
-                socket.emit('conveyerStartStopResult', {
-                    conveyerEnabled: conveyerEnabled
-                });
+                socket.emit('conveyerStartStopResult', { conveyerEnabled });
             });
         }());
+
         (function () {
             socket.on('conveyerClear', async function (value) {
                 if (value === true) {
@@ -569,26 +575,25 @@ export function loadController(app, db, io) {
                 socket.emit('getStatConveyer', data);
             }
 
-            socket.on('statConveyer', function () {
+            socket.on('statConveyer', async function () {
                 if (!hs.usObj.registered) {
-                    result({ message: 'Not authorized for statConveyer', error: true });
-                    return;
+                    return result({ message: 'Not authorized for statConveyer', error: true });
                 }
-                STPhotoConveyer.findAsync({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true })
-                    .then(function (docs) {
 
-                        for (var i = 0; i < docs.length; i++) {
-                            docs[i].stamp = docs[i].stamp.getTime();
-                        }
-                        result({ data: docs });
-                    });
+                const docs = await STPhotoConveyer.findAsync({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true });
+
+                for (const doc of docs) {
+                    doc.stamp = doc.stamp.getTime();
+                }
+
+                result({ data: docs });
             });
         }());
 
         (function statFast() {
             socket.on('giveStatFastConveyer', function () {
                 socket.emit('takeStatFastConveyer', {
-                    conveyerEnabled: conveyerEnabled,
+                    conveyerEnabled,
                     clength: conveyerLength,
                     cmaxlength: conveyerMaxLength,
                     converted: conveyerConverted
