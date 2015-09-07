@@ -701,6 +701,69 @@ Utils.addLeftZero = function (num) {
     return str.substr(str.length - 2, 2);
 };
 
+var times = (function () {
+    var msDay = 864e5;
+    var times = {
+        msDay: msDay, // Кол-во миллисекунд в дне
+        msWeek: 6048e5, // Кол-во миллисекунд в неделе
+        msYear: 0, // Кол-во миллисекунд в текущем году, вычисляется
+
+        midnight: null, // Миллисекунды полуночи текущего дня
+        midnightWeekAgo: null, // Миллисекунды полуночи семи дней назад
+        yearStart: null, // Миллисекунды начала текущего года
+        yearDays: null // Кол-во дней в текущем году
+    };
+
+    // Считаем переменные времен
+    (function timesRecalc() {
+        var current = new Date();
+        var currentYear = current.getFullYear();
+
+        times.midnight = new Date().setHours(0, 0, 0, 0);
+        times.midnightWeekAgo = times.midnight - times.msWeek;
+        times.yearStart = new Date(currentYear, 0, 1);
+        times.msYear = new Date(currentYear + 1, 0, 1) - times.yearStart;
+        times.yearDays = Math.floor(times.msYear / msDay);
+
+        // Планируем пересчет на первую миллисекунду следующего дня
+        setTimeout(timesRecalc, times.midnight + times.msDay - Date.now() + 1);
+    }());
+
+    return times;
+}());
+
+Utils.times = times;
+
+Utils.isThisYear = function (date) {
+    return new Date(date).getFullYear() === new Date().getFullYear();
+};
+
+Utils.isYesterday = function (date) {
+    return date >= times.midnight - times.msDay && date < times.midnight;
+};
+
+Utils.isToday = function (date) {
+    return date >= times.midnight && date < times.midnight + times.msDay;
+};
+
+Utils.hh_mm_ss = function (ms, utc, delimeter) {
+    if (!_.isDate(ms)) {
+        ms = new Date(ms);
+    }
+
+    if (!delimeter) {
+        delimeter = ':';
+    }
+
+    var hours = ms[utc ? 'getUTCHours' : 'getHours']();
+    var minutes = ms[utc ? 'getUTCMinutes' : 'getMinutes']();
+    var seconds = ms[utc ? 'getUTCSeconds' : 'getSeconds']();
+
+    return (hours > 9 ? hours : '0' + hours) +
+        delimeter + (minutes > 9 ? minutes : '0' + minutes) +
+        delimeter + (seconds > 9 ? seconds : '0' + seconds);
+};
+
 Utils.format = (function () {
     'use strict';
 

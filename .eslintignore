@@ -3,6 +3,7 @@
 .idea/**
 
 # App specific
+bin/run.js
 logs/**
 misc/**
 views/**

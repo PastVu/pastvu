@@ -19,12 +19,11 @@
 	"servePublic": true, /* Tell app.js serve out its public folder (js, css, etc). @Default true */
 	"serveStore": true, /* Tell app.js serve out store public folder.  @Default true */
 	"serveLog": true, /* Tell app.js serve out its logs folder (path: "logPath"). @Default true */
-	
+
 	"subdomains": "", /* Subdomains for serving store path's public folder divided by _.  @Default "" */
 	"gzip": true, /* Compress response data with gzip/deflate. If using nginx before nodejs, recommend to use gzip there and switch off here. @Default true */
 
 	"logPath": "", /* Folder for logs. @Default "./logs" */
-	"logUptimeInterval": 300000, /* Log uptime */
 	"manualGarbageCollect": 0, /* Manual invoke garbage collector in millisec.
 								  WARN: need to use with node flags --nouse-idle-notification --expose-gc
 								  If 0 - no manual collect. @Default 0 */

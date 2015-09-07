@@ -25,7 +25,8 @@
         "start": "node app.js"
     },
     "dependencies": {
-        "babel": "5.8.23",
+        "forever-monitor": "1.6.0",
+        "babel-core": "5.8.23",
         "express": "4.13.3",
         "compression": "1.5.2",
         "serve-index": "1.7.2",
@@ -39,6 +40,7 @@
         "lodash": "3.10.1",
         "bluebird": "2.9.34",
         "underscore.string": "3.2.2",
+        "yargs": "3.24.0",
         "ms": "0.7.1",
         "moment": "2.7.0",
         "useragent": "2.1.7",
