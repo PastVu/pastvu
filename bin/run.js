@@ -13,7 +13,7 @@ if (require.main === module) {
         .options('s', {
             'alias': 'script',
             'default': 'app.js',
-            describe: 'Path `to script to start'
+            describe: 'Path to script to start'
         })
         .argv;
 
@@ -36,9 +36,13 @@ function babelRequire(modulePath) {
     // Use require-hook babel without it's runtime
     require('babel-core/register')({
         only: /(?:app|photoConverter)\.js/,
-        stage: 0
+        stage: 0,
         // whitelist: [],
-        // blacklist: []
+        blacklist: [
+            // Prevent transforms like `Bluebird.try()` => `Bluebird['try']()`
+            'es3.memberExpressionLiterals',
+            'es3.propertyLiterals'
+        ]
     });
 
     return require(path.resolve(__dirname, modulePath));
