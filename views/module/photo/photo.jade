@@ -259,14 +259,21 @@
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
         select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")
+
     .fieldWrap.asrow: span(style="padding-bottom:3px", data-bind="css: {'panel-block': p.watersignIndividual()}")
         span.infoName(data-bind="html: fields.watersign.title+':'")
         label.radio-inline
-            input(type="radio", name="watersignIndividual", data-bind="checked: !p.watersignIndividual()")
+            input(type="radio", name="watersignIndividual", value="false", data-bind="checked: watersignIndividual")
             span(data-bind="html: fields.watersign.profile")
         label.radio-inline
-            input(type="radio", name="watersignIndividual", data-bind="сhecked: p.watersignIndividual()")
+            input(type="radio", name="watersignIndividual", value="true", data-bind="checked: watersignIndividual")
             span(data-bind="html: fields.watersign.individual")
+
+        //ko if: !p.watersignIndividual()
+        br
+        | Текущая настройка профиля:
+
+        // /ko
         //ko if: p.watersignIndividual()
         .btn-group.btn-group-sm
             button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!watersignOption()}, click: watersignAdd") Да

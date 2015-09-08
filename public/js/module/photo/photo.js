@@ -224,6 +224,18 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             }, this);
 
+            this.watersignIndividual = this.co.watersignIndividual = ko.computed({
+                read: function () {
+                    return String(self.p.watersignIndividual());
+                },
+                write: function (valNew) {
+                    valNew = valNew === 'true';
+
+                    self.p.watersignIndividual(valNew);
+                },
+                owner: this
+            });
+
             this.watersignOption = this.co.watersignOption = ko.computed(function () {
                 var photoOption = self.p.watersignOption();
                 return photoOption !== undefined ? photoOption : self.p.user.settings.photo_watermark_add_sign();
