@@ -269,16 +269,16 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
 
     return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
         .then(function (user) {
-            var watermark_setting;
+            var watermarkSetting;
 
             if (watersign.length) {
                 if (watersign === user.watersignCustom) {
                     return user;
                 }
-                watermark_setting = 'custom';
+                watermarkSetting = 'custom';
                 user.watersignCustom = watersign;
             } else if (user.watersignCustom !== undefined) {
-                watermark_setting = 'default';
+                watermarkSetting = true;
                 user.watersignCustom = undefined;
             }
 
@@ -286,8 +286,8 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
                 user.settings = {};
             }
 
-            if (watermark_setting !== user.settings.photo_watermark_add_sign) {
-                user.settings.photo_watermark_add_sign = watermark_setting;
+            if (watermarkSetting !== user.settings.photo_watermark_add_sign) {
+                user.settings.photo_watermark_add_sign = watermarkSetting;
                 user.markModified('settings');
             }
 
