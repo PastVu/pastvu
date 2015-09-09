@@ -121,7 +121,7 @@
         .panel-collapse.collapse.in#notice: .panel-body
             dl.dl-horizontal
                 dt.helpexists
-                    abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в фотографию")
+                    abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в изображение")
                         span.glyphicon.glyphicon-info-sign
                         |  Показывать вотермарк фотографии
                 dd
@@ -165,13 +165,30 @@
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Сбросить установленные в конкретных фотографиях индивидульные настройки подписи (если такие устанавливались). В этом случае при следующей конвертации фотографий, будут использованы настройки подписи, указанные в вышестоящей настройке")
+                        abbr(title="Отправить на переконвертацию свои фотографии")
                             span.glyphicon.glyphicon-info-sign
-                            |  Сбросить установленные в конкретных
+                            |  Переконвертировать фотографии, в которых
                             br
-                            |  фотографиях индивидульные
+                            | нет индивидульных настроек подписи
+                    dd: span.panel-block(style="padding-top:0")
+                        div
+                            label.radio-inline
+                                input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
+                                | Все
+                            label.radio-inline
+                                input(type="radio", name="reconvert", value="region", data-bind="checked: reconvertcheck")
+                                span
+                                    | В регионе
+                                    input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
+                        div: button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos") Отправить
+
+                dl.dl-horizontal
+                    dt.helpexists
+                        abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались). В этом случае при следующей конвертации фотографий, будут использованы настройки подписи, указанные выше")
+                            span.glyphicon.glyphicon-info-sign
+                            |  Сбросить установленные в фотографиях
                             br
-                            | настройки подписи
+                            | индивидульные настройки подписи
                     dd: span.panel-block(style="padding-top:0")
                         div
                             label.radio-inline
@@ -183,23 +200,6 @@
                                     | В регионе
                                     input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
                         div: button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: watersignReset") Сбросить
-
-                dl.dl-horizontal
-                    dt.helpexists
-                        abbr(title="Отправить на конвертацию свои фотографии")
-                            span.glyphicon.glyphicon-info-sign
-                            |  Переконвертировать мои фотографии
-                    dd: span.panel-block(style="padding-top:0")
-                        div
-                            label.radio-inline
-                                input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
-                                | Все
-                            label.radio-inline
-                                input(type="radio", name="reconvert", value="region", data-bind="checked: reconvertcheck")
-                                span
-                                    | В регионе
-                                    input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
-                        div: button.btn.btn-sm.btn-pr imary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos") Отправить
 
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления
