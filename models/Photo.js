@@ -62,7 +62,7 @@ var PhotoSchema = new Schema({
     watersignIndividual: { type: Boolean }, // Set individual watermark (not from user profile settings)
     watersignOption: { type: Schema.Types.Mixed }, // Watermark individual option, appended to photo
     watersignCustom: { type: String }, // Individual user text on watermark (except photo url)
-    watersignText: { type: String }, // Current watermark text, appended in the moment of last convert
+    watersignText: { type: String }, // Current sign on watermark, appended in the moment of last convert
 
     dir: { type: String },
     title: { type: String },
@@ -87,8 +87,8 @@ var PhotoSchema = new Schema({
     nowaterchange: { type: Boolean } // Prohibit watersign changing
 });
 
-//В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
-//Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
+// В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
+// Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
 PhotoSchema.index({ g: '2d', year: 1 });
 PhotoSchema.index({ r0: 1, sdate: 1 });
 PhotoSchema.index({ r1: 1, sdate: 1 });

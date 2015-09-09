@@ -1778,7 +1778,12 @@ var photoValidate = function (values) {
         result.address = undefined;
     }
 
-    if (values.watersignOption !== undefined && settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(values.watersignOption) > -1) {
+    if (_.isBoolean(values.watersignIndividual)) {
+        result.watersignIndividual = values.watersignIndividual;
+    }
+
+    if (values.watersignOption !== undefined &&
+        settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(values.watersignOption) > -1) {
         result.watersignOption = values.watersignOption;
     }
 
@@ -1808,12 +1813,19 @@ var savePhoto = function (iAm, data) {
         .spread(function (photo, canModerate) {
             var changes = photoValidate(data.changes);
 
+            this.photo = photo;
+            this.oldPhotoObj = photo.toObject();
+
+            // If individual watersign is off and was aff, remove this flag
+            // (in case of received 'false', but was 'undefined' - nothing has changed)
+            if (!changes.watersignIndividual && !this.oldPhotoObj.watersignIndividual) {
+                delete changes.watersignIndividual;
+            }
+
             if (_.isEmpty(changes)) {
                 throw { emptySave: true };
             }
 
-            this.photo = photo;
-            this.oldPhotoObj = photo.toObject();
             this.canModerate = canModerate;
             this.saveHistory = this.photo.s !== status.NEW;
             this.parsedFileds = {};
@@ -1830,7 +1842,7 @@ var savePhoto = function (iAm, data) {
             newValues = Utils.diff(
                 _.pick(
                     changes,
-                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author', 'watersignOption', 'watersignCustom'
+                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author', 'watersignIndividual', 'watersignOption', 'watersignCustom'
                 ),
                 this.oldPhotoObj
             );
@@ -1886,8 +1898,19 @@ var savePhoto = function (iAm, data) {
                 photoCheckPublickRequired(this.photo);
             }
 
-            // If photo individual watersign setting changed, sending it to reconvert
-            if (newValues.watersignOption !== this.oldPhotoObj.watersignOption || newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
+            // If photo watersign setting changed, send it to reconvert
+            if (_.isBoolean(newValues.watersignIndividual) ||
+                newValues.watersignOption !== this.oldPhotoObj.watersignOption ||
+                newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
+
+                //TODO: Случаи обнуления
+                //if (newValues.watersignOption === 'custom' && !this.photo.watersignCustom) {
+                //    delete newValues.watersignOption;
+                //}
+                //if (!newValues.watersignCustom && this.photo.watersignOption === 'custom') {
+                //    newValues.watersignOption = true;
+                //}
+
                 this.reconvert = true;
                 this.photo.convqueue = true;
 
