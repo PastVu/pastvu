@@ -550,14 +550,14 @@ export function loadController(app, db, io) {
         const hs = socket.handshake;
 
         (function () {
-            socket.on('conveyerStartStop', function (value) {
+            socket.on('conveyorStartStop', function (value) {
                 if (_.isBoolean(value)) {
                     conveyerEnabled = value;
                     if (value) {
                         conveyerControl();
                     }
                 }
-                socket.emit('conveyerStartStopResult', { conveyerEnabled });
+                socket.emit('conveyorStartStopResult', { conveyerEnabled });
             });
         }());
 

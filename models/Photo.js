@@ -62,7 +62,7 @@ var PhotoSchema = new Schema({
     watersignIndividual: { type: Boolean }, // Set individual watermark (not from user profile settings)
     watersignOption: { type: Schema.Types.Mixed }, // Watermark individual option, appended to photo
     watersignCustom: { type: String }, // Individual user text on watermark (except photo url)
-    watersignText: { type: String }, // Current watermark text, appendend in the moment of last convert
+    watersignText: { type: String }, // Current watermark text, appended in the moment of last convert
 
     dir: { type: String },
     title: { type: String },

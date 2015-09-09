@@ -420,13 +420,13 @@ define([
 
         startstop: function () {
             this.exe(true);
-            socket.once('conveyerStartStopResult', function (data) {
+            socket.once('conveyorStartStopResult', function (data) {
                 if (data && Utils.isType('boolean', data.conveyerEnabled)) {
                     this.conveyerEnabled(data.conveyerEnabled);
                 }
                 this.exe(false);
             }, this);
-            socket.emit('conveyerStartStop', !this.conveyerEnabled());
+            socket.emit('conveyorStartStop', !this.conveyerEnabled());
         },
         clearConveyer: function () {
             var _this = this;
