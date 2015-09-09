@@ -49,7 +49,7 @@ define(
                 waterhs: 0,
 
                 watersignIndividual: false,
-                watersignOption: true,
+                watersignOption: undefined,
                 watersignCustom: null,
                 watersignText: null,
 
@@ -102,6 +102,7 @@ define(
             origin = origin || {};
             defType = defType || 'full';
             picType = picType || 'd';
+            userDefType = userDefType || 'middle';
 
             if (customDefaults) {
                 origin = _.defaults(origin, customDefaults, defaults[defType]);
@@ -129,7 +130,7 @@ define(
                 if (origin.stdate) {
                     origin.stdate = new Date(origin.stdate);
                 }
-                User.factory(origin.user, userDefType || 'base');
+                User.factory(origin.user, userDefType);
             }
 
             origin.status = statuses.nums[origin.s] || {};

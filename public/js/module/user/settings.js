@@ -95,7 +95,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         if (valNew === 'true') {
                             valNew = true;
                         }
-                        // If clicked custom, but it value haven't set yet, do not save change.
+                        // If clicked custom, but it value haven't been set yet, do not save change.
                         if (valNew !== 'custom' || this.u.watersignCustom()) {
                             this.changeSetting('photo_watermark_add_sign', valNew, true);
                         }

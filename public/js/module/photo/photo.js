@@ -229,38 +229,52 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     return String(self.p.watersignIndividual());
                 },
                 write: function (valNew) {
-                    valNew = valNew === 'true';
-
-                    self.p.watersignIndividual(valNew);
-                },
-                owner: this
+                    self.p.watersignIndividual(valNew === 'true');
+                }
             });
 
-            this.watersignOption = this.co.watersignOption = ko.computed(function () {
-                var photoOption = self.p.watersignOption();
-                return photoOption !== undefined ? photoOption : self.p.user.settings.photo_watermark_add_sign();
-            });
-            this.watersigncheck = this.co.watersigncheck = ko.computed({
+            this.watersignOptionTrigger = ko.observable(null);
+            this.watersignOption = this.co.watersignOption = ko.computed({
                 read: function () {
-                    var current = self.watersignOption();
+                    this.watersignOptionTrigger();
 
-                    if (!current) {
-                        return false;
+                    var result;
+                    var p = self.p;
+                    var addSignBySetting = p.user.settings.photo_watermark_add_sign;
+
+                    addSignBySetting = addSignBySetting && addSignBySetting() || false;
+
+                    if (p.watersignIndividual()) {
+                        var photoOption = this.p.watersignOption();
+                        result = photoOption !== undefined ? photoOption : addSignBySetting;
+                    } else {
+                        result = addSignBySetting;
                     }
 
-                    return String(current);
+                    if (result === true) {
+                        result = 'true';
+                    }
+
+                    return result;
                 },
                 write: function (valNew) {
                     if (valNew === 'true') {
                         valNew = true;
                     }
-                    self.p.watersignOption(valNew);
+
+                    this.p.watersignOption(valNew);
                 },
                 owner: this
             });
-            this.watersignCustomChanged = this.co.watersignCustomChanged = ko.computed({
+
+            this.watersignCustom = this.co.watersignCustom = ko.computed({
                 read: function () {
-                    return self.originData && self.p.watersignCustom() !== self.originData.watersignCustom;
+                    return this.p.watersignIndividual() && this.p.watersignCustom() || this.p.user.watersignCustom();
+                },
+                write: function (valNew) {
+                    if (this.p.watersignIndividual()) {
+                        return this.p.watersignCustom(valNew);
+                    }
                 },
                 owner: this
             });
@@ -405,6 +419,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.p = Photo.vm(photo, this.p);
             this.can = ko_mapping.fromJS(can, this.can);
+
+            this.watersignOptionTrigger(this.p.watersignOption());
         },
 
         routeHandler: function () {
@@ -492,7 +508,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 var error = !data || data.error;
 
                 if (!error) {
-                    Photo.factory(data.photo, 'full', 'd', data.forEdit ? 'middle' : 'base');
+                    Photo.factory(data.photo, 'full', 'd', 'middle', 'middle');
                 }
 
                 cb.call(ctx, error, data);
@@ -697,19 +713,19 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.inputlblblur(data, event);
             $(event.target).removeClass('hasFocus').off('keyup');
         },
-        //Отслеживанием ввод, чтобы подгонять desc под высоту текста
+        // Отслеживанием ввод, чтобы подгонять desc под высоту текста
         descKeyup: function (evt) {
             var $input = $(evt.target);
             var realHeight = this.descCheckHeight($input);
 
-            //Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
-            //(т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
+            // Если высота изменилась, проверяем вхождение во вьюпорт с этой высотой
+            // (т.к. у нас transition на высоту textarea, сразу правильно её подсчитать нельзя)
             if (realHeight) {
                 this.descCheckInViewport($input, realHeight);
             }
         },
-        //Подгоняем desc под высоту текста.
-        //Если высота изменилась, возвращаем её, если нет - false
+        // Подгоняем desc под высоту текста.
+        // Если высота изменилась, возвращаем её, если нет - false
         descCheckHeight: function ($input) {
             var height = $input.height() + 2; //2 - border
             var heightScroll = ($input[0].scrollHeight) || height;
@@ -872,22 +888,23 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
-        watersignAdd: function (data, evt) {
+        watersignOptionChange: function (data, evt) {
             var flag = isYes(evt);
+            var p = this.p;
             var user = this.p.user;
             var newOption;
 
             if (!flag) {
                 newOption = false;
             } else {
-                if (!this.p.watersignCustom() && user.settings.photo_watermark_add_sign() === 'custom' && user.watersignCustom()) {
-                    this.p.watersignCustom(user.watersignCustom());
+                if (!p.watersignCustom() && user.settings.photo_watermark_add_sign() === 'custom' && user.watersignCustom()) {
+                    p.watersignCustom(user.watersignCustom());
                 }
 
-                newOption = this.p.watersignCustom() ? 'custom' : true;
+                newOption = p.watersignCustom() ? 'custom' : true;
             }
 
-            this.p.watersignOption(newOption);
+            p.watersignOption(newOption);
         },
 
         notifyReady: function () {

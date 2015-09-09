@@ -260,7 +260,7 @@
         label(for="pDir", data-bind="html: fields.dir")
         select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")
 
-    .fieldWrap.asrow: span(style="padding-bottom:3px", data-bind="css: {'panel-block': p.watersignIndividual()}")
+    .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
         span.infoName(data-bind="html: fields.watersign.title+':'")
         label.radio-inline
             input(type="radio", name="watersignIndividual", value="false", data-bind="checked: watersignIndividual")
@@ -268,26 +268,22 @@
         label.radio-inline
             input(type="radio", name="watersignIndividual", value="true", data-bind="checked: watersignIndividual")
             span(data-bind="html: fields.watersign.individual")
-
-        //ko if: !p.watersignIndividual()
         br
-        | Текущая настройка профиля:
-
-        // /ko
-        //ko if: p.watersignIndividual()
-        .btn-group.btn-group-sm
-            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !!watersignOption()}, click: watersignAdd") Да
-            button.btn.btn-primary.no(type="button", data-bind="css: {active: !watersignOption()}, click: watersignAdd") Нет
-        // ko if: !!watersignOption()
-        .radio(style="margin-top:8px"): label
-            input(type="radio", name="watersign", value="true", data-bind="checked: watersigncheck")
-            span(data-bind="html: fields.watersign.default+' ('")
-            span(style="color:#777", data-bind="text: 'uploaded by ' + p.user.login()")
-            | )
-        .radio(style="margin-top:0"): .input-group(style="")
-            input(type="radio", name="watersign", value="custom", data-bind="checked: watersigncheck")
-            span(style="display: table-cell; padding: 2px 9px 2px 0;", data-bind="html: fields.watersign.text")
-            input.form-control(type="text", maxlength="65", style="width:422px;max-width:100%", data-bind="attr: {disabled: watersigncheck()!=='custom'}, value: p.watersignCustom, valueUpdate: 'afterkeydown'")
-        // /ko
-        // /ko
+        div(style="margin-top:7px;")
+            | Добавлять подпись на вотермарк фотографии:&nbsp;
+            .btn-group.btn-group-sm.disabled
+                button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange") Да
+                button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange") Нет
+            // ko if: !!watersignOption()
+            .radio(style="margin-top:8px"): label
+                input(type="radio", name="watersign", value="true", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
+                span(data-bind="html: fields.watersign.default+' ('")
+                span(style="color:#777", data-bind="text: 'uploaded by ' + p.user.login()")
+                | )
+            .radio(style="margin-top:0"): .input-group(style="")
+                input(type="radio", name="watersign", value="custom", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
+                span(style="display: table-cell; padding: 2px 9px 2px 0;", data-bind="html: fields.watersign.text")
+                input.form-control(type="text", maxlength="65", style="width:422px;max-width:100%", data-bind="attr: {disabled: !p.watersignIndividual() || watersignOption()!=='custom'}, value: watersignCustom, valueUpdate: 'afterkeydown'")
+            // /ko
+    .spanner
     | </script>
