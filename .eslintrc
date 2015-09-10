@@ -65,7 +65,6 @@
         "no-implied-eval": 2,
         "no-inner-declarations": 2,
         "no-invalid-regexp": 2,
-        "no-invalid-this": 1,
         "no-iterator": 2,
         "no-label-var": 2,
         "no-multi-spaces": 2,
