@@ -1915,9 +1915,9 @@ var savePhoto = function (iAm, data) {
             }
 
             // If photo watersign setting changed, send it to reconvert
-            if (_.isBoolean(newValues.watersignIndividual) ||
-                newValues.watersignOption !== this.oldPhotoObj.watersignOption ||
-                newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
+            if (newValues.hasOwnProperty('watersignIndividual') ||
+                newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption ||
+                newValues.hasOwnProperty('watersignCustom') && newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
 
                 this.reconvert = true;
                 this.photo.convqueue = true;
