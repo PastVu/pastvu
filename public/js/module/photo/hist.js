@@ -11,7 +11,7 @@ define(
         var tplRegionsDiff;
         var maxRegionLevel = 5;
         var statusNums = statuses.nums;
-        var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir'];
+        var txtFields = ['title', 'geo', 'regions', 'y', 'desc', 'source', 'author', 'address', 'dir', 'watersignText'];
 
         return Cliche.extend({
             jade: jade,

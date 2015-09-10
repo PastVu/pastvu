@@ -52,7 +52,7 @@
             | {{?h.del}}
             .info.red.iconed
                 span.glyphicon.glyphicon-minus
-                | Удален{{?h.del.length>1}}ы поля:{{??}}о поле{{?}}
+                | Удален{{?h.del.length>1}}ы{{??}}о{{?}}:
                 | {{~h.del :del:delIndex}}
                 | {{?delIndex}},{{?}}&#32;
                 span.del {{=it.fields[del]}}

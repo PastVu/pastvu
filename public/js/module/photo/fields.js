@@ -31,6 +31,7 @@ define(['underscore'], function () {
             'individual': 'Индивидуально',
             'default': 'Настройки системы',
             'text': 'Текст'
-        }
+        },
+        watersignText: 'Подпись на вотермарке'
     };
 });
