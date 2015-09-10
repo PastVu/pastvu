@@ -1710,87 +1710,109 @@ function photoCheckPublickRequired(photo) {
     return true;
 }
 
-var photoValidate = function (values) {
+var photoValidate = function (newValues, oldValues) {
     var result = {};
 
-    if (!values) {
+    if (!newValues) {
         return result;
     }
 
     // Validate geo
-    if (values.geo && Utils.geo.checkLatLng(values.geo)) {
-        result.geo = Utils.geo.geoToPrecisionRound(values.geo.reverse());
-    } else if (values.geo === null) {
+    if (newValues.geo && Utils.geo.checkLatLng(newValues.geo)) {
+        result.geo = Utils.geo.geoToPrecisionRound(newValues.geo.reverse());
+    } else if (newValues.geo === null) {
         result.geo = undefined;
     }
 
-    if (_.isNumber(values.region) && values.region > 0) {
-        result.region = values.region;
-    } else if (values.region === null) {
+    if (_.isNumber(newValues.region) && newValues.region > 0) {
+        result.region = newValues.region;
+    } else if (newValues.region === null) {
         result.region = undefined;
     }
 
     // Both year fields must be felled and 1826-2000
-    if (_.isNumber(values.year) && _.isNumber(values.year2) &&
-        values.year >= 1826 && values.year <= 2000 &&
-        values.year2 >= values.year && values.year2 <= 2000) {
-        result.year = values.year;
-        result.year2 = values.year2;
-    } else if (values.year === null) {
+    if (_.isNumber(newValues.year) && _.isNumber(newValues.year2) &&
+        newValues.year >= 1826 && newValues.year <= 2000 &&
+        newValues.year2 >= newValues.year && newValues.year2 <= 2000) {
+        result.year = newValues.year;
+        result.year2 = newValues.year2;
+    } else if (newValues.year === null) {
         result.year = undefined;
         result.year2 = undefined;
     }
 
-    if (_.isString(values.dir) && values.dir.length) {
-        result.dir = values.dir.trim();
-    } else if (values.dir === null) {
+    if (_.isString(newValues.dir) && newValues.dir.length) {
+        result.dir = newValues.dir.trim();
+    } else if (newValues.dir === null) {
         result.dir = undefined;
     }
 
     // Trim and remove last dot in title, if it is not part of ellipsis
-    if (_.isString(values.title) && values.title.length) {
-        result.title = values.title.trim().substr(0, 120).replace(/([^\.])\.$/, '$1');
-    } else if (values.title === null) {
+    if (_.isString(newValues.title) && newValues.title.length) {
+        result.title = newValues.title.trim().substr(0, 120).replace(/([^\.])\.$/, '$1');
+    } else if (newValues.title === null) {
         result.title = undefined;
     }
 
-    if (_.isString(values.desc) && values.desc.length) {
-        result.desc = values.desc.trim().substr(0, 4000);
-    } else if (values.desc === null) {
+    if (_.isString(newValues.desc) && newValues.desc.length) {
+        result.desc = newValues.desc.trim().substr(0, 4000);
+    } else if (newValues.desc === null) {
         result.desc = undefined;
     }
 
-    if (_.isString(values.source) && values.source.length) {
-        result.source = values.source.trim().substr(0, 250);
-    } else if (values.source === null) {
+    if (_.isString(newValues.source) && newValues.source.length) {
+        result.source = newValues.source.trim().substr(0, 250);
+    } else if (newValues.source === null) {
         result.source = undefined;
     }
 
-    if (_.isString(values.author) && values.author.length) {
-        result.author = values.author.trim().substr(0, 250);
-    } else if (values.author === null) {
+    if (_.isString(newValues.author) && newValues.author.length) {
+        result.author = newValues.author.trim().substr(0, 250);
+    } else if (newValues.author === null) {
         result.author = undefined;
     }
 
-    if (_.isString(values.address) && values.address.length) {
-        result.address = values.address.trim().substr(0, 250);
-    } else if (values.address === null) {
+    if (_.isString(newValues.address) && newValues.address.length) {
+        result.address = newValues.address.trim().substr(0, 250);
+    } else if (newValues.address === null) {
         result.address = undefined;
     }
 
-    if (_.isBoolean(values.watersignIndividual)) {
-        result.watersignIndividual = values.watersignIndividual;
+    if (_.isBoolean(newValues.watersignIndividual) && newValues.watersignIndividual !== Boolean(oldValues.watersignIndividual)) {
+        result.watersignIndividual = newValues.watersignIndividual;
     }
 
-    if (values.watersignOption !== undefined &&
-        settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(values.watersignOption) > -1) {
-        result.watersignOption = values.watersignOption;
-    }
+    if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
+        if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(newValues.watersignOption) > -1) {
+            result.watersignOption = newValues.watersignOption;
+        }
 
-    if (_.isString(values.watersignCustom) && values.watersignCustom.length) {
-        result.watersignCustom = values.watersignCustom;
-    } else if (values.watersignCustom === null) {
-        result.watersignCustom = undefined;
+        if (newValues.watersignCustom === null || _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
+            result.watersignCustom = newValues.watersignCustom;
+        }
+
+        if (result.watersignOption === 'custom' && result.watersignCustom === null) {
+            // If user set custom sign and empty it, we set default option and empty custom sign further
+            if (oldValues.watersignOption !== true) {
+                result.watersignOption = true;
+            } else {
+                delete result.watersignOption;
+            }
+        } else if (result.watersignOption === 'custom' && !result.watersignCustom && !oldValues.watersignCustom) {
+            // If user set custom sign option, but did not fill it, don't set custom sign option
+            delete result.watersignOption;
+        } else if (oldValues.watersignOption === 'custom' && oldValues.watersignCustom &&
+            (!result.watersignOption || result.watersignOption === 'custom') &&
+            !result.watersignCustom && result.hasOwnProperty('watersignCustom')) {
+            // If photo had custom individual watersign, and user has deleted it, without changing the option, set default watersign
+
+            result.watersignOption = true;
+            result.watersignCustom = undefined;
+        }
+
+        if (newValues.watersignCustom === null) {
+            result.watersignCustom = undefined;
+        }
     }
 
     return result;
@@ -1811,16 +1833,10 @@ var savePhoto = function (iAm, data) {
     return photoEditPrefetch(iAm, data, 'edit')
         .bind({})
         .spread(function (photo, canModerate) {
-            var changes = photoValidate(data.changes);
-
             this.photo = photo;
             this.oldPhotoObj = photo.toObject();
 
-            // If individual watersign is off and was aff, remove this flag
-            // (in case of received 'false', but was 'undefined' - nothing has changed)
-            if (!changes.watersignIndividual && !this.oldPhotoObj.watersignIndividual) {
-                delete changes.watersignIndividual;
-            }
+            var changes = photoValidate(data.changes, this.oldPhotoObj);
 
             if (_.isEmpty(changes)) {
                 throw { emptySave: true };
@@ -1902,14 +1918,6 @@ var savePhoto = function (iAm, data) {
             if (_.isBoolean(newValues.watersignIndividual) ||
                 newValues.watersignOption !== this.oldPhotoObj.watersignOption ||
                 newValues.watersignCustom !== this.oldPhotoObj.watersignCustom) {
-
-                //TODO: Случаи обнуления
-                //if (newValues.watersignOption === 'custom' && !this.photo.watersignCustom) {
-                //    delete newValues.watersignOption;
-                //}
-                //if (!newValues.watersignCustom && this.photo.watersignOption === 'custom') {
-                //    newValues.watersignOption = true;
-                //}
 
                 this.reconvert = true;
                 this.photo.convqueue = true;
