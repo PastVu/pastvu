@@ -301,17 +301,18 @@ const identifyImage = (src, format) =>
 const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 
 function getWatertext(photo, photoConv) {
-    let watersign = `pastvu.com/p/${photo.cid}`;
+    const waterprefix = `pastvu.com/p/${photo.cid}`;
+    let watersign;
 
     if (photoConv.watersign !== false) {
         if (_.isString(photoConv.watersign) && photoConv.watersign.length) {
-            watersign += `  ${photoConv.watersign}`;
+            watersign = `${photoConv.watersign}`;
         } else {
-            watersign += `  uploaded by ${photo.user.login}`;
+            watersign = `uploaded by ${photo.user.login}`;
         }
     }
 
-    return watersign;
+    return [`${waterprefix}  ${watersign || ''}`, watersign];
 }
 
 /**
@@ -319,7 +320,7 @@ function getWatertext(photo, photoConv) {
  * @param photo Объект фотографии
  */
 async function conveyerStep(photo, photoConv) {
-    const waterTxt = getWatertext(photo, photoConv);
+    const [waterTxt, waterSign] = getWatertext(photo, photoConv);
     const originSrcPath = path.normalize(sourceDir + photo.file);
     const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
@@ -406,6 +407,7 @@ async function conveyerStep(photo, photoConv) {
             // console.log(variantName, commands.join(' '));
             await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
+            photo.watersignText = waterSign;
             photo[isOriginal ? 'waterh' : 'waterhs'] = watermark.params.splice;
             if (variantName === 'd') {
                 photo.hs -= watermark.params.splice;

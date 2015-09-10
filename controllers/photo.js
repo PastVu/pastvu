@@ -227,9 +227,9 @@ var core = {
 
             if (user.rules && _.isNumber(user.rules.photoNewLimit)) {
                 canCreate = Math.max(0, Math.min(user.rules.photoNewLimit, core.maxNewPhotosLimit) - pfcount);
-            } else if (user.ranks && (~user.ranks.indexOf('mec_silv') || ~user.ranks.indexOf('mec_gold'))) {
+            } else if (user.ranks && (user.ranks.includes('mec_silv') || user.ranks.includes('mec_gold'))) {
                 canCreate = core.maxNewPhotosLimit - pfcount; //Серебряный и золотой меценаты имеют максимально возможный лимит
-            } else if (user.ranks && ~user.ranks.indexOf('mec')) {
+            } else if (user.ranks && user.ranks.includes('mec')) {
                 canCreate = Math.max(0, 100 - pfcount); //Меценат имеет лимит 100
             } else if (user.pcount < 25) {
                 canCreate = Math.max(0, 3 - pfcount);
@@ -480,24 +480,29 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
 
 function getUserWaterSign(user, photo) {
     var result;
-    var photoOption = photo && photo.watersignOption;
-    var userOption = user.settings && user.settings.photo_watermark_add_sign;
+    var option;
     var validOptionValues = settings.getUserSettingsVars().photo_watermark_add_sign;
 
-    if (validOptionValues.indexOf(photoOption) > -1) {
-        result = photoOption === 'custom' && photo.watersignCustom ? photo.watersignCustom : photoOption;
+    if (_.get(photo, 'watersignIndividual')) {
+        option = _.get(photo, 'watersignOption');
+
+        if (validOptionValues.includes(option)) {
+            result = option === 'custom' && photo.watersignCustom ? photo.watersignCustom : !!option;
+        }
     }
 
     if (result !== undefined) {
         return result;
     }
 
+    option = _.get(user, 'settings.photo_watermark_add_sign');
+
     // If user watersign option is not valid, take default value
-    if (validOptionValues.indexOf(userOption) < 0) {
-        userOption = settings.getUserSettingsDef().photo_watermark_add_sign;
+    if (!validOptionValues.includes(option)) {
+        option = settings.getUserSettingsDef().photo_watermark_add_sign;
     }
 
-    return userOption === 'custom' && user.watersignCustom ? user.watersignCustom : userOption;
+    return option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
 }
 
 /**
@@ -721,7 +726,7 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
                 var values = historyEntry.values;
 
                 _.forEach(changes.fields, function (field) {
-                    if (!historyIndex || values && values[field] || del && del.indexOf(field) >= 0) {
+                    if (!historyIndex || values && values[field] || del && del.includes(field)) {
                         result[field] = historyIndex;
                     }
                 });
@@ -1783,7 +1788,7 @@ var photoValidate = function (newValues, oldValues) {
     }
 
     if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
-        if (settings.getUserSettingsVars().photo_watermark_add_sign.indexOf(newValues.watersignOption) > -1) {
+        if (settings.getUserSettingsVars().photo_watermark_add_sign.includes(newValues.watersignOption)) {
             result.watersignOption = newValues.watersignOption;
         }
 
@@ -1922,7 +1927,7 @@ var savePhoto = function (iAm, data) {
                 this.reconvert = true;
                 this.photo.convqueue = true;
 
-                if (newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
+                if (newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
                     this.photo.markModified('watersignOption');
                 }
             }
@@ -1983,7 +1988,11 @@ var savePhoto = function (iAm, data) {
             }
 
             if (this.reconvert) {
-                PhotoConverter.addPhotos([{ cid: this.photo.cid, watersign: getUserWaterSign(this.photo.user, this.photo) }], 2);
+                var photo = this.photo;
+                User.findOneAsync({ _id: photo.user }, { _id: 0, watersignCustom: 1, settings: 1 }, { lean: true })
+                    .then(function (user) {
+                        PhotoConverter.addPhotos([{ cid: photo.cid, watersign: getUserWaterSign(user, photo) }], 2);
+                    });
             }
 
             // Заново выбираем данные для отображения
@@ -2126,7 +2135,7 @@ function buildPhotosQuery(filter, forUserId, iAm) {
         regions_arr_all = [],//Массив объектов регионов, включая неактивные (phantom в фильтре)
         regions_hash = {},
 
-        squery_public_have = !filter.s || !filter.s.length || filter.s.indexOf(5) > -1,
+        squery_public_have = !filter.s || !filter.s.length || filter.s.includes(5),
         squery_public_only = !iAm.registered || filter.s && filter.s.length === 1 && filter.s[0] === status.PUBLIC,
 
         region,
