@@ -269,7 +269,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             this.watersignCustom = this.co.watersignCustom = ko.computed({
                 read: function () {
-                    return this.p.watersignIndividual() && this.p.watersignCustom() || this.p.user.watersignCustom();
+                    return this.p.watersignIndividual() ? this.p.watersignCustom() || '' : this.p.user.watersignCustom();
                 },
                 write: function (valNew) {
                     if (this.p.watersignIndividual()) {
@@ -1139,7 +1139,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var cid = p.cid();
 
             var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignIndividual', 'watersignOption', 'watersignCustom')
+                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignIndividual')
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 
@@ -1174,6 +1174,20 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
             if (p.author() !== self.authorEditOrigin) {
                 changes.author = p.author() || null;
+            }
+
+            if (p.watersignIndividual()) {
+                var watersignOption = self.watersignOption();
+
+                if (watersignOption === 'true') {
+                    watersignOption = true;
+                }
+                if (watersignOption !== origin.watersignOption) {
+                    changes.watersignOption = watersignOption;
+                }
+                if (self.watersignCustom() !== origin.watersignCustom) {
+                    changes.watersignCustom = self.watersignCustom() || null;
+                }
             }
 
             if (!_.isEmpty(changes)) {

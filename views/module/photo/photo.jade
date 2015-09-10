@@ -285,5 +285,6 @@
                 span(style="display: table-cell; padding: 2px 9px 2px 0;", data-bind="html: fields.watersign.text")
                 input.form-control(type="text", maxlength="65", style="width:422px;max-width:100%", data-bind="attr: {disabled: !p.watersignIndividual() || watersignOption()!=='custom'}, value: watersignCustom, valueUpdate: 'afterkeydown'")
             // /ko
+        p.text-muted(style="font-size:11px;margin-bottom:0;") *При изменении настройки подписи, фотография будет отправлена в очередь на обработку, что может занять некоторое время
     .spanner
     | </script>
