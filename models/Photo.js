@@ -44,7 +44,7 @@ var PhotoSchema = new Schema({
     r4: { type: Number, sparse: true },
     r5: { type: Number, sparse: true },
 
-    // Имя файла c путем, например 'i/n/o/ino6k6k6yz.jpg'
+    // File name with path, for example, 'i/n/o/ino6k6k6yz.jpg'
     file: { type: String, required: true },
 
     type: { type: String }, // like 'image/jpeg'
@@ -62,7 +62,9 @@ var PhotoSchema = new Schema({
     watersignIndividual: { type: Boolean }, // Set individual watermark (not from user profile settings)
     watersignOption: { type: Schema.Types.Mixed }, // Watermark individual option, appended to photo
     watersignCustom: { type: String }, // Individual user text on watermark (except photo url)
-    watersignText: { type: String }, // Current sign on watermark, appended in the moment of last convert
+    watersignText: { type: String }, // Current sign on watermark
+    // Time when current sign on watermark appended in the moment of last convert. If undefined - not yet appended
+    watersignTextApplied: { type: Date },
 
     dir: { type: String },
     title: { type: String },
@@ -133,8 +135,7 @@ var PhotoConveyerSchema = new Schema(
         cid: { type: Number, index: true },
         priority: { type: Number, required: true },
         added: { type: Date, 'default': Date.now, required: true },
-        converting: { type: Boolean },
-        watersign: { type: Schema.Types.Mixed } // Additional text on watermark
+        converting: { type: Boolean }
     },
     {
         collection: 'photos_conveyer',

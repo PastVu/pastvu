@@ -249,7 +249,7 @@ async function conveyerControl() {
         const photo = await Photo
             .findOne(
                 { cid: photoConv.cid },
-                { cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1 }
+                { cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
             )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .execAsync();
@@ -300,27 +300,16 @@ const identifyImage = (src, format) =>
 
 const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 
-function getWatertext(photo, photoConv) {
-    const waterprefix = `pastvu.com/p/${photo.cid}`;
-    let watersign;
-
-    if (photoConv.watersign !== false) {
-        if (_.isString(photoConv.watersign) && photoConv.watersign.length) {
-            watersign = `${photoConv.watersign}`;
-        } else {
-            watersign = `uploaded by ${photo.user.login}`;
-        }
-    }
-
-    return [`${waterprefix}  ${watersign || ''}`, watersign];
+function getWatertext(photo) {
+    return `pastvu.com/p/${photo.cid}  ${photo.watersignText || ''}`;
 }
 
 /**
  * Очередной шаг конвейера
  * @param photo Объект фотографии
  */
-async function conveyerStep(photo, photoConv) {
-    const [waterTxt, waterSign] = getWatertext(photo, photoConv);
+async function conveyerStep(photo/* , photoConv*/) {
+    const waterTxt = getWatertext(photo);
     const originSrcPath = path.normalize(sourceDir + photo.file);
     const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
@@ -407,7 +396,7 @@ async function conveyerStep(photo, photoConv) {
             // console.log(variantName, commands.join(' '));
             await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
-            photo.watersignText = waterSign;
+            photo.watersignTextApplied = new Date();
             photo[isOriginal ? 'waterh' : 'waterhs'] = watermark.params.splice;
             if (variantName === 'd') {
                 photo.hs -= watermark.params.splice;
@@ -464,7 +453,7 @@ export async function addPhotos(data, priority) {
         const cid = Number(photo.cid);
 
         if (cid > 0) {
-            toConvertObjs.push({ cid, watersign: photo.watersign, priority: priority || 4, added: stamp });
+            toConvertObjs.push({ cid, priority: priority || 4, added: stamp });
         }
     }
 

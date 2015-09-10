@@ -491,18 +491,24 @@ function getUserWaterSign(user, photo) {
         }
     }
 
-    if (result !== undefined) {
-        return result;
+    if (result === undefined) {
+        option = _.get(user, 'settings.photo_watermark_add_sign');
+
+        // If user watersign option is not valid, take default value
+        if (!validOptionValues.includes(option)) {
+            option = settings.getUserSettingsDef().photo_watermark_add_sign;
+        }
+
+        result = option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
     }
 
-    option = _.get(user, 'settings.photo_watermark_add_sign');
-
-    // If user watersign option is not valid, take default value
-    if (!validOptionValues.includes(option)) {
-        option = settings.getUserSettingsDef().photo_watermark_add_sign;
+    if (result === true) {
+        result = 'uploaded by ' + user.login;
+    } else if (result === false) {
+        result = undefined;
     }
 
-    return option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
+    return result;
 }
 
 /**
@@ -1914,6 +1920,9 @@ var savePhoto = function (iAm, data) {
             }
         })
         .then(function () {
+            return User.findOneAsync({ _id: this.photo.user }, { _id: 0, login: 1, watersignCustom: 1, settings: 1 }, { lean: true });
+        })
+        .then(function (user) {
             // Проверяем, что заполненны обязательные поля для опубликованных
             if (this.photo.s === status.READY || this.photo.s === status.PUBLIC) {
                 photoCheckPublickRequired(this.photo);
@@ -1926,6 +1935,9 @@ var savePhoto = function (iAm, data) {
 
                 this.reconvert = true;
                 this.photo.convqueue = true;
+
+                this.photo.watersignText = getUserWaterSign(user, this.photo);
+                this.photo.watersignTextApplied = undefined; // Delete applied time of previous watersign appliance
 
                 if (newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
                     this.photo.markModified('watersignOption');
@@ -1988,11 +2000,7 @@ var savePhoto = function (iAm, data) {
             }
 
             if (this.reconvert) {
-                var photo = this.photo;
-                User.findOneAsync({ _id: photo.user }, { _id: 0, watersignCustom: 1, settings: 1 }, { lean: true })
-                    .then(function (user) {
-                        PhotoConverter.addPhotos([{ cid: photo.cid, watersign: getUserWaterSign(user, photo) }], 2);
-                    });
+                PhotoConverter.addPhotos([{ cid: this.photo.cid }], 2);
             }
 
             // Заново выбираем данные для отображения
