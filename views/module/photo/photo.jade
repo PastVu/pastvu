@@ -186,15 +186,15 @@
         .info(data-bind="html: p.desc()")
         // /ko
     .infoBlock
-        //ko if: p.source().length
-        .info
-            span.infoName(data-bind="html: fields.source+':'")
-            span(data-bind="html: p.source()")
-        // /ko
         //ko if: p.author().length
         .info
             span.infoName(data-bind="html: fields.author+':'")
             span(data-bind="html: p.author()")
+        // /ko
+        //ko if: p.source().length
+        .info
+            span.infoName(data-bind="html: fields.source+':'")
+            span(data-bind="html: p.source()")
         // /ko
         //ko if: p.address().length
         .info
@@ -205,6 +205,11 @@
         .info
             span.infoName(data-bind="html: fields.dir+':'")
             span(data-bind="text: fields.dirVals[p.dir()]", style="text-transform: lowercase;")
+        // /ko
+        //ko if: p.watersignText() && p.watersignTextApplied()
+        .info
+            span.infoName(data-bind="html: fields.watersign.title+':'")
+            span(data-bind="text: p.watersignText()")
         // /ko
     //ko if: p.cdate
     .infoBlock
@@ -247,12 +252,12 @@
     .fieldWrap(data-bind="css: {hasContent: p.desc().length}")
         label(for="pDesc", data-bind="html: fields.desc")
         textarea.form-control.descInput(name="pDesc", wrap="soft", maxlength="4000", placeholder="Опишите фотографию", data-bind="value: p.desc, valueUpdate: 'afterkeydown', event: {focus: descFocus, blur: descBlur}")
-    .fieldWrap(data-bind="css: {hasContent: p.source().length}")
-        label(for="pSource", data-bind="html: fields.source")
-        input.form-control(name="pSource", type="text", maxlength="250", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: p.author().length}")
         label(for="pAuthor", data-bind="html: fields.author")
         input.form-control(name="pAuthor", type="text", maxlength="250", placeholder="Автор фотографии", data-bind="value: p.author, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
+    .fieldWrap(data-bind="css: {hasContent: p.source().length}")
+        label(for="pSource", data-bind="html: fields.source")
+        input.form-control(name="pSource", type="text", maxlength="250", placeholder="Если вам известен источник фотографии (ссылка, книга и т.д.), обязательно укажите его здесь", data-bind="value: p.source, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")
     .fieldWrap(data-bind="css: {hasContent: p.address().length}")
         label(for="pAddr", data-bind="html: fields.address")
         input.form-control(name="pAddr", type="text", maxlength="250", placeholder="Вы знаете адрес точки съемки?", data-bind="value: p.address, valueUpdate: 'afterkeydown', event: {focus: inputlblfocus, blur: inputlblblur}")

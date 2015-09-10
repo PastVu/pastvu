@@ -52,6 +52,7 @@ define(
                 watersignOption: undefined,
                 watersignCustom: null,
                 watersignText: null,
+                watersignTextApplied: null,
 
                 desc: '',
                 address: '',

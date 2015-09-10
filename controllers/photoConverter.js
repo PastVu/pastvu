@@ -396,7 +396,10 @@ async function conveyerStep(photo/* , photoConv*/) {
             // console.log(variantName, commands.join(' '));
             await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
 
-            photo.watersignTextApplied = new Date();
+            if (photo.watersignText) {
+                photo.watersignTextApplied = new Date();
+            }
+
             photo[isOriginal ? 'waterh' : 'waterhs'] = watermark.params.splice;
             if (variantName === 'd') {
                 photo.hs -= watermark.params.splice;
