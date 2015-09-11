@@ -26,7 +26,7 @@
     },
     "dependencies": {
         "forever-monitor": "1.6.0",
-        "babel-core": "5.8.23",
+        "babel-core": "5.8.24",
         "express": "4.13.3",
         "compression": "1.5.2",
         "serve-index": "1.7.2",

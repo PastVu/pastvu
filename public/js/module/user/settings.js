@@ -194,7 +194,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 region = Number(region) || undefined;
             }
 
-            socket.once('convertPhotosForUserResult', function (data) {
+            socket.once('convertUserNonIndividualPhotosResult', function (data) {
                 var error = !data || data.error;
                 var warning = !error && !data.added;
 
@@ -209,7 +209,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
 
             }, this);
-            socket.emit('convertPhotosForUser', { login: this.u.login(), r: region });
+            socket.emit('convertUserNonIndividualPhotos', { login: this.u.login(), r: region });
         },
         autoReply: function (data, evt) {
             this.changeSetting('subscr_auto_reply', isYes(evt), true);

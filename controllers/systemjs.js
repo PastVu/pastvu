@@ -240,6 +240,13 @@ module.exports.loadController = function (app, db) {
         if (params.region) {
             query['r' + params.region.level] = params.region.cid;
         }
+        if (params.hasOwnProperty('individual')) {
+            if (params.individual) {
+                query.watersignIndividual = true;
+            } else {
+                query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
+            }
+        }
 
         print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
         db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(iterator);

@@ -483,7 +483,7 @@ function getUserWaterSign(user, photo) {
     var option;
     var validOptionValues = settings.getUserSettingsVars().photo_watermark_add_sign;
 
-    if (_.get(photo, 'watersignIndividual')) {
+    if (photo && _.get(photo, 'watersignIndividual')) {
         option = _.get(photo, 'watersignOption');
 
         if (validOptionValues.includes(option)) {
@@ -696,7 +696,7 @@ function getPhotoChangedFields(oldPhoto, newPhoto, parsedFileds) {
 }
 
 var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canModerate, reason, parsedFileds) {
-    var changes = getPhotoChangedFields(oldPhotoObj, photo.toObject(), parsedFileds);
+    var changes = getPhotoChangedFields(oldPhotoObj, photo.toObject ? photo.toObject() : photo, parsedFileds);
 
     if (_.isEmpty(changes.fields)) {
         return null;
@@ -713,7 +713,7 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
             var firstEntryChanged;
             var newEntry = { cid: photo.cid, user: iAm.user._id, stamp: photo.cdate || new Date() };
 
-            // Если это первое изменение объекта, создаем первую запись (по премени создания),
+            // Если это первое изменение объекта, создаем первую запись (по времени создания),
             // чтобы писать туда первоначальные значения полей, и сразу сохраняем её (массивый undefined, чтобы не сохранялись пустыми)
             if (_.isEmpty(histories)) {
                 firstTime = true;
@@ -2104,25 +2104,130 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
 });
 
 // Sends user's photo for convert
-var convertPhotosForUser = Bluebird.method(function (iAm, data) {
+var usersWhoConvertingNonIndividualPhotos = {};
+var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
     if (!_.isObject(data) || !data.login) {
         throw { message: msg.badParams };
     }
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
+    if (usersWhoConvertingNonIndividualPhotos[data.login]) {
+        throw { message: 'Вы уже отправили такой запрос и он еще выполняется. Попробуйте позже' };
+    }
 
-    var params = { login: data.login, priority: 2 };
+    var stamp = new Date();
     var region;
-
     if (_.isNumber(data.r) && data.r > 0) {
         region = regionController.getRegionFromCache(data.r);
+
         if (region) {
-            params.region = { level: _.size(region.parents), cid: region.cid };
+            region = { level: _.size(region.parents), cid: region.cid };
         }
     }
 
-    return PhotoConverter.addPhotosAll(params);
+    var historyCalls = [];
+
+    return User.findOneAsync({ login: data.login }, { login: 1, watersignCustom: 1, settings: 1 }, { lean: true })
+        .bind({})
+        .then(function (user) {
+            if (!user) {
+                throw { message: msg.noUser };
+            }
+
+            usersWhoConvertingNonIndividualPhotos[data.login] = true;
+            logger.info('Starting to convert non individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+
+            this.query = { user: user._id, $or: [{ watersignIndividual: null }, { watersignIndividual: false }] };
+
+            if (region) {
+                this.query['r' + region.level] = region.cid;
+            }
+
+            this.user = user;
+
+            return Photo.findAsync(this.query, { _id: 0, cid: 1, s: 1, user: 1, ldate: 1, cdate: 1, ucdate: 1, watersignText: 1 }, { lean: true, sort: { sdate: -1 } });
+        })
+        .then(function (photos) {
+
+            if (_.isEmpty(photos)) {
+                return { added: 0, time: 0 };
+            }
+
+            logger.info('Selected %d photos', photos.length);
+
+            var photo;
+            var photoOld;
+            var canModerate;
+            var stamp = new Date();
+            var itsMe = this.user.login === iAm.user.login;
+            var watersignText = getUserWaterSign(this.user);
+
+            for (var i = 0; i < photos.length; i++) {
+                photoOld = photos[i];
+
+                if (photoOld.s === status.NEW) {
+                    // New photo has no history yet, so don't need to write history row about watersign
+                    continue;
+                }
+
+                photo = _.clone(photoOld);
+                photo.cdate = stamp;
+                photo.watersignText = watersignText;
+
+                canModerate = itsMe ? null : permissions.canModerate(photoOld, iAm);
+
+                if (!itsMe && !canModerate) {
+                    // If at least for one photo user have no rights, deny whole operation
+                    photos = null;
+                    throw { message: msg.deny };
+                }
+
+                historyCalls.push([iAm, photoOld, photo, itsMe ? false : canModerate]);
+            }
+
+            var update = { $set: {}, $unset: { watersignTextApplied: 1 } };
+
+            // New photos don't have to update cdate and ucdate
+            var updateNew = _.cloneDeep(update);
+            var queryNew = _.clone(this.query);
+            queryNew.s = status.NEW;
+
+            this.query.s = { $ne: status.NEW };
+            update.$set.cdate = stamp;
+            if (!itsMe) {
+                // Set notification about photo change, only if it not my photo
+                update.$set.ucdate = stamp;
+            }
+
+            if (watersignText) {
+                update.$set.watersignText = updateNew.$set.watersignText = watersignText;
+            } else {
+                update.$unset.watersignText = updateNew.$unset.watersignText = 1;
+            }
+
+            if (_.isEmpty(updateNew.$set)) {
+                delete updateNew.$set;
+            }
+
+            photos = null;
+
+            return Bluebird.join(
+                Photo.updateAsync(this.query, update, { multi: true }),
+                Photo.updateAsync(queryNew, updateNew, { multi: true }),
+                Bluebird.all(historyCalls.map(function (hist) {
+                    return savePhotoHistory.apply(undefined, hist);
+                }))
+            )
+                .then(function () {
+                    return PhotoConverter.addPhotosAll({ login: data.login, priority: 2, region: region, individual: false });
+                });
+        })
+        .finally(function () {
+            delete usersWhoConvertingNonIndividualPhotos[data.login];
+            historyCalls = null;
+            logger.info('Finish in %ds to convert non individual photos of user %s %s %s', (Date.now() - stamp) / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+        });
 });
 
 /**
@@ -2760,13 +2865,13 @@ module.exports.loadController = function (app, db, io) {
                     socket.emit('convertPhotosAllResult', resultData);
                 });
         });
-        socket.on('convertPhotosForUser', function (data) {
-            convertPhotosForUser(hs.usObj, data)
+        socket.on('convertUserNonIndividualPhotos', function (data) {
+            convertUserNonIndividualPhotos(hs.usObj, data)
                 .catch(function (err) {
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {
-                    socket.emit('convertPhotosForUserResult', resultData);
+                    socket.emit('convertUserNonIndividualPhotosResult', resultData);
                 });
         });
 
