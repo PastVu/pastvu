@@ -420,7 +420,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p = Photo.vm(photo, this.p);
             this.can = ko_mapping.fromJS(can, this.can);
 
-            this.watersignOptionTrigger(this.p.watersignOption());
+            this.watersignOptionTrigger(_.random(9e9));
         },
 
         routeHandler: function () {
