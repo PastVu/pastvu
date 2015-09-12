@@ -120,12 +120,14 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
      * Значением может быть строка символов или regexp (в этом случае нужно дополнительно экранировать \)
      * По умолчанию, переданные значения - разрешенные
      * Если в параметре watch передан observable, поле будет форматироваться при его изменении
+     * Чтобы корректно отрабатывала максимальная длина поля, параметр maxLength нужно указыват здесь, в не в атрибуте,
+     * на случай вставки длинной строки с запреденными символами в середине
      * P.S. Если на инпуте используется value-binding, то valueUpdate должен быть 'keyup'
      *
      * @example
      * symbols: /\\d/
      * symbols: 'abcdef'
-     * symbols: {pattern: new RegExp('\\\d', 'g'), allow: false, watch: someobservable, noMultiplySpace: false}
+     * symbols: {pattern: new RegExp('\\\d', 'g'), allow: false, watch: someobservable, noMultiplySpace: false, maxLength: 15}
      */
     ko.bindingHandlers.symbols = (function () {
         var validateRegexp = function (regex, str) {
@@ -141,6 +143,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                 var param = ko.utils.unwrapObservable(valueAccessor());
                 var pattern = param.pattern || param;
                 var disallow = param.allow === false;
+                var maxLength = param.maxLength || false;
                 var noMultiplySpace = !!param.noMultiplySpace;
                 var validator = _.partial(_.isRegExp(pattern) ? validateRegexp : validateIndexOf, pattern);
                 var watchSubscription;
@@ -162,6 +165,10 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                             valueOnlyAllowed = valueOnlyAllowed.replace(/ {2,}/g, ' ');
                         }
 
+                        if (maxLength && valueOnlyAllowed.length > maxLength) {
+                            valueOnlyAllowed = valueOnlyAllowed.substr(0, maxLength);
+                        }
+
                         if (valueOnlyAllowed !== value) {
                             param.watch(valueOnlyAllowed);
                         }
@@ -179,6 +186,7 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
 
                 function onkeypress(evt) {
                     var key = evt.keyCode || evt.which;
+                    var cancelInput;
                     var fullValue;
                     var valid;
 
@@ -186,24 +194,30 @@ define(['jquery', 'underscore', 'knockout'], function ($, _, ko) {
                     // Если keycode определился и нажат shift или код не совпадает с keydowm
                     if (key && (evt.shiftKey || downKey !== key || specialKeyCodes.indexOf(key) < 0)) {
                         key = String.fromCharCode(key);
+                        cancelInput = function () {
+                            evt.stopImmediatePropagation();
+                            evt.preventDefault();
+                            return false;
+                        };
 
                         if (key) {
                             valid = validator(key);
 
                             if (!disallow && !valid || disallow && valid) {
-                                evt.stopImmediatePropagation();
-                                evt.preventDefault();
-                                return false;
+                                return cancelInput();
                             }
 
-                            fullValue = $(this).val();
+                            fullValue = $(this).val() || '';
+
+                            if (maxLength && fullValue.length > maxLength) {
+                                return cancelInput();
+                            }
+
                             if (noMultiplySpace && key === ' ' && !_.isEmpty(fullValue)) {
                                 var cursorPosition = caret(this);
 
                                 if (fullValue.charAt(cursorPosition - 1) === ' ' || fullValue.charAt(cursorPosition) === ' ') {
-                                    evt.stopImmediatePropagation();
-                                    evt.preventDefault();
-                                    return false;
+                                    return cancelInput();
                                 }
                             }
                         }
