@@ -2160,8 +2160,6 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
                 return { added: 0, time: 0 };
             }
 
-            logger.info('Selected %d photos', photos.length);
-
             var photo;
             var photoOld;
             var canModerate;
@@ -2232,7 +2230,7 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
         .finally(function () {
             delete usersWhoConvertingNonIndividualPhotos[data.login];
             historyCalls = null;
-            logger.info('Finish in %ds to convert non individual photos of user %s %s %s', (Date.now() - stamp) / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            logger.info('Finish in %ds to convert non individual photos of user %s %s. %s', (Date.now() - stamp) / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
         });
 });
 
@@ -2592,7 +2590,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
 });
 
 module.exports.loadController = function (app, db, io) {
-    logger = log4js.getLogger("photo.js");
+    logger = log4js.getLogger('photo.js');
 
     Settings = db.model('Settings');
     User = db.model('User');
