@@ -560,7 +560,6 @@ var createPhotos = Bluebird.method(function (socket, data) {
             }
             var now = Date.now();
             var next = count.next - data.length + 1;
-            var watersign = getUserWaterSign(user);
 
             return Bluebird.all(data.map(function (item, i) {
                 var photo = new Photo({
@@ -575,13 +574,14 @@ var createPhotos = Bluebird.method(function (socket, data) {
                     s: 0,
                     title: item.name ? item.name.replace(/(.*)\.[^.]+$/, '$1') : undefined, //Отрезаем у файла расширение
                     frags: undefined,
+                    watersignText: getUserWaterSign(user),
                     convqueue: true
                     //geo: [_.random(36546649, 38456140) / 1000000, _.random(55465922, 56103812) / 1000000],
                     //dir: dirs[_.random(0, dirs.length - 1)],
                 });
                 item.photoObj = photo;
 
-                cids.push({ cid: photo.cid, watersign: watersign });
+                cids.push({ cid: photo.cid });
                 return photo.saveAsync();
             }));
         })
