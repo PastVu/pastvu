@@ -275,7 +275,7 @@ var core = {
                 var promiseProps = {};
                 var regionFields;
                 var userSelectField;
-                var shouldBeEdit = this.can.edit &&
+                var shouldBeEdit = iAm.registered && this.can.edit &&
                     (params.forEdit || params.fullView && photo.s === status.NEW && photo.user.equals(iAm.user._id));
 
                 if (userObj) {
@@ -304,7 +304,13 @@ var core = {
                             if (!photo) {
                                 throw { message: msg.noPhoto };
                             }
-                            return photo.toObject();
+                            photo = photo.toObject();
+
+                            if (userSelectField.settings) {
+                                photo.user.settings = _.defaults(photo.user.settings || {}, settings.getUserSettingsDef());
+                            }
+
+                            return photo;
                         });
                 }
 

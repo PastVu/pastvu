@@ -10,8 +10,8 @@ module.exports.loadController = function (app, db) {
     saveSystemJSFunc(function pastvuPatch() {
         var startTime = Date.now();
 
-        //db.user_settings.save({ key: 'photo_watermark_let_download_pure', val: true, vars: [true, false], desc: 'Let other users download photo without watermark' });
-        //db.user_settings.save({ key: 'photo_watermark_add_sign', val: true, vars: [true, false, 'custom'], desc: 'Add sign to watermark' });
+        db.user_settings.save({ key: 'photo_watermark_let_download_pure', val: true, vars: [true, false], desc: 'Let other users download photo without watermark' });
+        db.user_settings.save({ key: 'photo_watermark_add_sign', val: true, vars: [true, false, 'custom'], desc: 'Add sign to watermark' });
 
         db.photos.find({}).forEach(function (photo) {
             var user = db.users.findOne({ _id: photo.user }, { _id: 0, login: 1 });
