@@ -32,6 +32,8 @@ define(['underscore'], function () {
             'default': 'Настройки системы',
             'text': 'Текст'
         },
-        watersignText: 'Подпись на вотермарке'
+        watersignText: 'Подпись на вотермарке',
+        watersignLength: 65,
+        watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g
     };
 });

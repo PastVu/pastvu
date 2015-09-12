@@ -273,7 +273,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 },
                 write: function (valNew) {
                     if (this.p.watersignIndividual()) {
-                        return this.p.watersignCustom(valNew);
+                        this.p.watersignCustom(valNew);
                     }
                 },
                 owner: this

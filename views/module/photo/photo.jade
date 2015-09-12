@@ -289,7 +289,7 @@
             .radio(style="margin-top:0"): .input-group(style="")
                 input(type="radio", name="watersign", value="custom", data-bind="attr: {disabled: !p.watersignIndividual()}, checked: watersignOption")
                 span(style="display: table-cell; padding: 2px 9px 2px 0;", data-bind="html: fields.watersign.text")
-                input.form-control(type="text", maxlength="65", style="width:422px;max-width:100%", data-bind="attr: {disabled: !p.watersignIndividual() || watersignOption()!=='custom'}, value: watersignCustom, valueUpdate: 'afterkeydown'")
+                input.form-control(type="text", style="width:422px;max-width:100%", data-bind="attr: {disabled: !p.watersignIndividual() || watersignOption()!=='custom'}, value: watersignCustom, symbols: {pattern:fields.watersignPattern,watch:p.watersignCustom,noMultiplySpace:true,maxLength:fields.watersignLength}, valueUpdate: 'input'")
             // /ko
         p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
             sup(style="margin-left:-8px;") 1

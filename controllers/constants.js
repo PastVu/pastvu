@@ -28,6 +28,9 @@ module.exports = {
         ],
         parsingFields: [
             'desc', 'source', 'author'
-        ]
+        ],
+
+        watersignLength: 65,
+        watersignPattern: /[\w\.,:;\(\)\[\]\\\|/№§©®℗℠™•\?!@#\$%\^&\*\+\-={}"'<>~` ]/g
     }
 };

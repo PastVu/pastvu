@@ -1804,6 +1804,11 @@ var photoValidate = function (newValues, oldValues) {
             result.watersignOption = newValues.watersignOption;
         }
 
+        if (_.isString(newValues.watersignCustom)) {
+            newValues.watersignCustom = newValues.watersignCustom
+                .match(constants.photo.watersignPattern).join('')
+                .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength);
+        }
         if (newValues.watersignCustom === null || _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
             result.watersignCustom = newValues.watersignCustom;
         }

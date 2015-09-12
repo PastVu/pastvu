@@ -11,6 +11,7 @@ var Utils = require('../commons/Utils.js');
 var step = require('step');
 var log4js = require('log4js');
 var _ = require('lodash');
+var constants = require('./constants.js');
 var logger;
 var incomeDir = global.appVar.storePath + 'incoming/';
 var privateDir = global.appVar.storePath + 'private/avatars/';
@@ -265,7 +266,9 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
     }
 
     var userObjOnline = _session.getOnline(login);
-    var watersign = _.isString(data.watersign) ? _.trim(data.watersign) : '';
+    var watersign = _.isString(data.watersign) ? data.watersign
+        .match(constants.photo.watersignPattern).join('')
+        .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength) : '';
 
     return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
         .then(function (user) {

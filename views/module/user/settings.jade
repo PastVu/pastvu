@@ -156,7 +156,7 @@
                         .radio(style="margin-top:0"): .input-group(style="max-width:500px")
                             input(type="radio", name="watersign", value="custom", data-bind="checked: watersigncheck")
                             span.input-group-addon Текст
-                            input.form-control(type="text", maxlength="65", data-bind="attr: {disabled: watersigncheck()!=='custom'}, value: u.watersignCustom, valueUpdate: 'afterkeydown', executeOnEnter: watermarkCustomSave")
+                            input.form-control(type="text", data-bind="attr: {disabled: watersigncheck()!=='custom'}, value: u.watersignCustom, symbols: {pattern:fields.watersignPattern,watch:u.watersignCustom,noMultiplySpace:true,maxLength:fields.watersignLength}, valueUpdate: 'input', executeOnEnter: watermarkCustomSave")
                             span.input-group-addon.action.save(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomSave")
                                 span.glyphicon.glyphicon-ok
                             span.input-group-addon.action.cancel(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomCancel")
