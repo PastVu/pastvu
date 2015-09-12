@@ -4,8 +4,8 @@ module.exports = function (grunt) {
     global.appVar = {};
 
     var path = require('path'),
-        Utils = require('./commons/Utils.js'),
-        land = grunt.option('land') || 'prod', //Например, --land test
+        Utils = require('./commons/Utils'),
+        land = grunt.option('land') || 'prod', // Например, --land test
         upperDir = path.normalize(path.resolve('../') + '/'),
         targetDir = path.normalize(upperDir + 'appBuild/'),
         appHash = Utils.randomString(5);
@@ -24,14 +24,14 @@ module.exports = function (grunt) {
         },
         clean: {
             options: {
-                force: true //This overrides grunt.file.delete from blocking deletion of folders outside cwd
+                force: true // This overrides grunt.file.delete from blocking deletion of folders outside cwd
             },
             target: {
-                //Очищаем целевую директорию кроме вложенной папки node_modules
-                src: [targetDir + '/*'/*, '!' + targetDir + '/node_modules'*/]
+                // Очищаем целевую директорию кроме вложенной папки node_modules
+                src: [targetDir + '/*'/* , '!' + targetDir + '/node_modules'*/]
             },
             publicTpl: {
-                //Очищаем директорию скомпиленных tpl
+                // Очищаем директорию скомпиленных tpl
                 src: ['public/tpl']
             }
         },
@@ -71,7 +71,7 @@ module.exports = function (grunt) {
                 files: [
                     {
                         expand: true,
-                        src: ['basepatch/**', 'commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'],
+                        src: ['basepatch/**', 'bin/**', 'commons/**', 'controllers/**', 'models/**', 'misc/watermark/**'],
                         dest: targetDir
                     },
                     {
