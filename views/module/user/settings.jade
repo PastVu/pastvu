@@ -177,9 +177,9 @@
                                 span
                                     | В регионе
                                     input.form-control(id="reconvertRegion", data-bind="attr: {disabled: reconvertcheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
-                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos") Применить
+                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: reconvertPhotos, attr: {disabled: reconvertingPhotos()}") Применить
 
-                //-dl.dl-horizontal
+                dl.dl-horizontal
                     dt.helpexists
                         abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались). В этом случае при следующей конвертации фотографий, будут использованы настройки подписи, указанные выше")
                             span.glyphicon.glyphicon-info-sign

@@ -113,6 +113,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 });
                 this.resetwatersigncheck = ko.observable('all');
                 this.reconvertcheck = ko.observable('all');
+                this.reconvertingPhotos = ko.observable(false);
 
                 this.getSettingsVars(function () {
                     this.subscriptions.subscr_throttle = this.u.settings.subscr_throttle.subscribe(_.debounce(this.subscr_throttleHandler, 700), this);
@@ -189,6 +190,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var option = this.resetwatersigncheck();
         },
         reconvertPhotos: function () {
+            this.reconvertingPhotos(true);
+
             var option = this.reconvertcheck();
             var region = option === 'region' && $('#reconvertRegion', this.$dom).val();
 
@@ -210,6 +213,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     force: true
                 });
 
+                this.reconvertingPhotos(false);
             }, this);
             socket.emit('convertUserNonIndividualPhotos', { login: this.u.login(), r: region });
         },
