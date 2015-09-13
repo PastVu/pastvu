@@ -336,7 +336,7 @@ async.waterfall([
 
         require('./controllers/errors.js').registerErrorHandling(app);
         require('./controllers/systemjs.js').loadController(app, db);
-        require('./basepatch/v1.3.0.3.js').loadController(app, db);
+        //require('./basepatch/v1.3.0.3.js').loadController(app, db);
 
         CoreServer = require('./controllers/coreadapter.js');
         callback(null);

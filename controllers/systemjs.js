@@ -218,9 +218,7 @@ module.exports.loadController = function (app, db) {
         var query = {};
         var selectFields = { _id: 0, cid: 1 };
         var conveyer = [];
-        var iterator = function (photo) {
-            conveyer.push({ cid: photo.cid, priority: params.priority, added: addDate });
-        };
+        var counter = 0;
 
         if (params.login) {
             var user = db.users.findOne({ login: params.login });
@@ -249,11 +247,18 @@ module.exports.loadController = function (app, db) {
         }
 
         print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
-        db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(iterator);
-        db.photos_conveyer.insert(conveyer);
+        db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(function (photo) {
+            counter++;
+            if (!db.photos_conveyer.findOne({ cid: photo.cid })) {
+                conveyer.push({ cid: photo.cid, priority: params.priority, added: addDate });
+            }
+        });
+        if (conveyer.length) {
+            db.photos_conveyer.insert(conveyer);
+        }
 
         return {
-            added: conveyer.length,
+            added: counter,
             time: (Date.now() - startTime) / 1000,
             photosAdded: conveyer.length
         };
