@@ -162,8 +162,12 @@
                             span.input-group-addon.action.cancel(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomCancel")
                                 span.glyphicon.glyphicon-remove
                         // /ko
-                        abbr(title="Отправить на переконвертацию свои фотографии, в которых подпись на вотремарке берется из текущих настроек профиля")
-                            | Применить выбранные настройки к фотографиям, в которых нет индивидульных настроек подписи:
+                        p.text-muted(style="margin-bottom:7px;padding-left:8px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым фотографиям. Чтобы применить ее к существующим фотографиям, нажмите "применить" ниже
+                        hr(style="margin:6px 0 7px;")
+                        abbr(title="Отправить на переконвертацию свои фотографии, в которых подпись на вотермарке берется из текущих настроек профиля")
+                            | Применить настройку к загруженным фотографиям, в которых нет индивидульных настроек подписи:
                         div
                             label.radio-inline
                                 input(type="radio", name="reconvert", value="all", data-bind="checked: reconvertcheck")
