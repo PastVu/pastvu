@@ -2122,7 +2122,7 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
 
 // Sends user's photo for convert
 var usersWhoConvertingNonIndividualPhotos = {};
-var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
+var convertUserPhotos = Bluebird.method(function (iAm, data) {
     if (!_.isObject(data) || !data.login) {
         throw { message: msg.badParams };
     }
@@ -2130,10 +2130,10 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
         throw { message: msg.deny };
     }
     if (usersWhoConvertingNonIndividualPhotos[data.login]) {
-        throw { message: 'Вы уже отправили такой запрос и он еще выполняется. Попробуйте позже' };
+        throw { message: 'Вы уже отправили запрос и он еще выполняется. Попробуйте позже' };
     }
 
-    var stamp = new Date();
+    var stampStart = new Date();
     var region;
     if (_.isNumber(data.r) && data.r > 0) {
         region = regionController.getRegionFromCache(data.r);
@@ -2153,12 +2153,18 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
             }
 
             usersWhoConvertingNonIndividualPhotos[data.login] = true;
-            logger.info('Starting sending to convert non individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            logger.info('Starting sending to convert ' + (data.resetIndividual ? '' : 'non ') + 'individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
 
-            this.query = { user: user._id, $or: [{ watersignIndividual: null }, { watersignIndividual: false }] };
+            this.query = { user: user._id };
 
             if (region) {
                 this.query['r' + region.level] = region.cid;
+            }
+
+            if (data.resetIndividual) {
+                this.query.watersignIndividual = true;
+            } else {
+                this.query.$or = [{ watersignIndividual: null }, { watersignIndividual: false }];
             }
 
             this.user = user;
@@ -2175,8 +2181,11 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
             var photoOld;
             var canModerate;
             var stamp = new Date();
+            var count = photos.length;
             var itsMe = this.user.login === iAm.user.login;
             var watersignText = getUserWaterSign(this.user);
+
+            this.count = count;
 
             for (var i = 0; i < photos.length; i++) {
                 photoOld = photos[i];
@@ -2190,6 +2199,10 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
                 photo.cdate = stamp;
                 photo.watersignText = watersignText;
 
+                if (data.resetIndividual) {
+                    photo.watersignIndividual = undefined;
+                }
+
                 canModerate = itsMe ? null : permissions.canModerate(photoOld, iAm);
 
                 if (!itsMe && !canModerate) {
@@ -2201,9 +2214,11 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
                 historyCalls.push([iAm, photoOld, photo, itsMe ? false : canModerate]);
             }
 
-            this.count = photos.length;
-
             var update = { $set: {}, $unset: { watersignTextApplied: 1 } };
+
+            if (data.resetIndividual) {
+                update.$unset.watersignIndividual = 1;
+            }
 
             // New photos don't have to update cdate and ucdate
             var updateNew = _.cloneDeep(update);
@@ -2212,10 +2227,6 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
 
             this.query.s = { $ne: status.NEW };
             update.$set.cdate = stamp;
-            if (!itsMe) {
-                // Set notification about photo change, only if it not my photo
-                update.$set.ucdate = stamp;
-            }
 
             if (watersignText) {
                 update.$set.watersignText = updateNew.$set.watersignText = watersignText;
@@ -2237,13 +2248,16 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
                 }))
             )
                 .then(function () {
-                    return PhotoConverter.addPhotosAll({ login: data.login, priority: 2, region: region, individual: false });
+                    return PhotoConverter.addPhotosAll({ login: data.login, priority: 2, region: region, onlyWithoutTextApplied: true });
+                })
+                .then(function (conveyorResult) {
+                    return { updated: count, conveyorAdded: conveyorResult.conveyorAdded, time: Date.now() - stampStart };
                 });
         })
         .finally(function () {
             delete usersWhoConvertingNonIndividualPhotos[data.login];
             historyCalls = null;
-            logger.info('Finish in %ds sending to convert %d non individual photos of user %s %s. %s', (Date.now() - stamp) / 1000, this.count, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            logger.info('Finish in %ds sending to convert %d ' + (data.resetIndividual ? '' : 'non ') + 'individual photos of user %s %s. %s', (Date.now() - stampStart) / 1000, this.count, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
         });
 });
 
@@ -2882,15 +2896,15 @@ module.exports.loadController = function (app, db, io) {
                     socket.emit('convertPhotosAllResult', resultData);
                 });
         });
-        socket.on('convertUserNonIndividualPhotos', function (data) {
-            convertUserNonIndividualPhotos(hs.usObj, data)
+        socket.on('convertUserPhotos', function (data) {
+            convertUserPhotos(hs.usObj, data)
                 .catch(function (err) {
-                    logger.error('convertUserNonIndividualPhotos ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
+                    logger.error('convertUserPhotos ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
                     logger.trace(err);
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {
-                    socket.emit('convertUserNonIndividualPhotosResult', resultData);
+                    socket.emit('convertUserPhotosResult', resultData);
                 });
         });
 

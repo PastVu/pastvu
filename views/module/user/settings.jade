@@ -181,22 +181,24 @@
 
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались). В этом случае при следующей конвертации фотографий, будут использованы настройки подписи, указанные выше")
+                        abbr(title="Сбросить установленные индивидульные настройки подписи в фотографиях (если такие устанавливались)")
                             span.glyphicon.glyphicon-info-sign
                             |  Сбросить установленные в фотографиях
                             br
                             | индивидульные настройки подписи
                     dd: span.panel-block(style="padding-top:0")
-                        div
-                            label.radio-inline
-                                input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
-                                | Все
-                            label.radio-inline
-                                input(type="radio", name="resetwatersign", value="region", data-bind="checked: resetwatersigncheck")
-                                span
-                                    | В регионе
-                                    input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
-                            button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: watersignReset") Сбросить
+                        label.radio-inline
+                            input(type="radio", name="resetwatersign", value="all", data-bind="checked: resetwatersigncheck")
+                            | Все
+                        label.radio-inline
+                            input(type="radio", name="resetwatersign", value="region", data-bind="checked: resetwatersigncheck")
+                            span
+                                | В регионе
+                                input.form-control(id="resetwatersignRegion", data-bind="attr: {disabled: resetwatersigncheck()!=='region'}", style="display:inline-block;margin-left:6px;width:180px;", type="number", placeholder="Введите номер региона", maxlength="6")
+                        button.btn.btn-sm.btn-primary(type="button", style="margin: 5px 0 8px;", data-bind="click: individualWatersignReset, attr: {disabled: reconvertingPhotos()}") Сбросить
+                        p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  Фотографиям будет установлена настройка подписи по умолчанию, указанная выше. Эти фотографии будут отправлены на переконвертацию автоматически
 
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#notice") Подписка и уведомления

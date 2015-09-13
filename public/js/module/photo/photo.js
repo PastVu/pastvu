@@ -1,7 +1,7 @@
 /**
  * Модель страницы фотографии
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, Photo, Region, storage, fields, statuses, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'moment', 'noties', 'model/Photo', 'model/Region', 'model/storage', 'm/photo/fields', 'm/photo/status', 'text!tpl/photo/photo.jade', 'css!style/photo/photo', 'bs/ext/multiselect', 'jquery-plugins/imgareaselect'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, moment, noties, Photo, Region, storage, fields, statuses, jade) {
     var $window = $(window);
     var imgFailTpl = _.template('<div class="imgFail"><div class="failContent" style="${ style }">${ txt }</div></div>');
     var statusKeys = statuses.keys;
@@ -9,147 +9,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
     var isYes = function (evt) {
         return !!evt.target.classList.contains('yes');
     };
-
-    function confirm(params) {
-        return window.noty({
-            text: params.message,
-            type: 'confirm',
-            layout: 'center',
-            modal: true,
-            force: true,
-            animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 500 },
-            buttons: [
-                {
-                    addClass: 'btn btn-danger', text: params.okText || 'Ok', onClick: function ($noty) {
-                    // this = button element
-                    // $noty = $noty element
-
-                    if (!params.onOk) {
-                        $noty.close();
-                        return;
-                    }
-
-                    var $buttons = $noty.$buttons;
-                    var finish = function (onFinish, ctx) {
-                        $buttons.find('.btn-danger').remove();
-                        return $buttons.find('.btn-primary')
-                            .off('click')
-                            .attr('disabled', false)
-                            .on('click', function () {
-                                $noty.close();
-                                if (onFinish) {
-                                    onFinish.call(ctx);
-                                }
-                            });
-                    };
-                    var methods = {
-                        close: function () {
-                            $noty.close();
-                        },
-                        enable: function () {
-                            $buttons.find('button').attr('disabled', false);
-                        },
-                        disable: function () {
-                            $buttons.find('button').attr('disabled', true);
-                        },
-                        replaceTexts: function (message, okText, cancelText) {
-                            $noty.$message.children().html(message);
-                            if (okText) {
-                                $('.btn-danger', $buttons).text(okText);
-                            }
-                            if (cancelText) {
-                                $('.btn-primary', $buttons).text(cancelText);
-                            }
-                        },
-                        success: function (message, buttonText, countdown, onFinish, ctx) {
-                            this.replaceTexts(message, null, buttonText);
-                            var finishButton = finish(onFinish, ctx);
-
-                            if (_.isNumber(countdown) && countdown > 0) {
-                                finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
-
-                                Utils.timer(
-                                    countdown * 1000,
-                                    function (timeleft) {
-                                        finishButton.text(buttonText + ' (' + timeleft + ')');
-                                    },
-                                    function () {
-                                        finishButton.trigger('click');
-                                    }
-                                );
-                            }
-                        },
-                        error: function (message, buttonText, onFinish, ctx) {
-                            this.replaceTexts(message, null, buttonText);
-                            finish(onFinish, ctx);
-                        }
-                    };
-
-                    params.onOk.call(params.ctx, methods);
-                }
-                },
-                {
-                    addClass: 'btn btn-primary', text: params.cancelText || 'Отмена', onClick: function ($noty) {
-                    $noty.close();
-                    params.onCancel && params.onCancel.call(params.ctx);
-                }
-                }
-            ]
-        });
-    }
-
-    function notyAlert(params) {
-        var buttonText = params.text || 'Ok';
-        var countdown = params.countdown;
-
-        var $noty = window.noty({
-            text: params.message,
-            type: 'confirm',
-            layout: 'center',
-            modal: true,
-            force: true,
-            animation: { open: { height: 'toggle' }, close: {}, easing: 'swing', speed: 100 },
-            buttons: [
-                {
-                    addClass: 'btn btn-primary', text: buttonText, onClick: function ($noty) {
-                    // this = button element
-                    // $noty = $noty element
-
-                    $noty.close();
-                    if (params.onOk) {
-                        params.onOk.call(params.ctx);
-                    }
-                }
-                }
-            ]
-        });
-
-        var finishButton = $('.btn-primary', $noty);
-
-        if (_.isNumber(countdown) && countdown > 0) {
-            finishButton.text(buttonText + ' (' + (countdown - 1) + ')');
-
-            Utils.timer(
-                countdown * 1000,
-                function (timeleft) {
-                    finishButton.text(buttonText + ' (' + timeleft + ')');
-                },
-                function () {
-                    finishButton.trigger('click');
-                }
-            );
-        }
-    }
-
-    function notyError(message, timeout) {
-        window.noty({
-            text: message || 'Возникла ошибка',
-            type: 'error',
-            layout: 'center',
-            timeout: timeout || 2000,
-            force: true
-        });
-    }
 
     return Cliche.extend({
         jade: jade,
@@ -1190,17 +1049,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             }
 
-            // TODO: Отправка на переконвертацию фотографий из настроек
-            // TODO: Сброс индифидуальных настроек из профиля и отправка их на переконвертацию фотографий
-            // TODO: Опция разрешить скачивать без вотермарка
-
             if (!_.isEmpty(changes)) {
                 self.exe(true);
 
                 (function request(confirmer) {
                     socket.once('savePhotoResult', function (data) {
                         if (data && data.changed) {
-                            confirm({
+                            noties.confirm({
                                 message: data.message +
                                 '<br>В случае продолжения сохранения, ваши изменения заменят более ранние' +
                                 '<br><a data-replace="true" href="?history=1">Посмотреть историю изменений</a>' +
@@ -1221,7 +1076,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             var error = !data || data.error;
 
                             if (error) {
-                                notyError(data && data.message);
+                                noties.error(data && data.message);
                             } else {
                                 self.rechargeData(data.photo, data.can);
 
@@ -1267,7 +1122,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             };
 
             self.exe(true);
-            confirm({
+            noties.confirm({
                 message: 'Фотография будет перемещена в корзину и не попадет в очередь на публикацию<br>Подтвердить операцию?',
                 okText: 'Да',
                 cancelText: 'Нет',
@@ -1320,7 +1175,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             (function request(confirmer) {
                 socket.once('readyPhotoResult', function (data) {
                     if (data && data.changed) {
-                        confirm({
+                        noties.confirm({
                             message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                             okText: 'Продолжить отправку',
                             cancelText: 'Отменить',
@@ -1340,7 +1195,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             }
                             ga('send', 'event', 'photo', 'ready', 'photo ready success');
                         } else {
-                            notyError(data.message);
+                            noties.error(data.message);
                             ga('send', 'event', 'photo', 'ready', 'photo ready error');
                         }
                         self.exe(false);
@@ -1371,7 +1226,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 (function request(confirmer) {
                     socket.once('revisionPhotoResult', function (data) {
                         if (data && data.changed) {
-                            confirm({
+                            noties.confirm({
                                 message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                                 okText: 'Продолжить операцию',
                                 cancelText: 'Отменить',
@@ -1391,7 +1246,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 }
                                 ga('send', 'event', 'photo', 'revision', 'photo revision success');
                             } else {
-                                notyError(data.message);
+                                noties.error(data.message);
                                 ga('send', 'event', 'photo', 'revision', 'photo revision error');
                             }
                             self.exe(false);
@@ -1422,7 +1277,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 (function request(confirmer) {
                     socket.once('rejectPhotoResult', function (data) {
                         if (data && data.changed) {
-                            confirm({
+                            noties.confirm({
                                 message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                                 okText: 'Продолжить операцию',
                                 cancelText: 'Отменить',
@@ -1436,7 +1291,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         } else {
                             var error = !data || data.error;
                             if (error) {
-                                notyError(data && data.message);
+                                noties.error(data && data.message);
                             } else {
                                 self.rechargeData(data.photo, data.can);
 
@@ -1466,7 +1321,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             (function request(confirmer) {
                 socket.once('approvePhotoResult', function (data) {
                     if (data && data.changed) {
-                        confirm({
+                        noties.confirm({
                             message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                             okText: 'Продолжить публикацию',
                             cancelText: 'Отменить',
@@ -1487,7 +1342,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             }
                             ga('send', 'event', 'photo', 'approve', 'photo approve success');
                         } else {
-                            notyError(data.message);
+                            noties.error(data.message);
                             ga('send', 'event', 'photo', 'approve', 'photo approve error');
                         }
                         self.exe(false);
@@ -1524,7 +1379,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             function request(reason, confirmer) {
                 socket.once('disablePhotoResult', function (data) {
                     if (data && data.changed) {
-                        confirm({
+                        noties.confirm({
                             message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                             okText: 'Продолжить операцию',
                             cancelText: 'Отменить',
@@ -1538,7 +1393,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     } else {
                         var error = !data || data.error;
                         if (error) {
-                            notyError(data && data.message);
+                            noties.error(data && data.message);
                         } else {
                             self.rechargeData(data.photo, data.can);
 
@@ -1581,7 +1436,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 (function request(confirmer) {
                     socket.once('removePhotoResult', function (data) {
                         if (data && data.changed) {
-                            confirm({
+                            noties.confirm({
                                 message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                                 okText: 'Продолжить удаление',
                                 cancelText: 'Отменить',
@@ -1596,7 +1451,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             var error = !data || data.error;
                             if (error) {
                                 self.exe(false);
-                                notyError(data && data.message);
+                                noties.error(data && data.message);
                             } else {
                                 self.rechargeData(data.photo, data.can);
 
@@ -1604,7 +1459,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                     confirmer.close();
                                 }
 
-                                notyAlert({
+                                noties.alert({
                                     message: 'Фотография удалена',
                                     text: 'Завершить',
                                     countdown: 5,
@@ -1642,7 +1497,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 (function request(confirmer) {
                     socket.once('restorePhotoResult', function (data) {
                         if (data && data.changed) {
-                            confirm({
+                            noties.confirm({
                                 message: data.message + '<br><a target="_blank" href="/p/' + cid + '">Посмотреть последнюю версию</a>',
                                 okText: 'Продолжить восстановление',
                                 cancelText: 'Отменить',
@@ -1656,7 +1511,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         } else {
                             var error = !data || data.error;
                             if (error) {
-                                notyError(data && data.message);
+                                noties.error(data && data.message);
                             } else {
                                 self.rechargeData(data.photo, data.can);
 

@@ -1,7 +1,8 @@
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, fields, Region, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'],
+       function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -186,9 +187,6 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.u.watersignCustom(this.originUser.watersignCustom);
             this.photo_watermark_add_sign(this.u.settings.photo_watermark_add_sign());
         },
-        watersignReset: function () {
-            var option = this.resetwatersigncheck();
-        },
         reconvertPhotos: function () {
             this.reconvertingPhotos(true);
 
@@ -199,14 +197,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 region = Number(region) || undefined;
             }
 
-            socket.once('convertUserNonIndividualPhotosResult', function (data) {
+            socket.once('convertUserPhotosResult', function (data) {
                 var error = !data || data.error;
-                var warning = !error && !data.added;
+                var warning = !error && !data.updated;
 
                 window.noty({
                     text: error ? data && data.message || 'Error occurred' :
                         warning ? 'Ни одной фотографии не отправлено на конвертацию' :
-                        data.added + ' фотографий отправлено на повторную конвертацию',
+                        data.updated + ' фотографий отправлено на повторную конвертацию',
                     type: error ? 'error' : warning ? 'warning' : 'success',
                     layout: 'center',
                     timeout: 3000,
@@ -215,7 +213,50 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 this.reconvertingPhotos(false);
             }, this);
-            socket.emit('convertUserNonIndividualPhotos', { login: this.u.login(), r: region });
+            socket.emit('convertUserPhotos', { login: this.u.login(), r: region });
+        },
+        individualWatersignReset: function () {
+            var self = this;
+
+            self.reconvertingPhotos(true);
+
+            var option = self.resetwatersigncheck();
+            var region = option === 'region' && $('#resetwatersignRegion', self.$dom).val();
+
+            if (region) {
+                region = Number(region) || undefined;
+            }
+
+            noties.confirm({
+                message: 'Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях' +
+                         (region ? ' указанного региона' : '') + '?',
+                okText: 'Да, сбросить',
+                cancelText: 'Отменить',
+                onOk: function (confirmer) {
+                    socket.once('convertUserPhotosResult', function (data) {
+                        var error = !data || data.error;
+                        var warning = !error && !data.updated;
+
+                        confirmer.close();
+
+                        window.noty({
+                            text: error ? data && data.message || 'Error occurred' :
+                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками подписи' :
+                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки подписи и они отправлены на повторную конвертацию',
+                            type: error ? 'error' : warning ? 'warning' : 'success',
+                            layout: 'center',
+                            timeout: 3000,
+                            force: true
+                        });
+
+                        self.reconvertingPhotos(false);
+                    });
+                    socket.emit('convertUserPhotos', { login: self.u.login(), r: region, resetIndividual: true });
+                },
+                onCancel: function () {
+                    self.reconvertingPhotos(false);
+                }
+            });
         },
         autoReply: function (data, evt) {
             this.changeSetting('subscr_auto_reply', isYes(evt), true);

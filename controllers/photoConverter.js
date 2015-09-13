@@ -316,7 +316,7 @@ async function conveyerStep(photo/* , photoConv*/) {
         photo.hs = parseInt(result.h, 10) || undefined;
     };
     const saveStandardSign = function (result) {
-        photo.signs = result.signature ? result.signature.substr(0, 7) : undefined;
+        photo.signs = result.signature ? result.signature.substr(0, 7) + result.signature.substr(result.signature.length - 3) : undefined;
     };
 
     // Запускаем identify оригинала
@@ -483,7 +483,7 @@ export async function addPhotosAll(params) {
         throw { message: result.message || '' };
     }
 
-    conveyerLength += result.photosAdded;
+    conveyerLength += result.conveyorAdded;
     conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
     conveyerControl();
 
