@@ -2190,8 +2190,9 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
             for (var i = 0; i < photos.length; i++) {
                 photoOld = photos[i];
 
-                if (photoOld.s === status.NEW) {
+                if (photoOld.s === status.NEW || watersignText === photoOld.watersignText) {
                     // New photo has no history yet, so don't need to write history row about watersign
+                    // If watersignText did not really changed, do not save history, only reconvert
                     continue;
                 }
 
