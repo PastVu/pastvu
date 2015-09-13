@@ -118,7 +118,7 @@
 
     .panel.panel-pastvu
         .panel-heading: .panel-title: a(data-toggle="collapse", href="#photo") Фотографии
-        .panel-collapse.collapse.in#notice: .panel-body
+        .panel-collapse.collapse.in#photo: .panel-body
             dl.dl-horizontal
                 dt.helpexists
                     abbr(title="Показывать по умолчанию вотермарк pastvu.com, встроенный в изображение")
@@ -162,7 +162,7 @@
                             span.input-group-addon.action.cancel(data-bind="style: {visibility: watersignCustomChanged() ? 'visible' : 'hidden'}, click: watermarkCustomCancel")
                                 span.glyphicon.glyphicon-remove
                         // /ko
-                        p.text-muted(style="margin-bottom:7px;padding-left:8px;line-height:1.1;font-size:11px;")
+                        p.text-muted(style="padding-left:8px;line-height:1.1;font-size:11px;")
                             sup(style="margin-left:-6px;") *
                             |  Настройка сохраняется автоматически и будет применена ко всем вновь загружаемым фотографиям. Чтобы применить ее к существующим фотографиям, нажмите "применить" ниже
                         hr(style="margin:6px 0 7px;")
