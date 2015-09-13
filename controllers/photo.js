@@ -757,6 +757,12 @@ var savePhotoHistory = Bluebird.method(function (iAm, oldPhotoObj, photo, canMod
             _.forOwn(changes.oldValues, function (value, field) {
                 if (!lastFieldsIndexes[field]) {
                     firstEntryChanged = true;
+
+                    // There maybe no 'values' if photo was uploaded before introducing history functionality,
+                    // but after that some photo attribute was added (not edited)
+                    if (!histories[0].values) {
+                        histories[0].values = {};
+                    }
                     histories[0].values[field] = value;
                 }
                 // Если нет нового значения и старое значение не флаг, говорим что оно удалено
@@ -2147,7 +2153,7 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
             }
 
             usersWhoConvertingNonIndividualPhotos[data.login] = true;
-            logger.info('Starting to convert non individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            logger.info('Starting sending to convert non individual photos of user %s %s %s', user.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
 
             this.query = { user: user._id, $or: [{ watersignIndividual: null }, { watersignIndividual: false }] };
 
@@ -2195,6 +2201,8 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
                 historyCalls.push([iAm, photoOld, photo, itsMe ? false : canModerate]);
             }
 
+            this.count = photos.length;
+
             var update = { $set: {}, $unset: { watersignTextApplied: 1 } };
 
             // New photos don't have to update cdate and ucdate
@@ -2235,7 +2243,7 @@ var convertUserNonIndividualPhotos = Bluebird.method(function (iAm, data) {
         .finally(function () {
             delete usersWhoConvertingNonIndividualPhotos[data.login];
             historyCalls = null;
-            logger.info('Finish in %ds to convert non individual photos of user %s %s. %s', (Date.now() - stamp) / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
+            logger.info('Finish in %ds sending to convert %d non individual photos of user %s %s. %s', (Date.now() - stamp) / 1000, this.count, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login);
         });
 });
 
@@ -2877,6 +2885,8 @@ module.exports.loadController = function (app, db, io) {
         socket.on('convertUserNonIndividualPhotos', function (data) {
             convertUserNonIndividualPhotos(hs.usObj, data)
                 .catch(function (err) {
+                    logger.error('convertUserNonIndividualPhotos ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
+                    logger.trace(err);
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {
