@@ -1,8 +1,7 @@
 /**
  * Модель настроек пользователя
  */
-define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'],
-       function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
+define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mapping', 'm/_moduleCliche', 'globalVM', 'renderer', 'noties', 'm/photo/fields', 'model/Region', 'model/User', 'model/storage', 'text!tpl/user/settings.jade', 'css!style/user/settings', 'bs/collapse'], function (_, Utils, socket, P, ko, ko_mapping, Cliche, globalVM, renderer, noties, fields, Region, User, storage, jade) {
     function isYes(evt) {
         return !!evt.target.classList.contains('yes');
     }
@@ -177,7 +176,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     this.u.watersignCustom(watersignCustom);
                 } else {
                     window.noty({
-                        text: result && result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true
+                        text: result && result.message || 'Error occurred',
+                        type: 'error',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
                     });
                 }
             }, this);
@@ -229,7 +232,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
             noties.confirm({
                 message: 'Вы уверены что хотите сбросить индивидуальные настройки подписи в фотографиях' +
-                         (region ? ' указанного региона' : '') + '?',
+                (region ? ' указанного региона' : '') + '?',
                 okText: 'Да, сбросить',
                 cancelText: 'Отменить',
                 onOk: function (confirmer) {
@@ -284,7 +287,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
 
                 if (error) {
                     window.noty({
-                        text: result && result.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true
+                        text: result && result.message || 'Error occurred',
+                        type: 'error',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
                     });
                 } else {
                     this.u.settings[result.key](result.val);
@@ -362,7 +369,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.once('saveUserHomeRegionResult', function (data) {
                 var error = !data || data.error || !data.saved;
                 if (error) {
-                    window.noty({ text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true });
+                    window.noty({
+                        text: data.message || 'Error occurred',
+                        type: 'error',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
+                    });
                 }
                 cb.call(ctx, error, data);
             }, this);
@@ -372,7 +385,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             socket.once('saveUserRegionsResult', function (data) {
                 var error = !data || data.error || !data.saved;
                 if (error) {
-                    window.noty({ text: data.message || 'Error occurred', type: 'error', layout: 'center', timeout: 3000, force: true });
+                    window.noty({
+                        text: data.message || 'Error occurred',
+                        type: 'error',
+                        layout: 'center',
+                        timeout: 3000,
+                        force: true
+                    });
                 }
                 cb.call(ctx, error);
             }, this);
@@ -486,7 +505,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             withScroll: true,
                             offIcon: { text: 'Отмена', click: onCancel, ctx: ctx },
                             btns: [
-                                { css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: onApply, ctx: ctx },
+                                {
+                                    css: 'btn-success',
+                                    text: 'Применить',
+                                    glyphicon: 'glyphicon-ok',
+                                    click: onApply,
+                                    ctx: ctx
+                                },
                                 { css: 'btn-warning', text: 'Отмена', click: onCancel, ctx: ctx }
                             ]
                         },

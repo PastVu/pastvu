@@ -187,7 +187,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
             ];
 
-            this.descCheckInViewportDebounced = _.debounce(this.descCheckInViewport, 210, { leading: false, trailing: true });
+            this.descCheckInViewportDebounced = _.debounce(this.descCheckInViewport, 210, {
+                leading: false,
+                trailing: true
+            });
 
             // Вызовется один раз в начале 700мс и в конце один раз, если за эти 700мс были другие вызовы
             this.routeHandlerDebounced = _.debounce(this.routeHandler, 700, { leading: true, trailing: true });
@@ -707,22 +710,26 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 offIcon: { text: 'Отмена', click: this.closeRegionSelect, ctx: this },
                                 btns: [
                                     {
-                                        css: 'btn-success', text: 'Применить', glyphicon: 'glyphicon-ok', click: function () {
-                                        var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
+                                        css: 'btn-success',
+                                        text: 'Применить',
+                                        glyphicon: 'glyphicon-ok',
+                                        click: function () {
+                                            var regions = this.regselectVM.getSelectedRegionsFull(['cid', 'title_local']);
 
-                                        if (regions.length > 1) {
-                                            window.noty({
-                                                text: 'Допускается выбирать один регион',
-                                                type: 'error',
-                                                layout: 'center',
-                                                timeout: 3000,
-                                                force: true
-                                            });
-                                            return;
-                                        }
-                                        Photo.vm({ regions: regions[0] || [] }, this.p, true); //Обновляем регионы
-                                        this.closeRegionSelect();
-                                    }, ctx: this
+                                            if (regions.length > 1) {
+                                                window.noty({
+                                                    text: 'Допускается выбирать один регион',
+                                                    type: 'error',
+                                                    layout: 'center',
+                                                    timeout: 3000,
+                                                    force: true
+                                                });
+                                                return;
+                                            }
+                                            Photo.vm({ regions: regions[0] || [] }, this.p, true); //Обновляем регионы
+                                            this.closeRegionSelect();
+                                        },
+                                        ctx: this
                                     },
                                     { css: 'btn-warning', text: 'Отмена', click: this.closeRegionSelect, ctx: this }
                                 ]
@@ -822,17 +829,21 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     },
                     buttons: [
                         {
-                            addClass: 'btn btn-success margBott', text: 'Указать координаты', onClick: function ($noty) {
-                            this.edit(true);
-                            $noty.close();
-                        }.bind(this)
+                            addClass: 'btn btn-success margBott',
+                            text: 'Указать координаты',
+                            onClick: function ($noty) {
+                                this.edit(true);
+                                $noty.close();
+                            }.bind(this)
                         },
                         {
-                            addClass: 'btn btn-warning margBott', text: 'Выбрать регион вручную', onClick: function ($noty) {
-                            this.edit(true);
-                            $noty.close();
-                            this.regionSelect();
-                        }.bind(this)
+                            addClass: 'btn btn-warning margBott',
+                            text: 'Выбрать регион вручную',
+                            onClick: function ($noty) {
+                                this.edit(true);
+                                $noty.close();
+                                this.regionSelect();
+                            }.bind(this)
                         },
                         {
                             addClass: 'btn btn-danger margBott', text: 'Отмена', onClick: function ($noty) {
@@ -1098,7 +1109,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'edit', 'photo edit ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('savePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), changes: changes, ignoreChange: !!confirmer });
+                    socket.emit('savePhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        changes: changes,
+                        ignoreChange: !!confirmer
+                    });
                 }());
             } else {
                 self.edit(false);
@@ -1118,7 +1135,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 socket.once('revokePhotoCallback', function (data) {
                     cb.call(ctx, data);
                 });
-                socket.emit('revokePhoto', { cid: cid, cdate: self.p.cdate(), s: self.p.s(), ignoreChange: confimingChanges });
+                socket.emit('revokePhoto', {
+                    cid: cid,
+                    cdate: self.p.cdate(),
+                    s: self.p.s(),
+                    ignoreChange: confimingChanges
+                });
             };
 
             self.exe(true);
@@ -1252,7 +1274,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                         }
                     });
-                    socket.emit('revisionPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+                    socket.emit('revisionPhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        reason: reason,
+                        ignoreChange: !!confirmer
+                    });
                 }());
             });
         },
@@ -1303,7 +1331,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.exe(false);
                         }
                     });
-                    socket.emit('rejectPhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+                    socket.emit('rejectPhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        reason: reason,
+                        ignoreChange: !!confirmer
+                    });
                 }());
             });
         },
@@ -1472,7 +1506,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'reject', 'photo delete ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('removePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+                    socket.emit('removePhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        reason: reason,
+                        ignoreChange: !!confirmer
+                    });
                 }());
             });
         },
@@ -1523,7 +1563,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             ga('send', 'event', 'photo', 'reject', 'photo restore ' + (error ? 'error' : 'success'));
                         }
                     });
-                    socket.emit('restorePhoto', { cid: cid, cdate: p.cdate(), s: p.s(), reason: reason, ignoreChange: !!confirmer });
+                    socket.emit('restorePhoto', {
+                        cid: cid,
+                        cdate: p.cdate(),
+                        s: p.s(),
+                        reason: reason,
+                        ignoreChange: !!confirmer
+                    });
                 }());
             });
         },
@@ -1536,7 +1582,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.exe(true);
             socket.once('convertPhotosResult', function (data) {
                 if (data && !data.error) {
-                    window.noty({ text: data.message || 'OK', type: 'success', layout: 'center', timeout: 1000, force: true });
+                    window.noty({
+                        text: data.message || 'OK',
+                        type: 'success',
+                        layout: 'center',
+                        timeout: 1000,
+                        force: true
+                    });
                 } else {
                     window.noty({
                         text: (data && data.message) || 'Error occurred',
@@ -1666,7 +1718,13 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // Активируем комментарии, если фото не редактируется и разрешено комментировать
             if (!self.edit()/* && self.can.comment()*/ && p.s() >= statusKeys.PUBLIC) {
                 self.commentsVM.activate(
-                    { cid: p.cid(), count: p.ccount(), countNew: p.ccount_new(), subscr: p.subscr(), nocomments: p.nocomments() },
+                    {
+                        cid: p.cid(),
+                        count: p.ccount(),
+                        countNew: p.ccount_new(),
+                        subscr: p.subscr(),
+                        nocomments: p.nocomments()
+                    },
                     _.defaults(options || {}, {
                         instant: !!self.toComment || p.frags().length,
                         checkTimeout: p.ccount() > 30 ? 500 : 300
