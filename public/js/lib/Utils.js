@@ -195,6 +195,43 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 			}
 		},
 
+        // Not yet supported
+        copyTextSupported: (function () {
+            try {
+                alert(!!document.execCommand && !!document.queryCommandSupported &&
+                    document.queryCommandSupported('copy') && document.execCommand('copy'));
+            } catch (e) {
+                return false;
+            }
+
+        }),
+        // http://habrahabr.ru/post/256027/
+        copyText: function (element) {
+            var successful = false;
+
+            if (element) {
+                var range = document.createRange();
+                range.selectNode(element);
+                window.getSelection().addRange(range);
+            }
+
+            try {
+                // Теперь, когда мы выбрали текст ссылки, выполним команду копирования
+                successful = document.execCommand('copy');
+                console.log('Copy command was ' + (successful ? 'successful' : 'unsuccessful'));
+            } catch(err) {
+                console.log('Oops, unable to copy');
+            }
+
+            if (element) {
+                // Снятие выделения - ВНИМАНИЕ: вы должны использовать
+                // removeRange(range) когда это возможно
+                window.getSelection().removeAllRanges();
+            }
+
+            return successful;
+        },
+
 		/**
 		 * Загружает изображение и по завешению загрузки вызывает callback
 		 * @param url
