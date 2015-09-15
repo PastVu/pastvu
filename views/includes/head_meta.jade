@@ -9,9 +9,24 @@ meta(property="og:type", content="website")
 meta(property="og:locale", content="ru_RU")
 meta(property="og:site_name", content="PastVu")
 
+if meta && meta.og
+    if meta.og.title
+        meta(property="og:title", content=meta.og.desc)
+    if meta.og.desc
+        meta(property="og:description", content=meta.og.desc)
+    if meta.og.img
+        meta(property="og:image", content=meta.og.img.url)
+        if (meta.og.img.w)
+            meta(property="og:image:width", content=meta.og.img.w)
+        if (meta.og.img.h)
+            meta(property="og:image:height", content=meta.og.img.h)
+
+if meta && meta.desc
+    meta(property="description", content=meta.desc)
+
 //-Facebook-style для редиректа клиента с отключённым javascript
 if !nojsShow && nojsUrl
-	noscript: meta(http-equiv="refresh", content='0; URL='+nojsUrl)
+    noscript: meta(http-equiv="refresh", content='0; URL=' + nojsUrl)
 
 link(rel="shortcut icon", href="/favicon.ico")
 
@@ -37,3 +52,6 @@ link(rel="apple-touch-icon", href="/apple-touch-icon.png")
 meta(name="msapplication-TileColor", content="#214A7A")
 //-Иконка для старт-скрина Windows 8
 meta(name="msapplication-TileImage", content="/tileicon.png")
+
+if meta && meta.title
+    title= meta.title
