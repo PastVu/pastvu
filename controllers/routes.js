@@ -99,6 +99,7 @@ module.exports.loadController = function (app) {
         var meta = { og: {} };
 
         if (photo) {
+            meta.og.url = fullhost + '/p/' + photo.cid;
             meta.title = meta.og.title = photo.title;
             meta.desc = meta.og.desc = photo.desc;
             meta.og.img = {
@@ -106,6 +107,9 @@ module.exports.loadController = function (app) {
                 w: photo.w,
                 h: photo.h
             };
+        }
+        if (!meta.og.url) {
+            meta.og.url = fullhost + req.url; // req.path if decide without params
         }
         if (!meta.title) {
             meta.title = meta.og.title = 'Retro photos of mankind\'s habitat.';

@@ -10,6 +10,8 @@ meta(property="og:locale", content="ru_RU")
 meta(property="og:site_name", content="PastVu")
 
 if meta && meta.og
+    if meta.og.url
+        meta(property="og:url", content=meta.og.url)
     if meta.og.title
         meta(property="og:title", content=meta.og.title)
     if meta.og.desc
