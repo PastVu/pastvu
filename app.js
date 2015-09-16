@@ -227,6 +227,10 @@ async.waterfall([
             appHash: app.hash // Вставляется в head страниц
         });
 
+        // Alias for photos with cid from root. /5 -> /p/5
+        app.get(/^\/(\d{1,7})$/, function (req, res) {
+            res.redirect(303, '/p/' + req.params[0]);
+        });
         app.use(ourMiddlewares.responseHeaderHook());
         if (gzip) {
             app.use(require('compression')());
