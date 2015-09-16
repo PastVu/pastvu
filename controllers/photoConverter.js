@@ -301,7 +301,7 @@ const identifyImage = (src, format) =>
 const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 
 function getWatertext(photo) {
-    return `pastvu.com/p/${photo.cid}  ${photo.watersignText || ''}`;
+    return `pastvu.com/${photo.cid}  ${photo.watersignText || ''}`;
 }
 
 /**
