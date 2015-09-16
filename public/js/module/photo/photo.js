@@ -19,7 +19,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.p = Photo.vm(Photo.def.full);
             this.binded = false;
 
-            this.status = status;
+            this.statuses = statuses;
 
             this.photoSrc = ko.observable('');
             this.photoLoading = ko.observable(true);

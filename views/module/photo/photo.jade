@@ -54,8 +54,10 @@
                         // /ko
                         button.btn.btn-xxs.btn-primary(data-state="watermarkShow", data-bind="css: {active: watermarkShow()}, click: stateChange", title="Показывать вотермарк фотографии")
                             | W
+                        //ko if: p.s()===statuses.keys.PUBLIC
                         a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
                             span.glyphicon.glyphicon-share-alt
+                        // /ko
 
             //ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
             // /ko
