@@ -131,6 +131,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
                 //    _window.location = 'http://twitter.com/share?text=' + encodeURIComponent(pageTitle) + '&url=' + encodeURIComponent(shortUrl) + '&counturl=' + document.URL;
                 //});
             }
+
+            ga('send', 'event', 'share', network, 'share network click');
         }
     });
 
