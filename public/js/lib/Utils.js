@@ -372,10 +372,10 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 			};
 		}()),
 
-		txtHtmlToPlain: function (txt) {
+		txtHtmlToPlain: function (txt, brShrink) {
 			var result = txt;
 
-			result = result.replace(/<br\s*[\/]?>/gi, '\n'); //Заменяем <br> на \n
+			result = result.replace(/<br\s*[\/]?>/gi, brShrink ? ' ' : '\n'); // Заменяем <br> на \n или ничего
 			result = _s.stripTags(result); //Убираем обрамляющие тэги ahref
 			result = _s.unescapeHTML(result); //Возвращаем эскейпленные
 			return result;

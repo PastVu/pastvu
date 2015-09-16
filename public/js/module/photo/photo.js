@@ -989,13 +989,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         showShare: function () {
             var self = this;
             var p = self.p;
+            var desc = p.desc();
 
             if (!self.shareVM) {
                 renderer([{
                         module: 'm/common/share',
                         options: {
                             title: p.title() || 'Photo at PatVu.com',
-                            desc: p.desc(),
+                            desc: desc ? Utils.txtHtmlToPlain(desc, true) : '',
                             img: '/_p/a/' + p.file(),
                             linkPage: '/p/' + p.cid(),
                             linkSocial: '/p/' + p.cid(),
