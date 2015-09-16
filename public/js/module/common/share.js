@@ -56,8 +56,8 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
             title: '',
             desc: '',
             img: null,
-            linkSocial: null,
             linkPage: null,
+            linkSocial: null,
             linkObject: null
         },
         create: function () {

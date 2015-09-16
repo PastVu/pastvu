@@ -998,6 +998,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             desc: p.desc(),
                             img: '/_p/a/' + p.file(),
                             linkPage: '/p/' + p.cid(),
+                            linkSocial: '/p/' + p.cid(),
                             linkObject: '/_p/a/' + p.file()
                         },
                         modal: {
