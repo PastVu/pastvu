@@ -17,6 +17,7 @@ if meta && meta.og
     if meta.og.desc
         meta(property="og:description", content=meta.og.desc)
     if meta.og.img
+        link(rel="image_src", href=meta.og.img.url)
         meta(property="og:image", content=meta.og.img.url)
         if (meta.og.img.w)
             meta(property="og:image:width", content=meta.og.img.w)
