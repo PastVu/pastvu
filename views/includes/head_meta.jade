@@ -24,9 +24,6 @@ if meta && meta.og
         if (meta.og.img.h)
             meta(property="og:image:height", content=meta.og.img.h)
 
-if meta && meta.desc
-    meta(property="description", content=meta.desc)
-
 //-Facebook-style для редиректа клиента с отключённым javascript
 if !nojsShow && nojsUrl
     noscript: meta(http-equiv="refresh", content='0; URL=' + nojsUrl)
@@ -55,6 +52,9 @@ link(rel="apple-touch-icon", href="/apple-touch-icon.png")
 meta(name="msapplication-TileColor", content="#214A7A")
 //-Иконка для старт-скрина Windows 8
 meta(name="msapplication-TileImage", content="/tileicon.png")
+
+if meta && meta.desc
+    meta(name="description", content=meta.desc)
 
 if meta && meta.title
     title= meta.title
