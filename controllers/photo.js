@@ -263,7 +263,7 @@ var core = {
             .bind({})
             .then(function (photo) {
                 if (!photo || !permissions.canSee(photo, iAm)) {
-                    throw { message: msg.noPhoto };
+                    throw { message: msg.noPhoto, noPhoto: true };
                 }
 
                 if (iAm.registered) {
@@ -302,7 +302,7 @@ var core = {
                     promiseProps.photo = photo.populateAsync({ path: 'user', select: userSelectField })
                         .then(function (photo) {
                             if (!photo) {
-                                throw { message: msg.noPhoto };
+                                throw { message: msg.noPhoto, noPhoto: true };
                             }
                             photo = photo.toObject();
 

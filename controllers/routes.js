@@ -5,6 +5,7 @@ var Utils = require('../commons/Utils');
 var settings = require('./settings');
 var _session = require('./_session');
 var photo = require('./photo');
+var errors = require('./errors');
 
 module.exports.loadController = function (app) {
     var clientParams = settings.getClientParams();
@@ -135,11 +136,18 @@ module.exports.loadController = function (app) {
         photo.givePhotoForPage(req.handshake.usObj, { cid: cid })
             .then(function (result) {
                 if (!result) {
-                    return next({ message: 'Photo ' + cid + ' does not exist' });
+                    throw { noPhoto: true };
                 }
 
                 req.photoData = result;
                 next();
+            })
+            .catch(function (err) {
+                if (err.noPhoto) {
+                    next(new errors.err.e404('Photo ' + cid + ' does not exist'));
+                } else {
+                    next(err);
+                }
             });
     }
 
