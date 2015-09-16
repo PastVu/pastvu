@@ -290,6 +290,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var params = globalVM.router.params();
             var cid = Number(params.cid);
             var hl = params.hl;
+            self.share = Number(params.share) === 1 ? Number(params.share) : false;
             self.history = Number(params.history) >= 0 ? Number(params.history) : false;
 
             self.toComment = self.toFrag = undefined;
@@ -345,6 +346,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             self.makeBinding();
                         }
 
+                        if (self.share !== false && !self.edit()) {
+                            self.showShare();
+                        } else {
+                            self.destroyShare();
+                        }
+
                         if (self.history !== false && !self.edit()) {
                             self.showHistory();
                         } else {
@@ -357,6 +364,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 if (self.toFrag || self.toComment) {
                     self.scrollTimeout = setTimeout(self.scrollToBind, 50);
                 }
+                if (self.share !== false) {
+                    self.showShare();
+                } else {
+                    self.destroyShare();
+                }
                 if (self.history !== false) {
                     self.showHistory();
                 } else {
@@ -366,7 +378,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         },
 
         receivePhoto: function (cid, edit, cb, ctx) {
-            socket.once('takePhoto', function (data) {
+            var finish = function (data) {
                 var error = !data || data.error;
 
                 if (!error) {
@@ -374,7 +386,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
 
                 cb.call(ctx, error, data);
-            });
+            };
+
+            if (_.get(init, 'photo.photo.cid') === cid) {
+                finish(init.photo);
+                delete init.photo;
+                return;
+            }
+
+            socket.once('takePhoto', finish);
             socket.emit('givePhoto', { cid: cid, forEdit: edit });
         },
 
@@ -934,10 +954,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                             initWidth: '1400px',
                             maxWidthRatio: 0.82,
                             animateScale: true,
-                            curtainClick: { click: self.closeHistory, ctx: self },
-                            offIcon: { text: 'Закрыть', click: self.closeHistory, ctx: self },
+                            curtainClick: { click: self.closeHistoryOrShare, ctx: self },
+                            offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
                             btns: [
-                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistory, ctx: self }
+                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self }
                             ]
                         },
                         callback: function (vm) {
@@ -954,15 +974,57 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 self.histVM.setNewScroll(this.history);
             }
         },
-        closeHistory: function () {
-            // При закрытии надо сделать replaceState, чтобы текущей страницей истории стала страница самой фотографии,
-            // чтобы при переходе назад, перейти не на историю, а на исходный referrer
-            globalVM.router.navigate('/p/' + this.p.cid(), { replace: true });
-        },
         destroyHistory: function () {
             if (this.histVM) {
                 this.histVM.destroy();
                 delete this.histVM;
+            }
+        },
+        closeHistoryOrShare: function () {
+            // При закрытии надо сделать replaceState, чтобы текущей страницей истории стала страница самой фотографии,
+            // чтобы при переходе назад, перейти не на историю, а на исходный referrer
+            globalVM.router.navigate('/p/' + this.p.cid(), { replace: true });
+        },
+
+        showShare: function () {
+            var self = this;
+            var p = self.p;
+
+            if (!self.shareVM) {
+                renderer([{
+                        module: 'm/common/share',
+                        options: {
+                            title: p.title() || 'Photo at PatVu.com',
+                            desc: p.desc(),
+                            img: '/_p/a/' + p.file(),
+                            linkPage: '/p/' + p.cid(),
+                            linkObject: '/_p/a/' + p.file()
+                        },
+                        modal: {
+                            topic: 'Поделиться фотографией',
+                            initWidth: '500px',
+                            animateScale: true,
+                            curtainClick: { click: self.closeHistoryOrShare, ctx: self },
+                            offIcon: { text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self },
+                            btns: [
+                                { css: 'btn-primary', text: 'Закрыть', click: self.closeHistoryOrShare, ctx: self }
+                            ]
+                        },
+                        callback: function (vm) {
+                            self.shareVM = self.childModules[vm.id] = vm;
+                        }
+                    }],
+                    {
+                        parent: self,
+                        level: self.level + 3
+                    }
+                );
+            }
+        },
+        destroyShare: function () {
+            if (this.shareVM) {
+                this.shareVM.destroy();
+                delete this.shareVM;
             }
         },
 

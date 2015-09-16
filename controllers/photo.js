@@ -2921,6 +2921,7 @@ module.exports.loadController = function (app, db, io) {
     });
 };
 module.exports.findPhoto = findPhoto;
+module.exports.givePhotoForPage = givePhotoForPage;
 module.exports.permissions = permissions;
 module.exports.buildPhotosQuery = buildPhotosQuery;
 module.exports.savePhotoHistory = savePhotoHistory;
