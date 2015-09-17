@@ -89,10 +89,10 @@ var start = Date.now(),
                     'm/map/map', 'm/map/marker', 'm/map/navSlider',
                     'm/photo/photo', 'm/photo/gallery',
                     'm/diff/newsList', 'm/diff/news',
-                    'm/comment/comments', 'm/comment/hist',
+                    'm/comment/comments',
                     'm/user/brief', 'm/user/profile', 'm/user/userPage'
                 ],
-                exclude: ['lib/require/plugins/require-css/normalize'] //normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
+                exclude: ['lib/require/plugins/require-css/normalize'] // normalize надо исключать, т.к. он почему-то попадает в сборку https://github.com/guybedford/require-css#basic-usage
             },
             {
                 name: 'm/diff/about',
@@ -100,6 +100,18 @@ var start = Date.now(),
             },
             {
                 name: 'm/user/comments',
+                exclude: ['commonExcludes']
+            },
+            {
+                name: 'm/comment/hist',
+                exclude: ['commonExcludes']
+            },
+            {
+                name: 'm/photo/hist',
+                exclude: ['commonExcludes']
+            },
+            {
+                name: 'm/common/share',
                 exclude: ['commonExcludes']
             },
             {
