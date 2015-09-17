@@ -88,11 +88,12 @@ define(['underscore', 'jquery', 'Utils', 'socket!', 'Params', 'globalVM', 'knock
         },
         share: function (network) {
             var url;
+            var origin = location.origin || (location.protocol + '://' + location.host);
             var options = this.options;
-            var pageUrl = encodeURIComponent(options.linkSocial ? location.host + options.linkSocial : document.URL);
+            var pageUrl = encodeURIComponent(options.linkSocial ? origin + options.linkSocial : document.URL);
             var pageTitle = options.title;
             var pageDesc = options.desc;
-            var image = options.img;
+            var image = options.img ? origin + options.img : null;
             var popup = function (url) {
                 return window.open(url, '', 'menubar=no,toolbar=0,status=0,width=626,height=436');
             };
