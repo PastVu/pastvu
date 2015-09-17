@@ -59,6 +59,13 @@
     };
 }(global));
 
+if (!String.prototype.includes) {
+    String.prototype.includes = function () {
+        'use strict';
+        return String.prototype.indexOf.apply(this, arguments) !== -1;
+    };
+}
+
 if (!Array.prototype.includes) {
     Array.prototype.includes = function (searchElement/* , fromIndex*/) {
         'use strict';
