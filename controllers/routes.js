@@ -102,8 +102,20 @@ module.exports.loadController = function (app) {
         if (photo) {
             meta.og.url = fullhost + '/p/' + photo.cid;
             meta.title = meta.og.title = photo.title;
+
+            // Include years in OpenGraph title, if they are not in title already
+            if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2))) {
+                meta.og.title = photo.y + ' ' + meta.og.title;
+            }
+
             if (photo.desc) {
                 meta.desc = meta.og.desc = Utils.txtHtmlToPlain(photo.desc, true);
+            } else if (!_.isEmpty(photo.regions)) {
+                // If there in no description, create it as regions names
+                meta.desc = meta.og.desc = photo.regions.reduceRight(function (result, region, index) {
+                    result += region.title_local + (index ? ', ' : '');
+                    return result;
+                }, '');
             }
             meta.og.img = {
                 url: fullhost + '/_p/a/' + photo.file,

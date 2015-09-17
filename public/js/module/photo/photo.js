@@ -989,17 +989,33 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         showShare: function () {
             var self = this;
             var p = self.p;
-            var desc = p.desc();
+            var title = p.title() || 'Photo at PatVu.com';
+            var desc = p.desc() || '';
+            var link = '/p/' + p.cid();
 
             if (!self.shareVM) {
+                // Include years in OpenGraph title, if they are not in title already
+                if (!title.includes(p.year()) && (!p.year2() || !title.includes(p.year2()))) {
+                    title = p.y() + ' ' + title;
+                }
+                if (desc) {
+                    desc = Utils.txtHtmlToPlain(desc, true);
+                } else if (!_.isEmpty(p.regions())) {
+                    // If there in no description, create it as regions names
+                    desc = p.regions().reduceRight(function (result, region, index) {
+                        result += region.title_local() + (index ? ', ' : '');
+                        return result;
+                    }, '');
+                }
+
                 renderer([{
                         module: 'm/common/share',
                         options: {
-                            title: p.title() || 'Photo at PatVu.com',
-                            desc: desc ? Utils.txtHtmlToPlain(desc, true) : '',
+                            title: title,
+                            desc: desc,
                             img: '/_p/a/' + p.file(),
-                            linkPage: '/p/' + p.cid(),
-                            linkSocial: '/p/' + p.cid(),
+                            linkPage: link,
+                            linkSocial: link,
                             linkObject: '/_p/a/' + p.file()
                         },
                         modal: {
