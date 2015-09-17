@@ -101,12 +101,6 @@ module.exports.loadController = function (app) {
 
         if (photo) {
             meta.og.url = fullhost + '/p/' + photo.cid;
-            meta.title = meta.og.title = meta.twitter.title = photo.title;
-
-            // Include years in OpenGraph title, if they are not in title already
-            if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2))) {
-                meta.og.title = meta.twitter.title = photo.y + ' ' + meta.title;
-            }
 
             if (photo.desc) {
                 meta.desc = meta.og.desc = meta.twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
@@ -117,6 +111,15 @@ module.exports.loadController = function (app) {
                     return result;
                 }, '');
             }
+
+            meta.title = meta.og.title = meta.twitter.title = photo.title;
+
+            // Include years in OpenGraph title, if they are not in title already
+            if (!photo.title.includes(photo.year) && (!photo.year2 || !photo.title.includes(photo.year2)) &&
+                !meta.desc.includes(photo.year) && (!photo.year2 || !meta.desc.includes(photo.year2))) {
+                meta.og.title = meta.twitter.title = photo.y + ' ' + meta.title;
+            }
+
             meta.og.img = {
                 url: fullhost + '/_p/a/' + photo.file,
                 w: photo.w,
