@@ -126,7 +126,7 @@
         "react/jsx-max-props-per-line": 0,
         "react/jsx-no-duplicate-props": 1,
         "react/jsx-no-undef": 1,
-        "react/jsx-quotes": [2, "double"],
+        "jsx-quotes": [1, "prefer-double"],
         "react/jsx-sort-prop-types": 0,
         "react/jsx-sort-props": 0,
         "react/jsx-uses-react": 1,
