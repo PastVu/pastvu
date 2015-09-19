@@ -43,13 +43,15 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         var valPrev = this.regfiltercheck();
 
                         if (valNew === 'home') {
-                            //Если устанавляаем фильтрацию по Домашнему региону, снчала ставим домашний регион в фильтр, затем сохраняем настройку r_as_home
+                            // Если устанавляаем фильтрацию по Домашнему региону,
+                            // сначала ставим домашний регион в фильтр, затем сохраняем настройку r_as_home
                             this.saveFilterRegions([this.u.regionHome.cid()], function (err) {
                                 if (!err) {
                                     this.changeSetting('r_as_home', true, true, function (err) {
                                         if (!err) {
                                             this.originUser.regions = [ko.toJS(this.u.regionHome)];
-                                            User.vm({ regions: this.originUser.regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
+                                            // Обновляем регионы в текущей вкладке вручную
+                                            User.vm({ regions: this.originUser.regions }, this.u, true);
                                         }
                                         ga('send', 'event', 'region', 'update', 'region update ' + (err ? 'error' : 'success'), 1);
                                     }, this);
@@ -60,7 +62,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                                 this.saveFilterRegions([], function (err) {
                                     if (!err) {
                                         this.originUser.regions = [];
-                                        User.vm({ regions: this.originUser.regions }, this.u, true); //Обновляем регионы в текущей вкладке вручную
+                                        // Обновляем регионы в текущей вкладке вручную
+                                        User.vm({ regions: this.originUser.regions }, this.u, true);
                                         ga('send', 'event', 'region', 'update', 'region update success', 1);
 
                                         // Если был установлена фильтрация по Домашнему региону, отменяем её
@@ -112,6 +115,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     owner: this
                 });
                 this.resetwatersigncheck = ko.observable('all');
+                this.resetDisallowDownloadOrigin = ko.observable('all');
                 this.reconvertcheck = ko.observable('all');
                 this.reconvertingPhotos = ko.observable(false);
 
@@ -255,6 +259,52 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         self.reconvertingPhotos(false);
                     });
                     socket.emit('convertUserPhotos', { login: self.u.login(), r: region, resetIndividual: true });
+                },
+                onCancel: function () {
+                    self.reconvertingPhotos(false);
+                }
+            });
+        },
+        disallowDownloadOrigin: function (data, evt) {
+            this.changeSetting('photo_disallow_download_origin', !isYes(evt), true);
+        },
+        individualDisallowDownloadOriginReset: function () {
+            var self = this;
+
+            self.reconvertingPhotos(true);
+
+            var option = self.resetDisallowDownloadOrigin();
+            var region = option === 'region' && $('#resetDisallowDownloadOriginRegion', self.$dom).val();
+
+            if (region) {
+                region = Number(region) || undefined;
+            }
+
+            noties.confirm({
+                message: 'Вы уверены что хотите сбросить индивидуальные настройки скачивания оргиналов фотографий' +
+                (region ? ' указанного региона' : '') + '?',
+                okText: 'Да, сбросить',
+                cancelText: 'Отменить',
+                onOk: function (confirmer) {
+                    socket.once('resetIndividualDownloadOriginResult', function (data) {
+                        var error = !data || data.error;
+                        var warning = !error && !data.updated;
+
+                        confirmer.close();
+
+                        window.noty({
+                            text: error ? data && data.message || 'Error occurred' :
+                                warning ? 'Не найдено ни одной фотографии с индивидуальными настройками скачивания' :
+                                'У ' + data.updated + ' фотографий сброшены индивидуальные настройки скачивания',
+                            type: error ? 'error' : warning ? 'warning' : 'success',
+                            layout: 'center',
+                            timeout: 3000,
+                            force: true
+                        });
+
+                        self.reconvertingPhotos(false);
+                    });
+                    socket.emit('resetIndividualDownloadOrigin', { login: self.u.login(), r: region});
                 },
                 onCancel: function () {
                     self.reconvertingPhotos(false);

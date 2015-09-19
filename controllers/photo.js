@@ -2262,6 +2262,51 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
         });
 });
 
+var resetIndividualDownloadOrigin = Bluebird.method(function (iAm, data) {
+    if (!_.isObject(data) || !data.login) {
+        throw { message: msg.badParams };
+    }
+    if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
+        throw { message: msg.deny };
+    }
+
+    var stampStart = new Date();
+    var region;
+    if (_.isNumber(data.r) && data.r > 0) {
+        region = regionController.getRegionFromCache(data.r);
+
+        if (region) {
+            region = { level: _.size(region.parents), cid: region.cid };
+        }
+    }
+
+    return User.findOneAsync({ login: data.login }, { login: 1, settings: 1 }, { lean: true })
+        .bind({})
+        .then(function (user) {
+            if (!user) {
+                throw { message: msg.noUser };
+            }
+
+            var query = { user: user._id, disallowDownloadOrigin: { $exists: true } };
+
+            if (region) {
+                query['r' + region.level] = region.cid;
+            }
+
+            return Photo.updateAsync(query, { $unset: { disallowDownloadOrigin: 1 } }, { multi: true });
+        })
+        .spread(function (updated) {
+            var spent = Date.now() - stampStart;
+
+            logger.info(
+                'Resetting individual download setting in %d photos has finished in %ds of user %s %s. %s', updated,
+                spent / 1000, data.login, region ? 'in region ' + region.cid : '', 'Invoked by ' + iAm.user.login
+            );
+
+            return { updated: updated, time: spent };
+        });
+});
+
 /**
  * Строим параметры запроса (query) для запроса фотографий с фильтром с учетом прав на статусы и регионы
  * @param filter
@@ -2906,6 +2951,17 @@ module.exports.loadController = function (app, db, io) {
                 })
                 .then(function (resultData) {
                     socket.emit('convertUserPhotosResult', resultData);
+                });
+        });
+        socket.on('resetIndividualDownloadOrigin', function (data) {
+            resetIndividualDownloadOrigin(hs.usObj, data)
+                .catch(function (err) {
+                    logger.error('resetIndividualDownloadOrigin ERROR with data', hs.usObj.user && hs.usObj.user.login, data);
+                    logger.trace(err);
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('resetIndividualDownloadOriginResult', resultData);
                 });
         });
 

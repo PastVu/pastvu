@@ -1,6 +1,6 @@
 define(
     ['jquery', 'underscore', 'knockout', 'knockout.mapping', 'Utils', 'Params', 'model/User', 'model/Region', 'm/photo/status'],
-    function ($, _, ko, ko_mapping, Utils, P, User, Region, statuses) {
+    function ($, _, ko, koMapping, Utils, P, User, Region, statuses) {
 
         var defaults = {
             // Следующие типы включают друг друга по нарастающей
@@ -11,11 +11,11 @@ define(
                 file: '',
                 title: '',
 
-                conv: false, //Конвертируется
-                convqueue: false //В очереди на конвертацию
+                conv: false, // Converting now
+                convqueue: false // In queue for convertion
             },
             compact: {
-                ldate: Date.now(), // Время загрузки
+                ldate: Date.now(), // Load time
 
                 y: '',
                 year: null,
@@ -53,6 +53,8 @@ define(
                 watersignCustom: null,
                 watersignText: null,
                 watersignTextApplied: null,
+
+                disallowDownloadOrigin: false,
 
                 desc: '',
                 address: '',
@@ -141,7 +143,7 @@ define(
         }
 
         function vmCreate(data) {
-            var vm = ko_mapping.fromJS(data);
+            var vm = koMapping.fromJS(data);
 
             User.vmAdditional(vm.user);
             return vm;
@@ -162,7 +164,7 @@ define(
             if (!vmExist) {
                 vmExist = vmCreate(data);
             } else {
-                ko_mapping.fromJS(data, vmExist);
+                koMapping.fromJS(data, vmExist);
             }
             return vmExist;
         }

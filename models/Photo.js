@@ -66,6 +66,8 @@ var PhotoSchema = new Schema({
     // Time when current sign on watermark appended in the moment of last convert. If undefined - not yet appended
     watersignTextApplied: { type: Date },
 
+    disallowDownloadOrigin: { type: Boolean }, // Individual setting to prohibit others download origin of this photo
+
     dir: { type: String },
     title: { type: String },
     year: { type: Number },
