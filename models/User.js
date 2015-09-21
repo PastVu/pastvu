@@ -295,6 +295,38 @@ UserScheme.statics.getUserID = function (login, cb) {
         .nodeify(cb);
 };
 
+UserScheme.statics.isEqual = (function () {
+    function getUniq(user) {
+        var result;
+
+        if (typeof user === 'string') {
+            result = user;
+        } else if (user) {
+            if (user._id) {
+                result = user._id;
+
+                if (result._bsontype === 'ObjectID') {
+                    result = result.toString();
+                }
+            } else if (user._bsontype === 'ObjectID') {
+                result = user.toString();
+            } else if (user.login) {
+                result = user.login;
+            }
+        }
+
+        return result;
+    }
+
+    return function (user1, user2) {
+        if (!user1 || !user2) {
+            return false;
+        }
+
+        return getUniq(user1) === getUniq(user2);
+    };
+}());
+
 var UserConfirm = new Schema(
     {
         created: { type: Date, 'default': Date.now, index: { expires: '2d' } },
