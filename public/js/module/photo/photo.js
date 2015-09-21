@@ -31,11 +31,11 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.nearestRibbon = ko.observableArray();
             this.nearestRibbonOrigin = [];
 
-            this.rnks = ko.observable(''); //Звания пользователя в виде готового шаблона
+            this.rnks = ko.observable(''); // Звания пользователя в виде готового шаблона
             this.fields = fields;
 
-            this.exe = ko.observable(false); //Указывает, что сейчас идет обработка запроса на действие к серверу
-            this.exeregion = ko.observable(false); //Указывает, что сейчас идет запрос региона по координате
+            this.exe = ko.observable(false); // Указывает, что сейчас идет обработка запроса на действие к серверу
+            this.exeregion = ko.observable(false); // Указывает, что сейчас идет запрос региона по координате
 
             this.can = ko_mapping.fromJS({
                 edit: false,
@@ -49,7 +49,9 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 remove: false,
                 restore: false,
                 convert: false,
-                comment: false
+                comment: false,
+                watersign: false, // TODO: watch on thos flag
+                download: 'login'
             });
 
             this.IOwner = this.co.IOwner = ko.computed(function () {
@@ -149,6 +151,29 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         stamp: moment(this.p.ldate()).format('D MMMM YYYY')
                     }
                 );
+            }, this);
+
+            this.downLoadOrigin = this.co.downLoadOrigin = ko.computed(function () {
+                var download = this.can.download();
+
+                return download === true || download === 'byrole';
+            }, this);
+
+            this.downloadCSSClass = this.co.downloadCSSClass = ko.computed(function () {
+                var download = this.can.download();
+                var result;
+
+                if (download === true) {
+                    result = 'btn-success';
+                } else {
+                    result = 'btn-primary';
+
+                    if (download === 'byrole') {
+                        result += ' downloadByRole';
+                    }
+                }
+
+                return result;
             }, this);
 
             this.ws = ko.observable(Photo.def.full.ws);

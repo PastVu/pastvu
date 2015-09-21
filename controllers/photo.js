@@ -120,62 +120,81 @@ var settings = require('./settings.js'),
             }
             return false;
         },
-        getCan: function (photo, usObj, canModerate) {
+        getCan: function (photo, usObj, ownPhoto, canModerate) {
             var can = {
-                edit: false,
-                ready: false,
-                revision: false,
-                revoke: false,
-                reject: false,
-                approve: false,
-                activate: false,
-                deactivate: false,
-                remove: false,
-                restore: false,
-                convert: false,
-                comment: false,
-                water: false
+                // edit
+                // ready
+                // revision
+                // revoke
+                // reject
+                // approve
+                // activate
+                // deactivate
+                // remove
+                // restore
+                // convert
+                // comment
+                // watersign
+                // download
             };
             var s = photo.s;
-            var ownPhoto;
 
             if (usObj.registered) {
-                ownPhoto = !!photo.user && photo.user.equals(usObj.user._id);
+                if (typeof ownPhoto !== 'boolean') {
+                    ownPhoto = !!photo.user && User.isEqual(photo.user, usObj.user);
+                }
+
                 if (canModerate !== undefined && canModerate !== null) {
                     canModerate = !!canModerate;
                 } else {
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
+                if (photo.disallowDownloadOrigin === false ||
+                    photo.disallowDownloadOrigin !== true && !usObj.user.settings.photo_disallow_download_origin) {
+                    // If photo has individual setting not to disallow download origin or
+                    // photo owner doesn't have setting to disallow (and individual setting doesn't disallow),
+                    // than let download origin
+                    can.download = true;
+                } else if (ownPhoto || usObj.isAdmin) {
+                    // Or if it photo owner or admin then allow to download origin with special sign on button
+                    can.download = 'byrole';
+                } else {
+                    // Otherwise registered user can download full-size photo only with watermark
+                    can.download = 'withwater';
+                }
+
                 // Редактировать может модератор и владелец, если оно не удалено и не отозвано. Администратор - всегда
-                can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto);
+                can.edit = usObj.isAdmin || s !== status.REMOVE && s !== status.REVOKE && (canModerate || ownPhoto) || undefined;
                 // Отправлять на премодерацию может владелец и фото новое или на доработке
-                can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto;
+                can.ready = (s === status.NEW || s === status.REVISION) && ownPhoto || undefined;
                 // Отозвать может только владелец пока фото новое
-                can.revoke = s < status.REVOKE && ownPhoto;
+                can.revoke = s < status.REVOKE && ownPhoto || undefined;
                 // Модератор может отклонить не свое фото пока оно новое
-                can.reject = s < status.REVOKE && canModerate && !ownPhoto;
+                can.reject = s < status.REVOKE && canModerate && !ownPhoto || undefined;
                 // Восстанавливать из удаленных может только администратор
-                can.restore = s === status.REMOVE && usObj.isAdmin;
+                can.restore = s === status.REMOVE && usObj.isAdmin || undefined;
                 // Отправить на конвертацию может только администратор
-                can.convert = usObj.isAdmin;
+                can.convert = usObj.isAdmin || undefined;
                 // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
-                can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate;
+                can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate || undefined;
                 // Change watermark sign can administrator and owner if administrator didn't prohibit it for this photo or entire owner
-                can.water = usObj.isAdmin || ownPhoto && !usObj.user.nowaterchange && !photo.nowaterchange;
+                can.watersign = usObj.isAdmin || ownPhoto && !usObj.user.nowaterchange && !photo.nowaterchange || undefined;
 
                 if (canModerate) {
                     // Модератор может отправить на доработку
-                    can.revision = s === status.READY;
+                    can.revision = s === status.READY || undefined;
                     // Модератор может одобрить новое фото
-                    can.approve = s < status.REJECT;
+                    can.approve = s < status.REJECT || undefined;
                     // Модератор может активировать только деактивированное
-                    can.activate = s === status.DEACTIVATE;
+                    can.activate = s === status.DEACTIVATE || undefined;
                     // Модератор может деактивировать только опубликованное
-                    can.deactivate = s === status.PUBLIC;
+                    can.deactivate = s === status.PUBLIC || undefined;
                     // Модератор может удалить уже опубликованное и не удаленное фото
-                    can.remove = s >= status.PUBLIC && s !== status.REMOVE;
+                    can.remove = s >= status.PUBLIC && s !== status.REMOVE || undefined;
                 }
+            } else {
+                can.download = 'login';
             }
             return can;
         },
@@ -266,51 +285,22 @@ var core = {
                     throw { message: msg.noPhoto, noPhoto: true };
                 }
 
-                if (iAm.registered) {
-                    // Права надо проверять до популяции пользователя
-                    this.can = permissions.getCan(photo, iAm);
-                }
-
-                var userObj = _session.getOnline(null, photo.user);
+                var isMine = User.isEqual(iAm.user, photo.user);
+                var userObj = isMine ? iAm : _session.getOnline(null, photo.user);
                 var promiseProps = {};
                 var regionFields;
-                var userSelectField;
-                var shouldBeEdit = iAm.registered && this.can.edit &&
-                    (params.forEdit || params.fullView && photo.s === status.NEW && photo.user.equals(iAm.user._id));
 
                 if (userObj) {
-                    photo = photo.toObject();
-                    photo.user = {
-                        login: userObj.user.login,
-                        avatar: userObj.user.avatar,
-                        disp: userObj.user.disp,
-                        ranks: userObj.user.ranks || [],
-                        sex: userObj.user.sex,
-                        online: true
-                    };
-                    if (shouldBeEdit) {
-                        photo.user.settings = userObj.user.settings;
-                        photo.user.watersignCustom = userObj.user.watersignCustom;
-                    }
-                    promiseProps.photo = photo;
+                    this.isMine = isMine;
+                    this.online = true;
+                    promiseProps.owner = userObj.user;
                 } else {
-                    userSelectField = { _id: 0, login: 1, avatar: 1, disp: 1, ranks: 1, sex: 1 };
-                    if (shouldBeEdit) {
-                        userSelectField.settings = 1;
-                        userSelectField.watersignCustom = 1;
-                    }
-                    promiseProps.photo = photo.populateAsync({ path: 'user', select: userSelectField })
-                        .then(function (photo) {
-                            if (!photo) {
-                                throw { message: msg.noPhoto, noPhoto: true };
+                    promiseProps.owner = User.findOneAsync({ _id: photo.user })
+                        .then(function (user) {
+                            if (!user) {
+                                throw { message: msg.noUser, noPhoto: true };
                             }
-                            photo = photo.toObject();
-
-                            if (userSelectField.settings) {
-                                photo.user.settings = _.defaults(photo.user.settings || {}, settings.getUserSettingsDef());
-                            }
-
-                            return photo;
+                            return user;
                         });
                 }
 
@@ -322,16 +312,46 @@ var core = {
                 }
                 promiseProps.regions = regionController.getObjRegionList(photo, regionFields, !photo.geo);
 
+                this.photo = photo;
+
                 return Bluebird.props(promiseProps);
             })
             .then(function (result) {
                 var regions = result.regions;
-                var photo = result.photo;
+                var photo = this.photo.toObject();
+                var owner = result.owner.toObject();
                 var frags;
                 var frag;
                 var i;
 
-                //Не отдаем фрагменты удаленных комментариев
+                // Присваиваем владельца после приведения фотографии к объекту, иначе там останется просто объект _id
+                photo.user = owner;
+
+                this.can = permissions.getCan(photo, iAm, this.isMine);
+
+                var shouldBeEdit = iAm.registered && this.can.edit &&
+                    (params.forEdit || params.fullView && photo.s === status.NEW && this.isMine);
+
+                photo.user = {
+                    login: owner.login,
+                    avatar: owner.avatar,
+                    disp: owner.disp,
+                    ranks: owner.ranks || [],
+                    sex: owner.sex
+                };
+
+                if (shouldBeEdit) {
+                    // Serve user settings, only when photo is for editing
+                    photo.user.settings = this.online ? owner.settings :
+                        _.defaults(owner.settings || {}, settings.getUserSettingsDef());
+                    photo.user.watersignCustom = owner.watersignCustom;
+                }
+
+                if (this.online) {
+                    photo.user.online = true;
+                }
+
+                // Не отдаем фрагменты удаленных комментариев
                 if (photo.frags) {
                     frags = [];
                     for (i = 0; i < photo.frags.length; i++) {
@@ -849,7 +869,7 @@ var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
 
             var canModerate = permissions.canModerate(photo, iAm);
 
-            if (can && permissions.getCan(photo, iAm, canModerate)[can] !== true) {
+            if (can && permissions.getCan(photo, iAm, null, canModerate)[can] !== true) {
                 throw { message: msg.deny };
             }
 

@@ -58,6 +58,8 @@
                         a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
                             span.glyphicon.glyphicon-share-alt
                         // /ko
+                        button.btn.btn-xxs(data-bind="css: downloadCSSClass(), attr: {title: 'Скачать'+(downLoadOrigin()?' оригинал':'')}")
+                            span.glyphicon.glyphicon-save
 
             //ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
             // /ko
