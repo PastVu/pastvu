@@ -110,6 +110,8 @@ module.exports.loadController = function (app) {
                     result += region.title_local + (index ? ', ' : '');
                     return result;
                 }, '');
+            } else {
+                meta.desc = '';
             }
 
             meta.title = meta.og.title = meta.twitter.title = photo.title;
