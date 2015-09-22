@@ -58,33 +58,33 @@
                         a.btn.btn-xxs.btn-primary(href="?share=1", data-replace="true", title="Поделиться")
                             span.glyphicon.glyphicon-share-alt
                         // /ko
+                        //ko if: !edit()
                         button.btn.btn-xxs(data-bind="css: downloadCSSClass(), attr: {title: 'Скачать'+(downLoadOrigin()?' оригинал':'')}")
                             span.glyphicon.glyphicon-save
+                        // /ko
 
             //ko template: {name: edit() ? 'photoEdit' : 'photoView', afterRender: tplAfterRender}
             // /ko
         .col-xs-12.col-sm-4.col-lg-4.rightPanel
-            table.rightrow.tableUser(cellpadding="0")
-                tbody
-                    tr
-                        td(style="width: 85px; min-width: 85px;")
-                            a.avatar.fringe.plain(data-bind="attr: {href: '/u/' + p.user.login()}")
-                                img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
-                        td
-                            .userInfo(data-bind="html: userInfo() + rnks()")
-                            //ko if: userRibbon().length
-                            .userRibbon.photoTiles
-                                //ko foreach: userRibbon
-                                a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: 's' + $data.s")
-                                    .photoBox
-                                        img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
-                                        .curtain
-                                        //ko if: status.icon
-                                        .status.fringe(data-bind="attr: {title: status.tip}")
-                                            span.glyphicon(data-bind="css: status.icon")
-                                        // /ko
+            table.rightrow.tableUser(cellpadding="0"): tbody: tr
+                td(style="width: 85px; min-width: 85px;")
+                    a.avatar.fringe.plain(data-bind="attr: {href: '/u/' + p.user.login()}")
+                        img(data-bind="attr: {src: p.user.avatar()}, event: {load: onImgLoad, error: onAvatarError}")
+                td
+                    .userInfo(data-bind="html: userInfo() + rnks()")
+                    //ko if: userRibbon().length
+                    .userRibbon.photoTiles
+                        //ko foreach: userRibbon
+                        a.photoPreview.withStatus(data-bind="attr: {href: '/p/' + cid, title: $data.title}, style: {marginRight: $parent.thumbM}, css: 's' + $data.s")
+                            .photoBox
+                                img.img(data-bind="attr: {src: sfile, title: $data.title}, event: {load: $parent.onPreviewLoad, error: $parent.onPreviewErr}, style: {width: $parent.thumbW, height: $parent.thumbH}")
+                                .curtain
+                                //ko if: status.icon
+                                .status.fringe(data-bind="attr: {title: status.tip}")
+                                    span.glyphicon(data-bind="css: status.icon")
                                 // /ko
-                            // /ko
+                        // /ko
+                    // /ko
             .rightrow.photoMap.mContainer.mHidden(data-bind="allowBindings: false, style: {height: mapH()}")
             //ko if: nearestRibbon().length
             .rightrow.photoTiles(style="text-align: center;")
@@ -283,7 +283,7 @@
             span(data-bind="html: fields.watersign.individual")
         br
         div(style="margin-top:7px;")
-            | Добавлять подпись на вотермарк фотографии:&nbsp;
+            span(data-bind="html: fields.watersign.option + ': '")
             .btn-group.btn-group-sm.disabled
                 button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()!==false}, click: watersignOptionChange") Да
                 button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.watersignIndividual()}, css: {active: watersignOption()===false}, click: watersignOptionChange") Нет
@@ -306,5 +306,29 @@
         p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
             sup(style="margin-left:-8px;") *
             |  При изменении настройки подписи, фотография будет отправлена в очередь на обработку, что может занять некоторое время
+
+    .fieldWrap.asrow: span.panel-block(style="padding-bottom:3px")
+        span.infoName(data-bind="html: fields.downloadOrigin.title+':'")
+        label.radio-inline
+            input(type="radio", name="disallowDownloadOriginIndividual", value="false", data-bind="checked: disallowDownloadOriginIndividual")
+            span(data-bind="html: fields.downloadOrigin.profile")
+            sup 1
+        label.radio-inline
+            input(type="radio", name="disallowDownloadOriginIndividual", value="true", data-bind="checked: disallowDownloadOriginIndividual")
+            span(data-bind="html: fields.downloadOrigin.individual")
+        br
+        div(style="margin-top:7px;")
+            span(data-bind="html: fields.downloadOrigin.option + ': '")
+            .btn-group.btn-group-sm.disabled
+                button.btn.btn-primary.yes(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual() || watersignOption()===false}, css: {active: !disallowDownloadOrigin()}, click: downloadOriginChange") Да
+                button.btn.btn-primary.no(type="button", data-bind="attr: {disabled: !p.disallowDownloadOriginIndividual()|| watersignOption()===false}, css: {active: disallowDownloadOrigin()}, click: downloadOriginChange") Нет
+        p.text-muted(style="margin-bottom:0;padding-left:8px;line-height:1.1;font-size:11px;")
+            sup(style="margin-left:-8px;") *
+            |  Запретить скачивать оригинал можно только в случае наличия подписи на вотермарке фотографии
+        p.text-muted(style="margin:3px 0;padding-left:8px;line-height:1.1;font-size:11px;")
+            sup(style="margin-left:-8px;") 1
+            |  Указанная настройка по умолчанию применяется ко всем вашим фотографиям, на которых не указана индивидуальная.
+            span(style="display:inline-block;")  Изменить её можно на странине&nbsp;
+                a(target="_blank", data-bind="attr: {href: '/u/' + p.user.login() + '/settings'}") настроек
     .spanner
     | </script>

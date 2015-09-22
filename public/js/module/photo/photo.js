@@ -140,6 +140,50 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 owner: this
             });
 
+            this.disallowDownloadOriginIndividual = this.co.disallowDownloadOriginIndividual = ko.computed({
+                read: function () {
+                    return String(self.p.disallowDownloadOriginIndividual());
+                },
+                write: function (valNew) {
+                    self.p.disallowDownloadOriginIndividual(valNew === 'true');
+                }
+            });
+            this.disallowDownloadOrigin = this.co.disallowDownloadOrigin = ko.computed({
+                read: function () {
+                    this.watersignOptionTrigger();
+
+                    var result;
+                    var p = self.p;
+
+                    if (this.watersignOption() === false) {
+                        result = false;
+                    } else if (p.disallowDownloadOriginIndividual()) {
+                        result = p.disallowDownloadOrigin();
+                    } else {
+                        var addSignBySetting = p.user.settings.photo_disallow_download_origin;
+                        result = addSignBySetting && addSignBySetting();
+                    }
+
+                    if (result === undefined) {
+                        result = true;
+                    }
+
+                    if (result === true) {
+                        result = 'true';
+                    }
+
+                    return result;
+                },
+                write: function (valNew) {
+                    if (valNew === 'true') {
+                        valNew = true;
+                    }
+
+                    this.p.disallowDownloadOrigin(valNew);
+                },
+                owner: this
+            });
+
             var userInfoTpl = _.template('Добавил${ addEnd } <a href="/u/${ login }" ${ css }>${ name }</a>, ${ stamp }');
             this.userInfo = this.co.userInfo = ko.computed(function () {
                 return userInfoTpl(
@@ -802,7 +846,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         watersignOptionChange: function (data, evt) {
             var flag = isYes(evt);
             var p = this.p;
-            var user = this.p.user;
+            var user = p.user;
             var newOption;
 
             if (!flag) {
@@ -816,6 +860,12 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             p.watersignOption(newOption);
+        },
+        downloadOriginChange: function (data, evt) {
+            var flag = isYes(evt);
+            var p = this.p;
+
+            p.disallowDownloadOrigin(!flag);
         },
 
         notifyReady: function () {
@@ -1114,7 +1164,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var cid = p.cid();
 
             var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignIndividual')
+                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignIndividual', 'disallowDownloadOriginIndividual')
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 
@@ -1151,9 +1201,8 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 changes.author = p.author() || null;
             }
 
+            var watersignOption = self.watersignOption();
             if (p.watersignIndividual()) {
-                var watersignOption = self.watersignOption();
-
                 if (watersignOption === 'true') {
                     watersignOption = true;
                 }
@@ -1162,6 +1211,16 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                 }
                 if (self.watersignCustom() !== origin.watersignCustom) {
                     changes.watersignCustom = self.watersignCustom() || null;
+                }
+            }
+            if (p.disallowDownloadOriginIndividual()) {
+                var disallowDownloadOrigin = self.disallowDownloadOrigin();
+
+                if (disallowDownloadOrigin === 'true') {
+                    disallowDownloadOrigin = true;
+                }
+                if (watersignOption !== false && disallowDownloadOrigin !== origin.disallowDownloadOrigin) {
+                    changes.disallowDownloadOrigin = disallowDownloadOrigin;
                 }
             }
 

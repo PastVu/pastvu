@@ -150,10 +150,13 @@ var settings = require('./settings.js'),
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
-                if (photo.disallowDownloadOrigin === false ||
-                    photo.disallowDownloadOrigin !== true && !usObj.user.settings.photo_disallow_download_origin) {
-                    // If photo has individual setting not to disallow download origin or
-                    // photo owner doesn't have setting to disallow (and individual setting doesn't disallow),
+                if (photo.watersignIndividual && photo.watersignOption === false ||
+                    !photo.watersignIndividual && usObj.user.settings.photo_watermark_add_sign === false ||
+                    photo.disallowDownloadOriginIndividual && photo.disallowDownloadOrigin === false ||
+                    !photo.disallowDownloadOriginIndividual && !usObj.user.settings.photo_disallow_download_origin) {
+                    // If photo has no watersign (by individual setting or profile setting) or
+                    // if photo has individual setting not to disallow download origin or
+                    // photo owner doesn't have setting to disallow download,
                     // than let download origin
                     can.download = true;
                 } else if (ownPhoto || usObj.isAdmin) {
@@ -326,6 +329,9 @@ var core = {
 
                 // Присваиваем владельца после приведения фотографии к объекту, иначе там останется просто объект _id
                 photo.user = owner;
+
+                // TODO: Скачивание (+ просто аттрибут download усли withwater)
+                // TODO: Запрещение изменения watersign глобольно и индивидуально
 
                 this.can = permissions.getCan(photo, iAm, this.isMine);
 
@@ -568,9 +574,9 @@ var createPhotos = Bluebird.method(function (socket, data) {
     }
 
     return Bluebird.all(data.map(function (item) {
-        item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
-        return fs.renameAsync(incomeDir + item.file, privateDir + item.fullfile);
-    }))
+            item.fullfile = item.file.replace(/((.)(.)(.))/, "$2/$3/$4/$1");
+            return fs.renameAsync(incomeDir + item.file, privateDir + item.fullfile);
+        }))
         .then(function () {
             return Counter.incrementBy('photo', data.length);
         })
@@ -1356,9 +1362,9 @@ var givePhotos = Bluebird.method(function (iAm, filter, data, user_id) {
         fieldsSelect = iAm.registered ? compactFieldsForRegWithRegions : compactFieldsWithRegions;
 
         return Bluebird.join(
-            Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
-            Photo.countAsync(query)
-        )
+                Photo.findAsync(query, fieldsSelect, { lean: true, skip: skip, limit: limit, sort: { sdate: -1 } }),
+                Photo.countAsync(query)
+            )
             .bind({})
             .spread(function (photos, count) {
                 this.count = count;
@@ -1572,11 +1578,11 @@ var givePhotosForApprove = Bluebird.method(function (iAm, data) {
     }
 
     return Photo.findAsync(query, compactFieldsWithRegions, {
-        lean: true,
-        sort: { sdate: -1 },
-        skip: data.skip || 0,
-        limit: Math.min(data.limit || 20, 100)
-    })
+            lean: true,
+            sort: { sdate: -1 },
+            skip: data.skip || 0,
+            limit: Math.min(data.limit || 20, 100)
+        })
         .then(function (photos) {
             if (!photos) {
                 throw { message: msg.noPhoto };
@@ -1616,7 +1622,11 @@ var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
 
             if (limitR) {
                 query.sdate = { $lt: photo.sdate };
-                promises.push(Photo.findAsync(query, compactFields, { lean: true, sort: { sdate: -1 }, limit: limitR }));
+                promises.push(Photo.findAsync(query, compactFields, {
+                    lean: true,
+                    sort: { sdate: -1 },
+                    limit: limitR
+                }));
             }
 
             return Bluebird.all(promises);
@@ -1850,8 +1860,7 @@ var photoValidate = function (newValues, oldValues) {
             // If user set custom sign option, but did not fill it, don't set custom sign option
             delete result.watersignOption;
         } else if (oldValues.watersignOption === 'custom' && oldValues.watersignCustom &&
-            (!result.watersignOption || result.watersignOption === 'custom') &&
-            !result.watersignCustom && result.hasOwnProperty('watersignCustom')) {
+            (!result.watersignOption || result.watersignOption === 'custom') && !result.watersignCustom && result.hasOwnProperty('watersignCustom')) {
             // If photo had custom individual watersign, and user has deleted it, without changing the option, set default watersign
 
             result.watersignOption = true;
@@ -1860,6 +1869,16 @@ var photoValidate = function (newValues, oldValues) {
 
         if (newValues.watersignCustom === null) {
             result.watersignCustom = undefined;
+        }
+    }
+
+    if (_.isBoolean(newValues.disallowDownloadOriginIndividual) && newValues.disallowDownloadOriginIndividual !== Boolean(oldValues.disallowDownloadOriginIndividual)) {
+        result.disallowDownloadOriginIndividual = newValues.disallowDownloadOriginIndividual;
+    }
+
+    if (result.disallowDownloadOriginIndividual || oldValues.disallowDownloadOriginIndividual && result.disallowDownloadOriginIndividual === undefined) {
+        if (settings.getUserSettingsVars().photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
+            result.disallowDownloadOrigin = newValues.disallowDownloadOrigin;
         }
     }
 
@@ -1891,7 +1910,6 @@ var savePhoto = function (iAm, data) {
             }
 
             this.canModerate = canModerate;
-            this.saveHistory = this.photo.s !== status.NEW;
             this.parsedFileds = {};
 
             // Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
@@ -1906,7 +1924,9 @@ var savePhoto = function (iAm, data) {
             newValues = Utils.diff(
                 _.pick(
                     changes,
-                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author', 'watersignIndividual', 'watersignOption', 'watersignCustom'
+                    'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
+                    'watersignIndividual', 'watersignOption', 'watersignCustom',
+                    'disallowDownloadOriginIndividual', 'disallowDownloadOrigin'
                 ),
                 this.oldPhotoObj
             );
@@ -1914,6 +1934,8 @@ var savePhoto = function (iAm, data) {
             if (_.isEmpty(newValues) && !changes.hasOwnProperty('region')) {
                 throw { emptySave: true };
             }
+
+            this.saveHistory = this.photo.s !== status.NEW;
 
             _.assign(this.photo, newValues);
 
@@ -1947,9 +1969,9 @@ var savePhoto = function (iAm, data) {
             // Если координата добавилась/изменилась, запрашиваем по ней новые регионы фотографии
             if (newGeo) {
                 return regionController.setObjRegionsByGeo(
-                    photo, newGeo,
-                    { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
-                )
+                        photo, newGeo,
+                        { _id: 0, cid: 1, parents: 1, title_en: 1, title_local: 1 }
+                    )
                     .then(function (regionsArr) {
                         newRegions = regionsArr;
                         return null;
@@ -1957,7 +1979,12 @@ var savePhoto = function (iAm, data) {
             }
         })
         .then(function () {
-            return User.findOneAsync({ _id: this.photo.user }, { _id: 0, login: 1, watersignCustom: 1, settings: 1 }, { lean: true });
+            return User.findOneAsync({ _id: this.photo.user }, {
+                _id: 0,
+                login: 1,
+                watersignCustom: 1,
+                settings: 1
+            }, { lean: true });
         })
         .then(function (user) {
             // Проверяем, что заполненны обязательные поля для опубликованных
@@ -1982,7 +2009,17 @@ var savePhoto = function (iAm, data) {
             }
 
             if (this.saveHistory) {
-                this.photo.cdate = this.photo.ucdate = new Date();
+                this.photo.cdate = new Date();
+
+                var propsThatCountForUCDate = _.omit(
+                    newValues,
+                    'watersignIndividual', 'watersignOption', 'watersignCustom', // Do not notify when watersign changed
+                    'disallowDownloadOriginIndividual', 'disallowDownloadOrigin' // Do not notify when download changed
+                );
+
+                if (!_.isEmpty(propsThatCountForUCDate)) {
+                    this.photo.ucdate = this.photo.cdate;
+                }
             }
 
             var promise = photoUpdate(iAm, this.photo).bind(this);
@@ -2189,7 +2226,16 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
 
             this.user = user;
 
-            return Photo.findAsync(this.query, { _id: 0, cid: 1, s: 1, user: 1, ldate: 1, cdate: 1, ucdate: 1, watersignText: 1 }, { lean: true, sort: { sdate: -1 } });
+            return Photo.findAsync(this.query, {
+                _id: 0,
+                cid: 1,
+                s: 1,
+                user: 1,
+                ldate: 1,
+                cdate: 1,
+                ucdate: 1,
+                watersignText: 1
+            }, { lean: true, sort: { sdate: -1 } });
         })
         .then(function (photos) {
 
@@ -2262,17 +2308,26 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
             photos = null;
 
             return Bluebird.join(
-                Photo.updateAsync(this.query, update, { multi: true }),
-                Photo.updateAsync(queryNew, updateNew, { multi: true }),
-                Bluebird.all(historyCalls.map(function (hist) {
-                    return savePhotoHistory.apply(undefined, hist);
-                }))
-            )
+                    Photo.updateAsync(this.query, update, { multi: true }),
+                    Photo.updateAsync(queryNew, updateNew, { multi: true }),
+                    Bluebird.all(historyCalls.map(function (hist) {
+                        return savePhotoHistory.apply(undefined, hist);
+                    }))
+                )
                 .then(function () {
-                    return PhotoConverter.addPhotosAll({ login: data.login, priority: 2, region: region, onlyWithoutTextApplied: true });
+                    return PhotoConverter.addPhotosAll({
+                        login: data.login,
+                        priority: 2,
+                        region: region,
+                        onlyWithoutTextApplied: true
+                    });
                 })
                 .then(function (conveyorResult) {
-                    return { updated: count, conveyorAdded: conveyorResult.conveyorAdded, time: Date.now() - stampStart };
+                    return {
+                        updated: count,
+                        conveyorAdded: conveyorResult.conveyorAdded,
+                        time: Date.now() - stampStart
+                    };
                 });
         })
         .finally(function () {
@@ -2307,13 +2362,13 @@ var resetIndividualDownloadOrigin = Bluebird.method(function (iAm, data) {
                 throw { message: msg.noUser };
             }
 
-            var query = { user: user._id, disallowDownloadOrigin: { $exists: true } };
+            var query = { user: user._id, disallowDownloadOriginIndividual: true };
 
             if (region) {
                 query['r' + region.level] = region.cid;
             }
 
-            return Photo.updateAsync(query, { $unset: { disallowDownloadOrigin: 1 } }, { multi: true });
+            return Photo.updateAsync(query, { $unset: { disallowDownloadOriginIndividual: 1 } }, { multi: true });
         })
         .spread(function (updated) {
             var spent = Date.now() - stampStart;

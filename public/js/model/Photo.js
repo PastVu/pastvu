@@ -54,6 +54,7 @@ define(
                 watersignText: null,
                 watersignTextApplied: null,
 
+                disallowDownloadOriginIndividual: false,
                 disallowDownloadOrigin: false,
 
                 desc: '',
