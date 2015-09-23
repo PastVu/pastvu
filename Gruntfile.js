@@ -82,7 +82,7 @@ module.exports = function (grunt) {
                     //{expand: true, cwd: 'public-build', src: ['**'], dest: targetDir + 'public'},
                     {
                         expand: true,
-                        src: ['app.js', 'api.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', './README'],
+                        src: ['app.js', 'api.js', 'config.json', 'log4js.json', 'package.json', 'uploader.js', 'downloader.js', './README'],
                         dest: targetDir
                     }
                 ]
