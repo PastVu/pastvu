@@ -57,6 +57,7 @@
         "optimist": "0.6.1",
         "log4js": "0.6.27",
         "formidable": "1.0.17",
+        "content-disposition": "0.5.0",
         "gm": "1.19.0"
     },
     "devDependencies": {

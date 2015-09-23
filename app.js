@@ -1,6 +1,6 @@
 'use strict';
 
-var startStamp = Date.now();
+const startStamp = Date.now();
 
 // Включаем "наши" расширения js
 require('./commons/JExtensions');
@@ -56,6 +56,7 @@ const protocol = conf.protocol; // Протокол сервера для кли
 const domain = conf.domain || addresses[0]; // Адрес сервера для клинетов
 const port = conf.projectport; // Порт сервера для клиента
 const uport = conf.projectuport; // Порт сервера загрузки фотографий для клиента
+const dport = conf.projectdport; // Порт сервера скачки фотографий для клиента
 const host = domain + port; // Имя хоста (адрес+порт)
 
 const subdomains = (argv.subdomains || conf.subdomains).split('_').filter(function (item) {
@@ -140,22 +141,23 @@ async.waterfall([
     },
 
     function loadingModels(callback) {
-        require(__dirname + '/models/ApiLog.js').makeModel(db);
-        require(__dirname + '/models/ActionLog.js').makeModel(db);
-        require(__dirname + '/models/Counter.js').makeModel(db);
-        require(__dirname + '/models/Settings.js').makeModel(db);
-        require(__dirname + '/models/Reason.js').makeModel(db);
-        require(__dirname + '/models/User.js').makeModel(db);
-        require(__dirname + '/models/UserSettings.js').makeModel(db);
-        require(__dirname + '/models/UserStates.js').makeModel(db);
-        require(__dirname + '/models/UserAction.js').makeModel(db);
-        require(__dirname + '/models/Sessions.js').makeModel(db);
-        require(__dirname + '/models/Photo.js').makeModel(db);
-        require(__dirname + '/models/Comment.js').makeModel(db);
-        require(__dirname + '/models/Cluster.js').makeModel(db);
-        require(__dirname + '/models/Region.js').makeModel(db);
-        require(__dirname + '/models/News.js').makeModel(db);
-        require(__dirname + '/models/_initValues.js').makeModel(db);
+        require('./models/ApiLog').makeModel(db);
+        require('./models/ActionLog').makeModel(db);
+        require('./models/Counter').makeModel(db);
+        require('./models/Settings').makeModel(db);
+        require('./models/Reason').makeModel(db);
+        require('./models/User').makeModel(db);
+        require('./models/UserSettings').makeModel(db);
+        require('./models/UserStates').makeModel(db);
+        require('./models/UserAction').makeModel(db);
+        require('./models/Sessions').makeModel(db);
+        require('./models/Download').makeModel(db);
+        require('./models/Photo').makeModel(db);
+        require('./models/Comment').makeModel(db);
+        require('./models/Cluster').makeModel(db);
+        require('./models/Region').makeModel(db);
+        require('./models/News').makeModel(db);
+        require('./models/_initValues').makeModel(db);
         callback(null);
     },
 
@@ -181,7 +183,7 @@ async.waterfall([
         global.appVar.land = land;
         global.appVar.storePath = storePath;
         global.appVar.mail = mail;
-        global.appVar.serverAddr = { protocol, domain, host, port, uport, subdomains };
+        global.appVar.serverAddr = { protocol, domain, host, port, uport, dport, subdomains };
 
         Utils = require('./commons/Utils'); // Utils должны реквайрится после установки глобальных переменных, так как они там используются
         ourMiddlewares = require('./controllers/middleware');

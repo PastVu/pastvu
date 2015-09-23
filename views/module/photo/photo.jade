@@ -59,7 +59,7 @@
                             span.glyphicon.glyphicon-share-alt
                         // /ko
                         //ko if: !edit()
-                        button.btn.btn-xxs(data-bind="css: downloadCSSClass(), attr: {title: 'Скачать'+(downLoadOrigin()?' оригинал':'')}")
+                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+p.title()+'.jpg', title:'Скачать'+(downLoadOrigin()?' оригинал':'')}")
                             span.glyphicon.glyphicon-save
                         // /ko
 

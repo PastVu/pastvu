@@ -78,6 +78,13 @@
 		},
 		{
 			"type": "file",
+			"filename": "downloader.log",
+			"maxLogSize": 1048576,
+			"backups": 0,
+			"category": ["downloader.js"]
+		},
+		{
+			"type": "file",
 			"filename": "subscriber.log",
 			"maxLogSize": 1048576,
 			"backups": 1,

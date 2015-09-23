@@ -6,6 +6,7 @@ var settings = require('./settings.js'),
     User,
     UserSelfPublishedPhotos,
     Photo,
+    Download,
     PhotoMap,
     PhotoHistory,
     Comment,
@@ -2737,6 +2738,53 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
         });
 });
 
+var getDownloadKey = Bluebird.method(function (iAm, data) {
+    var cid = Number(_.get(data, 'cid'));
+
+    if (!iAm.registered) {
+        throw { message: msg.deny };
+    }
+
+    if (!cid) {
+        throw { message: msg.noPhoto };
+    }
+
+    return Photo.findOneAsync({ cid: cid }, {}, { lean: true })
+        .bind({})
+        .then(function (photo) {
+            if (!photo || !permissions.canSee(photo, iAm)) {
+                throw { message: msg.deny };
+            }
+
+            var canDownload = permissions.getCan(photo, iAm).download;
+
+            if (canDownload === 'login') {
+                throw { message: msg.deny };
+            }
+
+            this.origin = canDownload === true || canDownload === 'byrole';
+
+            var key = Utils.randomString(32);
+            var path = (this.origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
+            var fileName = photo.cid + ' ' + photo.title + '.jpg';
+            // We keep only size of origin file, size with watermark must be calculated by downloader.js
+            var size = this.origin ? photo.size : null;
+
+            return new Download({
+                key: key,
+                data: {
+                    fileName: fileName, path: path, size: size, type: 'image/jpeg',
+                    login: iAm.user.login, cid: photo.cid, origin: this.origin
+                }
+            }).saveAsync();
+        })
+        .spread(function (download) {
+            return { key: download.key, origin: this.origin || undefined };
+        });
+
+    return {};
+});
+
 module.exports.loadController = function (app, db, io) {
     logger = log4js.getLogger('photo.js');
 
@@ -2745,6 +2793,7 @@ module.exports.loadController = function (app, db, io) {
     Photo = db.model('Photo');
     PhotoMap = db.model('PhotoMap');
     PhotoHistory = db.model('PhotoHistory');
+    Download = db.model('Download');
     Counter = db.model('Counter');
     Comment = db.model('Comment');
     UserObjectRel = db.model('UserObjectRel');
@@ -2753,7 +2802,7 @@ module.exports.loadController = function (app, db, io) {
     PhotoCluster.loadController(app, db, io);
     PhotoConverter.loadController(app, db, io);
 
-    planResetDisplayStat(); //Планируем очистку статистики
+    planResetDisplayStat(); // Планируем очистку статистики
 
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
@@ -3047,6 +3096,16 @@ module.exports.loadController = function (app, db, io) {
                 })
                 .then(function (resultData) {
                     socket.emit('takeNewPhotosLimit', resultData);
+                });
+        });
+
+        socket.on('getDownloadKey', function (data) {
+            getDownloadKey(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('getDownloadKeyResult', resultData);
                 });
         });
     });

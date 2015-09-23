@@ -3,6 +3,7 @@
 	"hostname": "", /* Accept only this host. If the hostname is omitted, the server will accept connections directed to any IPv4 address (INADDR_ANY). @Default "" */
 	"port": 3000, /* Application app.js will listen this port. @Default 3000 */
 	"uport": 3001, /* Application uploader.js will listen this port. @Default 3001 */
+	"dport": 3002, /* Application downloader.js will listen this port. @Default 3002 */
 
 	"core_hostname": "", /* Core will listen this host. @Default "" */
 	"core_port": 3010, /* Core will listen this port. @Default 3010 */
@@ -14,6 +15,7 @@
 	"domain": "127.0.0.1", /* Domain for external users, i.e. site entry point. @Default "127.0.0.1" */
 	"projectport": "", /* Port for external users. @Example ":1234". @Default "" */
 	"projectuport": ":3001", /* Upload files port for external users. @Example ":1234". @Default "" */
+	"projectdport": ":3002", /* Download files port for external users. @Example ":1234". @Default "" */
 
 	"storePath": "", /* Store folder with static user content (avatars, photos, etc). @Default "../store/" */
 	"servePublic": true, /* Tell app.js serve out its public folder (js, css, etc). @Default true */

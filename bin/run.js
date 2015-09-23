@@ -35,7 +35,7 @@ function babelRequire(modulePath) {
 
     // Use require-hook babel without it's runtime
     require('babel-core/register')({
-        only: /(?:app|photoConverter)\.js/,
+        only: /(?:app|photoConverter|downloader)\.js/,
         stage: 0,
         // whitelist: [],
         blacklist: [

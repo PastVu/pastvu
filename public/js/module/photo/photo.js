@@ -1121,6 +1121,81 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
         },
 
+        download: (function () {
+            var supportDownloadAttribute = 'download' in document.createElement('a');
+            var waitingForKey = false;
+            var downloadPath = '//' + P.settings.server.domain() + P.settings.server.dport() + '/download/';
+            var getDownloadKey = function (cid) {
+                waitingForKey = true;
+                socket.once('getDownloadKeyResult', function (data) {
+                    if (data && !data.error && data.key) {
+                        ga('send', 'event', 'download', data.origin ? 'origin' : 'water', 'download ' + (data.origin ? 'origin' : 'water'));
+
+                        var a = document.createElement('a');
+                        a.setAttribute('href', downloadPath + data.key);
+                        // Tell browser that we expect to download it, to suppress warning about resource interpretation
+                        // File name will be obtained from Content-Disposition anyway
+                        a.setAttribute('download', '');
+
+                        // For Firefox clicked ahref must be on page, even invisible
+                        a.style.display = 'none';
+                        document.body.appendChild(a);
+
+                        Utils.clickElement(a);
+
+                        document.body.removeChild(a);
+                    } else {
+                        ga('send', 'event', 'download', 'error', 'download error');
+                        console.warn(data);
+                    }
+
+                    waitingForKey = false;
+                });
+                socket.emit('getDownloadKey', { cid: cid });
+            };
+
+            return function (data, event) {
+                if (waitingForKey) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                }
+
+                var a = event.currentTarget;
+                var $a = $(a);
+
+                ga('send', 'event', 'download', 'click', 'download click');
+
+                var canDownload = this.can.download();
+                var cid = data.p.cid();
+
+                if (this.downLoadOrigin()) {
+                    getDownloadKey(cid, $a);
+                } else if (canDownload === 'withwater') {
+                    // If browser support 'download' attribute - do nothing and it'll download with watermark by itself
+                    // (to reduce server load)
+                    // If don't support, get photo from server
+                    if (supportDownloadAttribute) {
+                        ga('send', 'event', 'download', 'water', 'download water');
+                        return true;
+                    }
+                    getDownloadKey(cid, $a);
+                } else if (canDownload === 'login' && !this.auth.loggedIn()) {
+                    this.auth.show('login', function (result) {
+                        if (result.loggedIn) {
+                            setTimeout(function () {
+                                Utils.clickElement(a);
+                            }, 500);
+                        }
+                    }, this);
+                }
+
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            };
+        }()),
+
         editSave: function () {
             var self = this;
 

@@ -161,7 +161,7 @@ var PhotoConveyerErrorSchema = new Schema(
     }
 );
 
-//Статистика заполненности конвейера
+// Статистика заполненности конвейера
 var STPhotoConveyerSchema = new Schema(
     {
         stamp: { type: Date, 'default': Date.now, required: true, index: true },

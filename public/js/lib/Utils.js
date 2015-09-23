@@ -128,6 +128,15 @@ define(['jquery', 'underscore', 'underscore.string', 'lib/jsuri', 'lib/jquery/pl
 			return false;
 		},
 
+        clickElement: function (element) {
+            if (typeof element.click === 'function') {
+                element.click();
+            } else if (document.createEvent) {
+                var eventObj = document.createEvent('MouseEvents');
+                eventObj.initEvent('click', true, true);
+                element.dispatchEvent(eventObj);
+            }
+        },
 
 		getObjectPropertyLength: (function () {
 			function ecma5(obj) {
