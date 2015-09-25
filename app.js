@@ -2,28 +2,25 @@
 
 const startStamp = Date.now();
 
-// Включаем "наши" расширения js
-require('./commons/JExtensions');
+import './commons/JExtensions';
+import fs from 'fs';
+import os from 'os';
+import ms from 'ms';
+import _ from 'lodash';
+import http from 'http';
+import path from 'path';
+import step from 'step';
+import async from 'async';
+import posix from 'posix';
+import mkdirp from 'mkdirp';
+import log4js from 'log4js';
+import express from 'express';
+import { argv } from 'optimist';
+import Bluebird from 'bluebird';
+import mongoose from 'mongoose';
+import constants from './controllers/constants';
 
-const express = require('express');
-const async = require('async');
-const posix = require('posix');
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const step = require('step');
-const log4js = require('log4js');
-const argv = require('optimist').argv;
-const _ = require('lodash');
-const Bluebird = require('bluebird');
-
-const mkdirp = require('mkdirp');
-const mongoose = require('mongoose');
-const ms = require('ms'); // Tiny milisecond conversion utility
 let Utils;
-
-const constants = require('./controllers/constants');
 let app;
 let io;
 let db;
@@ -103,7 +100,7 @@ if (land !== 'prod') {
 }
 
 // Промисифаем mongoose и fs, методы будут с постфиксом Async, например, model.saveAsync().then(..)
-Bluebird.promisifyAll(require('mongoose'));
+Bluebird.promisifyAll(mongoose);
 Bluebird.promisifyAll(fs);
 
 mkdirp.sync(storePath + 'incoming');
@@ -295,7 +292,7 @@ async.waterfall([
         io.sockets.setMaxListeners(0);
         process.setMaxListeners(0);
 
-        var _session = require('./controllers/_session.js');
+        var _session = require('./controllers/_session');
         io.use(_session.handleSocket);
         _session.loadController(app, db, io);
         callback(null);
@@ -303,8 +300,8 @@ async.waterfall([
     function (callback) {
         step(
             function () {
-                require('./controllers/settings.js').loadController(app, db, io, this.parallel());
-                require('./controllers/region.js').loadController(app, db, io, this.parallel());
+                require('./controllers/settings').loadController(app, db, io, this.parallel());
+                require('./controllers/region').loadController(app, db, io, this.parallel());
             },
             function (err) {
                 callback(err);
@@ -313,22 +310,22 @@ async.waterfall([
 
     },
     function (callback) {
-        require('./controllers/actionlog.js').loadController(app, db, io);
-        require('./controllers/mail.js').loadController(app);
-        require('./controllers/auth.js').loadController(app, db, io);
-        require('./controllers/reason.js').loadController(app, db, io);
-        require('./controllers/userobjectrel.js').loadController(app, db, io);
-        require('./controllers/index.js').loadController(app, db, io);
-        require('./controllers/photo.js').loadController(app, db, io);
-        require('./controllers/subscr.js').loadController(app, db, io);
-        require('./controllers/comment.js').loadController(app, db, io);
-        require('./controllers/profile.js').loadController(app, db, io);
-        require('./controllers/admin.js').loadController(app, db, io);
+        require('./controllers/actionlog').loadController(app, db, io);
+        require('./controllers/mail').loadController(app);
+        require('./controllers/auth').loadController(app, db, io);
+        require('./controllers/reason').loadController(app, db, io);
+        require('./controllers/userobjectrel').loadController(app, db, io);
+        require('./controllers/index').loadController(app, db, io);
+        require('./controllers/photo').loadController(app, db, io);
+        require('./controllers/subscr').loadController(app, db, io);
+        require('./controllers/comment').loadController(app, db, io);
+        require('./controllers/profile').loadController(app, db, io);
+        require('./controllers/admin').loadController(app, db, io);
         if (land === 'dev') {
-            require('./controllers/tpl.js').loadController(app);
+            require('./controllers/tpl').loadController(app);
         }
 
-        require('./controllers/routes.js').loadController(app);
+        require('./controllers/routes').loadController(app);
 
         //Раздаем лог
         if (serveLog) {
@@ -340,11 +337,11 @@ async.waterfall([
             );
         }
 
-        require('./controllers/errors.js').registerErrorHandling(app);
-        require('./controllers/systemjs.js').loadController(app, db);
-        require('./basepatch/v1.3.0.4.js').loadController(app, db);
+        require('./controllers/errors').registerErrorHandling(app);
+        require('./controllers/systemjs').loadController(app, db);
+        // require('./basepatch/v1.3.0.4').loadController(app, db);
 
-        CoreServer = require('./controllers/coreadapter.js');
+        CoreServer = require('./controllers/coreadapter');
         callback(null);
     }
     ],

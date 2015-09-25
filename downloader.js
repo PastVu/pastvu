@@ -2,22 +2,20 @@
 
 const startStamp = Date.now();
 
-const _ = require('lodash');
-const path = require('path');
-const http = require('http');
-const fs = require('fs');
-const os = require('os');
-const ms = require('ms');
-const mkdirp = require('mkdirp');
-const log4js = require('log4js');
-const argv = require('optimist').argv;
-const mongoose = require('mongoose');
-const Bluebird = require('bluebird');
-const contentDisposition = require('content-disposition');
-const Utils = require('./commons/Utils'); // Utils должны реквайрится после установки глобальных переменных, так как они там используются
-let Download;
-
-require('./commons/JExtensions');
+import './commons/JExtensions';
+import fs from 'fs';
+import os from 'os';
+import ms from 'ms';
+import _ from 'lodash';
+import path from 'path';
+import http from 'http';
+import mkdirp from 'mkdirp';
+import log4js from 'log4js';
+import { argv } from 'optimist';
+import mongoose from 'mongoose';
+import Bluebird from 'bluebird';
+import Utils from './commons/Utils';
+import contentDisposition from 'content-disposition';
 
 const addresses = _.transform(os.networkInterfaces(), (result, face) => face.forEach(function (address) {
     if (address.family === 'IPv4' && !address.internal) {
@@ -39,6 +37,8 @@ const dport = argv.projectdport || conf.projectdport || ''; // Port of downloade
 const host = domain + dport; // Hostname (address+port)
 
 const logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + '/logs')); // Путь к папке логов
+
+let Download;
 
 console.log('\n');
 mkdirp.sync(logPath);
@@ -65,7 +65,7 @@ if (land !== 'prod') {
 }
 
 // Made some libriries methods works as promise. This methods'll be with Async postfix, e.g., model.saveAsync().then(..)
-Bluebird.promisifyAll(require('mongoose'));
+Bluebird.promisifyAll(mongoose);
 Bluebird.promisifyAll(fs);
 
 function openConnection() {
@@ -150,10 +150,6 @@ const handleRequest = async function (req, res) {
     res.statusCode = 200;
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Expires', '0');
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Content-Range, Content-Disposition');
 
     try {
         if (req.method !== 'GET') {

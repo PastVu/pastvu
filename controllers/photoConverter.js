@@ -1,15 +1,15 @@
+import _ from 'lodash';
+import ms from 'ms';
+import gm from 'gm';
+import path from 'path';
+import log4js from 'log4js';
+import mkdirp from 'mkdirp';
+import moment from 'moment';
+import Bluebird from 'bluebird';
+import Utils from '../commons/Utils';
 import { exec } from 'child_process';
-import { default as path } from 'path';
-import { default as Bluebird } from 'bluebird';
-import { default as log4js } from 'log4js';
-import { default as _ } from 'lodash';
-import { default as gm } from 'gm';
-import { default as mkdirp } from 'mkdirp';
-import { default as moment } from 'moment';
-import { default as ms } from 'ms';
-import { default as Utils } from '../commons/Utils';
 
-const sleep = time => new Bluebird(resolve => setTimeout(resolve, time));
+const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 const mkdirpAsync = Bluebird.promisify(mkdirp);
 const execAsync = Bluebird.promisify(exec);
 const logger = log4js.getLogger('photoConverter.js');
@@ -281,7 +281,7 @@ async function conveyerControl() {
 }
 
 const identifyImage = (src, format) =>
-    new Bluebird((resolve, reject) => gm(src).identify(format, (err, result) => {
+    new Promise((resolve, reject) => gm(src).identify(format, (err, result) => {
         if (err) {
             return reject(err);
         }
@@ -296,7 +296,7 @@ const identifyImage = (src, format) =>
     }));
 
 // const writeImage = (dst, gmInstance) =>
-// new Bluebird((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
+// new Promise((resolve, reject) => gmInstance.write(dst, (err, result) => err ? reject(err) : resolve(result)));
 
 const originIdentifyString = '{"w": "%w", "h": "%h", "f": "%C", "signature": "%#"}';
 
