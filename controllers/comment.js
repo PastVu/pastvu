@@ -978,7 +978,11 @@ var createComment = Bluebird.method(function (socket, data) {
                     w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
                     h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
                 };
-                this.obj.frags.push(this.fragObj);
+                if (this.obj.frags) {
+                    this.obj.frags.push(this.fragObj);
+                } else {
+                    this.obj.frags = [this.fragObj];
+                }
             }
 
             this.obj.ccount = (this.obj.ccount || 0) + 1;
