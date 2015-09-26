@@ -151,18 +151,18 @@ var settings = require('./settings.js'),
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
-                var settings = photo.user.settings;
+                var userSettings = photo.user.settings || settings.getUserSettingsDef();
 
                 if (// If setted individual that photo has now watersing
                     photo.watersignIndividual && photo.watersignOption === false ||
                     // If no individual watersign option and setted by profile that photo has now watersing
-                    !photo.watersignIndividual && settings.photo_watermark_add_sign === false ||
+                    !photo.watersignIndividual && userSettings.photo_watermark_add_sign === false ||
                     // If individually setted allow to download origin
                     photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
                     // If no individual downloading setting and setted by profile that photo has now watersing
                     // or by profile allowed to download origin
                     !photo.disallowDownloadOriginIndividual &&
-                    (settings.photo_watermark_add_sign === false || !settings.photo_disallow_download_origin)) {
+                    (userSettings.photo_watermark_add_sign === false || !userSettings.photo_disallow_download_origin)) {
                     // Let download origin
                     can.download = true;
                 } else if (ownPhoto || usObj.isAdmin) {
@@ -249,6 +249,10 @@ function findPhoto(usObj, query, fieldSelect, options, populateUser) {
     return promise.then(function (photo) {
         if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
             throw { message: msg.noPhoto };
+        }
+
+        if (populateUser) {
+            photo.user.settings = _.defaults(photo.user.settings || {}, settings.getUserSettingsDef());
         }
 
         return photo;
