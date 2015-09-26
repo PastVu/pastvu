@@ -74,6 +74,7 @@ define(
             }
         };
         var canDef = {
+            edit: false,
             ready: false,
             revision: false,
             revoke: false,
