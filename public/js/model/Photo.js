@@ -74,11 +74,19 @@ define(
             }
         };
         var canDef = {
-            edit: false,
-            disable: false,
-            remove: false,
+            ready: false,
+            revision: false,
+            revoke: false,
+            reject: false,
             approve: false,
-            convert: false
+            activate: false,
+            deactivate: false,
+            remove: false,
+            restore: false,
+            convert: false,
+            comment: false,
+            watersign: false, // TODO: watch on thos flag
+            download: 'login'
         };
         var picPrefix = '/_p';
         var picFormats = {

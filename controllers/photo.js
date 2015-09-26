@@ -151,15 +151,18 @@ var settings = require('./settings.js'),
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
+                var settings = photo.user.settings;
+
                 if (// If setted individual that photo has now watersing
                     photo.watersignIndividual && photo.watersignOption === false ||
                     // If no individual watersign option and setted by profile that photo has now watersing
-                    !photo.watersignIndividual && photo.user.settings.photo_watermark_add_sign === false ||
+                    !photo.watersignIndividual && settings.photo_watermark_add_sign === false ||
                     // If individually setted allow to download origin
                     photo.disallowDownloadOriginIndividual && !photo.disallowDownloadOrigin ||
                     // If no individual downloading setting and setted by profile that photo has now watersing
                     // or by profile allowed to download origin
-                    !photo.disallowDownloadOriginIndividual && (photo.user.settings.photo_watermark_add_sign === false || !photo.user.settings.photo_disallow_download_origin)) {
+                    !photo.disallowDownloadOriginIndividual &&
+                    (settings.photo_watermark_add_sign === false || !settings.photo_disallow_download_origin)) {
                     // Let download origin
                     can.download = true;
                 } else if (ownPhoto || usObj.isAdmin) {

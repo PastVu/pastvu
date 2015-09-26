@@ -37,22 +37,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             this.exe = ko.observable(false); // Указывает, что сейчас идет обработка запроса на действие к серверу
             this.exeregion = ko.observable(false); // Указывает, что сейчас идет запрос региона по координате
 
-            this.can = ko_mapping.fromJS({
-                edit: false,
-                ready: false,
-                revision: false,
-                revoke: false,
-                reject: false,
-                approve: false,
-                activate: false,
-                deactivate: false,
-                remove: false,
-                restore: false,
-                convert: false,
-                comment: false,
-                watersign: false, // TODO: watch on thos flag
-                download: 'login'
-            });
+            this.can = ko_mapping.fromJS(Photo.canDef);
 
             this.IOwner = this.co.IOwner = ko.computed(function () {
                 return this.auth.iAm.login() === this.p.user.login();
@@ -344,7 +329,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         rechargeData: function (photo, can) {
             var originData = this.originData;
 
-            // Если дынные уже были, то очищаем их и присваиваем заново, чтобы ссылка на сам объект origin сохранилась
+            // If data has already been, so clear it (object must remain)
             if (_.isObject(originData)) {
                 Object.keys(originData).forEach(function (key) {
                     delete originData[key];
@@ -355,7 +340,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             }
 
             this.p = Photo.vm(photo, this.p);
-            this.can = ko_mapping.fromJS(can, this.can);
+            this.can = ko_mapping.fromJS(_.defaults({}, can, Photo.canDef), this.can);
 
             this.watersignOptionTrigger(_.random(9e9));
         },
@@ -390,7 +375,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                         var editModeCurr = self.edit();
                         var editModeNew = !!data.forEdit;
 
-                        self.rechargeData(data.photo, data.can || Photo.canDef);
+                        self.rechargeData(data.photo, data.can);
 
                         Utils.title.setTitle({ title: self.p.title() });
 
@@ -1232,7 +1217,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     // так как после возврата комментарии будут запрошены заново и соответственно иметь статус прочитанных
                     data.photo.ccount_new = 0;
 
-                    self.rechargeData(data.photo, data.can || Photo.canDef);
+                    self.rechargeData(data.photo, data.can);
                     self.edit(true);
                 }
             }, this);
