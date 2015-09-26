@@ -464,7 +464,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             // Запрашиваем разрешенные действия для фото
             storage.photoCan(this.p.cid(), function (data) {
                 if (!data.error) {
-                    this.can = ko_mapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can)
+                    this.can = ko_mapping.fromJS(_.defaults({}, data.can, Photo.canDef), this.can);
                     this.sizesCalc();
                 }
             }, this);
