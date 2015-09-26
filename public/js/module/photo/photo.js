@@ -160,8 +160,14 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
                     } else if (p.disallowDownloadOriginIndividual()) {
                         result = p.disallowDownloadOrigin();
                     } else {
-                        var addSignBySetting = p.user.settings.photo_disallow_download_origin;
-                        result = addSignBySetting && addSignBySetting();
+                        var addSignBySetting = p.user.settings.photo_watermark_add_sign;
+                        var disallowDownloadBySetting = p.user.settings.photo_disallow_download_origin;
+
+                        if (addSignBySetting && addSignBySetting() === false) {
+                            result = false;
+                        } else {
+                            result = disallowDownloadBySetting && disallowDownloadBySetting();
+                        }
                     }
 
                     if (result === undefined) {
