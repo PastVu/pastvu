@@ -152,9 +152,9 @@ var settings = require('./settings.js'),
                 }
 
                 if (photo.watersignIndividual && photo.watersignOption === false ||
-                    !photo.watersignIndividual && usObj.user.settings.photo_watermark_add_sign === false ||
+                    !photo.watersignIndividual && photo.user.settings.photo_watermark_add_sign === false ||
                     photo.disallowDownloadOriginIndividual && photo.disallowDownloadOrigin === false ||
-                    !photo.disallowDownloadOriginIndividual && !usObj.user.settings.photo_disallow_download_origin) {
+                    !photo.disallowDownloadOriginIndividual && !photo.user.settings.photo_disallow_download_origin) {
                     // If photo has no watersign (by individual setting or profile setting) or
                     // if photo has individual setting not to disallow download origin or
                     // photo owner doesn't have setting to disallow download,
@@ -183,7 +183,7 @@ var settings = require('./settings.js'),
                 // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
                 can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate || undefined;
                 // Change watermark sign can administrator and owner if administrator didn't prohibit it for this photo or entire owner
-                can.watersign = usObj.isAdmin || ownPhoto && !usObj.user.nowaterchange && !photo.nowaterchange || undefined;
+                can.watersign = usObj.isAdmin || ownPhoto && !photo.user.nowaterchange && !photo.nowaterchange || undefined;
 
                 if (canModerate) {
                     // Модератор может отправить на доработку
@@ -207,7 +207,7 @@ var settings = require('./settings.js'),
                 return true;
             } else if (usObj.registered && photo.user) {
                 // Владелец всегда может видеть свою фотографию
-                if (photo.user.equals(usObj.user._id)) {
+                if (User.isEqual(photo.user, usObj.user)) {
                     return true;
                 }
                 // Удаленную может видеть админ
@@ -223,16 +223,25 @@ var settings = require('./settings.js'),
 
 /**
  * Находим фотографию с учетом прав пользователя
+ * @param usObj Объект пользователя
  * @param query
  * @param fieldSelect Выбор полей (обязательно должны присутствовать user, s, r0-rmaxRegionLevel)
- * @param usObj Объект пользователя
+ * @param options For example, { lean: true }
+ * @param populateUser Flag, that user object needed
  */
-function findPhoto(query, fieldSelect, usObj) {
+function findPhoto(usObj, query, fieldSelect, options, populateUser) {
     if (!usObj.registered) {
         query.s = status.PUBLIC; // Анонимам ищем только публичные
     }
+    var promise;
 
-    return Photo.findOneAsync(query, fieldSelect).then(function (photo) {
+    if (populateUser) {
+        promise = Photo.findOne(query, fieldSelect || {}, options || {}).populate({ path: 'user' }).execAsync();
+    } else {
+        promise = Photo.findOneAsync(query, fieldSelect || {}, options || {});
+    }
+
+    return promise.then(function (photo) {
         if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
             throw { message: msg.noPhoto };
         }
@@ -331,7 +340,6 @@ var core = {
                 // Присваиваем владельца после приведения фотографии к объекту, иначе там останется просто объект _id
                 photo.user = owner;
 
-                // TODO: Скачивание (+ просто аттрибут download усли withwater)
                 // TODO: Запрещение изменения watersign глобольно и индивидуально
 
                 this.can = permissions.getCan(photo, iAm, this.isMine);
@@ -868,7 +876,7 @@ var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
         throw { message: msg.badParams };
     }
 
-    return findPhoto({ cid: cid }, {}, iAm)
+    return findPhoto(iAm, { cid: cid }, null, null, true)
         .then(function (photo) {
             if (_.isNumber(data.s) && data.s !== photo.s) {
                 throw { message: msg.anotherStatus };
@@ -907,7 +915,8 @@ var photoUpdate = function (iAm, photo, stamp) {
 };
 
 // Обновляем счетчики количества у пользователя
-var userPCountUpdate = function (userId, newDelta, publicDelta, inactiveDelta) {
+var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
+    var userId = user._id || user;
     var ownerObj = _session.getOnline(null, userId);
 
     if (ownerObj) {
@@ -1005,7 +1014,7 @@ var readyPhoto = function (socket, data) {
         })
         .spread(function (photoSaved, rel) {
             // Сохраняем в истории предыдущий статус
-            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate);
+            savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, User.isEqual(this.oldPhotoObj.user, iAm.user) ? false : this.canModerate);
 
             // Заново выбираем данные для отображения
             return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
@@ -1608,7 +1617,7 @@ var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
-    return findPhoto({ cid: cid }, null, iAm)
+    return findPhoto(iAm, { cid: cid })
         .then(function (photo) {
             var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
             var query = buildPhotosQuery(filter, photo.user, iAm).query;
@@ -1734,14 +1743,11 @@ var giveCanPhoto = Bluebird.method(function (iAm, data) {
         throw { message: msg.noPhoto };
     }
 
-    if (iAm.registered) {
-        return Photo.findOneAsync({ cid: cid })
-            .then(function (photo) {
-                return { can: permissions.getCan(photo, iAm) };
-            });
-    }
-
-    return {};
+    // Need to get can for anonymous too, but there is nothing to check with owner in this case, so do not populate him
+    return findPhoto(iAm, { cid: cid }, null, null, iAm.registered ? true : false)
+        .then(function (photo) {
+            return { can: permissions.getCan(photo, iAm) };
+        });
 });
 
 function photoCheckPublickRequired(photo) {
@@ -1980,14 +1986,6 @@ var savePhoto = function (iAm, data) {
             }
         })
         .then(function () {
-            return User.findOneAsync({ _id: this.photo.user }, {
-                _id: 0,
-                login: 1,
-                watersignCustom: 1,
-                settings: 1
-            }, { lean: true });
-        })
-        .then(function (user) {
             // Проверяем, что заполненны обязательные поля для опубликованных
             if (this.photo.s === status.READY || this.photo.s === status.PUBLIC) {
                 photoCheckPublickRequired(this.photo);
@@ -2001,7 +1999,7 @@ var savePhoto = function (iAm, data) {
                 this.reconvert = true;
                 this.photo.convqueue = true;
 
-                this.photo.watersignText = getUserWaterSign(user, this.photo);
+                this.photo.watersignText = getUserWaterSign(this.photo.user, this.photo);
                 this.photo.watersignTextApplied = undefined; // Delete applied time of previous watersign appliance
 
                 if (newValues.hasOwnProperty('watersignOption') && newValues.watersignOption !== this.oldPhotoObj.watersignOption) {
@@ -2071,7 +2069,7 @@ var savePhoto = function (iAm, data) {
 
             // Сохраняем в истории предыдущий статус
             if (this.saveHistory) {
-                savePhotoHistory(iAm, this.oldPhotoObj, this.photo, this.oldPhotoObj.user.equals(iAm.user._id) ? false : this.canModerate, null, this.parsedFileds);
+                savePhotoHistory(iAm, this.oldPhotoObj, this.photo, User.isEqual(this.oldPhotoObj.user, iAm.user) ? false : this.canModerate, null, this.parsedFileds);
             }
 
             if (this.reconvert) {
@@ -2624,7 +2622,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
     var cid = Number(data.cid);
     var showDiff = !!data.showDiff;
 
-    return findPhoto({ cid: cid }, { _id: 0 }, iAm)
+    return findPhoto(iAm, { cid: cid }, { _id: 0 })
         .bind({})
         .then(function (photo) {
             var historySelect = { _id: 0, cid: 0 };
@@ -2749,13 +2747,9 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
         throw { message: msg.noPhoto };
     }
 
-    return Photo.findOneAsync({ cid: cid }, {}, { lean: true })
+    return findPhoto(iAm, { cid: cid }, null, { lean: true }, true)
         .bind({})
         .then(function (photo) {
-            if (!photo || !permissions.canSee(photo, iAm)) {
-                throw { message: msg.deny };
-            }
-
             var canDownload = permissions.getCan(photo, iAm).download;
 
             if (canDownload === 'login') {

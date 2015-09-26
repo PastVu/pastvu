@@ -428,7 +428,7 @@ var core = {
             promise = News.findOneAsync({ cid: data.cid }, { _id: 1 });
         } else {
             commentModel = Comment;
-            promise = photoController.findPhoto({ cid: data.cid }, null, iAm);
+            promise = photoController.findPhoto(iAm, { cid: data.cid });
         }
 
         return promise
@@ -493,7 +493,7 @@ var core = {
             promise = News.findOneAsync({ cid: data.cid }, { _id: 1, nocomments: 1 });
         } else {
             commentModel = Comment;
-            promise = photoController.findPhoto({ cid: data.cid }, null, iAm);
+            promise = photoController.findPhoto(iAm, { cid: data.cid });
         }
 
         return promise
@@ -585,7 +585,7 @@ var core = {
                 if (data.type === 'news') {
                     objPromise = News.findOneAsync({ _id: objId }, { _id: 1, nocomments: 1 });
                 } else {
-                    objPromise = photoController.findPhoto({ _id: objId }, null, iAm);
+                    objPromise = photoController.findPhoto(iAm, { _id: objId });
                 }
 
                 return Bluebird.join(
@@ -900,7 +900,7 @@ var createComment = Bluebird.method(function (socket, data) {
     if (data.type === 'news') {
         promises.push(News.findOneAsync({ cid: cid }, { _id: 1, ccount: 1, nocomments: 1 }));
     } else {
-        promises.push(photoController.findPhoto({ cid: cid }, null, iAm));
+        promises.push(photoController.findPhoto(iAm, { cid: cid }));
     }
 
     if (data.parent) {
@@ -1046,7 +1046,7 @@ var removeComment = Bluebird.method(function (socket, data) {
                 return News.findOneAsync({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 });
             }
 
-            return photoController.findPhoto({ _id: comment.obj }, null, iAm);
+            return photoController.findPhoto(iAm, { _id: comment.obj });
         })
         .then(function (obj) {
             if (!obj) {
@@ -1275,7 +1275,7 @@ var restoreComment = Bluebird.method(function (socket, data) {
                 return News.findOneAsync({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 });
             }
 
-            return photoController.findPhoto({ _id: comment.obj }, null, iAm);
+            return photoController.findPhoto(iAm, { _id: comment.obj });
         })
         .then(function (obj) {
             if (!obj) {
@@ -1470,7 +1470,7 @@ var updateComment = Bluebird.method(function (socket, data) {
         );
     } else {
         promise = Bluebird.join(
-            photoController.findPhoto({ cid: data.obj }, null, iAm),
+            photoController.findPhoto(iAm, { cid: data.obj }),
             Comment.findOneAsync({ cid: cid })
         );
     }
@@ -1713,7 +1713,7 @@ var setNoComments = Bluebird.method(function (iAm, data) {
     if (data.type === 'news') {
         promise = News.findOneAsync({ cid: cid });
     } else {
-        promise = photoController.findPhoto({ cid: cid }, null, iAm);
+        promise = photoController.findPhoto(iAm, { cid: cid });
     }
 
     return promise

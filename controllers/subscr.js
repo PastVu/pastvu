@@ -54,7 +54,7 @@ function subscribeUser(iAm, data) {
     if (data.type === 'news') {
         promise = News.findOneAsync({ cid: cid }, { _id: 1 });
     } else {
-        promise = photoController.findPhoto({ cid: cid }, null, iAm);
+        promise = photoController.findPhoto(iAm, { cid: cid });
     }
 
     return promise
@@ -88,7 +88,8 @@ function subscribeUser(iAm, data) {
  * @param setCommentView
  * @param type
  */
-function subscribeUserByIds(userId, objId, setCommentView, type) {
+function subscribeUserByIds(user, objId, setCommentView, type) {
+    var userId = user._id || user;
     var stamp = new Date();
     var $update = { $set: { sbscr_create: stamp } };
 
