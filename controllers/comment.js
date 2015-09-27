@@ -1528,10 +1528,12 @@ var updateComment = Bluebird.method(function (socket, data) {
                     // Если фрагмент получен и его небыло раньше, просто вставляем полученный
                     fragChangedType = 1;
                     comment.frag = true;
+                    obj.frags = obj.frags || [];
                     obj.frags.push(fragRecieved);
                 } else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
                     // Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
                     fragChangedType = 2;
+                    obj.frags = obj.frags || [];
                     obj.frags.pull(fragExists._id);
                     obj.frags.push(fragRecieved);
                 }
@@ -1539,6 +1541,7 @@ var updateComment = Bluebird.method(function (socket, data) {
                 // Если фрагмент не получен, но раньше он был, то просто удаляем старый
                 fragChangedType = 3;
                 comment.frag = undefined;
+                obj.frags = obj.frags || [];
                 obj.frags.pull(fragExists._id);
             }
 
