@@ -20,16 +20,15 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             firstName: '',
             lastName: '',
 
-            //role
             role: 0,
 
-            regionHome: null, //Спопулированный домашний регион
-            regions: [], //Спопулированные регионы для фильтрации по умолчанию
-            mod_regions: [], //Спопулированные регионы модератора
+            regionHome: null, // Populated home region
+            regions: [], // Populated regions for filtration by default
+            mod_regions: [], // Populated regions of moderator
 
             nowaterchange: false,
 
-            //profile
+            // profile
             birthdate: '',
             sex: 'm',
             country: '',

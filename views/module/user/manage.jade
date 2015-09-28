@@ -47,13 +47,18 @@
             .panel-collapse.collapse.in#ranks: .panel-body
                 dl.dl-horizontal
                     dt.helpexists
-                        abbr(title="Резрешать менять настройки подписи на своих фотографиях и по умолчанию на собственной странице настроек," +
+                        abbr(title="Разрешать менять подпись на своих фотографиях и управлять настройками скачивания оригинала" +
                         " отправлять свои фотографии на переконвертацию")
                             span.glyphicon.glyphicon-info-sign
-                            |  Разрешать менять подпись на вотермарке
-                    dd: .btn-group.btn-group-sm
-                        button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Да
-                        button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange") Нет
+                            |  Может менять вотермарк и правила скачивания
+                    dd
+                        .btn-group.btn-group-sm
+                            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !u.nowaterchange()}, click: changewaterchange") Да
+                            button.btn.btn-primary.no(type="button", data-bind="css: {active: u.nowaterchange()}, click: changewaterchange") Нет
+                        p.text-muted(style="padding:6px 0 0 6px;line-height:1.1;font-size:11px;")
+                            sup(style="margin-left:-6px;") *
+                            |  Это глобальная настройка для пользователя, действующая на возможность изменения им соответствующих настроек в профиле и индивидуальных настроек в каждой фотографии. При этом в каждой фотографии можно запретить/разрешить это индивидуально
+
 
         .panel.panel-pastvu
             .panel-heading: .panel-title

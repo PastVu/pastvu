@@ -57,6 +57,8 @@ define(
                 disallowDownloadOriginIndividual: false,
                 disallowDownloadOrigin: false,
 
+                nowaterchange: false,
+
                 desc: '',
                 address: '',
                 source: '',

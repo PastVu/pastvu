@@ -187,8 +187,10 @@ var settings = require('./settings.js'),
                 can.convert = usObj.isAdmin || undefined;
                 // Комментировать опубликованное может любой зарегистрированный, или модератор и владелец снятое с публикации
                 can.comment = s === status.PUBLIC || s > status.PUBLIC && canModerate || undefined;
-                // Change watermark sign can administrator and owner if administrator didn't prohibit it for this photo or entire owner
-                can.watersign = usObj.isAdmin || ownPhoto && !photo.user.nowaterchange && !photo.nowaterchange || undefined;
+                // Change watermark sign and download setting can administrator and owner/moderator
+                // if administrator didn't prohibit it for this photo or entire owner
+                can.watersign = usObj.isAdmin || (ownPhoto || canModerate) &&
+                    (!photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
 
                 if (canModerate) {
                     // Модератор может отправить на доработку
@@ -1779,7 +1781,7 @@ function photoCheckPublickRequired(photo) {
     return true;
 }
 
-var photoValidate = function (newValues, oldValues) {
+var photoValidate = function (newValues, oldValues, can) {
     var result = {};
 
     if (!newValues) {
@@ -1847,57 +1849,64 @@ var photoValidate = function (newValues, oldValues) {
         result.address = undefined;
     }
 
-    if (_.isBoolean(newValues.watersignIndividual) && newValues.watersignIndividual !== Boolean(oldValues.watersignIndividual)) {
-        result.watersignIndividual = newValues.watersignIndividual;
-    }
-
-    if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
-        if (settings.getUserSettingsVars().photo_watermark_add_sign.includes(newValues.watersignOption)) {
-            result.watersignOption = newValues.watersignOption;
+    if (can.watersign) {
+        if (_.isBoolean(newValues.watersignIndividual) &&
+            newValues.watersignIndividual !== Boolean(oldValues.watersignIndividual)) {
+            result.watersignIndividual = newValues.watersignIndividual;
         }
 
-        if (_.isString(newValues.watersignCustom)) {
-            newValues.watersignCustom = newValues.watersignCustom
-                .match(constants.photo.watersignPattern).join('')
-                .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength);
-        }
-        if (newValues.watersignCustom === null || _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
-            result.watersignCustom = newValues.watersignCustom;
-        }
-
-        if (result.watersignOption === 'custom' && result.watersignCustom === null) {
-            // If user set custom sign and empty it, we set default option and empty custom sign further
-            if (oldValues.watersignOption !== true) {
-                result.watersignOption = true;
-            } else {
-                delete result.watersignOption;
+        if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
+            if (settings.getUserSettingsVars().photo_watermark_add_sign.includes(newValues.watersignOption)) {
+                result.watersignOption = newValues.watersignOption;
             }
-        } else if (result.watersignOption === 'custom' && !result.watersignCustom && !oldValues.watersignCustom) {
-            // If user set custom sign option, but did not fill it, don't set custom sign option
-            delete result.watersignOption;
-        } else if (oldValues.watersignOption === 'custom' && oldValues.watersignCustom &&
-            (!result.watersignOption || result.watersignOption === 'custom') && !result.watersignCustom && result.hasOwnProperty('watersignCustom')) {
-            // If photo had custom individual watersign, and user has deleted it, without changing the option, set default watersign
 
-            result.watersignOption = true;
-            result.watersignCustom = undefined;
+            if (_.isString(newValues.watersignCustom)) {
+                newValues.watersignCustom = newValues.watersignCustom
+                    .match(constants.photo.watersignPattern).join('')
+                    .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength);
+            }
+            if (newValues.watersignCustom === null ||
+                _.isString(newValues.watersignCustom) && newValues.watersignCustom.length) {
+                result.watersignCustom = newValues.watersignCustom;
+            }
+
+            if (result.watersignOption === 'custom' && result.watersignCustom === null) {
+                // If user set custom sign and empty it, we set default option and empty custom sign further
+                if (oldValues.watersignOption !== true) {
+                    result.watersignOption = true;
+                } else {
+                    delete result.watersignOption;
+                }
+            } else if (result.watersignOption === 'custom' && !result.watersignCustom && !oldValues.watersignCustom) {
+                // If user set custom sign option, but did not fill it, don't set custom sign option
+                delete result.watersignOption;
+            } else if (oldValues.watersignOption === 'custom' && oldValues.watersignCustom &&
+                (!result.watersignOption || result.watersignOption === 'custom') &&
+                !result.watersignCustom && result.hasOwnProperty('watersignCustom')) {
+                // If photo had custom individual watersign, and user has deleted it,
+                // without changing the option, set default watersign
+
+                result.watersignOption = true;
+                result.watersignCustom = undefined;
+            }
+
+            if (newValues.watersignCustom === null) {
+                result.watersignCustom = undefined;
+            }
         }
 
-        if (newValues.watersignCustom === null) {
-            result.watersignCustom = undefined;
+        if (_.isBoolean(newValues.disallowDownloadOriginIndividual) &&
+            newValues.disallowDownloadOriginIndividual !== Boolean(oldValues.disallowDownloadOriginIndividual)) {
+            result.disallowDownloadOriginIndividual = newValues.disallowDownloadOriginIndividual;
+        }
+
+        if (result.disallowDownloadOriginIndividual ||
+            oldValues.disallowDownloadOriginIndividual && result.disallowDownloadOriginIndividual === undefined) {
+            if (settings.getUserSettingsVars().photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
+                result.disallowDownloadOrigin = newValues.disallowDownloadOrigin;
+            }
         }
     }
-
-    if (_.isBoolean(newValues.disallowDownloadOriginIndividual) && newValues.disallowDownloadOriginIndividual !== Boolean(oldValues.disallowDownloadOriginIndividual)) {
-        result.disallowDownloadOriginIndividual = newValues.disallowDownloadOriginIndividual;
-    }
-
-    if (result.disallowDownloadOriginIndividual || oldValues.disallowDownloadOriginIndividual && result.disallowDownloadOriginIndividual === undefined) {
-        if (settings.getUserSettingsVars().photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
-            result.disallowDownloadOrigin = newValues.disallowDownloadOrigin;
-        }
-    }
-
     return result;
 };
 
@@ -1918,14 +1927,16 @@ var savePhoto = function (iAm, data) {
         .spread(function (photo, canModerate) {
             this.photo = photo;
             this.oldPhotoObj = photo.toObject();
+            this.isMine = User.isEqual(this.oldPhotoObj.user, iAm.user);
+            this.canModerate = canModerate;
 
-            var changes = photoValidate(data.changes, this.oldPhotoObj);
+            var can = permissions.getCan(this.oldPhotoObj, iAm, this.isMine, canModerate);
+            var changes = photoValidate(data.changes, this.oldPhotoObj, can);
 
             if (_.isEmpty(changes)) {
                 throw { emptySave: true };
             }
 
-            this.canModerate = canModerate;
             this.parsedFileds = {};
 
             // Сразу парсим нужные поля, чтобы далее сравнить их с существующим распарсеным значением
@@ -2078,7 +2089,7 @@ var savePhoto = function (iAm, data) {
 
             // Сохраняем в истории предыдущий статус
             if (this.saveHistory) {
-                savePhotoHistory(iAm, this.oldPhotoObj, this.photo, User.isEqual(this.oldPhotoObj.user, iAm.user) ? false : this.canModerate, null, this.parsedFileds);
+                savePhotoHistory(iAm, this.oldPhotoObj, this.photo, this.isMine ? false : this.canModerate, null, this.parsedFileds);
             }
 
             if (this.reconvert) {

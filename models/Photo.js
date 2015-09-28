@@ -69,6 +69,8 @@ var PhotoSchema = new Schema({
     disallowDownloadOriginIndividual: { type: Boolean }, // Set individual setting to prohibit others download origin of this photo (not from user profile settings)
     disallowDownloadOrigin: { type: Boolean }, // Individual setting to prohibit others download origin of this photo
 
+    nowaterchange: { type: Boolean }, // Prohibit by admin of watersign and download individual setting changing
+
     dir: { type: String },
     title: { type: String },
     year: { type: Number },
@@ -88,8 +90,7 @@ var PhotoSchema = new Schema({
     ccount: { type: Number, index: true }, // Number of comments
     frags: [FragmentSchema], // Array of comment's fragments
 
-    nocomments: { type: Boolean }, // Prohibit commentation
-    nowaterchange: { type: Boolean } // Prohibit watersign changing
+    nocomments: { type: Boolean } // Prohibit commentation
 });
 
 // В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте

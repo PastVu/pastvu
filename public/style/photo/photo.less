@@ -497,6 +497,25 @@
         clear: left;
         z-index: 1;
     }
+
+    .watersingcontrol {
+        position: relative;
+        margin-top: 10px;
+
+        &.deny {
+            opacity: .6;
+
+            &::after {
+                content: '';
+                position: absolute;
+                top: -1px;
+                left: 0;
+                right: 0;
+                bottom: -1px;
+                z-index: @zindex-popover;
+            }
+        }
+    }
 }
 
 @media (max-width: @screen-xs-max) {
