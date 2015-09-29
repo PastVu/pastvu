@@ -272,6 +272,16 @@
     .fieldWrap(data-bind="css: {hasContent: !!p.dir()}")
         label(for="pDir", data-bind="html: fields.dir")
         select.form-control(name="pDir", data-bind="css: {empty: !p.dir()}, options: fields.dirValsArr, value: p.dir, optionsText: function(item) {return fields.dirVals[item]}, optionsCaption: 'Выберите направление съемки...'")
+    //ko if: can.nowaterchange()
+    div(style="display:table;margin:8px 0 -6px;")
+        div(style="display:table-cell;padding-right:5px;")
+            = "Разрешить пользователю на этой фотографии управлять подписью на вотермарке и скачиванием оригинала (текущая глобальная настройка настройка для пользователя - "
+            strong(data-bind="text: p.user.nowaterchange()?'Нет':'Да'")
+            | )
+        .btn-group.btn-group-sm(style="display:table-cell;width:65px;vertical-align:top;")
+            button.btn.btn-primary.yes(type="button", data-bind="css: {active: !p.nowaterchange()}, click: nowaterchangeChange") Да
+            button.btn.btn-primary.no(type="button", data-bind="css: {active: !!p.nowaterchange()}, click: nowaterchangeChange") Нет
+    // /ko
     //ko if: !can.watersign()
     .text-danger(style="margin:8px 0 -8px;")
         span.glyphicon.glyphicon-warning-sign

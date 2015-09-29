@@ -853,10 +853,10 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             p.watersignOption(newOption);
         },
         downloadOriginChange: function (data, evt) {
-            var flag = isYes(evt);
-            var p = this.p;
-
-            p.disallowDownloadOrigin(!flag);
+            this.p.disallowDownloadOrigin(!isYes(evt));
+        },
+        nowaterchangeChange: function (data, evt) {
+            this.p.nowaterchange(!isYes(evt));
         },
 
         notifyReady: function () {
@@ -1230,7 +1230,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
             var cid = p.cid();
 
             var changes = _.chain(ko_mapping.toJS(p))
-                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'watersignIndividual', 'disallowDownloadOriginIndividual')
+                .pick('geo', 'dir', 'title', 'year', 'year2', 'address', 'nowaterchange', 'watersignIndividual', 'disallowDownloadOriginIndividual')
                 .transform(function (result, value, key) {
                     var valueOrigin = origin[key];
 

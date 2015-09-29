@@ -123,20 +123,21 @@ var settings = require('./settings.js'),
         },
         getCan: function (photo, usObj, ownPhoto, canModerate) {
             var can = {
-                // edit
-                // ready
-                // revision
-                // revoke
-                // reject
-                // approve
-                // activate
-                // deactivate
-                // remove
-                // restore
-                // convert
-                // comment
-                // watersign
-                // download
+                // edit: [true, false]
+                // ready: [true, false]
+                // revision: [true, false]
+                // revoke: [true, false]
+                // reject: [true, false]
+                // approve: [true, false]
+                // activate: [true, false]
+                // deactivate: [true, false]
+                // remove: [true, false]
+                // restore: [true, false]
+                // convert: [true, false]
+                // comment: [true, false]
+                // watersign: [true, false]
+                // nowatersign: [true, false]
+                // download: [true, byrole, withwater, login]
             };
             var s = photo.s;
 
@@ -191,6 +192,8 @@ var settings = require('./settings.js'),
                 // if administrator didn't prohibit it for this photo or entire owner
                 can.watersign = usObj.isAdmin || (ownPhoto || canModerate) &&
                     (!photo.user.nowaterchange && !photo.nowaterchange || photo.nowaterchange === false) || undefined;
+                // Administrator can prohibit watesign changing by owner/moderator
+                can.nowaterchange = usObj.isAdmin || undefined;
 
                 if (canModerate) {
                     // Модератор может отправить на доработку
@@ -351,8 +354,6 @@ var core = {
                 // Присваиваем владельца после приведения фотографии к объекту, иначе там останется просто объект _id
                 photo.user = owner;
 
-                // TODO: Запрещение изменения watersign глобольно и индивидуально
-
                 this.can = permissions.getCan(photo, iAm, this.isMine);
 
                 var shouldBeEdit = iAm.registered && this.can.edit &&
@@ -371,6 +372,10 @@ var core = {
                     photo.user.settings = this.online ? owner.settings :
                         _.defaults(owner.settings || {}, settings.getUserSettingsDef());
                     photo.user.watersignCustom = owner.watersignCustom;
+
+                    if (this.can.nowatersign) {
+                        photo.user.nowaterchange = owner.nowaterchange;
+                    }
                 }
 
                 if (this.online) {
@@ -1849,6 +1854,12 @@ var photoValidate = function (newValues, oldValues, can) {
         result.address = undefined;
     }
 
+    if (can.nowaterchange) {
+        if (_.isBoolean(newValues.nowaterchange) && newValues.nowaterchange !== Boolean(oldValues.nowaterchange)) {
+            result.nowaterchange = newValues.nowaterchange;
+        }
+    }
+
     if (can.watersign) {
         if (_.isBoolean(newValues.watersignIndividual) &&
             newValues.watersignIndividual !== Boolean(oldValues.watersignIndividual)) {
@@ -1952,6 +1963,7 @@ var savePhoto = function (iAm, data) {
                 _.pick(
                     changes,
                     'geo', 'year', 'year2', 'dir', 'title', 'address', 'desc', 'source', 'author',
+                    'nowaterchange',
                     'watersignIndividual', 'watersignOption', 'watersignCustom',
                     'disallowDownloadOriginIndividual', 'disallowDownloadOrigin'
                 ),

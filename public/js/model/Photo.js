@@ -88,7 +88,8 @@ define(
             restore: false,
             convert: false,
             comment: false,
-            watersign: false, // TODO: watch on thos flag
+            watersign: false,
+            nowaterchange: false,
             download: 'login'
         };
         var picPrefix = '/_p';

@@ -13,7 +13,8 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
         },
         middle: {
             settings: {},
-            watersignCustom: ''
+            watersignCustom: '',
+            nowaterchange: false
         },
         full: {
             email: '',
@@ -25,8 +26,6 @@ define(['jquery', 'underscore', 'Utils', 'knockout', 'knockout.mapping', 'Params
             regionHome: null, // Populated home region
             regions: [], // Populated regions for filtration by default
             mod_regions: [], // Populated regions of moderator
-
-            nowaterchange: false,
 
             // profile
             birthdate: '',
