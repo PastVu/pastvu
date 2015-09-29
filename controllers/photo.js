@@ -1974,8 +1974,6 @@ var savePhoto = function (iAm, data) {
                 throw { emptySave: true };
             }
 
-            this.saveHistory = this.photo.s !== status.NEW;
-
             _.assign(this.photo, newValues);
 
             if (newValues.hasOwnProperty('geo') && newValues.geo === undefined) {
@@ -2039,11 +2037,12 @@ var savePhoto = function (iAm, data) {
                 }
             }
 
-            if (this.saveHistory) {
+            if (this.photo.s !== status.NEW) {
                 this.photo.cdate = new Date();
 
                 var propsThatCountForUCDate = _.omit(
                     newValues,
+                    'nowaterchange', // Do not notify when admin change permission to change watersign/download
                     'watersignIndividual', 'watersignOption', 'watersignCustom', // Do not notify when watersign changed
                     'disallowDownloadOriginIndividual', 'disallowDownloadOrigin' // Do not notify when download changed
                 );
@@ -2051,6 +2050,8 @@ var savePhoto = function (iAm, data) {
                 if (!_.isEmpty(propsThatCountForUCDate)) {
                     this.photo.ucdate = this.photo.cdate;
                 }
+
+                this.saveHistory = true;
             }
 
             var promise = photoUpdate(iAm, this.photo).bind(this);
