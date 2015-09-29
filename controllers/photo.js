@@ -373,7 +373,7 @@ var core = {
                         _.defaults(owner.settings || {}, settings.getUserSettingsDef());
                     photo.user.watersignCustom = owner.watersignCustom;
 
-                    if (this.can.nowatersign) {
+                    if (this.can.nowaterchange) {
                         photo.user.nowaterchange = owner.nowaterchange;
                     }
                 }
