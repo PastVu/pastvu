@@ -2793,7 +2793,7 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
 
             var key = Utils.randomString(32);
             var path = (this.origin ? 'private/photos/' : 'public/photos/a/') + photo.file;
-            var fileName = photo.cid + ' ' + photo.title + '.jpg';
+            var fileName = photo.cid + ' ' + (photo.title || '').replace(/[\/|]/g, '-') + '.jpg';
             // We keep only size of origin file, size with watermark must be calculated by downloader.js
             var size = this.origin ? photo.size : null;
 

@@ -60,7 +60,7 @@
                             span.glyphicon.glyphicon-share-alt
                         // /ko
                         //ko if: !edit()
-                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+p.title()+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
+                        a.btn.btn-xxs(data-bind="click:download,css: downloadCSSClass(), attr: {href:'/_p/a/'+p.file(), download:p.cid()+' '+(p.title()||'').replace(/[\/|]/g, '-')+'.jpg', title:'Скачать '+(downLoadOrigin()?'оригинал ':'в полном размере ')+p.w() + '×' + p.h()}")
                             span.glyphicon.glyphicon-save
                         // /ko
 
