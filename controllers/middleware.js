@@ -89,7 +89,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
             }
         } catch (err) {
             if (acceptWebp) {
-                console.warn('Wanted webp, but it does not exists', filePath);
+                // console.warn('Wanted webp, but it does not exists', filePath);
             } else {
                 next();
             }
