@@ -249,7 +249,7 @@ async function conveyerControl() {
         const photo = await Photo
             .findOne(
                 { cid: photoConv.cid },
-                { cid: 1, file: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
+                { cid: 1, file: 1, type: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
             )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
             .execAsync();
@@ -309,6 +309,7 @@ function getWatertext(photo) {
  * @param photo Объект фотографии
  */
 async function conveyerStep(photo/* , photoConv*/) {
+    const cid = photo.cid;
     const waterTxt = getWatertext(photo);
     const originSrcPath = path.normalize(sourceDir + photo.file);
     const saveStandardSize = function (result) {
@@ -320,7 +321,7 @@ async function conveyerStep(photo/* , photoConv*/) {
     };
 
     // Запускаем identify оригинала
-    await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${photo.cid}`)
+    await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
         .then(function (result) {
             photo.w = parseInt(result.w, 10) || undefined;
             photo.h = parseInt(result.h, 10) || undefined;
@@ -374,13 +375,20 @@ async function conveyerStep(photo/* , photoConv*/) {
         }
 
         commands.push(dstPath);
-        // console.log(variantName, commands.join(' '));
-        await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
+
+        // Convert photo. For full size ('a') we need straight convert with watermark, because we know origin size
+        if (!isOriginal) {
+            // console.log(variantName, commands.join(' '));
+            await tryPromise(5,
+                () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${cid}`
+            );
+        }
 
         // For standard photo we must get result size before creating watermark, because it depends on those sizes
         if (variantName === 'd') {
-            await tryPromise(6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${photo.cid}`)
-                .then(saveStandardSize);
+            await tryPromise(
+                6, () => identifyImage(dstPath, '{"w": "%w", "h": "%h"}'), `identify standard size of photo ${cid}`
+            ).then(saveStandardSize);
         }
 
         if (variant.water) {
@@ -394,7 +402,9 @@ async function conveyerStep(photo/* , photoConv*/) {
             commands = commands.concat(watermark.commands);
             commands.push(dstPath);
             // console.log(variantName, commands.join(' '));
-            await tryPromise(5, () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${photo.cid}`);
+            await tryPromise(5,
+                () => execAsync(commands.join(' ')), `convert to ${variantName}-variant of photo ${cid}`
+            );
 
             if (photo.watersignText) {
                 photo.watersignTextApplied = new Date();
@@ -408,10 +418,20 @@ async function conveyerStep(photo/* , photoConv*/) {
 
         // For standard photo we must get signature after watermark, to consider it as well
         if (variantName === 'd') {
-            await tryPromise(
-                6, () => identifyImage(dstPath, '{"signature": "%#"}'), `identify sign ${variantName}-variant of photo ${photo.cid}`
+            await tryPromise(6,
+                () => identifyImage(dstPath, '{"signature": "%#"}'),
+                `identify sign ${variantName}-variant of photo ${photo.cid}`
             ).then(saveStandardSign);
         }
+
+        await sleep(10);
+
+        const lossless = photo.type === 'image/png';
+
+        await tryPromise(5,
+            () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
+            `convert ${variantName}-variant to webp of photo ${cid}`
+        );
 
         // Have a sleep to give file system time to save variant, for staying on the safe side
         await sleep(50);
