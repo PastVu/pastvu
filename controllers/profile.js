@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var mkdirp = require('mkdirp');
+var exec = require('child_process').exec;
 var Bluebird = require('bluebird');
 var gm = require('gm');
 var _session = require('./_session.js');
@@ -383,7 +384,6 @@ function changeEmail(iAm, data, cb) {
     }
 }
 
-//Меняем аватар
 function changeAvatar(iAm, data, cb) {
     var user,
         login = data && data.login,
@@ -395,12 +395,14 @@ function changeAvatar(iAm, data, cb) {
     if (!itsMe && !iAm.isAdmin) {
         return cb({ message: msg.deny, error: true });
     }
-    if (!_.isObject(data) || !login || !data.file || !new RegExp("^[a-z0-9]{10}\\.(jpe?g|png)$", "").test(data.file)) {
+    if (!_.isObject(data) || !login || !data.file || !new RegExp('^[a-z0-9]{10}\\.(jpe?g|png)$', '').test(data.file)) {
         return cb({ message: msg.badParams, error: true });
     }
 
     file = data.file;
     fullfile = file.replace(/((.)(.))/, '$2/$3/$1');
+    var originPath = path.join(privateDir, fullfile);
+    var lossless = data.type === 'image/png';
 
     step(
         function () {
@@ -418,10 +420,10 @@ function changeAvatar(iAm, data, cb) {
             var dirPrefix = fullfile.substr(0, 4);
             user = u;
 
-            //Переносим файл из incoming в private
-            fs.rename(incomeDir + file, path.normalize(privateDir + fullfile), this.parallel());
+            // Transfer file from incoming to private
+            fs.rename(incomeDir + file, path.normalize(originPath), this.parallel());
 
-            //Создаем папки в public
+            // Create folders inside public
             mkdirp(path.normalize(publicDir + 'd/' + dirPrefix), null, this.parallel());
             mkdirp(path.normalize(publicDir + 'h/' + dirPrefix), null, this.parallel());
         },
@@ -429,15 +431,25 @@ function changeAvatar(iAm, data, cb) {
             if (err) {
                 return cb({ message: err.message, error: true });
             }
-            //Копирование 100px из private в public/d/
-            Utils.copyFile(privateDir + fullfile, publicDir + 'd/' + fullfile, this.parallel());
 
-            //Конвертация в 50px из private в public/h/
-            gm(privateDir + fullfile)
+            // Копирование 100px из private в public/d/
+            Utils.copyFile(originPath, publicDir + 'd/' + fullfile, this.parallel());
+            exec(
+                'cwebp -preset photo -m 5 ' + (lossless ? '-lossless ': '') + originPath + ' -o ' + publicDir + 'd/' + fullfile + '.webp',
+                null, this.parallel()
+            );
+
+            // Конвертация в 50px из private в public/h/
+            gm(originPath)
                 .quality(90)
                 .filter('Sinc')
                 .resize(50, 50)
                 .write(publicDir + 'h/' + fullfile, this.parallel());
+
+            exec(
+                'cwebp -preset photo -m 5 -resize 50 50 ' + (lossless ? '-lossless ': '') + originPath + ' -o ' + publicDir + 'h/' + fullfile + '.webp',
+                null, this.parallel()
+            );
         },
         function (err) {
             if (err) {

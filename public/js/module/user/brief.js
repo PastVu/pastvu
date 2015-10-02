@@ -176,7 +176,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 						}
 						this.avaexe(false);
 					}, this);
-					socket.emit('changeAvatar', {login: this.user.login(), file: receivedFile.file});
+					socket.emit('changeAvatar', { login: this.user.login(), file: receivedFile.file, type: receivedFile.type, size: receivedFile.size});
 				}
 			}
 		},
