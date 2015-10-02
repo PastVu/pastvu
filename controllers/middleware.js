@@ -1,5 +1,6 @@
 'use strict';
 
+import fs from 'fs';
 import path from 'path';
 import Utils from '../commons/Utils';
 
@@ -49,7 +50,7 @@ export function cors(originRoot) {
     };
 };
 
-// Добавляет заголовок X-Response-Time
+// Add X-Response-Time header
 export function responseHeaderHook() {
     return function (req, res, next) {
         const start = Date.now();
@@ -63,5 +64,61 @@ export function responseHeaderHook() {
             writeHeadOriginal.apply(res, arguments);
         };
         next();
+    };
+};
+
+// Serve static images with check for webp support
+export function serveImages(storePath, { maxAge = 0 }) {
+    maxAge = maxAge / 1000;
+
+    return async function(req, res, next) {
+        const {
+            headers: {
+                accept = ''
+            } = {}
+        } = req;
+
+        const acceptWebp = accept.includes('image/webp');
+        let filePath = path.join(storePath, req.path);
+        let stat;
+
+        try {
+            stat = await fs.statAsync(filePath + (acceptWebp ? '.webp' : ''));
+            if (acceptWebp) {
+                filePath += '.webp';
+            }
+        } catch (err) {
+            if (acceptWebp) {
+                console.warn('Wanted webp, but it does not exists', filePath);
+            } else {
+                next();
+            }
+        }
+
+        if (!stat && acceptWebp) {
+            try {
+                stat = await fs.statAsync(filePath);
+            } catch (err) {
+                next();
+            }
+        }
+
+        res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+        res.setHeader('Content-Type', acceptWebp ? 'image/webp' : 'image/jpeg');
+
+        if (stat.size) {
+            res.setHeader('Content-Length', stat.size);
+        }
+
+        const file = new fs.ReadStream(filePath);
+
+        file.pipe(res);
+
+        file.on('error', (err) => next(err));
+
+        // Handle unexpected client disconnection to close file read stream and release memory
+        res.on('close', function () {
+            file.destroy();
+        });
     };
 };

@@ -261,8 +261,8 @@ async.waterfall([
             app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);
         }
         if (serveStore) {
-            app.use('/_a/', express.static(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d'), etag: false }));
-            app.use('/_p/', express.static(path.join(storePath, 'public/photos/'), { maxAge: ms('7d'), etag: false }));
+            app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
+            app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
 
             // "Законцовываем" пути к хранилищу, т.е. то что дошло сюда - 404
             app.get('/_a/d/*', function (req, res) {
