@@ -78,7 +78,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
             } = {}
         } = req;
 
-        const acceptWebp = accept.includes('image/webp');
+        let acceptWebp = accept.includes('image/webp');
         let filePath = path.join(storePath, req.path);
         let stat;
 
@@ -89,13 +89,14 @@ export function serveImages(storePath, { maxAge = 0 }) {
             }
         } catch (err) {
             if (acceptWebp) {
+                acceptWebp = false;
                 // console.warn('Wanted webp, but it does not exists', filePath);
             } else {
                 next();
             }
         }
 
-        if (!stat && acceptWebp) {
+        if (!stat) {
             try {
                 stat = await fs.statAsync(filePath);
             } catch (err) {
