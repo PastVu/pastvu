@@ -70,8 +70,10 @@ export function responseHeaderHook() {
 // Serve static images with check for webp support
 export function serveImages(storePath, { maxAge = 0 }) {
     maxAge = maxAge / 1000;
+    const cacheControl = `public, max-age=${maxAge}`;
 
     return async function(req, res, next) {
+
         const {
             headers: {
                 accept = ''
@@ -92,7 +94,7 @@ export function serveImages(storePath, { maxAge = 0 }) {
                 acceptWebp = false;
                 // console.warn('Wanted webp, but it does not exists', filePath);
             } else {
-                next();
+                return next();
             }
         }
 
@@ -100,11 +102,11 @@ export function serveImages(storePath, { maxAge = 0 }) {
             try {
                 stat = await fs.statAsync(filePath);
             } catch (err) {
-                next();
+                return next();
             }
         }
 
-        res.setHeader('Cache-Control', `public, max-age=${maxAge}`);
+        res.setHeader('Cache-Control', cacheControl);
         res.setHeader('Content-Type', acceptWebp ? 'image/webp' : 'image/jpeg');
 
         if (stat.size) {
