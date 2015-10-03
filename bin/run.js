@@ -4,6 +4,11 @@
  * This file is not being transformed by babel, nor being checked by eslint and that's why must be written in es5 carefully
  */
 
+var babelConfig = require('../babel/server.config');
+var babelOptions = Object.assign({}, babelConfig, {
+    only: /(?:app|photoConverter|downloader|middleware)\.js/
+});
+
 if (require.main === module) {
     // If run.js was invoked directly
 
@@ -33,17 +38,8 @@ if (require.main === module) {
 function babelRequire(modulePath) {
     var assign = require('lodash/object/assign');
 
-    // Use require-hook babel without it's runtime
-    require('babel-core/register')({
-        only: /(?:app|photoConverter|downloader|middleware)\.js/,
-        stage: 0,
-        // whitelist: [],
-        blacklist: [
-            // Prevent transforms like `Bluebird.try()` => `Bluebird['try']()`
-            'es3.memberExpressionLiterals',
-            'es3.propertyLiterals'
-        ]
-    });
+    // Use require-hook babel
+    require('babel-core/register')(babelOptions);
 
     return require(path.resolve(__dirname, modulePath));
 }

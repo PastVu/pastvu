@@ -4,6 +4,7 @@
 
 # App specific
 bin/run.js
+babel/output.js
 logs/**
 misc/**
 views/**
