@@ -250,8 +250,16 @@ module.exports.loadController = function (app, db) {
 
         print('Start to fill conveyer for ' + (query.user ? query.user + ' user for ' : '') + db.photos.count(query) + ' photos');
         db.photos.find(query, selectFields).sort({ cid: 1 }).forEach(function (photo) {
+            var row;
+
             if (!db.photos_conveyer.findOne({ cid: photo.cid })) {
-                conveyer.push({ cid: photo.cid, priority: params.priority, added: addDate });
+                row = { cid: photo.cid, priority: params.priority, added: addDate };
+
+                if (params.webpOnly) {
+                    row.webpOnly = true;
+                }
+
+                conveyer.push(row);
             }
         });
         if (conveyer.length) {

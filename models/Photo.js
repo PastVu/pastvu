@@ -139,6 +139,7 @@ var PhotoConveyerSchema = new Schema(
         cid: { type: Number, index: true },
         priority: { type: Number, required: true },
         added: { type: Date, 'default': Date.now, required: true },
+        webpOnly: { type: Boolean },
         converting: { type: Boolean }
     },
     {

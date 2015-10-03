@@ -308,9 +308,10 @@ function getWatertext(photo) {
  * Очередной шаг конвейера
  * @param photo Объект фотографии
  */
-async function conveyerStep(photo/* , photoConv*/) {
+async function conveyerStep(photo, { webpOnly = false }) {
     const cid = photo.cid;
     const waterTxt = getWatertext(photo);
+    const lossless = photo.type === 'image/png';
     const originSrcPath = path.normalize(sourceDir + photo.file);
     const saveStandardSize = function (result) {
         photo.ws = parseInt(result.w, 10) || undefined;
@@ -319,15 +320,21 @@ async function conveyerStep(photo/* , photoConv*/) {
     const saveStandardSign = function (result) {
         photo.signs = result.signature ? result.signature.substr(0, 7) + result.signature.substr(result.signature.length - 3) : undefined;
     };
+    const makeWebp = (variantName, dstPath) => tryPromise(5,
+        () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
+        `convert ${variantName}-variant to webp of photo ${cid}`
+    );
 
-    // Запускаем identify оригинала
-    await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
-        .then(function (result) {
-            photo.w = parseInt(result.w, 10) || undefined;
-            photo.h = parseInt(result.h, 10) || undefined;
-            photo.format = result.f || undefined;
-            photo.sign = result.signature || undefined;
-        });
+    if (!webpOnly) {
+        // Запускаем identify оригинала
+        await tryPromise(5, () => identifyImage(originSrcPath, originIdentifyString), `identify origin of photo ${cid}`)
+            .then(function (result) {
+                photo.w = parseInt(result.w, 10) || undefined;
+                photo.h = parseInt(result.h, 10) || undefined;
+                photo.format = result.f || undefined;
+                photo.sign = result.signature || undefined;
+            });
+    }
 
     for (const variantName of imageVersionsKeys) {
         const isOriginal = variantName === 'a';
@@ -336,6 +343,11 @@ async function conveyerStep(photo/* , photoConv*/) {
         const srcPath = path.normalize(srcDir + photo.file);
         const dstDir = path.normalize(targetDir + variant.dir + photo.file.substr(0, 5));
         const dstPath = path.normalize(targetDir + variant.dir + photo.file);
+
+        if (webpOnly) {
+            await makeWebp(variantName, dstPath);
+            continue;
+        }
 
         let commands = [`convert ${srcPath}`];
 
@@ -424,17 +436,9 @@ async function conveyerStep(photo/* , photoConv*/) {
             ).then(saveStandardSign);
         }
 
-        await sleep(10);
-
-        const lossless = photo.type === 'image/png';
-
-        await tryPromise(5,
-            () => execAsync(`cwebp -preset photo -m 5 ${lossless ? '-lossless ' : ''}${dstPath} -o ${dstPath}.webp`),
-            `convert ${variantName}-variant to webp of photo ${cid}`
-        );
-
-        // Have a sleep to give file system time to save variant, for staying on the safe side
-        await sleep(50);
+        await sleep(25);
+        await makeWebp(variantName, dstPath);
+        await sleep(25); // Have a sleep to give file system time to save variant, for staying on the safe side
     }
 }
 
