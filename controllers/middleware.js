@@ -86,7 +86,9 @@ export function serveImages(storePath, { maxAge = 0 }) {
 
         try {
             stat = await fs.statAsync(filePath + (acceptWebp ? '.webp' : ''));
-            if (acceptWebp) {
+            if (!stat.size) {
+                stat = null;
+            } else if (acceptWebp) {
                 filePath += '.webp';
             }
         } catch (err) {
