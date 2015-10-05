@@ -73,21 +73,21 @@ function openConnection() {
         const db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
             .once('open', openHandler)
             .once('error', errFirstHandler);
-        db.open(moongoUri, { httpServer: { poolSize: moongoPool, auto_reconnect: true }, db: { safe: true } });
 
-        function openHandler() {
-            const admin = new mongoose.mongo.Admin(db.db);
+        db.open(moongoUri, {
+            db: { native_parser: true, promiseLibrary: Promise },
+            server: { poolSize: moongoPool, auto_reconnect: true }
+        });
 
-            admin.buildInfo(function (err, info) {
-                if (err) {
-                    return reject(err);
-                }
-                logger.info(
-                    `MongoDB[${info.version}, x${info.bits}] connected through Mongoose[${mongoose.version}] ` +
-                    `at: ${moongoUri}`
-                );
-                resolve(db);
-            });
+        async function openHandler() {
+            const adminDb = db.db.admin(); // Use the admin database for some operation
+
+            const [buildInfo, serverStatus] = await* [adminDb.buildInfo(), adminDb.serverStatus()];
+
+            logger.info(
+                `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits}, ` +
+                `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}] at: ${moongoUri}`
+            );
 
             db.removeListener('error', errFirstHandler);
             db.on('error', function (err) {
@@ -97,6 +97,8 @@ function openConnection() {
             db.on('reconnected', function () {
                 logger.info('Reconnected to MongoDB at: ' + moongoUri);
             });
+
+            resolve(db);
         }
 
         function errFirstHandler(err) {
