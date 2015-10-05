@@ -502,9 +502,43 @@ Utils.geo = (function () {
         return [x / f, y / f];
     }
 
-    //Рассчитывает BBOX полигона/мультиполигона. По первой замкнутой линии полигона, т.к. она должна быть exterior ring для следующих
-    //На вход подаётся объект geometry полигона
-    //Возвращает [WestLng, SouthLat, EastLng, NorthLat]
+    /**
+     * Get polygon area
+     * @param points Path (array) of points ([[lng, lat]])
+     * @param signed If true function returns the signed area of the polygon (negative if path points are clockwise)
+     * @returns {number}
+     * TODO: sphere, now we just move coordinates by 180 for lng and 90 for lat
+     */
+    function polyArea(points, signed) {
+        var area = 0;
+        var isSigned = signed || false;
+
+        if (!_.isEqual(_.first(points), _.last(points))) {
+            points = points.concat(points[0]);
+        }
+
+        for (var i = 0, l = points.length; i < l; i++) {
+            area += (points[i][0] + 180) * (points[i + 1][1] + 90) - (points[i][1] + 90) * (points[i + 1][0] + 180);
+        }
+
+        if (!isSigned) {
+            area = Math.abs(area);
+        }
+
+        return area / 2;
+    }
+
+    function sortPolygonSegmentsByArea(a, b) {
+        const areaA = Utils.geo.polyArea(a);
+        const areaB = Utils.geo.polyArea(b);
+
+        return areaA > areaB ? 1 : areaA < areaB ? -1 : 0;
+    }
+
+    // Compute BBOX of polygon/multipolygon.
+    // By the first line of the closed polygon, because it must be exterior ring for the followings
+    // The input is polygon geometry object {type, coordinates}
+    // Return [WestLng, SouthLat, EastLng, NorthLat]
     function polyBBOX(geometry) {
         var i, resultbbox, polybbox, multipolycoords;
 
@@ -517,10 +551,10 @@ Utils.geo = (function () {
             while (i--) {
                 polybbox = getbbox(geometry.coordinates[i][0]);
 
-                multipolycoords.push([polybbox[0], polybbox[1]]); //SouthWest
-                multipolycoords.push([polybbox[2], polybbox[1]]); //NorthWest
-                multipolycoords.push([polybbox[2], polybbox[3]]); //NorthEast
-                multipolycoords.push([polybbox[0], polybbox[3]]); //SouthEast
+                multipolycoords.push([polybbox[0], polybbox[1]]); // SouthWest
+                multipolycoords.push([polybbox[2], polybbox[1]]); // NorthWest
+                multipolycoords.push([polybbox[2], polybbox[3]]); // NorthEast
+                multipolycoords.push([polybbox[0], polybbox[3]]); // SouthEast
             }
             multipolycoords.sort(function (a, b) {
                 return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0);
@@ -663,6 +697,8 @@ Utils.geo = (function () {
         getDistanceFromLatLonInKm: getDistanceFromLatLonInKm,
         polyCentroid: polyCentroid,
         polyBBOX: polyBBOX,
+        polyArea: polyArea,
+        sortPolygonSegmentsByArea: sortPolygonSegmentsByArea,
         spinLng: spinLng,
         latlngToArr: latlngToArr,
         check: check,

@@ -1,34 +1,39 @@
 'use strict';
 
-var mongoose = require('mongoose'),
-	Schema = mongoose.Schema;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-var RegionSchema = new Schema(
-	{
-		cid: {type: Number, index: {unique: true}},
-		parents: [Number], //Родительские регионы, если есть
-		geo: Schema.Types.Mixed,
+const RegionSchema = new Schema(
+    {
+        cid: { type: Number, index: { unique: true } },
+        parents: [Number], // Parent regions (cids), if applicable
+        geo: Schema.Types.Mixed,
 
-		pointsnum: {type: Number, index: true}, //Количество точек
-		polynum: {type: Schema.Types.Mixed, 'default': {}}, //Кол-во полигонов {exterior: N, interior: N}
-		center: {type: [Number], index: '2d'}, //Координаты центра региона
-		centerAuto: {type: Boolean, 'default': true, required: true}, //Центр расчитывается автоматически или устанавливается вручную(false)
+        pointsnum: { type: Number, index: true }, // Number of points
+        polynum: { type: Schema.Types.Mixed, 'default': {} }, // Number of polygons {exterior: N, interior: N}
+        center: { type: [Number], index: '2d' }, // Coordinates of region's center
+        // Does region's center compute automatically(true) or setted manually(false)
+        centerAuto: { type: Boolean, 'default': true, required: true },
 
-		bbox: {type: [Number]}, //Bounding box региона http://geojson.org/geojson-spec.html#bounding-boxes
-		bboxhome: {type: [Number]}, //Bounding box для выбора зума на карте пользователя. Если равен bbox - значит установлен автоматически, если нет - вручную
+        // Bounding box of region http://geojson.org/geojson-spec.html#bounding-boxes
+        bbox: { type: [Number] },
+        // Bounding box for determine zoom on user's map.
+        // If it equals bbox - setted automatically, if not - manually
+        bboxhome: { type: [Number] },
 
-		cdate: {type: Date, 'default': Date.now, required: true, index: true}, //Дата создания
-		udate: {type: Date, 'default': Date.now, required: true}, //Дата изменения
+        cdate: { type: Date, 'default': Date.now, required: true, index: true }, // Creation stamp
+        udate: { type: Date, 'default': Date.now, required: true }, // Update stamp
 
-		title_en: {type: String},
-		title_local: {type: String}
-	},
-	{
-		strict: true
-	}
+        title_en: { type: String },
+        title_local: { type: String }
+    },
+    {
+        strict: true
+    }
 );
-RegionSchema.index({geo: '2dsphere'});
+
+RegionSchema.index({ geo: '2dsphere' });
 
 module.exports.makeModel = function (db) {
-	db.model('Region', RegionSchema);
+    db.model('Region', RegionSchema);
 };

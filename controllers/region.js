@@ -39,37 +39,34 @@ for (i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
 
-//Заполняем кэш (массив и хэш) регионов в память
+// Заполняем кэш (массив и хэш) регионов в память
 function fillCache(cb) {
-    Region.find({}, { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 }, {
-        lean: true,
-        sort: { cid: 1 }
-    }, function (err, regions) {
-        if (err) {
-            logger.error('FillCache: ' + err.message);
-            if (cb) {
-                cb(err);
+    return Region.findAsync(
+        {},
+        { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
+        { lean: true, sort: { cid: 1 } }
+    )
+        .then(function (regions) {
+            const hash = {};
+            let i = regions.length;
+
+            while (i--) {
+                hash[regions[i].cid] = regions[i];
             }
-            return;
-        }
-        var hash = {},
-            i = regions.length;
+            hash['0'] = nogeoRegion; // Нулевой регион обозначает отсутствие координат
 
-        while (i--) {
-            hash[regions[i].cid] = regions[i];
-        }
-        hash['0'] = nogeoRegion; //Нулевой регион обозначает отсутствие координат
+            regionCacheHash = hash;
+            regionCacheArr = regions;
 
-        regionCacheHash = hash;
-        regionCacheArr = regions;
-
-        module.exports.DEFAULT_REGION = DEFAULT_REGION = regions[0];
-        logger.info('Region cache filled with ' + regions.length);
-        loggerApp.info('Region cache filled with ' + regions.length);
-        if (cb) {
-            cb();
-        }
-    });
+            module.exports.DEFAULT_REGION = DEFAULT_REGION = regions[0];
+            logger.info('Region cache filled with ' + regions.length);
+            loggerApp.info('Region cache filled with ' + regions.length);
+        })
+        .catch(function (err) {
+            err.message = `FillCache: ${err.message}`;
+            throw err;
+        })
+        .nodeify(cb);
 }
 
 function getRegionFromCache(cid) {
@@ -365,6 +362,7 @@ function calcRegionIncludes(cidOrRegion, cb) {
     if (!cb) {
         cb = Utils.dummyFn;
     }
+
     if (typeof cidOrRegion === 'number') {
         Region.findOne({ cid: cidOrRegion }, { _id: 0, cid: 1, parents: 1, geo: 1 }, { lean: true }, doCalc);
     } else {
@@ -419,6 +417,8 @@ function calcRegionIncludes(cidOrRegion, cb) {
         );
     }
 }
+const calcRegionIncludesPromised = Bluebird.promisify(calcRegionIncludes); // TODO: hack, make async calcRegionIncludes
+
 /**
  * Пересчет входящих объектов в переданный список регионов. Если список пуст - пересчет всех регионов
  * @param iAm
@@ -481,7 +481,7 @@ var getChildsLenByLevel = Bluebird.method(function (region, cb) {
         // {'parents.1': 77, parents: {$size: 3}}
         // {'parents.1': 77, parents: {$size: 4}}
         childrenQuery['parents.' + level] = region.cid;
-        while (level++ < maxRegionLevel) { //level инкрементируется после сравнения
+        while (level++ < maxRegionLevel) { // level инкрементируется после сравнения
             childrenQuery.parents = { $size: level };
             promises.push(Region.countAsync(childrenQuery));
         }
@@ -842,263 +842,252 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
         );
     }
 }
+const changeRegionParentExternalityPromised = Bluebird.promisify(changeRegionParentExternality); // TODO: hack
 
 /**
- * Сохранение/создание региона
+ * Save/Create region
  * @param iAm
  * @param data
- * @param cb
- * @returns {*}
  */
-function saveRegion(iAm, data, cb) {
+async function saveRegion(iAm, data) {
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
     }
 
     if (!_.isObject(data) || !data.title_en || !data.title_local) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.badParams };
     }
 
     data.title_en = data.title_en.trim();
     data.title_local = data.title_local.trim();
     if (!data.title_en || !data.title_local) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.badParams };
     }
 
     data.parent = data.parent && Number(data.parent);
+
+    let parentsArray;
+
     if (data.parent) {
         if (data.cid && data.cid === data.parent) {
-            return cb({ message: 'You trying to specify a parent himself', error: true });
+            throw { message: 'You trying to specify a parent himself' };
         }
-        Region.findOne({ cid: data.parent }, { _id: 0, cid: 1, parents: 1 }, { lean: true }, function (err, region) {
-            if (err || !region) {
-                return cb({ message: err && err.message || 'Such parent region doesn\'t exists', error: true });
-            }
-            var parentsArray = region.parents || [];
 
-            if (data.cid && ~parentsArray.indexOf(data.cid)) {
-                return cb({
-                    message: 'You specify the parent, which already has this region as his own parent',
-                    error: true
+        const parentRegion = await Region.findOneAsync(
+            { cid: data.parent }, { _id: 0, cid: 1, parents: 1 }, { lean: true }
+        );
+
+        if (_.isEmpty(parentRegion)) {
+            throw { message: `Such parent region doesn't exists` };
+        }
+
+        parentsArray = parentRegion.parents || [];
+
+        if (data.cid && parentsArray.includes(data.cid)) {
+            throw { message: 'You specify the parent, which already has this region as his own parent' };
+        }
+
+        parentsArray.push(parentRegion.cid);
+    } else {
+        parentsArray = [];
+    }
+
+    if (typeof data.geo === 'string') {
+        try {
+            data.geo = JSON.parse(data.geo);
+        } catch (err) {
+            throw { message: `GeoJSON parse error! ${err.message}` };
+        }
+
+        if (data.geo.type === 'GeometryCollection') {
+            data.geo = data.geo.geometries[0];
+        }
+
+        if (Object.keys(data.geo).length !== 2 ||
+            !Array.isArray(data.geo.coordinates) || !data.geo.coordinates.length ||
+            !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
+            throw { message: `It's not GeoJSON geometry!` };
+        }
+    } else if (data.geo) {
+        delete data.geo;
+    }
+
+    let region;
+    let parentChange;
+    let parentsArrayOld;
+    let childLenArray;
+    const resultStat = {};
+
+    if (!data.cid) {
+        // Create new region object
+        const count = await Counter.incrementAsync('region');
+
+        if (!count) {
+            throw ({ message: 'Increment comment counter error' });
+        }
+
+        region = new Region({ cid: count.next, parents: parentsArray });
+    } else {
+        // Find region by cid
+        region = await Region.findOneAsync({ cid: data.cid });
+
+        if (!region) {
+            throw ({ message: `Such region doesn't exists` });
+        }
+
+        parentChange = !_.isEqual(parentsArray, region.parents);
+
+        if (parentChange) {
+            childLenArray = await getChildsLenByLevel(region);
+        }
+
+        if (parentChange) {
+            if (parentsArray.length > region.parents.length &&
+                (parentsArray.length + childLenArray.length > maxRegionLevel)) {
+                throw ({
+                    message: `After moving the region, ` +
+                    `it or its descendants will be greater than the maximum level (${maxRegionLevel + 1}).`
                 });
             }
 
-            parentsArray.push(region.cid);
-            findOrCreate(parentsArray);
-        });
-    } else {
-        findOrCreate([]);
-    }
-
-    function findOrCreate(parentsArray) {
-        if (typeof data.geo === 'string') {
-            try {
-                data.geo = JSON.parse(data.geo);
-            } catch (err) {
-                return cb({ message: err && err.message || 'GeoJSON parse error!', error: true });
-            }
-            if (Object.keys(data.geo).length !== 2 || !Array.isArray(data.geo.coordinates) || !data.geo.type || (data.geo.type !== 'Polygon' && data.geo.type !== 'MultiPolygon')) {
-                return cb({ message: 'It\'s not GeoJSON geometry!' });
-            }
-        } else if (data.geo) {
-            delete data.geo;
+            parentsArrayOld = region.parents;
+            region.parents = parentsArray;
         }
 
-        var parentChange,
-            parentsArrayOld,
-            childLenArray,
-            resultStat = {};
+        region.udate = new Date();
+    }
 
-        if (!data.cid) {
-            // Создаем объект региона
-            Counter.increment('region', function (err, count) {
-                if (err || !count) {
-                    return cb({ message: err && err.message || 'Increment comment counter error', error: true });
-                }
-                fill(new Region({ cid: count.next, parents: parentsArray }));
-            });
+    // If 'geo' was updated - write it, marking modified, because it has type Mixed
+    if (data.geo) {
+        // If multipolygon contains only one polygon, take it and make type Polygon
+        if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
+            data.geo.coordinates = data.geo.coordinates[0];
+            data.geo.type = 'Polygon';
+        }
+
+        // Count number of points
+        region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
+
+        if (data.geo.type === 'Polygon' || data.geo.type === 'MultiPolygon') {
+
+            // TODO: determine polygon intersection, they must be segments inside one polygon,
+            // then sort segments in one polygon by its area
+            /// *if (data.geo.type === 'MultiPolygon') {
+            //    data.geo.coordinates.forEach(
+            //        polygon => polygon.length > 1 ? polygon.sort(Utils.sortPolygonSegmentsByArea) : null
+            //    );
+            // } else if (data.geo.coordinates.length > 1) {
+            //    data.geo.coordinates.sort(Utils.sortPolygonSegmentsByArea);
+            // }*/
+
+            // Count number of segments
+            region.polynum = Utils.calcGeoJSONPolygonsNum(data.geo);
         } else {
-            // Ищем регион по переданному cid
-            var region;
+            region.polynum = { exterior: 0, interior: 0 };
+        }
 
-            step(
-                function () {
-                    Region.findOne({ cid: data.cid }, this);
-                },
-                function (err, r) {
-                    if (err || !r) {
-                        return cb({ message: err && err.message || 'Such region doesn\'t exists', error: true });
-                    }
-                    region = r;
-                    parentChange = !_.isEqual(parentsArray, region.parents);
+        // Compute bbox
+        region.bbox = Utils.geo.polyBBOX(data.geo).map(Utils.math.toPrecision6);
 
-                    if (parentChange) {
-                        getChildsLenByLevel(region, this);
-                    } else {
-                        this();
-                    }
-                },
-                function (err, childLens) {
-                    if (err) {
-                        return cb({ message: err.message, error: true });
-                    }
-                    if (parentChange) {
-                        if (parentsArray.length > region.parents.length && (parentsArray.length + childLens.length > maxRegionLevel)) {
-                            return cb({
-                                message: 'При переносе региона он или его потомки окажутся на уровне больше максимального. Максимальный: ' + (maxRegionLevel + 1),
-                                error: true
-                            });
-                        }
+        region.geo = data.geo;
+        region.markModified('geo');
+        region.markModified('polynum');
+    }
 
-                        childLenArray = childLens;
-                        parentsArrayOld = region.parents;
-                        region.parents = parentsArray;
-                    }
-                    region.udate = new Date();
-                    fill(region);
-                }
+    if (Utils.geo.checkbboxLatLng(data.bboxhome)) {
+        region.bboxhome = Utils.geo.bboxReverse(data.bboxhome).map(Utils.math.toPrecision6);
+    } else if (data.bboxhome === null) {
+        region.bboxhome = undefined; // If null received, need to remove it, so it bocome automatic
+    }
+
+    if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
+        if (data.geo || !region.centerAuto) {
+            region.centerAuto = true;
+            // If Polygon - its center of gravity takes as the center, if MultiPolygon - center of bbox
+            region.center = Utils.geo.geoToPrecision(region.geo.type === 'MultiPolygon' ?
+                [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] :
+                Utils.geo.polyCentroid(region.geo.coordinates[0])
             );
         }
+    } else {
+        region.centerAuto = false;
+        region.center = Utils.geo.geoToPrecision(data.center.reverse());
+    }
 
-        function fill(region) {
-            // Если обновили geo - записываем, помечаем модифицированным, так как это тип Mixed
-            if (data.geo) {
-                // Если мультиполигон состоит из одного полигона, берем только его и делаем тип Polygon
-                if (data.geo.type === 'MultiPolygon' && data.geo.coordinates.length === 1) {
-                    data.geo.coordinates = data.geo.coordinates[0];
-                    data.geo.type = 'Polygon';
-                }
+    region.title_en = String(data.title_en);
+    region.title_local = data.title_local ? String(data.title_local) : undefined;
 
-                // Считаем количество точек
-                region.pointsnum = data.geo.type === 'Point' ? 1 : Utils.calcGeoJSONPointsNum(data.geo.coordinates);
-                if (data.geo.type === 'Polygon' || data.geo.type === 'MultiPolygon') {
-                    region.polynum = Utils.calcGeoJSONPolygonsNum(data.geo);
-                } else {
-                    region.polynum = { exterior: 0, interior: 0 };
-                }
+    region = (await region.saveAsync())[0].toObject();
 
-                // Вычисляем bbox
-                region.bbox = Utils.geo.polyBBOX(data.geo).map(Utils.math.toPrecision6);
+    // If coordinates changed, compute included objects
+    if (data.geo) {
+        try {
+            const geoRecalcRes = await calcRegionIncludesPromised(region);
 
-                region.geo = data.geo;
-                region.markModified('geo');
-                region.markModified('polynum');
+            if (geoRecalcRes) {
+                Object.assign(resultStat, geoRecalcRes);
             }
-
-            if (Utils.geo.checkbboxLatLng(data.bboxhome)) {
-                region.bboxhome = Utils.geo.bboxReverse(data.bboxhome).map(Utils.math.toPrecision6);
-            } else if (data.bboxhome === null) {
-                region.bboxhome = undefined; // Если пришел null - надо обнулить, т.е. bbox будет авто
-            }
-
-            if (data.centerAuto || !Utils.geo.checkLatLng(data.center)) {
-                if (data.geo || !region.centerAuto) {
-                    region.centerAuto = true;
-                    // Если Polygon - то в качестве центра берется его центр тяжести, если MultiPolygon - центр bbox
-                    region.center = Utils.geo.geoToPrecision(region.geo.type === 'MultiPolygon' ? [(region.bbox[0] + region.bbox[2]) / 2, (region.bbox[1] + region.bbox[3]) / 2] : Utils.geo.polyCentroid(region.geo.coordinates[0]));
-                }
-            } else {
-                region.centerAuto = false;
-                region.center = Utils.geo.geoToPrecision(data.center.reverse());
-            }
-
-            region.title_en = String(data.title_en);
-            region.title_local = data.title_local ? String(data.title_local) : undefined;
-
-            region.save(function (err, region) {
-                if (err || !region) {
-                    return cb({ message: err && err.message || 'Save error', error: true });
-                }
-                region = region.toObject();
-
-                step(
-                    function () {
-                        // Если изменились координаты, отправляем на пересчет входящие объекты
-                        if (data.geo) {
-                            calcRegionIncludes(region, this);
-                        } else {
-                            this();
-                        }
-                    },
-                    function (err, geoRecalcRes) {
-                        if (err) {
-                            return cb({
-                                message: 'Saved, but while calculating included photos for the new geojson: ' + err.message,
-                                error: true
-                            });
-                        }
-                        if (geoRecalcRes) {
-                            _.assign(resultStat, geoRecalcRes);
-                        }
-                        if (parentChange) {
-                            // Если изменился родитель - пересчитываем все зависимости от уровня
-                            changeRegionParentExternality(region, parentsArrayOld, childLenArray, this);
-                        } else {
-                            this();
-                        }
-                    },
-                    function (err, moveRes) {
-                        if (err) {
-                            return cb({
-                                message: 'Saved, but while change parent externality: ' + err.message,
-                                error: true
-                            });
-                        }
-                        if (moveRes) {
-                            _.assign(resultStat, moveRes);
-                        }
-                        fillCache(this); // Обновляем кэш регионов
-                    },
-                    function (err) {
-                        if (err) {
-                            return cb({ message: 'Saved, but while refilling cache: ' + err.message, error: true });
-                        }
-                        getParentsAndChilds(region, this);
-                    },
-                    function (err, childLenArr, parentsSortedArr) {
-                        if (err) {
-                            return cb({ message: 'Saved, but while parents populating: ' + err.message, error: true });
-                        }
-                        if (parentsSortedArr) {
-                            region.parents = parentsSortedArr;
-                        }
-
-                        if (data.geo) {
-                            region.geo = JSON.stringify(region.geo);
-                        } else {
-                            delete region.geo;
-                        }
-                        if (region.center) {
-                            region.center.reverse();
-                        }
-                        if (region.bbox !== undefined) {
-                            if (Utils.geo.checkbbox(region.bbox)) {
-                                region.bbox = Utils.geo.bboxReverse(region.bbox);
-                            } else {
-                                delete region.bbox;
-                            }
-                        }
-                        if (region.bboxhome !== undefined) {
-                            if (Utils.geo.checkbbox(region.bboxhome)) {
-                                region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
-                            } else {
-                                delete region.bboxhome;
-                            }
-                        }
-
-                        // Обновляем онлайн-пользователей, у которых данный регион установлен как домашний или фильтруемый по умолчанию или модерируемый
-                        _session.regetUsers(function (usObj) {
-                            return usObj.rhash && usObj.rhash[region.cid] ||
-                                usObj.mod_rhash && usObj.mod_rhash[region.cid] ||
-                                usObj.user.regionHome && usObj.user.regionHome.cid === region.cid;
-                        }, true);
-
-                        cb({ childLenArr: childLenArr, region: region, resultStat: resultStat });
-                    }
-                );
-            });
+        } catch (err) {
+            throw { message: `Saved, but while calculating included photos for the new geojson: ${err.message}` };
         }
     }
+
+    // If parents changed, compute all dependences from level
+    if (parentChange) {
+        try {
+            const moveRes = await changeRegionParentExternalityPromised(region, parentsArrayOld, childLenArray);
+
+            if (moveRes) {
+                Object.assign(resultStat, moveRes);
+            }
+        } catch (err) {
+            throw { message: `Saved, but while change parent externality: ${err.message}` };
+        }
+    }
+
+    try {
+        await fillCache(); // Refresh regions cache
+    } catch (err) {
+        throw { message: `Saved, but while refilling cache: ${err.message}` };
+    }
+
+    const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
+
+    if (parentsSortedArr) {
+        region.parents = parentsSortedArr;
+    }
+
+    if (data.geo) {
+        region.geo = JSON.stringify(region.geo);
+    } else {
+        delete region.geo;
+    }
+    if (region.center) {
+        region.center.reverse();
+    }
+    if (region.bbox !== undefined) {
+        if (Utils.geo.checkbbox(region.bbox)) {
+            region.bbox = Utils.geo.bboxReverse(region.bbox);
+        } else {
+            delete region.bbox;
+        }
+    }
+    if (region.bboxhome !== undefined) {
+        if (Utils.geo.checkbbox(region.bboxhome)) {
+            region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+        } else {
+            delete region.bboxhome;
+        }
+    }
+
+    // Update online users whose current region saved as home region or filtered by default of moderated
+    _session.regetUsers(function (usObj) {
+        return usObj.rhash && usObj.rhash[region.cid] ||
+            usObj.mod_rhash && usObj.mod_rhash[region.cid] ||
+            usObj.user.regionHome && usObj.user.regionHome.cid === region.cid;
+    }, true);
+
+    return { childLenArr, region, resultStat };
 }
 
 /**
@@ -1202,7 +1191,7 @@ function removeRegion(iAm, data, cb) {
                 }
                 resultData.affectedPhotos = affectedPhotos || 0;
                 resultData.affectedComments = affectedComments || 0;
-                fillCache(this); //Обновляем кэш регионов
+                fillCache(this); // Обновляем кэш регионов
             },
             function (err) {
                 if (err) {
@@ -1797,9 +1786,13 @@ module.exports.loadController = function (app, db, io, cb) {
             var hs = socket.handshake;
 
             socket.on('saveRegion', function (data) {
-                saveRegion(hs.usObj, data, function (resultData) {
-                    socket.emit('saveRegionResult', resultData);
-                });
+                saveRegion(hs.usObj, data)
+                    .catch(function (err) {
+                        return { message: err.message, error: true };
+                    })
+                    .then(function (resultData) {
+                        socket.emit('saveRegionResult', resultData);
+                    });
             });
             socket.on('removeRegion', function (data) {
                 removeRegion(hs.usObj, data, function (resultData) {
