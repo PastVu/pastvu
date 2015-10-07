@@ -40,6 +40,7 @@ import { News } from './models/News';
 import './models/_initValues';
 
 import { fillData as fillSettingsData } from './controllers/settings';
+import { fillData as fillRegionData } from './controllers/region';
 
 global.appVar = {}; // Глоблальный объект для хранения глобальных переменных приложения
 global.appVar.maxRegionLevel = constants.region.maxLevel;
@@ -267,14 +268,9 @@ Bluebird.promisifyAll(fs);
     io.use(_session.handleSocket);
     _session.loadController(app, db, io);
 
-    await fillSettingsData(app, io);
+    await* [fillSettingsData(app, io), fillRegionData(app, io)];
 
     async.waterfall([
-            function (callback) {
-                require('./controllers/region').loadController(app, db, io, function (err) {
-                    callback(err);
-                });
-            },
             function (callback) {
                 require('./controllers/actionlog').loadController(app, db, io);
                 require('./controllers/mail').loadController(app);

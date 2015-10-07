@@ -1,7 +1,6 @@
 'use strict';
 
 var _session = require('./_session.js'),
-    Settings,
     User,
     Photo,
     Region,
@@ -29,11 +28,18 @@ var _session = require('./_session.js'),
     maxRegionLevel = constants.region.maxLevel,
     regionsAllSelectHash = Object.create(null),
 
-    regionCacheHash = {}, //Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
-    regionCacheArr = [], //Массив-кэш регионов из базы [{_id, cid, parents}]
+    regionCacheHash = {}, // Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
+    regionCacheArr = [], // Массив-кэш регионов из базы [{_id, cid, parents}]
 
     nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' },
     i;
+
+import getDbAsync from './connection';
+import { User } from '../models/User';
+import { Photo } from '../models/Photo';
+import { Region } from '../models/Region';
+import { Comment } from '../models/Comment';
+import { Counter } from '../models/Counter';
 
 for (i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
@@ -1764,107 +1770,96 @@ function buildQuery(regions) {
         }
         //console.log(JSON.stringify(rquery));
     }
-    return { rquery: rquery, rhash: rhash };
+    return { rquery, rhash };
 }
 
-module.exports.loadController = function (app, db, io, cb) {
+export async function fillData(app, io) {
 
-    Settings = db.model('Settings');
-    Counter = db.model('Counter');
-    User = db.model('User');
-    Photo = db.model('Photo');
-    Region = db.model('Region');
-    Comment = db.model('Comment');
-
-    dbNative = db.db;
-    /* jshint evil:true */
+    dbNative = (await getDbAsync()).db;
     dbEval = Bluebird.promisify(dbNative.eval, dbNative);
-    /* jshint evil:false */
 
-    fillCache(function () {
-        io.sockets.on('connection', function (socket) {
-            var hs = socket.handshake;
+    await fillCache();
 
-            socket.on('saveRegion', function (data) {
-                saveRegion(hs.usObj, data)
-                    .catch(function (err) {
-                        return { message: err.message, error: true };
-                    })
-                    .then(function (resultData) {
-                        socket.emit('saveRegionResult', resultData);
-                    });
-            });
-            socket.on('removeRegion', function (data) {
-                removeRegion(hs.usObj, data, function (resultData) {
-                    socket.emit('removeRegionResult', resultData);
+    io.sockets.on('connection', function (socket) {
+        const hs = socket.handshake;
+
+        socket.on('saveRegion', function (data) {
+            saveRegion(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveRegionResult', resultData);
                 });
-            });
-            socket.on('giveRegion', function (data) {
-                getRegion(hs.usObj, data, function (resultData) {
-                    socket.emit('takeRegion', resultData);
-                });
-            });
-            socket.on('giveRegionsFull', function (data) {
-                getRegionsFull(hs.usObj, data, function (resultData) {
-                    socket.emit('takeRegionsFull', resultData);
-                });
-            });
-            socket.on('giveRegions', function (data) {
-                getRegionsPublic(data, function (resultData) {
-                    socket.emit('takeRegions', resultData);
-                });
-            });
-            socket.on('giveRegionsByGeo', function (data) {
-                if (!hs.usObj.registered) {
-                    return response({ message: msg.deny, error: true });
-                }
-                if (!_.isObject(data) || !Utils.geo.checkLatLng(data.geo)) {
-                    return response({ message: msg.badParams, error: true });
-                }
-                data.geo = data.geo.reverse();
-
-                getRegionsByGeoPoint(data.geo, { _id: 0, cid: 1, title_local: 1, parents: 1 }, function (err, regions) {
-                    if (err || !regions) {
-                        response({ message: err && err.message || 'No regions', error: true });
-                    }
-                    var regionsArr = [],
-                        i;
-
-                    for (i = 0; i <= maxRegionLevel; i++) {
-                        if (regions[i]) {
-                            regionsArr[regions[i].parents.length] = regions[i];
-                        }
-                    }
-
-                    response({ geo: data.geo.reverse(), regions: _.compact(regionsArr) }); //На случай пропущенных по иерархии регионов (такого быть не должно) удаляем пустые значения массива
-                });
-
-                function response(resultData) {
-                    socket.emit('takeRegionsByGeo', resultData);
-                }
-            });
-
-            socket.on('saveUserHomeRegion', function (data) {
-                saveUserHomeRegion(hs.usObj, data)
-                    .catch(function (err) {
-                        return { message: err.message, error: true };
-                    })
-                    .then(function (resultData) {
-                        socket.emit('saveUserHomeRegionResult', resultData);
-                    });
-            });
-            socket.on('saveUserRegions', function (data) {
-                saveUserRegions(socket, data)
-                    .catch(function (err) {
-                        return { message: err.message, error: true };
-                    })
-                    .then(function (resultData) {
-                        socket.emit('saveUserRegionsResult', resultData);
-                    });
+        });
+        socket.on('removeRegion', function (data) {
+            removeRegion(hs.usObj, data, function (resultData) {
+                socket.emit('removeRegionResult', resultData);
             });
         });
+        socket.on('giveRegion', function (data) {
+            getRegion(hs.usObj, data, function (resultData) {
+                socket.emit('takeRegion', resultData);
+            });
+        });
+        socket.on('giveRegionsFull', function (data) {
+            getRegionsFull(hs.usObj, data, function (resultData) {
+                socket.emit('takeRegionsFull', resultData);
+            });
+        });
+        socket.on('giveRegions', function (data) {
+            getRegionsPublic(data, function (resultData) {
+                socket.emit('takeRegions', resultData);
+            });
+        });
+        socket.on('giveRegionsByGeo', function (data) {
+            if (!hs.usObj.registered) {
+                return response({ message: msg.deny, error: true });
+            }
+            if (!_.isObject(data) || !Utils.geo.checkLatLng(data.geo)) {
+                return response({ message: msg.badParams, error: true });
+            }
+            data.geo = data.geo.reverse();
 
-        cb();
+            getRegionsByGeoPoint(data.geo, { _id: 0, cid: 1, title_local: 1, parents: 1 }, function (err, regions) {
+                if (err || !regions) {
+                    response({ message: err && err.message || 'No regions', error: true });
+                }
+                var regionsArr = [],
+                    i;
+
+                for (i = 0; i <= maxRegionLevel; i++) {
+                    if (regions[i]) {
+                        regionsArr[regions[i].parents.length] = regions[i];
+                    }
+                }
+
+                response({ geo: data.geo.reverse(), regions: _.compact(regionsArr) }); //На случай пропущенных по иерархии регионов (такого быть не должно) удаляем пустые значения массива
+            });
+
+            function response(resultData) {
+                socket.emit('takeRegionsByGeo', resultData);
+            }
+        });
+
+        socket.on('saveUserHomeRegion', function (data) {
+            saveUserHomeRegion(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserHomeRegionResult', resultData);
+                });
+        });
+        socket.on('saveUserRegions', function (data) {
+            saveUserRegions(socket, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('saveUserRegionsResult', resultData);
+                });
+        });
     });
 };
 

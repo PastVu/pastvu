@@ -76,11 +76,11 @@ var app,
     createSidCookieObj = (function () {
         //Создает объект с кукой ключа сессии
         var key = 'past.sid',
-            domain = global.appVar.serverAddr.domain,
+            // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
             cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
         return function (session) {
-            return { key: key, value: session.key, path: '/', domain: domain, 'max-age': cookieMaxAge };
+            return { key: key, value: session.key, path: '/', domain: global.appVar.serverAddr.domain, 'max-age': cookieMaxAge };
         };
     }()),
 
