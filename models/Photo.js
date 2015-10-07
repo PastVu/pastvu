@@ -179,7 +179,7 @@ const STPhotoConveyerSchema = new Schema(
     { strict: true }
 );
 
-PhotoSchema.pre('save', next => {
+PhotoSchema.pre('save', function (next) {
     if (this.isModified('year') || this.isModified('year2')) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
         if (this.year && this.year2) {
