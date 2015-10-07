@@ -1,20 +1,15 @@
-'use strict';
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var mongoose = require('mongoose'),
-    Schema = mongoose.Schema;
+export let UserAction = null;
 
-var UserActionSchema = new Schema(
-    {
-        key: { type: String, index: { unique: true } },
-        reasons: [Number],
-        reason_text: { type: String }
-    },
-    {
-        collection: 'user_actions',
-        strict: true
-    }
-);
-
-module.exports.makeModel = function (db) {
-    db.model('UserAction', UserActionSchema);
-};
+registerModel(db => {
+    UserAction = db.model('UserAction', new Schema(
+        {
+            key: { type: String, index: { unique: true } },
+            reasons: [Number],
+            reason_text: { type: String }
+        },
+        { collection: 'user_actions', strict: true }
+    ));
+});

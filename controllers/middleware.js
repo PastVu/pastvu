@@ -1,15 +1,13 @@
-'use strict';
-
 import fs from 'fs';
 import path from 'path';
 import Utils from '../commons/Utils';
 
-// Middleware для проверки запрашиваемого html, есть ли такой jade,
-// если да - компиляция, нет - передаем следующему обработчику
+// Middleware for checking requested html, usually for development.
+// If such jade exists - compile it, if not - pass request to the next handler
 export function jadeToHtml(seekPath) {
     const htmlRegExp = /\.html$/;
 
-    return function (req, res, next) {
+    return (req, res, next) => {
         if (req.method.toUpperCase() !== 'GET' && req.method.toUpperCase() !== 'HEAD') {
             return next();
         }
@@ -20,11 +18,11 @@ export function jadeToHtml(seekPath) {
         if (htmlRegExp.test(pathname)) {
             const jadePath = path.normalize(seekPath + (pathname.replace('.html', '.jade')));
 
-            res.render(jadePath, {}, function (err, renderedHTML) {
+            res.render(jadePath, {}, (err, renderedHTML) => {
                 if (err || !renderedHTML) {
                     next();
                 } else {
-                    console.log('%s compiled from jade', req.url);
+                    console.log(`${req.url} compiled from jade`);
                     res.status(200).send(renderedHTML);
                 }
             });
@@ -34,11 +32,11 @@ export function jadeToHtml(seekPath) {
     };
 };
 
-// Middleware для включения cors для переданного домена и всех поддоменов
+// Middleware for cors switching-on for a particular domain with wildcard
 export function cors(originRoot) {
     const originRegExp = new RegExp(originRoot + '$', '');
 
-    return function (req, res, next) {
+    return (req, res, next) => {
         const origin = req.headers.origin || req.headers.Origin;
 
         if (origin && originRegExp.test(origin)) {
@@ -52,15 +50,16 @@ export function cors(originRoot) {
 
 // Add X-Response-Time header
 export function responseHeaderHook() {
-    return function (req, res, next) {
+    return (req, res, next) => {
         const start = Date.now();
         const writeHeadOriginal = res.writeHead;
 
         if (!next) {
             next = Utils.dummyFn;
         }
+
         res.writeHead = function () {
-            res.setHeader('X-Response-Time', (Date.now() - start) + 'ms');
+            res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
             writeHeadOriginal.apply(res, arguments);
         };
         next();
@@ -69,11 +68,9 @@ export function responseHeaderHook() {
 
 // Serve static images with check for webp support
 export function serveImages(storePath, { maxAge = 0 }) {
-    maxAge = maxAge / 1000;
-    const cacheControl = `public, max-age=${maxAge}`;
+    const cacheControl = `public, max-age=${Math.ceil(maxAge / 1000)}`;
 
     return async function(req, res, next) {
-
         const {
             headers: {
                 accept = ''
@@ -93,8 +90,8 @@ export function serveImages(storePath, { maxAge = 0 }) {
             }
         } catch (err) {
             if (acceptWebp) {
+                // Wanted webp, but it does not exists
                 acceptWebp = false;
-                // console.warn('Wanted webp, but it does not exists', filePath);
             } else {
                 return next();
             }
@@ -122,8 +119,6 @@ export function serveImages(storePath, { maxAge = 0 }) {
         file.on('error', (err) => next(err));
 
         // Handle unexpected client disconnection to close file read stream and release memory
-        res.on('close', function () {
-            file.destroy();
-        });
+        res.on('close', () => file.destroy());
     };
 };

@@ -1,59 +1,52 @@
-'use strict';
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+export let UserNoty = null;
+export let UserObjectRel = null;
+export let UserSelfPublishedPhotos = null;
 
-// Схема отношений пользователя и объекта
-var UserObjectRelSchema = new mongoose.Schema(
-    {
-        obj: { type: Schema.Types.ObjectId, index: true }, // id объекта
-        user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // id пользователя
-        type: { type: String }, // Тип объекта
+registerModel(db => {
+    // Scheme of relationship user-object (photo or news)
+    const UserObjectRelSchema = new Schema(
+        {
+            obj: { type: Schema.Types.ObjectId, index: true }, // Object _id
+            user: { type: Schema.Types.ObjectId, ref: 'User', index: true }, // User _id
+            type: { type: String }, // Object type
 
-        view: { type: Date }, // Время последнего просмотра самого объекта
-        comments: { type: Date }, // Время последнего просмотра комментариев объекта
-        ccount_new: { type: Number }, // Кол-во новых комментариев
-        sbscr_create: { type: Date }, // Время создания подписки
-        sbscr_noty_change: { type: Date }, // Время изменнения значения флага отправки уведомления sbscr_noty
-        sbscr_noty: { type: Boolean } // Флаг, что нужно отправить уведомление
-    },
-    {
-        strict: true,
-        collection: 'users_objects_rel'
-    }
-);
-// Составной индекс для запроса по объекту и юзеру
-UserObjectRelSchema.index({ obj: 1, user: 1 });
-// Составной индекс для запроса подписок пользователя
-UserObjectRelSchema.index({ user: 1, ccount_new: -1, sbscr_create: -1 });
+            view: { type: Date }, // Time of last view of object
+            comments: { type: Date }, // Time of last view of object's comments
+            ccount_new: { type: Number }, // Number of new comments
+            sbscr_create: { type: Date }, // Time of subscription create
+            sbscr_noty_change: { type: Date }, // Change time of sbscr_noty
+            sbscr_noty: { type: Boolean } // Flag that notification send needed
+        },
+        { strict: true, collection: 'users_objects_rel' }
+    );
+    // Compound index for request by user and object
+    UserObjectRelSchema.index({ obj: 1, user: 1 });
+    // Compound index for request user subscriptions
+    UserObjectRelSchema.index({ user: 1, ccount_new: -1, sbscr_create: -1 });
 
-// Время отправки уведомления пользователю
-var UserNotySchema = new mongoose.Schema(
-    {
-        user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
-        lastnoty: { type: Date }, // Предыдущая отправка
-        nextnoty: { type: Date, index: true } // Следующая отправка. Индексирование для сортировки
-    },
-    {
-        strict: true,
-        collection: 'users_noty'
-    }
-);
+    // Sending time of user notification
+    const UserNotySchema = new Schema(
+        {
+            user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
+            lastnoty: { type: Date }, // Previous send
+            nextnoty: { type: Date, index: true } // Next send. Indexed for sort
+        },
+        { strict: true, collection: 'users_noty' }
+    );
 
-// Список "самоопубликованных" снимков без модератора
-var UserSelfPublishedPhotosSchema = new mongoose.Schema(
-    {
-        user: { type: Schema.Types.ObjectId, ref: 'User', index: { unique: true } },
-        photos: [Schema.Types.ObjectId] // Массив фотографий, которые они опубликовали сами
-    },
-    {
-        strict: true,
-        collection: 'users_selfpublished_photos'
-    }
-);
+    // List of selfpublished photos (without moderation)
+    const UserSelfPublishedPhotosSchema = new Schema(
+        {
+            user: { type: Schema.Types.ObjectId, ref: 'User', index: { unique: true } },
+            photos: [Schema.Types.ObjectId] // Array of photo that user selfpublished
+        },
+        { strict: true, collection: 'users_selfpublished_photos' }
+    );
 
-module.exports.makeModel = function (db) {
-    db.model('UserObjectRel', UserObjectRelSchema);
-    db.model('UserNoty', UserNotySchema);
-    db.model('UserSelfPublishedPhotos', UserSelfPublishedPhotosSchema);
-};
+    UserNoty = db.model('UserNoty', UserNotySchema);
+    UserObjectRel = db.model('UserObjectRel', UserObjectRelSchema);
+    UserSelfPublishedPhotos = db.model('UserSelfPublishedPhotos', UserSelfPublishedPhotosSchema);
+});

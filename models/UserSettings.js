@@ -1,22 +1,16 @@
-'use strict';
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var mongoose = require('mongoose'),
-	Schema = mongoose.Schema;
+export let UserSettings = null;
 
-//Настройки пользователя
-var UserSettingsDefSchema = new mongoose.Schema(
-	{
-		key: {type: String, lowercase: true, index: {unique: true}},
-		val: {type: Schema.Types.Mixed}, //Значение по умолчанию
-		vars: {type: Schema.Types.Mixed}, //Справочник возможных значений, если нужен
-		desc: {type: String, default: ''}
-	},
-	{
-		strict: true,
-		collection: 'user_settings'
-	}
-);
-
-module.exports.makeModel = function (db) {
-	db.model('UserSettingsDef', UserSettingsDefSchema);
-};
+registerModel(db => {
+    UserSettings = db.model('UserSettingsDef', new Schema(
+        {
+            key: { type: String, lowercase: true, index: { unique: true } },
+            val: { type: Schema.Types.Mixed }, // Value by default
+            vars: { type: Schema.Types.Mixed }, // Array of possible values, if applicable
+            desc: { type: String, default: '' }
+        },
+        { collection: 'user_settings', strict: true }
+    ));
+});

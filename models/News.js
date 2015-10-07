@@ -1,27 +1,23 @@
-'use strict';
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var mongoose = require('mongoose'),
-	Schema = mongoose.Schema;
+export let News = null;
 
-var NewsSchema = new Schema(
-		{
-			cid: {type: Number, index: {unique: true}},
-			user: {type: Schema.Types.ObjectId, ref: 'User'},
-			cdate: {type: Date, 'default': Date.now, required: true}, // Время создания
-			pdate: {type: Date, 'default': Date.now, required: true, index: true}, // Время появления новости
-			tdate: {type: Date}, // Время до которого показывается notice
-			title: {type: String, 'default': ''}, // Заголовок
-			notice: {type: String}, // Анонс, краткий текст
-			txt: {type: String, required: true}, // Полный текст
+registerModel(db => {
+    News = db.model('News', new Schema(
+        {
+            cid: { type: Number, index: { unique: true } },
+            user: { type: Schema.Types.ObjectId, ref: 'User' },
+            cdate: { type: Date, 'default': Date.now, required: true }, // Creation time
+            pdate: { type: Date, 'default': Date.now, required: true, index: true }, // Time of news appeared
+            tdate: { type: Date }, // Time before notice on main page is shown
+            title: { type: String, 'default': '' },
+            notice: { type: String }, // Notice short text
+            txt: { type: String, required: true }, // Full text
 
-			nocomments: {type: Boolean}, //Запретить комментирование
-			ccount: {type: Number} //Кол-во комментариев
-		},
-		{
-			strict: true
-		}
-	);
-
-module.exports.makeModel = function (db) {
-	db.model('News', NewsSchema);
-};
+            nocomments: { type: Boolean }, // Prohibit commenting
+            ccount: { type: Number } // Number of comments
+        },
+        { strict: true }
+    ));
+});

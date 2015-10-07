@@ -1,18 +1,16 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-// Download keys expired in 10 seconds
-var DownloadSchema = new Schema(
-    {
-        stamp: { type: Date, 'default': Date.now, index: { expires: '10s' } },
-        key: { type: String, index: { unique: true } },
-        data: { type: Schema.Types.Mixed }
-    },
-    {
-        strict: true
-    }
-);
+export let Download = null;
 
-module.exports.makeModel = function (db) {
-    db.model('Download', DownloadSchema);
-};
+registerModel(/* async */function (db) {
+    Download = db.model('Download', new Schema(
+        {
+            stamp: { type: Date, 'default': Date.now, index: { expires: '10s' } }, // Download keys expired in 10 seconds
+            key: { type: String, index: { unique: true } },
+            data: { type: Schema.Types.Mixed }
+        },
+        { strict: true }
+    ));
+});
+

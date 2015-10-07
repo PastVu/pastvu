@@ -146,9 +146,9 @@ module.exports.loadController = function (app) {
 
         res.statusCode = 200;
         res.render('app', {
+            meta,
             appName: 'Main',
             initData: genInitDataString(req),
-            meta: meta,
             nojsUrl: nojs.nojsUrl,
             nojsShow: nojs.nojsShow,
             agent: req.browser && req.browser.agent
@@ -158,7 +158,7 @@ module.exports.loadController = function (app) {
     function getPhotoForPage(req, res, next) {
         var cid = Number(req.params[0]);
 
-        photo.givePhotoForPage(req.handshake.usObj, { cid: cid })
+        photo.givePhotoForPage(req.handshake.usObj, { cid })
             .then(function (result) {
                 if (!result) {
                     throw { noPhoto: true };

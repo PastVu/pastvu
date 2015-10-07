@@ -1,7 +1,14 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var FragmentSchema = new Schema({
+export let Photo = null;
+export let PhotoMap = null;
+export let PhotoHistory = null;
+export let PhotoConveyer = null;
+export let PhotoConveyerError = null;
+export let STPhotoConveyer = null;
+
+const FragmentSchema = new Schema({
     cid: { type: Number }, // Comment cid
 
     l: { type: Number }, // Left percent
@@ -12,7 +19,7 @@ var FragmentSchema = new Schema({
     del: { type: Boolean } // Flag that fragment's comment has been deleted
 });
 
-var PhotoSchema = new Schema({
+const PhotoSchema = new Schema({
     cid: { type: Number, index: { unique: true } },
     user: { type: Schema.Types.ObjectId, ref: 'User', index: true },
 
@@ -28,7 +35,8 @@ var PhotoSchema = new Schema({
     // Last change time
     cdate: { type: Date },
     // Time of last change, which used for notifying user about change
-    // cdate - shows change time of many attributes (including status), whereas ucdate tracks only human-readable attributes
+    // cdate - shows change time of many attributes (including status),
+    // whereas ucdate tracks only human-readable attributes
     ucdate: { type: Date },
 
     // Coordinates, [lng, lat]
@@ -66,7 +74,8 @@ var PhotoSchema = new Schema({
     // Time when current sign on watermark appended in the moment of last convert. If undefined - not yet appended
     watersignTextApplied: { type: Date },
 
-    disallowDownloadOriginIndividual: { type: Boolean }, // Set individual setting to prohibit others download origin of this photo (not from user profile settings)
+    // Set individual setting to prohibit others download origin of this photo (not from user profile settings)
+    disallowDownloadOriginIndividual: { type: Boolean },
     disallowDownloadOrigin: { type: Boolean }, // Individual setting to prohibit others download origin of this photo
 
     nowaterchange: { type: Boolean }, // Prohibit by admin of watersign and download individual setting changing
@@ -93,9 +102,9 @@ var PhotoSchema = new Schema({
     nocomments: { type: Boolean } // Prohibit commentation
 });
 
-// В основной коллекции фотографий индексируем выборку координат по годам для выборки на карте
+// In the main collection if photo do indexing to select on the map by year
 // Compound index http://docs.mongodb.org/manual/core/geospatial-indexes/#compound-geospatial-indexes
-PhotoSchema.index({ g: '2d', year: 1 });
+PhotoSchema.index({ geo: '2d', year: 1 });
 PhotoSchema.index({ r0: 1, sdate: 1 });
 PhotoSchema.index({ r1: 1, sdate: 1 });
 PhotoSchema.index({ r2: 1, sdate: 1 });
@@ -103,7 +112,7 @@ PhotoSchema.index({ r3: 1, sdate: 1 });
 PhotoSchema.index({ r4: 1, sdate: 1 });
 PhotoSchema.index({ r5: 1, sdate: 1 });
 
-var PhotoHistSchema = new Schema(
+const PhotoHistSchema = new Schema(
     {
         cid: { type: Number, index: true },
         stamp: { type: Date, 'default': Date.now, required: true },
@@ -121,7 +130,7 @@ var PhotoHistSchema = new Schema(
     },
     { collection: 'photos_history', strict: true, versionKey: false }
 );
-var PhotoMapSchema = new Schema(
+const PhotoMapSchema = new Schema(
     {
         cid: { type: Number, index: { unique: true } },
         geo: { type: [Number], index: '2d' },
@@ -134,7 +143,7 @@ var PhotoMapSchema = new Schema(
     { collection: 'photos_map', strict: true }
 );
 
-var PhotoConveyerSchema = new Schema(
+const PhotoConveyerSchema = new Schema(
     {
         cid: { type: Number, index: true },
         priority: { type: Number, required: true },
@@ -149,33 +158,28 @@ var PhotoConveyerSchema = new Schema(
 );
 PhotoConveyerSchema.index({ priority: 1, added: 1 });
 
-// Ошибки конвертирования
-var PhotoConveyerErrorSchema = new Schema(
+// Errors in convertation
+const PhotoConveyerErrorSchema = new Schema(
     {
         cid: { type: String, index: true },
         added: { type: Date },
         stamp: { type: Date, 'default': Date.now },
         error: { type: String }
     },
-    {
-        collection: 'photos_conveyer_errors',
-        strict: true
-    }
+    { collection: 'photos_conveyer_errors', strict: true }
 );
 
-// Статистика заполненности конвейера
-var STPhotoConveyerSchema = new Schema(
+// Statistic about conveyer
+const STPhotoConveyerSchema = new Schema(
     {
         stamp: { type: Date, 'default': Date.now, required: true, index: true },
-        clength: { type: Number }, // Максимальная длина конвейра на дату
-        converted: { type: Number } // Обработанно фотографий на дату
+        clength: { type: Number }, // Maximum conveyer length at stamp time
+        converted: { type: Number } // Converted photos at stamp time
     },
-    {
-        strict: true
-    }
+    { strict: true }
 );
 
-PhotoSchema.pre('save', function (next) {
+PhotoSchema.pre('save', next => {
     if (this.isModified('year') || this.isModified('year2')) {
         // Fill aggregated year field. '—' here is em (long) dash '&mdash;' (not hyphen or minus)
         if (this.year && this.year2) {
@@ -188,12 +192,12 @@ PhotoSchema.pre('save', function (next) {
     return next();
 });
 
-module.exports.makeModel = function (db) {
-    db.model('Photo', PhotoSchema);
-    db.model('PhotoMap', PhotoMapSchema);
-    db.model('PhotoHistory', PhotoHistSchema);
+registerModel(db => {
+    Photo = db.model('Photo', PhotoSchema);
+    PhotoMap = db.model('PhotoMap', PhotoMapSchema);
+    PhotoHistory = db.model('PhotoHistory', PhotoHistSchema);
 
-    db.model('PhotoConveyer', PhotoConveyerSchema);
-    db.model('PhotoConveyerError', PhotoConveyerErrorSchema);
-    db.model('STPhotoConveyer', STPhotoConveyerSchema);
-};
+    PhotoConveyer = db.model('PhotoConveyer', PhotoConveyerSchema);
+    PhotoConveyerError = db.model('PhotoConveyerError', PhotoConveyerErrorSchema);
+    STPhotoConveyer = db.model('STPhotoConveyer', STPhotoConveyerSchema);
+});

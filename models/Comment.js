@@ -1,9 +1,10 @@
-'use strict';
+import { Schema } from 'mongoose';
+import { registerModel } from '../controllers/connection';
 
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+export let Comment = null;
+export let CommentN = null;
 
-var delInfo = {
+const delInfo = {
     user: { type: Schema.Types.ObjectId, ref: 'User' },
     stamp: { type: Date },
     reason: {
@@ -14,7 +15,7 @@ var delInfo = {
     role: { type: Number }, // Реализуемая на момент удаления роль пользователя. Например, если это модератор. При удалении своего комментария без потомков не заполняется
     roleregion: { type: Number } // Регион реализуемой роли
 };
-var histSchema = {
+const histSchema = {
     user: { type: Schema.Types.ObjectId, ref: 'User' },
     stamp: { type: Date, 'default': Date.now, required: true },
     frag: { type: Number },
@@ -31,8 +32,8 @@ var histSchema = {
     role: { type: Number }, // Реализуемая на момент операции роль пользователя. Например, если это модератор
     roleregion: { type: Number } // Регион реализуемой роли
 };
-// Комментарии фотографий
-var CommentPSchema = new Schema(
+// Photos comments
+const CommentPSchema = new Schema(
     {
         cid: { type: Number, index: { unique: true } },
         obj: { type: Schema.Types.ObjectId, ref: 'Photo', index: true },
@@ -54,18 +55,22 @@ var CommentPSchema = new Schema(
         r4: { type: Number, sparse: true },
         r5: { type: Number, sparse: true },
 
-        lastChanged: { type: Date }, // Время последнего изменения
+        lastChanged: { type: Date }, // Time of last changes
         hist: [new Schema(histSchema)],
 
-        del: delInfo, // Удалённый
-        hidden: { type: Boolean } // Скрытый комментарий, например, у неактивной фотографии. Не отображается в списке пользователя и не участвует в статистике
+        del: delInfo, // Comment is deleted
+
+        // Hidden comment, for example, it belongs to inactive photo.
+        // It doesn't shown in user comments list and doesn't not involved in statistics
+        hidden: { type: Boolean }
     },
     {
         strict: true
     }
 );
-//  Комментарии новостей
-var CommentNSchema = new Schema(
+
+// News comments
+const CommentNSchema = new Schema(
     {
         cid: { type: Number, index: { unique: true } },
         obj: { type: Schema.Types.ObjectId, ref: 'News', index: true },
@@ -75,21 +80,18 @@ var CommentNSchema = new Schema(
         parent: { type: Number },
         level: { type: Number },
 
-        lastChanged: { type: Date }, // Время последнего изменения
+        lastChanged: { type: Date }, // Time of last changes
         hist: [new Schema(histSchema)],
 
-        del: delInfo // Удалённый
+        del: delInfo // Comment is deleted
     },
-    {
-        strict: true,
-        collection: 'commentsn'
-    }
+    { strict: true, collection: 'commentsn' }
 );
 
-CommentPSchema.index({ user: 1, stamp: -1 }); // Составной индекс для запроса комментариев фотографий пользователя
-// CommentSchema.index({ photo: 1, stamp: 1 }); // Составной индекс для запроса комментариев фотографии. (Пока не нужен)
+CommentPSchema.index({ user: 1, stamp: -1 }); // Compund index for select user comments
+// CommentSchema.index({ photo: 1, stamp: 1 }); // Compund index for select photo comments (Not needed yet)
 
-module.exports.makeModel = function (db) {
-    db.model('Comment', CommentPSchema);
-    db.model('CommentN', CommentNSchema);
-};
+registerModel(db => {
+    Comment = db.model('Comment', CommentPSchema);
+    CommentN = db.model('CommentN', CommentNSchema);
+});

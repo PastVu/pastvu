@@ -12,10 +12,12 @@ import http from 'http';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import { argv } from 'optimist';
-import mongoose from 'mongoose';
 import Bluebird from 'bluebird';
 import Utils from './commons/Utils';
 import contentDisposition from 'content-disposition';
+
+import connectDb from './controllers/connection';
+import { Download } from './models/Download';
 
 const addresses = _.transform(os.networkInterfaces(), (result, face) => face.forEach(function (address) {
     if (address.family === 'IPv4' && !address.internal) {
@@ -37,8 +39,6 @@ const dport = argv.projectdport || conf.projectdport || ''; // Port of downloade
 const host = domain + dport; // Hostname (address+port)
 
 const logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + '/logs')); // Путь к папке логов
-
-let Download;
 
 console.log('\n');
 mkdirp.sync(logPath);
@@ -64,49 +64,7 @@ if (land !== 'prod') {
     Bluebird.longStackTraces();
 }
 
-// Made some libriries methods works as promise. This methods'll be with Async postfix, e.g., model.saveAsync().then(..)
-Bluebird.promisifyAll(mongoose);
 Bluebird.promisifyAll(fs);
-
-function openConnection() {
-    return new Promise(function (resolve, reject) {
-        const db = mongoose.createConnection() // http://mongoosejs.com/docs/api.html#connection_Connection
-            .once('open', openHandler)
-            .once('error', errFirstHandler);
-
-        db.open(moongoUri, {
-            db: { native_parser: true, promiseLibrary: Promise },
-            server: { poolSize: moongoPool, auto_reconnect: true }
-        });
-
-        async function openHandler() {
-            const adminDb = db.db.admin(); // Use the admin database for some operation
-
-            const [buildInfo, serverStatus] = await* [adminDb.buildInfo(), adminDb.serverStatus()];
-
-            logger.info(
-                `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits}, ` +
-                `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}] at: ${moongoUri}`
-            );
-
-            db.removeListener('error', errFirstHandler);
-            db.on('error', function (err) {
-                logger.error('Connection error to MongoDB at: ' + moongoUri);
-                logger.error(err && (err.message || err));
-            });
-            db.on('reconnected', function () {
-                logger.info('Reconnected to MongoDB at: ' + moongoUri);
-            });
-
-            resolve(db);
-        }
-
-        function errFirstHandler(err) {
-            logger.error('Connection error to MongoDB at: ' + moongoUri);
-            reject(err);
-        }
-    });
-}
 
 const responseCode = function (code, response) {
     const textStatus = http.STATUS_CODES[code];
@@ -148,56 +106,6 @@ const exists = function (path) {
 
 const utlPattern = /^\/download\/(\w{32})$/;
 
-const handleRequest = async function (req, res) {
-    res.statusCode = 200;
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Expires', '0');
-
-    try {
-        if (req.method !== 'GET') {
-            return responseCode(405, res);
-        }
-
-        const key = _.get(req.url.match(utlPattern), '[1]');
-
-        if (!key) {
-            return responseCode(403, res);
-        }
-
-        const keyEntry = await Download.findOneAndRemoveAsync({ key }, { _id: 0, data: 1 });
-        const keyData = _.get(keyEntry, 'data');
-        let filePath = _.get(keyData, 'path');
-
-        if (filePath) {
-            filePath = path.join(storePath, filePath);
-        }
-
-        const fileAvailable = filePath && await exists(filePath);
-
-        if (!fileAvailable) {
-            logger.warn('File not available', keyEntry);
-            return responseCode(404, res);
-        }
-
-        const size = keyData.size || (await fs.statAsync(filePath)).size;
-        const fileName = contentDisposition(keyData.fileName);
-
-        res.setHeader('Content-Disposition', fileName);
-        res.setHeader('Content-Type', keyData.type || 'text/html');
-
-        if (size) {
-            res.setHeader('Content-Length', size);
-        }
-
-        logger.debug(`${keyData.login} get ${keyData.origin ? 'origin' : 'water'} of ${keyData.cid} as ${fileName}`);
-
-        sendFile(filePath, res);
-    } catch (err) {
-        logger.error(err);
-        responseCode(500, res);
-    }
-};
-
 const scheduleMemInfo = (function () {
     const INTERVAL = ms('30s');
 
@@ -225,10 +133,59 @@ const scheduleMemInfo = (function () {
 }());
 
 (async function configure() {
-    const db = await openConnection();
+    await connectDb(moongoUri, moongoPool, logger);
 
-    require('./models/Download').makeModel(db);
-    Download = db.model('Download');
+    console.log(Download);
+
+    const handleRequest = async function (req, res) {
+        res.statusCode = 200;
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Expires', '0');
+
+        try {
+            if (req.method !== 'GET') {
+                return responseCode(405, res);
+            }
+
+            const key = _.get(req.url.match(utlPattern), '[1]');
+
+            if (!key) {
+                return responseCode(403, res);
+            }
+
+            const keyEntry = await Download.findOneAndRemoveAsync({ key }, { _id: 0, data: 1 });
+            const keyData = _.get(keyEntry, 'data');
+            let filePath = _.get(keyData, 'path');
+
+            if (filePath) {
+                filePath = path.join(storePath, filePath);
+            }
+
+            const fileAvailable = filePath && await exists(filePath);
+
+            if (!fileAvailable) {
+                logger.warn('File not available', keyEntry);
+                return responseCode(404, res);
+            }
+
+            const size = keyData.size || (await fs.statAsync(filePath)).size;
+            const fileName = contentDisposition(keyData.fileName);
+
+            res.setHeader('Content-Disposition', fileName);
+            res.setHeader('Content-Type', keyData.type || 'text/html');
+
+            if (size) {
+                res.setHeader('Content-Length', size);
+            }
+
+            logger.debug(`${keyData.login} get ${keyData.origin ? 'origin' : 'water'} of ${keyData.cid} as ${fileName}`);
+
+            sendFile(filePath, res);
+        } catch (err) {
+            logger.error(err);
+            responseCode(500, res);
+        }
+    };
 
     http.createServer(handleRequest).listen(listenport, listenhost, function () {
         logger.info(`Uploader host for users: [${host}]`);
