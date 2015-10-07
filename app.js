@@ -9,14 +9,13 @@ import ms from 'ms';
 import _ from 'lodash';
 import http from 'http';
 import path from 'path';
-import step from 'step';
-import async from 'async';
 import posix from 'posix';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
 import express from 'express';
 import { argv } from 'optimist';
 import Bluebird from 'bluebird';
+import socketIO from 'socket.io';
 import constants from './controllers/constants';
 import * as ourMiddlewares from './controllers/middleware';
 
@@ -251,7 +250,7 @@ Bluebird.promisifyAll(fs);
 
     let CoreServer;
     const httpServer = http.createServer(app);
-    const io = require('socket.io')(httpServer, {
+    const io = socketIO(httpServer, {
         transports: ['websocket', 'polling'],
         path: '/socket.io',
         serveClient: false
@@ -270,112 +269,103 @@ Bluebird.promisifyAll(fs);
 
     await* [fillSettingsData(app, io), fillRegionData(app, io)];
 
-    async.waterfall([
-            function (callback) {
-                require('./controllers/actionlog').loadController(app, db, io);
-                require('./controllers/mail').loadController(app);
-                require('./controllers/auth').loadController(app, db, io);
-                require('./controllers/reason').loadController(app, db, io);
-                require('./controllers/userobjectrel').loadController(app, db, io);
-                require('./controllers/index').loadController(app, db, io);
-                require('./controllers/photo').loadController(app, db, io);
-                require('./controllers/subscr').loadController(app, db, io);
-                require('./controllers/comment').loadController(app, db, io);
-                require('./controllers/profile').loadController(app, db, io);
-                require('./controllers/admin').loadController(app, db, io);
-                if (land === 'dev') {
-                    require('./controllers/tpl').loadController(app);
-                }
+    require('./controllers/actionlog').loadController(app, db, io);
+    require('./controllers/mail').loadController(app);
+    require('./controllers/auth').loadController(app, db, io);
+    require('./controllers/reason').loadController(app, db, io);
+    require('./controllers/userobjectrel').loadController(app, db, io);
+    require('./controllers/index').loadController(app, db, io);
+    require('./controllers/photo').loadController(app, db, io);
+    require('./controllers/subscr').loadController(app, db, io);
+    require('./controllers/comment').loadController(app, db, io);
+    require('./controllers/profile').loadController(app, db, io);
+    require('./controllers/admin').loadController(app, db, io);
+    if (land === 'dev') {
+        require('./controllers/tpl').loadController(app);
+    }
 
-                require('./controllers/routes').loadController(app);
+    require('./controllers/routes').loadController(app);
 
-                if (serveLog) {
-                    app.use(
-                        '/nodelog',
-                        require('basic-auth-connect')('pastvu', 'pastvupastvu'),
-                        require('serve-index')(logPath, { icons: true }),
-                        express.static(logPath, { maxAge: 0, etag: false })
-                    );
-                }
+    if (serveLog) {
+        app.use(
+            '/nodelog',
+            require('basic-auth-connect')('pastvu', 'pastvupastvu'),
+            require('serve-index')(logPath, { icons: true }),
+            express.static(logPath, { maxAge: 0, etag: false })
+        );
+    }
 
-                require('./controllers/errors').registerErrorHandling(app);
-                require('./controllers/systemjs').loadController(app, db);
-                // require('./basepatch/v1.3.0.4').loadController(app, db);
+    require('./controllers/errors').registerErrorHandling(app);
+    require('./controllers/systemjs').loadController(app, db);
+    // require('./basepatch/v1.3.0.4').loadController(app, db);
 
-                CoreServer = require('./controllers/coreadapter');
-                callback(null);
+    CoreServer = require('./controllers/coreadapter');
+
+    const manualGC = manualGCInterval && global.gc;
+
+    if (manualGC) {
+        // Самостоятельно вызываем garbage collector через определеное время
+        logger.info(`Manual garbage collection every ${manualGCInterval / 1000}s`);
+    }
+
+    const scheduleMemInfo = (function () {
+        const INTERVAL = manualGC ? manualGCInterval : ms('30s');
+
+        function memInfo() {
+            let memory = process.memoryUsage();
+            let elapsedMs = Date.now() - startStamp;
+            let elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
+
+            if (elapsedDays) {
+                elapsedMs -= elapsedDays * Utils.times.msDay;
             }
-        ],
-        function finish(err) {
-            if (err) {
-                logger.fatal(err && (err.message || err));
-                setTimeout(function () {
-                    process.exit(1); // Запускаем в setTimeout, т.к. в некоторых консолях в противном случае не выводятся предыдущие console.log
-                }, 100);
-            } else {
 
-                const manualGC = manualGCInterval && global.gc;
+            logger.info(
+                `+${elapsedDays}.${Utils.hh_mm_ss(elapsedMs, true)} `,
+                `rss: ${Utils.format.fileSize(memory.rss)}`,
+                `heapUsed: ${Utils.format.fileSize(memory.heapUsed)},`,
+                `heapTotal: ${Utils.format.fileSize(memory.heapTotal)}`,
+                manualGC ? '-> Starting GC' : ''
+            );
 
-                if (manualGC) {
-                    // Самостоятельно вызываем garbage collector через определеное время
-                    logger.info('Manual garbage collection every %ss', manualGCInterval / 1000);
-                }
+            if (manualGC) {
+                const start = Date.now();
 
-                const scheduleMemInfo = (function () {
-                    const INTERVAL = manualGC ? manualGCInterval : ms('30s');
+                global.gc(); // Вызываем gc
 
-                    function memInfo() {
-                        let memory = process.memoryUsage();
-                        let elapsedMs = Date.now() - startStamp;
-                        let elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
+                memory = process.memoryUsage();
+                elapsedMs = Date.now() - startStamp;
+                elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
 
-                        if (elapsedDays) {
-                            elapsedMs -= elapsedDays * Utils.times.msDay;
-                        }
-
-                        logger.info(
-                            `+${elapsedDays}.${Utils.hh_mm_ss(elapsedMs, true)} `,
-                            `rss: ${Utils.format.fileSize(memory.rss)}`,
-                            `heapUsed: ${Utils.format.fileSize(memory.heapUsed)}, heapTotal: ${Utils.format.fileSize(memory.heapTotal)}`,
-                            manualGC ? '-> Starting GC' : ''
-                        );
-
-                        if (manualGC) {
-                            const start = Date.now();
-
-                            global.gc(); // Вызываем gc
-
-                            memory = process.memoryUsage();
-                            elapsedMs = Date.now() - startStamp;
-                            elapsedDays = Math.floor(elapsedMs / Utils.times.msDay);
-
-                            logger.info(
-                                `+${elapsedDays}.${Utils.hh_mm_ss(elapsedMs, true)} `,
-                                `rss: ${Utils.format.fileSize(memory.rss)}`,
-                                `heapUsed: ${Utils.format.fileSize(memory.heapUsed)}, heapTotal: ${Utils.format.fileSize(memory.heapTotal)}`,
-                                `Garbage collected in ${(Date.now() - start) / 1000}s`
-                            );
-                        }
-
-                        scheduleMemInfo();
-                    }
-
-                    return function (delta = 0) {
-                        setTimeout(memInfo, INTERVAL + delta);
-                    };
-                }());
-
-                new CoreServer(corePort, coreHostname, function () {
-                    httpServer.listen(httpPort, httpHostname, function () {
-                        logger.info('servePublic: ' + servePublic + ', serveStore ' + serveStore);
-                        logger.info('Host for users: [%s]', protocol + '://' + host);
-                        logger.info('Core server listening [%s:%s] in %s-mode', coreHostname ? coreHostname : '*', corePort, land.toUpperCase());
-                        logger.info('HTTP server listening [%s:%s] in %s-mode %s gzip \n', httpHostname ? httpHostname : '*', httpPort, land.toUpperCase(), gzip ? 'with' : 'without');
-
-                        scheduleMemInfo(startStamp - Date.now());
-                    });
-                });
+                logger.info(
+                    `+${elapsedDays}.${Utils.hh_mm_ss(elapsedMs, true)} `,
+                    `rss: ${Utils.format.fileSize(memory.rss)}`,
+                    `heapUsed: ${Utils.format.fileSize(memory.heapUsed)},`,
+                    `heapTotal: ${Utils.format.fileSize(memory.heapTotal)}`,
+                    `Garbage collected in ${(Date.now() - start) / 1000}s`
+                );
             }
+
+            scheduleMemInfo();
         }
-    );
+
+        return function (delta = 0) {
+            setTimeout(memInfo, INTERVAL + delta);
+        };
+    }());
+
+    new CoreServer(corePort, coreHostname, function () {
+        httpServer.listen(httpPort, httpHostname, function () {
+            logger.info(`servePublic: ${servePublic}, serveStore ${serveStore}`);
+            logger.info(`Host for users: [${protocol}://${host}]`);
+            logger.info(`Core server listening [${coreHostname || '*'}:${corePort}] in ${land.toUpperCase()}-mode`);
+            logger.info(
+                `HTTP server listening [${httpHostname || '*'}:${httpPort}] in ${land.toUpperCase()}-mode`,
+                `${gzip ? 'with' : 'without'} gzip`,
+                '\n'
+            );
+
+            scheduleMemInfo(startStamp - Date.now());
+        });
+    });
 }());
