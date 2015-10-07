@@ -294,7 +294,7 @@ function sessionToArchive(session) {
 function userObjectTreatUser(usObj, cb) {
     var user = usObj.user;
     // Присваиваем ему настройки по умолчанию
-    user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
+    user.settings = _.defaults(user.settings || {}, settings.userSettingsDef);
 
     return new Bluebird(function (resolve, reject) {
         // Популируем регионы
@@ -893,7 +893,7 @@ module.exports.loadController = function (a, db, io) {
                 session = hs.session;
 
             socket.emit('takeInitData', {
-                p: settings.getClientParams(),
+                p: settings.clientParams,
                 cook: createSidCookieObj(session),
                 u: getPlainUser(usObj.user),
                 registered: usObj.registered

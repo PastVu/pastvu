@@ -67,7 +67,7 @@ function giveUser(iAm, data, cb) {
                 return cb({ message: err && err.message || msg.nouser, error: true });
             }
             if (itsMe || iAm.isAdmin) {
-                user.settings = _.defaults(user.settings || {}, settings.getUserSettingsDef());
+                user.settings = _.defaults(user.settings || {}, settings.userSettingsDef);
             }
             user.online = itsOnline;
             cb({ message: 'ok', user: user });
@@ -165,8 +165,8 @@ var changeSetting = Bluebird.method(function (socket, data) {
             if (!user) {
                 throw { message: msg.nouser };
             }
-            var defSetting = settings.getUserSettingsDef()[data.key];
-            var vars = settings.getUserSettingsVars()[data.key];
+            var defSetting = settings.userSettingsDef[data.key];
+            var vars = settings.userSettingsVars[data.key];
 
             // If this setting does not exist or its value is not allowed - throw error
             if (defSetting === undefined || vars === undefined || vars.indexOf(data.val) < 0) {
@@ -584,8 +584,8 @@ function saveUserRanks(iAm, data, cb) {
         return cb({ message: msg.badParams, error: true });
     }
 
-    //Проверяем, чтобы не было несуществующих званий
-    ranksHash = settings.getUserRanksHash();
+    // Проверяем, чтобы не было несуществующих званий
+    ranksHash = settings.userRanksHash;
     for (i = data.ranks; i--;) {
         if (!ranksHash[data.ranks[i]]) {
             return cb({ message: msg.badParams, error: true });

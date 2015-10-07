@@ -8,7 +8,7 @@ var photo = require('./photo');
 var errors = require('./errors');
 
 module.exports.loadController = function (app) {
-    var clientParams = settings.getClientParams();
+    var clientParams = settings.clientParams;
     var fullhost = clientParams.server.protocol + '://' + clientParams.server.host;
 
     var genInitDataString = (function () {

@@ -135,8 +135,6 @@ const scheduleMemInfo = (function () {
 (async function configure() {
     await connectDb(moongoUri, moongoPool, logger);
 
-    console.log(Download);
-
     const handleRequest = async function (req, res) {
         res.statusCode = 200;
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

@@ -152,7 +152,7 @@ var settings = require('./settings.js'),
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
-                var userSettings = photo.user.settings || settings.getUserSettingsDef();
+                var userSettings = photo.user.settings || settings.userSettingsDef;
 
                 if (// If setted individual that photo has now watersing
                     photo.watersignIndividual && photo.watersignOption === false ||
@@ -257,7 +257,7 @@ function findPhoto(usObj, query, fieldSelect, options, populateUser) {
         }
 
         if (populateUser) {
-            photo.user.settings = _.defaults(photo.user.settings || {}, settings.getUserSettingsDef());
+            photo.user.settings = _.defaults(photo.user.settings || {}, settings.userSettingsDef);
         }
 
         return photo;
@@ -370,7 +370,7 @@ var core = {
                 if (shouldBeEdit) {
                     // Serve user settings, only when photo is for editing
                     photo.user.settings = this.online ? owner.settings :
-                        _.defaults(owner.settings || {}, settings.getUserSettingsDef());
+                        _.defaults(owner.settings || {}, settings.userSettingsDef);
                     photo.user.watersignCustom = owner.watersignCustom;
 
                     if (this.can.nowaterchange) {
@@ -538,7 +538,7 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
 function getUserWaterSign(user, photo) {
     var result;
     var option;
-    var validOptionValues = settings.getUserSettingsVars().photo_watermark_add_sign;
+    var validOptionValues = settings.userSettingsVars.photo_watermark_add_sign;
 
     if (photo && _.get(photo, 'watersignIndividual')) {
         option = _.get(photo, 'watersignOption');
@@ -553,7 +553,7 @@ function getUserWaterSign(user, photo) {
 
         // If user watersign option is not valid, take default value
         if (!validOptionValues.includes(option)) {
-            option = settings.getUserSettingsDef().photo_watermark_add_sign;
+            option = settings.userSettingsDef.photo_watermark_add_sign;
         }
 
         result = option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
@@ -1867,7 +1867,7 @@ var photoValidate = function (newValues, oldValues, can) {
         }
 
         if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
-            if (settings.getUserSettingsVars().photo_watermark_add_sign.includes(newValues.watersignOption)) {
+            if (settings.userSettingsVars.photo_watermark_add_sign.includes(newValues.watersignOption)) {
                 result.watersignOption = newValues.watersignOption;
             }
 
@@ -1913,7 +1913,7 @@ var photoValidate = function (newValues, oldValues, can) {
 
         if (result.disallowDownloadOriginIndividual ||
             oldValues.disallowDownloadOriginIndividual && result.disallowDownloadOriginIndividual === undefined) {
-            if (settings.getUserSettingsVars().photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
+            if (settings.userSettingsVars.photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
                 result.disallowDownloadOrigin = newValues.disallowDownloadOrigin;
             }
         }

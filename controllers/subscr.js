@@ -242,7 +242,7 @@ function scheduleUserNotice(users) {
         .spread(function (usersThrottle, usersNoty) {
             var usersNotyHash = {};
             var usersTrottleHash = {};
-            var defThrottle = settings.getUserSettingsDef().subscr_throttle;
+            var defThrottle = settings.userSettingsDef.subscr_throttle;
             var nearestNoticeTimeStamp = Date.now() + 10000; // Ближайшее уведомление для пользователей, у которых не было предыдущих
             var lastnoty;
             var nextnoty;

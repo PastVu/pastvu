@@ -151,7 +151,7 @@ function register(data, cb) {
 					regionHome: regionHome || undefined, //Домашним регионом пока делаем всем Москву
 					settings: {
 						//Пустой объект settings не сохранится, заполняем его одной из настроек
-						subscr_auto_reply: settings.getUserSettingsDef().subscr_auto_reply || true
+						subscr_auto_reply: settings.userSettingsDef.subscr_auto_reply || true
 					}
 				}).save(this);
 			},
