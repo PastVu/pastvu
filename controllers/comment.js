@@ -194,7 +194,7 @@ var commentsTreeBuildAuth = Bluebird.method(function (myId, comments, previousVi
     }
 
     return getUsersHashForComments(usersArr)
-        .spread(function (usersById, usersByLogin) {
+        .then(function ([usersById, usersByLogin]) {
             var comments = commentsArrMid;
             var commentsTree = [];
             var comment;
@@ -230,7 +230,7 @@ var commentsTreeBuildAuth = Bluebird.method(function (myId, comments, previousVi
                 }
             }
 
-            return { tree: commentsTree, users: usersByLogin, countTotal: countTotal, countNew: countNew };
+            return { tree: commentsTree, users: usersByLogin, countTotal: countTotal, countNew };
         });
 });
 
@@ -300,7 +300,7 @@ var commentsTreeBuildCanModerate = Bluebird.method(function (myId, comments, pre
     }
 
     return getUsersHashForComments(usersArr)
-        .spread(function (usersById, usersByLogin) {
+        .then(function ([usersById, usersByLogin]) {
             var c;
 
             for (var i = commentsPlain.length; i--;) {
@@ -380,7 +380,7 @@ var commentsTreeBuildDel = Bluebird.method(function (comment, childs, checkMyId)
     }
 
     return getUsersHashForComments(usersArr)
-        .spread(function (usersById, usersByLogin) {
+        .then(function ([usersById, usersByLogin]) {
             var c, i;
 
             for (i in commentsHash) {
@@ -394,7 +394,7 @@ var commentsTreeBuildDel = Bluebird.method(function (comment, childs, checkMyId)
 
 // Готовим хэш пользователей для комментариев
 function getUsersHashForComments(usersArr) {
-    return User.findAsync({ _id: { $in: usersArr } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true })
+    return User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, avatar: 1, disp: 1, ranks: 1 }, { lean: true }).exec()
         .then(function (users) {
             if (!users) {
                 throw { message: 'Users find for comments error' };
@@ -419,70 +419,53 @@ function getUsersHashForComments(usersArr) {
 
 var core = {
     // Упрощенная отдача комментариев анонимным пользователям
-    getCommentsObjAnonym: function (iAm, data) {
-        var commentModel;
-        var promise;
+    getCommentsObjAnonym: async function (iAm, data) {
+        let obj;
+        let commentModel;
 
         if (data.type === 'news') {
             commentModel = CommentN;
-            promise = News.findOneAsync({ cid: data.cid }, { _id: 1 });
+            obj = await News.findOne({ cid: data.cid }, { _id: 1 }).exec();
         } else {
             commentModel = Comment;
-            promise = photoController.findPhoto(iAm, { cid: data.cid });
+            obj = await photoController.findPhoto(iAm, { cid: data.cid });
         }
 
-        return promise
-            .bind({})
-            .then(function (obj) {
-                if (!obj) {
-                    throw { message: msg.noObject };
+        if (!obj) {
+            throw { message: msg.noObject };
+        }
+
+        const comments = await commentModel.find(
+            { obj: obj._id, del: null },
+            { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+            { lean: true, sort: { stamp: 1 } }
+        ).exec();
+
+        const usersArr = [];
+
+        if (comments.length) {
+            const usersHash = {};
+
+            for (const comment of comments) {
+                const userId = String(comment.user);
+
+                if (usersHash[userId] === undefined) {
+                    usersHash[userId] = true;
+                    usersArr.push(userId);
                 }
+            }
+        }
 
-                return commentModel.findAsync(
-                    { obj: obj._id, del: null },
-                    { _id: 0, obj: 0, hist: 0, del: 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                    { lean: true, sort: { stamp: 1 } }
-                );
-            })
-            .then(function (comments) {
-                if (!comments) {
-                    throw { message: 'Comments for anonym find error' };
-                }
-                var userId;
-                var usersArr;
-                var usersHash;
-                var i = comments.length;
+        let tree;
+        let usersById;
+        let usersByLogin;
 
-                this.comments = comments;
+        if (usersArr.length) {
+            [usersById, usersByLogin] = await getUsersHashForComments(usersArr);
+            tree = await commentsTreeBuildAnonym(comments, usersById);
+        }
 
-                if (i) {
-                    usersArr = [];
-                    usersHash = {};
-
-                    while (i--) {
-                        userId = String(comments[i].user);
-                        if (usersHash[userId] === undefined) {
-                            usersHash[userId] = true;
-                            usersArr.push(userId);
-                        }
-                    }
-                }
-
-                if (usersArr && usersArr.length) {
-                    return getUsersHashForComments(usersArr);
-                }
-
-                return [{}, {}];
-            })
-            .spread(function (usersById, usersByLogin) {
-                var len = this.comments.length;
-
-                return Bluebird.props({
-                    comments: len ? commentsTreeBuildAnonym(this.comments, usersById) : [],
-                    countTotal: len,
-                    users: usersByLogin
-                });
-            });
+        return { comments: tree || [], countTotal: comments.length, users: usersByLogin };
     },
     getCommentsObjAuth: async function (iAm, { cid, type }) {
         let obj;
@@ -529,7 +512,7 @@ var core = {
         const canReply = canModerate || permissions.canReply(type, obj, iAm);
 
         if (!comments.length) {
-            return { tree: [], users: {}, countTotal: 0, countNew: 0 };
+            return { comments: [], users: {}, countTotal: 0, countNew: 0, canModerate, canReply };
         }
 
         const { tree, users, countTotal, countNew } = await (canModerate ?
