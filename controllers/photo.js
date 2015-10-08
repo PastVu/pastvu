@@ -239,29 +239,28 @@ var settings = require('./settings.js'),
  * @param options For example, { lean: true }
  * @param populateUser Flag, that user object needed
  */
-function findPhoto(usObj, query, fieldSelect, options, populateUser) {
+async function findPhoto(usObj, query, fieldSelect, options, populateUser) {
     if (!usObj.registered) {
         query.s = status.PUBLIC; // Анонимам ищем только публичные
     }
-    var promise;
+
+    let photo = Photo.findOne(query, fieldSelect || {}, options || {});
 
     if (populateUser) {
-        promise = Photo.findOne(query, fieldSelect || {}, options || {}).populate({ path: 'user' }).execAsync();
-    } else {
-        promise = Photo.findOneAsync(query, fieldSelect || {}, options || {});
+        photo = photo.populate({ path: 'user' });
     }
 
-    return promise.then(function (photo) {
-        if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
-            throw { message: msg.noPhoto };
-        }
+    photo = await photo.exec();
 
-        if (populateUser) {
-            photo.user.settings = _.defaults(photo.user.settings || {}, settings.userSettingsDef);
-        }
+    if (!photo || !photo.user || !permissions.canSee(photo, usObj)) {
+        throw { message: msg.noPhoto };
+    }
 
-        return photo;
-    });
+    if (populateUser) {
+        photo.user.settings = _.defaults(photo.user.settings || {}, settings.userSettingsDef);
+    }
+
+    return photo;
 }
 
 var core = {
@@ -892,7 +891,7 @@ var photoEditPrefetch = Bluebird.method(function (iAm, data, can) {
         throw { message: msg.badParams };
     }
 
-    return findPhoto(iAm, { cid: cid }, null, null, true)
+    return findPhoto(iAm, { cid }, null, null, true)
         .then(function (photo) {
             if (_.isNumber(data.s) && data.s !== photo.s) {
                 throw { message: msg.anotherStatus };
@@ -1627,7 +1626,7 @@ var giveUserPhotosAround = Bluebird.method(function (iAm, data) {
         throw { message: msg.badParams };
     }
 
-    return findPhoto(iAm, { cid: cid })
+    return findPhoto(iAm, { cid })
         .then(function (photo) {
             var filter = iAm.registered && iAm.user.settings && !iAm.user.settings.r_f_photo_user_gal ? { r: 0 } : {};
             var query = buildPhotosQuery(filter, photo.user, iAm).query;
@@ -1754,7 +1753,7 @@ var giveCanPhoto = Bluebird.method(function (iAm, data) {
     }
 
     // Need to get can for anonymous too, but there is nothing to check with owner in this case, so do not populate him
-    return findPhoto(iAm, { cid: cid }, null, null, iAm.registered ? true : false)
+    return findPhoto(iAm, { cid }, null, null, iAm.registered ? true : false)
         .then(function (photo) {
             return { can: permissions.getCan(photo, iAm) };
         });
@@ -2649,7 +2648,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
     var cid = Number(data.cid);
     var showDiff = !!data.showDiff;
 
-    return findPhoto(iAm, { cid: cid }, { _id: 0 })
+    return findPhoto(iAm, { cid }, { _id: 0 })
         .bind({})
         .then(function (photo) {
             var historySelect = { _id: 0, cid: 0 };
@@ -2774,7 +2773,7 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
         throw { message: msg.noPhoto };
     }
 
-    return findPhoto(iAm, { cid: cid }, null, { lean: true }, true)
+    return findPhoto(iAm, { cid }, null, { lean: true }, true)
         .bind({})
         .then(function (photo) {
             var canDownload = permissions.getCan(photo, iAm).download;

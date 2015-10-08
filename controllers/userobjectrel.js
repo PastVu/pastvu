@@ -134,7 +134,7 @@ var setCommentView = Bluebird.method(function (objId, userId, type, stamp) {
         stamp = new Date();
     }
 
-    var query = { obj: objId, user: userId, type: type };
+    var query = { obj: objId, user: userId, type };
 
     return UserObjectRel.findOneAsync(query, { _id: 0, obj: 0, user: 0, type: 0 }, { lean: true })
         .bind({})
@@ -154,9 +154,9 @@ var setCommentView = Bluebird.method(function (objId, userId, type, stamp) {
 
             this.relBeforeUpdate = relBeforeUpdate;
 
-            return UserObjectRel.updateAsync(query, update, { upsert: true });
+            return UserObjectRel.update(query, update, { upsert: true }).exec();
         })
-        .spread(function () {
+        .then(function () {
             return this.relBeforeUpdate;
         });
 });
@@ -171,12 +171,11 @@ var onCommentAdd = Bluebird.method(function (objId, userId, type) {
     if (!type) {
         type = 'photo';
     }
-    var query = { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type: type };
+    var query = { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type };
 
-    return UserObjectRel.updateAsync(query, { $inc: { ccount_new: 1 } }, { multi: true })
-        .bind({})
-        .spread(function (count) {
-            return count;
+    return UserObjectRel.update(query, { $inc: { ccount_new: 1 } }, { multi: true }).exec()
+        .then(function (count) {
+            return count.n;
         });
 });
 
@@ -226,12 +225,12 @@ var onCommentsRemove = Bluebird.method(function (objId, comments, type) {
                         newDeltaCount = rel.ccount_new;
                     }
 
-                    result.push(UserObjectRel.updateAsync(
+                    result.push(UserObjectRel.update(
                         // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
                         // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
                         { _id: rel._id, comments: { $lte: lastCommentStamp } },
                         { $inc: { ccount_new: -newDeltaCount } }
-                    ));
+                    ).exec());
                 }
 
                 return result;
@@ -241,7 +240,7 @@ var onCommentsRemove = Bluebird.method(function (objId, comments, type) {
                 return Bluebird.all(updates)
                     .then(function (updateResults) {
                         return updateResults.reduce(function (result, updateResult) {
-                            result += updateResult[0] || 0;
+                            result += updateResult.n || 0;
                             return result;
                         }, 0);
                     });
@@ -292,12 +291,12 @@ var onCommentsRestore = Bluebird.method(function (objId, comments, type) {
                 }, 0);
 
                 if (newDeltaCount) {
-                    result.push(UserObjectRel.updateAsync(
+                    result.push(UserObjectRel.update(
                         // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
                         // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
                         { _id: rel._id, comments: { $lte: lastCommentStamp } },
                         { $inc: { ccount_new: newDeltaCount } }
-                    ));
+                    ).exec());
                 }
 
                 return result;
@@ -307,7 +306,7 @@ var onCommentsRestore = Bluebird.method(function (objId, comments, type) {
                 return Bluebird.all(updates)
                     .then(function (updateResults) {
                         return updateResults.reduce(function (result, updateResult) {
-                            result += updateResult[0] || 0;
+                            result += updateResult.n || 0;
                             return result;
                         }, 0);
                     });

@@ -42,7 +42,7 @@ var _session = require('./_session.js'),
 
     permissions = {
         canModerate: function (type, obj, usObj) {
-            return usObj.registered && (type === 'photo' && photoController.permissions.canModerate(obj, usObj) || type === 'news' && usObj.isAdmin);
+            return usObj.registered && (type === 'photo' && photoController.permissions.canModerate(obj, usObj) || type === 'news' && usObj.isAdmin) || undefined;
         },
         canEdit: function (comment, obj, usObj) {
             return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
@@ -484,76 +484,62 @@ var core = {
                 });
             });
     },
-    getCommentsObjAuth: function (iAm, data) {
-        var commentModel;
-        var promise;
+    getCommentsObjAuth: async function (iAm, { cid, type }) {
+        let obj;
+        let commentModel;
 
-        if (data.type === 'news') {
+        if (type === 'news') {
             commentModel = CommentN;
-            promise = News.findOneAsync({ cid: data.cid }, { _id: 1, nocomments: 1 });
+            obj = await News.findOneAsync({ cid }, { _id: 1, nocomments: 1 });
         } else {
             commentModel = Comment;
-            promise = photoController.findPhoto(iAm, { cid: data.cid });
+            obj = await photoController.findPhoto(iAm, { cid });
         }
 
-        return promise
-            .bind({})
-            .then(function (obj) {
-                if (!obj) {
-                    throw { message: msg.noObject };
-                }
+        if (!obj) {
+            throw { message: msg.noObject };
+        }
 
-                this.obj = obj;
+        const [comments, relBeforeUpdate] = await* [
+            // Берём все комментарии
+            commentModel.find(
+                { obj: obj._id },
+                { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
+                { lean: true, sort: { stamp: 1 } }
+            ).exec(),
+            // Берём последнее время просмотра комментариев объекта и
+            // выставляем вместо него текущее время со сбросом уведомления, если есть
+            userObjectRelController.setCommentView(obj._id, iAm.user._id, type)
+        ];
 
-                return Bluebird.join(
-                    // Берём все комментарии
-                    commentModel.findAsync(
-                        { obj: obj._id },
-                        { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
-                        { lean: true, sort: { stamp: 1 } }
-                    ),
-                    // Берём последнее время просмотра комментариев объекта и
-                    // выставляем вместо него текущее время со сбросом уведомления, если есть
-                    userObjectRelController.setCommentView(obj._id, iAm.user._id, data.type)
-                );
-            })
-            .spread(function (comments, relBeforeUpdate) {
-                var previousViewStamp;
+        let previousViewStamp;
 
-                if (relBeforeUpdate) {
-                    if (relBeforeUpdate.comments) {
-                        previousViewStamp = relBeforeUpdate.comments.getTime();
-                    }
-                    if (relBeforeUpdate.sbscr_noty) {
-                        // Если было заготовлено уведомление, просим менеджер подписок проверить есть ли уведомления по другим объектам
-                        subscrController.commentViewed(this.obj._id, iAm.user);
-                    }
-                }
+        if (relBeforeUpdate) {
+            if (relBeforeUpdate.comments) {
+                previousViewStamp = relBeforeUpdate.comments.getTime();
+            }
+            if (relBeforeUpdate.sbscr_noty) {
+                // Если было заготовлено уведомление,
+                // просим менеджер подписок проверить есть ли уведомления по другим объектам
+                subscrController.commentViewed(obj._id, iAm.user);
+            }
+        }
 
-                this.canModerate = permissions.canModerate(data.type, this.obj, iAm);
-                this.canReply = this.canModerate || permissions.canReply(data.type, this.obj, iAm);
+        const canModerate = permissions.canModerate(type, obj, iAm);
+        const canReply = canModerate || permissions.canReply(type, obj, iAm);
 
-                if (!comments.length) {
-                    return { tree: [], users: {}, countTotal: 0, countNew: 0 };
-                }
+        if (!comments.length) {
+            return { tree: [], users: {}, countTotal: 0, countNew: 0 };
+        }
 
-                if (this.canModerate) {
-                    // Если это модератор данной фотографии или администратор новости
-                    return commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp);
-                }
-                // Если это зарегистрированный пользователь
-                return commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !this.obj.nocomments);
-            })
-            .then(function (commentsTree) {
-                return ({
-                    comments: commentsTree.tree,
-                    users: commentsTree.users,
-                    countTotal: commentsTree.countTotal,
-                    countNew: commentsTree.countNew,
-                    canModerate: this.canModerate || undefined,
-                    canReply: this.canReply || undefined
-                });
-            });
+        const { tree, users, countTotal, countNew } = await (canModerate ?
+            // Если это модератор данной фотографии или администратор новости
+            commentsTreeBuildCanModerate(String(iAm.user._id), comments, previousViewStamp) :
+            // Если это зарегистрированный пользователь
+            commentsTreeBuildAuth(String(iAm.user._id), comments, previousViewStamp, !obj.nocomments)
+        );
+
+        return ({ comments: tree, users, countTotal, countNew, canModerate, canReply });
     },
     getDelTree: function (iAm, data) {
         var commentModel;
@@ -618,20 +604,19 @@ var core = {
  * @param iAm
  * @param data Объект
  */
-var getCommentsObj = Bluebird.method(function (iAm, data) {
+const getCommentsObj = async function (iAm, data) {
     if (!_.isObject(data) || !Number(data.cid)) {
         throw { message: msg.badParams };
     }
 
     data.cid = Number(data.cid);
 
-    return (iAm.registered ? core.getCommentsObjAuth(iAm, data) : core.getCommentsObjAnonym(iAm, data))
-        .then(function (result) {
-            result.cid = data.cid;
+    const result = await (iAm.registered ? core.getCommentsObjAuth(iAm, data) : core.getCommentsObjAnonym(iAm, data));
 
-            return result;
-        });
-});
+    result.cid = data.cid;
+
+    return result;
+};
 
 /**
  * Выбирает ветку удалённых комментариев начиная с запрошенного
