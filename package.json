@@ -39,7 +39,7 @@
         "lodash": "3.10.1",
         "bluebird": "2.10.2",
         "underscore.string": "3.2.2",
-        "yargs": "3.26.0",
+        "yargs": "3.27.0",
         "ms": "0.7.1",
         "moment": "2.7.0",
         "useragent": "2.1.7",

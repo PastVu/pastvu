@@ -7,7 +7,7 @@
 var babelConfig = require('../babel/server.config');
 var babelOptions = Object.assign({}, babelConfig, {
     only: [
-        /(?:app|downloader|middleware|settings|photoConverter|region|connection)\.js/,
+        /(?:app|downloader|middleware|settings|photoConverter|region|connection|_session)\.js/,
         'models/*.js'
     ]
 });

@@ -265,7 +265,7 @@ Bluebird.promisifyAll(fs);
     const _session = require('./controllers/_session');
 
     io.use(_session.handleSocket);
-    _session.loadController(app, db, io);
+    _session.loadController(app, io);
 
     await* [fillSettingsData(app, io), fillRegionData(app, io)];
 

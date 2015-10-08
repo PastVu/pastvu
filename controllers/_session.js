@@ -1,19 +1,18 @@
-'use strict';
+import ms from 'ms';
+import _ from 'lodash';
+import log4js from 'log4js';
+import Bluebird from 'bluebird';
+import Utils from '../commons/Utils';
+import getDbAsync from './connection';
+import { Session, SessionArchive } from '../models/Sessions';
+import { User } from '../models/User';
 
-var app,
-    dbNative,
-    Session,
-    SessionArchive,
-    User,
-    Utils = require('../commons/Utils.js'),
-    _ = require('lodash'),
-    Bluebird = require('bluebird'),
-    ms = require('ms'), // Tiny milisecond conversion utility
-    cookie = require('express/node_modules/cookie'),
-    logger = require('log4js').getLogger("session"),
+let dbNative;
+var cookie = require('express/node_modules/cookie'),
+    logger = log4js.getLogger('session'),
 
-    settings = require('./settings.js'),
-    regionController = require('./region.js'),
+    settings = require('./settings'),
+    regionController = require('./region'),
 
     errtypes = {
         NO_HEADERS: 'Bad request - no header or user agent',
@@ -27,11 +26,11 @@ var app,
 
     checkUserAgent = Utils.checkUserAgent({
         'IE': '>=9.0.0',
-        'Firefox': '>=6.0.0', //6-я версия - это G+
+        'Firefox': '>=6.0.0', // 6-я версия - это G+
         'Opera': '>=12.10.0',
-        'Chrome': '>=11.0.0', //11 версия - это Android 4 default browser в desktop-режиме
+        'Chrome': '>=11.0.0', // 11 версия - это Android 4 default browser в desktop-режиме
         'Android': '>=4.0.0',
-        'Safari': '>=5.1.4', //5.1.4 это Function.prototype.bind
+        'Safari': '>=5.1.4', // 5.1.4 это Function.prototype.bind
         'Mobile Safari': '>=5.1.4'
     }),
 
@@ -76,11 +75,17 @@ var app,
     createSidCookieObj = (function () {
         //Создает объект с кукой ключа сессии
         var key = 'past.sid',
-            // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
+        // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
             cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
         return function (session) {
-            return { key: key, value: session.key, path: '/', domain: global.appVar.serverAddr.domain, 'max-age': cookieMaxAge };
+            return {
+                key: key,
+                value: session.key,
+                path: '/',
+                domain: global.appVar.serverAddr.domain,
+                'max-age': cookieMaxAge
+            };
         };
     }()),
 
@@ -704,7 +709,10 @@ module.exports.handleHTTPRequest = function (req, res, next) {
         if (err) {
             if (err.type === errtypes.BAD_BROWSER) {
                 res.statusCode = 200;
-                res.render('status/badbrowser', { agent: err.agent, title: 'Вы используете устаревшую версию браузера' });
+                res.render('status/badbrowser', {
+                    agent: err.agent,
+                    title: 'Вы используете устаревшую версию браузера'
+                });
             } else if (err.type === errtypes.NO_HEADERS) {
                 res.statusCode = 400;
                 res.end(err.type);
@@ -861,7 +869,7 @@ module.exports.saveEmitUser = saveEmitUser;
 module.exports.isOnline = isOnline;
 module.exports.getOnline = getOnline;
 
-//Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
+// Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
 module.exports.usLogin = usLogin;
 module.exports.usId = usId;
 module.exports.usSid = usSid;
@@ -873,20 +881,16 @@ module.exports.regetUsers = regetUsers;
 module.exports.getPlainUser = getPlainUser;
 module.exports.checkUserAgent = checkUserAgent;
 
-module.exports.loadController = function (a, db, io) {
-    app = a;
-    dbNative = db.db;
-    Session = db.model('Session');
-    SessionArchive = db.model('SessionArchive');
-    User = db.model('User');
+module.exports.loadController = async function (a, io) {
+    dbNative = (await getDbAsync()).db;
 
     checkSessWaitingConnect();
     checkExpiredSessions();
 
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
-        socket.setMaxListeners(0); //TODO: Make only one listener with custom router
+        socket.setMaxListeners(0); // TODO: Make only one listener with custom router
 
         socket.on('giveInitData', function () {
             var usObj = hs.usObj,
