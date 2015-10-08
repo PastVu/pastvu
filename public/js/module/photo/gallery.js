@@ -36,7 +36,7 @@ define(['underscore', 'Browser', 'Utils', 'socket!', 'Params', 'knockout', 'knoc
 
 			this.scrollActive = false;
 			this.scrollHandler = function () {
-				if ($window.scrollTop() >= $(document).height() - $window.height() - 140) {
+				if ($window.scrollTop() >= $(document).height() - $window.height() - 400) {
 					this.getNextFeedPhotos();
 				}
 			}.bind(this);
