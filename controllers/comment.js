@@ -1136,7 +1136,7 @@ var removeComment = Bluebird.method(function (socket, data) {
                 delInfo.reason.desc = Utils.inputIncomingParse(data.reason.desc).result;
             }
 
-            promises.push(commentModel.updateAsync({ cid: cid }, { $set: { lastChanged: delInfo.stamp, del: delInfo } }));
+            promises.push(commentModel.updateAsync({ cid }, { $set: { lastChanged: delInfo.stamp, del: delInfo } }));
 
             if (childsCids.length) {
                 countCommentsRemoved += childsCids.length;
@@ -1338,7 +1338,7 @@ var restoreComment = Bluebird.method(function (socket, data) {
             }
 
             promises.push(
-                commentModel.updateAsync({ cid: cid }, {
+                commentModel.updateAsync({ cid }, {
                     $set: { lastChanged: stamp },
                     $unset: { del: 1 },
                     $push: { hist: { $each: hist } }
@@ -1762,8 +1762,8 @@ var setNoComments = Bluebird.method(function (iAm, data) {
  * @param hide Скрыть или наоборот
  * @param iAm Объект пользователя, считаем сколько его комментариев затронуто
  */
-function hideObjComments(oid, hide, iAm) {
-    var command = {};
+async function hideObjComments(oid, hide, iAm) {
+    const command = {};
 
     if (hide) {
         command.$set = { hidden: true };
@@ -1771,42 +1771,36 @@ function hideObjComments(oid, hide, iAm) {
         command.$unset = { hidden: 1 };
     }
 
-    return Comment.updateAsync({ obj: oid }, command, { multi: true })
-        .spread(function (count) {
-            if (count === 0) {
-                return { myCount: 0 };
-            }
+    const { n: count } = await Comment.updateAsync({ obj: oid }, command, { multi: true });
 
-            return Comment.collection.findAsync({ obj: oid }, {}, { lean: true })
-                .then(function (comments) {
-                    var i,
-                        len = comments.length,
-                        cdelta,
-                        userObj,
-                        comment,
-                        hashUsers = {};
+    if (count === 0) {
+        return { myCount: 0 };
+    }
 
-                    for (i = 0; i < len; i++) {
-                        comment = comments[i];
-                        if (comment.del === undefined) {
-                            hashUsers[comment.user] = (hashUsers[comment.user] || 0) + 1;
-                        }
-                    }
-                    for (i in hashUsers) {
-                        if (hashUsers[i] !== undefined) {
-                            cdelta = hide ? -hashUsers[i] : hashUsers[i];
-                            userObj = _session.getOnline(null, i);
-                            if (userObj !== undefined) {
-                                userObj.user.ccount = userObj.user.ccount + cdelta;
-                                _session.saveEmitUser(userObj);
-                            } else {
-                                User.update({ _id: i }, { $inc: { ccount: cdelta } }).exec();
-                            }
-                        }
-                    }
-                    return { myCount: hashUsers[iAm.user._id] || 0 };
-                });
-        });
+    const comments = await Comment.findAsync({ obj: oid }, {}, { lean: true });
+
+    const hashUsers = _.transform(comments, (result, comment) => {
+        if (comment.del === undefined) {
+            result[comment.user] = (result[comment.user] || 0) + 1;
+        }
+    }, {});
+
+    _.forOwn(hashUsers, (cdelta, userId) => {
+        if (hide) {
+            cdelta = -cdelta;
+        }
+
+        const userObj = _session.getOnline(null, userId);
+
+        if (userObj !== undefined) {
+            userObj.user.ccount = userObj.user.ccount + cdelta;
+            _session.saveEmitUser(userObj);
+        } else {
+            User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
+        }
+    });
+
+    return { myCount: hashUsers[iAm.user._id] || 0 };
 }
 
 module.exports.loadController = function (app, db, io) {

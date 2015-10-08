@@ -67,7 +67,6 @@ var recalcAllClusters = Bluebird.method(function (iAm, data) {
     //db.db.dropCollection(collectionName);
 });
 
-
 var clusterRecalcByPhoto = Bluebird.method(function (g, zParam, geoPhotos, yearPhotos, cb) {
     var $update = { $set: {} };
 
@@ -152,9 +151,9 @@ var clusterRecalcByPhoto = Bluebird.method(function (g, zParam, geoPhotos, yearP
             )
                 .then(function (photo) {
                     $update.$set.p = photo;
-                    return Cluster.updateAsync({ g: g, z: zParam.z }, $update, { multi: false, upsert: true });
+                    return Cluster.updateAsync({ g, z: zParam.z }, $update, { multi: false, upsert: true });
                 })
-                .spread(function (count) {
+                .then(function ({ n: count }) {
                     return count;
                 });
         })

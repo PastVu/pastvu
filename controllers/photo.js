@@ -951,22 +951,16 @@ var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
     }
 };
 
-var changePublicPhotoExternality = Bluebird.method(function (photo, iAm, makePublic) {
-    var promises = {};
-
-    //Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
-    promises.hideComments = commentController.hideObjComments(photo._id, !makePublic, iAm);
-
-    // Пересчитываем кол-во фото у владельца
-    promises.pcount = userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1);
-
-    //Если у фото есть координаты, значит надо провести действие с картой
-    if (Utils.geo.check(photo.geo)) {
-        promises.mapOperaton = makePublic ? photoToMap(photo) : photoFromMap(photo);
-    }
-
-    return Bluebird.props(promises);
-});
+const changePublicPhotoExternality = async function (photo, iAm, makePublic) {
+    await* [
+        // Скрываем или показываем комментарии и пересчитываем их публичное кол-во у пользователей
+        commentController.hideObjComments(photo._id, !makePublic, iAm),
+        // Пересчитываем кол-во фото у владельца
+        userPCountUpdate(photo.user, 0, makePublic ? 1 : -1, makePublic ? -1 : 1),
+        // Если у фото есть координаты, значит надо провести действие с картой
+        Utils.geo.check(photo.geo) ? (makePublic ? photoToMap(photo) : photoFromMap(photo)) : null
+    ];
+};
 
 /**
  * Отзыв собственной фотографии
@@ -1218,10 +1212,10 @@ var activateDeactivate = function (socket, data) {
             savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, disable && data.reason);
 
             // Заново выбираем данные для отображения
-            return core.givePhoto(iAm, { cid: photoSaved.cid, rel: rel });
+            return core.givePhoto(iAm, { cid: photoSaved.cid, rel });
         })
         .spread(function (photo, can) {
-            return { photo: photo, can: can };
+            return { photo, can };
         })
         .catch(function (err) {
             if (err.changed === true) {
@@ -2113,7 +2107,7 @@ var savePhoto = function (iAm, data) {
             return core.givePhoto(iAm, { cid: this.photo.cid, rel: this.rel });
         })
         .spread(function (photo, can) {
-            return { photo: photo, can: can, reconvert: this.reconvert };
+            return { photo, can, reconvert: this.reconvert };
         })
         .catch(function (err) {
             if (err.changed === true) {
@@ -2633,7 +2627,7 @@ var planResetDisplayStat = (function () {
             if (err) {
                 return logger.error(err);
             }
-            logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s photos', count);
+            logger.info('Reset day' + (needWeek ? ' and week ' : ' ') + 'display statistics for %s photos', count.n);
         });
     }
 

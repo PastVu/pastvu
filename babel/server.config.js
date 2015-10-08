@@ -2,6 +2,7 @@
  * Config for node
  */
 module.exports = {
+    compact: false,
     optional: [
         // 'runtime', // Don't use runtime, it's overabundant in case of Node 4 and bluebirdCoroutines
         // 'asyncToGenerator', // Use bluebirdCoroutines on server because we have blubird on server, not client

@@ -402,8 +402,8 @@ function calcRegionIncludes(cidOrRegion, cb) {
                 if (err) {
                     return cb(err);
                 }
-                resultStat.photosCountBeforeGeo = photosCountBefore || 0;
-                resultStat.commentsCountBefore = commentsCountBefore || 0;
+                resultStat.photosCountBeforeGeo = photosCountBefore.n || 0;
+                resultStat.commentsCountBefore = commentsCountBefore.n || 0;
 
                 //Теперь присваиваем этот регион всем, входящим в его полигон
                 setObject = { $set: {} };
@@ -416,8 +416,8 @@ function calcRegionIncludes(cidOrRegion, cb) {
                 if (err) {
                     return cb(err);
                 }
-                resultStat.photosCountAfterGeo = photosCountAfter || 0;
-                resultStat.commentsCountAfter = commentsCountAfter || 0;
+                resultStat.photosCountAfterGeo = photosCountAfter.n || 0;
+                resultStat.commentsCountAfter = commentsCountAfter.n || 0;
                 cb(null, resultStat);
             }
         );
@@ -843,7 +843,7 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
                 if (err) {
                     return cb(err);
                 }
-                cb(null, { affectedUsers: affectedUsers || 0, affectedMods: affectedMods || 0 });
+                cb(null, { affectedUsers: affectedUsers.n || 0, affectedMods: affectedMods.n || 0 });
             }
         );
     }
@@ -926,7 +926,7 @@ async function saveRegion(iAm, data) {
 
     if (!data.cid) {
         // Create new region object
-        const count = await Counter.incrementAsync('region');
+        const count = await Counter.increment('region');
 
         if (!count) {
             throw ({ message: 'Increment comment counter error' });
@@ -1162,6 +1162,9 @@ function removeRegion(iAm, data, cb) {
                 removeRegionsFromMods({ mod_regions: { $in: removingRegionsIds } }, removingRegionsIds, this.parallel());
             },
             function (err, homeAffectedUsers, affectedUsers, modsResult) {
+                homeAffectedUsers = homeAffectedUsers.n;
+                affectedUsers = affectedUsers.n;
+
                 if (err) {
                     return cb({ message: err.message, error: true });
                 }
@@ -1192,6 +1195,9 @@ function removeRegion(iAm, data, cb) {
                 regionToRemove.remove(this.parallel()); //Удаляем сам регион
             },
             function (err, affectedPhotos, affectedComments) {
+                affectedPhotos = affectedPhotos.n;
+                affectedComments = affectedComments.n;
+
                 if (err) {
                     return cb({ message: err.message, error: true });
                 }
@@ -1228,6 +1234,8 @@ function removeRegionsFromMods(usersQuery, regionsIds, cb) {
         if (modUsersCids.length) {
             //Удаляем регионы у найденных модераторов, в которых они есть
             User.update({ cid: { $in: modUsersCids } }, { $pull: { mod_regions: { $in: regionsIds } } }, { multi: true }, function (err, affectedMods) {
+                affectedMods = affectedMods.n;
+
                 if (err) {
                     return cb(err);
                 }
@@ -1243,7 +1251,7 @@ function removeRegionsFromMods(usersQuery, regionsIds, cb) {
                     if (err) {
                         return cb(err);
                     }
-                    resultData.affectedModsLose = affectedModsLose || 0;
+                    resultData.affectedModsLose = affectedModsLose.n || 0;
                     cb(null, resultData);
                 });
             });
@@ -1541,7 +1549,6 @@ function clearObjRegions(obj) {
     }
 }
 
-
 /**
  * Сохраняет массив _id регионов в указанное поле юзера
  */
@@ -1593,7 +1600,7 @@ var setUserRegions = Bluebird.method(function (login, regionsCids, field, cb) {
                 $update.$unset[field] = 1;
             }
 
-            return User.updateAsync({ login: login }, $update);
+            return User.updateAsync({ login }, $update);
         })
         .nodeify(cb);
 });
