@@ -1,120 +1,87 @@
-'use strict';
-
-var _session = require('./_session.js'),
-    User,
-    Photo,
-    Region,
-    Comment,
-    Counter,
-    dbNative,
-    dbEval,
-    _ = require('lodash'),
-    step = require('step'),
-    Bluebird = require('bluebird'),
-    Utils = require('../commons/Utils.js'),
-    msg = {
-        badParams: 'Bad params',
-        deny: 'You do not have permission for this action',
-        nouser: 'Requested user does not exist',
-        noregion: 'Requested region does not exist'
-    },
-    async = require('async'),
-    logger = require('log4js').getLogger("region.js"),
-    loggerApp = require('log4js').getLogger("app.js"),
-
-    DEFAULT_REGION,
-
-    constants = require('./constants.js'),
-    maxRegionLevel = constants.region.maxLevel,
-    regionsAllSelectHash = Object.create(null),
-
-    regionCacheHash = {}, // Хэш-кэш регионов из базы 'cid': {_id, cid, parents}
-    regionCacheArr = [], // Массив-кэш регионов из базы [{_id, cid, parents}]
-
-    nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' },
-    i;
-
+import _ from 'lodash';
+import step from 'step';
+import async from 'async';
+import log4js from 'log4js';
+import Bluebird from 'bluebird';
+import Utils from '../commons/Utils';
 import getDbAsync from './connection';
+import constants from './constants.js';
+import * as _session from './_session.js';
 import { User } from '../models/User';
 import { Photo } from '../models/Photo';
 import { Region } from '../models/Region';
 import { Comment } from '../models/Comment';
 import { Counter } from '../models/Counter';
 
-for (i = 0; i <= maxRegionLevel; i++) {
+export let DEFAULT_REGION = null;
+export const regionsAllSelectHash = Object.create(null);
+
+const logger = log4js.getLogger('region.js');
+const loggerApp = log4js.getLogger('app.js');
+const maxRegionLevel = constants.region.maxLevel;
+const nogeoRegion = { cid: 0, title_en: 'Where is it?', title_local: 'Где это?' };
+const msg = {
+    badParams: 'Bad params',
+    deny: 'You do not have permission for this action',
+    nouser: 'Requested user does not exist',
+    noregion: 'Requested region does not exist'
+};
+
+let dbEval;
+let dbNative;
+let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
+let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
+
+for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
 
 // Заполняем кэш (массив и хэш) регионов в память
-function fillCache(cb) {
-    return Region.findAsync(
-        {},
-        { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
-        { lean: true, sort: { cid: 1 } }
-    )
-        .then(function (regions) {
-            const hash = {};
-            let i = regions.length;
+async function fillCache() {
+    try {
+        regionCacheArr = await Region.find(
+            {},
+            { _id: 1, cid: 1, parents: 1, title_en: 1, title_local: 1 },
+            { lean: true, sort: { cid: 1 } }
+        ).exec();
 
-            while (i--) {
-                hash[regions[i].cid] = regions[i];
-            }
-            hash['0'] = nogeoRegion; // Нулевой регион обозначает отсутствие координат
-
-            regionCacheHash = hash;
-            regionCacheArr = regions;
-
-            module.exports.DEFAULT_REGION = DEFAULT_REGION = regions[0];
-            logger.info('Region cache filled with ' + regions.length);
-            loggerApp.info('Region cache filled with ' + regions.length);
-        })
-        .catch(function (err) {
-            err.message = `FillCache: ${err.message}`;
-            throw err;
-        })
-        .nodeify(cb);
-}
-
-function getRegionFromCache(cid) {
-    return regionCacheHash[cid];
-}
-function getRegionsArrFromCache(cids) {
-    var result = [];
-    var region;
-
-    for (var i = cids.length; i--;) {
-        region = regionCacheHash[cids[i]];
-        if (region !== undefined) {
-            result.unshift(region);
-        }
-    }
-
-    return result;
-}
-
-function getRegionsHashFromCache(cids) {
-    var result = {};
-    var region;
-
-    for (var i = cids.length; i--;) {
-        region = regionCacheHash[cids[i]];
-        if (region !== undefined) {
+        regionCacheHash = _.transform(regionCacheArr, (result, region) => {
             result[region.cid] = region;
-        }
-    }
+        }, { '0': nogeoRegion }); // Zero region means absence of coordinates
 
-    return result;
+        DEFAULT_REGION = regionCacheArr[0];
+        logger.info('Region cache filled with ' + regionCacheArr.length);
+        loggerApp.info('Region cache filled with ' + regionCacheArr.length);
+    } catch (err) {
+        err.message = `FillCache: ${err.message}`;
+        throw err;
+    }
 }
-function getRegionsArrFromHash(hash, cids) {
-    var result = [],
-        i;
+
+export const getRegionFromCache = cid => regionCacheHash[cid];
+export const getRegionsArrFromCache = cids => _.transform(cids, (result, cid) => {
+    const region = regionCacheHash[cid];
+
+    if (region !== undefined) {
+        result.push(region);
+    }
+});
+export const getRegionsHashFromCache = cids => _.transform(cids, (result, cid) => {
+    const region = regionCacheHash[cid];
+
+    if (region !== undefined) {
+        result[region.cid] = region;
+    }
+}, {});
+export const getRegionsArrFromHash = (hash, cids) => {
+    const result = [];
 
     if (cids) {
-        for (i = 0; i < cids.length; i++) {
+        for (let i = 0; i < cids.length; i++) {
             result.push(hash[cids[i]]);
         }
     } else {
-        for (i in hash) {
+        for (const i in hash) {
             if (hash[i] !== undefined) {
                 result.push(hash[i]);
             }
@@ -122,80 +89,72 @@ function getRegionsArrFromHash(hash, cids) {
     }
 
     return result;
-}
-function fillRegionsHash(hash, fileds) {
-    var i;
+};
+export const fillRegionsHash = (hash, fileds) => {
     if (fileds) {
-        var j, len = fileds.length, region;
-        for (i in hash) {
-            region = regionCacheHash[i];
+        for (const i in hash) {
+            const region = regionCacheHash[i];
+
             hash[i] = {};
-            for (j = 0; j < len; j++) {
-                hash[i][fileds[j]] = region[fileds[j]];
+
+            for (const field of fileds) {
+                hash[i][field] = region[field];
             }
         }
     } else {
-        for (i in hash) {
+        for (const i in hash) {
             hash[i] = regionCacheHash[i];
         }
     }
-    return hash;
-}
 
+    return hash;
+};
 
 /**
- * Возвращает список регионов по массиву cid в том же порядке, что и переданный массив
- * @param cidArr Массив номеров регионов
+ * Returns regions array in the same order as received array of cids
+ * @param cidArr Regions cid array
  * @param [fields]
  */
-var getOrderedRegionList = (function () {
-    var defFields = { _id: 0, geo: 0, __v: 0 };
+async function getOrderedRegionList(cidArr = [], fields = { _id: 0, geo: 0, __v: 0 }) {
+    const regions = await Region.find({ cid: { $in: cidArr } }, fields, { lean: true }).exec();
 
-    return Bluebird.method(function (cidArr, fields) {
-        if (_.isEmpty(cidArr)) {
-            return [];
+    if (cidArr.length !== regions.length) {
+        return [];
+    }
+
+    // $in doesn't guarantee sort as incoming array, so make manual resort
+
+    const parentsSortedArr = [];
+
+    for (const cid of cidArr) {
+        for (const region of regions) {
+            if (region.cid === cid) {
+                parentsSortedArr.push(region);
+                break;
+            }
         }
+    }
 
-        return Region.findAsync({ cid: { $in: cidArr } }, fields || defFields, { lean: true })
-            .then(function (regions) {
-                var parentsSortedArr = [];
-                var parent;
-                var i = cidArr.length;
-                var parentfind = function (parent) {
-                    return parent.cid === cidArr[i];
-                };
-
-                if (cidArr.length === regions.length) {
-                    // $in не гарантирует такой же сортировки результата как искомого массива, поэтому приводим к сортировке искомого
-                    while (i--) {
-                        parent = _.find(regions, parentfind);
-                        if (parent) {
-                            parentsSortedArr.unshift(parent);
-                        }
-                    }
-                }
-                return parentsSortedArr;
-            });
-    });
-}());
+    return parentsSortedArr;
+};
 
 /**
  * Возвращает массив cid регионов объекта
  * @param obj Объект (фото, комментарий и т.д.)
  */
-function getObjRegionCids(obj) {
-    var result = [];
-    var rcid;
+export const getObjRegionCids = obj => {
+    const result = [];
 
-    for (i = 0; i <= maxRegionLevel; i++) {
-        rcid = obj['r' + i];
+    for (let i = 0; i <= maxRegionLevel; i++) {
+        const rcid = obj['r' + i];
+
         if (rcid) {
             result.push(rcid);
         }
     }
 
     return result;
-}
+};
 
 /**
  * Возвращает спопулированный массив регионов для заданного объекта
@@ -1097,170 +1056,126 @@ async function saveRegion(iAm, data) {
 }
 
 /**
- * Удаление региона администратором
- * Параметр reassignChilds зарезервирован - перемещение дочерних регионов в другой при удалении
+ * Region removal by administrator
+ * Parameter 'reassignChilds' is reserved for moving child regions of removed under another region
  * @param iAm
  * @param data
- * @param cb
- * @returns {*}
  */
-function removeRegion(iAm, data, cb) {
+async function removeRegion(iAm, data) {
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
     }
 
     if (!_.isObject(data) || !data.cid) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.badParams };
     }
 
-    Region.findOne({ cid: data.cid }, function (err, regionToRemove) {
-        if (err) {
-            return cb({ message: err.message, error: true });
+    const regionToRemove = await Region.findOne({ cid: data.cid }).exec();
+
+    if (!regionToRemove) {
+        throw { message: 'Deleting region does not exists'};
+    }
+
+    // if (data.reassignChilds && !regionToReassignChilds) {
+    //  throw { message: 'Region for reassign descendants does not exists'};
+    // }
+
+    const removingLevel = regionToRemove.parents.length;
+
+    const [childRegions, parentRegion] = await* [
+        // Find all child regions
+        Region.find({ parents: regionToRemove.cid }, { _id: 1 }, { lean: true }).exec(),
+        // Find parent region for replacing with it user's home region (for those who have removing region as home),
+        // If region has no parent (we removing whole country) - select any another country
+        Region.findOne(
+            removingLevel ?
+            { cid: regionToRemove.parents[regionToRemove.parents.length - 1] } :
+            { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } },
+            { _id: 1, cid: 1, title_en: 1 }, { lean: true }
+        ).exec()
+    ];
+
+    if (_.isEmpty(parentRegion)) {
+        throw { message: `Can't find parent`};
+    }
+
+    // _ids of all removing regoions
+    const removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
+    removingRegionsIds.push(regionToRemove._id);
+
+    // Replace home regions
+    const { n: homeAffectedUsers = 0 } = await User.update(
+        { regionHome: { $in: removingRegionsIds } }, { $set: { regionHome: parentRegion._id } }, { multi: true }
+    ).exec();
+
+    // Unsubscribe all users from removing regions ('my regions')
+    const { n: affectedUsers = 0 } = await User.update(
+        { regions: { $in: removingRegionsIds } }, { $pull: { regions: { $in: removingRegionsIds } } }, { multi: true }
+    ).exec();
+
+    // Remove removing regions from moderated by users
+    const modsResult = await removeRegionsFromMods({ mod_regions: { $in: removingRegionsIds } }, removingRegionsIds);
+
+    const objectsMatchQuery = { ['r' + removingLevel]: regionToRemove.cid };
+    const objectsUpdateQuery = { $unset: {} };
+
+    if (removingLevel === 0) {
+        // If we remove country, assign all its photos to Open sea
+        objectsUpdateQuery.$set = { r0: 1000000 };
+        for (let i = 1; i <= maxRegionLevel; i++) {
+            objectsUpdateQuery.$unset['r' + i] = 1;
         }
-        if (!regionToRemove) {
-            return cb({ message: 'Deleting region does not exists', error: true });
+    } else {
+        for (let i = removingLevel; i <= maxRegionLevel; i++) {
+            objectsUpdateQuery.$unset['r' + i] = 1;
         }
-//		if (data.reassignChilds && !regionToReassignChilds) {
-//			return cb({message: 'Region for reassign descendants does not exists', error: true});
-//		}
+    }
 
-        var removingLevel = regionToRemove.parents.length,
-            removingRegionsIds, //Номера всех удаляемых регионов
-            resultData = {};
+    const [affectedPhotos = 0, affectedComments = 0] = await* [
+        // Update included photos
+        Photo.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
+        // Update comments of included photos
+        Comment.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }).exec(),
+        // Remove child regions
+        Region.remove({ parents: regionToRemove.cid }).exec(),
+        // Remove this regions
+        regionToRemove.remove().exec()
+    ];
 
-        step(
-            function () {
-                var parentQuery;
+    await fillCache(); // Refresh regions cache
 
-                //Находим все дочерние регионы
-                Region.find({ parents: regionToRemove.cid }, { _id: 1 }, { lean: true }, this.parallel());
+    // If some users affected with region removal, reget all online users (because we don't know concrete of them)
+    if (homeAffectedUsers || affectedUsers || modsResult.affectedMods) {
+        _session.regetUsers('all', true);
+    };
 
-                //Находим родительский регион для замены домашнего региона пользователей, если он попадает в удаляемый
-                //Если родительского нет (удаляем страну) - берем любую другую страну
-                if (removingLevel) {
-                    parentQuery = { cid: regionToRemove.parents[regionToRemove.parents.length - 1] };
-                } else {
-                    parentQuery = { cid: { $ne: regionToRemove.cid }, parents: { $size: 0 } };
-                }
-                Region.findOne(parentQuery, { _id: 1, cid: 1, title_en: 1 }, { lean: true }, this.parallel());
-            },
-            function (err, childRegions, parentRegion) {
-                if (err || !parentRegion) {
-                    return cb({ message: err && err.message || "Can't find parent", error: true });
-                }
-                removingRegionsIds = childRegions ? _.pluck(childRegions, '_id') : [];
-                removingRegionsIds.push(regionToRemove._id);
-
-                //Заменяем домашние регионы
-                User.update({ regionHome: { $in: removingRegionsIds } }, { $set: { regionHome: parentRegion._id } }, { multi: true }, this.parallel());
-                resultData.homeReplacedWith = parentRegion;
-
-                //Отписываем ("мои регионы") всех пользователей от удаляемых регионов
-                User.update({ regions: { $in: removingRegionsIds } }, { $pull: { regions: { $in: removingRegionsIds } } }, { multi: true }, this.parallel());
-
-                //Удаляем регионы из модерируемых пользователями
-                removeRegionsFromMods({ mod_regions: { $in: removingRegionsIds } }, removingRegionsIds, this.parallel());
-            },
-            function (err, homeAffectedUsers, affectedUsers, modsResult) {
-                homeAffectedUsers = homeAffectedUsers.n;
-                affectedUsers = affectedUsers.n;
-
-                if (err) {
-                    return cb({ message: err.message, error: true });
-                }
-                resultData.homeAffectedUsers = homeAffectedUsers;
-                resultData.affectedUsers = affectedUsers;
-                _.assign(resultData, modsResult);
-
-                var objectsMatchQuery = {},
-                    objectsUpdateQuery = { $unset: {} },
-                    i;
-
-                objectsMatchQuery['r' + removingLevel] = regionToRemove.cid;
-                if (removingLevel === 0) {
-                    //Если удаляем страну, то присваивам все её объекты Открытому морю
-                    objectsUpdateQuery.$set = { r0: 1000000 };
-                    for (i = 1; i <= maxRegionLevel; i++) {
-                        objectsUpdateQuery.$unset['r' + i] = 1;
-                    }
-                } else {
-                    for (i = removingLevel; i <= maxRegionLevel; i++) {
-                        objectsUpdateQuery.$unset['r' + i] = 1;
-                    }
-                }
-
-                Photo.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }, this.parallel()); //Обновляем входящие фотографии
-                Comment.update(objectsMatchQuery, objectsUpdateQuery, { multi: true }, this.parallel()); //Обновляем входящие комментарии фотографий
-                Region.remove({ parents: regionToRemove.cid }, this.parallel()); //Удаляем дочерние регионы
-                regionToRemove.remove(this.parallel()); //Удаляем сам регион
-            },
-            function (err, affectedPhotos, affectedComments) {
-                affectedPhotos = affectedPhotos.n;
-                affectedComments = affectedComments.n;
-
-                if (err) {
-                    return cb({ message: err.message, error: true });
-                }
-                resultData.affectedPhotos = affectedPhotos || 0;
-                resultData.affectedComments = affectedComments || 0;
-                fillCache(this); // Обновляем кэш регионов
-            },
-            function (err) {
-                if (err) {
-                    return cb({ message: err.message, error: true });
-                }
-                resultData.removed = true;
-
-                //Если задеты какие-то пользователи, обновляем всех онлайн-пользователей, т.к. конкретных мы не знаем
-                if (resultData.homeAffectedUsers || resultData.affectedUsers || resultData.affectedMods) {
-                    _session.regetUsers('all', true);
-                }
-                cb(resultData);
-            }
-        );
-    });
+    return { removed: true, homeAffectedUsers, affectedUsers, affectedPhotos, affectedComments, ...modsResult };
 }
 
+async function removeRegionsFromMods(usersQuery, regionsIds) {
+    // Find all moderators of removing regions
+    const modUsers = await User.find(usersQuery, { cid: 1 }, { lean: true }).exec();
+    const modUsersCids = _.isEmpty(modUsers) ? [] : _.pluck(modUsers, 'cid');
 
-function removeRegionsFromMods(usersQuery, regionsIds, cb) {
-    //Находим всех модераторов удаляемых регионов
-    User.find(usersQuery, { cid: 1 }, { lean: true }, function (err, modUsers) {
-        if (err) {
-            return cb(err);
-        }
-        var modUsersCids = modUsers ? _.pluck(modUsers, 'cid') : [],
-            resultData = {};
+    if (modUsersCids.length) {
+        // Remove regions from finded moderators
+        const { n: affectedMods = 0 } = await User.update(
+            { cid: { $in: modUsersCids } },
+            { $pull: { mod_regions: { $in: regionsIds } } },
+            { multi: true }
+        ).exec();
 
-        if (modUsersCids.length) {
-            //Удаляем регионы у найденных модераторов, в которых они есть
-            User.update({ cid: { $in: modUsersCids } }, { $pull: { mod_regions: { $in: regionsIds } } }, { multi: true }, function (err, affectedMods) {
-                affectedMods = affectedMods.n;
+        // Revoke moderation role from users, in whose no moderation regions left after regions removal
+        const { n: affectedModsLose = 0 } = await User.update(
+            { cid: { $in: modUsersCids }, mod_regions: { $size: 0 } },
+            { $unset: { role: 1, mod_regions: 1 } },
+            { multi: true }
+        ).exec();
 
-                if (err) {
-                    return cb(err);
-                }
-                resultData.affectedMods = affectedMods || 0;
+        return { affectedMods, affectedModsLose };
+    }
 
-                //Лишаем звания модератора тех модераторов, у которых после удаления регионов, не осталось модерируемых регионов
-                User.update({ cid: { $in: modUsersCids }, mod_regions: { $size: 0 } }, {
-                    $unset: {
-                        role: 1,
-                        mod_regions: 1
-                    }
-                }, { multi: true }, function (err, affectedModsLose) {
-                    if (err) {
-                        return cb(err);
-                    }
-                    resultData.affectedModsLose = affectedModsLose.n || 0;
-                    cb(null, resultData);
-                });
-            });
-        } else {
-            resultData.affectedMods = 0;
-            resultData.affectedModsLose = 0;
-            cb(null, resultData);
-        }
-    });
+    return { affectedMods: 0, affectedModsLose: 0 };
 }
 
 function getRegion(iAm, data, cb) {
@@ -1800,9 +1715,13 @@ export async function fillData(app, io) {
                 });
         });
         socket.on('removeRegion', function (data) {
-            removeRegion(hs.usObj, data, function (resultData) {
-                socket.emit('removeRegionResult', resultData);
-            });
+            removeRegion(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('removeRegionResult', resultData);
+                });
         });
         socket.on('giveRegion', function (data) {
             getRegion(hs.usObj, data, function (resultData) {
@@ -1870,19 +1789,11 @@ export async function fillData(app, io) {
     });
 };
 
-module.exports.getRegionFromCache = getRegionFromCache;
-module.exports.getRegionsArrFromCache = getRegionsArrFromCache;
-module.exports.getRegionsHashFromCache = getRegionsHashFromCache;
-module.exports.fillRegionsHash = fillRegionsHash;
-module.exports.getRegionsArrFromHash = getRegionsArrFromHash;
-
-module.exports.regionsAllSelectHash = regionsAllSelectHash;
 module.exports.getShortRegionsParams = getShortRegionsParams;
 module.exports.genObjsShortRegionsArr = genObjsShortRegionsArr;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 
-module.exports.getObjRegionCids = getObjRegionCids;
 module.exports.getObjRegionList = getObjRegionList;
 module.exports.setObjRegionsByGeo = setObjRegionsByGeo;
 module.exports.setObjRegionsByRegionCid = setObjRegionsByRegionCid;
