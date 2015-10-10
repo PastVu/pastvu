@@ -1,4 +1,4 @@
-'use strict';
+import * as regionController from './region.js';
 
 var _session = require('./_session.js'),
     Settings,
@@ -32,7 +32,6 @@ var _session = require('./_session.js'),
     },
 
     actionLogController = require('./actionlog.js'),
-    regionController = require('./region.js'),
     photoController = require('./photo.js'),
     subscrController = require('./subscr.js'),
     reasonController = require('./reason.js'),
@@ -567,7 +566,7 @@ var core = {
                     )
                 );
             })
-            .spread(function (obj, childs) {
+            .then(function ([obj, childs]) {
                 if (!obj) {
                     throw { message: msg.noObject };
                 }
@@ -715,7 +714,7 @@ var getComments = (function () {
     return Bluebird.method(function (iAm, query, data) {
         var skip = Math.abs(Number(data.skip)) || 0;
         var limit = Math.min(data.limit || 30, 100);
-        var options = { lean: true, limit: limit, sort: { stamp: -1 } };
+        var options = { lean: true, limit, sort: { stamp: -1 } };
         var commentsArr;
         var photosHash = {};
         var usersHash = {};
@@ -765,8 +764,8 @@ var getComments = (function () {
                     )
                 );
             })
-            .spread(function (photos, users) {
-                var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls);
+            .then(function ([photos, users]) {
+                var shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls || undefined);
                 var photoFormattedHash = {};
                 var userFormattedHash = {};
                 var photoFormatted;
@@ -820,7 +819,7 @@ var getCommentsFeed = (function () {
     var globalOptions = { limit: 30 };
     var globalQuery = { del: null, hidden: null };
     var globalFeed = Utils.memoizePromise(function () {
-        return getComments(null, globalQuery, globalOptions);
+        return getComments(undefined, globalQuery, globalOptions);
     }, ms('10s'));
 
     return function (iAm) {
@@ -877,7 +876,7 @@ var createComment = Bluebird.method(function (socket, data) {
 
     return Bluebird.all(promises)
         .bind({})
-        .spread(function counterUp(obj, parent) {
+        .then(function counterUp([obj, parent]) {
             if (!obj) {
                 throw { message: msg.noObject };
             }
@@ -1448,7 +1447,7 @@ var updateComment = Bluebird.method(function (socket, data) {
     }
 
     return promise
-        .spread(function (obj, comment) {
+        .then(function ([obj, comment]) {
             if (!comment || !obj || data.obj !== obj.cid) {
                 throw { message: msg.noCommentExists };
             }
@@ -1543,7 +1542,7 @@ var updateComment = Bluebird.method(function (socket, data) {
                 }
 
                 return Bluebird.all(promises)
-                    .spread(function (commentResult, objResult) {
+                    .then(function ([commentResult, objResult]) {
                         return commentResult[0];
                     });
             }
@@ -1713,7 +1712,7 @@ var setNoComments = Bluebird.method(function (iAm, data) {
 
             return obj.saveAsync();
         })
-        .spread(function (objSaved) {
+        .then(function ([objSaved]) {
             if (data.type === 'photo') {
                 // Сохраняем в истории предыдущее значение nocomments
                 // Чтобы в истории установился false вместо undefined

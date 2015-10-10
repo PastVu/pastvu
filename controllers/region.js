@@ -139,8 +139,8 @@ async function getOrderedRegionList(cidArr = [], fields = { _id: 0, geo: 0, __v:
 };
 
 /**
- * Возвращает массив cid регионов объекта
- * @param obj Объект (фото, комментарий и т.д.)
+ * Return array of cid or object regions
+ * @param obj Object (photo, comment и т.д.)
  */
 export const getObjRegionCids = obj => {
     const result = [];
@@ -157,58 +157,54 @@ export const getObjRegionCids = obj => {
 };
 
 /**
- * Возвращает спопулированный массив регионов для заданного объекта
- * @param obj Объект (фото, комментарий и т.д.)
- * @param fields Выбранные поля регионов. Массив, а в случае fromDb - объект
- * @param [fromDb] Выбирать ли из базы (не все поля есть в кеше)
+ * Return populated array of regions for transferred object
+ * @param obj Object (photo, comment etc.)
+ * @param fields Selected region fields. Array, but in case of 'fromDb' - object
+ * @param [fromDb] Select from db, not just from cache (in cahce not all fields presented)
  */
-var getObjRegionList = Bluebird.method(function (obj, fields, fromDb) {
+export function getObjRegionList(obj, fields, fromDb) {
     if (fromDb) {
         return getOrderedRegionList(getObjRegionCids(obj), fields);
     }
 
-    var cidArr = [];
-    var rcid;
+    const cidArr = [];
 
-    for (var i = 0; i <= maxRegionLevel; i++) {
-        rcid = obj['r' + i];
+    for (let i = 0; i <= maxRegionLevel; i++) {
+        const rcid = obj['r' + i];
+
         if (rcid) {
             cidArr.push(fields ? _.pick(regionCacheHash[rcid], fields) : regionCacheHash[rcid]);
         }
     }
 
     return cidArr;
-});
+};
 
-
-//Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
-//Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
-//Например, при глобальной фильтрации максимальный уровень - страна, т.к. их множество
-//При фильтрации по стране - максимальный уровень - субъект, т.к. их множество в стране, сл-но, надо отображать принадлежность к субъектам.
-//Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
-//@returns {lvls: ['rn'], sel: {rn: 1, rn+1: 1, ..., rmax: 1}}
-var getShortRegionsParams = (function () {
-    var globalFilterParams = { lvls: ['r0', 'r1'], sel: regionsAllSelectHash };
+// Выделяем максимальные уровни регионов, которые надо отображать в краткой региональной принадлежности фотографий/комментариев
+// Максимальный уровень - тот, под которым у пользователя фильтруется по умолчанию более одного региона
+// Например, при глобальной фильтрации максимальный уровень - страна, т.к. их множество
+// При фильтрации по стране - максимальный уровень - субъект, т.к. их множество в стране, сл-но, надо отображать принадлежность к субъектам.
+// Если в фильтрации несколько регионов разный стран, значит стран несколько и максимальный уровень - страна
+// @returns {lvls: ['rn'], sel: {rn: 1, rn+1: 1, ..., rmax: 1}}
+export const getShortRegionsParams = (function () {
+    const globalFilterParams = { lvls: ['r0', 'r1'], sel: regionsAllSelectHash };
 
     return function (rhash) {
-        //Если хеша нет (например, аноним) или передан пустой хеш (значит глобальный фильтр), отдаём глобальные параметры
-        if (!rhash || !Object.keys(rhash).length) {
+        // If hash not transfered (for example anonym user) or it's empty (this mean filter is global),
+        // return global parameters
+        if (_.isEmpty(rhash)) {
             return globalFilterParams;
         }
 
-        var regionLevels = new Array(maxRegionLevel + 1),
-            regionLevelHash,
-            regionParents,
-            region,
-            cid,
-            i, j,
-            result;
+        let i;
+        let result;
+        const regionLevels = new Array(maxRegionLevel + 1);
 
-        for (cid in rhash) {
-            region = rhash[cid];
-            regionParents = region.parents;
+        for (const cid in rhash) {
+            const region = rhash[cid];
+            const regionParents = region.parents;
+            let regionLevelHash = regionLevels[regionParents.length];
 
-            regionLevelHash = regionLevels[regionParents.length];
             if (regionLevelHash === undefined) {
                 regionLevelHash = regionLevels[regionParents.length] = {};
             }
@@ -222,25 +218,28 @@ var getShortRegionsParams = (function () {
                 regionLevelHash[regionParents[i]] = true;
             }
         }
-        //Максимальный уровень для отображения, это тот на котором несколько регионов либо undefined (т.е. любое кол-во регионов)
+        // Maximum level is on which several regions or undefined (ie any number of regions)
         for (i = 0; i < regionLevels.length; i++) {
             if (!regionLevels[i] || Object.keys(regionLevels[i]).length > 1) {
                 if (i === 0) {
-                    //Если это нулевой уровень (т.е. отображаем страны), то берем глобальную преднастройку
+                    // If it's zero level (ie show countries), take global params
                     result = globalFilterParams;
                 } else {
                     result = { lvls: ['r' + i], sel: Object.create(null) };
 
-                    //Начиная с этого уровня заполняем хэш выбираемых уровней регионов у объекта ({rn: 1, rn+1: 1, ..., rmax: 1}),
-                    //просто чтобы не выбирать лишние вышестоящие в каждом запросе к объекту
-                    for (j = i; j <= maxRegionLevel; j++) {
+                    // Beginning from this level, fill hash selected region's levels regions of object
+                    // ({rn: 1, rn+1: 1, ..., rmax: 1}),
+                    // just not to select superfluous highers in each request to object
+                    for (let j = i; j <= maxRegionLevel; j++) {
                         result.sel['r' + j] = 1;
                     }
                 }
                 break;
             }
         }
-        //Если в прошлом цикле не нашли уровень, значит выбран последний уровень ветки и надо отдать пустые объекты
+
+        // If in previous cycle didn't find level,
+        // means that last level of branch has selected and need to return empty objects
         if (!result) {
             result = { lvls: [], sel: Object.create(null) };
         }
@@ -249,147 +248,106 @@ var getShortRegionsParams = (function () {
     };
 }());
 
-//Бежит по массиву переданных объектов и для каждого создает массив cid регионов,
-//которые соответствуют переданным уровням для краткого отображения регионов
-//Изменяет элементы переданного массива и возвращает хеш попавших регионов
-var genObjsShortRegionsArr = (function () {
-    var defalutLevels = ['r0', 'r1'];
+// Run through array of objects and for each object create array of cids of regions,
+// which match transfered levels for shorthand regions view
+// Mutate elements of transfered array and return hash of regions
+export const genObjsShortRegionsArr = function (objs, showlvls = ['r0', 'r1'], dropRegionsFields) {
+    let shortRegionsHash = {};
+    let level;
+    let cid;
+    let j;
+    let k;
 
-    return function (objs, showlvls, dropRegionsFields) {
-        var shortRegionsHash = {},
-            i = objs.length,
-            level,
-            cid,
-            obj,
-            j, k;
+    for (const obj of objs) {
+        for (j = maxRegionLevel; j--;) {
+            level = 'r' + j;
+            cid = obj[level];
+            if (cid !== undefined) {
+                shortRegionsHash[cid] = true;
+                obj.rs = [cid];
 
-        if (!showlvls) {
-            showlvls = defalutLevels;
-        }
-
-        while (i--) {
-            obj = objs[i];
-
-            for (j = maxRegionLevel; j--;) {
-                level = 'r' + j;
-                cid = obj[level];
-                if (cid !== undefined) {
-                    shortRegionsHash[cid] = true;
-                    obj.rs = [cid];
-
-                    for (k = showlvls.length; k--;) {
-                        if (showlvls[k] !== level) {
-                            cid = obj[showlvls[k]];
-                            if (cid !== undefined) {
-                                shortRegionsHash[cid] = true;
-                                obj.rs.push(cid);
-                            }
+                for (k = showlvls.length; k--;) {
+                    if (showlvls[k] !== level) {
+                        cid = obj[showlvls[k]];
+                        if (cid !== undefined) {
+                            shortRegionsHash[cid] = true;
+                            obj.rs.push(cid);
                         }
                     }
-                    break;
                 }
-            }
-            //Если у объекта нет координаты, значит он относится к "где это?" и
-            //добавляем для информирования об этом 0 в начале краткого списка регионов
-            //Если регионов нет (без координат и регионов могут быть новые), то в списке будет только 0
-            if (!obj.geo) {
-                if (!obj.rs) {
-                    obj.rs = [0];
-                } else {
-                    obj.rs.unshift(0);
-                }
-                shortRegionsHash['0'] = true;
-            }
-            //Если передан флаг, что надо удалить поля rn, делаем это
-            if (dropRegionsFields === true) {
-                delete obj.geo;
-                for (j = 0; j <= maxRegionLevel; j++) {
-                    delete obj['r' + j];
-                }
+                break;
             }
         }
-        if (Object.keys(shortRegionsHash).length) {
-            fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
-        } else {
-            shortRegionsHash = undefined;
-        }
-        return shortRegionsHash;
-    };
-}());
 
-/**
- * Пересчет входящих объектов в переданный регион.
- * Сначала очищается текущее присвоение всех объектов данному региону, затем заново ищутся объекты, входящие в полигон региона
- * @param cidOrRegion
- * @param cb
- */
-function calcRegionIncludes(cidOrRegion, cb) {
-    if (!cb) {
-        cb = Utils.dummyFn;
+        // If object has no coordinates, this mean that it belongs to category 'where is it?'
+        // To inform about it add 0 to the beginning of array of regions
+        // If there is no regions (without regions and coordinates may be new photos), so in array will be only 0
+        if (!obj.geo) {
+            if (!obj.rs) {
+                obj.rs = [0];
+            } else {
+                obj.rs.unshift(0);
+            }
+            shortRegionsHash['0'] = true;
+        }
+
+        // If transfered flag that removal of field 'rn' is needed, do it
+        if (dropRegionsFields === true) {
+            delete obj.geo;
+            for (j = 0; j <= maxRegionLevel; j++) {
+                delete obj['r' + j];
+            }
+        }
     }
 
-    if (typeof cidOrRegion === 'number') {
-        Region.findOne({ cid: cidOrRegion }, { _id: 0, cid: 1, parents: 1, geo: 1 }, { lean: true }, doCalc);
+    if (Object.keys(shortRegionsHash).length) {
+        fillRegionsHash(shortRegionsHash, ['cid', 'title_local']);
     } else {
-        doCalc(null, cidOrRegion);
+        shortRegionsHash = undefined;
     }
 
-    function doCalc(err, region) {
-        if (err || !region) {
-            return cb({
-                message: ('Region [' + cidOrRegion + '] find for calcRegionIncludes error: ' + (err && err.message) || 'doesn\'t exists'),
-                error: true
-            });
-        }
-        var level = 'r' + region.parents.length,
-            queryObject = { geo: { $exists: true } },
-            setObject,
-            resultStat = {};
-
-        queryObject[level] = region.cid;
-        step(
-            function () {
-                //Сначала очищаем присвоение текущего региона объектам с координатой,
-                //чтобы убрать те объекты, которые больше не будут в него попадать
-                setObject = { $unset: {} };
-
-                setObject.$unset[level] = 1;
-                Photo.update(queryObject, setObject, { multi: true }, this.parallel());
-                Comment.update(queryObject, setObject, { multi: true }, this.parallel());
-            },
-            function (err, photosCountBefore, commentsCountBefore) {
-                if (err) {
-                    return cb(err);
-                }
-                resultStat.photosCountBeforeGeo = photosCountBefore.n || 0;
-                resultStat.commentsCountBefore = commentsCountBefore.n || 0;
-
-                //Теперь присваиваем этот регион всем, входящим в его полигон
-                setObject = { $set: {} };
-                setObject.$set[level] = region.cid;
-
-                Photo.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }, this.parallel());
-                Comment.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }, this.parallel());
-            },
-            function (err, photosCountAfter, commentsCountAfter) {
-                if (err) {
-                    return cb(err);
-                }
-                resultStat.photosCountAfterGeo = photosCountAfter.n || 0;
-                resultStat.commentsCountAfter = commentsCountAfter.n || 0;
-                cb(null, resultStat);
-            }
-        );
-    }
-}
-const calcRegionIncludesPromised = Bluebird.promisify(calcRegionIncludes); // TODO: hack, make async calcRegionIncludes
+    return shortRegionsHash;
+};
 
 /**
- * Пересчет входящих объектов в переданный список регионов. Если список пуст - пересчет всех регионов
- * @param iAm
- * @param cids Массив cid регионов
+ * Recalculate what objects belong to region
+ * First, clear current assignment of objects to region, then again search for objects, located within region's polygon
+ * @param cidOrRegion
  */
-var calcRegionsIncludes = Bluebird.method(function (iAm, cids) {
+async function calcRegionIncludes(cidOrRegion) {
+    const region = _.isNumber(cidOrRegion) ?
+        await Region.findOne({ cid: cidOrRegion }, { _id: 0, cid: 1, parents: 1, geo: 1 }, { lean: true }).exec() :
+        cidOrRegion;
+
+    if (!region) {
+        throw { message: `Cant find region ${cidOrRegion}] find for calcRegionIncludes` };
+    }
+
+    const level = 'r' + region.parents.length;
+
+    // First clear assignment of objects with coordinates to region
+    const unsetObject = { $unset: { [level]: 1 } };
+    const [{n: photosCountBefore = 0 }, { n: commentsCountBefore }] = await* [
+        Photo.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec(),
+        Comment.update({ geo: { $exists: true }, [level]: region.cid }, unsetObject, { multi: true }).exec()
+    ];
+
+    // Then assign to region on located in it polygon objects
+    const setObject = { $set: { [level]: region.cid } };
+    const [{ n: photosCountAfter = 0 }, { n: commentsCountAfter = 0 }] = await* [
+        Photo.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec(),
+        Comment.update({ geo: { $geoWithin: { $geometry: region.geo } } }, setObject, { multi: true }).exec()
+    ];
+
+    return { cid: region.cid, photosCountBefore, commentsCountBefore, photosCountAfter, commentsCountAfter };
+}
+
+/**
+ * Recalculate what objects belong to list of region. If list is empty - recalc all regions
+ * @param iAm
+ * @param cids Array of regions cids
+ */
+export async function calcRegionsIncludes(iAm, cids) {
     if (!iAm.isAdmin) {
         throw { message: msg.deny };
     }
@@ -397,92 +355,68 @@ var calcRegionsIncludes = Bluebird.method(function (iAm, cids) {
         throw { message: msg.badParams };
     }
 
-    if (!cids.length) {
-        //Если массив пуст - пересчитываем все фотографии
-        return dbEval('function () {regionsAssignObjects()', [], { nolock: true })
-            .then(function (ret) {
-                if (ret && ret.error) {
-                    throw { message: ret.message };
-                }
+    let result;
 
-                return ret;
-            });
+    if (_.isEmpty(cids)) {
+        // If array is empty - recalc all photos
+        result = await dbEval('function () {regionsAssignObjects()', [], { nolock: true });
+
+        if (result && result.error) {
+            throw { message: result.message };
+        }
     } else {
-        return new Promise(function (resolve, reject) {
-            //Проходим по каждому региону и пересчитываем
-            (function iterate(i) {
-                calcRegionIncludes(cids[i], function (err) {
-                    if (err) {
-                        reject({ message: err.message });
-                    }
+        // Recalc every region in loop
+        result = [];
 
-                    if (++i < cids.length) {
-                        iterate();
-                    } else {
-                        resolve({ message: 'ok' });
-                    }
-                });
-            }(0));
-        });
-    }
-});
-
-/**
- * Возвращает для региона спопулированные parents и кол-во дочерних регионов
- * @param region Объект региона
- * @param [cb]
- */
-var getChildsLenByLevel = Bluebird.method(function (region, cb) {
-    var level = region.parents && region.parents.length || 0; // Уровень региона равен кол-ву родительских
-    var childrenQuery = {};
-    var promises = [];
-
-    if (level < maxRegionLevel) {
-        // Ищем кол-во потомков по уровням
-        // У таких регионов на позиции текущего уровня будет стоять этот регион
-        // и на кажой итераци кол-во уровней будет на один больше текущего
-        // Например, потомки региона 77, имеющего одного родителя, будут найдены так:
-        // {'parents.1': 77, parents: {$size: 2}}
-        // {'parents.1': 77, parents: {$size: 3}}
-        // {'parents.1': 77, parents: {$size: 4}}
-        childrenQuery['parents.' + level] = region.cid;
-        while (level++ < maxRegionLevel) { // level инкрементируется после сравнения
-            childrenQuery.parents = { $size: level };
-            promises.push(Region.countAsync(childrenQuery));
+        for (const cid of cids) {
+            result.push(await calcRegionIncludes(cid));
         }
     }
 
-    // Если уровень максимальный - просто переходим на следующий шаг
-    return Bluebird.all(promises)
-        .then(function (childCounts) {
-            var childLenArr = [];
+    return result;
+};
 
-            for (var i = 0; i < childCounts.length; i++) {
-                if (childCounts[i]) {
-                    childLenArr.push(childCounts[i]);
-                }
-            }
+/**
+ * Returns for region it populated parents and number of children
+ * @param region Region object
+ */
+async function getChildsLenByLevel(region) {
+    let level = _.size(region.parent); // Region level equals number of parent regions
 
-            return childLenArr;
-        })
-        .nodeify(cb);
-});
+    if (level < maxRegionLevel) {
+        // Find number of children by levels
+        // Current region will be on position of current level
+        // For example, children of region 77, wich has only one parent, will be found like that:
+        // {'parents.1': 77, parents: {$size: 2}}
+        // {'parents.1': 77, parents: {$size: 3}}
+        // {'parents.1': 77, parents: {$size: 4}}
+        const childrenQuery = { ['parents.' + level]: region.cid };
+        const promises = [];
+
+        while (level++ < maxRegionLevel) { // level инкрементируется после сравнения
+            childrenQuery.parents = { $size: level };
+            promises.push(Region.count(childrenQuery).exec());
+        }
+
+        return _.compact(await* [promises]);
+    } else {
+        // If level is maximum just move to the mext step
+        return [];
+    }
+};
 
 /**
  * Возвращает для региона спопулированные parents и кол-во дочерних регионов по уровням
  * @param region Объект региона
- * @param cb
  */
-var getParentsAndChilds = function (region, cb) {
-    var level = region.parents && region.parents.length || 0; // Уровень региона равен кол-ву родительских
-    var promises = [getChildsLenByLevel(region)];
+async function getParentsAndChilds(region) {
+    const level = _.size(region.parents); // Region level equals number of parent regions
 
-    // Если есть родительские регионы - вручную их "популируем"
-    if (level) {
-        promises.push(getOrderedRegionList(region.parents));
-    }
-
-    return Bluebird.all(promises).nodeify(cb, { spread: true });
+    return await* [
+        getChildsLenByLevel(region),
+        // If parents regions exist - populate them
+        level ? getOrderedRegionList(region.parents) : null
+    ];
 };
 
 function changeRegionParentExternality(region, oldParentsArray, childLenArray, cb) {
@@ -643,7 +577,6 @@ function changeRegionParentExternality(region, oldParentsArray, childLenArray, c
             }
         );
     }
-
 
     //Считаем, сколько фотографий принадлежит текущему региону
     function countAffectedPhotos(cb) {
@@ -987,7 +920,7 @@ async function saveRegion(iAm, data) {
     // If coordinates changed, compute included objects
     if (data.geo) {
         try {
-            const geoRecalcRes = await calcRegionIncludesPromised(region);
+            const geoRecalcRes = await calcRegionIncludes(region);
 
             if (geoRecalcRes) {
                 Object.assign(resultStat, geoRecalcRes);
@@ -1178,54 +1111,52 @@ async function removeRegionsFromMods(usersQuery, regionsIds) {
     return { affectedMods: 0, affectedModsLose: 0 };
 }
 
-function getRegion(iAm, data, cb) {
+async function getRegion(iAm, data) {
     if (!iAm.isAdmin) {
-        return cb({ message: msg.deny, error: true });
+        throw { message: msg.deny };
     }
 
     if (!_.isObject(data) || !data.cid) {
-        return cb({ message: msg.badParams, error: true });
+        throw { message: msg.badParams };
     }
 
-    Region.findOne({ cid: data.cid }, { _id: 0, __v: 0 }, { lean: true }, function (err, region) {
-        if (err || !region) {
-            return cb({ message: err && err.message || 'Such region doesn\'t exists', error: true });
+    const region = await Region.findOne({ cid: data.cid }, { _id: 0, __v: 0 }, { lean: true }).exec();
+
+    if (!region) {
+        throw { message: `Such region doesn't exists` };
+    }
+
+    const [childLenArr, parentsSortedArr] = await getParentsAndChilds(region);
+
+    if (parentsSortedArr) {
+        region.parents = parentsSortedArr;
+    }
+
+    // Send client stringified geojson
+    region.geo = JSON.stringify(region.geo);
+
+    if (region.center) {
+        region.center.reverse();
+    }
+
+    if (region.bbox !== undefined) {
+        if (Utils.geo.checkbbox(region.bbox)) {
+            region.bbox = Utils.geo.bboxReverse(region.bbox);
+        } else {
+            delete region.bbox;
         }
+    }
 
-        getParentsAndChilds(region, function (err, childLenArr, parentsSortedArr) {
-            if (err) {
-                return cb({ message: err.message, error: true });
-            }
-            if (parentsSortedArr) {
-                region.parents = parentsSortedArr;
-            }
+    if (region.bboxhome !== undefined) {
+        if (Utils.geo.checkbbox(region.bboxhome)) {
+            region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
+        } else {
+            delete region.bboxhome;
+        }
+    }
 
-            //Клиенту отдаем стрингованный geojson
-            region.geo = JSON.stringify(region.geo);
-
-            if (region.center) {
-                region.center.reverse();
-            }
-            if (region.bbox !== undefined) {
-                if (Utils.geo.checkbbox(region.bbox)) {
-                    region.bbox = Utils.geo.bboxReverse(region.bbox);
-                } else {
-                    delete region.bbox;
-                }
-            }
-            if (region.bboxhome !== undefined) {
-                if (Utils.geo.checkbbox(region.bboxhome)) {
-                    region.bboxhome = Utils.geo.bboxReverse(region.bboxhome);
-                } else {
-                    delete region.bboxhome;
-                }
-            }
-
-            cb({ childLenArr: childLenArr, region: region });
-        });
-    });
+    return { childLenArr, region };
 }
-
 
 //Массив количества всех регионов по уровням
 function getRegionsCountByLevel(cb) {
@@ -1724,9 +1655,13 @@ export async function fillData(app, io) {
                 });
         });
         socket.on('giveRegion', function (data) {
-            getRegion(hs.usObj, data, function (resultData) {
-                socket.emit('takeRegion', resultData);
-            });
+            getRegion(hs.usObj, data)
+                .catch(function (err) {
+                    return { message: err.message, error: true };
+                })
+                .then(function (resultData) {
+                    socket.emit('takeRegion', resultData);
+                });
         });
         socket.on('giveRegionsFull', function (data) {
             getRegionsFull(hs.usObj, data, function (resultData) {
@@ -1788,9 +1723,6 @@ export async function fillData(app, io) {
         });
     });
 };
-
-module.exports.getShortRegionsParams = getShortRegionsParams;
-module.exports.genObjsShortRegionsArr = genObjsShortRegionsArr;
 
 module.exports.getRegionsByGeoPoint = getRegionsByGeoPoint;
 
