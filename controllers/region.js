@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import step from 'step';
-import async from 'async';
 import log4js from 'log4js';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
@@ -398,7 +397,7 @@ async function getChildsLenByLevel(region) {
             promises.push(Region.count(childrenQuery).exec());
         }
 
-        return _.compact(await* [promises]);
+        return _.compact(await* promises);
     } else {
         // If level is maximum just move to the mext step
         return [];
@@ -419,328 +418,194 @@ async function getParentsAndChilds(region) {
     ];
 };
 
-function changeRegionParentExternality(region, oldParentsArray, childLenArray, cb) {
-    var moveTo,
-        levelWas = oldParentsArray.length,
-        levelNew = region.parents.length,
-        levelDiff = Math.abs(levelWas - levelNew), //Разница в уровнях
-        regionsDiff, //Массив cid добавляемых/удаляемых регионов
-        childLen = childLenArray.length,
-        resultData = {},
-        i;
+async function changeRegionParentExternality(region, oldParentsArray, childLenArray) {
+    const levelWas = oldParentsArray.length;
+    const levelNew = region.parents.length;
+    const levelDiff = Math.abs(levelWas - levelNew); // The difference between the levels
+    const childLen = childLenArray.length;
 
-    if (!levelNew ||
-        (levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents))) {
-        moveTo = 'up';
-        regionsDiff = _.difference(oldParentsArray, region.parents);
-    } else if (levelNew > levelWas && _.isEqual(region.parents.slice(0, levelWas), oldParentsArray)) {
-        moveTo = 'down';
-        regionsDiff = _.difference(region.parents, oldParentsArray);
-    } else {
-        moveTo = 'anotherBranch';
-    }
+    async function updateObjects(query, update) {
+        return await* [
+            Photo.update(query, update, { multi: true }).exec(),
+            Comment.update(query, update, { multi: true }).exec()
+        ];
+    };
 
-    if (moveTo === 'up') {
-        step(
-            function () {
-                countAffectedPhotos(this.parallel());
-                //Удаляем убранные родительские регионы у потомков текущего региона, т.е. поднимаем их тоже
-                Region.update({ parents: region.cid }, { $pull: { parents: { $in: regionsDiff } } }, { multi: true }, this.parallel());
-            },
-            function (err, affected) {
-                if (err) {
-                    return cb(err);
-                }
-                resultData.affectedPhotos = affected.photos || 0;
-                resultData.affectedComments = affected.comments || 0;
+    // Sequentially raise photos up by level difference
+    // First, rename region level field with name of new region level, next rename child levels also up
+    async function pullPhotosRegionsUp() {
+        let queryObj;
+        let setObj;
+        let i;
 
-                if (!resultData.affectedPhotos) {
-                    return cb(null, resultData);
-                }
-                //Последовательно поднимаем фотографии на уровни регионов вверх
-                pullPhotosRegionsUp(this);
-            },
-            function (err) {
-                cb(err, resultData);
-            }
-        );
-    } else if (moveTo === 'down') {
-        step(
-            function () {
-                countAffectedPhotos(this.parallel());
-                //Вставляем добавленные родительские регионы у потомков текущего региона, т.е. опускаем их тоже
-                Region.collection.update({ parents: region.cid }, {
-                    $push: {
-                        parents: {
-                            $each: regionsDiff,
-                            $position: levelWas
-                        }
-                    }
-                }, { multi: true }, this.parallel());
-            },
-            function (err, affected) {
-                if (err) {
-                    return cb(err);
-                }
-                resultData.affectedPhotos = affected.photos || 0;
-                resultData.affectedComments = affected.comments || 0;
-
-                if (!resultData.affectedPhotos) {
-                    return this();
-                }
-                //Последовательно опускаем фотографии на уровни регионов вниз
-                pushPhotosRegionsDown(this);
-            },
-            function (err) {
-                if (err) {
-                    return cb(err);
-                }
-                //Вставляем на место сдвинутых новые родительские
-                refillPhotosRegions(levelWas, levelNew, this);
-            },
-            function (err) {
-                if (err) {
-                    return cb(err);
-                }
-                //Удаляем подписки и модерирование дочерних, если есть на родительские
-                dropChildRegionsForUsers(region.parents, region.cid, this);
-            },
-            function (err, result) {
-                if (err) {
-                    return cb(err);
-                }
-                _.assign(resultData, result);
-                cb(null, resultData);
-            }
-        );
-    } else if (moveTo === 'anotherBranch') {
-        step(
-            function () {
-                //Удаляем всех родителей текущего региона у потомков текущего региона
-                Region.update({ parents: region.cid }, { $pull: { parents: { $in: oldParentsArray } } }, { multi: true }, this.parallel());
-            },
-            function (err) {
-                if (err) {
-                    return cb(err);
-                }
-                countAffectedPhotos(this.parallel());
-                //Вставляем все родительские регионы переносимого региона его потомкам
-                Region.collection.update({ parents: region.cid }, {
-                    $push: {
-                        parents: {
-                            $each: region.parents,
-                            $position: 0
-                        }
-                    }
-                }, { multi: true }, this.parallel());
-            },
-            function (err, affected) {
-                if (err) {
-                    return cb(err);
-                }
-                resultData.affectedPhotos = affected.photos || 0;
-                resultData.affectedComments = affected.comments || 0;
-
-                if (!resultData.affectedPhotos || levelNew === levelWas) {
-                    return this();
-                }
-
-                if (levelNew < levelWas) {
-                    pullPhotosRegionsUp(this);
-                } else if (levelNew > levelWas) {
-                    pushPhotosRegionsDown(this);
-                }
-            },
-            function (err) {
-                if (err) {
-                    return cb(err);
-                }
-                if (!resultData.affectedPhotos) {
-                    return this();
-                }
-                //Присваиваем фотографиям новые родительские регионы выше уровня переносимого
-                refillPhotosRegions(0, levelNew, this);
-            },
-            function (err) {
-                if (err) {
-                    return cb(err);
-                }
-                //Удаляем подписки и модерирование дочерних, если есть на родительские
-                dropChildRegionsForUsers(region.parents, region.cid, this);
-            },
-            function (err, result) {
-                if (err) {
-                    return cb(err);
-                }
-                _.assign(resultData, result);
-                cb(null, resultData);
-            }
-        );
-    }
-
-    //Считаем, сколько фотографий принадлежит текущему региону
-    function countAffectedPhotos(cb) {
-        var querycount = {};
-        querycount['r' + levelWas] = region.cid;
-        step(
-            function () {
-                Photo.count(querycount, this.parallel());
-                Comment.count(querycount, this.parallel());
-            },
-            function (err, photos, comments) {
-                cb(err, { photos: photos, comments: comments });
-            }
-        );
-    }
-
-    //Последовательно поднимаем фотографии на уровни регионов вверх
-    //Для этого сначала переименовываем поле уровня поднимаемого региона по имени нового уровня, а
-    //затем переименовываем дочерние уровни также вверх
-    function pullPhotosRegionsUp(cb) {
-        var serialUpdates = [],
-            queryObj,
-            setObj,
-            updateParamsClosure = function (q, u) {
-                //Замыкаем параметры выборки и переименования
-                return function () {
-                    var cb = _.last(arguments);
-                    //$rename делаем напрямую через collection, https://github.com/LearnBoost/mongoose/issues/1845
-                    step(
-                        function () {
-                            Photo.collection.update(q, u, { multi: true }, this.parallel());
-                            Comment.collection.update(q, u, { multi: true }, this.parallel());
-                        },
-                        cb
-                    );
-                };
-            };
-
-        //Удаляем все поля rX, которые выше поднимаего уровня до его нового значения
-        //Это нужно в случае, когда поднимаем на больше чем один уровень,
-        //т.к. фотографии присвоенные только этому региону (а не его потомкам), оставят присвоение верхних,
-        //т.к. $rename работает в случае присутствия поля и не удалит существующее, если переименовываемого нет
+        // Remove all rX fileds, which are between current and new levels
+        // It in case when we lift up more than one level,
+        // inasmuch as photos, which belongs only to this region (but not to its children),
+        // will still be belong to intermediate upper levels,
+        // because $rename doesn't remove exists fields if renamed field doesn't exists
         if (levelDiff > 1) {
-            queryObj = {};
-            queryObj['r' + levelWas] = region.cid;
+            queryObj = {['r' + levelWas]: region.cid};
             setObj = { $unset: {} };
             for (i = levelNew; i < levelWas; i++) {
                 setObj.$unset['r' + i] = 1;
             }
-            serialUpdates.push(updateParamsClosure(queryObj, setObj));
+
+            await updateObjects(queryObj, setObj);
         }
 
-        //Переименовываем последовательно на уровни вверх, начиная с верхнего переносимого
-        queryObj = {};
-        queryObj['r' + levelWas] = region.cid;
+        // Sequentally rename to upper level, begining from top moved
+        queryObj = { ['r' + levelWas]: region.cid };
         for (i = levelWas; i <= levelWas + childLen; i++) {
             if (i === (levelWas + 1)) {
-                //Фотографии, принадлежащие к потомкам по отношению к поднимаемому региону,
-                //должны выбираться уже по принадлежности к новому уровню, т.к. их подвинули на первом шаге
-                queryObj = {};
-                queryObj['r' + levelNew] = region.cid;
+                // Photos, which belongs to children of moving region,
+                // must be selected as belonging to new level, because they were moved on first dtep
+                queryObj = { ['r' + levelNew]: region.cid };
             }
-            setObj = { $rename: {} };
-            setObj.$rename['r' + i] = 'r' + (i - levelDiff);
-            serialUpdates.push(updateParamsClosure(queryObj, setObj));
-        }
+            setObj = { $rename: { ['r' + i]: 'r' + (i - levelDiff) } };
 
-        //Запускаем последовательное обновление по подготовленным параметрам
-        async.waterfall(serialUpdates, cb);
+            await updateObjects(queryObj, setObj);
+        }
     }
 
-    //Последовательно опускаем фотографии на уровни регионов вниз
-    //Начинаем переименование полей с последнего уровня
-    function pushPhotosRegionsDown(cb) {
-        var serialUpdates = [],
-            queryObj,
-            setObj,
-            updateParamsClosure = function (q, u) {
-                //Замыкаем параметры выборки и переименования
-                return function () {
-                    var cb = _.last(arguments);
-                    step(
-                        function () {
-                            Photo.collection.update(q, u, { multi: true }, this.parallel());
-                            Comment.collection.update(q, u, { multi: true }, this.parallel());
-                        },
-                        cb
-                    );
-                };
-            };
+    // Sequentially move photos down by level difference
+    // Start renaming from last level fields
+    async function pushPhotosRegionsDown() {
+        let queryObj;
+        let setObj;
 
-        queryObj = {};
-        queryObj['r' + levelWas] = region.cid;
-        for (i = levelWas + childLen; i >= levelWas; i--) {
-            setObj = { $rename: {} };
-            setObj.$rename['r' + i] = 'r' + (i + levelDiff);
-            serialUpdates.push(updateParamsClosure(queryObj, setObj));
+        queryObj = { ['r' + levelWas]: region.cid };
+        for (let i = levelWas + childLen; i >= levelWas; i--) {
+            setObj = { $rename: { ['r' + i]: 'r' + (i + levelDiff) } };
+            await updateObjects(queryObj, setObj);
         }
-
-        async.waterfall(serialUpdates, cb);
     }
 
-    //Вставляем на место сдвинутых новые родительские
-    function refillPhotosRegions(levelFrom, levelTo, cb) {
-        var queryObj = {},
-            setObj = {},
-            i;
-        queryObj['r' + levelTo] = region.cid;
-        for (i = levelFrom; i < levelTo; i++) {
+    // Insert new parents on places of shifted old ones
+    async function refillPhotosRegions(levelFrom, levelTo) {
+        const queryObj = { ['r' + levelTo]: region.cid };
+        const setObj = {};
+
+        for (let i = levelFrom; i < levelTo; i++) {
             setObj['r' + i] = region.parents[i];
         }
-        step(
-            function () {
-                Photo.collection.update(queryObj, { $set: setObj }, { multi: true }, this.parallel());
-                Comment.collection.update(queryObj, { $set: setObj }, { multi: true }, this.parallel());
-            },
-            cb
-        );
+
+        await updateObjects(queryObj, setObj);
     }
 
-    //Удаляем у пользователей и модераторов подписку на дочерние регионы, если они подписаны на родительские
-    function dropChildRegionsForUsers(parentsCids, childBranchCid, cb) {
-        step(
-            function () {
-                //Находим _id новых родительских регионов
-                Region.find({ cid: { $in: region.parents } }, { _id: 1 }, { lean: true }, this.parallel());
-                //Находим _id всех регионов, дочерних переносимому
-                Region.find({ parents: region.cid }, { _id: 1 }, { lean: true }, this.parallel());
-            },
-            function (err, parentRegions, childRegions) {
-                if (err) {
-                    return cb(err);
-                }
-                var parentRegionsIds = _.pluck(parentRegions, '_id'), //Массив _id родительских регионов
-                    movingRegionsIds = _.pluck(childRegions, '_id'); //Массив _id регионов, переносимой ветки (т.е. сам регион и его потомки)
-                movingRegionsIds.unshift(region._id);
+    // Remove from users and moderators subscription on children regions, if they subscribed on parents
+    async function dropChildRegionsForUsers() {
+        const [parentRegions, childRegions] = await* [
+            // Find _ids of new parent regions
+            Region.find({ cid: { $in: region.parents } }, { _id: 1 }, { lean: true }).exec(),
+            // Find _ids of all children regions of moving region
+            Region.find({ parents: region.cid }, { _id: 1 }, { lean: true }).exec()
+        ];
 
-                //Удаляем подписку тех пользователей на перемещаемые регионы,
-                //у которых есть подписка и на новые родительские регионы, т.к. в этом случае у них автоматическая подписка на дочерние
-                User.update({
-                    $and: [
-                        { regions: { $in: parentRegionsIds } },
-                        { regions: { $in: movingRegionsIds } }
-                    ]
-                }, { $pull: { regions: { $in: movingRegionsIds } } }, { multi: true }, this.parallel());
+        // Array of _id of parents regions
+        const parentRegionsIds = _.pluck(parentRegions, '_id');
+        // Array of _ids of regions of moving branch (ie region itself and its children)
+        const movingRegionsIds = _.pluck(childRegions, '_id');
+        movingRegionsIds.unshift(region._id);
 
-                //Тоже самое с модераторскими регионами
-                User.update({
-                    $and: [
-                        { mod_regions: { $in: parentRegionsIds } },
-                        { mod_regions: { $in: movingRegionsIds } }
-                    ]
-                }, { $pull: { mod_regions: { $in: movingRegionsIds } } }, { multi: true }, this.parallel());
-            },
-            function (err, affectedUsers, affectedMods) {
-                if (err) {
-                    return cb(err);
-                }
-                cb(null, { affectedUsers: affectedUsers.n || 0, affectedMods: affectedMods.n || 0 });
+        const [{ n: affectedUsers = 0 }, { n: affectedMods = 0 }] = await* [
+            // Remove subscription on moving regions of those users, who have subscription on new and on parent regions,
+            // because in this case they'll have subscription on children automatically
+            User.update({
+                $and: [
+                    { regions: { $in: parentRegionsIds } },
+                    { regions: { $in: movingRegionsIds } }
+                ]
+            }, { $pull: { regions: { $in: movingRegionsIds } } }, { multi: true }).exec(),
+
+            // Tha same with moderated regions
+            User.update({
+                $and: [
+                    { mod_regions: { $in: parentRegionsIds } },
+                    { mod_regions: { $in: movingRegionsIds } }
+                ]
+            }, { $pull: { mod_regions: { $in: movingRegionsIds } } }, { multi: true }).exec()
+        ];
+
+        return { affectedUsers, affectedMods };
+    }
+
+    // Calculate number of photos belongs to the region
+    const countQuery = { ['r' + levelWas]: region.cid };
+    const [affectedPhotos = 0, affectedComments = 0] = await* [Photo.count(countQuery), Comment.count(countQuery)];
+
+    let affectedUsers;
+    let affectedMods;
+    let regionsDiff; // Array of cids of adding/removing regions
+
+    if (!levelNew || (levelNew < levelWas && _.isEqual(oldParentsArray.slice(0, levelNew), region.parents))) {
+        // Move region UP
+        regionsDiff = _.difference(oldParentsArray, region.parents);
+
+        // Remove differens in regions from children of moving region, eg move them up too
+        await Region.update(
+            { parents: region.cid }, { $pull: { parents: { $in: regionsDiff } } }, { multi: true }
+        ).exec();
+
+        if (affectedPhotos) {
+            // Sequentially raise photos up by level difference
+            await pullPhotosRegionsUp();
+        }
+    } else if (levelNew > levelWas && _.isEqual(region.parents.slice(0, levelWas), oldParentsArray)) {
+        // Move region DOWN
+        regionsDiff = _.difference(region.parents, oldParentsArray);
+
+        // Insert added parent regions to children of moving region, eg move them down also
+        await Region.update(
+            { parents: region.cid },
+            { $push: { parents: { $each: regionsDiff, $position: levelWas } } },
+            { multi: true }
+        ).exec();
+
+        if (!affectedPhotos) {
+            return { affectedPhotos, affectedComments };
+        }
+
+        await pushPhotosRegionsDown(); // Sequentially move photos down by level difference
+
+        await refillPhotosRegions(levelWas, levelNew); // Insert new parents on places of shifted old ones
+
+        // Remove from users and moderators subscription on children regions, if they subscribed on parents
+        ({ affectedUsers, affectedMods } = await dropChildRegionsForUsers());
+    } else {
+        // Move region to ANOTHER BRANCH
+
+        // Remove all parents of this region from its children
+        await Region.update(
+            { parents: region.cid }, { $pull: { parents: { $in: oldParentsArray } } }, { multi: true }
+        ).exec();
+
+        // Insert added parent regions to children of moving region, eg move them down also
+        // Insert all parents of region to its children
+        await Region.update(
+            { parents: region.cid },
+            { $push: { parents: { $each: region.parents, $position: 0 } } },
+            { multi: true }
+        ).exec();
+
+        if (affectedPhotos && levelNew !== levelWas) {
+            if (levelNew < levelWas) {
+                await pullPhotosRegionsUp();
+            } else if (levelNew > levelWas) {
+                await pushPhotosRegionsDown();
             }
-        );
+        }
+
+        if (affectedPhotos) {
+            // Insert new parents on places of shifted old ones
+            await refillPhotosRegions(0, levelNew);
+        }
+
+        // Remove from users and moderators subscription on children regions, if they subscribed on parents
+        ({ affectedUsers, affectedMods } = await dropChildRegionsForUsers());
     }
+
+    return { affectedPhotos, affectedComments, affectedUsers, affectedMods };
 }
-const changeRegionParentExternalityPromised = Bluebird.promisify(changeRegionParentExternality); // TODO: hack
 
 /**
  * Save/Create region
@@ -771,9 +636,9 @@ async function saveRegion(iAm, data) {
             throw { message: 'You trying to specify a parent himself' };
         }
 
-        const parentRegion = await Region.findOneAsync(
+        const parentRegion = await Region.findOne(
             { cid: data.parent }, { _id: 0, cid: 1, parents: 1 }, { lean: true }
-        );
+        ).exec();
 
         if (_.isEmpty(parentRegion)) {
             throw { message: `Such parent region doesn't exists` };
@@ -827,7 +692,7 @@ async function saveRegion(iAm, data) {
         region = new Region({ cid: count.next, parents: parentsArray });
     } else {
         // Find region by cid
-        region = await Region.findOneAsync({ cid: data.cid });
+        region = await Region.findOne({ cid: data.cid }).exec();
 
         if (!region) {
             throw ({ message: `Such region doesn't exists` });
@@ -870,7 +735,7 @@ async function saveRegion(iAm, data) {
 
             // TODO: determine polygon intersection, they must be segments inside one polygon,
             // then sort segments in one polygon by its area
-            /// *if (data.geo.type === 'MultiPolygon') {
+            // *if (data.geo.type === 'MultiPolygon') {
             //    data.geo.coordinates.forEach(
             //        polygon => polygon.length > 1 ? polygon.sort(Utils.sortPolygonSegmentsByArea) : null
             //    );
@@ -915,7 +780,8 @@ async function saveRegion(iAm, data) {
     region.title_en = String(data.title_en);
     region.title_local = data.title_local ? String(data.title_local) : undefined;
 
-    region = (await region.saveAsync())[0].toObject();
+    region = await region.save();
+    region = region.toObject();
 
     // If coordinates changed, compute included objects
     if (data.geo) {
@@ -933,7 +799,7 @@ async function saveRegion(iAm, data) {
     // If parents changed, compute all dependences from level
     if (parentChange) {
         try {
-            const moveRes = await changeRegionParentExternalityPromised(region, parentsArrayOld, childLenArray);
+            const moveRes = await changeRegionParentExternality(region, parentsArrayOld, childLenArray);
 
             if (moveRes) {
                 Object.assign(resultStat, moveRes);
@@ -1248,7 +1114,6 @@ function getRegionsPublic(data, cb) {
     cb({ regions: regionCacheArr });
 }
 
-
 // Возвращает список регионов, в которые попадает заданая точка
 var getRegionsByGeoPoint = (function () {
     var defRegion = 1000000; // Если регион не найден, возвращаем Открытое море
@@ -1496,9 +1361,9 @@ var saveUserHomeRegion = Bluebird.method(function (iAm, data) {
             this.region = region;
 
             user.regionHome = region;
-            return user.saveAsync();
+            return user.save();
         })
-        .spread(function (user) {
+        .then(function (user) {
             var region = this.region;
             // Нужно взять именно от region, т.к. user.regionHome будет объектом только в случае спопулированного,
             // например, онлайн пользователя и просто _id в случае не онлайн
