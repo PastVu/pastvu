@@ -1,19 +1,18 @@
-module.exports = {
-
+export default {
     region: {
-        maxLevel: 5 // 6 уровней регионов: 0..5
+        maxLevel: 5 // 6 levels of regions: 0..5
     },
 
     photo: {
         status: {
-            NEW: 0, // Новое
-            REVISION: 1, // На доработке
-            READY: 2, // Ожидает публикации
-            REVOKE: 3, // Отозвано владельцем
-            REJECT: 4, // Отклонено
-            PUBLIC: 5, // Опубликованное
-            DEACTIVATE: 7, // Деактивировано
-            REMOVE: 9 // Удалено
+            NEW: 0, // Newphoto
+            REVISION: 1, // Being adjusted by user
+            READY: 2, // Awaiting publication
+            REVOKE: 3, // Revoked by owner
+            REJECT: 4, // Rejected
+            PUBLIC: 5, // Published
+            DEACTIVATE: 7, // Deactivated
+            REMOVE: 9 // Removed
         },
 
         historyFields: [
