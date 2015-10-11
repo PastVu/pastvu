@@ -11,13 +11,16 @@ let getDBResolve;
 let getDBReject;
 
 export let db = null;
-export const getDbAsync = new Promise(function (resolve, reject) {
+export let dbEval = null;
+export let dbNative = null;
+
+export const waitDb = new Promise(function (resolve, reject) {
     getDBResolve = resolve;
     getDBReject = reject;
 });
 export const registerModel = modelPromise => {
     modelPromises.push(modelPromise);
-    return getDbAsync;
+    return waitDb;
 };
 
 export default function (uri, poolSize = 1, logger = log4js.getLogger('app.js')) {
@@ -50,6 +53,9 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app.js'))
                 db.on('reconnected', function () {
                     logger.info('Reconnected to MongoDB at: ' + uri);
                 });
+
+                dbNative = db.db;
+                dbEval = Bluebird.promisify(dbNative.eval, dbNative);
 
                 await* modelPromises.map(modelPromise => modelPromise(db));
 

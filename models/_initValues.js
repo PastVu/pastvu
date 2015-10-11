@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
 import { Settings } from './Settings';
-import { getDbAsync } from '../controllers/connection';
+import { waitDb } from '../controllers/connection';
 
 Model.saveUpsert = function (findQuery, properties, cb) {
     this.findOne(findQuery, function (err, doc) {
@@ -25,7 +25,7 @@ Model.saveUpsert = function (findQuery, properties, cb) {
     }.bind(this));
 };
 
-getDbAsync.then(() => {
+waitDb.then(() => {
     Settings.saveUpsert({ key: 'USE_OSM_API' }, { val: true, desc: 'OSM Active' }, function (err) {
         if (err) {
             console.log('Settings ' + err);

@@ -1,8 +1,7 @@
 import _ from 'lodash';
 import log4js from 'log4js';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
-import getDbAsync from './connection';
+import { dbEval } from './connection';
 import constants from './constants.js';
 import * as _session from './_session.js';
 import { User } from '../models/User';
@@ -26,7 +25,6 @@ const msg = {
     noregions: 'No regions'
 };
 
-let dbEval;
 let regionCacheArr = []; // Array-cache of regions  [{ _id, cid, parents }]
 let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } }
 
@@ -1448,9 +1446,6 @@ export const buildQuery = regions => {
 };
 
 export async function fillData(app, io) {
-    const dbNative = (await getDbAsync()).db;
-    dbEval = Bluebird.promisify(dbNative.eval, dbNative);
-
     await fillCache();
 
     io.sockets.on('connection', function (socket) {
