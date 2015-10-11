@@ -1238,7 +1238,7 @@ export async function updateObjsRegions(model, criteria = {}, regions = [], addi
     }
 
     if (Object.keys($update).length) {
-        return await model.updateAsync(criteria, $update, { multi: true });
+        return await model.update(criteria, $update, { multi: true }).exec();
     } else {
         return null;
     }

@@ -272,7 +272,7 @@ Bluebird.promisifyAll(fs);
     require('./controllers/actionlog').loadController(app, db, io);
     require('./controllers/mail').loadController(app);
     require('./controllers/auth').loadController(app, db, io);
-    require('./controllers/reason').loadController(app, db, io);
+    require('./controllers/reason').loadController(app, io);
     require('./controllers/userobjectrel').loadController(app, db, io);
     require('./controllers/index').loadController(app, db, io);
     require('./controllers/photo').loadController(app, db, io);
