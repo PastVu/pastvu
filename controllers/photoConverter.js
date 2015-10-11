@@ -8,17 +8,13 @@ import moment from 'moment';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import { exec } from 'child_process';
+import { waitDb, dbEval } from './connection';
+import { Photo, PhotoConveyer, PhotoConveyerError, STPhotoConveyer } from '../models/Photo';
 
-const sleep = time => new Promise(resolve => setTimeout(resolve, time));
-const mkdirpAsync = Bluebird.promisify(mkdirp);
 const execAsync = Bluebird.promisify(exec);
+const mkdirpAsync = Bluebird.promisify(mkdirp);
 const logger = log4js.getLogger('photoConverter.js');
-let dbNative;
-let dbEval;
-let Photo;
-let PhotoConveyer;
-let PhotoConveyerError;
-let STPhotoConveyer;
+const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
 let conveyerEnabled = true;
 let conveyerLength = 0;
@@ -517,53 +513,39 @@ export async function addPhotosAll(params) {
 /**
  * Удаление фотографий из конвейера конвертаций
  * @param data Массив cid
- * @param {function} [cb] Коллбэк успешности удаления
  */
-export function removePhotos(data, cb) {
-    PhotoConveyer.remove({ cid: { $in: data } }, function (err, docs) {
-        if (cb) {
-            cb(err);
-        }
-        conveyerLength -= docs.length;
-    });
+export async function removePhotos(data) {
+    const docs = await PhotoConveyer.remove({ cid: { $in: data } }).exec();
+    conveyerLength -= docs.length;
 }
 
-export function loadController(app, db, io) {
-    dbNative = db.db;
-    /* jshint evil:true */
-    dbEval = Bluebird.promisify(dbNative.eval, dbNative);
-    /* jshint evil:false */
-
-    Photo = db.model('Photo');
-    PhotoConveyer = db.model('PhotoConveyer');
-    PhotoConveyerError = db.model('PhotoConveyerError');
-    STPhotoConveyer = db.model('STPhotoConveyer');
+(async function converterStarter() {
+    await waitDb;
 
     // Запускаем конвейер после рестарта сервера, устанавливаем все недоконвертированные фото обратно в false
-    setTimeout(function () {
-        PhotoConveyer.update({ converting: { $exists: true } }, { $unset: { converting: 1 } }, { multi: true }, function (err) {
-            if (err) {
-                logger.error(err);
-                return;
-            }
-            conveyerControl();
-        });
-    }, 5000);
-
-    PhotoConveyer.count({}, function (err, count) {
-        if (err) {
-            logger.error(err);
-            return;
+    setTimeout(async function () {
+        try {
+            await PhotoConveyer.update(
+                { converting: { $exists: true } }, { $unset: { converting: 1 } }, { multi: true }
+            ).exec();
+        } catch (err) {
+            return logger.error(err);
         }
 
-        conveyerLength = Math.max(count, conveyerMaxLength);
-        conveyerMaxLength = conveyerLength;
-    });
+        conveyerControl();
+    }, 4000);
+
+    const count = await PhotoConveyer.count({}).exec();
+
+    conveyerLength = Math.max(count, conveyerMaxLength);
+    conveyerMaxLength = conveyerLength;
 
     // Планируем запись статистики конвейера на начало следующей 10-минутки
     const hourStart = +(moment().utc().startOf('hour'));
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
+}());
 
+export function loadController(app, io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 

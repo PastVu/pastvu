@@ -490,7 +490,7 @@ define([
             socket.once('convertPhotosAllResult', function (data) {
                 if (data && !data.error) {
                     window.noty({
-                        text: 'Added ' + data.added + ' photos to conveyer in ' + data.time + 's',
+                        text: 'Added ' + data.conveyorAdded + ' photos to conveyer in ' + data.time + 's',
                         type: 'success',
                         layout: 'center',
                         timeout: 2000,
