@@ -39,15 +39,5 @@
 		"pool": 2 /* Number of concurrent connections to DB.  @Default 5*/
 	},
 
-	"mail": {
-		"type": "SMTP",
-		"service": "gmail",
-		"secure": true,
-		"host": "",
-		"port": 0,
-		"auth": {
-			"user": "oldmos2@gmail.com",
-			"pass": "zaq1xsw21"
-		}
-	}
+	"mail": {}
 }
