@@ -207,9 +207,9 @@ function CollectConveyerStat() {
  */
 async function conveyerClear() {
     try {
-        const removed = (await PhotoConveyer.removeAsync({ converting: { $exists: false } }))[0];
+        const removed = (await PhotoConveyer.remove({ converting: { $exists: false } }).exec())[0];
 
-        conveyerLength = await PhotoConveyer.countAsync({});
+        conveyerLength = await PhotoConveyer.count({}).exec();
         return { message: `Cleared ok! Removed ${removed}, left ${conveyerLength}` };
     } catch (err) {
         return { message: err || 'Error occurred', error: true };
@@ -230,7 +230,7 @@ async function conveyerControl() {
     const files = await PhotoConveyer.find({ converting: { $exists: false } })
         .sort({ priority: 1, added: 1 })
         .limit(toWork)
-        .execAsync();
+        .exec();
 
     goingToWork -= toWork - files.length;
 
@@ -248,11 +248,11 @@ async function conveyerControl() {
                 { cid: 1, file: 1, type: 1, user: 1, w: 1, h: 1, ws: 1, hs: 1, conv: 1, convqueue: 1, watersignText: 1 }
             )
             .populate({ path: 'user', select: { _id: 0, login: 1 } })
-            .execAsync();
+            .exec();
 
         photo.conv = true;
         photoConv.converting = true;
-        await* [photo.saveAsync(), photoConv.saveAsync()];
+        await* [photo.save(), photoConv.save()];
 
         try {
             await conveyerStep(photo, photoConv);
@@ -261,12 +261,12 @@ async function conveyerControl() {
             const errorObject = { cid: photoConv.cid, added: photoConv.added, error: String(err && err.message) };
 
             logger.error(errorObject);
-            await new PhotoConveyerError(errorObject).saveAsync();
+            await new PhotoConveyerError(errorObject).save();
         }
 
         photo.conv = undefined; // Присваиваем undefined, чтобы удалить свойства
         photo.convqueue = undefined;
-        await* [photo.saveAsync(), photoConv.removeAsync()];
+        await* [photo.save(), photoConv.remove()];
 
         working -= 1;
         if (conveyerLength) {
@@ -481,7 +481,7 @@ export async function addPhotos(data, priority) {
     }
 
     if (toConvertObjs.length) {
-        await PhotoConveyer.collection.insertAsync(toConvertObjs, { safe: true });
+        await PhotoConveyer.collection.insert(toConvertObjs, { safe: true });
 
         conveyerLength += toConvertObjs.length;
         conveyerMaxLength = Math.max(conveyerLength, conveyerMaxLength);
@@ -580,7 +580,7 @@ export function loadController(app, io) {
                     return result({ message: 'Not authorized for statConveyer', error: true });
                 }
 
-                const docs = await STPhotoConveyer.findAsync({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true });
+                const docs = await STPhotoConveyer.find({}, { _id: 0, __v: 0 }, { sort: 'stamp', lean: true }).exec();
 
                 for (const doc of docs) {
                     doc.stamp = doc.stamp.getTime();
