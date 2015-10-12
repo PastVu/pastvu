@@ -9,6 +9,7 @@ var babelOptions = Object.assign({}, babelConfig, {
     only: [
         /(?:app|downloader|middleware|settings|photoConverter|photoCluster|region|connection|_session)\.js/,
         'controllers/constants.js',
+        'controllers/userobjectrel.js',
         'controllers/comment.js',
         'controllers/reason.js',
         'controllers/photoCluster.js',

@@ -1,347 +1,287 @@
-'use strict';
+import _ from 'lodash';
+import log4js from 'log4js';
 
-var Bluebird = require('bluebird');
-var _ = require('lodash');
-var UserObjectRel;
-var User;
-var Comment;
-var CommentN;
-var logger;
+import { UserObjectRel } from '../models/UserStates';
+import { Comment, CommentN } from '../models/Comment';
+
+const logger = log4js.getLogger('userobjectrel.js');
 
 /**
- * Находим количество новых комментариев для списка объектов для пользователя
- * @param objIds Массив _id объектов
- * @param userId _id пользователя
- * @param type Тип объекта
- * @param [rels] Уже выбранные записи (например в отдаче подписок пользователя)
+ * Find number of new comments for array of objects for user
+ * @param objIds Array of _ids of objects
+ * @param userId
+ * @param {string} [type=photo] Object type
+ * @param {Array|Object} [rels] Already selected rows (for example when serve user subscription)
  */
-var getRel = function (objIds, userId, type, rels) {
-    if (!type) {
-        type = 'photo';
-    }
-
-    if (rels && !Array.isArray(rels)) {
+export async function getViewCommentsRel(objIds, userId, type = 'photo', rels) {
+    if (!rels) {
+        rels = await UserObjectRel.find(
+            { obj: { $in: objIds }, user: userId, type },
+            { _id: 0, obj: 1, view: 1, ccount_new: 1, sbscr_create: 1 },
+            { lean: true }
+        ).exec();
+    } else if (!Array.isArray(rels)) {
         rels = [rels];
     }
 
-    var promise = rels ? Bluebird.resolve(rels) : UserObjectRel.findAsync(
-        { obj: { $in: objIds }, user: userId, type: type },
-        { _id: 0, obj: 1, view: 1, ccount_new: 1, sbscr_create: 1 },
-        { lean: true }
-    );
+    return _.transform(rels, (result, rel) => {
+        const res = { view: rel.view, ccount_new: rel.ccount_new };
 
-    return promise.then(function (rels) {
-        var result = {};
-        var res;
-        var rel;
-
-        for (var i = rels.length; i--;) {
-            rel = rels[i];
-            res = {
-                view: rel.view,
-                ccount_new: rel.ccount_new
-            };
-
-            if (rel.sbscr_create) {
-                res.subscr = true;
-            }
-
-            result[rels[i].obj] = res;
+        if (rel.sbscr_create) {
+            res.subscr = true;
         }
 
-        return result;
-    });
+        result[rel.obj] = res;
+    }, {});
 };
 
 /**
- * Заполняет для каждого из массива переданных объектов кол-во новых комментариев - поле ccount_new
- * И флаг changed, если изменился ucdate с момента последнего просмотра объекта
- * Т.е. модифицирует исходные объекты
- * @param objs Массив объектов
- * @param userId _id пользователя
- * @param type Тип объекта
+ * Fill for every object in transferred array number of new comments - field 'ccount_new'
+ * And flag 'changed', if 'ucdate' has changed since last object view
+ * Eg mutate transferred objects
+ * @param objs Array of objects
+ * @param userId
+ * @param {string} [type=photo] Object type
+ * @param [rels]
  */
-var fillObjectByRels = function (objs, userId, type, rels) {
-    var single = !Array.isArray(objs);
-    var objIds = [];
+export async function fillObjectByRels(objs, userId, type = 'photo', rels) {
+    const single = !Array.isArray(objs);
 
     if (single) {
         objs = [objs];
     }
 
-    // Составляем массив id объектов
-    for (var i = objs.length; i--;) {
-        objIds.push(objs[i]._id);
-    }
+    // Make array of _ids of objects
+    const objIds = objs.map(obj => obj._id);
 
-    return getRel(objIds, userId, type, rels)
-        .then(function (relHash) {
-            var obj;
-            var rel;
+    const relHash = await getViewCommentsRel(objIds, userId, type, rels);
 
-            for (var i = objs.length; i--;) {
-                obj = objs[i];
-                rel = relHash[obj._id];
-                if (rel !== undefined) {
-                    if (rel.view) {
-                        obj.vdate = rel.view;
+    for (const obj of objs) {
+        const rel = relHash[obj._id];
 
-                        if (obj.ucdate && obj.ucdate > rel.view) {
-                            obj.changed = true;
-                        }
-                    }
-                    if (rel.subscr) {
-                        obj.subscr = true;
-                    }
-                    if (rel.ccount_new) {
-                        obj.ccount_new = rel.ccount_new;
-                    }
+        if (rel !== undefined) {
+            if (rel.view) {
+                obj.vdate = rel.view;
+
+                if (obj.ucdate && obj.ucdate > rel.view) {
+                    obj.changed = true;
                 }
             }
-            return single ? objs[0] : objs;
-        });
+            if (rel.subscr) {
+                obj.subscr = true;
+            }
+            if (rel.ccount_new) {
+                obj.ccount_new = rel.ccount_new;
+            }
+        }
+    }
+
+    return single ? objs[0] : objs;
 };
 
 /**
- * Записываем время последнего просмотра объекта пользователем
- * @param objId _id объекта
- * @param userId _id пользователя
- * @param [type] Тип объекта
+ * Record time of last object view by user
+ * @param objId
+ * @param userId
+ * @param {string} [type=photo] Object type
  */
-var setObjectView = Bluebird.method(function (objId, userId, type) {
-    if (!type) {
-        type = 'photo';
-    }
-
-    return UserObjectRel.findOneAndUpdateAsync(
-        { obj: objId, user: userId, type: type },
+export function setObjectView(objId, userId, type = 'photo') {
+    return UserObjectRel.findOneAndUpdate(
+        { obj: objId, user: userId, type },
         { $set: { view: new Date() } },
         { upsert: true, new: true, lean: true, fields: { _id: 0 } }
-    );
-});
+    ).exec();
+};
 
 /**
- * Записываем время последнего просмотра объекта пользователем
- * @param objId _id объекта
- * @param userId _id пользователя
- * @param [type] Тип объекта
+ * Record time of last comments view on object by user
+ * @param objId
+ * @param userId
+ * @param {string} [type=photo] Object type
+ * @param {Date} [stamp=new Date()]
  */
-var setCommentView = Bluebird.method(function (objId, userId, type, stamp) {
-    if (!type) {
-        type = 'photo';
+export async function setCommentView(objId, userId, type = 'photo', stamp = new Date()) {
+    const query = { obj: objId, user: userId, type };
+
+    const relBeforeUpdate = await UserObjectRel.findOne(
+        query, { _id: 0, obj: 0, user: 0, type: 0 }, { lean: true }
+    ).exec();
+
+    const update = { $set: { comments: stamp } };
+
+    if (relBeforeUpdate) {
+        // Reset number of new comments
+        update.$unset = { ccount_new: 1 };
+
+        if (relBeforeUpdate.sbscr_noty) {
+            // If time of next notification send was setted, reset it
+            update.$unset.sbscr_noty = 1;
+            update.$set.sbscr_noty_change = stamp;
+        }
     }
-    if (!stamp) {
-        stamp = new Date();
-    }
 
-    var query = { obj: objId, user: userId, type };
+    await UserObjectRel.update(query, update, { upsert: true }).exec();
 
-    return UserObjectRel.findOneAsync(query, { _id: 0, obj: 0, user: 0, type: 0 }, { lean: true })
-        .bind({})
-        .then(function (relBeforeUpdate) {
-            var update = { $set: { comments: stamp } };
-
-            if (relBeforeUpdate) {
-                // Сбрасываем кол-во новых комментариев
-                update.$unset = { ccount_new: 1 };
-
-                if (relBeforeUpdate.sbscr_noty) {
-                    // Если было установлено время следующей отправки уведолмления, сбрасываем его
-                    update.$unset.sbscr_noty = 1;
-                    update.$set.sbscr_noty_change = stamp;
-                }
-            }
-
-            this.relBeforeUpdate = relBeforeUpdate;
-
-            return UserObjectRel.update(query, update, { upsert: true }).exec();
-        })
-        .then(function () {
-            return this.relBeforeUpdate;
-        });
-});
+    return relBeforeUpdate;
+};
 
 /**
- * При добавлении комментария увелививает счетчик новых у пользователей, прочитавших однажды комментрии объекта
- * @param objId _id объекта
- * @param userId _id пользователя
- * @param [type] Тип объекта
+ * Increase new comments counter of users, who saw comments of this object, when new comment added
+ * @param objId
+ * @param userId
+ * @param {string} [type=photo] Object type
  */
-var onCommentAdd = Bluebird.method(function (objId, userId, type) {
-    if (!type) {
-        type = 'photo';
-    }
-    var query = { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type };
+export async function onCommentAdd(objId, userId, type = 'photo') {
+    const { n: count = 0 } = await UserObjectRel.update(
+        { obj: objId, comments: { $exists: true }, user: { $ne: userId }, type },
+        { $inc: { ccount_new: 1 } },
+        { multi: true }
+    ).exec();
 
-    return UserObjectRel.update(query, { $inc: { ccount_new: 1 } }, { multi: true }).exec()
-        .then(function (count) {
-            return count.n;
-        });
-});
+    return count;
+};
 
 /**
- * При удалении комментариев уменьшает счетчик новых у пользователей,
- * которые прочитали комментарии объекта до создания последнего из удаленных
- * @param objId _id объекта
- * @param comments комментарии
- * @param [type] Тип объекта
+ * When remove comments, decrease number of new comments of users,
+ * who had read object comments before creation of last comment of removed
+ * @param objId
+ * @param {Array} comments Comments array
+ * @param {string} [type=photo] Object type
  */
-var onCommentsRemove = Bluebird.method(function (objId, comments, type) {
+export async function onCommentsRemove(objId, comments, type = 'photo') {
     if (_.isEmpty(comments)) {
         return;
     }
-    if (!type) {
-        type = 'photo';
-    }
 
-    var lastCommentStamp = _.last(comments).stamp;
+    const lastCommentStamp = _.last(comments).stamp;
 
-    // Для каждого пользователя, который последний раз просматривал коментарии объекта до даты последнего удаляемого комментария,
-    // надо индивидуально посчитать сколько из удаляемых для него новые и не его собственные, и уменьшить на это кол-во
-    return UserObjectRel.findAsync(
-        { obj: objId, comments: { $lte: lastCommentStamp }, ccount_new: { $gt: 0 }, type: type },
+    // For each user, who had read object comments before creation of last comment of removed,
+    // need to individually count how many of removed is new for him and not his own, and decrease by that quantity
+    const rels = await UserObjectRel.find(
+        { obj: objId, comments: { $lte: lastCommentStamp }, ccount_new: { $gt: 0 }, type },
         { _id: 1, user: 1, comments: 1, ccount_new: 1 },
         { lean: true }
-    )
-        .then(function (rels) {
-            if (_.isEmpty(rels)) {
-                return 0;
+    ).exec();
+
+    if (_.isEmpty(rels)) {
+        return 0;
+    }
+
+    // For each relation how many comments have been written after last visit,
+    // and subtract them from quantity of new in this relation
+    const updates = rels.reduce((result, rel) => {
+        const commentsView = rel.comments;
+        let newDeltaCount = comments.reduce((result, comment) => {
+            if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
+                result++;
+            }
+            return result;
+        }, 0);
+
+        if (newDeltaCount) {
+            if (newDeltaCount > rel.ccount_new) {
+                logger.warn(
+                    `Try to decrease more new comments count due to comments removal,`,
+                    `then they where calculated, objId: ${objId}, rel: ${rel._id}`
+                );
+                newDeltaCount = rel.ccount_new;
             }
 
-            // Для каждого отношения ищем сколько удаленных комментариев были написаны после последнего посещения
-            // и вычитаем их из кол-ва новых в этом отношении
-            var updates = rels.reduce(function (result, rel) {
-                var commentsView = rel.comments;
-                var newDeltaCount = comments.reduce(function (result, comment) {
-                    if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
-                        result++;
-                    }
-                    return result;
-                }, 0);
+            // Update specific rel, but just in case но на всякий случае specify maximum time of comments view,
+            // on which we compute, in case while we compete user read comments again
+            result.push(UserObjectRel.update(
+                { _id: rel._id, comments: { $lte: lastCommentStamp } },
+                { $inc: { ccount_new: -newDeltaCount } }
+            ).exec());
+        }
 
-                if (newDeltaCount) {
-                    if (newDeltaCount > rel.ccount_new) {
-                        logger.warn('Try to decrease more new comments count due to comments removal, then they where calculated, objId: ' + objId + ', rel: ' + rel._id);
-                        newDeltaCount = rel.ccount_new;
-                    }
+        return result;
+    }, []);
 
-                    result.push(UserObjectRel.update(
-                        // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
-                        // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
-                        { _id: rel._id, comments: { $lte: lastCommentStamp } },
-                        { $inc: { ccount_new: -newDeltaCount } }
-                    ).exec());
-                }
+    if (updates.length) {
+        return (await* updates).reduce((result, { n: count = 0 }) => result + count, 0);
+    }
 
-                return result;
-            }, []);
-
-            if (updates.length) {
-                return Bluebird.all(updates)
-                    .then(function (updateResults) {
-                        return updateResults.reduce(function (result, updateResult) {
-                            result += updateResult.n || 0;
-                            return result;
-                        }, 0);
-                    });
-            }
-
-            return 0;
-        });
-});
+    return 0;
+};
 
 /**
- * При восстановлении комментариев увелививает счетчик новых у пользователей,
- * которые прочитали комментарии объекта до создания последнего из восстанавливаемых
- * @param objId _id объекта
- * @param comments комментарии
- * @param [type] Тип объекта
+ * When restore deleted comments, increase new comments counter of users,
+ * who had read object comments before creation of last of restored comments
+ * @param objId
+ * @param {Array} comments Comments array
+ * @param {string} [type=photo] Object type
  */
-var onCommentsRestore = Bluebird.method(function (objId, comments, type) {
+export async function onCommentsRestore(objId, comments, type = 'photo') {
     if (_.isEmpty(comments)) {
         return;
     }
-    if (!type) {
-        type = 'photo';
-    }
 
-    var lastCommentStamp = _.last(comments).stamp;
+    const lastCommentStamp = _.last(comments).stamp;
 
-    // Для каждого пользователя, который последний раз просматривал коментарии объекта до даты последнего восстанавливаемого комментария,
-    // надо индивидуально посчитать сколько из них для него новые и не его собственные, и увеличить на это кол-во
-    return UserObjectRel.findAsync(
-        { obj: objId, comments: { $lte: lastCommentStamp }, type: type },
+    // For every user, who had read objects comment before the date of last of restored comment,
+    // need to individually count how many of them is new for him and not his own, and increase by that quantity
+    const rels = await UserObjectRel.find(
+        { obj: objId, comments: { $lte: lastCommentStamp }, type },
         { _id: 1, user: 1, comments: 1 },
         { lean: true }
-    )
-        .then(function (rels) {
-            if (_.isEmpty(rels)) {
-                return 0;
+    ).exec();
+
+    if (_.isEmpty(rels)) {
+        return 0;
+    }
+
+    // For each of relations find how many removed comments have been written after last user vist,
+    // and subtract them from new quantity in this relation
+    const updates = rels.reduce((result, rel) => {
+        const commentsView = rel.comments;
+        const newDeltaCount = comments.reduce((result, comment) => {
+            if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
+                result++;
             }
+            return result;
+        }, 0);
 
-            // Для каждого отношения ищем сколько удаленных комментариев были написаны после последнего посещения
-            // и вычитаем их из кол-ва новых в этом отношении
-            var updates = rels.reduce(function (result, rel) {
-                var commentsView = rel.comments;
-                var newDeltaCount = comments.reduce(function (result, comment) {
-                    if (comment.stamp > commentsView && !rel.user.equals(comment.user)) {
-                        result++;
-                    }
-                    return result;
-                }, 0);
+        if (newDeltaCount) {
+            result.push(UserObjectRel.update(
+                // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
+                // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
+                { _id: rel._id, comments: { $lte: lastCommentStamp } },
+                { $inc: { ccount_new: newDeltaCount } }
+            ).exec());
+        }
 
-                if (newDeltaCount) {
-                    result.push(UserObjectRel.update(
-                        // Обновляем конкретный rel, но на всякий случае указываем максимальное время просмотра комментариев,
-                        // по которому мы считали, на случай, если пока мы считали пользователь опять посмотрел комментарии
-                        { _id: rel._id, comments: { $lte: lastCommentStamp } },
-                        { $inc: { ccount_new: newDeltaCount } }
-                    ).exec());
-                }
+        return result;
+    }, []);
 
-                return result;
-            }, []);
+    if (updates.length) {
+        return (await* updates).reduce((result, { n: count = 0 }) => result + count, 0);
+    }
 
-            if (updates.length) {
-                return Bluebird.all(updates)
-                    .then(function (updateResults) {
-                        return updateResults.reduce(function (result, updateResult) {
-                            result += updateResult.n || 0;
-                            return result;
-                        }, 0);
-                    });
-            }
-
-            return 0;
-        });
-});
-
+    return 0;
+};
 
 /**
- * Находим количество новых комментариев для формирования письма уведомления пользователю
- * @param objs Массив _id объектов
+ * Find quantity of new comments for build notification letter for user
+ * @param objs Array of _id of object
  * @param relHash
- * @param userId _id пользователя
- * @param [type] Тип объекта
+ * @param userId
+ * @param {string} [type=photo] Object type
  */
-function getNewCommentsBrief(objs, relHash, userId, type) {
+export async function getNewCommentsBrief(objs, relHash, userId, type = 'photo') {
     if (_.isEmpty(objs)) {
         return [];
     }
 
-    var commentModel = type === 'news' ? CommentN : Comment;
-    var objsCommentsIds = [];
-    var promises = [];
-    var commentFrom;
-    var objId;
-    var rel;
-    var i;
+    const commentModel = type === 'news' ? CommentN : Comment;
+    const objsCommentsIds = [];
+    const promises = [];
 
-    // По каждому объекту выбираем комментарии со времени последнего просмотра комментариев или подписки
-    for (i = objs.length; i--;) {
-        objId = objs[i]._id;
-        rel = relHash[objId];
-        commentFrom = rel && (rel.comments || rel.sbscr_noty_change || rel.sbscr_create);
+    // For each object select comments with time of last view of comments of subscription
+    for (const obj of objs) {
+        const objId = obj._id;
+        const rel = relHash[objId];
+        const commentFrom = rel && (rel.comments || rel.sbscr_noty_change || rel.sbscr_create);
 
         if (!commentFrom) {
             continue;
@@ -352,51 +292,32 @@ function getNewCommentsBrief(objs, relHash, userId, type) {
             commentModel.find(
                 { obj: objId, del: null, stamp: { $gt: commentFrom }, user: { $ne: userId } },
                 { _id: 0, obj: 1, user: 1, stamp: 1 },
-                { lean: true, sort: { stamp: 1 } })
-                .populate({ path: 'user', select: { _id: 0, login: 1, disp: 1 } })
-                .execAsync()
+                { lean: true, sort: { stamp: 1 } }
+            ).populate({ path: 'user', select: { _id: 0, login: 1, disp: 1 } }).exec()
         );
     }
 
-    return Bluebird
-        .all(promises)
-        .then(function (objComments) {
-            var briefsHash = objComments.reduce(function (result, comments, index) {
-                var objId = objsCommentsIds[index];
+    const objComments = await* promises;
 
-                result[objId] = comments.reduce(function (brief, comment) {
-                    if (comment.stamp >= relHash[objId].sbscr_noty_change) {
-                        brief.newest++;
-                        brief.users[comment.user.login] = comment.user.disp;
-                    }
-                    return brief;
-                }, { unread: comments.length, newest: 0, users: {} });
+    const briefsHash = objComments.reduce((result, comments, index) => {
+        const objId = objsCommentsIds[index];
 
-                return result;
-            }, {});
+        result[objId] = comments.reduce((brief, comment) => {
+            if (comment.stamp >= relHash[objId].sbscr_noty_change) {
+                brief.newest++;
+                brief.users[comment.user.login] = comment.user.disp;
+            }
 
-            // Присваиваем каждому объекту его brief
-            return _.forEach(objs, function (obj) {
-                obj.brief = briefsHash[obj._id];
-            });
-        });
+            return brief;
+        }, { unread: comments.length, newest: 0, users: {} });
+
+        return result;
+    }, {});
+
+    // Assign to each object its brief
+    return _.forEach(objs, obj => {
+        obj.brief = briefsHash[obj._id];
+    });
 }
 
-
-module.exports.loadController = function (app, db, io) {
-    logger = require('log4js').getLogger('userobjectrel.js');
-
-    User = db.model('User');
-    Comment = db.model('Comment');
-    CommentN = db.model('CommentN');
-    UserObjectRel = db.model('UserObjectRel');
-};
-
-module.exports.getViewCommentsRel = getRel;
-module.exports.fillObjectByRels = fillObjectByRels;
-module.exports.getNewCommentsBrief = getNewCommentsBrief;
-module.exports.setObjectView = setObjectView;
-module.exports.setCommentView = setCommentView;
-module.exports.onCommentAdd = onCommentAdd;
-module.exports.onCommentsRemove = onCommentsRemove;
-module.exports.onCommentsRestore = onCommentsRestore;
+export const loadController = _.noop;
