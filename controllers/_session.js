@@ -1,18 +1,16 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
+import cookie from 'express/node_modules/cookie';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
-import getDbAsync from './connection';
+import { dbEval } from './connection';
+import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
 
-let dbNative;
-var cookie = require('express/node_modules/cookie'),
-    logger = log4js.getLogger('session'),
-
-    settings = require('./settings'),
-    regionController = require('./region'),
+const logger = log4js.getLogger('session');
+var regionController = require('./region'),
 
     errtypes = {
         NO_HEADERS: 'Bad request - no header or user agent',
@@ -120,7 +118,7 @@ function userObjectAddSession(session, cb) {
     if (usObj === undefined) {
         firstAdding = true;
         usObj = usSid[session.key] = {
-            user: user,
+            user,
             sessions: Object.create(null),
             rquery: Object.create(null),
             rshortlvls: [],
@@ -299,7 +297,7 @@ function sessionToArchive(session) {
 function userObjectTreatUser(usObj, cb) {
     var user = usObj.user;
     // Присваиваем ему настройки по умолчанию
-    user.settings = _.defaults(user.settings || {}, settings.userSettingsDef);
+    user.settings = _.defaults(user.settings || {}, userSettingsDef);
 
     return new Bluebird(function (resolve, reject) {
         // Популируем регионы
@@ -822,39 +820,51 @@ var checkSessWaitingConnect = (function () {
     };
 }());
 
-//Периодически отправляет просроченные сессии в архив
-var checkExpiredSessions = (function () {
-    var checkInterval = ms('1h'); //Интервал проверки
+// Periodically sends expired session to archive
+const checkExpiredSessions = (function () {
+    const checkInterval = ms('1h'); // Check interval
 
-    function procedure() {
-        dbNative.eval('function (frontierDate) {archiveExpiredSessions(frontierDate);}', [new Date() - SESSION_SHELF_LIFE], { nolock: true }, function (err, ret) {
-            if (err || !ret) {
-                logger.error('archiveExpiredSessions error: ', err);
-            } else {
-                logger.info(ret.count, ' sessions moved to archive');
+    async function procedure() {
+        try {
+            const result = await dbEval(
+                'function (frontierDate) {archiveExpiredSessions(frontierDate);}',
+                [new Date() - SESSION_SHELF_LIFE], { nolock: true }
+            );
+
+            if (!result) {
+                logger.error('archiveExpiredSessions result undefined');
             }
-            if (ret && Array.isArray(ret.keys)) {
-                //Проверяем, если какая-либо из отправленных в архив сессий находится в памяти (хешах), убираем из памяти
-                ret.keys.forEach(function (key) {
-                    var session = sessConnected[key],
-                        usObj = usSid[key];
+
+            logger.info(`${result.count} sessions moved to archive`);
+
+            if (Array.isArray(result.keys)) {
+                // Check if some of archived sessions is still in memory (in hashes), remove it frome memory
+                for (const key of result.keys) {
+                    const session = sessConnected[key];
+                    const usObj = usSid[key];
+
                     if (session) {
                         if (usObj !== undefined) {
                             sessionFromHashes(usObj, session, 'checkExpiredSessions');
                         }
-                        //Если в сессии есть сокеты, разрываем соединение
+
+                        // If session contains sockets, break connection
                         _.forEach(session.sockets, function (socket) {
                             if (socket.disconnet) {
                                 socket.disconnet();
                             }
                         });
+
                         delete session.sockets;
                     }
-                });
+                }
             }
-            //Планируем следующий запуск
-            checkExpiredSessions();
-        });
+        } catch (err) {
+            logger.error('archiveExpiredSessions error: ', err);
+        }
+
+        // Schedule next launch
+        checkExpiredSessions();
     }
 
     return function () {
@@ -882,8 +892,6 @@ module.exports.getPlainUser = getPlainUser;
 module.exports.checkUserAgent = checkUserAgent;
 
 module.exports.loadController = async function (a, io) {
-    dbNative = (await getDbAsync()).db;
-
     checkSessWaitingConnect();
     checkExpiredSessions();
 
@@ -897,7 +905,7 @@ module.exports.loadController = async function (a, io) {
                 session = hs.session;
 
             socket.emit('takeInitData', {
-                p: settings.clientParams,
+                p: clientParams,
                 cook: createSidCookieObj(session),
                 u: getPlainUser(usObj.user),
                 registered: usObj.registered

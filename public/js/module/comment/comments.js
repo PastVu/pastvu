@@ -324,7 +324,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                         force: true
                     });
                 } else {
-                    var subscrFlag = !!result.subscr,
+                    var subscrFlag = !!result.subscribe,
                         subscrGAction = subscrFlag ? (byCommentCreate ? 'createAutoReply' : 'create') : 'delete';
 
                     this.parentModule.setSubscr(subscrFlag);
@@ -332,7 +332,7 @@ define(['underscore', 'underscore.string', 'Browser', 'Utils', 'socket!', 'Param
                     ga('send', 'event', 'subscription', subscrGAction, 'subscription ' + subscrGAction);
                 }
             }, this);
-            socket.emit('subscr', { cid: this.cid, type: this.type, do: !this.subscr() });
+            socket.emit('subscr', { cid: this.cid, type: this.type, subscribe: !this.subscr() });
         },
 
         receive: function (cb, ctx) {

@@ -1,53 +1,45 @@
-'use strict';
+import fs from 'fs';
+import ms from 'ms';
+import _ from 'lodash';
+import log4js from 'log4js';
+import moment from 'moment';
+import Bluebird from 'bluebird';
+import Utils from '../commons/Utils';
+import constants from './constants.js';
+import * as session from './_session';
+import * as regionController from './region';
+import * as photoCluster from './photoCluster';
+import * as photoConverter from './photoConverter';
+import * as userObjectRelController from './userobjectrel';
+import { getReasonHashFromCache } from './reason';
+import { unSubscribeObj, subscribeUserByIds } from './subscr';
+import { userSettingsDef, userSettingsVars } from './settings';
 
-var _session = require('./_session.js');
-var settings = require('./settings.js'),
-    Settings,
-    User,
-    UserSelfPublishedPhotos,
-    Photo,
-    Download,
-    PhotoMap,
-    PhotoHistory,
-    Comment,
-    Counter,
-    UserObjectRel,
-    reasonController = require('./reason.js'),
-    regionController = require('./region.js'),
-    PhotoCluster = require('./photoCluster.js'),
-    PhotoConverter = require('./photoConverter.js'),
-    subscrController = require('./subscr.js'),
-    commentController = require('./comment.js'),
-    userObjectRelController = require('./userobjectrel'),
+import { User } from '../models/User';
+import { Counter } from '../models/Counter';
+import { Comment } from '../models/Comment';
+import { Download } from '../models/Download';
+import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
 
-    fs = require('fs'),
-    ms = require('ms'),
-    _ = require('lodash'),
-    moment = require('moment'),
-    log4js = require('log4js'),
-    Bluebird = require('bluebird'),
-    Utils = require('../commons/Utils.js'),
-    logger,
-    incomeDir = global.appVar.storePath + 'incoming/',
-    privateDir = global.appVar.storePath + 'private/photos/',
-    publicDir = global.appVar.storePath + 'public/photos/',
-    imageFolders = ['x/', 's/', 'q/', 'm/', 'h/', 'd/', 'a/'],
+const logger = log4js.getLogger('photo.js');
+const maxRegionLevel = constants.region.maxLevel;
+const incomeDir = global.appVar.storePath + 'incoming/';
+const privateDir = global.appVar.storePath + 'private/photos/';
 
-    constants = require('./constants.js'),
+const msg = {
+    deny: 'У вас нет прав на это действие',
+    noUser: 'Запрашиваемый пользователь не существует',
+    noPhoto: 'Запрашиваемой фотографии не существует или не доступна',
+    noRegion: 'Такого региона не существует',
+    badParams: 'Неверные параметры запроса',
+    needReason: 'Необходимо указать причину операции',
+    // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
+    changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена',
+    anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
+    mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
+};
 
-    maxRegionLevel = constants.region.maxLevel,
-
-    msg = {
-        deny: 'У вас нет прав на это действие',
-        noUser: 'Запрашиваемый пользователь не существует',
-        noPhoto: 'Запрашиваемой фотографии не существует или не доступна',
-        noRegion: 'Такого региона не существует',
-        badParams: 'Неверные параметры запроса',
-        needReason: 'Необходимо указать причину операции',
-        changed: 'С момента обновления вами страницы, информация на ней была кем-то изменена', // Две кнопки: "Посмотреть", "Продолжить <сохранение|изменение статуса>"
-        anotherStatus: 'Фотография уже в другом статусе, обновите страницу',
-        mustCoord: 'Фотография должна иметь координату или быть привязана к региону вручную'
-    },
+var commentController = require('./comment.js'),
 
     status = constants.photo.status,
     parsingFields = constants.photo.parsingFields,
@@ -152,7 +144,7 @@ var settings = require('./settings.js'),
                     canModerate = !!permissions.canModerate(photo, usObj);
                 }
 
-                var userSettings = photo.user.settings || settings.userSettingsDef;
+                var userSettings = photo.user.settings || userSettingsDef;
 
                 if (// If setted individual that photo has now watersing
                     photo.watersignIndividual && photo.watersignOption === false ||
@@ -257,7 +249,7 @@ async function findPhoto(usObj, query, fieldSelect, options, populateUser) {
     }
 
     if (populateUser) {
-        photo.user.settings = _.defaults(photo.user.settings || {}, settings.userSettingsDef);
+        photo.user.settings = _.defaults(photo.user.settings || {}, userSettingsDef);
     }
 
     return photo;
@@ -312,7 +304,7 @@ var core = {
                 }
 
                 var isMine = User.isEqual(iAm.user, photo.user);
-                var userObj = isMine ? iAm : _session.getOnline(null, photo.user);
+                var userObj = isMine ? iAm : session.getOnline(null, photo.user);
                 var promiseProps = {};
                 var regionFields;
 
@@ -369,7 +361,7 @@ var core = {
                 if (shouldBeEdit) {
                     // Serve user settings, only when photo is for editing
                     photo.user.settings = this.online ? owner.settings :
-                        _.defaults(owner.settings || {}, settings.userSettingsDef);
+                        _.defaults(owner.settings || {}, userSettingsDef);
                     photo.user.watersignCustom = owner.watersignCustom;
 
                     if (this.can.nowaterchange) {
@@ -447,7 +439,7 @@ var core = {
         }
 
         if (data.z < 17) {
-            promise = year ? PhotoCluster.getBoundsByYear(data) : PhotoCluster.getBounds(data);
+            promise = year ? photoCluster.getBoundsByYear(data) : photoCluster.getBounds(data);
         } else {
             promises = [];
 
@@ -516,7 +508,7 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
-    var userObj = _session.getOnline(data.login);
+    var userObj = session.getOnline(data.login);
     var promise;
 
     if (userObj) {
@@ -537,7 +529,7 @@ var giveNewPhotosLimit = Bluebird.method(function (iAm, data) {
 function getUserWaterSign(user, photo) {
     var result;
     var option;
-    var validOptionValues = settings.userSettingsVars.photo_watermark_add_sign;
+    var validOptionValues = userSettingsVars.photo_watermark_add_sign;
 
     if (photo && _.get(photo, 'watersignIndividual')) {
         option = _.get(photo, 'watersignOption');
@@ -552,7 +544,7 @@ function getUserWaterSign(user, photo) {
 
         // If user watersign option is not valid, take default value
         if (!validOptionValues.includes(option)) {
-            option = settings.userSettingsDef.photo_watermark_add_sign;
+            option = userSettingsDef.photo_watermark_add_sign;
         }
 
         result = option === 'custom' && user.watersignCustom ? user.watersignCustom : !!option;
@@ -636,10 +628,10 @@ var createPhotos = Bluebird.method(function (socket, data) {
             }));
         })
         .then(function () {
-            PhotoConverter.addPhotos(cids, 1);
+            photoConverter.addPhotos(cids, 1);
 
             user.pfcount = user.pfcount + data.length;
-            return _session.saveEmitUser(iAm, socket);
+            return session.saveEmitUser(iAm, socket);
         })
         .then(function () {
             return { message: data.length + ' photo successfully saved', cids: cids };
@@ -668,14 +660,14 @@ function photoToMap(photo, geoPhotoOld, yearPhotoOld) {
     return Bluebird.join(
         PhotoMap.updateAsync({ cid: photo.cid }, $update, { upsert: true }),
         // Отправляем на кластеризацию
-        PhotoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
+        photoCluster.clusterPhoto(photo, geoPhotoOld, yearPhotoOld)
     );
 }
 
-// Удаляет фото с карты
+// Remove photo from map
 function photoFromMap(photo) {
     return Bluebird.all([
-        PhotoCluster.declusterPhoto(photo),
+        photoCluster.declusterPhoto(photo),
         PhotoMap.removeAsync({ cid: photo.cid })
     ]);
 }
@@ -932,13 +924,13 @@ var photoUpdate = function (iAm, photo, stamp) {
 // Обновляем счетчики количества у пользователя
 var userPCountUpdate = function (user, newDelta, publicDelta, inactiveDelta) {
     var userId = user._id || user;
-    var ownerObj = _session.getOnline(null, userId);
+    var ownerObj = session.getOnline(null, userId);
 
     if (ownerObj) {
         ownerObj.user.pfcount = ownerObj.user.pfcount + (newDelta || 0);
         ownerObj.user.pcount = ownerObj.user.pcount + (publicDelta || 0);
         ownerObj.user.pdcount = ownerObj.user.pdcount + (inactiveDelta || 0);
-        return _session.saveEmitUser(ownerObj);
+        return session.saveEmitUser(ownerObj);
     } else {
         return User.updateAsync({ _id: userId }, {
             $inc: {
@@ -1152,7 +1144,7 @@ var approvePhoto = function (socket, data) {
 
             // Подписываем владельца фотографии на неё и устанавливаем ему время просмотра комментариев,
             // чтобы для него корректо считались кол-во новых пока сам не зайдет
-            subscrController.subscribeUserByIds(photoSaved.user, photoSaved._id, true, 'photo');
+            subscribeUserByIds(photoSaved.user, photoSaved._id, true, 'photo');
 
             // Добавляем фото на карту
             if (Utils.geo.check(photoSaved.geo)) {
@@ -1265,7 +1257,7 @@ var removePhoto = Bluebird.method(function (socket, data) {
             savePhotoHistory(iAm, this.oldPhotoObj, photoSaved, this.canModerate, data.reason);
 
             // Отписываем всех пользователей
-            subscrController.unSubscribeObj(photoSaved._id);
+            unSubscribeObj(photoSaved._id);
 
             if (this.oldPhotoObj.s === status.PUBLIC) {
                 changePublicPhotoExternality(photoSaved, iAm);
@@ -1860,7 +1852,7 @@ var photoValidate = function (newValues, oldValues, can) {
         }
 
         if (result.watersignIndividual || oldValues.watersignIndividual && result.watersignIndividual === undefined) {
-            if (settings.userSettingsVars.photo_watermark_add_sign.includes(newValues.watersignOption)) {
+            if (userSettingsVars.photo_watermark_add_sign.includes(newValues.watersignOption)) {
                 result.watersignOption = newValues.watersignOption;
             }
 
@@ -1906,7 +1898,7 @@ var photoValidate = function (newValues, oldValues, can) {
 
         if (result.disallowDownloadOriginIndividual ||
             oldValues.disallowDownloadOriginIndividual && result.disallowDownloadOriginIndividual === undefined) {
-            if (settings.userSettingsVars.photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
+            if (userSettingsVars.photo_disallow_download_origin.includes(newValues.disallowDownloadOrigin)) {
                 result.disallowDownloadOrigin = newValues.disallowDownloadOrigin;
             }
         }
@@ -2099,7 +2091,7 @@ var savePhoto = function (iAm, data) {
             }
 
             if (this.reconvert) {
-                PhotoConverter.addPhotos([{ cid: this.photo.cid }], 2);
+                photoConverter.addPhotos([{ cid: this.photo.cid }], 2);
             }
 
             // Заново выбираем данные для отображения
@@ -2170,7 +2162,7 @@ var convertPhotos = Bluebird.method(function (iAm, data) {
                 Photo.updateAsync({ cid: { $in: cids } }, { $set: { convqueue: true } }, { multi: true });
             }
 
-            return PhotoConverter.addPhotos(converterData, 3);
+            return photoConverter.addPhotos(converterData, 3);
         });
 });
 
@@ -2199,7 +2191,7 @@ var convertPhotosAll = Bluebird.method(function (iAm, data) {
         }
     }
 
-    return PhotoConverter.addPhotosAll(params);
+    return photoConverter.addPhotosAll(params);
 });
 
 // Sends user's photo for convert
@@ -2340,7 +2332,7 @@ var convertUserPhotos = Bluebird.method(function (iAm, data) {
                     }))
                 )
                 .then(function () {
-                    return PhotoConverter.addPhotosAll({
+                    return photoConverter.addPhotosAll({
                         login: data.login,
                         priority: 2,
                         region: region,
@@ -2755,7 +2747,7 @@ var giveObjHist = Bluebird.method(function (iAm, data) {
             // Если есть причины, запрашиваем их заголовки
             reasons = Object.keys(reasons);
             if (reasons.length) {
-                result.reasons = reasonController.getReasonHashFromCache(reasons);
+                result.reasons = getReasonHashFromCache(reasons);
             }
 
             return result;
@@ -2791,9 +2783,9 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
             var size = this.origin ? photo.size : null;
 
             return new Download({
-                key: key,
+                key,
                 data: {
-                    fileName: fileName, path: path, size: size, type: 'image/jpeg',
+                    fileName, path, size, type: 'image/jpeg',
                     login: iAm.user.login, cid: photo.cid, origin: this.origin
                 }
             }).saveAsync();
@@ -2806,21 +2798,8 @@ var getDownloadKey = Bluebird.method(function (iAm, data) {
 });
 
 module.exports.loadController = function (app, db, io) {
-    logger = log4js.getLogger('photo.js');
-
-    Settings = db.model('Settings');
-    User = db.model('User');
-    Photo = db.model('Photo');
-    PhotoMap = db.model('PhotoMap');
-    PhotoHistory = db.model('PhotoHistory');
-    Download = db.model('Download');
-    Counter = db.model('Counter');
-    Comment = db.model('Comment');
-    UserObjectRel = db.model('UserObjectRel');
-    UserSelfPublishedPhotos = db.model('UserSelfPublishedPhotos');
-
-    PhotoCluster.loadController(app, db, io);
-    PhotoConverter.loadController(app, db, io);
+    photoCluster.loadController(app, io);
+    photoConverter.loadController(app, io);
 
     planResetDisplayStat(); // Планируем очистку статистики
 
