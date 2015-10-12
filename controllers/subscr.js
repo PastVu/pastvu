@@ -1,629 +1,529 @@
-'use strict';
+import fs from 'fs';
+import _ from 'lodash';
+import path from 'path';
+import jade from 'jade';
+import log4js from 'log4js';
+import Utils from '../commons/Utils';
+import * as session from './_session';
+import { waitDb } from './connection';
+import { send as sendMail } from './mail';
+import { userSettingsDef } from './settings';
+import { findPhoto, buildPhotosQuery } from './photo';
+import * as userObjectRelController from './userobjectrel';
 
-var fs = require('fs'),
-    _ = require('lodash'),
-    path = require('path'),
-    jade = require('jade'),
-    Bluebird = require('bluebird'),
-    _session = require('./_session.js'),
-    settings = require('./settings.js'),
-    Settings,
-    User,
-    UserObjectRel,
-    UserNoty,
-    News,
-    Photo,
-    Utils = require('../commons/Utils.js'),
-    logger = require('log4js').getLogger("subscr.js"),
-    mailController = require('./mail.js'),
-    photoController = require('./photo.js'),
-    userObjectRelController = require('./userobjectrel'),
+import { News } from '../models/News';
+import { User } from '../models/User';
+import { Photo } from '../models/Photo';
+import { UserNoty, UserObjectRel } from '../models/UserStates';
 
-    msg = {
-        deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
-        noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-        nouser: 'Requested user does not exist'
-    },
+const logger = log4js.getLogger('subscr.js');
+const msg = {
+    badParams: 'Неверные параметры запроса',
+    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
+    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
+    nouser: 'Requested user does not exist'
+};
 
-    noticeTpl,
-
-    declension = {
-        comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
-        commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
-    },
-
-    sendFreq = 1500, //Частота шага конвейера отправки в ms
-    sendPerStep = 10; //Кол-во отправляемых уведомлений за шаг конвейера
+let noticeTpl;
+const noticeTplPath = path.normalize('./views/mail/notice.jade');
+const sendFreq = 1500; // Conveyor step frequency in ms
+const sendPerStep = 10; // Amount of sending emails in conveyor step
+const subscrPerPage = 24;
+const sortNotice = (a, b) => a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
+const sortSubscr = ({ ccount_new: aCount = 0, sbscr_create: aDate}, { ccount_new: bCount = 0, sbscr_create: bDate}) =>
+    aCount < bCount ? 1 : aCount > bCount ? - 1 : aDate < bDate ? 1 : aDate > bDate ? -1 : 0;
+const declension = {
+    comment: [' новый комментарий', ' новых комментария', ' новых комментариев'],
+    commentUnread: [' непрочитанный', ' непрочитанных', ' непрочитанных']
+};
 
 /**
- * Подписка/Отписка объекта (внешняя, для текущего пользователя по cid объекта)
+ * Subscribe to/unsubscribe from object (external, for current user by object cid)
  * @param iAm
- * @param data
  */
-function subscribeUser(iAm, data) {
+async function subscribeUser(iAm, { cid, type = 'photo', subscribe } = {}) {
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !Number(data.cid)) {
-        throw { message: 'Bad params' };
+    cid = Number(cid);
+
+    if (!cid || cid < 1) {
+        throw { message: msg.badParams };
     }
 
-    var cid = Number(data.cid);
-    var promise;
+    const obj = await (type === 'news' ? News.findOne({ cid }, { _id: 1 }).exec() : findPhoto(iAm, { cid }));
 
-    if (data.type === 'news') {
-        promise = News.findOneAsync({ cid: cid }, { _id: 1 });
+    if (_.isEmpty(obj)) {
+        throw { message: msg.noObject };
+    }
+
+    if (subscribe) {
+        // TODO: Подумать, что делать с новыми комментариями появившимися после просмотра объекта, но до подписки
+        await UserObjectRel.update(
+            { obj: obj._id, user: iAm.user._id, type },
+            { $set: { sbscr_create: new Date() } },
+            { upsert: true }
+        ).exec();
     } else {
-        promise = photoController.findPhoto(iAm, { cid: cid });
+        await UserObjectRel.update(
+            { obj: obj._id, user: iAm.user._id, type },
+            { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
+        ).exec();
     }
 
-    return promise
-        .then(function (obj) {
-            if (!obj) {
-                throw { message: msg.noObject };
-            }
-            if (data.do) {
-                // TODO: Подумать, что делать с новыми комментариями появившимися после просмотра объекта, но до подписки
-                return UserObjectRel.updateAsync(
-                    { obj: obj._id, user: iAm.user._id, type: data.type },
-                    { $set: { sbscr_create: new Date() } },
-                    { upsert: true }
-                );
-            } else {
-                return UserObjectRel.updateAsync(
-                    { obj: obj._id, user: iAm.user._id, type: data.type },
-                    { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
-                );
-            }
-        })
-        .then(function () {
-            return { subscr: data.do };
-        });
+    return { subscribe };
 }
 
 /**
- * Подписка объекта по id пользователя и объекта (внутренняя, например, после подтверждения фото)
- * @param userId
+ * Subscribe by userId and objectId (internal, for example, after photo approval)
+ * @param user User object or userId
  * @param objId
  * @param setCommentView
- * @param type
+ * @param {string} [type=photo]
  */
-function subscribeUserByIds(user, objId, setCommentView, type) {
-    var userId = user._id || user;
-    var stamp = new Date();
-    var $update = { $set: { sbscr_create: stamp } };
+export async function subscribeUserByIds(user, objId, setCommentView, type = 'photo') {
+    const userId = user._id || user;
+    const stamp = new Date();
+    const $update = { $set: { sbscr_create: stamp } };
 
     if (setCommentView) {
         $update.$set.comments = stamp;
     }
 
-    return UserObjectRel.updateAsync({ obj: objId, user: userId, type: type }, $update, { upsert: true })
-        .catch(function (err) {
-            logger.error(err.message);
-            return null;
-        });
+    return await UserObjectRel.update({ obj: objId, user: userId, type }, $update, { upsert: true }).exec();
 }
 
 /**
- * Удаляет подписки на объект, если указан _id пользователя, то только его подписку
+ * Remove subscriptions to object. If specified userId, only his subscription
  * @param objId
- * @param [userId] Опционально. Без этого параметра удалит подписки на объект у всех пользователей
+ * @param [userId] Without it remove subscription to object from all users
  */
-function unSubscribeObj(objId, userId) {
-    var query = { obj: objId };
+export async function unSubscribeObj(objId, userId) {
+    const query = { obj: objId };
+
     if (userId) {
         query.user = userId;
     }
-    return UserObjectRel.updateAsync(query, { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } });
+
+    return await UserObjectRel.update(
+        query, { $unset: { sbscr_create: 1, sbscr_noty_change: 1, sbscr_noty: 1 } }
+    ).exec();
 }
 
 /**
- * Устанавливает готовность уведомления для объекта по событию добавления комментария
+ * Establishes notification readiness for object by event of comment addition
  * @param objId
  * @param user
+ * @param {Date} [stamp=new Date()]
  */
-function commentAdded(objId, user, stamp) {
-    if (!stamp) {
-        stamp = new Date();
-    }
-
-    // Находим всех пользователей, кроме создающего, подписанных на комментарии объекта, но еще не ожидающих уведомления
-    return UserObjectRel.findAsync(
+export async function commentAdded(objId, user, stamp = new Date()) {
+    // Find all users (except comment creator), who is subscribed to object and still don't waiting notification
+    const objs = await UserObjectRel.find(
         { obj: objId, user: { $ne: user._id }, sbscr_create: { $exists: true }, sbscr_noty: { $exists: false } },
         { _id: 1, user: 1 },
         { lean: true }
-    )
-        .bind({})
-        .then(function (objs) {
-            if (_.isEmpty(objs)) {
-                return []; // Если никто на этот объект не подписан - выходим
-            }
-            this.users = [];
-            var ids = [];
+    ).exec();
 
-            for (var i = objs.length; i--;) {
-                ids.push(objs[i]._id);
-                this.users.push(objs[i].user);
-            }
+    if (_.isEmpty(objs)) {
+        return []; // If no one is subscribed to object - exit
+    }
 
-            // Устанавливаем флаг готовности уведомления по объекту, для подписанных пользователей
-            return UserObjectRel.updateAsync(
-                { _id: { $in: ids } },
-                { $set: { sbscr_noty_change: stamp, sbscr_noty: true } },
-                { multi: true }
-            );
-        })
-        .then(function () {
-            // Вызываем планировщик отправки уведомлений для подписанных пользователей
-            scheduleUserNotice(this.users);
-            return this.users;
-        });
+    const ids = [];
+    const users = [];
+
+    for (const obj of objs) {
+        ids.push(obj._id);
+        users.push(obj.user);
+    }
+
+    // Set flag of readiness of notification by object for subscribed users
+    await UserObjectRel.update(
+        { _id: { $in: ids } },
+        { $set: { sbscr_noty_change: stamp, sbscr_noty: true } },
+        { multi: true }
+    ).exec();
+
+    scheduleUserNotice(users); // Call scheduler of notification sending for subscribed users
+
+    return users;
 }
 
 /**
- * Устанавливает объект комментариев как просмотренный, т.е. ненужный для уведомления
+ * Sets object comments like viewed, ie unnecessary to notify
  * @param objId
  * @param user
  * @param [setInRel]
  */
-function commentViewed(objId, user, setInRel) {
-    var promise;
-
+export async function commentViewed(objId, user, setInRel) {
     if (setInRel) {
-        promise = UserObjectRel.updateAsync(
+        const { n: numberAffected = 0 } = await UserObjectRel.update(
             { obj: objId, user: user._id },
             { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
             { upsert: false }
-        )
-            .spread(function (numberAffected) {
-                return numberAffected;
-            });
-    } else {
-        promise = Bluebird.resolve();
+        ).exec();
+
+        if (numberAffected === 0) {
+            return;
+        }
     }
 
-    return promise
-        .then(function (numberAffected) {
-            if (numberAffected === 0) {
-                return;
-            }
-            // Считаем кол-во оставшихся готовых к отправке уведомлений для пользователя
-            return UserObjectRel.countAsync({ user: user._id, sbscr_noty: true });
-        })
-        .then(function (count) {
-            if (count === 0) {
-                // Если уведомлений, готовых к отправке больше нет, то сбрасываем запланированное уведомление для пользователя
-                UserNoty.update({ user: user._id }, { $unset: { nextnoty: 1 } }).exec();
-            }
-        });
+    // Calculate amount of notification which ready for sending to user
+    const count = await UserObjectRel.count({ user: user._id, sbscr_noty: true }).exec();
+
+    if (count === 0) {
+        // If there is no notifications ready fo sending left, reset scheduled sending to user
+        await UserNoty.update({ user: user._id }, { $unset: { nextnoty: 1 } }).exec();
+    }
 }
 
 /**
- * При изменении пользователем своего throttle, надо поменять время заплонированной отправки, если оно есть
+ * When user changes his 'throttle', need to change time of scheduled sending, if its exists
  * @param userId
  * @param newThrottle
  */
-function userThrottleChange(userId, newThrottle) {
+export async function userThrottleChange(userId, newThrottle) {
     if (!newThrottle) {
         return;
     }
-    UserNoty.findOne({ user: userId, nextnoty: { $exists: true } }, { _id: 0 }, { lean: true }, function (err, userNoty) {
-        if (err) {
-            return logger.error(err.message);
-        }
-        if (!userNoty) {
-            return;
-        }
-        var newNextNoty;
-        var nearestNoticeTimeStamp = Date.now() + 10000;
 
-        if (userNoty.lastnoty && userNoty.lastnoty.getTime) {
-            newNextNoty = Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp);
-        } else {
-            newNextNoty = nearestNoticeTimeStamp;
-        }
+    const userNoty = await UserNoty.findOne(
+        { user: userId, nextnoty: { $exists: true } }, { _id: 0 }, { lean: true }
+    ).exec();
 
-        UserNoty.update({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
-    });
+    if (_.isEmpty(userNoty)) {
+        return;
+    }
+
+    const nearestNoticeTimeStamp = Date.now() + 10000;
+    const newNextNoty = userNoty.lastnoty && userNoty.lastnoty.getTime ?
+            Math.max(userNoty.lastnoty.getTime() + newThrottle, nearestNoticeTimeStamp) :
+            nearestNoticeTimeStamp;
+
+    await UserNoty.update({ user: userId }, { $set: { nextnoty: new Date(newNextNoty) } }).exec();
 }
 
 /**
- * Планируем отправку уведомлений для пользователей
- * @param users Массив _id пользователй
+ * Schedule sending of notification for users
+ * @param users Array of users _id
  */
-function scheduleUserNotice(users) {
-    return Bluebird.join(
-        // Находим для каждого пользователя параметр throttle
-        User.findAsync({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }),
-        // Находим noty пользователей из списка, и берем даже запланированных,
-        // если их не возьмем, то не сможем понять, кто уже запланирован, а кто первый раз планируется
-        UserNoty.findAsync({ user: { $in: users } }, { _id: 0 }, { lean: true })
-    )
-        .spread(function (usersThrottle, usersNoty) {
-            var usersNotyHash = {};
-            var usersTrottleHash = {};
-            var defThrottle = settings.userSettingsDef.subscr_throttle;
-            var nearestNoticeTimeStamp = Date.now() + 10000; // Ближайшее уведомление для пользователей, у которых не было предыдущих
-            var lastnoty;
-            var nextnoty;
-            var userId;
-            var i;
+async function scheduleUserNotice(users) {
+    const [usersThrottle, usersNoty] = await* [
+        // Find for every user 'throttle' value
+        User.find({ _id: { $in: users } }, { _id: 1, 'settings.subscr_throttle': 1 }, { lean: true }).exec(),
+        // Find noty of users, even scheduled
+        // (if we won't, we can't understand which is planed already, and wich is planning for the first time)
+        UserNoty.find({ user: { $in: users } }, { _id: 0 }, { lean: true }).exec()
+    ];
 
-            for (i = usersThrottle.length; i--;) {
-                usersTrottleHash[usersThrottle[i]._id] = usersThrottle[i].settings && usersThrottle[i].settings.subscr_throttle;
+    const usersNotyHash = {};
+    const usersTrottleHash = {};
+    const nearestNoticeTimeStamp = Date.now() + 10000; // Closest notification for users, who have not previous one
+
+    for (const userThrotle of usersThrottle) {
+        usersTrottleHash[userThrotle._id] = _.get(userThrotle, 'settings.subscr_throttle');
+    }
+
+    for (const userNoty of usersNoty) {
+        const user = userNoty.user;
+
+        if (userNoty.nextnoty) {
+            // Means that notification for user has been already scheduled and we don't need to do anything
+            usersNotyHash[user] = false;
+        } else {
+            // If user has no next schedule time, calculate it
+            const lastnoty = userNoty.lastnoty;
+            let nextnoty;
+
+            // If there was no previous notification or since it has elapsed time more then throttle,
+            // or left less then 10 seconds, then set closest time
+            if (lastnoty && lastnoty.getTime) {
+                nextnoty = Math.max(
+                    lastnoty.getTime() + (usersTrottleHash[user] || userSettingsDef.subscr_throttle),
+                    nearestNoticeTimeStamp
+                );
+            } else {
+                nextnoty = nearestNoticeTimeStamp;
             }
+            usersNotyHash[user] = nextnoty;
+        }
+    }
 
-            for (i = usersNoty.length; i--;) {
-                if (usersNoty[i].nextnoty) {
-                    // Значит у этого пользователя уже запланированно уведомление и ничего делать не надо
-                    usersNotyHash[usersNoty[i].user] = false;
-                } else {
-                    // Если у пользователя еще не установленно время следующего уведомления, расчитываем его
-                    lastnoty = usersNoty[i].lastnoty;
-
-                    // Если прошлого уведомления еще не было или с его момента прошло больше времени,
-                    // чем throttle пользователя или осталось менее 10сек, ставим ближайший
-                    if (lastnoty && lastnoty.getTime) {
-                        nextnoty = Math.max(lastnoty.getTime() + (usersTrottleHash[usersNoty[i].user] || defThrottle), nearestNoticeTimeStamp);
-                    } else {
-                        nextnoty = nearestNoticeTimeStamp;
-                    }
-                    usersNotyHash[usersNoty[i].user] = nextnoty;
-                }
-            }
-
-            for (i = users.length; i--;) {
-                userId = users[i];
-                if (usersNotyHash[userId] !== false) {
-                    UserNoty.update(
-                        { user: userId },
-                        { $set: { nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp) } },
-                        { upsert: true }
-                    ).exec();
-                }
-            }
-        })
-        .catch(function (err) {
-            logger.error(err.message);
-        });
+    for (const userId of users) {
+        if (usersNotyHash[userId] !== false) {
+            UserNoty.update(
+                { user: userId },
+                { $set: { nextnoty: new Date(usersNotyHash[userId] || nearestNoticeTimeStamp) } },
+                { upsert: true }
+            ).exec();
+        }
+    }
 }
 
-// Конвейер отправки уведомлений
-// Каждые sendFreq ms отправляем sendPerStep уведомлений
-var notifierConveyer = (function () {
-    function conveyerStep() {
-        // Находим уведомления, у которых прошло время nextnoty
-        UserNoty.findAsync(
-            { nextnoty: { $lte: new Date() } },
-            { _id: 0 },
-            { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
-        )
-            .bind({})
-            .then(function (usersNoty) {
-                if (_.isEmpty(usersNoty)) {
-                    throw { code: 'EMPTY' };
-                }
-                this.userIds = [];
-                this.nowDate = new Date();
+// Conveyor of notificaton sending
+// Every 'sendFreq' sends 'sendPerStep' notifications
+const notifierConveyor = (function () {
+    async function conveyorStep() {
+        try {
+            // Find noty, which time nextnoty has passed
+            const usersNoty = await UserNoty.find(
+                { nextnoty: { $lte: new Date() } },
+                { _id: 0 },
+                { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
+            ).exec();
 
-                return Bluebird.all(usersNoty.map(function (noty) {
-                    this.userIds.push(noty.user);
-                    return sendUserNotice(noty.user, noty.lastnoty);
-                }, this));
-            })
-            .then(function () {
-                return UserNoty.updateAsync(
-                    { user: { $in: this.userIds } },
-                    { $set: { lastnoty: this.nowDate }, $unset: { nextnoty: 1 } },
-                    { multi: true }
-                );
-            })
-            .catch(function (err) {
-                if (err.code !== 'EMPTY') {
-                    logger.error(err.message);
-                }
-                return null;
-            })
-            .then(function () {
-                return notifierConveyer();
+            if (!_.isEmpty(usersNoty)) {
+                return notifierConveyor();
+            }
+
+            const userIds = [];
+            const nowDate = new Date();
+
+            await* usersNoty.map(({ user }) => {
+                userIds.push(user);
+                return sendUserNotice(user).catch(err => logger.error('sendUserNotice', err));
             });
+
+            await UserNoty.update(
+                { user: { $in: userIds } },
+                { $set: { lastnoty: nowDate }, $unset: { nextnoty: 1 } },
+                { multi: true }
+            ).exec();
+        } catch (err) {
+            logger.error('conveyorStep', err);
+        }
+
+        notifierConveyor();
     }
 
     return function () {
-        setTimeout(conveyerStep, sendFreq);
+        setTimeout(conveyorStep, sendFreq);
     };
 }());
 
 /**
- * Формируем письмо для пользователя из готовых уведомлений (noty: true) и отправляем его
+ * Forms a letter to user from ready notifications (noty: true) and send it
  * @param userId
- * @param lastsend Время прошлой отправки уведомления пользователя для подсчета кол-ва новых
  */
-function sendUserNotice(userId, lastsend) {
-    var userObj = _session.getOnline(null, userId);
-    var promise = userObj ?
-        Bluebird.resolve(userObj.user) :
-        User.findOneAsync({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true });
+async function sendUserNotice(userId) {
+    const userObj = session.getOnline(null, userId);
+    const user = await (userObj ? Promise.resolve(userObj.user) :
+        User.findOne({ _id: userId }, { _id: 1, login: 1, disp: 1, email: 1 }, { lean: true }).exec());
 
-    return promise
-        .bind({})
-        .then(function (user) {
-            if (!user) {
-                throw { message: msg.nouser };
-            }
-            this.user = user;
+    if (!user) {
+        throw { message: msg.nouser };
+    }
 
-            // Ищем все готовые к уведомлению (sbscr_noty: true) подписки пользователя
-            return UserObjectRel.findAsync(
-                { user: userId, sbscr_noty: true },
-                { user: 0, sbscr_noty: 0 },
-                { lean: true }
-            );
-        })
-        .then(function (rels) {
-            if (_.isEmpty(rels)) {
-                throw { code: 'EMPTY' };
-            }
+    // Find all subscriptions of users, which ready for notyfication (sbscr_noty: true)
+    const rels = await UserObjectRel.find(
+        { user: userId, sbscr_noty: true },
+        { user: 0, sbscr_noty: 0 },
+        { lean: true }
+    ).exec();
 
-            this.relIds = []; // Массив _id уведомлений, который мы обработаем и сбросим в случае успеха отправки
+    if (_.isEmpty(rels)) {
+        return;
+    }
 
-            var objsIdPhotos = [];
-            var objsIdNews = [];
-            var promises = {};
-            var relHash = {};
-            var rel;
+    const objsIdPhotos = [];
+    const objsIdNews = [];
+    const relHash = {};
+    const relIds = []; // Array of relations _ids, which we'll process and reset in case of successful sending
 
-            for (var i = rels.length; i--;) {
-                rel = rels[i];
-                relHash[rel.obj] = rel;
+    // Reset flag of rediness to notification (sbscr_noty) of sent objects
+    async function resetRelsNoty() {
+        if (!_.isEmpty(relIds)) {
+            return await UserObjectRel.update(
+                { _id: { $in: relIds } },
+                { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
+                { multi: true }
+            ).exec();
+        }
+    }
 
-                this.relIds.push(rel._id);
-                if (rel.type === 'news') {
-                    objsIdNews.push(rel.obj);
-                } else {
-                    objsIdPhotos.push(rel.obj);
-                }
-            }
+    for (const rel of rels) {
+        relHash[rel.obj] = rel;
+        relIds.push(rel._id);
 
-            // Выбираем каждый объект и кол-во непрочитанных и новых комментариев по нему
-            if (objsIdNews.length) {
-                promises.news = News
-                    .findAsync({ _id: { $in: objsIdNews }, ccount: { $gt: 0 } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true })
-                    .then(function (news) {
-                        return userObjectRelController.getNewCommentsBrief(news, relHash, userId, 'news');
-                    });
-            }
-            if (objsIdPhotos.length) {
-                promises.photos = Photo
-                    .findAsync({ _id: { $in: objsIdPhotos }, ccount: { $gt: 0 } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true })
-                    .then(function (photos) {
-                        return userObjectRelController.getNewCommentsBrief(photos, relHash, userId);
-                    });
-            }
+        if (rel.type === 'news') {
+            objsIdNews.push(rel.obj);
+        } else {
+            objsIdPhotos.push(rel.obj);
+        }
+    }
 
-            return Bluebird.props(promises);
-        })
-        .then(function (result) {
-            var photos = result.photos || [];
-            var news = result.news || [];
+    // Select each object and amount of unread and new comments for it
+    const [photos = [], news = []] = await* [
+        objsIdNews.length ? News.find(
+            { _id: { $in: objsIdNews }, ccount: { $gt: 0 } },
+            { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
+        ).exec().then(news => userObjectRelController.getNewCommentsBrief(news, relHash, userId, 'news')) : undefined,
 
-            if (_.isEmpty(news) && _.isEmpty(photos)) {
-                throw { code: 'EMPTY' };
-            }
+        objsIdPhotos.length ? Photo.find(
+            { _id: { $in: objsIdPhotos }, ccount: { $gt: 0 } },
+            { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
+        ).exec().then(photos => userObjectRelController.getNewCommentsBrief(photos, relHash, userId)) : undefined
+    ];
 
-            var totalNewestComments = 0;
-            var photosResult = [];
-            var newsResult = [];
-            var obj;
-            var i;
+    if (_.isEmpty(news) && _.isEmpty(photos)) {
+        return await resetRelsNoty();
+    }
 
-            // Оставляем только те объекты, у который кол-во новых действительно есть.
-            // Если пользователь успел зайти в объект, например, в период выполнения этого шага конвейера,
-            // то новые обнулятся и уведомлять об этом объекте уже не нужно
-            for (i = news.length; i--;) {
-                obj = news[i];
-                if (obj.brief && obj.brief.newest) {
-                    totalNewestComments += obj.brief.newest;
-                    newsResult.push(objProcess(obj));
-                }
-            }
-            for (i = photos.length; i--;) {
-                obj = photos[i];
-                if (obj.brief && obj.brief.newest) {
-                    totalNewestComments += obj.brief.newest;
-                    photosResult.push(objProcess(obj));
-                }
+    let totalNewestComments = 0;
+    const photosResult = [];
+    const newsResult = [];
+
+    // Leave only objects, for which new comments really exists
+    // If user viewed object, for example, while this step of conveyor works,
+    // then new comments will be cleared and we don't need to send notification anymore
+    function objProcess(result, obj) {
+        const newest = _.get(obj, 'brief.newest', 0);
+
+        if (newest > 0) {
+            const unread = _.get(obj, 'brief.unread', 0);
+
+            totalNewestComments += newest;
+
+            obj.briefFormat = { newest: newest + Utils.format.wordEndOfNum(newest, declension.comment) };
+            if (newest !== unread) {
+                obj.briefFormat.unread = unread + Utils.format.wordEndOfNum(unread, declension.commentUnread);
             }
 
-            function objProcess(obj) {
-                obj.briefFormat = {};
-                obj.briefFormat.newest = obj.brief.newest + Utils.format.wordEndOfNum(obj.brief.newest, declension.comment);
-                if (obj.brief.newest !== obj.brief.unread) {
-                    obj.briefFormat.unread = obj.brief.unread + Utils.format.wordEndOfNum(obj.brief.unread, declension.commentUnread);
-                }
-                return obj;
-            }
+            result.push(obj);
+        }
 
-            if (newsResult.length || photosResult.length) {
-                //Отправляем письмо с уведомлением, только если есть новые комментарии
+        return obj;
+    }
+    news.forEach(_.partial(objProcess, newsResult));
+    photos.forEach(_.partial(objProcess, photosResult));
 
-                //Сортируем по количеству новых комментариев
-                newsResult.sort(sortNotice);
-                photosResult.sort(sortNotice);
+    // Send letter, only if new comments exists
+    if (newsResult.length || photosResult.length) {
+        // Sort by amount of new comments
+        newsResult.sort(sortNotice);
+        photosResult.sort(sortNotice);
 
-                return mailController.send(
-                    {
-                        sender: 'noreply',
-                        receiver: { alias: String(this.user.disp), email: this.user.email },
-                        subject: 'Новое уведомление',
-                        head: true,
-                        body: noticeTpl({
-                            username: String(this.user.disp),
-                            greeting: 'Уведомление о событиях на PastVu',
-                            addr: global.appVar.serverAddr,
-                            user: this.user,
-                            news: newsResult,
-                            photos: photosResult
-                        }),
-                        text: totalNewestComments + (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' + (totalNewestComments < 5 ? 'комментария' : 'комментариев'))
-                    }
-                );
-            } else {
-                throw { code: 'EMPTY' };
-            }
-        })
-        .catch(function (err) {
-            if (err.code === 'EMPTY') {
-                return null;
-            }
-            throw err;
-        })
-        .then(function () {
-            if (!_.isEmpty(this.relIds)) {
-                // Сбрасываем флаг готовности к уведомлению (sbscr_noty) у всех отправленных объектов
-                UserObjectRel.update(
-                    { _id: { $in: this.relIds } },
-                    { $unset: { sbscr_noty: 1 }, $set: { sbscr_noty_change: new Date() } },
-                    { multi: true }
-                ).exec();
-            }
+        await sendMail({
+            sender: 'noreply',
+            receiver: { alias: String(user.disp), email: user.email },
+            subject: 'Новое уведомление',
+            head: true,
+            body: noticeTpl({
+                user,
+                news: newsResult,
+                photos: photosResult,
+                username: String(user.disp),
+                addr: global.appVar.serverAddr,
+                greeting: 'Уведомление о событиях на PastVu'
+            }),
+            text: totalNewestComments +
+            (totalNewestComments === 1 ? ' новый коментарий' : ' новых ' +
+            (totalNewestComments < 5 ? 'комментария' : 'комментариев'))
         });
-}
-function sortNotice(a, b) {
-    return a.brief.newest < b.brief.newest ? 1 : (a.brief.newest > b.brief.newest ? -1 : 0);
-}
-
-var subscrPerPage = 24;
-function sortSubscr(a, b) {
-    var a_cc = a.ccount_new || 0;
-    var b_cc = b.ccount_new || 0;
-    if (a_cc < b_cc) {
-        return 1;
-    }
-    if (a_cc > b_cc) {
-        return -1;
     }
 
-    var a_date = a.sbscr_create;
-    var b_date = b.sbscr_create;
-    return a_date < b_date ? 1 : a_date > b_date ? -1 : 0;
+    return await resetRelsNoty();
 }
-// Отдача постраничного списка подписанных объектов пользователя
-var getUserSubscr = Bluebird.method(function (iAm, data) {
+
+// Return paged list of user's subscriptions
+async function getUserSubscr(iAm, data) {
     if (!_.isObject(data)) {
-        throw { message: 'Bad params' };
+        throw { message: msg.badParams };
     }
     if (!iAm.registered || iAm.user.login !== data.login && !iAm.isAdmin) {
         throw { message: msg.deny };
     }
 
-    var page = (Math.abs(Number(data.page)) || 1) - 1;
-    var skip = page * subscrPerPage;
+    const userId = await User.getUserID(data.login);
 
-    return User.getUserID(data.login)
-        .bind({})
-        .then(function (user_id) {
-            if (!user_id) {
-                throw { message: msg.nouser };
-            }
+    if (!userId) {
+        throw { message: msg.nouser };
+    }
 
-            this.user_id = user_id;
+    const page = (Math.abs(Number(data.page)) || 1) - 1;
+    const skip = page * subscrPerPage;
 
-            return UserObjectRel.findAsync(
-                { user: user_id, type: data.type, sbscr_create: { $exists: true } },
-                { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
-                { lean: true, skip: skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } });
-        })
-        .then(function (rels) {
-            if (_.isEmpty(rels)) {
-                return [];
-            }
-            this.rels = rels;
+    const rels = await UserObjectRel.find(
+        { user: userId, type: data.type, sbscr_create: { $exists: true } },
+        { _id: 0, user: 0, type: 0, sbscr_noty_change: 0 },
+        { lean: true, skip, limit: subscrPerPage, sort: { ccount_new: -1, sbscr_create: -1 } }
+    ).exec();
 
-            var query;
-            var objIds = [];
+    let objs = [];
+    const objIds = [];
+    const relHash = {};
 
-            this.relHash = {};
+    if (!_.isEmpty(rels)) {
+        for (const rel of rels) {
+            relHash[rel.obj] = rel;
+            objIds.push(rel.obj);
+        }
 
-            for (var i = rels.length; i--;) {
-                this.relHash[rels[i].obj] = rels[i];
-                objIds.push(rels[i].obj);
-            }
+        objs = await (data.type === 'news' ?
+            News.find(
+                { _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true }
+            ).exec() :
+            Photo.find(
+                Object.assign(buildPhotosQuery({ r: 0 }, null, iAm).query, { _id: { $in: objIds } }),
+                { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true }
+            ).exec());
+    }
 
-            if (data.type === 'news') {
-                return News.findAsync({ _id: { $in: objIds } }, { _id: 1, cid: 1, title: 1, ccount: 1 }, { lean: true });
-            }
+    const [countPhoto = 0, countNews = 0, nextNoty] = await* [
+        // Count total number of photos in subscriptions
+        UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
-            query = photoController.buildPhotosQuery({ r: 0 }, null, iAm).query;
-            query._id = { $in: objIds };
-            return Photo.findAsync(query, { _id: 1, cid: 1, title: 1, ccount: 1, file: 1 }, { lean: true });
-        })
-        .then(function (objs) {
-            this.objs = objs;
+        // Count total number of news in subscriptions
+        UserObjectRel.count({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
 
-            return Bluebird.join(
-                // Считаем общее кол-во фотографий в подписках
-                UserObjectRel.countAsync({ user: this.user_id, type: 'photo', sbscr_create: { $exists: true } }),
-                // Считаем общее кол-во новостей в подписках
-                UserObjectRel.countAsync({ user: this.user_id, type: 'news', sbscr_create: { $exists: true } }),
-                // Берем время следующего запланированного уведомления
-                UserNoty.findOneAsync({ user: this.user_id, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true })
-            );
-        })
-        .spread(function (countPhoto, countNews, nextNoty) {
-            var objs = this.objs;
-            var obj;
-            var rel;
+        // Take time of next scheduled notification
+        UserNoty.findOne(
+            { user: userId, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true }
+        ).exec()
+    ];
 
-            for (var i = objs.length; i--;) {
-                obj = objs[i];
-                rel = this.relHash[obj._id];
+    for (const obj of objs) {
+        const rel = relHash[obj._id];
 
-                if (rel.ccount_new) {
-                    obj.ccount_new = rel.ccount_new;
-                }
-                if (rel.sbscr_noty) {
-                    obj.sbscr_noty = true;
-                }
-                obj.sbscr_create = rel.sbscr_create.getTime();
+        if (rel.ccount_new) {
+            obj.ccount_new = rel.ccount_new;
+        }
+        if (rel.sbscr_noty) {
+            obj.sbscr_noty = true;
+        }
 
-                delete obj.subscr;
-                delete obj._id;
-            }
-            // $in не гарантирует сортировку, поэтому сортируем результат
-            objs.sort(sortSubscr);
+        obj.sbscr_create = rel.sbscr_create.getTime();
 
-            return {
-                subscr: objs,
-                countPhoto: countPhoto || 0,
-                countNews: countNews || 0,
-                nextNoty: nextNoty && nextNoty.nextnoty,
-                page: page + 1,
-                perPage: subscrPerPage,
-                type: data.type
-            };
-        });
+        delete obj.subscr;
+        delete obj._id;
+    }
+
+    objs.sort(sortSubscr); // $in doesn't guarantee sorting, so do manual sort
+
+    return {
+        countNews,
+        countPhoto,
+        subscr: objs,
+        page: page + 1,
+        type: data.type,
+        perPage: subscrPerPage,
+        nextNoty: _.get(nextNoty, 'nextnoty')
+    };
+};
+
+fs.readFile(noticeTplPath, 'utf-8', async function (err, data) {
+    if (err) {
+        return logger.error('Notice jade read error: ' + err.message);
+    }
+    noticeTpl = jade.compile(data, { filename: noticeTplPath, pretty: false });
+
+    await waitDb;
+
+    notifierConveyor();
 });
 
-
-module.exports.loadController = function (app, db, io) {
-    Settings = db.model('Settings');
-    User = db.model('User');
-    UserObjectRel = db.model('UserObjectRel');
-    UserNoty = db.model('UserNoty');
-    News = db.model('News');
-    Photo = db.model('Photo');
-
-    fs.readFile(path.normalize('./views/mail/notice.jade'), 'utf-8', function (err, data) {
-        if (err) {
-            return logger.error('Notice jade read error: ' + err.message);
-        }
-        noticeTpl = jade.compile(data, { filename: path.normalize('./views/mail/notice.jade'), pretty: false });
-        notifierConveyer();
-    });
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
         socket.on('subscr', function (data) {
             subscribeUser(hs.usObj, data)
@@ -637,7 +537,7 @@ module.exports.loadController = function (app, db, io) {
         socket.on('giveUserSubscr', function (data) {
             getUserSubscr(hs.usObj, data)
                 .catch(function (err) {
-                    logger.error(err);
+                    console.error(err);
                     return { message: err.message, error: true };
                 })
                 .then(function (resultData) {
@@ -646,8 +546,3 @@ module.exports.loadController = function (app, db, io) {
         });
     });
 };
-module.exports.subscribeUserByIds = subscribeUserByIds;
-module.exports.unSubscribeObj = unSubscribeObj;
-module.exports.commentAdded = commentAdded;
-module.exports.commentViewed = commentViewed;
-module.exports.userThrottleChange = userThrottleChange;
