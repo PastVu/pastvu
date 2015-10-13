@@ -271,7 +271,7 @@ const notifierConveyor = (function () {
                 { lean: true, limit: sendPerStep, sort: { nextnoty: 1 } }
             ).exec();
 
-            if (!_.isEmpty(usersNoty)) {
+            if (_.isEmpty(usersNoty)) {
                 return notifierConveyor();
             }
 
