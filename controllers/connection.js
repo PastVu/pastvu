@@ -2,6 +2,9 @@ import Bluebird from 'bluebird';
 import mongoose from 'mongoose';
 import log4js from 'log4js';
 
+// Set native Promise as mongoose promise provider
+mongoose.Promise = Promise;
+
 // Made methods works as promise. This methods'll be with Async postfix, e.g., model.saveAsync().then(..)
 Bluebird.promisifyAll(mongoose);
 
