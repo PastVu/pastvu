@@ -1,55 +1,55 @@
+import ms from 'ms';
+import _ from 'lodash';
+import log4js from 'log4js';
+import Bluebird from 'bluebird';
+import Utils from '../commons/Utils';
+import constants from './constants.js';
+import * as session from './_session';
+import * as subscrController from './subscr';
 import * as regionController from './region.js';
+import * as actionLogController from './actionlog.js';
+import * as userObjectRelController from './userobjectrel';
+import { giveReasonTitle } from './reason';
 
-var _session = require('./_session.js'),
-    Settings,
-    User,
-    UserObjectRel,
-    Photo,
-    News,
-    Comment,
-    CommentN,
-    Counter,
-    _ = require('lodash'),
-    Bluebird = require('bluebird'),
-    ms = require('ms'), // Tiny milisecond conversion utility
-    Utils = require('../commons/Utils.js'),
-    appEnv = {},
-    host,
-    logger,
+const photoController = require('./photo');
 
-    constants = require('./constants'),
+import { News } from '../models/News';
+import { User } from '../models/User';
+import { Photo } from '../models/Photo';
+import { Counter } from '../models/Counter';
+import { Comment, CommentN } from '../models/Comment';
 
-    dayMS = ms('1d'),
-    commentMaxLength = 12e3,
-    msg = {
-        deny: 'У вас нет разрешения на это действие', //'You do not have permission for this action'
-        noUser: 'Запрашиваемый пользователь не существует',
-        noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
-        noComments: 'Операции с комментариями на этой странице запрещены',
-        noCommentExists: 'Комментария не существует',
-        badParams: 'Неверные параметры запроса',
-        maxLength: 'Комментарий длиннее допустимого значения (' + commentMaxLength + ')'
+const dayMS = ms('1d');
+const commentMaxLength = 12e3;
+const logger = log4js.getLogger('comment.js');
+const maxRegionLevel = constants.region.maxLevel;
+
+const msg = {
+    deny: 'У вас нет разрешения на это действие', // 'You do not have permission for this action'
+    noUser: 'Запрашиваемый пользователь не существует',
+    noObject: 'Комментируемого объекта не существует, или модераторы перевели его в недоступный вам режим',
+    noComments: 'Операции с комментариями на этой странице запрещены',
+    noCommentExists: 'Комментария не существует',
+    badParams: 'Неверные параметры запроса',
+    maxLength: 'Комментарий длиннее допустимого значения (' + commentMaxLength + ')'
+};
+
+const permissions = {
+    canModerate(type, obj, usObj) {
+        return usObj.registered &&
+            (type === 'photo' && photoController.permissions.canModerate(obj, usObj)
+            || type === 'news' && usObj.isAdmin)
+            || undefined;
     },
-
-    actionLogController = require('./actionlog.js'),
-    photoController = require('./photo.js'),
-    subscrController = require('./subscr.js'),
-    reasonController = require('./reason.js'),
-    userObjectRelController = require('./userobjectrel'),
-
-    maxRegionLevel = global.appVar.maxRegionLevel,
-
-    permissions = {
-        canModerate: function (type, obj, usObj) {
-            return usObj.registered && (type === 'photo' && photoController.permissions.canModerate(obj, usObj) || type === 'news' && usObj.isAdmin) || undefined;
-        },
-        canEdit: function (comment, obj, usObj) {
-            return usObj.registered && !obj.nocomments && comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
-        },
-        canReply: function (type, obj, usObj) {
-            return usObj.registered && !obj.nocomments && (type === 'photo' && obj.s >= constants.photo.status.PUBLIC || type === 'news');
-        }
-    };
+    canEdit(comment, obj, usObj) {
+        return usObj.registered && !obj.nocomments &&
+            comment.user.equals(usObj.user._id) && comment.stamp > (Date.now() - dayMS);
+    },
+    canReply(type, obj, usObj) {
+        return usObj.registered && !obj.nocomments &&
+            (type === 'photo' && obj.s >= constants.photo.status.PUBLIC || type === 'news');
+    }
+};
 
 var commentsTreeBuildAnonym = Bluebird.method(function (comments, usersHash) {
     var user;
@@ -407,7 +407,7 @@ function getUsersHashForComments(usersArr) {
                 if (user.avatar) {
                     user.avatar = '/_a/h/' + user.avatar;
                 }
-                user.online = _session.usLogin[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
+                user.online = session.usLogin[user.login] !== undefined; //Для скорости смотрим непосредственно в хеше, без функции isOnline
                 hashByLogin[user.login] = hashById[String(user._id)] = user;
                 delete user._id;
             }
@@ -416,7 +416,7 @@ function getUsersHashForComments(usersArr) {
         });
 }
 
-var core = {
+export const core = {
     // Упрощенная отдача комментариев анонимным пользователям
     getCommentsObjAnonym: async function (iAm, data) {
         let obj;
@@ -791,7 +791,7 @@ var getComments = (function () {
                     userFormatted = {
                         login: user.login,
                         disp: user.disp,
-                        online: _session.usLogin[user.login] !== undefined // Для скорости смотрим непосредственно в хеше, без функции isOnline
+                        online: session.usLogin[user.login] !== undefined // Для скорости смотрим непосредственно в хеше, без функции isOnline
                     };
                     userFormattedHash[user.login] = usersHash[user._id] = userFormatted;
                 }
@@ -972,7 +972,7 @@ var createComment = Bluebird.method(function (socket, data) {
                 this.comment.level = 0;
             }
 
-            _session.emitUser(iAm, null, socket);
+            session.emitUser(iAm, null, socket);
             subscrController.commentAdded(this.obj._id, iAm.user, stamp);
 
             return { comment: this.comment, frag: this.fragObj };
@@ -1139,11 +1139,11 @@ var removeComment = Bluebird.method(function (socket, data) {
             promises.push(this.obj.saveAsync());
 
             for (u in this.hashUsers) {
-                userObj = _session.getOnline(null, u);
+                userObj = session.getOnline(null, u);
 
                 if (userObj !== undefined) {
                     userObj.user.ccount = userObj.user.ccount - this.hashUsers[u];
-                    promises.push(_session.saveEmitUser(userObj));
+                    promises.push(session.saveEmitUser(userObj));
                 } else {
                     promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: -this.hashUsers[u] } }));
                 }
@@ -1185,12 +1185,12 @@ var removeComment = Bluebird.method(function (socket, data) {
             );
 
             return {
-                frags: frags,
+                frags,
+                delInfo,
                 countComments: countCommentsRemoved,
                 myCountComments: myCountRemoved,
                 countUsers: Object.keys(this.hashUsers).length,
-                stamp: delInfo.stamp.getTime(),
-                delInfo: delInfo
+                stamp: delInfo.stamp.getTime()
             };
         });
 });
@@ -1353,10 +1353,10 @@ var restoreComment = Bluebird.method(function (socket, data) {
 
             for (u in hashUsers) {
                 if (hashUsers[u] !== undefined) {
-                    userObj = _session.getOnline(null, u);
+                    userObj = session.getOnline(null, u);
                     if (userObj !== undefined) {
                         userObj.user.ccount = userObj.user.ccount + hashUsers[u];
-                        promises.push(_session.saveEmitUser(userObj));
+                        promises.push(session.saveEmitUser(userObj));
                     } else {
                         promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: hashUsers[u] } }));
                     }
@@ -1631,7 +1631,7 @@ var giveCommentHist = Bluebird.method(function (data) {
 
                 if (histDel || hist.restore) {
                     if (histDel && histDel.reason && histDel.reason.cid) {
-                        histDel.reason.title = reasonController.giveReasonTitle({ cid: histDel.reason.cid });
+                        histDel.reason.title = giveReasonTitle({ cid: histDel.reason.cid });
                     }
                     result.push(hist);
                 } else {
@@ -1724,12 +1724,12 @@ var setNoComments = Bluebird.method(function (iAm, data) {
 });
 
 /**
- * Скрывает/открывает комментарии объекта (делает их не публичными/публичными)
- * @param oid _id объекта
- * @param hide Скрыть или наоборот
- * @param iAm Объект пользователя, считаем сколько его комментариев затронуто
+ * Hide/show object comments (so doing them unpublic/public)
+ * @param oid
+ * @param {boolean} hide
+ * @param iAm Count how many comments of user are affected
  */
-async function hideObjComments(oid, hide, iAm) {
+export async function hideObjComments(oid, hide, iAm) {
     const command = {};
 
     if (hide) {
@@ -1757,11 +1757,11 @@ async function hideObjComments(oid, hide, iAm) {
             cdelta = -cdelta;
         }
 
-        const userObj = _session.getOnline(null, userId);
+        const userObj = session.getOnline(null, userId);
 
         if (userObj !== undefined) {
             userObj.user.ccount = userObj.user.ccount + cdelta;
-            _session.saveEmitUser(userObj);
+            session.saveEmitUser(userObj);
         } else {
             User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }
@@ -1770,22 +1770,9 @@ async function hideObjComments(oid, hide, iAm) {
     return { myCount: hashUsers[iAm.user._id] || 0 };
 }
 
-module.exports.loadController = function (app, db, io) {
-    logger = require('log4js').getLogger('comment.js');
-    appEnv = app.get('appEnv');
-    host = appEnv.serverAddr.host;
-
-    Settings = db.model('Settings');
-    User = db.model('User');
-    Photo = db.model('Photo');
-    News = db.model('News');
-    Comment = db.model('Comment');
-    CommentN = db.model('CommentN');
-    Counter = db.model('Counter');
-    UserObjectRel = db.model('UserObjectRel');
-
+export const loadController = io => {
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
         socket.on('createComment', function (data) {
             createComment(socket, data)
@@ -1880,5 +1867,3 @@ module.exports.loadController = function (app, db, io) {
     });
 
 };
-module.exports.core = core;
-module.exports.hideObjComments = hideObjComments;

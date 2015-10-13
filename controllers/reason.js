@@ -59,7 +59,7 @@ export const giveReasonTitle = function ({ cid }) {
 // After connection to db read reasons
 waitDb.then(periodicFetchReasons);
 
-module.exports.loadController = function (app, io) {
+module.exports.loadController = function (io) {
     io.sockets.on('connection', function (socket) {
         socket.on('giveActionReasons', function (data) {
             giveActionReasons(data)

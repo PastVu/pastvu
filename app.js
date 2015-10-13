@@ -269,15 +269,15 @@ Bluebird.promisifyAll(fs);
 
     await* [fillSettingsData(app, io), fillRegionData(app, io)];
 
-    require('./controllers/actionlog').loadController(app, db, io);
-    require('./controllers/mail').loadController(app);
+    require('./controllers/actionlog').loadController();
+    require('./controllers/mail').loadController();
     require('./controllers/auth').loadController(app, db, io);
-    require('./controllers/reason').loadController(app, io);
+    require('./controllers/reason').loadController(io);
     require('./controllers/userobjectrel').loadController();
     require('./controllers/index').loadController(app, db, io);
     require('./controllers/photo').loadController(app, db, io);
     require('./controllers/subscr').loadController(io);
-    require('./controllers/comment').loadController(app, db, io);
+    require('./controllers/comment').loadController(io);
     require('./controllers/profile').loadController(app, db, io);
     require('./controllers/admin').loadController(app, db, io);
     if (land === 'dev') {
