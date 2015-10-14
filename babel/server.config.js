@@ -35,10 +35,11 @@ module.exports = {
         'es6.objectSuper', // Enabled with classes in V8 4.2 (Node 4)
         // 'es6.parameters', // Rest in V8 4.7, Spread in V8 4.6, Default is still in development
         'es6.properties.computed', // Enabled in V8 4.4 (Node 4)
-        'es6.properties.shorthand', // Enabled in V8 4.2 (Node 4)
+        // Shorthands Enabled in V8 4.2 (Node 4), but with 'async' babel handle them incorrect without this transform
+        // 'es6.properties.shorthand',
         // 'es6.regex.sticky', // Proposed
         // 'es6.regex.unicode', // Proposed
-        'es6.spec.templateLiterals', // Enabled in V8 4.1 (Node 4)
+        'es6.spec.templateLiterals' // Enabled in V8 4.1 (Node 4)
         // 'es6.spread', // Will be enabled in V8 4.6 (Node 5)
         // 'es6.tailCall', // In development
 
