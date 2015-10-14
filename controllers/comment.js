@@ -439,7 +439,7 @@ export const core = {
 
         if (type === 'news') {
             commentModel = CommentN;
-            obj = await News.findOneAsync({ cid }, { _id: 1, nocomments: 1 });
+            obj = await News.findOne({ cid }, { _id: 1, nocomments: 1 }).exec();
         } else {
             commentModel = Comment;
             obj = await photoController.findPhoto(iAm, { cid });
@@ -508,14 +508,14 @@ export const core = {
             data.type === 'news' ? News.findOne({ _id: objId }, { _id: 1, nocomments: 1 }).exec() :
                 photoController.findPhoto(iAm, { _id: objId }),
             // Take all removed comments, created after requested and below it
-            commentModel.findAsync(
+            commentModel.find(
                 {
                     obj: objId, del: { $exists: true },
                     stamp: { $gte: comment.stamp }, level: { $gt: comment.level || 0 }
                 },
                 { _id: 0, obj: 0, hist: 0, 'del.reason': 0, geo: 0, r0: 0, r1: 0, r2: 0, r3: 0, r4: 0, r5: 0, __v: 0 },
                 { lean: true, sort: { stamp: 1 } }
-            )
+            ).exec()
         ];
 
         if (!obj) {
@@ -653,14 +653,14 @@ const getComments = (function () {
         }
 
         const [photos, users] = await* [
-            Photo.findAsync(
+            Photo.find(
                 { _id: { $in: photosArr } },
                 iAm && iAm.rshortsel ?
                     Object.assign({ _id: 1, cid: 1, file: 1, title: 1, geo: 1 }, iAm.rshortsel) :
                     photosSelectAllRegions,
                 { lean: true }
-            ),
-            User.findAsync({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true })
+            ).exec(),
+            User.find({ _id: { $in: usersArr } }, { _id: 1, login: 1, disp: 1 }, { lean: true }).exec()
         ];
 
         const shortRegionsHash = regionController.genObjsShortRegionsArr(photos, iAm && iAm.rshortlvls || undefined);
@@ -786,7 +786,7 @@ async function createComment(socket, data) {
     }
 
     obj.ccount = (obj.ccount || 0) + 1;
-    const promises = [obj.saveAsync()];
+    const promises = [obj.save()];
 
     if (!comment.hidden) {
         iAm.user.ccount += 1;
@@ -941,7 +941,7 @@ async function removeComment(socket, data) {
     }
 
     obj.ccount -= countCommentsRemoved;
-    const promises = [obj.saveAsync()];
+    const promises = [obj.save()];
 
     for (const [userId, count] of usersCountMap) {
         const userObj = session.getOnline(null, userId);
@@ -1026,7 +1026,7 @@ var restoreComment = Bluebird.method(function (socket, data) {
         commentModel = Comment;
     }
 
-    return commentModel.findOneAsync({ cid: cid, del: { $exists: true } }, {
+    return commentModel.findOneAsync({ cid, del: { $exists: true } }, {
         _id: 1,
         obj: 1,
         user: 1,
@@ -1467,61 +1467,47 @@ var giveCommentHist = Bluebird.method(function (data) {
         });
 });
 
-/**
- * Переключает возможность комментирования объекта
- * @param iAm Объект пользователя
- * @param data
- */
-var setNoComments = Bluebird.method(function (iAm, data) {
+// Toggle ability to write comments for object (except administrators)
+async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {}) {
     if (!iAm.registered || !iAm.user.role) {
         throw { message: msg.deny };
     }
 
-    var cid = data && Number(data.cid);
-    var promise;
+    cid = Number(cid);
 
-    if (!_.isObject(data) || !cid) {
+    if (!cid) {
         throw { message: msg.badParams };
     }
 
-    if (data.type === 'news') {
-        promise = News.findOneAsync({ cid: cid });
-    } else {
-        promise = photoController.findPhoto(iAm, { cid: cid });
+    const obj = await (type === 'news' ? News.findOne({ cid }).exec() : photoController.findPhoto(iAm, { cid }));
+
+    if (!obj) {
+        throw { message: msg.noObject };
     }
 
-    return promise
-        .bind({})
-        .then(function (obj) {
-            if (!obj) {
-                throw { message: msg.noObject };
-            }
-            this.canModerate = permissions.canModerate(data.type, obj, iAm);
+    const canModerate = permissions.canModerate(type, obj, iAm);
 
-            if (!this.canModerate) {
-                throw { message: msg.deny };
-            }
+    if (!canModerate) {
+        throw { message: msg.deny };
+    }
 
-            if (data.type === 'photo') {
-                this.oldPhotoObj = obj.toObject();
-                this.obj = obj;
-                obj.cdate = new Date();
-            }
+    let oldPhotoObj;
+    if (type === 'photo') {
+        oldPhotoObj = obj.toObject();
+        obj.cdate = new Date();
+    }
 
-            obj.nocomments = data.val ? true : undefined;
+    obj.nocomments = nocomments ? true : undefined;
+    await obj.save();
 
-            return obj.saveAsync();
-        })
-        .then(function ([objSaved]) {
-            if (data.type === 'photo') {
-                // Сохраняем в истории предыдущее значение nocomments
-                // Чтобы в истории установился false вместо undefined
-                objSaved.nocomments = !!objSaved.nocomments;
-                photoController.savePhotoHistory(iAm, this.oldPhotoObj, objSaved, this.canModerate);
-            }
-            return { nocomments: objSaved.nocomments };
-        });
-});
+    if (type === 'photo') {
+        // Save previous value of 'nocomments' in history
+        obj.nocomments = !!obj.nocomments; // To set false in history instead of undefined
+        photoController.savePhotoHistory(iAm, oldPhotoObj, obj, canModerate);
+    }
+
+    return { nocomments: obj.nocomments };
+};
 
 /**
  * Hide/show object comments (so doing them unpublic/public)
@@ -1538,13 +1524,13 @@ export async function hideObjComments(oid, hide, iAm) {
         command.$unset = { hidden: 1 };
     }
 
-    const { n: count } = await Comment.updateAsync({ obj: oid }, command, { multi: true });
+    const { n: count } = await Comment.update({ obj: oid }, command, { multi: true }).exec();
 
     if (count === 0) {
         return { myCount: 0 };
     }
 
-    const comments = await Comment.findAsync({ obj: oid }, {}, { lean: true });
+    const comments = await Comment.find({ obj: oid }, {}, { lean: true }).exec();
 
     const hashUsers = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
@@ -1665,5 +1651,4 @@ export const loadController = io => {
                 });
         });
     });
-
 };
