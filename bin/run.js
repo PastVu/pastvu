@@ -8,6 +8,7 @@ var babelConfig = require('../babel/server.config');
 var babelOptions = Object.assign({}, babelConfig, {
     only: [
         /(?:app|downloader|middleware|settings|photoConverter|photoCluster|region|connection|_session)\.js/,
+        'controllers/tpl.js',
         'controllers/mail.js',
         'controllers/actionlog.js',
         'controllers/subscr.js',

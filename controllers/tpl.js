@@ -1,25 +1,22 @@
-'use strict';
+import path from 'path';
+import Utils from '../commons/Utils';
 
-var fs = require("fs"),
-	path = require("path"),
-	Utils = require('../commons/Utils.js'),
-	tpls = [];
+let tpls = [];
 
-
-Utils.walkParallel(path.normalize('./views/module'), function (e, files) {
-	if (e) {
-		console.dir(e);
-		process.exit(1);
-	}
-	tpls = Utils.filesListProcess(files, 'views/module/');
+Utils.walkParallel(path.normalize('./views/module'), function (err, files) {
+    if (err) {
+        console.error(err);
+        process.exit(1);
+    }
+    tpls = Utils.filesListProcess(files, 'views/module/');
 });
 
 module.exports.loadController = function (app) {
-	app.get('/tpl/*', function (req, res) {
-		if (~tpls.indexOf(req.params[0])) {
-			res.status(200).render('module/' + req.params[0]);
-		} else {
-			res.sendStatus(404);
-		}
-	});
+    app.get('/tpl/*', function (req, res) {
+        if (tpls.includes(req.params[0])) {
+            res.status(200).render('module/' + req.params[0]);
+        } else {
+            res.sendStatus(404);
+        }
+    });
 };
