@@ -468,7 +468,7 @@ async function getUserSubscr(iAm, data) {
             ).exec());
     }
 
-    const [countPhoto = 0, countNews = 0, nextNoty] = await* [
+    const [countPhoto = 0, countNews = 0, { nextnoty: nextNoty } = {}] = await* [
         // Count total number of photos in subscriptions
         UserObjectRel.count({ user: userId, type: 'photo', sbscr_create: { $exists: true } }).exec(),
 
@@ -476,9 +476,11 @@ async function getUserSubscr(iAm, data) {
         UserObjectRel.count({ user: userId, type: 'news', sbscr_create: { $exists: true } }).exec(),
 
         // Take time of next scheduled notification
-        UserNoty.findOne(
+        await UserNoty.findOne(
             { user: userId, nextnoty: { $exists: true } }, { _id: 0, nextnoty: 1 }, { lean: true }
-        ).exec()
+        ).exec() || undefined
+        // ( await xxx || undefined ) needed for 'null' to be replaced with default value '{}' in desctruction
+        // https://github.com/Automattic/mongoose/issues/3457
     ];
 
     for (const obj of objs) {
@@ -506,7 +508,7 @@ async function getUserSubscr(iAm, data) {
         page: page + 1,
         type: data.type,
         perPage: subscrPerPage,
-        nextNoty: _.get(nextNoty, 'nextnoty')
+        nextNoty
     };
 };
 
