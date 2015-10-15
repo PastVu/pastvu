@@ -147,8 +147,8 @@ async.waterfall([
 			callback(null);
 		},
 		function loadingControllers(callback) {
-			require('./controllers/api.js').loadController(app, db, core);
-			require('./controllers/apilog.js').loadController(app, db);
+			require('./controllers/api.js').loadController(app, core);
+			require('./controllers/apilog.js').loadController();
 			require('./controllers/errors.js').registerErrorHandling(app);
 			callback(null);
 		}

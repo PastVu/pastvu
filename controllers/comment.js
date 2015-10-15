@@ -1,7 +1,6 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import constants from './constants.js';
 import * as session from './_session';

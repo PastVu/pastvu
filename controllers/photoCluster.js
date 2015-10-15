@@ -335,7 +335,7 @@ async function getClusterPoster(cluster, yearCriteria) {
 // After connection to db read current cluster parameters
 waitDb.then(readClusterParams);
 
-module.exports.loadController = function (app, io) {
+module.exports.loadController = function (io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 

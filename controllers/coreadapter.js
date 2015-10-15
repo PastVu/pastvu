@@ -1,17 +1,17 @@
-'use strict';
+import net from 'net';
+import _ from 'lodash';
+import log4js from 'log4js';
+import Bluebird from 'bluebird';
+import { core as photoCore } from './photo';
+import { core as commentCore } from './comment';
 
-var net = require('net');
-var _ = require('lodash');
-var Bluebird = require('bluebird');
-var log4js = require('log4js');
-var logger = log4js.getLogger('app.js');
-var photoController = require('./photo.js');
-var commentController = require('./comment.js');
-var core = {
-    photo: photoController.core,
-    comment: commentController.core
+const logger = log4js.getLogger('app.js');
+
+const core = {
+    photo: photoCore,
+    comment: commentCore
 };
-var coreCaller = Bluebird.method(function (msg) {
+const coreCaller = Bluebird.method(function (msg) {
     var cat = core[msg.category];
     var method;
 
@@ -25,7 +25,6 @@ var coreCaller = Bluebird.method(function (msg) {
 
     throw { message: 'Unsupported method [' + msg.category + ':' + msg.method + ']' };
 });
-
 
 var clientSockets = [];
 var ClientSocket = function (server, socket) {
@@ -109,7 +108,7 @@ ClientSocket.prototype._tokenizer = function (data) {
     return result;
 };
 
-var Server = function () {
+export const Server = function () {
     var args = _.toArray(arguments);
     var server = net.createServer(function (socket) {
         var clientSocket = new ClientSocket(server, socket);
@@ -148,5 +147,3 @@ var Server = function () {
 
     server.listen.apply(server, args);
 };
-
-module.exports = Server;

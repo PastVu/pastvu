@@ -1,16 +1,16 @@
-var auth = require('./auth.js');
-var _session = require('./_session.js');
-var Settings;
-var User;
-var Counter;
-var News;
-var _ = require('lodash');
-var step = require('step');
-var Utils = require('../commons/Utils.js');
-var regionController = require('./region.js');
-var msg = {
-        deny: 'You do not have permission for this action'
-    };
+import _ from 'lodash';
+import step from 'step';
+import Utils from '../commons/Utils';
+import * as session from './_session';
+import * as regionController from './region.js';
+
+import { News } from '../models/News';
+import { User } from '../models/User';
+import { Counter } from '../models/Counter';
+
+const msg = {
+    deny: 'You do not have permission for this action'
+};
 
 function createNews(iAm, data, cb) {
     if (!_.isObject(data)) {
@@ -80,8 +80,8 @@ function getOnlineStat(iAm, cb) {
         return cb({ message: msg.deny, error: true });
     }
 
-    var usersCount = Utils.getObjectPropertyLength(_session.usLogin);
-    var sessions = _session.sessConnected;
+    var usersCount = Utils.getObjectPropertyLength(session.usLogin);
+    var sessions = session.sessConnected;
 
     var sessUserCount = 0;
     var sessUserZeroSockCount = 0;
@@ -91,7 +91,7 @@ function getOnlineStat(iAm, cb) {
     var sessAnonymNoSockCount = 0;
     var sessNoSockHeaders = [];
 
-    var sessionsWaitingConnect = _session.sessWaitingConnect;
+    var sessionsWaitingConnect = session.sessWaitingConnect;
     var sessWCUserCount = 0;
     var sessWCAnonymCount = 0;
     var sessWCNoSockHeaders = [];
@@ -172,12 +172,12 @@ function getOnlineStat(iAm, cb) {
         sockUC: socketUserCount,
         sockAC: socketAnonymCount,
 
-        cusSid: Utils.getObjectPropertyLength(_session.usSid),
+        cusSid: Utils.getObjectPropertyLength(session.usSid),
         cusLogin: usersCount,
-        cusId: Utils.getObjectPropertyLength(_session.usId),
-        csessConnected: Utils.getObjectPropertyLength(_session.sessConnected),
-        csessWaitingConnect: Utils.getObjectPropertyLength(_session.sessWaitingConnect),
-        csessWaitingSelect: Utils.getObjectPropertyLength(_session.sessWaitingSelect)
+        cusId: Utils.getObjectPropertyLength(session.usId),
+        csessConnected: Utils.getObjectPropertyLength(session.sessConnected),
+        csessWaitingConnect: Utils.getObjectPropertyLength(session.sessWaitingConnect),
+        csessWaitingSelect: Utils.getObjectPropertyLength(session.sessWaitingSelect)
     });
 }
 
@@ -201,7 +201,7 @@ function saveUserCredentials(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -237,7 +237,7 @@ function saveUserCredentials(iAm, data, cb) {
                             return cb({ message: err.message, error: true });
                         }
                         if (userObjOnline) {
-                            _session.regetUser(userObjOnline, false, null, function (err) {
+                            session.regetUser(userObjOnline, false, null, function (err) {
                                 if (err) {
                                     return cb({ message: err.message, error: true });
                                 }
@@ -268,7 +268,7 @@ function saveUserCredentials(iAm, data, cb) {
                     }
 
                     if (userObjOnline) {
-                        _session.emitUser(userObjOnline);
+                        session.emitUser(userObjOnline);
                     }
                     cb({ message: 'ok', saved: true });
                 });
@@ -277,15 +277,9 @@ function saveUserCredentials(iAm, data, cb) {
     );
 }
 
-module.exports.loadController = function (app, db, io) {
-
-    Settings = db.model('Settings');
-    Counter = db.model('Counter');
-    User = db.model('User');
-    News = db.model('News');
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
-        var hs = socket.handshake;
+        const hs = socket.handshake;
 
         socket.on('saveNews', function (data) {
             if (!hs.usObj.isAdmin) {

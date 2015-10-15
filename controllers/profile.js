@@ -1,31 +1,30 @@
-var fs = require('fs');
-var path = require('path');
-var mkdirp = require('mkdirp');
-var exec = require('child_process').exec;
-var Bluebird = require('bluebird');
-var gm = require('gm');
-var _session = require('./_session.js');
-var settings = require('./settings.js');
-var photoController = require('./photo.js');
-var User;
-var Utils = require('../commons/Utils.js');
-var step = require('step');
-var log4js = require('log4js');
-var _ = require('lodash');
-var constants = require('./constants.js');
-var logger;
-var incomeDir = global.appVar.storePath + 'incoming/';
-var privateDir = global.appVar.storePath + 'private/avatars/';
-var publicDir = global.appVar.storePath + 'public/avatars/';
-var msg = {
+import fs from 'fs';
+import gm from 'gm';
+import _ from 'lodash';
+import path from 'path';
+import step from 'step';
+import mkdirp from 'mkdirp';
+import Bluebird from 'bluebird';
+import { exec } from 'child_process';
+import Utils from '../commons/Utils';
+import * as session from './_session';
+import constants from './constants.js';
+import * as photoController from './photo';
+import { userThrottleChange } from './subscr';
+
+import { User } from '../models/User';
+
+const incomeDir = global.appVar.storePath + 'incoming/';
+const privateDir = global.appVar.storePath + 'private/avatars/';
+const publicDir = global.appVar.storePath + 'public/avatars/';
+const msg = {
     badParams: 'Bad params',
     deny: 'У вас нет прав на это действие',
     nouser: 'Requested user does not exist',
     nosetting: 'Such setting does not exists'
 };
-var subscrController = require('./subscr.js');
 
-//Отдаем пользователя
+// Отдаем пользователя
 function giveUser(iAm, data, cb) {
     var login = data && data.login,
         itsMe = iAm.registered && iAm.user.login === login,
@@ -37,10 +36,10 @@ function giveUser(iAm, data, cb) {
 
     step(
         function () {
-            var userObj = _session.getOnline(login);
+            var userObj = session.getOnline(login);
             if (userObj) {
                 itsOnline = true;
-                this(null, _session.getPlainUser(userObj.user));
+                this(null, session.getPlainUser(userObj.user));
             } else {
                 User.findOne({ login: login, active: true }, {
                     _id: 0,
@@ -96,7 +95,7 @@ function saveUser(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -128,7 +127,7 @@ function saveUser(iAm, data, cb) {
                 return cb({ message: err.message, error: true });
             }
             if (userObjOnline) {
-                _session.emitUser(userObjOnline);
+                session.emitUser(userObjOnline);
             }
 
             cb({ message: 'ok', saved: 1 });
@@ -158,7 +157,7 @@ var changeSetting = Bluebird.method(function (socket, data) {
         throw { message: msg.deny };
     }
 
-    var userObjOnline = _session.getOnline(login);
+    var userObjOnline = session.getOnline(login);
 
     return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
         .then(function (user) {
@@ -187,12 +186,12 @@ var changeSetting = Bluebird.method(function (socket, data) {
 
                 if (data.key === 'subscr_throttle') {
                     // If throttle value has changed, trying to reschedule next notification time
-                    subscrController.userThrottleChange(user._id, data.val);
+                    userThrottleChange(user._id, data.val);
                 }
 
                 return user.saveAsync().spread(function (user) {
                     if (userObjOnline) {
-                        _session.emitUser(userObjOnline, null, socket);
+                        session.emitUser(userObjOnline, null, socket);
                     }
 
                     return user;
@@ -219,7 +218,7 @@ function changeDispName(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -246,7 +245,7 @@ function changeDispName(iAm, data, cb) {
                 return cb({ message: err.message, error: true });
             }
             if (userObjOnline) {
-                _session.emitUser(userObjOnline);
+                session.emitUser(userObjOnline);
             }
             cb({ message: 'ok', saved: 1, disp: user.disp });
         }
@@ -266,7 +265,7 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
         throw { message: msg.badParams };
     }
 
-    var userObjOnline = _session.getOnline(login);
+    var userObjOnline = session.getOnline(login);
     var watersign = _.isString(data.watersign) ? data.watersign
         .match(constants.photo.watersignPattern).join('')
         .trim().replace(/ {2,}/g, ' ').substr(0, constants.photo.watersignLength) : '';
@@ -297,7 +296,7 @@ var setWatersignCustom = Bluebird.method(function (socket, data) {
 
             return user.saveAsync().spread(function (user) {
                 if (userObjOnline) {
-                    _session.emitUser(userObjOnline, null, socket);
+                    session.emitUser(userObjOnline, null, socket);
                 }
 
                 return user;
@@ -331,7 +330,7 @@ function changeEmail(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -377,7 +376,7 @@ function changeEmail(iAm, data, cb) {
                 return cb({ message: err.message, error: true });
             }
             if (userObjOnline) {
-                _session.emitUser(userObjOnline);
+                session.emitUser(userObjOnline);
             }
             cb({ message: 'ok', email: savedUser.email });
         });
@@ -406,7 +405,7 @@ function changeAvatar(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -473,7 +472,7 @@ function changeAvatar(iAm, data, cb) {
                 return cb({ message: err.message, error: true });
             }
             if (userObjOnline) {
-                _session.emitUser(userObjOnline);
+                session.emitUser(userObjOnline);
             }
             cb({ message: 'ok', avatar: user.avatar });
         }
@@ -495,7 +494,7 @@ function delAvatar(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -520,7 +519,7 @@ function delAvatar(iAm, data, cb) {
                         return cb({ message: err.message, error: true });
                     }
                     if (userObjOnline) {
-                        _session.emitUser(userObjOnline);
+                        session.emitUser(userObjOnline);
                     }
                     cb({ message: 'ok' });
                 });
@@ -543,7 +542,7 @@ var setUserWatermarkChange = Bluebird.method(function (socket, data) {
         throw { message: msg.badParams };
     }
 
-    var userObjOnline = _session.getOnline(login);
+    var userObjOnline = session.getOnline(login);
 
     return (userObjOnline ? Bluebird.resolve(userObjOnline.user) : User.findOneAsync({ login: login }))
         .then(function (user) {
@@ -558,7 +557,7 @@ var setUserWatermarkChange = Bluebird.method(function (socket, data) {
 
             return user.saveAsync().spread(function (user) {
                 if (userObjOnline) {
-                    _session.emitUser(userObjOnline, null, socket);
+                    session.emitUser(userObjOnline, null, socket);
                 }
 
                 return user;
@@ -594,7 +593,7 @@ function saveUserRanks(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(login);
+            userObjOnline = session.getOnline(login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -615,7 +614,7 @@ function saveUserRanks(iAm, data, cb) {
                     return cb({ message: err.message, error: true });
                 }
                 if (userObjOnline) {
-                    _session.emitUser(userObjOnline);
+                    session.emitUser(userObjOnline);
                 }
                 cb({ message: 'ok', saved: true, ranks: user.ranks || [] });
             });
@@ -633,7 +632,7 @@ function giveUserRules(iAm, data, cb) {
 
     step(
         function () {
-            var userObj = _session.getOnline(data.login);
+            var userObj = session.getOnline(data.login);
             if (userObj) {
                 this(null, userObj.user);
             } else {
@@ -660,7 +659,7 @@ function saveUserRules(iAm, data, cb) {
 
     step(
         function () {
-            userObjOnline = _session.getOnline(data.login);
+            userObjOnline = session.getOnline(data.login);
             if (userObjOnline) {
                 this(null, userObjOnline.user);
             } else {
@@ -697,7 +696,7 @@ function saveUserRules(iAm, data, cb) {
                     return cb({ message: err.message, error: true });
                 }
                 if (userObjOnline) {
-                    _session.emitUser(userObjOnline);
+                    session.emitUser(userObjOnline);
                 }
                 cb({
                     message: 'ok',
@@ -710,11 +709,7 @@ function saveUserRules(iAm, data, cb) {
     );
 }
 
-module.exports.loadController = function (app, db, io) {
-    logger = log4js.getLogger('profile.js');
-
-    User = db.model('User');
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         var hs = socket.handshake;
 
@@ -798,5 +793,4 @@ module.exports.loadController = function (app, db, io) {
             });
         });
     });
-
 };

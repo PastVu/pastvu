@@ -1,32 +1,22 @@
 #!/usr/bin/env node
 /**
  * Entry point to application. It's purpuse - to run script with transformation
- * This file is not being transformed by babel, nor being checked by eslint and that's why must be written in es5 carefully
+ * This file is not being transformed by babel, nor being checked by eslint and that's why must be written carefully
  */
 
-var babelConfig = require('../babel/server.config');
-var babelOptions = Object.assign({}, babelConfig, {
+const babelConfig = require('../babel/server.config');
+const babelOptions = Object.assign({}, babelConfig, {
     only: [
-        /(?:app|downloader|middleware|settings|photoConverter|photoCluster|region|connection|_session)\.js/,
-        'controllers/tpl.js',
-        'controllers/mail.js',
-        'controllers/actionlog.js',
-        'controllers/subscr.js',
-        'controllers/constants.js',
-        'controllers/userobjectrel.js',
-        'controllers/comment.js',
-        'controllers/reason.js',
-        'controllers/photoCluster.js',
-        'controllers/photo.js',
+        '@(app|downloader).js',
+        'controllers/!(api|apilog).js',
         'models/*.js'
     ]
 });
 
 if (require.main === module) {
     // If run.js was invoked directly
-
-    var path = require('path');
-    var argv = require('yargs')
+    const path = require('path');
+    const argv = require('yargs')
         .help('help') // --help to get help
         .options('s', {
             'alias': 'script',

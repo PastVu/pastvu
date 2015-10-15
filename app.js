@@ -1,5 +1,3 @@
-'use strict';
-
 const startStamp = Date.now();
 
 import './commons/JExtensions';
@@ -133,7 +131,8 @@ if (land !== 'prod') {
 Bluebird.promisifyAll(fs);
 
 (async function configure() {
-    const db = await connectDb(moongoUri, moongoPool, logger);
+    await connectDb(moongoUri, moongoPool, logger);
+
     // Utils должны реквайрится после установки глобальных переменных, так как они там используются
     // TODO: fix it
     const Utils = require('./commons/Utils');
@@ -248,7 +247,6 @@ Bluebird.promisifyAll(fs);
         app.get(/^\/(?:_a|_p)(?:\/.*)$/, static404);
     }
 
-    let CoreServer;
     const httpServer = http.createServer(app);
     const io = socketIO(httpServer, {
         transports: ['websocket', 'polling'],
@@ -265,21 +263,21 @@ Bluebird.promisifyAll(fs);
     const _session = require('./controllers/_session');
 
     io.use(_session.handleSocket);
-    _session.loadController(app, io);
+    _session.loadController(io);
 
     await* [fillSettingsData(app, io), fillRegionData(app, io)];
 
     require('./controllers/actionlog').loadController();
     require('./controllers/mail').loadController();
-    require('./controllers/auth').loadController(app, db, io);
+    require('./controllers/auth').loadController(app, io);
     require('./controllers/reason').loadController(io);
     require('./controllers/userobjectrel').loadController();
-    require('./controllers/index').loadController(app, db, io);
-    require('./controllers/photo').loadController(app, db, io);
+    require('./controllers/index').loadController(io);
+    require('./controllers/photo').loadController(io);
     require('./controllers/subscr').loadController(io);
     require('./controllers/comment').loadController(io);
-    require('./controllers/profile').loadController(app, db, io);
-    require('./controllers/admin').loadController(app, db, io);
+    require('./controllers/profile').loadController(io);
+    require('./controllers/admin').loadController(io);
     if (land === 'dev') {
         require('./controllers/tpl').loadController(app);
     }
@@ -296,10 +294,10 @@ Bluebird.promisifyAll(fs);
     }
 
     require('./controllers/errors').registerErrorHandling(app);
-    require('./controllers/systemjs').loadController(app, db);
-    // require('./basepatch/v1.3.0.4').loadController(app, db);
+    require('./controllers/systemjs').loadController();
+    // require('./basepatch/v1.3.0.4').loadController(app);
 
-    CoreServer = require('./controllers/coreadapter');
+    const CoreServer = require('./controllers/coreadapter').Server;
 
     const manualGC = manualGCInterval && global.gc;
 

@@ -545,7 +545,7 @@ export async function removePhotos(data) {
     setTimeout(CollectConveyerStat, hourStart + ms('10m') * Math.ceil((Date.now() - hourStart) / ms('10m')) - Date.now() + 10);
 }());
 
-export function loadController(app, io) {
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 

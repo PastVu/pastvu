@@ -1,12 +1,10 @@
-'use strict';
+import net from 'net';
+import _ from 'lodash';
+import util from 'util';
+import events from 'events';
+import Bluebird from 'bluebird';
 
-var _ = require('lodash');
-var net = require('net');
-var util = require('util');
-var events = require('events');
-var Bluebird = require('bluebird');
-
-var Client = function (logger) {
+export const Client = function (logger) {
     this.logger = logger || console;
     this.socketClosed = true;
 };
@@ -134,5 +132,3 @@ Client.prototype._tokenizer = function (data) {
     this.buffer = result.pop();
     return result;
 };
-
-module.exports = Client;

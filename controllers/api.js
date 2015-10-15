@@ -1,18 +1,15 @@
-'use strict';
+import ms from 'ms';
+import Bluebird from 'bluebird';
+import { logIt } from './apilog.js';
+import Utils from '../commons/Utils';
 
-var ms = require('ms');
-var Bluebird = require('bluebird');
-var log4js = require('log4js');
-var logger = log4js.getLogger('api.js');
-var logController = require('./apilog.js');
-var Utils = require('../commons/Utils.js');
 var core;
-var REQUEST_SELF_LIFE = ms('60s');
-var apps = {
+const REQUEST_SELF_LIFE = ms('60s');
+const apps = {
     test: { limit: 2, interval: 1e3, lastCall: 0, count: 0 },
     mPsTm: true
 };
-var errors = {
+const errors = {
     '1': { status: 403, statusText: 'Not allowed application. Forbidden' },
     '2': { status: 401, statusText: 'Service unavalible' },
 
@@ -247,7 +244,7 @@ function logIt(req, start, status, errorCode, errorMessage) {
     logController.logIt(query.app, query.rid, query.stamp, query.method, query.data, start, ms, status, errorCode, errorMessage);
 }
 
-module.exports.loadController = function (app, db, c) {
+module.exports.loadController = function (app, c) {
     core = c;
     app.route(/^\/0\.2\.0\/?$/).get(requestHandler).post(requestHandler);
 };

@@ -1,36 +1,31 @@
-'use strict';
+import _ from 'lodash';
+import Utils from '../commons/Utils';
+import * as errors from './errors';
+import * as session from './_session';
+import { clientParams } from './settings';
+import { givePhotoForPage } from './photo';
 
-var _ = require('lodash');
-var Utils = require('../commons/Utils');
-var settings = require('./settings');
-var _session = require('./_session');
-var photo = require('./photo');
-var errors = require('./errors');
+export function loadController(app) {
+    const fullhost = clientParams.server.protocol + '://' + clientParams.server.host;
+    const clientParamsJSON = JSON.stringify(clientParams);
 
-module.exports.loadController = function (app) {
-    var clientParams = settings.clientParams;
-    var fullhost = clientParams.server.protocol + '://' + clientParams.server.host;
+    function genInitDataString(req) {
+        const usObj = req.handshake.usObj;
+        let resultString = `var init={settings:${clientParamsJSON},` +
+            `user:${JSON.stringify(session.getPlainUser(usObj.user))}`;
 
-    var genInitDataString = (function () {
-        var clientParamsJSON = JSON.stringify(clientParams);
+        if (usObj.registered) {
+            resultString += ',registered:true';
+        }
 
-        return function (req) {
-            var usObj = req.handshake.usObj;
-            var resultString = 'var init={settings:' + clientParamsJSON + ', user:' + JSON.stringify(_session.getPlainUser(usObj.user));
+        if (req.photoData) {
+            resultString += ',photo:' + JSON.stringify(req.photoData);
+        }
 
-            if (usObj.registered) {
-                resultString += ',registered:true';
-            }
+        resultString += '};';
 
-            if (req.photoData) {
-                resultString += ',photo:' + JSON.stringify(req.photoData);
-            }
-
-            resultString += '};';
-
-            return resultString;
-        };
-    }());
+        return resultString;
+    };
 
     // Проверка на выключенный у клиенты js. В этом случае клиент передаст параметр _nojs=1 в url
     var checkNoJS = function (req) {
@@ -48,7 +43,7 @@ module.exports.loadController = function (app) {
     var getReqBrowser = function (req, res, next) {
         var ua = req.headers['user-agent'];
         if (ua) {
-            req.browser = _session.checkUserAgent(ua);
+            req.browser = session.checkUserAgent(ua);
         }
         next();
     };
@@ -88,10 +83,10 @@ module.exports.loadController = function (app) {
         /^\/(?:confirm)\/.+$/ // Пути обязательным продолжением (/example/*)
     ]
         .forEach(function (route) {
-            app.get(route, _session.handleHTTPRequest, setStaticHeaders, appMainHandler);
+            app.get(route, session.handleHTTPRequest, setStaticHeaders, appMainHandler);
         });
 
-    app.get(/^\/p\/(\d{1,7})$/, _session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
+    app.get(/^\/p\/(\d{1,7})$/, session.handleHTTPRequest, setStaticHeaders, getPhotoForPage, appMainHandler);
 
     function appMainHandler(req, res) {
         var nojs = checkNoJS(req);
@@ -158,7 +153,7 @@ module.exports.loadController = function (app) {
     function getPhotoForPage(req, res, next) {
         var cid = Number(req.params[0]);
 
-        photo.givePhotoForPage(req.handshake.usObj, { cid })
+        givePhotoForPage(req.handshake.usObj, { cid })
             .then(function (result) {
                 if (!result) {
                     throw { noPhoto: true };
@@ -177,7 +172,7 @@ module.exports.loadController = function (app) {
     }
 
     [/^\/(?:admin)(?:\/.*)?$/].forEach(function (route) {
-        app.get(route, _session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
+        app.get(route, session.handleHTTPRequest, setStaticHeaders, appAdminHandler);
     });
     function appAdminHandler(req, res) {
         var nojs = checkNoJS(req);

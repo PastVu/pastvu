@@ -4,111 +4,108 @@ import log4js from 'log4js';
 import cookie from 'express/node_modules/cookie';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
-import { dbEval } from './connection';
+import { waitDb, dbEval } from './connection';
+import * as regionController from './region';;
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
 
 const logger = log4js.getLogger('session');
-var regionController = require('./region'),
+const errtypes = {
+    NO_HEADERS: 'Bad request - no header or user agent',
+    BAD_BROWSER: 'Bad browser, we do not support it',
+    CANT_CREATE_SESSION: 'Can not create session',
+    CANT_UPDATE_SESSION: 'Can not update session',
+    CANT_GET_SESSION: 'Can not get session',
+    CANT_POPUSER_SESSION: 'Can not populate user session',
+    ANOTHER: 'Some error occured'
+};
 
-    errtypes = {
-        NO_HEADERS: 'Bad request - no header or user agent',
-        BAD_BROWSER: 'Bad browser, we do not support it',
-        CANT_CREATE_SESSION: 'Can not create session',
-        CANT_UPDATE_SESSION: 'Can not update session',
-        CANT_GET_SESSION: 'Can not get session',
-        CANT_POPUSER_SESSION: 'Can not populate user session',
-        ANOTHER: 'Some error occured'
-    },
+export const checkUserAgent = Utils.checkUserAgent({
+    'IE': '>=9.0.0',
+    'Firefox': '>=6.0.0', // 6-я версия - это G+
+    'Opera': '>=12.10.0',
+    'Chrome': '>=11.0.0', // 11 версия - это Android 4 default browser в desktop-режиме
+    'Android': '>=4.0.0',
+    'Safari': '>=5.1.4', // 5.1.4 это Function.prototype.bind
+    'Mobile Safari': '>=5.1.4'
+});
 
-    checkUserAgent = Utils.checkUserAgent({
-        'IE': '>=9.0.0',
-        'Firefox': '>=6.0.0', // 6-я версия - это G+
-        'Opera': '>=12.10.0',
-        'Chrome': '>=11.0.0', // 11 версия - это Android 4 default browser в desktop-режиме
-        'Android': '>=4.0.0',
-        'Safari': '>=5.1.4', // 5.1.4 это Function.prototype.bind
-        'Mobile Safari': '>=5.1.4'
-    }),
+const getBrowserAgent = function (browser) {
+    var agent = {
+            n: browser.agent.family, //Agent name e.g. 'Chrome'
+            v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
+        },
+        device = browser.agent.device.toString(), //Device e.g 'Asus A100'
+        os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
 
-    getBrowserAgent = function (browser) {
-        var agent = {
-                n: browser.agent.family, //Agent name e.g. 'Chrome'
-                v: browser.agent.toVersion() //Agent version string e.g. '15.0.874'
-            },
-            device = browser.agent.device.toString(), //Device e.g 'Asus A100'
-            os = browser.agent.os.toString(); //Operation system e.g. 'Mac OSX 10.8.1'
+    if (os) {
+        agent.os = os;
+    }
+    if (device && device !== 'Other') {
+        agent.d = device;
+    }
+    return agent;
+};
 
-        if (os) {
-            agent.os = os;
+export const getPlainUser = (function () {
+    var userToPublicObject = function (doc, ret/* , options */) {
+        // Этот метод вызовется и в дочерних популированных объектах.
+        // Transforms are applied to the document and each of its sub-documents.
+        // Проверяем, что именно пользователь
+        if (doc.login !== undefined) {
+            delete ret.cid;
+            delete ret.pass;
+            delete ret.activatedate;
+            delete ret.loginAttempts;
+            delete ret.active;
+            delete ret.__v;
         }
-        if (device && device !== 'Other') {
-            agent.d = device;
-        }
-        return agent;
-    },
-
-    getPlainUser = (function () {
-        var userToPublicObject = function (doc, ret, options) {
-            //Этот метод вызовется и в дочерних популированных объектах. Transforms are applied to the document and each of its sub-documents.
-            //Проверяем, что именно пользователь
-            if (doc.login !== undefined) {
-                delete ret.cid;
-                delete ret.pass;
-                delete ret.activatedate;
-                delete ret.loginAttempts;
-                delete ret.active;
-                delete ret.__v;
-            }
-            delete ret._id;
-        };
-        return function (user) {
-            return user && user.toObject ? user.toObject({ transform: userToPublicObject }) : null;
-        };
-    }()),
-
-    SESSION_SHELF_LIFE = ms('21d'), //Срок годности сессии с последней активности
-
-    createSidCookieObj = (function () {
-        //Создает объект с кукой ключа сессии
-        var key = 'past.sid',
-        // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
-            cookieMaxAge = SESSION_SHELF_LIFE / 1000;
-
-        return function (session) {
-            return {
-                key: key,
-                value: session.key,
-                path: '/',
-                domain: global.appVar.serverAddr.domain,
-                'max-age': cookieMaxAge
-            };
-        };
-    }()),
-
-    usSid = Object.create(null), //usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
-    usLogin = Object.create(null), //usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
-    usId = Object.create(null), //usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
-
-    sessConnected = Object.create(null), //Sessions. Хэш всех активных сессий, с установленными соединениями
-    sessWaitingConnect = Object.create(null), //Хэш сессий, которые ожидают первого соединения
-    sessWaitingSelect = Object.create(null), //Хэш сессий, ожидающих выборки по ключу из базы
-
-    usObjIsOwner = function () {
-        /*jshint validthis: true*/
-        return this.registered && this.user.role > 10;
-    },
-    usObjIsAdmin = function () {
-        /*jshint validthis: true*/
-        return this.registered && this.user.role > 9;
-    },
-    usObjIsModerator = function () {
-        /*jshint validthis: true*/
-        return this.registered && this.user.role === 5;
+        delete ret._id;
     };
+    return function (user) {
+        return user && user.toObject ? user.toObject({ transform: userToPublicObject }) : null;
+    };
+}());
 
-//Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
+const SESSION_SHELF_LIFE = ms('21d'); // Срок годности сессии с последней активности
+
+const createSidCookieObj = (function () {
+    // Создает объект с кукой ключа сессии
+    var key = 'past.sid',
+    // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
+        cookieMaxAge = SESSION_SHELF_LIFE / 1000;
+
+    return function (session) {
+        return {
+            key,
+            value: session.key,
+            path: '/',
+            domain: global.appVar.serverAddr.domain,
+            'max-age': cookieMaxAge
+        };
+    };
+}());
+
+export const usSid = Object.create(null); // usObjs by session key. Хэш всех пользовательских обектов по ключам сессий. Может быть один объект у нескольких сессий, если клиент залогинен ы нескольких браузерах
+export const usLogin = Object.create(null); // usObjs loggedin by user login.  Хэш пользовательских обектов по login зарегистрированного пользователя
+export const usId = Object.create(null); // usObjs loggedin by user _id. Хэш пользовательских обектов по _id зарегистрированного пользователя
+
+export const sessConnected = Object.create(null); // Sessions. Хэш всех активных сессий, с установленными соединениями
+export const sessWaitingConnect = Object.create(null); // Хэш сессий, которые ожидают первого соединения
+export const sessWaitingSelect = Object.create(null); // Хэш сессий, ожидающих выборки по ключу из базы
+
+const usObjIsOwner = function () {
+    return this.registered && this.user.role > 10;
+};
+const usObjIsAdmin = function () {
+    return this.registered && this.user.role > 9;
+};
+const usObjIsModerator = function () {
+    return this.registered && this.user.role === 5;
+};
+
+// Создаем запись в хэше пользователей (если нет) и добавляем в неё сессию
 function userObjectAddSession(session, cb) {
     var registered = !!session.user,
         user = registered ? session.user : session.anonym,
@@ -366,7 +363,7 @@ function popUserRegions(usObj, cb) {
 }
 
 // Заново выбирает пользователя из базы и популирует все зависимости. Заменяет ссылки в хешах на эти новые объекты
-var regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSocket, cb) {
+export const regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSocket, cb) {
     if (!usObj.registered) {
         throw { message: 'Can reget only registered user' };
     }
@@ -395,11 +392,11 @@ var regetUser = Bluebird.method(function (usObj, emitHim, emitExcludeSocket, cb)
         .nodeify(cb);
 });
 
-//TODO: Обрабатывать и анонимных пользователей, популировать у них регионы
-//Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
-//Принимает на вход 'all' или функцию фильтра пользователей
-//Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
-function regetUsers(filterFn, emitThem, cb) {
+// TODO: Обрабатывать и анонимных пользователей, популировать у них регионы
+// Заново выбирает онлайн пользователей из базы и популирует у них все зависимости. Заменяет ссылки в хешах на эти новые объекты
+// Принимает на вход 'all' или функцию фильтра пользователей
+// Не ждет выполнения - сразу возвращает кол-во пользователей, для которых будет reget
+export function regetUsers(filterFn, emitThem, cb) {
     var usersToReget = filterFn === 'all' ? usLogin : _.filter(usLogin, filterFn),
         usersCount = _.size(usersToReget);
 
@@ -415,7 +412,7 @@ function regetUsers(filterFn, emitThem, cb) {
 }
 
 //Работа с сессиями при авторизации пользователя, вызывается из auth-контроллера
-function loginUser(socket, user, data, cb) {
+export function loginUser(socket, user, data, cb) {
     var handshake = socket.handshake,
         sessionOld = handshake.session,
         usObjOld = handshake.usObj,
@@ -490,7 +487,7 @@ function loginUser(socket, user, data, cb) {
 }
 
 //Работа с сессиями при выходе пользователя, вызывается из auth-контроллера
-function logoutUser(socket, cb) {
+export function logoutUser(socket, cb) {
     var handshake = socket.handshake,
         usObjOld = handshake.usObj,
         sessionOld = handshake.session,
@@ -557,7 +554,7 @@ function logoutUser(socket, cb) {
 }
 
 // Отправка текущего пользователя всем его подключеным клиентам
-function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
+export function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
     var userPlain,
         sessions,
         sockets,
@@ -590,7 +587,7 @@ function emitUser(usObj, loginOrIdOrSessKey, excludeSocket) {
 }
 
 // Сохранение и последующая отправка
-function saveEmitUser(usObj, excludeSocket) {
+export function saveEmitUser(usObj, excludeSocket) {
     if (usObj && usObj.user !== undefined) {
         return usObj.user.saveAsync()
             .spread(function () {
@@ -607,7 +604,7 @@ function emitSidCookie(socket) {
 }
 
 //Проверяем если пользователь онлайн
-function isOnline(login, _id) {
+export function isOnline(login, _id) {
     if (login) {
         return usLogin[login] !== undefined;
     } else if (_id) {
@@ -616,7 +613,7 @@ function isOnline(login, _id) {
 }
 
 //Берем онлайн-пользователя
-function getOnline(login, _id) {
+export function getOnline(login, _id) {
     var usObj;
     if (login) {
         usObj = usLogin[login];
@@ -793,7 +790,7 @@ module.exports.handleSocket = (function () {
     };
 }());
 
-//Периодически убирает из памяти ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
+// Периодически убирает из памяти ожидающие подключения сессии, если они не подключились по сокету в течении 30 секунд
 var checkSessWaitingConnect = (function () {
     var checkInterval = ms('10s'),
         sessWaitingPeriod = ms('30s');
@@ -872,37 +869,22 @@ const checkExpiredSessions = (function () {
     };
 }());
 
-module.exports.loginUser = loginUser;
-module.exports.logoutUser = logoutUser;
-module.exports.emitUser = emitUser;
-module.exports.saveEmitUser = saveEmitUser;
-module.exports.isOnline = isOnline;
-module.exports.getOnline = getOnline;
+(async function () {
+    await waitDb;
 
-// Для быстрой проверки на online в некоторых модулях, экспортируем сами хеши
-module.exports.usLogin = usLogin;
-module.exports.usId = usId;
-module.exports.usSid = usSid;
-module.exports.sessConnected = sessConnected;
-module.exports.sessWaitingConnect = sessWaitingConnect;
-module.exports.sessWaitingSelect = sessWaitingSelect;
-module.exports.regetUser = regetUser;
-module.exports.regetUsers = regetUsers;
-module.exports.getPlainUser = getPlainUser;
-module.exports.checkUserAgent = checkUserAgent;
-
-module.exports.loadController = async function (a, io) {
     checkSessWaitingConnect();
     checkExpiredSessions();
+});
 
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 
         socket.setMaxListeners(0); // TODO: Make only one listener with custom router
 
         socket.on('giveInitData', function () {
-            var usObj = hs.usObj,
-                session = hs.session;
+            const usObj = hs.usObj;
+            const session = hs.session;
 
             socket.emit('takeInitData', {
                 p: clientParams,

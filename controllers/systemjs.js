@@ -1,16 +1,34 @@
 /*
- global module:true, print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
+ global db:true, print:true, linkifyUrlString: true, toPrecision: true, toPrecision6: true, toPrecisionRound:true,
  geoToPrecision:true, spinLng:true, regionClearPhotoTitle:true
  */
 
-var log4js = require('log4js');
-var mongoose = require('mongoose');
-var logger;
+import log4js from 'log4js';
+import mongoose from 'mongoose';
+import { waitDb, dbNative } from './connection';
+const logger = log4js.getLogger('systemjs.js');
 
-module.exports.loadController = function (app, db) {
-    logger = log4js.getLogger('systemjs.js');
+(async function () {
+    await waitDb;
 
-    //Архивирует сессии
+    // Save function to db.system.js
+    function saveSystemJSFunc(func) {
+        if (!func || !func.name) {
+            logger.error('saveSystemJSFunc: function name is not defined');
+        }
+        dbNative.collection('system.js').save(
+            {
+                _id: func.name,
+                value: new mongoose.mongo.Code(func.toString())
+            },
+            function saveCallback(err) {
+                if (err) {
+                    logger.error(err);
+                }
+            }
+        );
+    }
+
     saveSystemJSFunc(function archiveExpiredSessions(frontierDate) {
         var startFullTime = Date.now();
         var archiveDate = new Date();
@@ -175,7 +193,11 @@ module.exports.loadController = function (app, db) {
             print('~~~~~~~~~~~~~~~~~~~~~~~~~');
         }
 
-        return { message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's', photos: photosAllCount, clusters: db.clusters.count() };
+        return {
+            message: 'Ok in ' + (Date.now() - startFullTime) / 1000 + 's',
+            photos: photosAllCount,
+            clusters: db.clusters.count()
+        };
     });
 
     saveSystemJSFunc(function photosToMapAll() {
@@ -278,11 +300,18 @@ module.exports.loadController = function (app, db) {
 
         //Очищаем принадлежность к регионам у всех фотографий с проставленной точкой
         print('Clearing current regions assignment\n');
-        db.photos.update({ geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true });
+        db.photos.update(
+            { geo: { $exists: true } }, { $unset: { r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 } }, { multi: true }
+        );
 
         //Для каждого региона находим фотографии
         print('Start to assign for ' + db.regions.count() + ' regions..\n');
-        db.regions.find({ cid: { $ne: 1000000 } }, { cid: 1, parents: 1, geo: 1, title_en: 1 }).forEach(function (region) {
+        db.regions.find({ cid: { $ne: 1000000 } }, {
+            cid: 1,
+            parents: 1,
+            geo: 1,
+            title_en: 1
+        }).forEach(function (region) {
             var startTime = Date.now();
             var count;
             var queryObject = {};
@@ -310,7 +339,9 @@ module.exports.loadController = function (app, db) {
         var maxRegionLevel = 5;
 
         print('Assign regions to comments for ' + db.photos.count({ s: { $gte: 5 } }) + ' published photos');
-        db.photos.find({ s: { $gte: 5 } }, { _id: 1, geo: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 }).forEach(function (photo) {
+        db.photos.find(
+            { s: { $gte: 5 } }, { _id: 1, geo: 1, r0: 1, r1: 1, r2: 1, r3: 1, r4: 1, r5: 1 }
+        ).forEach(function (photo) {
             var r;
             var $set = {};
             var $unset = {};
@@ -716,7 +747,12 @@ module.exports.loadController = function (app, db) {
                 if (!rel.ccount_new) {
                     rel.ccount_new = 0;
                 }
-                ccount_new = commentCollection.count({ obj: rel.obj, del: null, stamp: { $gt: rel.comments }, user: { $ne: rel.user } });
+                ccount_new = commentCollection.count({
+                    obj: rel.obj,
+                    del: null,
+                    stamp: { $gt: rel.comments },
+                    user: { $ne: rel.user }
+                });
 
                 if (ccount_new !== rel.ccount_new) {
                     if (ccount_new) {
@@ -899,25 +935,5 @@ module.exports.loadController = function (app, db) {
             return inputText;
         }
     });
-
-    /**
-     * Save function to db.system.js
-     * @param func
-     */
-    function saveSystemJSFunc(func) {
-        if (!func || !func.name) {
-            logger.error('saveSystemJSFunc: function name is not defined');
-        }
-        db.db.collection('system.js').save(
-            {
-                _id: func.name,
-                value: new mongoose.mongo.Code(func.toString())
-            },
-            function saveCallback(err) {
-                if (err) {
-                    logger.error(err);
-                }
-            }
-        );
-    }
-};
+}());
+export function loadController() {};
