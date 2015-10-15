@@ -995,232 +995,181 @@ async function removeComment(socket, data) {
     };
 };
 
-/**
- * Восстанавливает комментарий и его потомков
- * @param socket Сокет пользователя
- * @param data
- */
-var restoreComment = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Restore comment and its descendants
+async function restoreComment(socket, { cid, type } = {}) {
+    const iAm = socket.handshake.usObj;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
-    if (!_.isObject(data) || !Number(data.cid)) {
+
+    cid = Number(cid);
+
+    if (!cid) {
         throw { message: msg.badParams };
     }
 
-    var countCommentsRestored = 1;
-    var cid = Number(data.cid);
-    var commentsHash = {};
-    var hashUsers = {};
-    var commentModel;
-    var histChilds;
-    var childsCids;
-    var stamp;
-    var hist;
+    const commentModel = type === 'news' ? CommentN : Comment;
+    const comment = await commentModel.findOne(
+        { cid, del: { $exists: true } }, { _id: 1, obj: 1, user: 1, stamp: 1, hidden: 1, del: 1 }, { lean: true }
+    ).exec();
 
-    if (data.type === 'news') {
-        commentModel = CommentN;
-    } else {
-        commentModel = Comment;
+    if (!comment) {
+        throw { message: msg.noCommentExists };
     }
 
-    return commentModel.findOneAsync({ cid, del: { $exists: true } }, {
-        _id: 1,
-        obj: 1,
-        user: 1,
-        stamp: 1,
-        hidden: 1,
-        del: 1
-    }, { lean: true })
-        .bind({})
-        .then(function (comment) {
-            if (!comment) {
-                throw { message: msg.noCommentExists };
+    const obj = await (type === 'news' ?
+        News.findOne({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 }).exec() :
+        photoController.findPhoto(iAm, { _id: comment.obj })
+    );
+
+    if (!obj) {
+        throw { message: msg.noObject };
+    }
+
+    const canModerate = permissions.canModerate(type, obj, iAm);
+    if (!canModerate) {
+        throw { message: msg.deny };
+    }
+
+    // Find all comments directly descendants to restoring, which were deleted with it,
+    // eg theirs 'origin' refers to the current
+    const children = await commentModel.find(
+        { obj: obj._id, 'del.origin': cid }, { _id: 0, obj: 0, txt: 0, hist: 0 }, { lean: true, sort: { stamp: 1 } }
+    ).exec();
+
+    const stamp = new Date();
+    const commentsForRelArr = [];
+    const usersCountMap = new Map();
+    const commentsCidSet = new Set();
+
+    comment.user = String(comment.user); // For Map key
+
+    commentsCidSet.add(cid);
+    if (!comment.hidden) {
+        usersCountMap.set(comment.user, 1);
+        commentsForRelArr.push(comment);
+    }
+
+    const childsCids = [];
+    // Loop by children for restoring comment
+    for (const child of children) {
+        child.user = String(child.user);
+
+        if (!child.hidden) {
+            usersCountMap.set(child.user, (usersCountMap.get(child.user) || 0) + 1);
+            commentsForRelArr.push(child);
+        }
+
+        childsCids.push(child.cid);
+        commentsCidSet.add(child.cid);
+    }
+
+    const hist = [
+        Object.assign(_.omit(comment.del, 'origin'), { del: { reason: comment.del.reason } }),
+        { user: iAm.user._id, stamp, restore: true, role: iAm.user.role }
+    ];
+    if (iAm.isModerator && _.isNumber(canModerate)) {
+        hist[1].roleregion = canModerate;
+    }
+
+    await commentModel.update(
+        { cid }, { $set: { lastChanged: stamp }, $unset: { del: 1 }, $push: { hist: { $each: hist } }}
+    ).exec();
+
+    if (childsCids.length) {
+        const histChilds = [
+            Object.assign(_.omit(comment.del, 'reason'), { del: { origin: cid } }),
+            { user: iAm.user._id, stamp, restore: true, role: iAm.user.role }
+        ];
+
+        if (iAm.isModerator && _.isNumber(canModerate)) {
+            histChilds[1].roleregion = canModerate;
+        }
+
+        await commentModel.update({ obj: obj._id, 'del.origin': cid }, {
+            $set: { lastChanged: stamp },
+            $unset: { del: 1 },
+            $push: { hist: { $each: histChilds } }
+        }, { multi: true }).exec();
+    }
+
+    let frags = obj.frags && obj.frags.toObject();
+    let frag;
+
+    if (!_.isEmpty(frags)) {
+        for (frag of frags) {
+            if (commentsCidSet.has(frag.cid)) {
+                obj.frags.id(frag._id).del = undefined;
             }
+        }
+    }
 
-            this.comment = comment;
+    const countCommentsRestored = children.length + 1;
+    obj.ccount += countCommentsRestored;
+    const promises = [obj.save()];
 
-            if (data.type === 'news') {
-                return News.findOneAsync({ _id: comment.obj }, { _id: 1, ccount: 1, nocomments: 1 });
+    for (const [userId, ccount] of usersCountMap) {
+        const userObj = session.getOnline(null, userId);
+        if (userObj !== undefined) {
+            userObj.user.ccount = userObj.user.ccount + ccount;
+            promises.push(session.saveEmitUser(userObj));
+        } else {
+            promises.push(User.update({ _id: userId }, { $inc: { ccount } }).exec());
+        }
+    }
+
+    if (commentsForRelArr.length) {
+        promises.push(userObjectRelController.onCommentsRestore(obj._id, commentsForRelArr, type));
+    }
+
+    await* promises;
+
+    // Pass to client only fragments of unremoved comments, for replacement on client
+    if (obj.frags) {
+        obj.frags = obj.frags.toObject();
+
+        frags = [];
+        for (frag of obj.frags) {
+            if (!frag.del) {
+                frags.push(frag);
             }
+        }
+    } else {
+        frags = undefined;
+    }
 
-            return photoController.findPhoto(iAm, { _id: comment.obj });
-        })
-        .then(function (obj) {
-            if (!obj) {
-                throw { message: msg.noObject };
-            }
-            this.obj = obj;
+    actionLogController.logIt(
+        iAm.user,
+        comment._id,
+        actionLogController.OBJTYPES.COMMENT,
+        actionLogController.TYPES.RESTORE,
+        stamp,
+        undefined,
+        iAm.isModerator && _.isNumber(canModerate) ? canModerate : undefined,
+        childsCids.length ? { childs: childsCids.length } : undefined
+    );
 
-            // Нужны права модератора/администратора
-            this.canModerate = permissions.canModerate(data.type, obj, iAm);
-            if (!this.canModerate) {
-                throw { message: msg.deny };
-            }
+    return {
+        frags,
+        stamp: stamp.getTime(),
+        countUsers: usersCountMap.size,
+        countComments: countCommentsRestored,
+        myCountComments: usersCountMap.has(String(iAm.user._id))
+    };
+};
 
-            // Находим все комментарии, дочерние восстанавливаемому, которые были удалены вместе с ним,
-            // т.е. у которых origin указывает на текущий
-            return commentModel.findAsync(
-                { obj: obj._id, 'del.origin': cid },
-                { _id: 0, obj: 0, txt: 0, hist: 0 },
-                { lean: true, sort: { stamp: 1 } }
-            );
-        })
-        .then(function (childs) {
-            var len = childs.length;
-            var promises = [];
-            var child;
-
-            this.commentsForRelArr = [];
-            stamp = new Date();
-
-            // Операции с корневым удаляемым комментарием
-            commentsHash[cid] = this.comment;
-            if (!this.comment.hidden) {
-                hashUsers[this.comment.user] = (hashUsers[this.comment.user] || 0) + 1;
-                this.commentsForRelArr.push(this.comment);
-            }
-
-            childsCids = [];
-            countCommentsRestored += len;
-            // Обходим потомков восстанавливаемого комментария
-            for (var i = 0; i < len; i++) {
-                child = childs[i];
-                if (!child.hidden) {
-                    hashUsers[child.user] = (hashUsers[child.user] || 0) + 1;
-                    this.commentsForRelArr.push(child);
-                }
-                childsCids.push(child.cid);
-                commentsHash[child.cid] = child;
-            }
-
-            hist = [
-                _.assign(_.omit(this.comment.del, 'origin'), { del: { reason: this.comment.del.reason } }),
-                { user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role }
-            ];
-            if (iAm.isModerator && _.isNumber(this.canModerate)) {
-                hist[1].roleregion = this.canModerate;
-            }
-
-            promises.push(
-                commentModel.updateAsync({ cid }, {
-                    $set: { lastChanged: stamp },
-                    $unset: { del: 1 },
-                    $push: { hist: { $each: hist } }
-                })
-            );
-
-            if (childsCids.length) {
-                histChilds = [
-                    _.assign(_.omit(this.comment.del, 'reason'), { del: { origin: cid } }),
-                    { user: iAm.user._id, stamp: stamp, restore: true, role: iAm.user.role }
-                ];
-
-                if (iAm.isModerator && _.isNumber(this.canModerate)) {
-                    histChilds[1].roleregion = this.canModerate;
-                }
-
-                promises.push(
-                    commentModel.updateAsync({ obj: this.obj._id, 'del.origin': cid }, {
-                        $set: { lastChanged: stamp },
-                        $unset: { del: 1 },
-                        $push: { hist: { $each: histChilds } }
-                    }, { multi: true })
-                );
-            }
-
-            return Bluebird.all(promises);
-        })
-        .then(function () {
-            var frags = this.obj.frags && this.obj.frags.toObject();
-            var promises = [];
-            var userObj;
-            var u;
-            var i;
-
-            if (frags) {
-                for (i = frags.length; i--;) {
-                    if (commentsHash[frags[i].cid] !== undefined) {
-                        this.obj.frags.id(frags[i]._id).del = undefined;
-                    }
-                }
-            }
-
-            this.obj.ccount += countCommentsRestored;
-            promises.push(this.obj.saveAsync());
-
-            for (u in hashUsers) {
-                if (hashUsers[u] !== undefined) {
-                    userObj = session.getOnline(null, u);
-                    if (userObj !== undefined) {
-                        userObj.user.ccount = userObj.user.ccount + hashUsers[u];
-                        promises.push(session.saveEmitUser(userObj));
-                    } else {
-                        promises.push(User.updateAsync({ _id: u }, { $inc: { ccount: hashUsers[u] } }));
-                    }
-                }
-            }
-
-            if (this.commentsForRelArr.length) {
-                promises.push(userObjectRelController.onCommentsRestore(this.obj._id, this.commentsForRelArr, data.type));
-            }
-
-            return Bluebird.all(promises);
-        })
-        .then(function () {
-            var frags;
-            var frag;
-            var i;
-
-            //Не отдаем фрагменты только не удаленных комментариев, для замены на клиенте
-            if (this.obj.frags) {
-                this.obj.frags = this.obj.frags.toObject();
-                frags = [];
-
-                for (i = 0; i < this.obj.frags.length; i++) {
-                    frag = this.obj.frags[i];
-                    if (!frag.del) {
-                        frags.push(frag);
-                    }
-                }
-            }
-
-            actionLogController.logIt(
-                iAm.user,
-                this.comment._id,
-                actionLogController.OBJTYPES.COMMENT,
-                actionLogController.TYPES.RESTORE,
-                stamp,
-                undefined,
-                iAm.isModerator && _.isNumber(this.canModerate) ? this.canModerate : undefined,
-                childsCids.length ? { childs: childsCids.length } : undefined
-            );
-
-            return {
-                frags: frags,
-                countComments: countCommentsRestored,
-                myCountComments: ~~hashUsers[iAm.user._id],
-                countUsers: Object.keys(hashUsers).length,
-                stamp: stamp.getTime()
-            };
-        });
-});
-
-/**
- * Редактирует комментарий
- * @param socket Сокет пользователя
- * @param data Объект
- */
-var updateComment = Bluebird.method(function (socket, data) {
-    var iAm = socket.handshake.usObj;
+// Edit comment
+async function updateComment(socket, data = {}) {
+    const iAm = socket.handshake.usObj;
 
     if (!iAm.registered) {
         throw { message: msg.deny };
     }
 
-    if (!_.isObject(data) || !data.obj || !Number(data.cid) || !data.txt) {
+    const cid = Number(data.cid);
+
+    if (!data.obj || !cid || !data.txt) {
         throw { message: msg.badParams };
     }
 
@@ -1228,244 +1177,208 @@ var updateComment = Bluebird.method(function (socket, data) {
         throw { message: msg.maxLength };
     }
 
-    var cid = Number(data.cid);
-    var canEdit;
-    var canModerate;
-    var fragRecieved;
-    var promise;
+    const [obj, comment] = await* (data.type === 'news' ? [
+        News.findOne({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }).exec(),
+        CommentN.findOne({ cid }).exec()
+    ] : [
+        photoController.findPhoto(iAm, { cid: data.obj }),
+        Comment.findOne({ cid }).exec()
+    ]);
 
-    if (data.type === 'news') {
-        promise = Bluebird.join(
-            News.findOneAsync({ cid: data.obj }, { cid: 1, frags: 1, nocomments: 1 }),
-            CommentN.findOneAsync({ cid: cid })
-        );
-    } else {
-        promise = Bluebird.join(
-            photoController.findPhoto(iAm, { cid: data.obj }),
-            Comment.findOneAsync({ cid: cid })
-        );
+    if (!comment || !obj || data.obj !== obj.cid) {
+        throw { message: msg.noCommentExists };
     }
 
-    return promise
-        .then(function ([obj, comment]) {
-            if (!comment || !obj || data.obj !== obj.cid) {
-                throw { message: msg.noCommentExists };
+    const hist = { user: iAm.user };
+
+    // Ability to edit as regular user, if it' own comment younger than day
+    const canEdit = permissions.canEdit(comment, obj, iAm);
+    let canModerate;
+    if (!canEdit) {
+        // В противном случае нужны права модератора/администратора
+        canModerate = permissions.canModerate(data.type, obj, iAm);
+        if (!canModerate) {
+            throw { message: obj.nocomments ? msg.noComments : msg.deny };
+        }
+    }
+
+    const parsedResult = Utils.inputIncomingParse(data.txt);
+    const content = parsedResult.result;
+    let fragChangedType;
+    let txtChanged;
+
+    const fragExists = _.find(obj.frags, { cid: comment.cid });
+
+    const fragRecieved = data.type === 'photo' && data.fragObj && {
+        cid: comment.cid,
+        l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
+        t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
+        w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
+        h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
+    };
+
+    if (fragRecieved) {
+        if (!fragExists) {
+            // If fragment was received and had not had exist before, simply append it
+            fragChangedType = 1;
+            comment.frag = true;
+            obj.frags = obj.frags || [];
+            obj.frags.push(fragRecieved);
+        } else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t ||
+            fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
+            // If fragment was received and had had exist before, but something changed in it,
+            // then remove old and append new one
+            fragChangedType = 2;
+            obj.frags = obj.frags || [];
+            obj.frags.pull(fragExists._id);
+            obj.frags.push(fragRecieved);
+        }
+    } else if (fragExists) {
+        // If fragment wasn't recieved, but it had had exist before, simply remove it
+        fragChangedType = 3;
+        comment.frag = undefined;
+        obj.frags = obj.frags || [];
+        obj.frags.pull(fragExists._id);
+    }
+
+    if (content !== comment.txt) {
+        // Save current text (before edit) to history object
+        hist.txt = comment.txt;
+        // Get formatted difference of current and new tests (unformatted) and save to history object
+        hist.txtd = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
+        txtChanged = true;
+    }
+
+    if (txtChanged || fragChangedType) {
+        hist.frag = fragChangedType || undefined;
+
+        if (canModerate && iAm.user.role) {
+            // If moderator/administrator role was used for editing, save it on the moment of editing
+            hist.role = iAm.user.role;
+            if (iAm.isModerator && _.isNumber(canModerate)) {
+                hist.roleregion = canModerate; // In case of moderator 'permissions.canModerate' returns role cid
             }
+        }
 
-            var i;
-            var hist = { user: iAm.user };
-            var promises;
-            var parsedResult;
-            var content;
-            var fragExists;
-            var fragChangedType;
-            var txtChanged;
+        comment.hist.push(hist);
+        comment.lastChanged = new Date();
+        comment.txt = content;
 
-            // Возможно редактировать как простой пользователь, если это собственный комментарий моложе суток
-            canEdit = permissions.canEdit(comment, obj, iAm);
-            if (!canEdit) {
-                // В противном случае нужны права модератора/администратора
-                canModerate = permissions.canModerate(data.type, obj, iAm);
-                if (!canModerate) {
-                    throw { message: obj.nocomments ? msg.noComments : msg.deny };
-                }
-            }
-            parsedResult = Utils.inputIncomingParse(data.txt);
-            content = parsedResult.result;
+        await* [comment.save(), fragChangedType ? obj.save() : null];
+    }
 
-            if (obj.frags) {
-                for (i = obj.frags.length; i--;) {
-                    if (obj.frags[i].cid === comment.cid) {
-                        fragExists = obj.frags[i];
-                        break;
-                    }
-                }
-            }
-
-            fragRecieved = data.type === 'photo' && data.fragObj && {
-                    cid: comment.cid,
-                    l: Utils.math.toPrecision(Number(data.fragObj.l) || 0, 2),
-                    t: Utils.math.toPrecision(Number(data.fragObj.t) || 0, 2),
-                    w: Utils.math.toPrecision(Number(data.fragObj.w) || 20, 2),
-                    h: Utils.math.toPrecision(Number(data.fragObj.h) || 15, 2)
-                };
-
-            if (fragRecieved) {
-                if (!fragExists) {
-                    // Если фрагмент получен и его небыло раньше, просто вставляем полученный
-                    fragChangedType = 1;
-                    comment.frag = true;
-                    obj.frags = obj.frags || [];
-                    obj.frags.push(fragRecieved);
-                } else if (fragRecieved.l !== fragExists.l || fragRecieved.t !== fragExists.t || fragRecieved.w !== fragExists.w || fragRecieved.h !== fragExists.h) {
-                    // Если фрагмент получен, он был раньше, но что-то в нем изменилось, то удаляем старый и вставляем полученный
-                    fragChangedType = 2;
-                    obj.frags = obj.frags || [];
-                    obj.frags.pull(fragExists._id);
-                    obj.frags.push(fragRecieved);
-                }
-            } else if (fragExists) {
-                // Если фрагмент не получен, но раньше он был, то просто удаляем старый
-                fragChangedType = 3;
-                comment.frag = undefined;
-                obj.frags = obj.frags || [];
-                obj.frags.pull(fragExists._id);
-            }
-
-            if (content !== comment.txt) {
-                // Записываем текущий текст(до смены) в объект истории
-                hist.txt = comment.txt;
-                // Получаем форматированную разницу текущего и нового текста (неформатированных) и записываем в объект истории
-                hist.txtd = Utils.txtdiff(Utils.txtHtmlToPlain(comment.txt), parsedResult.plain);
-                txtChanged = true;
-            }
-
-            if (txtChanged || fragChangedType) {
-                hist.frag = fragChangedType || undefined;
-
-                if (canModerate && iAm.user.role) {
-                    // Если для изменения потребовалась роль модератора/адиминитратора, записываем её на момент изменения
-                    hist.role = iAm.user.role;
-                    if (iAm.isModerator && _.isNumber(canModerate)) {
-                        hist.roleregion = canModerate; // В случае с модератором региона, permissions.canModerate возвращает cid роли,
-                    }
-                }
-
-                comment.hist.push(hist);
-                comment.lastChanged = new Date();
-                comment.txt = content;
-
-                promises = [];
-                promises.push(comment.saveAsync());
-                if (fragChangedType) {
-                    promises.push(obj.saveAsync());
-                }
-
-                return Bluebird.all(promises)
-                    .then(function ([commentResult, objResult]) {
-                        return commentResult[0];
-                    });
-            }
-
-            return comment;
-        })
-        .then(function (comment) {
-            return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };
-        });
-});
-function commentDeleteHist(doc, ret, options) {
+    return { comment: comment.toObject({ transform: commentDeleteHist }), frag: fragRecieved };
+};
+function commentDeleteHist(doc, ret/* , options */) {
     delete ret.hist;
 }
 
 /**
- * Возвращает историю редактирования комментария
- * В базе история хранится по строкам. В одной строке содержится одно событие.
- * Такое событие может содержать 2 паказателя: изменение текста и(или) фрагмента.
- * Причем в это событие текст комментария сохраняется старый, т.е.
- * писался он в комментарий в другое время (во время другого события),
- * а флаг изменения фрагмента относится именно к этому событию.
- * Следовательно одна строка содержит события 2-х разных времен.
- * Для представления этого в более нормальном по временной шкале виде
- * необходимо изменение текста переносить во времена события предыдущего изменения текста, а
- * текущие событие отражать только если в нём есть изменение фрагмента или в будущем будет изменение текста и
- * оно будет установленно именно временем этого события
- * Т.е. событие реально отражается, если в нем есть изменениеи фрагмента или изменение текста в другом событии в будущем
- * @param data Объект
+ * Returns the history of comment's editing
+ * Stored by lines in db. Each line contains one event
+ * Event can contain 2 indicator: change of text or(and) fragment.
+ * Event contains previous text, eg it was written in comment at another time (at the time of another event), but
+ * flag about changing of fragment refers to exactly this event.
+ * Therefore, one line contains events from 2 different times.
+ * To show it in readable view to user,
+ * we need move changed text to the time of previous text change,
+ * and current event show only if it contains fragment's change
+ * or in next steps will be text change and it will move to time of this event.
+ * In other words event really will be shoed,
+ * if it contains a fragment's change or text modification in another event in the future
  */
-var giveCommentHist = Bluebird.method(function (data) {
-    if (!_.isObject(data) || !Number(data.cid)) {
+async function giveCommentHist({ cid, type = 'photo' } = {}) {
+    cid = Number(cid);
+
+    if (!cid) {
         throw { message: msg.badParams };
     }
-    var commentModel;
 
-    if (data.type === 'news') {
-        commentModel = CommentN;
-    } else {
-        commentModel = Comment;
+    const commentModel = type === 'news' ? CommentN : Comment;
+
+    const comment = await commentModel.findOne(
+        { cid }, { _id: 0, user: 1, txt: 1, txtd: 1, stamp: 1, hist: 1, del: 1 }, { lean: true }
+    ).populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } }).exec();
+
+    if (!comment) {
+        throw { message: msg.noCommentExists };
     }
 
-    return commentModel.findOne({ cid: Number(data.cid) }, { _id: 0, user: 1, txt: 1, txtd: 1, stamp: 1, hist: 1, del: 1 }, { lean: true })
-        .populate({ path: 'user hist.user del.user', select: { _id: 0, login: 1, avatar: 1, disp: 1 } })
-        .execAsync()
-        .then(function (comment) {
-            if (!comment) {
-                throw { message: msg.noCommentExists };
+    const result = [];
+    const hists = comment.hist || [];
+
+    // First record about text changing will be equal to comment creation
+    let lastTxtObj = { user: comment.user, stamp: comment.stamp };
+    let lastTxtIndex = 0; // Position of last text change in events stack
+
+    const getregion = function (regionId) {
+        if (regionId) {
+            let result = regionController.getRegionsHashFromCache([regionId])[regionId];
+
+            if (result) {
+                result = _.omit(result, '_id', 'parents');
             }
 
-            var i;
-            var hist;
-            var hists = comment.hist || [];
-            var histDel;
-            var lastTxtIndex = 0; // Позиция последнего изменение текста в стеке событий
-            var lastTxtObj = { user: comment.user, stamp: comment.stamp }; // Первое событие изменения текста будет равнятся созданию комментария
-            var result = [];
+            return result;
+        }
+    };
 
-            var getregion = function (regionId) {
-                var result;
-                if (regionId) {
-                    result = regionController.getRegionsHashFromCache([regionId])[regionId];
-                    if (result) {
-                        result = _.omit(result, '_id', 'parents');
-                    }
-                }
-                return result;
-            };
-
-            if (comment.del) {
-                hists.push({
-                    user: comment.del.user,
-                    stamp: comment.del.stamp,
-                    del: _.pick(comment.del, 'reason', 'origin'),
-                    role: comment.del.role,
-                    roleregion: comment.del.roleregion
-                });
-            }
-
-            for (i = 0; i < hists.length; i++) {
-                hist = hists[i];
-                histDel = hist.del;
-
-                if (hist.role && hist.roleregion) {
-                    hist.roleregion = getregion(hist.roleregion);
-                }
-
-                if (histDel || hist.restore) {
-                    if (histDel && histDel.reason && histDel.reason.cid) {
-                        histDel.reason.title = giveReasonTitle({ cid: histDel.reason.cid });
-                    }
-                    result.push(hist);
-                } else {
-                    if (hist.txt) {
-                        // Если присутствует текст, то вставляем его в прошлую запись, сменившую текст
-                        lastTxtObj.txt = hist.txt;
-                        if (!lastTxtObj.frag) {
-                            // Если в той записи небыло фрагмента, значит она не вставлялась и запись надо вставить
-                            result.splice(lastTxtIndex, 0, lastTxtObj);
-                        }
-                        // Из этого события удаляем текст и оно встает на ожидание следующего изменения текста
-                        delete hist.txt;
-                        lastTxtIndex = result.length;
-                        lastTxtObj = hist;
-                    }
-                    // Если в записи есть изменение фрагмента, то вставляем её
-                    if (hist.frag) {
-                        result.push(hist);
-                    }
-                }
-
-                // Если это последняя запись (в случае текущего состояние удаления - предпоследняя) в истории и ранее была смена текста,
-                // то необходимо вставить текущий текст комментария в эту последнюю запись изменения текста
-                if (i === hists.length - 1 && lastTxtIndex > 0) {
-                    lastTxtObj.txt = comment.txt;
-                    if (!lastTxtObj.frag) {
-                        result.splice(lastTxtIndex, 0, lastTxtObj);
-                    }
-                }
-            }
-
-            return { hists: result };
+    if (comment.del) {
+        hists.push({
+            user: comment.del.user,
+            stamp: comment.del.stamp,
+            del: _.pick(comment.del, 'reason', 'origin'),
+            role: comment.del.role,
+            roleregion: comment.del.roleregion
         });
-});
+    }
+
+    for (let i = 0; i < hists.length; i++) {
+        const hist = hists[i];
+        const histDel = hist.del;
+
+        if (hist.role && hist.roleregion) {
+            hist.roleregion = getregion(hist.roleregion);
+        }
+
+        if (histDel || hist.restore) {
+            if (histDel && histDel.reason && histDel.reason.cid) {
+                histDel.reason.title = giveReasonTitle({ cid: histDel.reason.cid });
+            }
+            result.push(hist);
+        } else {
+            if (hist.txt) {
+                lastTxtObj.txt = hist.txt; // If text exists, put it to previous record, which changed the text
+
+                if (!lastTxtObj.frag) {
+                    // If in those record had no fragment, means record was not append and need to append
+                    result.splice(lastTxtIndex, 0, lastTxtObj);
+                }
+
+                delete hist.txt; // Remove text from this event and it will be waiting next text changing
+                lastTxtIndex = result.length;
+                lastTxtObj = hist;
+            }
+
+            // If record contains fragment change, append it
+            if (hist.frag) {
+                result.push(hist);
+            }
+        }
+
+        // If it was last record (in case of current removal - penultimate) in history
+        // and there was text changing earlier,
+        // then need to append current text of comment in this last record of text change
+        if (i === hists.length - 1 && lastTxtIndex > 0) {
+            lastTxtObj.txt = comment.txt;
+            if (!lastTxtObj.frag) {
+                result.splice(lastTxtIndex, 0, lastTxtObj);
+            }
+        }
+    }
+
+    return { hists: result };
+};
 
 // Toggle ability to write comments for object (except administrators)
 async function setNoComments(iAm, { cid, type = 'photo', val: nocomments } = {}) {
@@ -1532,17 +1445,15 @@ export async function hideObjComments(oid, hide, iAm) {
 
     const comments = await Comment.find({ obj: oid }, {}, { lean: true }).exec();
 
-    const hashUsers = _.transform(comments, (result, comment) => {
+    const usersCountMap = _.transform(comments, (result, comment) => {
         if (comment.del === undefined) {
-            result[comment.user] = (result[comment.user] || 0) + 1;
+            const userId = String(comment.user);
+            result.set(userId, (result.get(userId) || 0) + 1);
         }
-    }, {});
+    }, new Map());
 
-    _.forOwn(hashUsers, (cdelta, userId) => {
-        if (hide) {
-            cdelta = -cdelta;
-        }
-
+    for (const [userId, ccount] of usersCountMap) {
+        const cdelta = hide ? -ccount : ccount;
         const userObj = session.getOnline(null, userId);
 
         if (userObj !== undefined) {
@@ -1551,9 +1462,9 @@ export async function hideObjComments(oid, hide, iAm) {
         } else {
             User.update({ _id: userId }, { $inc: { ccount: cdelta } }).exec();
         }
-    });
+    };
 
-    return { myCount: hashUsers[iAm.user._id] || 0 };
+    return { myCount: usersCountMap.get(String(iAm.user._id)) || 0 };
 }
 
 export const loadController = io => {
