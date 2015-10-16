@@ -1,3 +1,5 @@
+import config from '../config';
+import { waitDb } from './connection';
 import { Settings } from '../models/Settings';
 import { UserSettings } from '../models/UserSettings';
 
@@ -7,15 +9,14 @@ export const userSettingsVars = {};
 export const userRanksHash = {};
 export let userRanks;
 
-// Fill object for client parameters
-async function fillClientParams({ serverAddr, hash, version }) {
-    const settings = await Settings.findAsync({}, { _id: 0, key: 1, val: 1 }, { lean: true });
+export const ready = waitDb.then(() => Promise.all([fillClientParams(), fillUserSettingsDef(), fillUserRanks()]));
 
-    Object.assign(clientParams, {
-        server: serverAddr,
-        appHash: hash,
-        appVersion: version
-    });
+// Fill object for client parameters
+async function fillClientParams() {
+    const settings = await Settings.find({}, { _id: 0, key: 1, val: 1 }, { lean: true }).exec();
+    const { client, hash } = config;
+
+    Object.assign(clientParams, { server: client, hash });
 
     for (const setting of settings) {
         clientParams[setting.key] = setting.val;
@@ -46,9 +47,7 @@ async function fillUserRanks() {
     }
 }
 
-export async function fillData(app, io) {
-    await* [fillClientParams(app.get('appEnv')), fillUserSettingsDef(), fillUserRanks()];
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         socket.on('giveClientParams', function () {
             socket.emit('takeClientParams', clientParams);

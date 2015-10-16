@@ -4,6 +4,7 @@ import _ from 'lodash';
 import path from 'path';
 import step from 'step';
 import mkdirp from 'mkdirp';
+import config from '../config';
 import Bluebird from 'bluebird';
 import { exec } from 'child_process';
 import Utils from '../commons/Utils';
@@ -14,9 +15,9 @@ import { userThrottleChange } from './subscr';
 
 import { User } from '../models/User';
 
-const incomeDir = global.appVar.storePath + 'incoming/';
-const privateDir = global.appVar.storePath + 'private/avatars/';
-const publicDir = global.appVar.storePath + 'public/avatars/';
+const incomeDir = path.join(config.storePath, 'incoming/');
+const privateDir = path.join(config.storePath, 'private/avatars/');
+const publicDir = path.join(config.storePath, 'public/avatars/');
 const msg = {
     badParams: 'Bad params',
     deny: 'У вас нет прав на это действие',
@@ -119,7 +120,7 @@ function saveUser(iAm, data, cb) {
                 user.disp = f + (f && l ? ' ' : '') + l;
             }
 
-            _.assign(user, newValues);
+            Object.assign(user, newValues);
             user.save(this);
         },
         function (err, user) {

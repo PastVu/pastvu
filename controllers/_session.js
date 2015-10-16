@@ -1,11 +1,12 @@
 import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
-import cookie from 'express/node_modules/cookie';
+import config from '../config';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import { waitDb, dbEval } from './connection';
-import * as regionController from './region';;
+import * as regionController from './region';
+import cookie from 'express/node_modules/cookie';
 import { userSettingsDef, clientParams } from './settings';
 import { Session, SessionArchive } from '../models/Sessions';
 import { User } from '../models/User';
@@ -73,15 +74,15 @@ const SESSION_SHELF_LIFE = ms('21d'); // Срок годности сессии 
 const createSidCookieObj = (function () {
     // Создает объект с кукой ключа сессии
     var key = 'past.sid',
-    // domain = global.appVar.serverAddr.domain, // TODO: make appVar module
+        hostname = config.client.hostname,
         cookieMaxAge = SESSION_SHELF_LIFE / 1000;
 
     return function (session) {
         return {
             key,
-            value: session.key,
+            hostname,
             path: '/',
-            domain: global.appVar.serverAddr.domain,
+            value: session.key,
             'max-age': cookieMaxAge
         };
     };
@@ -722,7 +723,7 @@ module.exports.handleHTTPRequest = function (req, res, next) {
 
         //Добавляем в заголовок Set-cookie с идентификатором сессии (создает куку или продлевает её действие на клиенте)
         var cookieObj = createSidCookieObj(session),
-            cookieResOptions = { path: cookieObj.path, domain: cookieObj.domain };
+            cookieResOptions = { path: cookieObj.path, hostname: cookieObj.hostname };
 
         if (cookieObj['max-age'] !== undefined) {
             cookieResOptions.maxAge = cookieObj['max-age'] * 1000;

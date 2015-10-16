@@ -6,10 +6,11 @@
 
 const babelConfig = require('../babel/server.config');
 const babelOptions = Object.assign({}, babelConfig, {
-    only: [
+    only: [ // May be array of regexp, or github.com/isaacs/node-glob
         '@(app|downloader).js',
         'controllers/!(api|apilog).js',
-        'models/*.js'
+        'models/*.js',
+        'config/*.js'
     ]
 });
 
@@ -22,6 +23,10 @@ if (require.main === module) {
             'alias': 'script',
             'default': 'app.js',
             describe: 'Path to script to start'
+        })
+        .options('c', {
+            alias: 'config',
+            describe: 'Alternative path to config file'
         })
         .argv;
 

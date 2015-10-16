@@ -1,12 +1,13 @@
 import _ from 'lodash';
-import Utils from '../commons/Utils';
+import config from '../config';
 import * as errors from './errors';
+import Utils from '../commons/Utils';
 import * as session from './_session';
 import { clientParams } from './settings';
 import { givePhotoForPage } from './photo';
 
 export function loadController(app) {
-    const fullhost = clientParams.server.protocol + '://' + clientParams.server.host;
+    const origin = config.client.origin;
     const clientParamsJSON = JSON.stringify(clientParams);
 
     function genInitDataString(req) {
@@ -95,7 +96,7 @@ export function loadController(app) {
         var meta = { og: {}, twitter: {} };
 
         if (photo) {
-            meta.og.url = fullhost + '/p/' + photo.cid;
+            meta.og.url = `${origin}/p/${photo.cid}`;
 
             if (photo.desc) {
                 meta.desc = meta.og.desc = meta.twitter.desc = Utils.txtHtmlToPlain(photo.desc, true);
@@ -118,16 +119,16 @@ export function loadController(app) {
             }
 
             meta.og.img = {
-                url: fullhost + '/_p/a/' + photo.file,
+                url: `${origin}/_p/a/${photo.file}`,
                 w: photo.w,
                 h: photo.h
             };
             meta.twitter.img = {
-                url: fullhost + '/_p/d/' + photo.file // Twitter image must be less than 1MB in size, so use standard
+                url: `${origin}/_p/d/${photo.file}` // Twitter image must be less than 1MB in size, so use standard
             };
         }
         if (!meta.og.url) {
-            meta.og.url = fullhost + req.url; // req.path if decide without params
+            meta.og.url = origin + req.url; // req.path if decide without params
         }
         if (!meta.title) {
             meta.title = meta.og.title = meta.twitter.title = 'Retro photos of mankind\'s habitat.';

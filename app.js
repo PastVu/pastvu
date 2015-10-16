@@ -1,20 +1,19 @@
-const startStamp = Date.now();
-
 import './commons/JExtensions';
 import fs from 'fs';
 import os from 'os';
 import ms from 'ms';
-import _ from 'lodash';
 import http from 'http';
 import path from 'path';
 import posix from 'posix';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
+import config from './config';
 import express from 'express';
-import { argv } from 'optimist';
 import Bluebird from 'bluebird';
 import socketIO from 'socket.io';
-import constants from './controllers/constants';
+import Utils from './commons/Utils';
+import * as region from './controllers/region';
+import * as settings from './controllers/settings';
 import * as ourMiddlewares from './controllers/middleware';
 
 import connectDb from './controllers/connection';
@@ -36,59 +35,20 @@ import { Region } from './models/Region';
 import { News } from './models/News';
 import './models/_initValues';
 
-import { fillData as fillSettingsData } from './controllers/settings';
-import { fillData as fillRegionData } from './controllers/region';
-
-global.appVar = {}; // Глоблальный объект для хранения глобальных переменных приложения
-global.appVar.maxRegionLevel = constants.region.maxLevel;
-
-const nofileLimits = posix.getrlimit('nofile');
-const addresses = _.transform(os.networkInterfaces(), (result, face) => face.forEach(function (address) {
-    if (address.family === 'IPv4' && !address.internal) {
-        result.push(address.address);
+const startStamp = Date.now();
+const {
+    env,
+    logPath,
+    storePath,
+    manualGarbageCollect,
+    listen: {
+        hostname
+    },
+    core: {
+        hostname: coreHostname,
+        port: corePort
     }
-}), []);
-
-const pkg = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'));
-const confDefault = JSON.parse(JSON.minify(fs.readFileSync(__dirname + '/config.json', 'utf8')));
-const confConsole = _.pick(argv, Object.keys(confDefault));
-const conf = _.defaults(confConsole, argv.conf ? JSON.parse(JSON.minify(fs.readFileSync(argv.conf, 'utf8'))) : {}, confDefault);
-
-const land = conf.land; // Окружение (dev, test, prod)
-const httpPort = conf.port; // Порт прослушки сервера
-const httpHostname = conf.hostname; // Хост прослушки сервера
-
-const coreHostname = conf.core_hostname; // Хост Core
-const corePort = conf.core_port; // Порт Core
-
-const protocol = conf.protocol; // Протокол сервера для клинетов
-const domain = conf.domain || addresses[0]; // Адрес сервера для клинетов
-const port = conf.projectport; // Порт сервера для клиента
-const uport = conf.projectuport; // Порт сервера загрузки фотографий для клиента
-const dport = conf.projectdport; // Порт сервера скачки фотографий для клиента
-const host = domain + port; // Имя хоста (адрес+порт)
-
-const subdomains = (argv.subdomains || conf.subdomains).split('_').filter(function (item) {
-    return typeof item === 'string' && item.length > 0;
-}); // Поддомены для раздачи статики из store
-const moongoUri = argv.mongo || conf.mongo.con;
-const moongoPool = argv.mongopool || conf.mongo.pool;
-const mail = conf.mail || {};
-
-const buildJson = land === 'dev' ? {} : JSON.parse(fs.readFileSync(__dirname + '/build.json', 'utf8'));
-const storePath = path.normalize(conf.storePath || (__dirname + '/../store/')); // Путь к папке хранилища
-const servePublic = conf.servePublic; // Флаг, что node должен раздавать статику скриптов
-const serveStore = conf.serveStore; // Флаг, что node должен раздавать статику хранилища
-const serveLog = conf.serveLog; // Флаг, что node должен раздавать лог
-const gzip = conf.gzip; // Использовать gzip
-
-const logPath = path.normalize(conf.logPath || (__dirname + '/logs')); // Путь к папке логов
-const manualGCInterval = conf.manualGarbageCollect; // Интервал самостоятельного вызова gc. 0 - выключено
-
-Object.assign(
-    global.appVar,
-    { land, storePath, mail, serverAddr: { protocol, domain, host, port, uport, dport, subdomains } }
-);
+} = config;
 
 mkdirp.sync(logPath);
 mkdirp.sync(storePath + 'incoming');
@@ -97,10 +57,11 @@ mkdirp.sync(storePath + 'public/avatars');
 mkdirp.sync(storePath + 'public/photos');
 
 log4js.configure('./log4js.json', { cwd: logPath });
-if (land === 'dev') {
-    // In dev write all logs to the console
-    log4js.addAppender(log4js.appenders.console());
+if (env === 'development') {
+    log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
 }
+
+const nofileLimits = posix.getrlimit('nofile');
 const logger404 = log4js.getLogger('404.js');
 const logger = log4js.getLogger('app.js');
 
@@ -115,30 +76,27 @@ process.on('exit', function () {
     logger.info('--SHUTDOWN--');
 });
 
+// Displays information about the environment
 logger.info('~~~');
-
-// Вывод информации об окружении
+logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode`);
 logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
-logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on process pid: ${process.pid}`);
+logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
 logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
 
-// Включаем подробный stack trace промисов не на проде
-if (land !== 'prod') {
+// Enable verbose stack trace of Bluebird promises (not in production)
+if (env !== 'production') {
     logger.info('Bluebird long stack traces are enabled');
     Bluebird.longStackTraces();
 }
+logger.info('Application Hash: ' + config.hash);
 
 Bluebird.promisifyAll(fs);
 
 (async function configure() {
-    await connectDb(moongoUri, moongoPool, logger);
-
-    // Utils должны реквайрится после установки глобальных переменных, так как они там используются
-    // TODO: fix it
-    const Utils = require('./commons/Utils');
+    await connectDb(config.mongo.connection, config.mongo.pool, logger);
 
     const status404Text = http.STATUS_CODES[404];
-    const static404 = function ({ url, method, headers: { useragent, referer } = {} }, res) {
+    const static404 = ({ url, method, headers: { useragent, referer } = {} }, res) => {
         logger404.error(JSON.stringify({ url, method, useragent, referer }));
 
         res.statusCode = 404;
@@ -147,7 +105,7 @@ Bluebird.promisifyAll(fs);
 
     const app = express();
     app.disable('x-powered-by'); // Disable default X-Powered-By
-    app.set('query parser', 'extended'); // Parse with 'qs' module
+    app.set('query parser', 'extended'); // Parse query with 'qs' module
     app.set('views', 'views');
     app.set('view engine', 'jade');
 
@@ -162,31 +120,18 @@ Bluebird.promisifyAll(fs);
 
     // Enable chache of temlates in production
     // It reduce rendering time (and correspondingly 'waiting' time of client request) dramatically
-    if (land === 'dev') {
+    if (env === 'development') {
         app.disable('view cache'); // In dev disable this, so we able to edit jade templates without server reload
     } else {
         app.enable('view cache');
     }
-
-    app.hash = land === 'dev' ? pkg.version : buildJson.appHash;
-    logger.info('Application Hash: ' + app.hash);
-
-    app.set('appEnv', {
-        land,
-        storePath,
-        hash: app.hash,
-        version: pkg.version,
-        serverAddr: global.appVar.serverAddr
-    });
 
     // Set an object which properties will be available from all jade-templates as global variables
     Object.assign(app.locals, {
         pretty: false, // Adds whitespace to the resulting html to make it easier for a human to read
         compileDebug: false, // Include the function source in the compiled template for better error messages
         debug: false, // If set to true, the tokens and function body is logged to stdoutl (in development).
-
-        appLand: land, // Decides which scripts insert in the head
-        appHash: app.hash // Inserted in page head
+        config
     });
 
     // Alias for photos with cid from root. /5 -> /p/5
@@ -196,14 +141,14 @@ Bluebird.promisifyAll(fs);
 
     app.use(ourMiddlewares.responseHeaderHook());
 
-    if (gzip) {
+    if (config.gzip) {
         app.use(require('compression')());
     }
 
-    if (servePublic) {
+    if (config.servePublic) {
         const pub = '/public/';
 
-        if (land === 'dev') {
+        if (env === 'development') {
             const lessMiddleware = require('less-middleware');
             app.use('/style', lessMiddleware(path.join(__dirname, pub, 'style'), {
                 force: true,
@@ -222,16 +167,19 @@ Bluebird.promisifyAll(fs);
 
         // Favicon need to be placed before static, because it will written from disc once and will be cached
         // It would be served even on next step (at static), but in this case it would be written from disc on every req
-        app.use(require('serve-favicon')(path.join(__dirname, pub, 'favicon.ico'), { maxAge: ms(land === 'dev' ? '1s' : '2d') }));
+        app.use(require('serve-favicon')(
+            path.join(__dirname, pub, 'favicon.ico'), { maxAge: ms(env === 'development' ? '1s' : '2d') })
+        );
+
         app.use(express.static(path.join(__dirname, pub), {
-            maxAge: ms(land === 'dev' ? '1s' : '2d'),
+            maxAge: ms(env === 'development' ? '1s' : '2d'),
             etag: false
         }));
 
         // Seal static paths, ie request that achieve this handler will receive 404
         app.get(/^\/(?:img|js|style)(?:\/.*)$/, static404);
     }
-    if (serveStore) {
+    if (config.serveStore) {
         app.use('/_a/', ourMiddlewares.serveImages(path.join(storePath, 'public/avatars/'), { maxAge: ms('2d') }));
         app.use('/_p/', ourMiddlewares.serveImages(path.join(storePath, 'public/photos/'), { maxAge: ms('7d') }));
 
@@ -265,11 +213,13 @@ Bluebird.promisifyAll(fs);
     io.use(_session.handleSocket);
     _session.loadController(io);
 
-    await* [fillSettingsData(app, io), fillRegionData(app, io)];
+    await* [settings.ready, region.ready];
 
+    settings.loadController(io);
+    region.loadController(io);
     require('./controllers/actionlog').loadController();
     require('./controllers/mail').loadController();
-    require('./controllers/auth').loadController(app, io);
+    require('./controllers/auth').loadController(io);
     require('./controllers/reason').loadController(io);
     require('./controllers/userobjectrel').loadController();
     require('./controllers/index').loadController(io);
@@ -278,13 +228,13 @@ Bluebird.promisifyAll(fs);
     require('./controllers/comment').loadController(io);
     require('./controllers/profile').loadController(io);
     require('./controllers/admin').loadController(io);
-    if (land === 'dev') {
+    if (env === 'development') {
         require('./controllers/tpl').loadController(app);
     }
 
     require('./controllers/routes').loadController(app);
 
-    if (serveLog) {
+    if (config.serveLog) {
         app.use(
             '/nodelog',
             require('basic-auth-connect')('pastvu', 'pastvupastvu'),
@@ -299,15 +249,15 @@ Bluebird.promisifyAll(fs);
 
     const CoreServer = require('./controllers/coreadapter').Server;
 
-    const manualGC = manualGCInterval && global.gc;
+    const manualGC = manualGarbageCollect && global.gc;
 
     if (manualGC) {
         // Самостоятельно вызываем garbage collector через определеное время
-        logger.info(`Manual garbage collection every ${manualGCInterval / 1000}s`);
+        logger.info(`Manual garbage collection every ${manualGarbageCollect / 1000}s`);
     }
 
     const scheduleMemInfo = (function () {
-        const INTERVAL = manualGC ? manualGCInterval : ms('30s');
+        const INTERVAL = manualGC ? manualGarbageCollect : ms('30s');
 
         function memInfo() {
             let memory = process.memoryUsage();
@@ -353,13 +303,14 @@ Bluebird.promisifyAll(fs);
     }());
 
     new CoreServer(corePort, coreHostname, function () {
-        httpServer.listen(httpPort, httpHostname, function () {
-            logger.info(`servePublic: ${servePublic}, serveStore ${serveStore}`);
-            logger.info(`Host for users: [${protocol}://${host}]`);
-            logger.info(`Core server listening [${coreHostname || '*'}:${corePort}] in ${land.toUpperCase()}-mode`);
+        httpServer.listen(config.listen.port, hostname, function () {
+            logger.info(`servePublic: ${config.servePublic}, serveStore ${config.serveStore}`);
+            logger.info(`Host for users: [${config.client.host}]`);
+            logger.info(`Core server listening [${coreHostname || '*'}:${corePort}]`);
             logger.info(
-                `HTTP server listening [${httpHostname || '*'}:${httpPort}] in ${land.toUpperCase()}-mode`,
-                `${gzip ? 'with' : 'without'} gzip`,
+                `HTTP server started up in ${(Date.now() - startStamp) / 1000}s`,
+                `and listening [${hostname || '*'}:${config.listen.port}]`,
+                config.gzip ? `with gzip` : '',
                 '\n'
             );
 

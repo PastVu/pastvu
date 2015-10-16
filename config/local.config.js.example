@@ -1,0 +1,19 @@
+export default function (config, appRequire) {
+    const ms = appRequire('ms');
+
+    _.merge(config, {
+        client: {
+            hostname: 'klimashkin.com'
+        },
+
+        storePath: '../store',
+
+        manualGarbageCollect: ms('30s'),
+
+        mongo: {
+            pool: 10
+        }
+    });
+
+    return config;
+};

@@ -5,6 +5,7 @@ import path from 'path';
 import log4js from 'log4js';
 import mkdirp from 'mkdirp';
 import moment from 'moment';
+import config from '../config';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import { exec } from 'child_process';
@@ -21,8 +22,8 @@ let conveyerLength = 0;
 let conveyerMaxLength = 0;
 let conveyerConverted = 0;
 
-const sourceDir = global.appVar.storePath + 'private/photos/';
-const targetDir = global.appVar.storePath + 'public/photos/';
+const sourceDir = path.join(config.storePath, 'private/photos/');
+const targetDir = path.join(config.storePath, 'public/photos/');
 const waterDir = path.join(__dirname, '/../misc/watermark/');
 
 const maxWorking = 6; // Possible to convert in parallel
@@ -179,7 +180,7 @@ function fillImgPrior(parent, level) {
     return _.transform(imageVersions, function (result, item, key) {
         if (item.parent === parent) {
             result[key] = level;
-            _.assign(result, fillImgPrior(key, level + 1));
+            Object.assign(result, fillImgPrior(key, level + 1));
         }
     });
 }

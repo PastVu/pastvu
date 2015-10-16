@@ -64,7 +64,7 @@ define(['jquery', 'underscore', 'socket!', 'Utils', 'knockout', 'knockout.mappin
         if (subdomains && subdomains.length) {
             subdomains(_.shuffle(subdomains));
             Params.preaddrs = subdomains.map(function (sub) {
-                return (location.protocol || 'http:') + '//' + sub + '.' + location.host;
+                return '//' + sub + '.' + location.host;
             });
             Params.preaddr = Params.preaddrs[0];
         } else {

@@ -3,6 +3,7 @@ import ms from 'ms';
 import _ from 'lodash';
 import log4js from 'log4js';
 import moment from 'moment';
+import config from '../config';
 import Bluebird from 'bluebird';
 import Utils from '../commons/Utils';
 import constants from './constants.js';
@@ -24,8 +25,8 @@ import { Photo, PhotoMap, PhotoHistory } from '../models/Photo';
 
 const logger = log4js.getLogger('photo.js');
 const maxRegionLevel = constants.region.maxLevel;
-const incomeDir = global.appVar.storePath + 'incoming/';
-const privateDir = global.appVar.storePath + 'private/photos/';
+const incomeDir = config.storePath + 'incoming/';
+const privateDir = config.storePath + 'private/photos/';
 
 const status = constants.photo.status;
 const parsingFieldsSet = new Set(constants.photo.parsingFields);

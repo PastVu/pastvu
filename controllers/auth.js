@@ -6,6 +6,7 @@ import step from 'step';
 import jade from 'jade';
 import log4js from 'log4js';
 import moment from 'moment';
+import config from '../config';
 import Utils from '../commons/Utils';
 import * as session from './_session';
 import { send as sendMail } from './mail';
@@ -17,15 +18,13 @@ import { Counter } from '../models/Counter';
 
 const logger = log4js.getLogger('auth.js');
 const loggerApp = log4js.getLogger('app.js');
-const subdl = global.appVar.serverAddr.subdomains.length;
-const preaddrs = global.appVar.serverAddr.subdomains.map(function (sub) {
-    return 'http://' + sub + '.' + global.appVar.serverAddr.host;
+const preaddrs = config.client.subdomains.map(function (sub) {
+    return `${sub}.${config.client.host}`;
 });
 const msg = {
     deny: 'You do not have permission for this action'
 };
 
-let appEnv = {};
 let recallTpl;
 let regTpl;
 
@@ -81,8 +80,8 @@ function login(socket, data, cb) {
     });
 }
 
-// Регистрация
-var registerPublicError = { message: 'Ошибка регистрации', error: true };
+// Registration
+const registerPublicError = { message: 'Ошибка регистрации', error: true };
 function register(data, cb) {
     var error = '',
         success = 'Учетная запись создана успешно. Для завершения регистрации следуйте инструкциям, отправленным на указанный вами e-mail', //'Account has been successfully created. To confirm registration, follow the instructions sent to Your e-mail',
@@ -182,14 +181,13 @@ function register(data, cb) {
                     subject: 'Подтверждение регистрации',
                     head: true,
                     body: regTpl({
-                        username: data.login,
-                        greeting: 'Спасибо за регистрацию на проекте PastVu!',
-                        addr: appEnv.serverAddr,
                         data,
                         confirmKey,
+                        username: data.login,
+                        greeting: 'Спасибо за регистрацию на проекте PastVu!',
                         linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
                     }),
-                    text: 'Перейдите по следующей ссылке: ' + appEnv.serverAddr.protocol + '://' + appEnv.serverAddr.host + '/confirm/' + confirmKey
+                    text: 'Перейдите по следующей ссылке: ' + config.client.origin + '/confirm/' + confirmKey
                 });
             }
         );
@@ -255,13 +253,12 @@ function recall(iAm, data, cb) {
                 subject: 'Запрос на восстановление пароля',
                 head: true,
                 body: recallTpl({
+                    data,
+                    confirmKey,
                     username: data.disp,
-                    addr: appEnv.serverAddr,
-                    data: data,
-                    confirmKey: confirmKey,
                     linkvalid: moment.duration(ms('2d')).humanize() + ' (до ' + moment().utc().lang('ru').add(ms('2d')).format("LLL") + ')'
                 }),
-                text: 'Перейдите по следующей ссылке: ' + appEnv.serverAddr.protocol + '://' + appEnv.serverAddr.host + '/confirm/' + confirmKey
+                text: 'Перейдите по следующей ссылке: ' + config.client.origin + '/confirm/' + confirmKey
             });
         }
     );
@@ -405,7 +402,7 @@ function checkConfirm(data, cb) {
             );
         } else if (key.length === 8) { //Confirm pass change
             if (user.avatar) {
-                if (subdl) {
+                if (preaddrs.length) {
                     avatar = preaddrs[0] + '/_a/h/' + user.avatar;
                 } else {
                     avatar = '/_a/h/' + user.avatar;
@@ -431,9 +428,7 @@ fs.readFile(path.normalize('./views/mail/recall.jade'), 'utf-8', function (err, 
     }
     recallTpl = jade.compile(data, { filename: path.normalize('./views/mail/recall.jade'), pretty: false });
 });
-export function loadController(app, io) {
-    appEnv = app.get('appEnv');
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 

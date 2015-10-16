@@ -6,7 +6,7 @@ p
 p
 	| Для ввода нового пароля перейдите по следующей ссылке:
 	br
-	a(href=addr.protocol + '://' + addr.host + '/confirm/' + confirmKey, target='_blank')
-		= addr.host + '/confirm/' + confirmKey
+	a(href=config.client.origin + '/confirm/' + confirmKey, target='_blank')
+		= config.client.host + '/confirm/' + confirmKey
 	br
 	small Ссылка действительна #{linkvalid}, по истечении которых Вам будет необходимо запрашивать смену пароля повторно

@@ -1,11 +1,9 @@
 'use strict';
 
 module.exports = function (grunt) {
-    global.appVar = {};
-
     var path = require('path'),
         Utils = require('./commons/Utils'),
-        land = grunt.option('land') || 'prod', // Например, --land test
+        env = grunt.option('env') || 'production', // Например, --env testing
         upperDir = path.normalize(path.resolve('../') + '/'),
         targetDir = path.normalize(upperDir + 'appBuild/'),
         appHash = Utils.randomString(5);
@@ -98,7 +96,7 @@ module.exports = function (grunt) {
             compileTpls: {
                 options: {
                     data: {
-                        appLand: land, appHash: appHash, pretty: false
+                        appEnv: env, appHash, pretty: false
                     }
                 },
                 files: [
@@ -110,7 +108,7 @@ module.exports = function (grunt) {
                     data: function (dest, src) {
                         var name = dest.replace(/.*\/(?:app)?(.*)\.html/i, '$1');
                         grunt.log.write('appName: ' + name + '. ');
-                        return { appName: name, appLand: land, appHash: appHash, pretty: false };
+                        return { appName: name, appEnv: env, appHash, pretty: false };
                     }
                 },
                 files: [
@@ -163,10 +161,10 @@ module.exports = function (grunt) {
 
     //Записываем параметры сборки, например appHash, из которых запуск в prod возьмет даные
     grunt.registerTask('writeBuildParams', function () {
-        var buildString = JSON.stringify({ appHash: appHash });
+        const buildString = JSON.stringify({ appHash });
 
         grunt.file.write(targetDir + 'build.json', buildString);
         grunt.log.writeln('Build json: ' + buildString);
-        grunt.log.write('appLand: ' + land + '. ');
+        grunt.log.write('env: ' + env + '. ');
     });
 };

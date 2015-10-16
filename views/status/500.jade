@@ -3,8 +3,8 @@ html
 	head
 		include ../includes/head_meta
 		title Ошибка - PastVu
-		link(rel="stylesheet", type="text/css", href='/style/normalize.css?__='+appHash)
-		link(rel="stylesheet", type="text/css", href='/style/fonts.css?__='+appHash)
+		link(rel="stylesheet", type="text/css", href='/style/normalize.css?__='+config.hash)
+		link(rel="stylesheet", type="text/css", href='/style/fonts.css?__='+config.appHash)
 		style.
 			html,body{height:100%; min-height:100%; overflow:hidden}
 			body {background: #ebebeb url(/img/misc/500.jpg) center center / cover no-repeat fixed;}
@@ -31,7 +31,7 @@ html
 					background-image: url(/img/misc/500sm.jpg);
 				}
 			}
-		
+
 	body
 		a.msg(href="/")
 			span Sorry, server failed to fulfill an apparently request

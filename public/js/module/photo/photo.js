@@ -1115,7 +1115,7 @@ define(['underscore', 'Utils', 'socket!', 'Params', 'knockout', 'knockout.mappin
         download: (function () {
             var supportDownloadAttribute = 'download' in document.createElement('a');
             var waitingForKey = false;
-            var downloadPath = '//' + P.settings.server.domain() + P.settings.server.dport() + '/download/';
+            var downloadPath = '//' + P.settings.server.hostname() + P.settings.server.dport() + '/download/';
             var getDownloadKey = function (cid) {
                 waitingForKey = true;
                 socket.once('getDownloadKeyResult', function (data) {

@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var config = require('../config');
 var Utils = Object.create(null);
 var _ = require('lodash');
 var _s = require('underscore.string');
@@ -251,7 +252,7 @@ Utils.linkifyUrlString = function (text, target, className) {
     return text;
 };
 Utils.inputIncomingParse = (function () {
-    var host = global.appVar && global.appVar.serverAddr && global.appVar.serverAddr.host || '',
+    var host = config.client.host,
         reversedEscapeChars = { "<": "lt", ">": "gt", "\"": "quot", "&": "amp", "'": "#39" };
 
     function escape(txt) {

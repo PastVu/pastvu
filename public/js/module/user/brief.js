@@ -110,7 +110,7 @@ define(['underscore', 'Params', 'knockout', 'socket!', 'm/_moduleCliche', 'globa
 					this.$fileupload = this.$dom.find('.avaInput');
 					this.$fileupload.fileupload();
 					this.$fileupload.fileupload('option', {
-						url: (location.protocol || 'http:') + '//' + P.settings.server.domain() + P.settings.server.uport() + '/uploadava',
+						url: '//' + P.settings.server.hostname() + P.settings.server.uport() + '/uploadava',
 						dataType: 'json',
 						dropZone: null,
 						pasteZone: null,

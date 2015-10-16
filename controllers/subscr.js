@@ -412,7 +412,6 @@ async function sendUserNotice(userId) {
                 news: newsResult,
                 photos: photosResult,
                 username: String(user.disp),
-                addr: global.appVar.serverAddr,
                 greeting: 'Уведомление о событиях на PastVu'
             }),
             text: totalNewestComments +

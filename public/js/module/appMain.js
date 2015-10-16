@@ -15,7 +15,7 @@ require([
 
 	Utils.title.setPostfix('Фотографии прошлого');
 
-	var appHash = P.settings.appHash(),
+	var appHash = P.settings.hash(),
 		routerDeferred = $.Deferred(),
 		routerAnatomy = {
 			globalModules: {

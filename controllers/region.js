@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import log4js from 'log4js';
 import Utils from '../commons/Utils';
-import { dbEval } from './connection';
+import { waitDb, dbEval } from './connection';
 import constants from './constants.js';
 import * as _session from './_session.js';
 import { User } from '../models/User';
@@ -31,6 +31,8 @@ let regionCacheHash = {}; // Hash-cache of regions { cid: { _id, cid, parents } 
 for (let i = 0; i <= maxRegionLevel; i++) {
     regionsAllSelectHash['r' + i] = 1;
 }
+
+export const ready = waitDb.then(fillCache);
 
 // Заполняем кэш (массив и хэш) регионов в память
 async function fillCache() {
@@ -1445,9 +1447,7 @@ export const buildQuery = regions => {
     return { rquery, rhash };
 };
 
-export async function fillData(app, io) {
-    await fillCache();
-
+export function loadController(io) {
     io.sockets.on('connection', function (socket) {
         const hs = socket.handshake;
 
