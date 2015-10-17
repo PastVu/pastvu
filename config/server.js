@@ -78,8 +78,8 @@ export default (function () {
     config.client.host = `${config.client.hostname}${config.client.port}`;
     config.client.origin = `${config.client.protocol}://${config.client.host}`;
 
-    config.logPath = path.normalize(config.logPath);
-    config.storePath = path.normalize(config.storePath);
+    config.logPath = path.resolve(config.logPath);
+    config.storePath = path.resolve(config.storePath);
 
     console.log(config);
 

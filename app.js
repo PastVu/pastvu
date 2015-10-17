@@ -51,10 +51,10 @@ const {
 } = config;
 
 mkdirp.sync(logPath);
-mkdirp.sync(storePath + 'incoming');
-mkdirp.sync(storePath + 'private');
-mkdirp.sync(storePath + 'public/avatars');
-mkdirp.sync(storePath + 'public/photos');
+mkdirp.sync(path.join(storePath + 'incoming'));
+mkdirp.sync(path.join(storePath + 'private'));
+mkdirp.sync(path.join(storePath + 'public/avatars'));
+mkdirp.sync(path.join(storePath + 'public/photos'));
 
 log4js.configure('./log4js.json', { cwd: logPath });
 if (env === 'development') {
