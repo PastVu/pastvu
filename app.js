@@ -37,69 +37,68 @@ import { Region } from './models/Region';
 import { News } from './models/News';
 import './models/_initValues';
 
-const startStamp = Date.now();
-const {
-    env,
-    logPath,
-    storePath,
-    manualGarbageCollect,
-    listen: {
-        hostname
-    },
-    core: {
-        hostname: coreHostname,
-        port: corePort
+export async function configure(startStamp) {
+    const {
+        env,
+        logPath,
+        storePath,
+        manualGarbageCollect,
+        listen: {
+            hostname
+        },
+        core: {
+            hostname: coreHostname,
+            port: corePort
+        }
+    } = config;
+
+    mkdirp.sync(logPath);
+    mkdirp.sync(path.join(storePath + 'incoming'));
+    mkdirp.sync(path.join(storePath + 'private'));
+    mkdirp.sync(path.join(storePath + 'public/avatars'));
+    mkdirp.sync(path.join(storePath + 'public/photos'));
+
+    log4js.configure('./log4js.json', { cwd: logPath });
+    if (env === 'development') {
+        log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
     }
-} = config;
 
-mkdirp.sync(logPath);
-mkdirp.sync(path.join(storePath + 'incoming'));
-mkdirp.sync(path.join(storePath + 'private'));
-mkdirp.sync(path.join(storePath + 'public/avatars'));
-mkdirp.sync(path.join(storePath + 'public/photos'));
+    const nofileLimits = posix.getrlimit('nofile');
+    const logger404 = log4js.getLogger('404.js');
+    const logger = log4js.getLogger('app.js');
 
-log4js.configure('./log4js.json', { cwd: logPath });
-if (env === 'development') {
-    log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
-}
+    // Handling uncaught exceptions
+    process.on('uncaughtException', function (err) {
+        // Add here storage for saving and resuming
+        logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
+        logger.trace(err && (err.stack || err));
+    });
 
-const nofileLimits = posix.getrlimit('nofile');
-const logger404 = log4js.getLogger('404.js');
-const logger = log4js.getLogger('app.js');
+    process.on('exit', function () {
+        logger.info('--SHUTDOWN--');
+    });
 
-// Handling uncaught exceptions
-process.on('uncaughtException', function (err) {
-    // Add here storage for saving and resuming
-    logger.fatal('PROCESS uncaughtException: ' + (err && (err.message || err)));
-    logger.trace(err && (err.stack || err));
-});
+    // Displays information about the environment and configuration
+    logger.info('~~~');
+    logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode with NODE_ENV=${process.env.NODE_ENV}`);
+    logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
+    logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
+    logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
+    logger.info(`Configuration:\n`, util.inspect(
+        // Do deep clone of config and shade password fields
+        _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
+        { depth: null, colors: env === 'development' }
+    ));
 
-process.on('exit', function () {
-    logger.info('--SHUTDOWN--');
-});
+    // Enable verbose stack trace of Bluebird promises (not in production)
+    if (env !== 'production') {
+        logger.info('Bluebird long stack traces are enabled');
+        Bluebird.longStackTraces();
+    }
+    logger.info('Application Hash: ' + config.hash);
 
-// Displays information about the environment and configuration
-logger.info('~~~');
-logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode with NODE_ENV=${process.env.NODE_ENV}`);
-logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
-logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
-logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
-logger.info(`Configuration:\n`, util.inspect(
-    // Do deep clone of config and shade password fields
-    _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
-    { depth: null, colors: env === 'development' }
-));
+    Bluebird.promisifyAll(fs);
 
-// Enable verbose stack trace of Bluebird promises (not in production)
-if (env !== 'production') {
-    logger.info('Bluebird long stack traces are enabled');
-    Bluebird.longStackTraces();
-}
-logger.info('Application Hash: ' + config.hash);
-
-Bluebird.promisifyAll(fs);
-
-(async function configure() {
     await connectDb(config.mongo.connection, config.mongo.pool, logger);
 
     const status404Text = http.STATUS_CODES[404];
@@ -324,4 +323,4 @@ Bluebird.promisifyAll(fs);
             scheduleMemInfo(startStamp - Date.now());
         });
     });
-}());
+};

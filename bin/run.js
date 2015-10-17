@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
  * Entry point to application. It's purpuse - to run script with transformation
- * This file is not being transformed by babel, nor being checked by eslint and that's why must be written carefully
+ * This file is not being transformed by babel, nor being checked by eslint and that's why it must be written carefully
  */
 
+const startStamp = Date.now();
 const babelConfig = require('../babel/server.config');
 const babelOptions = Object.assign({}, babelConfig, {
     only: [ // May be array of regexp, or github.com/isaacs/node-glob
@@ -30,7 +31,13 @@ if (require.main === module) {
         })
         .argv;
 
-    module.exports = babelRequire(path.resolve(argv.script));
+    const requiredModule = babelRequire(path.resolve(argv.script));
+
+    if (typeof requiredModule.configure === 'function') {
+        requiredModule.configure(startStamp);
+    }
+
+    module.exports = requiredModule;
 } else {
     // If run.js is required by another fil
     module.exports = babelRequire;
