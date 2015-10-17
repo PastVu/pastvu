@@ -44,8 +44,9 @@ export default function (uri, poolSize = 1, logger = log4js.getLogger('app.js'))
                 const [buildInfo, serverStatus] = await* [adminDb.buildInfo(), adminDb.serverStatus()];
 
                 logger.info(
-                    `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits}, ` +
-                    `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}] at: ${uri}`
+                    `MongoDB[${buildInfo.version}, ${serverStatus.storageEngine.name}, x${buildInfo.bits},`,
+                    `pid ${serverStatus.pid}] connected through Mongoose[${mongoose.version}]`,
+                    `with poolsize ${poolSize} at: ${uri}`
                 );
 
                 db.removeListener('error', errFirstHandler);

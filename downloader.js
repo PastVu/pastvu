@@ -1,17 +1,12 @@
-'use strict';
-
-const startStamp = Date.now();
-
 import './commons/JExtensions';
 import fs from 'fs';
-import os from 'os';
 import ms from 'ms';
 import _ from 'lodash';
 import path from 'path';
 import http from 'http';
 import mkdirp from 'mkdirp';
 import log4js from 'log4js';
-import { argv } from 'optimist';
+import config from './config';
 import Bluebird from 'bluebird';
 import Utils from './commons/Utils';
 import contentDisposition from 'content-disposition';
@@ -19,34 +14,22 @@ import contentDisposition from 'content-disposition';
 import connectDb from './controllers/connection';
 import { Download } from './models/Download';
 
-const addresses = _.transform(os.networkInterfaces(), (result, face) => face.forEach(function (address) {
-    if (address.family === 'IPv4' && !address.internal) {
-        result.push(address.address);
+const startStamp = Date.now();
+const {
+    env,
+    storePath,
+    listen: {
+        hostname,
+        dport: listenport
     }
-}), []);
+} = config;
 
-const conf = JSON.parse(JSON.minify(fs.readFileSync(argv.conf || __dirname + '/config.json', 'utf8')));
-const storePath = path.normalize(argv.storePath || conf.storePath || (__dirname + '/../store/'));
-const land = argv.land || conf.land || 'dev'; // Environment (dev, test, prod)
-const listenport = argv.dport || conf.dport || 3002;
-const listenhost = argv.hostname || conf.hostname || undefined;
-
-const moongoUri = argv.mongo || conf.mongo.con;
-const moongoPool = argv.mongopool || conf.mongo.pool;
-
-const domain = argv.domain || conf.domain || addresses[0] || '127.0.0.1'; // Server address for clients
-const dport = argv.projectdport || conf.projectdport || ''; // Port of downloader server
-const host = domain + dport; // Hostname (address+port)
-
-const logPath = path.normalize(argv.logPath || conf.logPath || (__dirname + '/logs')); // Путь к папке логов
-
-console.log('\n');
-mkdirp.sync(logPath);
-log4js.configure('./log4js.json', { cwd: logPath });
-if (land === 'dev') {
-    // В dev выводим все логи также в консоль
-    log4js.addAppender(log4js.appenders.console());
+mkdirp.sync(config.logPath);
+log4js.configure('./log4js.json', { cwd: config.logPath });
+if (env === 'development') {
+    log4js.addAppender(log4js.appenders.console()); // In dev write all logs also to the console
 }
+
 const logger = log4js.getLogger('downloader.js');
 
 /**
@@ -58,8 +41,12 @@ process.on('uncaughtException', function (err) {
     logger.trace(err && (err.stack || err));
 });
 
-// Enable detailed stack trace for blubird (not in production)
-if (land !== 'prod') {
+process.on('exit', function () {
+    logger.info('--SHUTDOWN--');
+});
+
+// Enable verbose stack trace of Bluebird promises (not in production)
+if (env !== 'production') {
     logger.info('Bluebird long stack traces are enabled');
     Bluebird.longStackTraces();
 }
@@ -133,7 +120,7 @@ const scheduleMemInfo = (function () {
 }());
 
 (async function configure() {
-    await connectDb(moongoUri, moongoPool, logger);
+    await connectDb(config.mongo.connection, config.mongo.poolDownloader, logger);
 
     const handleRequest = async function (req, res) {
         res.statusCode = 200;
@@ -185,9 +172,9 @@ const scheduleMemInfo = (function () {
         }
     };
 
-    http.createServer(handleRequest).listen(listenport, listenhost, function () {
-        logger.info(`Uploader host for users: [${host}]`);
-        logger.info(`Uploader server listening [${listenhost ? listenhost : '*'}:${listenport}]\n`);
+    http.createServer(handleRequest).listen(listenport, hostname, function () {
+        logger.info(`Uploader host for users: [${config.client.hostname + config.client.dport}]`);
+        logger.info(`Uploader server listening [${hostname ? hostname : '*'}:${listenport}]\n`);
 
         scheduleMemInfo(startStamp - Date.now());
     });

@@ -56,7 +56,8 @@ export default {
 
     mongo: {
         connection: 'mongodb://localhost:27017/pastvu',
-        pool: 5 // Number of concurrent connections to DB
+        pool: 5, // Number of concurrent connections to DB
+        poolDownloader: 2 // Number of concurrent connections to DB of downloader.js
     },
     mongo_api: {
         con: 'mongodb://localhost:27017/pastvu',
