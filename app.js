@@ -2,6 +2,8 @@ import './commons/JExtensions';
 import fs from 'fs';
 import os from 'os';
 import ms from 'ms';
+import _ from 'lodash';
+import util from 'util';
 import http from 'http';
 import path from 'path';
 import posix from 'posix';
@@ -76,12 +78,17 @@ process.on('exit', function () {
     logger.info('--SHUTDOWN--');
 });
 
-// Displays information about the environment
+// Displays information about the environment and configuration
 logger.info('~~~');
-logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode`);
+logger.info(`Starting server v${config.version} in ${env.toUpperCase()} mode with NODE_ENV=${process.env.NODE_ENV}`);
 logger.info(`Platform: ${process.platform}, architecture: ${process.arch} with ${os.cpus().length} cpu cores`);
 logger.info(`Node.js [${process.versions.node}] with v8 [${process.versions.v8}] on pid: ${process.pid}`);
 logger.info(`Posix file descriptor limits: soft=${nofileLimits.soft}, hard=${nofileLimits.hard}`);
+logger.info(`Configuration:\n`, util.inspect(
+    // Do deep clone of config and shade password fields
+    _.cloneDeep(config, (val, key) => key === 'pass' ? '######' : undefined),
+    { depth: null, colors: env === 'development' }
+));
 
 // Enable verbose stack trace of Bluebird promises (not in production)
 if (env !== 'production') {

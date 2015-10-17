@@ -81,7 +81,5 @@ export default (function () {
     config.logPath = path.resolve(config.logPath);
     config.storePath = path.resolve(config.storePath);
 
-    console.log(config);
-
     return config;
 }());
