@@ -244,7 +244,7 @@ Bluebird.promisifyAll(fs);
     if (config.serveLog) {
         app.use(
             '/nodelog',
-            require('basic-auth-connect')('pastvu', 'pastvupastvu'),
+            require('basic-auth-connect')(config.serveLogAuth.user, config.serveLogAuth.pass),
             require('serve-index')(logPath, { icons: true }),
             express.static(logPath, { maxAge: 0, etag: false })
         );
